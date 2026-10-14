@@ -1,0 +1,45 @@
+import BatteryCore
+
+/// A source of battery readings for the current device.
+@MainActor
+public protocol BatteryProvider: AnyObject {
+    /// Reads the current state, or `nil` when the device has no battery
+    /// (desktop Mac, CI virtual machine, iOS Simulator).
+    func read() -> BatteryReading?
+
+    /// Calls `handler` on the main actor whenever the OS signals a power-related change.
+    /// Delivery stops when the returned observation is cancelled or deallocated.
+    func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation
+}
+
+/// Keeps a change subscription alive; cancels it on `cancel()` or deinit.
+public final class BatteryObservation {
+    private var onCancel: (@Sendable () -> Void)?
+
+    public init(onCancel: @escaping @Sendable () -> Void) {
+        self.onCancel = onCancel
+    }
+
+    public func cancel() {
+        onCancel?()
+        onCancel = nil
+    }
+
+    deinit {
+        onCancel?()
+    }
+}
+
+public enum SystemBattery {
+    /// The provider for the platform this code runs on, or `nil` where none exists (Linux).
+    @MainActor
+    public static func makeProvider() -> (any BatteryProvider)? {
+        #if os(macOS)
+        MacBatteryProvider()
+        #elseif os(iOS)
+        IOSBatteryProvider()
+        #else
+        nil
+        #endif
+    }
+}
