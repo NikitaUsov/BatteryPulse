@@ -80,6 +80,30 @@ import Testing
         #expect(DemoAnimation.chargeFromEmpty.battery(progress: 1) == DemoScenario.fullyCharged.battery)
     }
 
+    @Test func timeToFullFallsSteadily() throws {
+        var previous = Int.max
+        for step in 8...99 {
+            let minutes = try #require(
+                DemoAnimation.chargeFromEmpty.battery(progress: Double(step) / 100).minutesRemaining)
+            #expect(minutes <= previous, "progress \(step) %")
+            previous = minutes
+        }
+        #expect(previous <= 2)
+    }
+
+    @Test func onBatteryLoadMatchesBatteryPowerWhileVarying() throws {
+        for scenario in DemoScenario.allCases {
+            guard let battery = scenario.battery, battery.adapter == nil else { continue }
+            for tick in 0..<60 {
+                let telemetry = try #require(
+                    battery.varied(tick).reading(at: now).smartBattery["PowerTelemetryData"]?.dictionaryValue)
+                let load = try #require(telemetry["SystemLoad"]?.intValue)
+                let batteryPower = try #require(telemetry["BatteryPower"]?.intValue)
+                #expect(abs(load + batteryPower) <= 1, "\(scenario) tick \(tick)")
+            }
+        }
+    }
+
     @Test func drainAnimationPassesLowAndCritical() {
         let tiers = [0.0, 0.85, 0.95].map {
             BatteryPresentation.levelTier(

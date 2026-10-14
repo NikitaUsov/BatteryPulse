@@ -74,10 +74,19 @@ struct DeveloperView: View {
         .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
         .toolbar {
             ToolbarItemGroup {
+                // Exports are for bug reports, so they are off while the data is simulated.
                 Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
-                    .help("Copy the parsed readings as JSON, without serial numbers")
+                    .disabled(monitor.isOverridden)
+                    .help(
+                        monitor.isOverridden
+                            ? Text("Not available in Demo Mode")
+                            : Text("Copy the parsed readings as JSON, without serial numbers"))
                 Button("Export Capture…", systemImage: "square.and.arrow.up", action: exportCapture)
-                    .help("Save the raw data for a bug report. Serial numbers are redacted.")
+                    .disabled(monitor.isOverridden)
+                    .help(
+                        monitor.isOverridden
+                            ? Text("Not available in Demo Mode")
+                            : Text("Save the raw data for a bug report. Serial numbers are redacted."))
             }
         }
         .disabled(monitor.reading == nil)
@@ -132,7 +141,7 @@ struct DeveloperView: View {
     }
 
     private func copyJSON() {
-        guard var snapshot = monitor.snapshot else { return }
+        guard var snapshot = monitor.snapshot, !monitor.isOverridden else { return }
         snapshot.serialNumber = nil
         snapshot.adapter?.serialNumber = nil
         let encoder = JSONEncoder()
@@ -145,7 +154,7 @@ struct DeveloperView: View {
     }
 
     private func exportCapture() {
-        guard let reading = monitor.reading else { return }
+        guard let reading = monitor.reading, !monitor.isOverridden else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.xml]
         panel.nameFieldStringValue = "BatteryPulse-capture.xml"

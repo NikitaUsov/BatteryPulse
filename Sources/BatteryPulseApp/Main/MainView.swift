@@ -60,8 +60,9 @@ struct MainView: View {
         } detail: {
             MainDetail(monitor: monitor, selection: selection)
                 .navigationTitle(selection.title)
-                // Floats over every page while Demo Mode is on.
-                .safeAreaInset(edge: .bottom) {
+                // Floats over every page while Demo Mode is on; content scrolls under it with the
+                // system's scroll edge effect.
+                .safeAreaBar(edge: .bottom) {
                     DemoControlBar()
                 }
                 // The minimum size belongs on the column: a minimum on the whole split view makes
@@ -73,14 +74,15 @@ struct MainView: View {
                     }
                 }
         }
+        // DemoController stops the demo itself when the section is hidden.
         .onChange(of: showsDeveloper) { _, shows in
-            guard !shows else { return }
-            demo.stop()
-            if SidebarItem.developerPages.contains(selection) { selection = .overview }
+            if !shows, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
-        // The demo tour switches pages by itself.
+        // The demo tour switches pages by itself, but never to a hidden one.
         .onChange(of: demo.pageRequest) { _, request in
-            if let request { selection = request.page }
+            guard let request else { return }
+            let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
+            selection = isHidden ? .overview : request.page
         }
         .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "main") }
         .onDisappear { monitor.setLiveRefreshInterval(nil, for: "main") }
@@ -122,13 +124,16 @@ private struct CopyReportButton: View {
     let monitor: BatteryMonitor
 
     var body: some View {
+        // A report of simulated data would mislead a bug report.
         Button("Copy Report", systemImage: "doc.on.doc", action: copyReport)
-            .disabled(monitor.snapshot == nil)
-            .help("Copy a plain-text report without serial numbers")
+            .disabled(monitor.snapshot == nil || monitor.isOverridden)
+            .help(
+                monitor.isOverridden
+                    ? Text("Not available in Demo Mode") : Text("Copy a plain-text report without serial numbers"))
     }
 
     private func copyReport() {
-        guard let snapshot = monitor.snapshot else { return }
+        guard let snapshot = monitor.snapshot, !monitor.isOverridden else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(BatteryReport.text(for: snapshot), forType: .string)

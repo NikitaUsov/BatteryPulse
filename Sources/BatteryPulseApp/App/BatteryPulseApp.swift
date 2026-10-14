@@ -44,6 +44,7 @@ struct BatteryPulseApp: App {
                 .environment(demo)
         } label: {
             MenuBarLabel(monitor: monitor)
+                .environment(demo)
         }
         .menuBarExtraStyle(.window)
 

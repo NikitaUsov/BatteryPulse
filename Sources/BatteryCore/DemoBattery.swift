@@ -60,7 +60,9 @@ public struct DemoBattery: Sendable, Equatable {
         var copy = self
         let wobble = sin(Double(tick) * 1.3) * 0.04 + sin(Double(tick) * 0.37) * 0.02
         copy.batteryWatts = batteryWatts * (1 + wobble)
-        copy.systemLoadWatts = systemLoadWatts * (1 + wobble * 1.5)
+        // On battery the Mac's load is exactly what the battery delivers; on the adapter the
+        // load moves on its own and the adapter covers the difference.
+        copy.systemLoadWatts = adapter == nil ? -copy.batteryWatts : systemLoadWatts * (1 + wobble * 1.5)
         return copy
     }
 
@@ -298,9 +300,11 @@ public enum DemoAnimation: String, Sendable, CaseIterable, Identifiable {
                 return full
             }
             let percent = 2 + 98 * progress
-            // Constant current up to 80 %, then the charger tapers.
+            // Constant current up to 80 %, then the charger tapers off.
             let watts = percent < 80 ? 38 : max(3, 38 * (100 - percent) / 20)
-            let hoursLeft = DemoBattery.energyWattHours * (100 - percent) / 100 / watts
+            // The estimate uses the full-power rate so it falls steadily instead of stalling
+            // while the power tapers.
+            let hoursLeft = DemoBattery.energyWattHours * (100 - percent) / 100 / 38
             // Right after plugging in, macOS is still estimating.
             let minutes = progress < 0.08 ? nil : Int((hoursLeft * 60 * 1.15).rounded())
             return DemoBattery(

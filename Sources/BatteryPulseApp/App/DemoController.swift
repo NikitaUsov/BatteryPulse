@@ -30,6 +30,8 @@ final class DemoController {
         (.scene(.onBattery), .overview),
         (.scene(.heavyLoad), .power),
         (.animation(.drainToEmpty), .overview),
+        (.scene(.lowBattery), .overview),
+        (.scene(.criticalBattery), .overview),
         (.scene(.lowPowerMode), .power),
         (.scene(.optimizedHold), .overview),
         (.scene(.slowCharger), .power),
@@ -57,12 +59,27 @@ final class DemoController {
     @ObservationIgnored private var nextVariation: Duration = .zero
     @ObservationIgnored private var tourIndex = 0
     @ObservationIgnored private var variation = 0
+    /// Paused by the user: animations hold their frame until playback resumes.
+    @ObservationIgnored private var isFrozen = false
+    @ObservationIgnored private var defaultsObserver: NSObjectProtocol?
 
     /// Animation frame and clock resolution.
     private static let frame: Duration = .milliseconds(200)
 
     init(monitor: BatteryMonitor) {
         self.monitor = monitor
+        // Demo Mode lives in the Developer section: hiding the section ends the demo, even when
+        // no window is open to notice.
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isActive,
+                    !UserDefaults.standard.bool(forKey: AppSettings.showDeveloperKey)
+                else { return }
+                self.stop()
+            }
+        }
     }
 
     // MARK: - Controls
@@ -75,19 +92,27 @@ final class DemoController {
     /// Shows one step by hand; the tour pauses.
     func show(_ step: Step) {
         isPlaying = false
-        if let index = Self.tour.firstIndex(where: { $0.step == step }) {
-            tourIndex = index
-        }
+        // Every step is in the tour, so Previous and Next continue from its neighbours.
+        tourIndex = Self.tour.firstIndex { $0.step == step } ?? -1
         begin(step, page: Self.page(for: step))
     }
 
+    /// Pause freezes everything, animations included; Play continues where it stopped.
     func togglePlayback() {
         if isPlaying {
             isPlaying = false
-        } else if isActive {
+            isFrozen = true
+        } else if let step {
             isPlaying = true
-            // Give the current scene a full turn before moving on.
-            elapsed = .zero
+            isFrozen = false
+            switch step {
+            case .scene:
+                // Give the current scene a full turn before moving on.
+                elapsed = .zero
+                nextVariation = .seconds(1)
+            case .animation(let animation):
+                if elapsed >= animation.duration { next() }
+            }
         } else {
             startTour()
         }
@@ -107,6 +132,8 @@ final class DemoController {
         clock = nil
         step = nil
         isPlaying = false
+        isFrozen = false
+        tourIndex = 0
         withAnimation(.smooth) { monitor.setOverride(nil) }
         provider.battery = nil
     }
@@ -129,6 +156,7 @@ final class DemoController {
         pageRequest = PageRequest(page: page, serial: (pageRequest?.serial ?? 0) + 1)
         elapsed = .zero
         nextVariation = .seconds(1)
+        isFrozen = false
         provider.gaugeUpdatedAt = Date()
         withAnimation(.smooth) {
             provider.battery = battery(for: step, progress: 0)
@@ -156,7 +184,7 @@ final class DemoController {
     }
 
     private func advance() {
-        guard let step else { return }
+        guard let step, !isFrozen else { return }
         elapsed += Self.frame
         switch step {
         case .animation(let animation):

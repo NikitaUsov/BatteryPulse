@@ -1311,6 +1311,18 @@
         }
       }
     },
+    "Not available in Demo Mode": {
+      "extractionState": "manual",
+      "comment": "Help for export buttons while Demo Mode shows simulated data",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Недоступно в демо-режиме"
+          }
+        }
+      }
+    },
     "Not charging": {
       "extractionState": "manual",
       "localizations": {

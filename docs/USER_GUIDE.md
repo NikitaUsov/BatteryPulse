@@ -95,9 +95,11 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
   seconds.
 
 While the demo runs, a bar at the bottom of the window shows the current scene with buttons for
-the previous scene, play/pause, the next scene and stopping the demo, and the menu bar popover
-shows a **Demo** badge with **Stop Demo**. The demo also stops when you quit or turn the
-Developer section off.
+the previous scene, play/pause (pause also freezes an animation), the next scene and stopping
+the demo. The menu bar shows a demo symbol next to the simulated values, and its popover shows a
+**Demo** badge with **Stop Demo**. Copy Report, Copy JSON and Export Capture are unavailable
+during the demo, so a bug report always contains real data. The demo stops when you quit or turn
+the Developer section off.
 
 ## Settings
 

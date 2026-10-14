@@ -7,6 +7,7 @@ import SwiftUI
 /// The status item: a battery symbol plus percentage and/or power, as configured.
 struct MenuBarLabel: View {
     let monitor: BatteryMonitor
+    @Environment(DemoController.self) private var demo
     @AppStorage(AppSettings.menuBarStyleKey) private var style: MenuBarStyle = .percent
     @AppStorage(AppSettings.menuBarIconKey) private var iconStyle: MenuBarIconStyle = .standard
     @Environment(\.openWindow) private var openWindow
@@ -14,6 +15,11 @@ struct MenuBarLabel: View {
     var body: some View {
         let title = BatteryPresentation.menuBarTitle(for: monitor.snapshot, style: style, formatter: .app)
         Group {
+            if demo.isActive {
+                // The values next to it are simulated.
+                Image(systemName: "play.rectangle.on.rectangle")
+                    .accessibilityLabel("Demo Mode")
+            }
             if BatteryPresentation.showsIcon(iconStyle, title: title) {
                 icon(BatteryPresentation.symbolName(for: monitor.snapshot))
             }
