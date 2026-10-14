@@ -89,11 +89,11 @@ dependencies.
 - English and Russian, chosen like any Mac app in System Settings → Language & Region.
 - A welcome window with the starting settings on first launch.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
-  the SMC is only ever read. Updates are event-driven, so it uses almost no CPU in the
-  background. The only network request is an optional daily update check against GitHub
+  the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
+  history while recording is on, so it uses almost no CPU in the background. The only network request is an optional daily update check against GitHub
   releases, which sends nothing about your Mac.
 - *Check for Updates…* in the app menu, a daily automatic check (Settings → General), and a
-  What's New window after each update.
+  What's New window after updates that add features.
 
 Build it from source:
 
@@ -114,7 +114,7 @@ swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
-swift run bpulse --smc        # the SMC's battery and charger keys with types and raw bytes
+swift run bpulse --smc        # the SMC's battery and charger keys; values of the battery ones
 ```
 
 Real output on a MacBook Air M5 (macOS 27) while charging:
@@ -173,13 +173,16 @@ needed.
 BatteryCore   platform-independent models, parsing, metrics, raw-value decoding, demo data,
               text report (tested on Linux)
 BatteryKit    IOKit (macOS) / UIDevice (iOS) / demo providers + an @Observable BatteryMonitor
-BatteryPulse  SwiftUI app: main window, menu bar item, settings (Sources/BatteryPulseApp)
+BatteryPulse  SwiftUI app: main and compact windows, menu bar item, history, notifications,
+              update check, settings (Sources/BatteryPulseApp)
+BatteryPulseWidget  WidgetKit extension, wrapped into the app as an .appex by build-app.sh
 Resources     app icon and the String Catalog with the Russian translation
 bpulse        command-line report for macOS
 ```
 
-`BatteryMonitor` is event-driven: it re-reads the battery only when the OS posts a
-power-source change. Fast polling is enabled only while a view displays live values.
+`BatteryMonitor` is event-driven: it re-reads the battery when the OS posts a power-source
+change. Fast polling is enabled only while a view displays live values, and the history
+recorder reads once a minute while recording is on.
 
 ## Development
 

@@ -36,6 +36,14 @@ import Testing
         #expect(alerts == [[], [.chargeLimitReached], [], [], [], [], [.chargeLimitReached]])
     }
 
+    @Test func aChargeHeldBelowTheLimitNotifiesOnce() {
+        // macOS's Charge Limit holds at 80 % and reports it as fully charged; the user's limit is 90.
+        let held = snapshot(80, pluggedIn: true, state: .charged)
+        let alerts = run(
+            [held, held, held, held, snapshot(80, pluggedIn: false), held], AlertSettings(chargeLimit: 90))
+        #expect(alerts == [[.chargeLimitReached], [], [], [], [], [.chargeLimitReached]])
+    }
+
     @Test func fullChargeCountsForALimitOf100() {
         let alerts = run([snapshot(99, pluggedIn: true, state: .charged)], AlertSettings(chargeLimit: 100))
         #expect(alerts == [[.chargeLimitReached]])

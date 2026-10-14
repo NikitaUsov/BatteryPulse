@@ -36,13 +36,17 @@ struct HistoryView: View {
                 .frame(maxWidth: 280)
 
                 if hasLoaded, points.isEmpty {
-                    ContentUnavailableView(
-                        "No History Yet",
-                        systemImage: "chart.xyaxis.line",
-                        description: Text(
-                            "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
-                        )
-                    )
+                    ContentUnavailableView {
+                        Label("No History Yet", systemImage: "chart.xyaxis.line")
+                    } description: {
+                        if AppSettings.recordsHistory {
+                            Text(
+                                "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
+                            )
+                        } else {
+                            Text("Recording is off. Turn it on in Settings → Advanced.")
+                        }
+                    }
                     .frame(minHeight: 260)
                 } else {
                     Card("Charge") { chargeChart }
@@ -92,8 +96,8 @@ struct HistoryView: View {
             Chart {
                 ForEach(spans) { span in
                     RectangleMark(
-                        xStart: .value("Start", span.start), xEnd: .value("End", span.end),
-                        yStart: .value("Bottom", 0), yEnd: .value("Top", 100)
+                        xStart: .value(ChartKey.start, span.start), xEnd: .value(ChartKey.end, span.end),
+                        yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
                     )
                     // Charging a little stronger than holding the charge.
                     .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
@@ -103,7 +107,7 @@ struct HistoryView: View {
                     if let percent = point.percent {
                         LineMark(
                             x: .value("Time", point.time), y: .value("Charge", percent),
-                            series: .value("Segment", point.segment)
+                            series: .value(ChartKey.segment, point.segment)
                         )
                         .foregroundStyle(.green)
                         .interpolationMethod(.monotone)
@@ -139,19 +143,19 @@ struct HistoryView: View {
                 if let watts = point.batteryWatts {
                     LineMark(
                         x: .value("Time", point.time), y: .value("Watts", watts),
-                        series: .value("Series", "battery-\(point.segment)")
+                        series: .value(ChartKey.series, "battery-\(point.segment)")
                     )
-                    .foregroundStyle(by: .value("Line", String(localized: "Battery")))
+                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Battery")))
                 }
                 if let load = point.systemLoadWatts {
                     LineMark(
                         x: .value("Time", point.time), y: .value("Watts", load),
-                        series: .value("Series", "load-\(point.segment)")
+                        series: .value(ChartKey.series, "load-\(point.segment)")
                     )
-                    .foregroundStyle(by: .value("Line", String(localized: "Mac")))
+                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Mac")))
                 }
             }
-            RuleMark(y: .value("Zero", 0))
+            RuleMark(y: .value(ChartKey.zero, 0))
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
         }
@@ -182,7 +186,7 @@ struct HistoryView: View {
                 if let celsius = point.temperatureCelsius {
                     LineMark(
                         x: .value("Time", point.time), y: .value("Temperature", celsius),
-                        series: .value("Segment", point.segment)
+                        series: .value(ChartKey.segment, point.segment)
                     )
                     .foregroundStyle(.orange)
                     .interpolationMethod(.monotone)
@@ -295,6 +299,20 @@ struct HistoryView: View {
             }
         }
     }
+}
+
+/// Names of internal chart dimensions (segments, series, rectangle edges). Passed as Strings,
+/// not literals, so they aren't localization keys; the user-facing ones (Time, Charge, Watts…)
+/// are literals and in the catalog, for VoiceOver and Audio Graphs.
+private enum ChartKey {
+    static let bottom = "Bottom"
+    static let top = "Top"
+    static let start = "Start"
+    static let end = "End"
+    static let line = "Line"
+    static let segment = "Segment"
+    static let series = "Series"
+    static let zero = "Zero"
 }
 
 /// The rule and readout for the point under the pointer.

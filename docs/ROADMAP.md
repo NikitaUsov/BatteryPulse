@@ -13,8 +13,8 @@ charging state.
 - **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
-- **App shape:** a regular app with a main window (sidebar: Overview, Power, Health, optional
-  Developer) plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
+- **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
+  optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass comes from standard components only (sidebar, toolbar,
   controls); content uses standard fills, per Apple's HIG.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
@@ -24,7 +24,8 @@ charging state.
 ## Principles
 
 - **No third-party dependencies.** System frameworks only.
-- **Event-driven.** Readings update on OS power notifications. Fast polling (every 2 s) runs
+- **Event-driven.** Readings update on OS power notifications, plus one a minute for history
+  while recording is on. Fast polling (every 2 s) runs
   only while a view shows live values such as current or power.
 - **Platform-independent core.** `BatteryCore` has no Apple-only dependencies and is tested on
   Linux and macOS against real captures (`bpulse --raw`).
@@ -108,9 +109,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 ### Stage 1.1: macOS polish and missing readings (0.3)
 
 - [x] Battery temperature and cell voltages: from the registry entries below
-  `AppleSmartBattery`, with the SMC (read-only, no root) as a second source for the cells; shown
-  on Power, Health, the compact window, the widget and in History; `bpulse --smc` lists the
-  SMC's battery keys
+  `AppleSmartBattery`, with the SMC (read-only, no root) as a second source for the cells. The
+  temperature shows on Power, in the compact window, the widget and History, each cell's voltage
+  on Health; `bpulse --smc` lists the SMC's battery keys
 - [x] Raw Data inspector for the full description, value and decoding of a row
 - [x] Check for updates against the latest GitHub release (no third-party updater) and show
   what's new

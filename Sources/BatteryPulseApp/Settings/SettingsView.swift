@@ -92,7 +92,7 @@ struct GeneralSettings: View {
                         .foregroundStyle(.red)
                 }
             }
-            Picker("Open BatteryPulse in", selection: $prefersCompactWindow) {
+            Picker("Window to open", selection: $prefersCompactWindow) {
                 Text("Full window").tag(false)
                 Text("Compact window").tag(true)
             }

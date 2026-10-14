@@ -158,7 +158,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Маленькое окно только с самым важным. Переключается в Настройках → Основные."
+            "value": "Маленькое окно только с самым важным. Переключается в разделе «Настройки» → «Основные»."
           }
         }
       }
@@ -1371,7 +1371,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "компактном окне"
+            "value": "Компактное окно"
           }
         }
       }
@@ -1626,6 +1626,17 @@
         }
       }
     },
+    "Cycles": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Циклы"
+          }
+        }
+      }
+    },
     "Daily maximum state of charge logged by the gauge; it is not updated live.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1646,6 +1657,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Минимальный за день уровень заряда по журналу контроллера."
+          }
+        }
+      }
+    },
+    "Day": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "День"
           }
         }
       }
@@ -2212,7 +2234,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "полном окне"
+            "value": "Полное окно"
           }
         }
       }
@@ -2329,7 +2351,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Температура контроллера аккумулятора по данным SMC; пока не установлено, в чем она измеряется: в 0,1 K или в 0,01 °C."
+            "value": "Температура контроллера аккумулятора по данным SMC; пока не установлено, в чём она измеряется: в 0,1 K или в 0,01 °C."
           }
         }
       }
@@ -3842,17 +3864,6 @@
         }
       }
     },
-    "Open BatteryPulse in": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Открывать BatteryPulse в"
-          }
-        }
-      }
-    },
     "Open Login Items…": {
       "extractionState": "manual",
       "localizations": {
@@ -4578,6 +4589,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Записанная история"
+          }
+        }
+      }
+    },
+    "Recording is off. Turn it on in Settings → Advanced.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись выключена. Включить её можно в разделе «Настройки» → «Дополнения»."
           }
         }
       }
@@ -5333,6 +5355,17 @@
         }
       }
     },
+    "Time": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время"
+          }
+        }
+      }
+    },
     "Time during which charging was limited for thermal reasons.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5920,6 +5953,17 @@
         }
       }
     },
+    "Watts": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность"
+          }
+        }
+      }
+    },
     "Welcome to BatteryPulse": {
       "extractionState": "manual",
       "localizations": {
@@ -6147,6 +6191,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Виджет"
+          }
+        }
+      }
+    },
+    "Window to open": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открывать"
           }
         }
       }

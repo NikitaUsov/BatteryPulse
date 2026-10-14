@@ -86,8 +86,9 @@ Spotlight also brings up its window.
 **Copy Report** in the toolbar copies a plain-text report without serial numbers.
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open, and every
-10 seconds when the menu bar shows power. Otherwise BatteryPulse only updates when macOS reports
-a change, so it uses almost no CPU in the background.
+10 seconds when the menu bar shows power. Otherwise BatteryPulse updates when macOS reports a
+change, plus one reading a minute for the history while recording is on (the default; turn it
+off in Settings → Advanced), so it uses almost no CPU in the background.
 
 ## Compact window
 
@@ -95,7 +96,7 @@ For a quick look without the sidebar, BatteryPulse has a small window of a fixed
 coconutBattery's: the charge, what the battery is doing, time remaining, capacity bars, maximum
 capacity, cycle count, battery power, temperature and the adapter. Open it with **Compact
 Window** in the main window's toolbar, and go back with **Full Window** in its own toolbar. To
-make it the window BatteryPulse opens, choose **Open BatteryPulse in: Compact window** in
+make it the window BatteryPulse opens, choose **Window to open: Compact window** in
 Settings → General.
 
 ## History
@@ -201,8 +202,10 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 ### Updates
 
 BatteryPulse checks GitHub for a new version once a day (turn it off in Settings → General), and
-**BatteryPulse → Check for Updates…** checks right away. When a new version is out, a window
-shows its release notes with **Download**, **Remind Me Later** and **Skip This Version**.
+**BatteryPulse → Check for Updates…** checks right away. When a new version is out, the first
+check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
+Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
+available** in the menu bar popover instead, which opens the same window.
 Download opens the DMG in your browser: open it, drag BatteryPulse onto Applications to replace
 the old copy, and approve the new version once in Privacy & Security (see
 [First launch](#first-launch)). It's the only network request BatteryPulse makes: GitHub sees
@@ -210,7 +213,8 @@ your IP address, the app's version and your language, as with any web request, a
 about your Mac is sent. If GitHub limits requests from your network, the check waits and tries
 again later.
 
-After an update, a **What's New** window lists the new features once; it's also in the Help menu.
+After an update that adds features, a **What's New** window lists them once; it's also in the
+Help menu.
 
 ## Language
 
@@ -245,8 +249,8 @@ language. To use a different language for BatteryPulse only:
   degrees off.
 - **Spread** is the difference between the highest and lowest cell voltage. A few millivolts is
   normal; a spread that keeps growing over months hints at an ageing or unbalanced battery.
-- **Requested charge current and voltage** are what the battery asks the charger for. They drop
-  as the battery fills up and while macOS holds the charge.
+- **Requested charge current and voltage** are what the battery asks the charger for, shown
+  while charging. They drop as the battery fills up.
 
 ## Command-line report
 

@@ -23,8 +23,9 @@ through the App Store. Reference hardware: MacBook Air M5.
   demo).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
   keys, Dock icon policy, localized phrases, `DemoController`), `Main/` (sidebar window:
-  Overview, Power, Health, and the Developer section with Raw Data and Demo Mode), `MenuBar/`,
-  `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
+  Overview, Power, History, Health, and the Developer section with Raw Data and Demo Mode; the
+  compact window), `Updates/` (update check, Software Update and What's New windows),
+  `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
   `main` keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
   (numbers/units per locale) live in BatteryCore so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
   `Resources/AppIcon.svg` is the icon source (`AppIcon.png` is rendered from it, and

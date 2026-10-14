@@ -67,7 +67,9 @@ public enum BatteryAlerts {
             if reached, state.chargeLimitArmed {
                 alerts.append(.chargeLimitReached)
                 state.chargeLimitArmed = false
-            } else if !pluggedIn || percent <= limit - rearmMargin {
+            } else if !pluggedIn || (!reached && percent <= limit - rearmMargin) {
+                // Re-arm only once the alert's own condition is gone: macOS can report a held
+                // charge as fully charged well below the user's limit.
                 state.chargeLimitArmed = true
             }
         }

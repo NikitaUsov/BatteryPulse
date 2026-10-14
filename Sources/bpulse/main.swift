@@ -12,8 +12,9 @@ let usage = """
                         redacted — attach this to bug reports; it is also the test fixture format
       --watch [sec]     Repeat every N seconds (default 2, max 86400) until interrupted
       --input <file>    Read a capture saved with --raw instead of this Mac's battery
-      --smc             List the SMC's battery and charger keys with their types and raw
-                        bytes (macOS); read-only, for finding the keys on a new Mac model
+      --smc             List the SMC's battery and charger keys with their types, and the raw
+                        bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
+                        read-only, for finding the keys on a new Mac model
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found.
