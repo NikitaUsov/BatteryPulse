@@ -14,38 +14,36 @@ struct DeveloperView: View {
 
     var body: some View {
         let sections = filteredSections
-        // macOS 27's Liquid Glass sidebar floats over the detail column. Lists and forms inset
-        // their content past it, but a Table extends underneath, hiding its first column. So the
-        // table ignores the leading safe area and is padded by exactly the sidebar's overlap.
-        GeometryReader { proxy in
-            rawTable(sections)
-                .padding(.leading, proxy.safeAreaInsets.leading)
-        }
-        .ignoresSafeArea(.container, edges: .leading)
-        .overlay {
-            if sections.isEmpty, !filter.isEmpty {
-                ContentUnavailableView.search(text: filter)
+        // The Liquid Glass sidebar floats over the detail column, and a scroll view whose edge
+        // touches it is stretched underneath. A Table wider than it shows then starts at the
+        // window edge with its Key column behind the sidebar. A point of padding keeps it clear of
+        // that edge, so it is laid out beside the sidebar like the Form pages.
+        rawTable(sections)
+            .padding(.leading, 1)
+            .overlay {
+                if sections.isEmpty, !filter.isEmpty {
+                    ContentUnavailableView.search(text: filter)
+                }
             }
-        }
-        .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
-        .toolbar {
-            ToolbarItemGroup {
-                // Exports are for bug reports, so they are off while the data is simulated.
-                Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
-                    .disabled(monitor.isOverridden)
-                    .help(
-                        monitor.isOverridden
-                            ? Text("Not available in Demo Mode")
-                            : Text("Copy the parsed readings as JSON, without serial numbers"))
-                Button("Export Capture…", systemImage: "square.and.arrow.up", action: exportCapture)
-                    .disabled(monitor.isOverridden)
-                    .help(
-                        monitor.isOverridden
-                            ? Text("Not available in Demo Mode")
-                            : Text("Save the raw data for a bug report. Serial numbers are redacted."))
+            .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
+            .toolbar {
+                ToolbarItemGroup {
+                    // Exports are for bug reports, so they are off while the data is simulated.
+                    Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
+                        .disabled(monitor.isOverridden)
+                        .help(
+                            monitor.isOverridden
+                                ? Text("Not available in Demo Mode")
+                                : Text("Copy the parsed readings as JSON, without serial numbers"))
+                    Button("Export Capture…", systemImage: "square.and.arrow.up", action: exportCapture)
+                        .disabled(monitor.isOverridden)
+                        .help(
+                            monitor.isOverridden
+                                ? Text("Not available in Demo Mode")
+                                : Text("Save the raw data for a bug report. Serial numbers are redacted."))
+                }
             }
-        }
-        .disabled(monitor.reading == nil)
+            .disabled(monitor.reading == nil)
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
@@ -57,7 +55,7 @@ struct DeveloperView: View {
                     .lineLimit(1)
                     .help(row.path)
             }
-            .width(min: 160, ideal: 280)
+            .width(min: 140, ideal: 230)
             TableColumn("Value") { row in
                 Text(verbatim: row.value)
                     .font(.callout.monospaced())
@@ -65,7 +63,7 @@ struct DeveloperView: View {
                     .truncationMode(.middle)
                     .help(row.value)
             }
-            .width(min: 60, ideal: 110)
+            .width(min: 60, ideal: 90)
             TableColumn("Decoded") { row in
                 if let decoded = row.decoded {
                     Text(RawValueText.string(for: decoded))
@@ -73,7 +71,7 @@ struct DeveloperView: View {
                         .lineLimit(1)
                 }
             }
-            .width(min: 70, ideal: 150)
+            .width(min: 70, ideal: 130)
             TableColumn("Description") { row in
                 if let summary = row.info?.summary {
                     let text = RawValueText.summary(summary)
@@ -83,7 +81,7 @@ struct DeveloperView: View {
                         .help(text)
                 }
             }
-            .width(min: 120, ideal: 380)
+            .width(min: 100, ideal: 260)
         } rows: {
             ForEach(sections) { section in
                 Section {
