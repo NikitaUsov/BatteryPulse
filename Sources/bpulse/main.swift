@@ -9,7 +9,7 @@ let usage = """
       --json            Parsed snapshot as JSON (one compact object per line with --watch)
       --raw             Raw IOKit dictionaries as an XML property list, serial numbers
                         redacted — attach this to bug reports; it is also the test fixture format
-      --watch [sec]     Repeat every N seconds (default 2) until interrupted
+      --watch [sec]     Repeat every N seconds (default 2, max 86400) until interrupted
       --input <file>    Read a capture saved with --raw instead of this Mac's battery
       -h, --help        Show this help
 
@@ -35,7 +35,8 @@ func parseOptions(_ arguments: [String]) -> Options? {
         case "--raw": options.format = .raw
         case "--watch":
             if let next = remaining.first, let seconds = Double(next) {
-                guard seconds > 0 else { return nil }
+                // `Duration.seconds` traps on inf and values beyond ~1e19 s.
+                guard seconds.isFinite, seconds > 0, seconds <= 86_400 else { return nil }
                 options.watchInterval = seconds
                 remaining.removeFirst()
             } else {

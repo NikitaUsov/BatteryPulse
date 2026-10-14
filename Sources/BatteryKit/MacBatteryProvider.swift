@@ -2,6 +2,7 @@
 import Foundation
 import IOKit
 import IOKit.ps
+import notify
 import BatteryCore
 
 /// Reads the internal battery through IOKit.
@@ -13,8 +14,8 @@ import BatteryCore
 ///   (percent, time remaining, health condition).
 /// - `IOPSCopyExternalPowerAdapterDetails` — the connected adapter.
 ///
-/// Changes are pushed by `IOPSNotificationCreateRunLoopSource`, so no polling is needed unless
-/// the UI shows live current/power values.
+/// Changes are pushed through notify(3) power-source keys, so no polling is needed unless the UI
+/// shows live current/power values.
 @MainActor
 public final class MacBatteryProvider: BatteryProvider {
     public init() {}
@@ -34,30 +35,30 @@ public final class MacBatteryProvider: BatteryProvider {
         return reading
     }
 
+    /// notify(3) keys from IOPowerSources.h: `kIOPSNotifyAnyPowerSource` and
+    /// `kIOPSNotifyTimeRemaining` (the key `IOPSNotificationCreateRunLoopSource` uses internally).
+    static let powerSourceNotifications = [
+        "com.apple.system.powersources",
+        "com.apple.system.powersources.timeremaining",
+    ]
+
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
         let removeObservers = observeNotifications(systemStateNotifications, handler: handler)
 
-        // The C callback can't capture, so the handler travels through the context pointer.
-        let context = Unmanaged.passRetained(HandlerBox(handler))
-        let callback: IOPowerSourceCallbackType = { context in
-            guard let context else { return }
-            let box = Unmanaged<HandlerBox>.fromOpaque(context).takeUnretainedValue()
-            MainActor.assumeIsolated { box.handler() }
+        // notify(3) rather than IOPSNotificationCreateRunLoopSource: invalidating that run loop
+        // source never releases its CFMachPort, so every stop() would leak a port and a
+        // notifyd registration. notify_cancel tears down deterministically.
+        var tokens: [Int32] = []
+        for name in Self.powerSourceNotifications {
+            var token: Int32 = 0
+            let status = notify_register_dispatch(name, &token, .main) { _ in
+                MainActor.assumeIsolated { handler() }
+            }
+            if status == 0 { tokens.append(token) }
         }
-        guard
-            let source = IOPSNotificationCreateRunLoopSource(callback, context.toOpaque())?
-                .takeRetainedValue()
-        else {
-            context.release()
-            return BatteryObservation(onCancel: removeObservers)
-        }
-        // Common modes keep updates flowing while a menu is open (event-tracking mode).
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-
-        let resources = UncheckedSendable(value: (source, context))
+        let registered = tokens
         return BatteryObservation {
-            CFRunLoopSourceInvalidate(resources.value.0)
-            resources.value.1.release()
+            for token in registered { notify_cancel(token) }
             removeObservers()
         }
     }
@@ -97,14 +98,6 @@ public final class MacBatteryProvider: BatteryProvider {
             return nil
         }
         return PropertyValue.dictionary(fromAny: details)
-    }
-}
-
-private final class HandlerBox: Sendable {
-    let handler: @MainActor @Sendable () -> Void
-
-    init(_ handler: @escaping @MainActor @Sendable () -> Void) {
-        self.handler = handler
     }
 }
 #endif

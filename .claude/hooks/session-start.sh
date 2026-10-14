@@ -17,13 +17,19 @@ case "${ID}-${VERSION_ID}" in
 esac
 
 toolchain="$INSTALL_ROOT/swift-$SWIFT_VERSION-RELEASE-$suffix"
-if ! "$toolchain/usr/bin/swift" --version >/dev/null 2>&1; then
+# The marker is written only after a complete extraction: an interrupted tar leaves a tree in
+# which `swift --version` works but `swift build` doesn't.
+if [ ! -f "$toolchain/.complete" ]; then
   mkdir -p "$INSTALL_ROOT"
   archive="$(mktemp)"
-  trap 'rm -f "$archive"' EXIT
+  staging="$(mktemp -d "$INSTALL_ROOT/.staging.XXXXXX")"
+  trap 'rm -rf "$archive" "$staging"' EXIT
   curl -fsSL --retry 4 -o "$archive" \
     "https://download.swift.org/swift-$SWIFT_VERSION-release/$platform/swift-$SWIFT_VERSION-RELEASE/swift-$SWIFT_VERSION-RELEASE-$suffix.tar.gz"
-  tar -xzf "$archive" -C "$INSTALL_ROOT"
+  tar -xzf "$archive" -C "$staging"
+  rm -rf "$toolchain"
+  mv "$staging/$(basename "$toolchain")" "$toolchain"
+  touch "$toolchain/.complete"
 fi
 
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then

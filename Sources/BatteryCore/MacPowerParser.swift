@@ -53,25 +53,26 @@ extension BatteryReading {
 
     static let redactedPlaceholder = "REDACTED"
 
+    /// Opaque gauge blobs that can embed manufacturing identifiers.
+    static let redactedKeys: Set<String> = ["ManufacturerData", "MfgData"]
+
     static func redactingSerialNumbers(in dictionary: PropertyDictionary) -> PropertyDictionary {
-        var result = dictionary
+        var result: PropertyDictionary = [:]
         for (key, value) in dictionary {
-            switch value {
-            case .string where key.localizedCaseInsensitiveContains("serial"):
-                result[key] = .string(redactedPlaceholder)
-            case .dictionary(let nested):
-                result[key] = .dictionary(redactingSerialNumbers(in: nested))
-            case .array(let items):
-                result[key] = .array(
-                    items.map { item in
-                        guard case .dictionary(let nested) = item else { return item }
-                        return .dictionary(redactingSerialNumbers(in: nested))
-                    })
-            default:
-                break
-            }
+            // Serials appear as strings, integers (`FirmwareSerialNumber`, adapter `SerialNumber`)
+            // or data, so match on the key, not the value type.
+            let isSensitive = key.lowercased().contains("serial") || redactedKeys.contains(key)
+            result[key] = isSensitive ? .string(redactedPlaceholder) : redactingSerialNumbers(in: value)
         }
         return result
+    }
+
+    static func redactingSerialNumbers(in value: PropertyValue) -> PropertyValue {
+        switch value {
+        case .dictionary(let nested): .dictionary(redactingSerialNumbers(in: nested))
+        case .array(let items): .array(items.map(redactingSerialNumbers(in:)))
+        default: value
+        }
     }
 
     /// Re-parses a raw capture produced by ``rawCapture``.
@@ -210,7 +211,8 @@ enum MacPowerParser {
     }
 
     static func percent(_ value: Int, of max: Int) -> Double {
-        min(100, Swift.max(0, Double(value) / Double(max) * 100))
+        // Multiply first: 29 / 100 * 100 would give 28.999999999999996.
+        min(100, Swift.max(0, Double(value) * 100 / Double(max)))
     }
 
     /// `Temperature` is reported in hundredths of a degree Celsius.

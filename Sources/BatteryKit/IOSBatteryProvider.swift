@@ -20,7 +20,8 @@ public final class IOSBatteryProvider: BatteryProvider {
         guard level >= 0 || state != .unknown else { return nil }
 
         var snapshot = BatterySnapshot(timestamp: Date())
-        snapshot.chargePercent = level >= 0 ? Double(level) * 100 : nil
+        // `batteryLevel` is a Float; 0.7 would otherwise become 69.99999880…
+        snapshot.chargePercent = level >= 0 ? (Double(level) * 100).rounded() : nil
         switch state {
         case .charging:
             snapshot.chargeState = .charging

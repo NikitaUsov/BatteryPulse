@@ -3,7 +3,8 @@ import Foundation
 /// Plain-text battery report: used by the `bpulse` CLI and the app's "Copy report" action.
 ///
 /// Formatting is locale-independent so the output is stable in tests and when pasted into
-/// bug reports. The app renders its own localized UI from ``BatterySnapshot`` directly.
+/// bug reports, and it never includes serial numbers. The app renders its own localized UI
+/// from ``BatterySnapshot`` directly.
 public enum BatteryReport {
     public struct Line: Sendable, Equatable {
         public var label: String
@@ -16,7 +17,8 @@ public enum BatteryReport {
             if let value { lines.append(Line(label: label, value: value)) }
         }
 
-        add("Battery", joined([s.deviceName, s.manufacturer, s.serialNumber]))
+        // No serial number: this text is meant to be pasted into public bug reports.
+        add("Battery", joined([s.deviceName, s.manufacturer]))
 
         if let percent = s.chargePercent {
             var value = "\(fixed(percent, 0)) %"

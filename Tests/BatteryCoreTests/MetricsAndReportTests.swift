@@ -62,7 +62,8 @@ import Testing
 
     @Test func dischargingReport() throws {
         let s = try Fixture.appleSiliconDischarging.snapshot()
-        #expect(value("Battery", in: s) == "bq40z651 · SMP · F8Y0000SYNTHETIC")
+        #expect(value("Battery", in: s) == "bq40z651 · SMP")
+        #expect(!BatteryReport.text(for: s).contains("F8Y0000SYNTHETIC"), "serials must not leak into reports")
         #expect(value("Charge", in: s) == "87 %  (5051 of 5807 mAh)")
         #expect(value("State", in: s) == "Discharging")
         #expect(value("Time to empty", in: s) == "4 h 51 min")

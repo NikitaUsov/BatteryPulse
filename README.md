@@ -86,7 +86,7 @@ Linux and builds and tests everything on macOS, including an iOS build of `Batte
 
 Raw captures from different Macs are the most valuable contribution right now. They become
 test fixtures, so the parser is checked against real hardware. Run
-`swift run bpulse --raw > capture.plist` and attach the file to a
+`swift run bpulse --raw > capture.xml` and attach the file to a
 [bug report](https://github.com/NikitaUsov/BatteryPulse/issues/new/choose) together with your
 Mac model and macOS version. Serial numbers are redacted automatically.
 

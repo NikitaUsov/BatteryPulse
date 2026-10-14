@@ -96,6 +96,66 @@ import Testing
         #expect(reparsed == reading)
     }
 
+    @Test func redactionMatchesKeysWhateverTheValueType() {
+        let capture: PropertyDictionary = [
+            "AppleSmartBattery": .dictionary([
+                "FirmwareSerialNumber": .int(48879),
+                "ManufacturerData": .data(Data([0xDE, 0xAD])),
+                "Cells": .array([.array([.dictionary(["SerialString": .string("X1")])])]),
+                "CycleCount": .int(12),
+            ]),
+            "AdapterDetails": .dictionary(["SerialNumber": .int(12_345_678), "Watts": .int(96)]),
+        ]
+        let redacted = BatteryReading.redactingSerialNumbers(in: capture)
+        let battery = redacted["AppleSmartBattery"]?.dictionaryValue
+        #expect(battery?["FirmwareSerialNumber"] == .string("REDACTED"))
+        #expect(battery?["ManufacturerData"] == .string("REDACTED"))
+        #expect(battery?["Cells"] == .array([.array([.dictionary(["SerialString": .string("REDACTED")])])]))
+        #expect(battery?["CycleCount"] == .int(12))
+        #expect(redacted["AdapterDetails"]?.dictionaryValue?["SerialNumber"] == .string("REDACTED"))
+        #expect(redacted["AdapterDetails"]?.dictionaryValue?["Watts"] == .int(96))
+    }
+
+    @Test func staleAdapterIsIgnoredOnBattery() {
+        let adapter: PropertyDictionary = ["Watts": .int(96), "Name": .string("96W USB-C Power Adapter")]
+        let s = BatteryReading(
+            smartBattery: ["ExternalConnected": .bool(false), "AdapterDetails": .dictionary(adapter)],
+            adapterDetails: adapter,
+            timestamp: Fixture.timestamp
+        ).snapshot
+        #expect(s.chargeState == .discharging)
+        #expect(s.adapter == nil)
+    }
+
+    @Test func timeToEmptyOnlyWhileDischarging() {
+        let s = BatteryReading(
+            smartBattery: [
+                "ExternalConnected": .bool(true), "IsCharging": .bool(false), "AvgTimeToEmpty": .int(120),
+            ],
+            powerSource: ["Time to Empty": .int(120)],
+            timestamp: Fixture.timestamp
+        ).snapshot
+        #expect(s.chargeState == .notCharging)
+        #expect(s.timeToEmptyMinutes == nil)
+    }
+
+    @Test func timeToFullOnlyWhileCharging() {
+        let s = BatteryReading(
+            smartBattery: ["ExternalConnected": .bool(false), "AvgTimeToFull": .int(60)],
+            powerSource: ["Time to Full Charge": .int(60)],
+            timestamp: Fixture.timestamp
+        ).snapshot
+        #expect(s.chargeState == .discharging)
+        #expect(s.timeToFullMinutes == nil)
+    }
+
+    @Test func integerPercentagesStayExact() {
+        for value in 0...100 {
+            #expect(MacPowerParser.percent(value, of: 100) == Double(value))
+        }
+        #expect(MacPowerParser.percent(150, of: 100) == 100)
+    }
+
     @Test func redactedCaptureHidesSerialNumbers() throws {
         let reading = try Fixture.appleSiliconCharging.reading()
         let redacted = BatteryReading(rawCapture: reading.redactedRawCapture, timestamp: Fixture.timestamp)

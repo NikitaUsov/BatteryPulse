@@ -1,0 +1,20 @@
+◇ Test run started.
+↳ Testing Library Version: 6.4.1 (804dc4530ef3666)
+↳ Target Platform: x86_64-unknown-linux-gnu
+◇ Suite BatteryMonitorTests started.
+◇ Test systemChangeTriggersRefresh() started.
+◇ Test liveRefreshPollsOnlyWhileEnabled() started.
+◇ Test liveRefreshStopsWithMonitor() started.
+◇ Test missingBatteryIsReported() started.
+◇ Test stopCancelsObservation() started.
+◇ Test startReadsImmediatelyAndSubscribes() started.
+◇ Test identicalStateKeepsOriginalSnapshot() started.
+✔ Test missingBatteryIsReported() passed after 0.001 seconds.
+✔ Test stopCancelsObservation() passed after 0.001 seconds.
+✔ Test startReadsImmediatelyAndSubscribes() passed after 0.001 seconds.
+✔ Test identicalStateKeepsOriginalSnapshot() passed after 0.001 seconds.
+✔ Test systemChangeTriggersRefresh() passed after 0.001 seconds.
+✔ Test liveRefreshStopsWithMonitor() passed after 0.201 seconds.
+✔ Test liveRefreshPollsOnlyWhileEnabled() passed after 0.261 seconds.
+✔ Suite BatteryMonitorTests passed after 0.261 seconds.
+✔ Test run with 7 tests in 1 suite passed after 0.266 seconds.
