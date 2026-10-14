@@ -7,6 +7,8 @@ import Testing
     @Test func unitsAndSentinels() {
         #expect(RawValueDecoder.decode(.int(5760), as: .milliampHours) == .milliampHours(5760))
         #expect(RawValueDecoder.decode(.int(-612), as: .milliamps) == .milliamps(-612))
+        // PowerTelemetryData.AdapterEfficiencyLoss on the real M5 while charging.
+        #expect(RawValueDecoder.decode(.int(453), as: .microwattHoursPerSecond) == .milliwatts(1631))
         #expect(
             RawValueDecoder.decode(.int(65535), as: .minutes, sentinels: [65535: .notAvailable])
                 == .sentinel(.notAvailable))

@@ -3,6 +3,8 @@ import Foundation
 /// How the Developer section presents a raw IORegistry or IOPS value.
 public enum RawValueKind: String, Sendable, CaseIterable {
     case milliampHours, millivolts, milliamps, milliwatts, percent
+    /// Energy per one-second telemetry sample in µWh, shown as power (1 µWh/s = 3.6 mW).
+    case microwattHoursPerSecond
     case minutes, seconds, unixTime
     case boolean, count, hex, flags
     /// USB Power Delivery Power Data Object: one voltage/current offer of a USB-C source.
@@ -54,6 +56,8 @@ public enum RawValueDecoder {
         case .millivolts: return value.intValue.map(DecodedRawValue.millivolts)
         case .milliamps: return value.intValue.map(DecodedRawValue.milliamps)
         case .milliwatts: return value.intValue.map(DecodedRawValue.milliwatts)
+        case .microwattHoursPerSecond:
+            return value.intValue.map { .milliwatts(Int((Double($0) * 3.6).rounded())) }
         case .percent: return value.doubleValue.map(DecodedRawValue.percent)
         case .minutes: return value.intValue.map(DecodedRawValue.minutes)
         case .seconds: return value.intValue.map(DecodedRawValue.seconds)
