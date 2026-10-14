@@ -5,8 +5,9 @@ import Observation
 /// Observable battery state for SwiftUI.
 ///
 /// Event-driven by default: it re-reads only when the OS posts a power change, which costs
-/// nothing while idle. Call ``setLiveRefreshInterval(_:)`` while a view shows fast-moving
-/// values (current, power) and reset it to `nil` when that view disappears.
+/// nothing while idle. Views that show fast-moving values (current, power) request polling with
+/// ``setLiveRefreshInterval(_:for:)`` and withdraw it with `nil`; the shortest active request
+/// wins.
 @MainActor
 @Observable
 public final class BatteryMonitor {
@@ -23,6 +24,7 @@ public final class BatteryMonitor {
     @ObservationIgnored private let provider: any BatteryProvider
     @ObservationIgnored private var observation: BatteryObservation?
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
+    @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
 
     public init(provider: any BatteryProvider) {
         self.provider = provider
@@ -44,10 +46,17 @@ public final class BatteryMonitor {
         liveRefreshTask = nil
     }
 
-    /// Polls at `interval` while running; `nil` returns to purely event-driven updates.
-    public func setLiveRefreshInterval(_ interval: Duration?) {
-        guard interval != liveRefreshInterval else { return }
-        liveRefreshInterval = interval
+    /// Requests polling at `interval` on behalf of `client` (e.g. "popover"); `nil` withdraws the
+    /// request. Polls at the shortest active interval, or not at all without requests.
+    public func setLiveRefreshInterval(_ interval: Duration?, for client: String = "default") {
+        let isNewRequest = interval != nil && liveRefreshRequests[client] == nil
+        liveRefreshRequests[client] = interval
+        // A view that just appeared shouldn't wait a full interval for fresh values.
+        if isNewRequest, isRunning { refresh() }
+
+        let effective = liveRefreshRequests.values.min()
+        guard effective != liveRefreshInterval else { return }
+        liveRefreshInterval = effective
         scheduleLiveRefresh()
     }
 

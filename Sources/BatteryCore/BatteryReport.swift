@@ -11,10 +11,25 @@ public enum BatteryReport {
         public var value: String
     }
 
+    /// A titled group of lines, used by the app's Details window.
+    public struct Section: Sendable, Equatable {
+        public var title: String
+        public var lines: [Line]
+    }
+
     public static func lines(for s: BatterySnapshot) -> [Line] {
+        sections(for: s).flatMap(\.lines)
+    }
+
+    public static func sections(for s: BatterySnapshot) -> [Section] {
+        var sections: [Section] = []
         var lines: [Line] = []
         func add(_ label: String, _ value: String?) {
             if let value { lines.append(Line(label: label, value: value)) }
+        }
+        func close(_ title: String) {
+            if !lines.isEmpty { sections.append(Section(title: title, lines: lines)) }
+            lines = []
         }
 
         // No serial number: this text is meant to be pasted into public bug reports.
@@ -28,13 +43,18 @@ public enum BatteryReport {
             add("Charge", value)
         }
         add("State", stateDescription(s))
-        // OS estimates are shown as is; values derived from capacity and current get "≈".
-        add("Time to empty", timeRemaining(os: s.timeToEmptyMinutes, derived: s.estimatedTimeToEmptyMinutes))
-        add("Time to full", timeRemaining(os: s.timeToFullMinutes, derived: s.estimatedTimeToFullMinutes))
+        if s.isTimeRemainingCalculating {
+            add(s.chargeState == .charging ? "Time to full" : "Time to empty", "calculating…")
+        } else {
+            // OS estimates are shown as is; values derived from capacity and current get "≈".
+            add("Time to empty", timeRemaining(os: s.timeToEmptyMinutes, derived: s.estimatedTimeToEmptyMinutes))
+            add("Time to full", timeRemaining(os: s.timeToFullMinutes, derived: s.estimatedTimeToFullMinutes))
+        }
 
         if let watts = s.batteryPowerWatts, let voltage = s.voltageMV, let amperage = s.amperageMA {
             add("Battery power", "\(signed(watts, 1)) W  (\(fixed(Double(voltage) / 1000, 2)) V × \(amperage) mA)")
         }
+        close("Charge")
 
         if let health = s.healthPercent, let ratio = s.capacityToDesignPercent, let design = s.designCapacityMAh {
             let full = s.nominalChargeCapacityMAh ?? s.fullChargeCapacityMAh ?? 0
@@ -61,6 +81,7 @@ public enum BatteryReport {
             if let spread = s.cellVoltageSpreadMV { value += "  (spread \(spread) mV)" }
             add("Cells", value)
         }
+        close("Health")
 
         if let adapter = s.adapter {
             var parts: [String] = []
@@ -89,9 +110,11 @@ public enum BatteryReport {
             add("Adapter loss", "\(fixed(loss, 1)) W")
         }
         add("Optimized charging", s.isOptimizedChargingEngaged.map { $0 ? "holding charge" : "inactive" })
+        close("Power")
         add("Low Power Mode", s.isLowPowerModeEnabled.map { $0 ? "on" : "off" })
         add("Thermal state", s.thermalState?.rawValue)
-        return lines
+        close("System")
+        return sections
     }
 
     public static func text(for snapshot: BatterySnapshot) -> String {

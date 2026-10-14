@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="charge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22C55E"/>
+      <stop offset="1" stop-color="#A3E635"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  <rect x="226" y="352" width="520" height="320" rx="72" fill="none" stroke="#F8FAFC" stroke-width="36"/>
+  <rect x="764" y="447" width="44" height="130" rx="18" fill="#F8FAFC"/>
+  <rect x="268" y="394" width="330" height="236" rx="38" fill="url(#charge)"/>
+  <polyline points="160,512 330,512 382,420 452,640 520,360 572,560 612,512 864,512"
+    fill="none" stroke="#020617" stroke-width="62" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="160,512 330,512 382,420 452,640 520,360 572,560 612,512 864,512"
+    fill="none" stroke="#F8FAFC" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

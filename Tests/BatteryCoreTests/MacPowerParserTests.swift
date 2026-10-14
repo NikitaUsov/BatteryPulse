@@ -13,6 +13,7 @@ import Testing
         #expect(s.isExternalPowerConnected == false)
         // The power-source estimate wins over the registry's AvgTimeToEmpty (339).
         #expect(s.timeToEmptyMinutes == 342)
+        #expect(!s.isTimeRemainingCalculating)
         #expect(s.timeToFullMinutes == nil)
 
         // macOS 27 keeps mAh values in BatteryData.
@@ -55,6 +56,7 @@ import Testing
         // but must be ignored while charging.
         #expect(s.timeToFullMinutes == nil)
         #expect(s.timeToEmptyMinutes == nil)
+        #expect(s.isTimeRemainingCalculating)
         #expect(s.currentCapacityMAh == 3896)
         #expect(s.fullChargeCapacityMAh == 5866)
         #expect(s.amperageMA == 384)
@@ -219,6 +221,20 @@ import Testing
             MacPowerParser.chargeState(
                 isCharging: nil, isExternalPowerConnected: nil, isFullyCharged: nil
             ) == .unknown)
+    }
+
+    @Test func calculatingIsDistinctFromMissing() {
+        // -1 from IOPS: macOS is calculating; the gauge's average must not stand in.
+        let calculating = MacPowerParser.timeRemaining(powerSource: .int(-1), gauge: .int(403))
+        #expect(calculating.0 == nil)
+        #expect(calculating.calculating)
+        // No IOPS value at all: fall back to the gauge.
+        let missing = MacPowerParser.timeRemaining(powerSource: nil, gauge: .int(403))
+        #expect(missing.0 == 403)
+        #expect(!missing.calculating)
+        let zero = MacPowerParser.timeRemaining(powerSource: .int(0), gauge: .int(65535))
+        #expect(zero.0 == nil)
+        #expect(!zero.calculating)
     }
 
     @Test func minuteSentinelsAreDropped() {

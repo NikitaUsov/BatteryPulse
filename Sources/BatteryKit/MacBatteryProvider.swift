@@ -8,8 +8,9 @@ import BatteryCore
 /// Reads the internal battery through IOKit.
 ///
 /// Three sources are combined:
-/// - `AppleSmartBattery` IORegistry properties — the gauge's raw data (capacities, cycles,
-///   cells, temperature, telemetry). Readable without privileges and inside the App Sandbox.
+/// - `AppleSmartBattery` IORegistry properties — the gauge's raw data (capacities in
+///   `BatteryData`, cycles, charger and power telemetry; macOS 27 publishes no temperature or
+///   cell voltages). Readable without privileges.
 /// - `IOPSCopyPowerSourcesInfo` — the public power-source API that backs the menu bar
 ///   (percent, time remaining, health condition).
 /// - `IOPSCopyExternalPowerAdapterDetails` — the connected adapter.

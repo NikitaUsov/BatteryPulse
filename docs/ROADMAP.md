@@ -29,7 +29,7 @@ charging state.
 | Reading                                      | macOS 27 | iOS 27                |
 |----------------------------------------------|:--------:|:---------------------:|
 | Charge level, charging state                 | ✅       | ✅ `UIDevice`          |
-| Optimized charging hold                      | ✅       | —                     |
+| Optimized charging hold                      | ✅*      | —                     |
 | Time to empty / full                         | ✅       | estimated by the app  |
 | Capacity in mAh (remaining / full / design)  | ✅       | analytics import      |
 | Health (Maximum Capacity), cycle count       | ✅       | analytics import      |
@@ -41,6 +41,9 @@ charging state.
 
 On a MacBook Air M5 with macOS 27, `AppleSmartBattery` keeps the mAh values in its
 `BatteryData` dictionary and no longer publishes `Temperature` or `CellVoltage`.
+
+\* Read from IOPS `Optimized Battery Charging Engaged`, which macOS only publishes while the
+charge is on hold; not yet seen in a macOS 27 capture.
 
 On iOS the public API only provides level and state. The rest can come from the analytics file
 iOS lets users export (Settings → Privacy & Security → Analytics & Improvements → Analytics
@@ -70,15 +73,18 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1: macOS MVP (menu-bar app)
 
-- [ ] Xcode project (XcodeGen `project.yml`): macOS app target, `LSUIElement`
-- [ ] `MenuBarExtra`: icon plus percent or watts in the menu bar (configurable)
-- [ ] Popover: charge, state, time, power, health, cycles, adapter
-- [ ] Details window: every reading, searchable raw IORegistry keys, "Copy report"
-- [ ] Settings: menu-bar content, launch at login (`SMAppService`)
+- [x] SwiftUI app target built with SwiftPM (`swift run BatteryPulse`), no Dock icon
+- [x] `MenuBarExtra`: icon plus percentage and/or power (configurable)
+- [x] Popover: charge, state, time, live power, health, cycles, adapter
+- [x] Details window: every reading by group, filterable raw IORegistry keys, "Copy Report"
+- [x] Settings: menu-bar content, launch at login (`SMAppService`)
+- [x] App icon and first-launch welcome window with the starting settings
+- [x] DMG packaging (`scripts/build-app.sh`, built by CI)
+- [ ] Verify the UI on the M5 and polish it from screenshots
 - [ ] Battery temperature and cell voltages from the SMC
 - [ ] String Catalog for localization
 - [ ] Profile in Instruments against the resource targets
-- [ ] DMG packaging
+- [ ] Developer ID signing and notarization
 
 ### Stage 2: iOS MVP
 
@@ -114,5 +120,5 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   and tests except code under `#if os(macOS)` / `#if os(iOS)`.
 - **CI** (`xcode-27` runner: macOS 27, Xcode 27): builds and tests the Darwin code and builds
   `BatteryKit` for iOS.
-- **The maintainer's Mac:** running the tools and the UI. Today `swift run bpulse`; later
-  `xcodegen && open BatteryPulse.xcodeproj`.
+- **The maintainer's Mac:** running the tools and the UI: `swift run BatteryPulse`,
+  `swift run bpulse`, or `scripts/build-app.sh` for the packaged app.

@@ -49,9 +49,10 @@ extension BatterySnapshot {
     }
 
     /// The OS estimate when available, otherwise derived from remaining capacity and current.
+    /// `nil` while macOS is still calculating.
     public var estimatedTimeToEmptyMinutes: Int? {
         if let timeToEmptyMinutes { return timeToEmptyMinutes }
-        guard chargeState == .discharging,
+        guard !isTimeRemainingCalculating, chargeState == .discharging,
             let capacity = currentCapacityMAh,
             let amperage = amperageMA, amperage < -Self.minimumMeaningfulCurrentMA
         else { return nil }
@@ -59,10 +60,11 @@ extension BatterySnapshot {
     }
 
     /// The OS estimate when available, otherwise derived from missing capacity and current.
-    /// The derived value is optimistic: charging slows down near full (constant-voltage phase).
+    /// `nil` while macOS is still calculating: the current right after plugging in is far
+    /// below the settled charge rate. The derived value ignores the constant-voltage taper.
     public var estimatedTimeToFullMinutes: Int? {
         if let timeToFullMinutes { return timeToFullMinutes }
-        guard chargeState == .charging,
+        guard !isTimeRemainingCalculating, chargeState == .charging,
             let capacity = currentCapacityMAh, let full = fullChargeCapacityMAh, full > capacity,
             let amperage = amperageMA, amperage > Self.minimumMeaningfulCurrentMA
         else { return nil }
