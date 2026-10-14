@@ -1,0 +1,126 @@
+import Foundation
+
+/// Plain-text battery report: used by the `bpulse` CLI and the app's "Copy report" action.
+///
+/// Formatting is locale-independent so the output is stable in tests and when pasted into
+/// bug reports. The app renders its own localized UI from ``BatterySnapshot`` directly.
+public enum BatteryReport {
+    public struct Line: Sendable, Equatable {
+        public var label: String
+        public var value: String
+    }
+
+    public static func lines(for s: BatterySnapshot) -> [Line] {
+        var lines: [Line] = []
+        func add(_ label: String, _ value: String?) {
+            if let value { lines.append(Line(label: label, value: value)) }
+        }
+
+        add("Battery", joined([s.deviceName, s.manufacturer, s.serialNumber]))
+
+        if let percent = s.chargePercent {
+            var value = "\(fixed(percent, 0)) %"
+            if let current = s.currentCapacityMAh, let full = s.fullChargeCapacityMAh {
+                value += "  (\(current) of \(full) mAh)"
+            }
+            add("Charge", value)
+        }
+        add("State", stateDescription(s))
+        add("Time to empty", s.estimatedTimeToEmptyMinutes.map(duration))
+        add("Time to full", s.estimatedTimeToFullMinutes.map(duration))
+
+        if let watts = s.batteryPowerWatts, let voltage = s.voltageMV, let amperage = s.amperageMA {
+            add("Battery power", "\(signed(watts, 1)) W  (\(fixed(Double(voltage) / 1000, 2)) V × \(amperage) mA)")
+        }
+
+        if let health = s.healthPercent, let design = s.designCapacityMAh {
+            let full = s.nominalChargeCapacityMAh ?? s.fullChargeCapacityMAh ?? 0
+            add("Health", "\(fixed(health, 1)) %  (\(full) of \(design) mAh design)")
+        }
+        add("Condition", s.healthCondition)
+        if let failure = s.permanentFailureStatus, failure != 0 {
+            add("Permanent failure", String(format: "0x%X", failure))
+        }
+        if let cycles = s.cycleCount {
+            if let rated = s.designCycleCount, let used = s.cycleLifeUsed {
+                add("Cycles", "\(cycles) of \(rated)  (\(fixed(used * 100, 0)) % of rated life)")
+            } else {
+                add("Cycles", String(cycles))
+            }
+        }
+        add("Temperature", s.temperatureCelsius.map { "\(fixed($0, 1)) °C" })
+
+        if !s.cellVoltagesMV.isEmpty {
+            var value = s.cellVoltagesMV.map(String.init).joined(separator: " / ") + " mV"
+            if let spread = s.cellVoltageSpreadMV { value += "  (spread \(spread) mV)" }
+            add("Cells", value)
+        }
+
+        if let adapter = s.adapter {
+            var parts: [String] = []
+            if let watts = adapter.watts { parts.append("\(watts) W") }
+            if let name = adapter.name ?? adapter.adapterDescription { parts.append(name) }
+            if let voltage = adapter.voltageMV, let current = adapter.currentMA {
+                parts.append("\(fixed(Double(voltage) / 1000, 1)) V × \(fixed(Double(current) / 1000, 2)) A")
+            }
+            if adapter.isWireless == true { parts.append("wireless") }
+            add("Adapter", parts.isEmpty ? "connected" : parts.joined(separator: " · "))
+        }
+        if let current = s.chargingCurrentMA, let voltage = s.chargingVoltageMV, current > 0 {
+            add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V")
+        }
+        if let reason = s.notChargingReason, reason != 0 {
+            add("Not charging reason", String(format: "0x%X", reason))
+        }
+        add("System input", s.systemPowerInWatts.map { "\(fixed($0, 1)) W" })
+        add("System load", s.systemLoadWatts.map { "\(fixed($0, 1)) W" })
+        add("Optimized charging", s.isOptimizedChargingEngaged.map { $0 ? "holding charge" : "inactive" })
+        add("Low Power Mode", s.isLowPowerModeEnabled.map { $0 ? "on" : "off" })
+        add("Thermal state", s.thermalState?.rawValue)
+
+        if let date = s.manufactureDate, let year = date.year, let month = date.month, let day = date.day {
+            add("Manufactured", String(format: "%04d-%02d-%02d", year, month, day))
+        }
+        return lines
+    }
+
+    public static func text(for snapshot: BatterySnapshot) -> String {
+        let lines = lines(for: snapshot)
+        let width = lines.map(\.label.count).max() ?? 0
+        return lines
+            .map { $0.label.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.value }
+            .joined(separator: "\n")
+    }
+
+    // MARK: - Formatting helpers
+
+    static func stateDescription(_ s: BatterySnapshot) -> String {
+        switch s.chargeState {
+        case .charging: "Charging"
+        case .discharging: "Discharging"
+        case .charged: "Fully charged, on power adapter"
+        case .notCharging: "On power adapter, not charging"
+        case .unknown: "Unknown"
+        }
+    }
+
+    /// `75` → "1 h 15 min", `40` → "40 min".
+    static func duration(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let rest = minutes % 60
+        return hours > 0 ? "\(hours) h \(rest) min" : "\(rest) min"
+    }
+
+    static func fixed(_ value: Double, _ digits: Int) -> String {
+        String(format: "%.\(digits)f", value)
+    }
+
+    static func signed(_ value: Double, _ digits: Int) -> String {
+        String(format: "%+.\(digits)f", value)
+    }
+
+    private static func joined(_ parts: [String?]) -> String? {
+        let present = parts.compactMap { $0 }.filter { !$0.isEmpty }
+        return present.isEmpty ? nil : present.joined(separator: " · ")
+    }
+}

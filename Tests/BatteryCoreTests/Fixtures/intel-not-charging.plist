@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SYNTHETIC: modeled on an Intel MacBook Pro on AC power holding at 80 % (optimized charging).
+     Intel Macs report CurrentCapacity/MaxCapacity in mAh and have no AppleRaw* keys. -->
+<plist version="1.0">
+<dict>
+	<key>AppleSmartBattery</key>
+	<dict>
+		<key>AdapterDetails</key>
+		<dict>
+			<key>Current</key>
+			<integer>4300</integer>
+			<key>Watts</key>
+			<integer>87</integer>
+		</dict>
+		<key>Amperage</key>
+		<integer>0</integer>
+		<key>AvgTimeToEmpty</key>
+		<integer>65535</integer>
+		<key>AvgTimeToFull</key>
+		<integer>65535</integer>
+		<key>BatterySerialNumber</key>
+		<string>D86000SYNTHETIC</string>
+		<key>CellVoltage</key>
+		<array>
+			<integer>4034</integer>
+			<integer>4035</integer>
+			<integer>4019</integer>
+		</array>
+		<key>CurrentCapacity</key>
+		<integer>4152</integer>
+		<key>CycleCount</key>
+		<integer>512</integer>
+		<key>DesignCapacity</key>
+		<integer>6669</integer>
+		<key>DesignCycleCount9C</key>
+		<integer>1000</integer>
+		<key>DeviceName</key>
+		<string>bq20z451</string>
+		<key>ExternalConnected</key>
+		<true/>
+		<key>FullyCharged</key>
+		<false/>
+		<key>InstantAmperage</key>
+		<integer>0</integer>
+		<key>IsCharging</key>
+		<false/>
+		<key>ManufactureDate</key>
+		<integer>20207</integer>
+		<key>Manufacturer</key>
+		<string>SMP</string>
+		<key>MaxCapacity</key>
+		<integer>5190</integer>
+		<key>PermanentFailureStatus</key>
+		<integer>0</integer>
+		<key>Temperature</key>
+		<integer>3045</integer>
+		<key>Voltage</key>
+		<integer>12102</integer>
+	</dict>
+	<key>PowerSource</key>
+	<dict>
+		<key>BatteryHealth</key>
+		<string>Poor</string>
+		<key>BatteryHealthCondition</key>
+		<string>Service Recommended</string>
+		<key>Current Capacity</key>
+		<integer>80</integer>
+		<key>Is Charging</key>
+		<false/>
+		<key>Max Capacity</key>
+		<integer>100</integer>
+		<key>Optimized Battery Charging Engaged</key>
+		<true/>
+		<key>Power Source State</key>
+		<string>AC Power</string>
+		<key>Time to Empty</key>
+		<integer>0</integer>
+		<key>Time to Full Charge</key>
+		<integer>0</integer>
+		<key>Type</key>
+		<string>InternalBattery</string>
+	</dict>
+	<key>AdapterDetails</key>
+	<dict>
+		<key>Current</key>
+		<integer>4300</integer>
+		<key>Description</key>
+		<string>pd charger</string>
+		<key>Voltage</key>
+		<integer>20000</integer>
+		<key>Watts</key>
+		<integer>87</integer>
+	</dict>
+</dict>
+</plist>

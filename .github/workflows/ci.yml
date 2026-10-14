@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux · core tests
+    runs-on: ubuntu-latest
+    container: swift:6.4-noble
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: swift build --build-tests
+      - name: Test
+        run: swift test --skip-build
+
+  macos:
+    name: macOS · build & test
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Test
+        run: swift test
+      - name: Build bpulse (release)
+        run: swift build -c release --product bpulse
+      - name: Smoke-run bpulse
+        # Hosted runners are VMs without a battery, so exit status 2 ("no battery") is expected.
+        run: |
+          set +e
+          .build/release/bpulse
+          status=$?
+          echo "bpulse exited with $status"
+          [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+      - name: Build BatteryKit for iOS
+        run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
