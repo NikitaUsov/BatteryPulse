@@ -78,7 +78,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] CI: Linux (core tests and lint) and macOS 27 (build, tests, iOS build of BatteryKit)
 - [x] Verified on a real MacBook Air M5 (macOS 27); real captures are the test fixtures
 
-### Stage 1: macOS MVP (menu-bar app)
+### Stage 1: macOS MVP ✅ (released as 0.2.0)
 
 - [x] SwiftUI app target built with SwiftPM (`swift run BatteryPulse`); starts without a Dock
   icon (`LSUIElement`) and shows one only when needed
@@ -96,9 +96,20 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Verify the new UI on the M5 and polish it from screenshots (English and Russian)
 - [x] Developer section: raw values decoded (units, times, USB-PD offers) and explained
 - [x] Demo Mode: simulated scenes and animations everywhere in the app, by hand or as a tour
-- [ ] Battery temperature and cell voltages from the SMC
+
+### Stage 1.1: macOS polish and missing readings (0.2.x–0.3)
+
+- [ ] Raw Data: show the full description, value and decoding of the selected row in an
+  inspector; the Description column cuts long text off (feedback on 0.2.0, English and Russian)
+- [ ] Battery temperature and cell voltages from the SMC (read-only, no root), shown on Health
+  and Overview
+- [ ] Check for updates against the latest GitHub release (no third-party updater) and show
+  what's new
+- [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
+  silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
-- [ ] Developer ID signing and notarization
+- [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
+  first launch needs no Open Anyway
 
 ### Stage 2: iOS MVP
 
@@ -127,7 +138,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] Bluetooth device batteries on macOS (AirPods, mouse, keyboard)
 - [ ] CSV/JSON export
 - [ ] Charge limiting (like AlDente): needs a privileged helper and SMC writes
-- [ ] Notarized DMG and a Homebrew cask
+- [ ] Homebrew cask (after notarization)
+
+## Releases
+
+| Version | Date       | Highlights |
+|---------|------------|------------|
+| 0.2.0   | 2026-10-14 | Main window (Overview, Power, Health), optional menu bar and Dock presence, Developer section with decoded and explained Raw Data and Demo Mode, English and Russian |
 
 ## Development environment
 
