@@ -14,9 +14,11 @@ struct BatteryPulseApp: App {
     private let showsMainWindow: Bool
 
     init() {
+        UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
         let monitor = BatteryMonitor(provider: MacBatteryProvider())
         monitor.start()
-        _monitor = State(initialValue: monitor)
+        // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
+        self.monitor = monitor
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar
@@ -66,8 +68,8 @@ enum WindowID {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var defaultsObserver: NSObjectProtocol?
 
-    func applicationWillFinishLaunching(_ notification: Notification) {
-        // Decide on the Dock icon before anything is shown, so it doesn't flash.
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Not in applicationWillFinishLaunching: changing the policy that early is unreliable.
         DockIconPolicy.apply()
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main
@@ -83,9 +85,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    /// Keeps running in the menu bar (or the Dock) after the last window closes.
+    /// In the menu bar, BatteryPulse keeps running after its last window closes. Without the
+    /// menu bar item it behaves like a single-window utility and quits.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        false
+        !AppSettings.showInMenuBar
+    }
+
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+        true
     }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {

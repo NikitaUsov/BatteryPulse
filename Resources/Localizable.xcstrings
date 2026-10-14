@@ -90,6 +90,17 @@
         }
       }
     },
+    "Allow BatteryPulse in Login Items to finish.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы завершить, разрешите BatteryPulse в разделе «Объекты входа»."
+          }
+        }
+      }
+    },
     "Available in the installed app. Build it with scripts/build-app.sh.": {
       "extractionState": "manual",
       "localizations": {
@@ -992,6 +1003,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть BatteryPulse"
+          }
+        }
+      }
+    },
+    "Open Login Items…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть «Объекты входа»…"
           }
         }
       }

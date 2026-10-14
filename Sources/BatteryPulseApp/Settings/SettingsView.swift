@@ -72,6 +72,18 @@ struct GeneralSettings: View {
                     Text("Available in the installed app. Build it with scripts/build-app.sh.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                } else if launchAtLogin.requiresApproval {
+                    HStack {
+                        Text("Allow BatteryPulse in Login Items to finish.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Button("Open Login Items…") { launchAtLogin.openLoginItemsSettings() }
+                            .controlSize(.small)
+                    }
+                } else if let error = launchAtLogin.errorMessage {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
                 }
             }
             Toggle("Show welcome window at startup", isOn: $showWelcomeAtLaunch)

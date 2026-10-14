@@ -117,16 +117,29 @@ extension View {
 @Observable
 final class LaunchAtLoginModel {
     private(set) var isEnabled = LaunchAtLogin.isEnabled
+    /// macOS registered the login item but wants the user to allow it in System Settings.
+    private(set) var requiresApproval = LaunchAtLogin.requiresApproval
+    private(set) var errorMessage: String?
 
     var isAvailable: Bool { LaunchAtLogin.isAvailable }
 
     func refresh() {
         isEnabled = LaunchAtLogin.isEnabled
+        requiresApproval = LaunchAtLogin.requiresApproval
     }
 
     func set(_ enabled: Bool) {
-        try? LaunchAtLogin.set(enabled)
+        do {
+            try LaunchAtLogin.set(enabled)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         refresh()
+    }
+
+    func openLoginItemsSettings() {
+        SMAppService.openSystemSettingsLoginItems()
     }
 }
 
@@ -136,6 +149,8 @@ enum LaunchAtLogin {
     static var isAvailable: Bool { Bundle.main.bundleIdentifier != nil }
 
     static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
+
+    static var requiresApproval: Bool { SMAppService.mainApp.status == .requiresApproval }
 
     static func set(_ enabled: Bool) throws {
         if enabled {
