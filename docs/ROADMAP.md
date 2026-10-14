@@ -106,8 +106,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   what's new
 - [x] History and charts (see Stage 3)
 - [x] Notifications: charge limit, low battery, battery service, heat (see Stage 4)
-- [ ] Compact mode: a small, fixed-size window with the essentials, like coconutBattery's; switch
-  from the toolbar or the View menu, and choose which window Open BatteryPulse shows
+- [x] Compact mode: a small, fixed-size window with the essentials, like coconutBattery's; switch
+  from the toolbar, and choose which window Open BatteryPulse shows
 - [ ] WidgetKit widget, if an ad-hoc signed app can ship one
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
