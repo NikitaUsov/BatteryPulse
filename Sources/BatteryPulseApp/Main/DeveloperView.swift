@@ -14,7 +14,42 @@ struct DeveloperView: View {
 
     var body: some View {
         let sections = filteredSections
-        // A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
+        // macOS 27's Liquid Glass sidebar floats over the detail column. Lists and forms inset
+        // their content past it, but a Table extends underneath, hiding its first column. So the
+        // table ignores the leading safe area and is padded by exactly the sidebar's overlap.
+        GeometryReader { proxy in
+            rawTable(sections)
+                .padding(.leading, proxy.safeAreaInsets.leading)
+        }
+        .ignoresSafeArea(.container, edges: .leading)
+        .overlay {
+            if sections.isEmpty, !filter.isEmpty {
+                ContentUnavailableView.search(text: filter)
+            }
+        }
+        .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
+        .toolbar {
+            ToolbarItemGroup {
+                // Exports are for bug reports, so they are off while the data is simulated.
+                Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
+                    .disabled(monitor.isOverridden)
+                    .help(
+                        monitor.isOverridden
+                            ? Text("Not available in Demo Mode")
+                            : Text("Copy the parsed readings as JSON, without serial numbers"))
+                Button("Export Capture…", systemImage: "square.and.arrow.up", action: exportCapture)
+                    .disabled(monitor.isOverridden)
+                    .help(
+                        monitor.isOverridden
+                            ? Text("Not available in Demo Mode")
+                            : Text("Save the raw data for a bug report. Serial numbers are redacted."))
+            }
+        }
+        .disabled(monitor.reading == nil)
+    }
+
+    /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
+    private func rawTable(_ sections: [RawSection]) -> some View {
         Table(of: RawRow.self, selection: $selection) {
             TableColumn("Key") { row in
                 Text(verbatim: row.path)
@@ -66,30 +101,6 @@ struct DeveloperView: View {
             Button("Copy Value") { copy(ids, as: \.value) }
         }
         .onCopyCommand { providers(for: selection) }
-        .overlay {
-            if sections.isEmpty, !filter.isEmpty {
-                ContentUnavailableView.search(text: filter)
-            }
-        }
-        .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
-        .toolbar {
-            ToolbarItemGroup {
-                // Exports are for bug reports, so they are off while the data is simulated.
-                Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
-                    .disabled(monitor.isOverridden)
-                    .help(
-                        monitor.isOverridden
-                            ? Text("Not available in Demo Mode")
-                            : Text("Copy the parsed readings as JSON, without serial numbers"))
-                Button("Export Capture…", systemImage: "square.and.arrow.up", action: exportCapture)
-                    .disabled(monitor.isOverridden)
-                    .help(
-                        monitor.isOverridden
-                            ? Text("Not available in Demo Mode")
-                            : Text("Save the raw data for a bug report. Serial numbers are redacted."))
-            }
-        }
-        .disabled(monitor.reading == nil)
     }
 
     private var allSections: [RawSection] {
