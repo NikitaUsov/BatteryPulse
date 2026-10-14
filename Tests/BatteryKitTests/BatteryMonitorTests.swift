@@ -82,6 +82,20 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         monitor.refresh()
         // Only the timestamp changed, so the snapshot (and the views reading it) stay put.
         #expect(monitor.snapshot?.timestamp == Date(timeIntervalSince1970: 1))
+        #expect(monitor.reading?.snapshot.timestamp == Date(timeIntervalSince1970: 1))
+    }
+
+    @Test func changedRawDataRepublishesReading() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = BatteryMonitor(provider: provider)
+        monitor.start()
+
+        var next = reading(percent: 80, at: 2)
+        next.smartBattery = ["UpdateTime": .int(2)]
+        provider.next = next
+        monitor.refresh()
+        #expect(monitor.reading?.smartBattery["UpdateTime"] == .int(2))
+        #expect(monitor.snapshot?.timestamp == Date(timeIntervalSince1970: 1))
     }
 
     @Test func missingBatteryIsReported() {

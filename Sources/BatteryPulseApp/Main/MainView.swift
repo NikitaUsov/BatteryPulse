@@ -46,16 +46,16 @@ struct MainView: View {
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
-            detail
+            MainDetail(monitor: monitor, selection: selection)
                 .navigationTitle(selection.title)
-        }
-        .frame(minWidth: 780, minHeight: 540)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Copy Report", systemImage: "doc.on.doc", action: copyReport)
-                    .disabled(monitor.snapshot == nil)
-                    .help("Copy a plain-text report without serial numbers")
-            }
+                // The minimum size belongs on the column: a minimum on the whole split view makes
+                // the sidebar's show/hide animation stutter.
+                .frame(minWidth: 520, minHeight: 540)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        CopyReportButton(monitor: monitor)
+                    }
+                }
         }
         .onChange(of: showsDeveloper) { _, shows in
             if !shows, selection == .developer { selection = .overview }
@@ -65,8 +65,15 @@ struct MainView: View {
         .trackedWindow(WindowID.main)
     }
 
-    @ViewBuilder
-    private var detail: some View {
+}
+
+/// The selected page. A separate view, so live updates re-render only the detail column and not
+/// the split view, sidebar and toolbar.
+private struct MainDetail: View {
+    let monitor: BatteryMonitor
+    let selection: SidebarItem
+
+    var body: some View {
         if let snapshot = monitor.snapshot {
             switch selection {
             case .overview: OverviewView(snapshot: snapshot)
@@ -83,6 +90,17 @@ struct MainView: View {
         } else {
             ProgressView()
         }
+    }
+
+}
+
+private struct CopyReportButton: View {
+    let monitor: BatteryMonitor
+
+    var body: some View {
+        Button("Copy Report", systemImage: "doc.on.doc", action: copyReport)
+            .disabled(monitor.snapshot == nil)
+            .help("Copy a plain-text report without serial numbers")
     }
 
     private func copyReport() {

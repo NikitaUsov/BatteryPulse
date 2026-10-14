@@ -21,7 +21,7 @@ dependencies.
 
 > **First launch:** BatteryPulse is not notarized yet, so macOS blocks it the first time. Click
 > **Done**, then go to **System Settings → Privacy & Security** and click **Open Anyway** next to
-> the BatteryPulse message. You only do this once. Details are in the
+> the BatteryPulse message. You do this once for each version you download. Details are in the
 > [User Guide](docs/USER_GUIDE.md#first-launch).
 
 ## The app
