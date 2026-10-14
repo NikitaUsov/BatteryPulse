@@ -121,8 +121,9 @@ or at login), and right away when you plug in, unplug or the charge state change
 - **Battery Health**: capacity compared with design and the cycle count, one point per day,
   so you can watch the battery age over months.
 
-Minute-by-minute history is kept for 10 days, one file per day, and the daily summary for good,
-in `~/Library/Application Support/io.github.nikitausov.BatteryPulse/History` on your Mac only.
+Minute-by-minute history is kept for the last 10 or so days with records, one file per day, and
+the daily summary for good, in `~/Library/Application Support/io.github.nikitausov.BatteryPulse/History`
+on your Mac only.
 Turn recording off or clear it in Settings → Advanced. Nothing is recorded during Demo Mode.
 
 ## Notifications

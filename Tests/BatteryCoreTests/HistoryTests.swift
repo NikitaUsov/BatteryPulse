@@ -164,10 +164,12 @@ import Testing
         #expect(try await reopened.samples(from: start.addingTimeInterval(23 * 3600)).count == 1)
         #expect(try await reopened.samples(from: start, to: start.addingTimeInterval(3600)).count == 2)
 
-        // Eleven days later the first day's file is deleted; the second is still within reach.
-        #expect(try await reopened.record(sample(11 * 24 * 60, 50)))
-        #expect(try await reopened.samples(since: .distantPast).count == 2)
+        // Twelve more days of records: the first day's file goes, eleven days' files stay.
+        for day in 2...12 { #expect(try await reopened.record(sample(Double(day) * 24 * 60, 50))) }
         #expect(!FileManager.default.fileExists(atPath: dayFile.path))
+        let files = try FileManager.default.contentsOfDirectory(
+            atPath: directory.appendingPathComponent("samples").path)
+        #expect(files.count == 11)
 
         try await reopened.clear()
         #expect(try await reopened.samples(since: .distantPast).isEmpty)
@@ -177,13 +179,15 @@ import Testing
     @Test func aClockSetAheadDoesNotDeleteHistory() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let today = start.addingTimeInterval(4 * 24 * 60 * 60)
-        let store = HistoryStore(directory: directory, now: { today })
+        // The store's clock moves with the samples, as in the app.
+        let store = HistoryStore(directory: directory, now: { .distantFuture })
         for day in 0..<5 { #expect(try await store.record(sample(Double(day) * 24 * 60, 80))) }
         // The Mac's date is set 40 days ahead for a moment.
         #expect(try await store.record(sample(44 * 24 * 60, 79)))
         #expect(try await store.samples(since: .distantPast).count == 6)
-        // After a relaunch the stray future sample isn't taken as the last one.
+        // After the clock is set back and the app relaunched, the stray future sample isn't taken
+        // as the last one.
+        let today = start.addingTimeInterval(4 * 24 * 60 * 60)
         let reopened = HistoryStore(directory: directory, now: { today })
         #expect(
             try await reopened.record(sample(4 * 24 * 60 + 0.5, 80)) == false, "within a minute of the real last sample"

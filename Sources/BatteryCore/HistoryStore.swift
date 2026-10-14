@@ -110,9 +110,13 @@ public actor HistoryStore {
         return nil
     }
 
-    /// Deletes the files of days before `day`.
+    /// The newest day files are always kept, however old: a single sample from a clock set far
+    /// ahead (which moves the sample's date and `now` together) can't push the real ones out.
+    static let keptDayFiles = Int(HistoryPolicy.retention / (24 * 60 * 60)) + 1
+
+    /// Deletes the files of days before `day`, except the newest ``keptDayFiles``.
     private func prune(before day: String) throws {
-        for old in try sampleDays() where old < day {
+        for old in try sampleDays().dropLast(Self.keptDayFiles) where old < day {
             try FileManager.default.removeItem(at: sampleURL(old))
         }
     }
