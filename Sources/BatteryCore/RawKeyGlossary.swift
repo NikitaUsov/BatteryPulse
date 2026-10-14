@@ -945,7 +945,7 @@ public struct RawSection: Sendable, Identifiable, Equatable {
             let name = value.key.description
             let key = "SMC." + name
             let property: PropertyValue =
-                value.number.map { number in
+                SMCBattery.displayNumber(value).map { number in
                     number.rounded() == number && abs(number) < 1e15 ? .int(Int64(number)) : .double(number)
                 } ?? .data(Data(value.payload))
             return row(

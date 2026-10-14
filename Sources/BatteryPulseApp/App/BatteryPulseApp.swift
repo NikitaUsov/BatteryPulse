@@ -37,7 +37,9 @@ struct BatteryPulseApp: App {
         showsMainWindow = !AppSettings.showInMenuBar
         let updater = UpdateChecker()
         self.updater = updater
-        showsWhatsNew = !showsWelcome && WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
+        // A fresh install has no last-seen version, so What's New only follows a real update, even
+        // when the welcome window opens at every launch by choice.
+        showsWhatsNew = WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
         WhatsNewPolicy.markSeen(updater.currentVersion)
         updater.showWindow = { WindowOpener.show(WindowID.update) }
         updater.startAutomaticChecks()
@@ -150,6 +152,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         true
+    }
+
+    /// Saves the day's battery summary, which is otherwise written at most hourly, before quitting.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task {
+            try? await AppHistory.store.flush()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {

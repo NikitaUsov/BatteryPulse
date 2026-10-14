@@ -93,6 +93,41 @@ struct SMCTests {
         #expect(SMCBattery.cellVoltagesMV(in: capture, packVoltageMV: 11_477) == [3823, 3817, 3837])
     }
 
+    @Test func floatsInTheWrongOrderNeverTrap() {
+        // Little-endian floats whose sum is off the pack voltage: every byte order is tried, and
+        // the big-endian reading (about 1e23) must be rejected, not converted to Int.
+        let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84)
+        let capture = SMCBattery.capture(
+            [Float(3812.4), 3810.1, 3811.7].enumerated().map { index, millivolts in
+                SMCRawValue(
+                    key: SMCBattery.floatCellVoltageKeys[index], info: float,
+                    payload: withUnsafeBytes(of: millivolts.bitPattern.littleEndian, Array.init))
+            })
+        #expect(SMCBattery.cellVoltagesMV(in: capture, packVoltageMV: 11_134) == [])
+        // A cell count that doesn't fit an Int is ignored too.
+        let huge = SMCRawValue(
+            key: "BNCB", info: SMCKeyInfo(size: 8, type: "ui64", attributes: 0x84),
+            payload: Array(repeating: 0xFF, count: 8))
+        #expect(
+            SMCBattery.cellVoltagesMV(in: SMCBattery.capture([huge, Self.cell("BC1V", 4000)]), packVoltageMV: nil) == [
+                4000
+            ])
+    }
+
+    @Test func rawDataShowsCellsInThePlausibleOrder() throws {
+        // Attribute bit 0x04 clear says big-endian, but the bytes are little-endian.
+        let info = SMCKeyInfo(size: 2, type: "ui16", attributes: 0x80)
+        let reading = BatteryReading(
+            smartBattery: ["Voltage": .int(3823)], smc: SMCBattery.capture([Self.cell("BC1V", 3823, info: info)]),
+            timestamp: Fixture.timestamp)
+        let row = try #require(RawSection.sections(for: reading.rawCapture).last?.rows.first)
+        #expect(row.decoded == .millivolts(3823))
+        // No plausible order: the raw bytes, not a nonsense measurement.
+        let garbage = SMCRawValue(key: "BC1V", info: Self.ui16, payload: [0xFF, 0xFF])
+        let rows = RawSection.sections(for: [BatteryReading.CaptureKey.smc: .dictionary(SMCBattery.capture([garbage]))])
+        #expect(rows.first?.rows.first?.decoded == nil)
+    }
+
     @Test func cellCountLimitsTheCells() {
         let count = SMCRawValue(key: "BNCB", info: SMCKeyInfo(size: 1, type: "ui8 ", attributes: 0x80), payload: [2])
         let capture = SMCBattery.capture([

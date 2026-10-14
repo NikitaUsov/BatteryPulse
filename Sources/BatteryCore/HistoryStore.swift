@@ -23,8 +23,12 @@ public actor HistoryStore {
     /// most this often unless its health or cycle count changed.
     public static let daysWriteInterval: TimeInterval = 60 * 60
 
-    public init(directory: URL) {
+    /// The current time, injectable for tests.
+    private let now: @Sendable () -> Date
+
+    public init(directory: URL, now: @escaping @Sendable () -> Date = { Date() }) {
         self.directory = directory
+        self.now = now
     }
 
     /// `~/Library/Application Support/<bundle identifier>/History`.
@@ -57,7 +61,10 @@ public actor HistoryStore {
         try append(sample, to: sampleURL(day))
         lastSample = sample
         if prunedThrough != day {
-            try prune(before: Self.fileDay(for: sample.time.addingTimeInterval(-HistoryPolicy.retention)))
+            // Relative to the clock as well as the sample, so a sample from a clock set far ahead
+            // can't delete the real history.
+            let reference = min(sample.time, now())
+            try prune(before: Self.fileDay(for: reference.addingTimeInterval(-HistoryPolicy.retention)))
             prunedThrough = day
         }
         return true
@@ -92,8 +99,10 @@ public actor HistoryStore {
             .sorted()
     }
 
+    /// The newest sample, ignoring days after tomorrow: those come from a clock that was set ahead.
     private func latestSample() throws -> HistorySample? {
-        for day in try sampleDays().reversed() {
+        let latestPlausibleDay = Self.fileDay(for: now().addingTimeInterval(24 * 60 * 60))
+        for day in try sampleDays().reversed() where day <= latestPlausibleDay {
             if let last = try readLines(HistorySample.self, from: sampleURL(day)).max(by: { $0.time < $1.time }) {
                 return last
             }

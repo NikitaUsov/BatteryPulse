@@ -131,9 +131,10 @@ public struct HistoryDay: Sendable, Equatable, Codable {
         )
     }
 
-    /// "2026-10-14" for `date` in `calendar`'s time zone.
+    /// "2026-10-14" for `date` in `calendar`'s time zone. The key is always a Gregorian date,
+    /// whatever calendar the user has chosen, so stored keys stay comparable for good.
     public static func key(for date: Date, calendar: Calendar = .current) -> String {
-        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        let c = gregorian(in: calendar.timeZone).dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
@@ -141,7 +142,14 @@ public struct HistoryDay: Sendable, Equatable, Codable {
     public func date(calendar: Calendar = .current) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        return Self.gregorian(in: calendar.timeZone).date(
+            from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+    }
+
+    static func gregorian(in timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
     }
 }
 

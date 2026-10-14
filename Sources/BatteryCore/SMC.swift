@@ -277,6 +277,28 @@ public enum SMCBattery {
     public static let keys: [SMCFourCC] =
         [cellCountKey, "B0AV", "B0AC", "B0AT"] + cellVoltageKeys + floatCellVoltageKeys + temperatureKeys
 
+    /// A key's value in its own unit for display. For the cell voltages and area sensors it is
+    /// decoded in the byte order that gives a plausible reading, as the snapshot does, and is
+    /// `nil` when no order does; other keys follow their attribute bits.
+    public static func displayNumber(_ value: SMCRawValue) -> Double? {
+        let range: ClosedRange<Double>
+        if cellVoltageKeys.contains(value.key) || floatCellVoltageKeys.contains(value.key) {
+            range = Double(plausibleCellVoltage.lowerBound)...Double(plausibleCellVoltage.upperBound)
+        } else if temperatureKeys.contains(value.key) {
+            range = -20...85
+        } else {
+            return value.number
+        }
+        for order in [nil, SMCByteOrder.little, .big] {
+            if let number = SMCValueDecoder.number(value.payload, info: value.info, order: order),
+                range.contains(number)
+            {
+                return number
+            }
+        }
+        return nil
+    }
+
     /// The values of a capture's `AppleSMC` dictionary, sorted by key.
     public static func values(in capture: PropertyDictionary) -> [SMCRawValue] {
         capture.compactMap { SMCRawValue(key: $0.key, captureValue: $0.value) }.sorted { $0.key < $1.key }
@@ -291,7 +313,9 @@ public enum SMCBattery {
     /// must add up to it, allowing for the readings not being simultaneous.
     public static func cellVoltagesMV(in capture: PropertyDictionary, packVoltageMV: Int?) -> [Int] {
         let values = Dictionary(uniqueKeysWithValues: Self.values(in: capture).map { ($0.key, $0) })
-        let count = values[cellCountKey]?.number.map { Int($0) }.flatMap { (1...4).contains($0) ? $0 : nil }
+        let count = values[cellCountKey]?.number.flatMap { Int(exactly: $0) }.flatMap {
+            (1...4).contains($0) ? $0 : nil
+        }
         for keys in [cellVoltageKeys, floatCellVoltageKeys] {
             var cells = keys.compactMap { values[$0] }
             if let count {
@@ -306,8 +330,13 @@ public enum SMCBattery {
     static func cellVoltages(_ cells: [SMCRawValue], packVoltageMV: Int?) -> [Int]? {
         guard !cells.isEmpty else { return nil }
         for order in [nil, SMCByteOrder.little, .big] {
-            let millivolts = cells.compactMap { cell in
-                SMCValueDecoder.number(cell.payload, info: cell.info, order: order).map { Int($0.rounded()) }
+            // Checked as a Double first: a float read in the wrong byte order can be far beyond
+            // Int's range, and converting it would trap.
+            let millivolts = cells.compactMap { cell -> Int? in
+                guard let value = SMCValueDecoder.number(cell.payload, info: cell.info, order: order),
+                    value.isFinite, abs(value) < 1e9
+                else { return nil }
+                return Int(value.rounded())
             }
             guard millivolts.count == cells.count, millivolts.allSatisfy(plausibleCellVoltage.contains) else {
                 continue

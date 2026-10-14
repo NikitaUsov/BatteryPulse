@@ -139,7 +139,8 @@ import Testing
     @Test func storeFilesSamplesByDayTrimsAndSummarises() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let store = HistoryStore(directory: directory)
+        // The samples are dated 2027; let the store's clock agree.
+        let store = HistoryStore(directory: directory, now: { .distantFuture })
 
         #expect(try await store.record(sample(0, 90)))
         #expect(try await store.record(sample(0.2, 90)) == false)
@@ -154,7 +155,7 @@ import Testing
         try handle.seekToEnd()
         try handle.write(contentsOf: Data(#"{"t":18000"#.utf8))
         try handle.close()
-        let reopened = HistoryStore(directory: directory)
+        let reopened = HistoryStore(directory: directory, now: { .distantFuture })
         #expect(try await reopened.samples(since: start).count == 2)
         #expect(try await reopened.record(sample(1.2, 89.8)) == false, "remembers the last sample")
 
@@ -171,6 +172,30 @@ import Testing
         try await reopened.clear()
         #expect(try await reopened.samples(since: .distantPast).isEmpty)
         #expect(try await reopened.dailySummaries().isEmpty)
+    }
+
+    @Test func aClockSetAheadDoesNotDeleteHistory() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let today = start.addingTimeInterval(4 * 24 * 60 * 60)
+        let store = HistoryStore(directory: directory, now: { today })
+        for day in 0..<5 { #expect(try await store.record(sample(Double(day) * 24 * 60, 80))) }
+        // The Mac's date is set 40 days ahead for a moment.
+        #expect(try await store.record(sample(44 * 24 * 60, 79)))
+        #expect(try await store.samples(since: .distantPast).count == 6)
+        // After a relaunch the stray future sample isn't taken as the last one.
+        let reopened = HistoryStore(directory: directory, now: { today })
+        #expect(
+            try await reopened.record(sample(4 * 24 * 60 + 0.5, 80)) == false, "within a minute of the real last sample"
+        )
+    }
+
+    @Test func dayKeysAreGregorianWhateverTheUserCalendar() throws {
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = try #require(TimeZone(identifier: "Asia/Bangkok"))
+        #expect(HistoryDay.key(for: start, calendar: buddhist) == "2027-01-15")
+        let noon = try #require(HistoryDay(day: "2027-01-15").date(calendar: buddhist))
+        #expect(HistoryDay.key(for: noon, calendar: buddhist) == "2027-01-15")
     }
 
     @Test func dailySummariesAreCompactedAndWrittenSparingly() async throws {

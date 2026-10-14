@@ -86,45 +86,46 @@ struct HistoryView: View {
 
     // MARK: - Charts
 
+    /// The legend sits under the chart, clear of the axis labels and the hover readout.
     private var chargeChart: some View {
-        Chart {
-            ForEach(spans) { span in
-                RectangleMark(
-                    xStart: .value("Start", span.start), xEnd: .value("End", span.end),
-                    yStart: .value("Bottom", 0), yEnd: .value("Top", 100)
-                )
-                // Charging a little stronger than holding the charge.
-                .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
-                .accessibilityHidden(true)
-            }
-            ForEach(points) { point in
-                if let percent = point.percent {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Charge", percent),
-                        series: .value("Segment", point.segment)
+        VStack(alignment: .trailing, spacing: 6) {
+            Chart {
+                ForEach(spans) { span in
+                    RectangleMark(
+                        xStart: .value("Start", span.start), xEnd: .value("End", span.end),
+                        yStart: .value("Bottom", 0), yEnd: .value("Top", 100)
                     )
-                    .foregroundStyle(.green)
-                    .interpolationMethod(.monotone)
+                    // Charging a little stronger than holding the charge.
+                    .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
+                    .accessibilityHidden(true)
+                }
+                ForEach(points) { point in
+                    if let percent = point.percent {
+                        LineMark(
+                            x: .value("Time", point.time), y: .value("Charge", percent),
+                            series: .value("Segment", point.segment)
+                        )
+                        .foregroundStyle(.green)
+                        .interpolationMethod(.monotone)
+                    }
                 }
             }
-        }
-        .chartXScale(domain: domain)
-        .chartYScale(domain: 0...100)
-        .chartYAxis {
-            AxisMarks(values: [0, 25, 50, 75, 100]) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let percent = value.as(Double.self) { Text(formatter.percent(percent)) }
+            .chartXScale(domain: domain)
+            .chartYScale(domain: 0...100)
+            .chartYAxis {
+                AxisMarks(values: [0, 25, 50, 75, 100]) { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let percent = value.as(Double.self) { Text(formatter.percent(percent)) }
+                    }
                 }
             }
-        }
-        .chartXAxis { timeAxis }
-        .chartXSelection(value: $selectedTime)
-        .chartOverlay { proxy in
-            selectionOverlay(proxy) { point in point.percent.map { formatter.percent($0) } }
-        }
-        .frame(height: 200)
-        .overlay(alignment: .topTrailing) {
+            .chartXAxis { timeAxis }
+            .chartXSelection(value: $selectedTime)
+            .chartOverlay { proxy in
+                selectionOverlay(proxy) { point in point.percent.map { formatter.percent($0) } }
+            }
+            .frame(height: 200)
             Label("On power adapter", systemImage: "square.fill")
                 .font(.caption)
                 .foregroundStyle(.green.opacity(0.6))

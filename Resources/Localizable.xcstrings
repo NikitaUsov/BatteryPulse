@@ -1119,13 +1119,13 @@
         }
       }
     },
-    "Charge, power and temperature over the last 10 days, with daily statistics.": {
+    "Charge, power and temperature over the last 24 hours or 7 days, with figures for the period.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, мощность и температура за последние 10 дней со статистикой по дням."
+            "value": "Заряд, мощность и температура за последние 24 часа или 7 дней с итогами за период."
           }
         }
       }

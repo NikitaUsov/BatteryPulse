@@ -97,12 +97,13 @@ final class UpdateChecker {
     }
 
     private func checkIfDue() async {
+        // Only the first scheduled tick may open the window, whether or not it checks.
+        defer { mayOpenWindow = false }
         guard AppSettings.checksForUpdates,
             UpdatePolicy.isCheckDue(lastCheck: lastCheck, now: Date()),
             rateLimitedUntil.map({ Date() >= $0 }) ?? true
         else { return }
         await check(userInitiated: false)
-        mayOpenWindow = false
     }
 
     private func check(userInitiated: Bool) async {

@@ -175,7 +175,7 @@ enum WhatsNew {
     static let features: [Feature] = [
         Feature(
             id: 1, symbol: "chart.xyaxis.line", title: "History",
-            detail: "Charge, power and temperature over the last 10 days, with daily statistics."),
+            detail: "Charge, power and temperature over the last 24 hours or 7 days, with figures for the period."),
         Feature(
             id: 2, symbol: "thermometer.medium", title: "Temperature and cells",
             detail: "The battery's temperature and the voltage of each cell, on the Health and Power pages."),
