@@ -66,8 +66,11 @@ dependencies.
 - *Copy Report*: a plain-text report without serial numbers.
 - English and Russian, chosen like any Mac app in System Settings → Language & Region.
 - A welcome window with the starting settings on first launch.
-- Native SwiftUI with Liquid Glass and no third-party code. No network access, no root, no
-  kernel extension; updates are event-driven, so it uses almost no CPU in the background.
+- Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
+  updates are event-driven, so it uses almost no CPU in the background. The only network request
+  is an optional daily update check against GitHub releases, which sends nothing about your Mac.
+- *Check for Updates…* in the app menu, a daily automatic check (Settings → General), and a
+  What's New window after each update.
 
 Build it from source:
 

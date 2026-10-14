@@ -38,7 +38,9 @@ struct GeneralSettings: View {
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     @AppStorage(AppSettings.showDockIconKey) private var showDockIcon = false
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
+    @AppStorage(AppSettings.checkForUpdatesKey) private var checksForUpdates = true
     @Environment(LaunchAtLoginModel.self) private var launchAtLogin
+    @Environment(UpdateChecker.self) private var updater
 
     var body: some View {
         Section {
@@ -91,6 +93,21 @@ struct GeneralSettings: View {
         .onAppear { launchAtLogin.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             launchAtLogin.refresh()
+        }
+
+        Section {
+            Toggle("Check for updates automatically", isOn: $checksForUpdates)
+            LabeledContent {
+                Button("Check Now") { updater.checkNow() }
+            } label: {
+                if let lastCheck = updater.lastCheck {
+                    Text("Last checked \(lastCheck.formatted(.relative(presentation: .named)))")
+                } else {
+                    Text("Not checked yet")
+                }
+            }
+        } footer: {
+            Text("BatteryPulse asks GitHub once a day whether a newer version exists. Nothing about your Mac is sent.")
         }
 
         Section {

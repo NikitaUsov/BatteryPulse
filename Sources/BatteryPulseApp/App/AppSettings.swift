@@ -15,6 +15,10 @@ enum AppSettings {
     static let showDeveloperKey = "showDeveloperSection"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
+    static let checkForUpdatesKey = "checkForUpdates"
+    static let lastUpdateCheckKey = "lastUpdateCheck"
+    static let skippedVersionKey = "skippedVersion"
+    static let lastSeenVersionKey = "lastSeenVersion"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -24,10 +28,31 @@ enum AppSettings {
         UserDefaults.standard.bool(forKey: showDockIconKey)
     }
 
+    /// On by default; the welcome window and Settings → General show the switch.
+    static var checksForUpdates: Bool {
+        UserDefaults.standard.object(forKey: checkForUpdatesKey) as? Bool ?? true
+    }
+
     /// The welcome window always appears on first launch, later only if the user asked for it.
     static var shouldShowWelcomeAtLaunch: Bool {
         let defaults = UserDefaults.standard
         return !defaults.bool(forKey: hasSeenWelcomeKey) || defaults.bool(forKey: showWelcomeAtLaunchKey)
+    }
+}
+
+/// What's New appears once after an update. Installs from before 0.3 have no recorded version,
+/// so an earlier welcome window counts as 0.2.
+enum WhatsNewPolicy {
+    static func showsAtLaunch(current: AppVersion) -> Bool {
+        let defaults = UserDefaults.standard
+        let lastSeen =
+            defaults.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
+            ?? (defaults.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
+        return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current)
+    }
+
+    static func markSeen(_ version: AppVersion) {
+        UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }
 
@@ -82,8 +107,12 @@ enum WindowOpener {
     static var openWindow: OpenWindowAction?
 
     static func showMainWindow() {
+        show(WindowID.main)
+    }
+
+    static func show(_ id: String) {
         DockIconPolicy.prepareToShowWindow()
-        openWindow?(id: WindowID.main)
+        openWindow?(id: id)
         NSApp.activate()
     }
 }

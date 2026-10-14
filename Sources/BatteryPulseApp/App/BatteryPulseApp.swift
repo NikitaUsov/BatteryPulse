@@ -9,10 +9,12 @@ struct BatteryPulseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var monitor: BatteryMonitor
     @State private var demo: DemoController
+    @State private var updater: UpdateChecker
     @State private var launchAtLogin = LaunchAtLoginModel()
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     private let showsWelcome: Bool
     private let showsMainWindow: Bool
+    private let showsWhatsNew: Bool
 
     init() {
         UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
@@ -24,6 +26,12 @@ struct BatteryPulseApp: App {
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar
+        let updater = UpdateChecker()
+        self.updater = updater
+        showsWhatsNew = !showsWelcome && WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
+        WhatsNewPolicy.markSeen(updater.currentVersion)
+        updater.showWindow = { WindowOpener.show(WindowID.update) }
+        updater.startAutomaticChecks()
     }
 
     var body: some Scene {
@@ -34,14 +42,19 @@ struct BatteryPulseApp: App {
         .defaultSize(width: 860, height: 640)
         .defaultLaunchBehavior(showsMainWindow ? .presented : .suppressed)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { updater.checkNow() }
+            }
             CommandGroup(replacing: .help) {
                 Button("BatteryPulse Help") { NSWorkspace.shared.open(AppLinks.help) }
+                Button("What's New in BatteryPulse") { WindowOpener.show(WindowID.whatsNew) }
             }
         }
 
         MenuBarExtra(isInserted: $showInMenuBar) {
             PopoverView(monitor: monitor)
                 .environment(demo)
+                .environment(updater)
         } label: {
             MenuBarLabel(monitor: monitor)
                 .environment(demo)
@@ -51,14 +64,31 @@ struct BatteryPulseApp: App {
         Window("Welcome to BatteryPulse", id: WindowID.welcome) {
             WelcomeView()
                 .environment(launchAtLogin)
+                .environment(updater)
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(showsWelcome ? .presented : .suppressed)
         .restorationBehavior(.disabled)
 
+        Window("Software Update", id: WindowID.update) {
+            UpdateView()
+                .environment(updater)
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
+        .restorationBehavior(.disabled)
+
+        Window("What's New", id: WindowID.whatsNew) {
+            WhatsNewView()
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(showsWhatsNew ? .presented : .suppressed)
+        .restorationBehavior(.disabled)
+
         Settings {
             SettingsView()
                 .environment(launchAtLogin)
+                .environment(updater)
         }
     }
 }
@@ -67,6 +97,8 @@ enum WindowID {
     static let main = "main"
     static let welcome = "welcome"
     static let settings = "settings"
+    static let update = "update"
+    static let whatsNew = "whatsNew"
 }
 
 @MainActor

@@ -1,16 +1,19 @@
 #!/bin/bash
 # Builds build/BatteryPulse.app and build/BatteryPulse.dmg (macOS only).
 #
-#   scripts/build-app.sh            # version 0.1.0, build 1
+#   scripts/build-app.sh            # version from the latest git tag, build 1
 #   VERSION=0.2.0 BUILD_NUMBER=7 scripts/build-app.sh
 #
 # The app is ad-hoc signed. A notarized build needs a Developer ID certificate; until then,
-# a downloaded copy must be approved once in System Settings → Privacy & Security.
+# each downloaded version must be approved once in System Settings → Privacy & Security.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-VERSION="${VERSION:-0.1.0}"
+# Defaults to the latest release tag, so a local build of main doesn't look outdated to the
+# update check.
+VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}"
+VERSION="${VERSION:-0.0.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 BUILD_DIR="build"

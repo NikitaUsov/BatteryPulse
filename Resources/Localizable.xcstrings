@@ -95,6 +95,17 @@
         }
       }
     },
+    "A New Version of BatteryPulse Is Available": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступна новая версия BatteryPulse"
+          }
+        }
+      }
+    },
     "About %@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -503,6 +514,17 @@
         }
       }
     },
+    "BatteryPulse %@ is available; you have %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступна версия BatteryPulse %@; у вас установлена %@."
+          }
+        }
+      }
+    },
     "BatteryPulse always shows a Dock icon when it isn't in the menu bar.": {
       "extractionState": "manual",
       "localizations": {
@@ -510,6 +532,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Когда BatteryPulse нет в строке меню, его значок всегда показан в Dock."
+          }
+        }
+      }
+    },
+    "BatteryPulse asks GitHub once a day whether a newer version exists. Nothing about your Mac is sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раз в день BatteryPulse спрашивает у GitHub, вышла ли новая версия. Никакие данные о вашем Mac не отправляются."
           }
         }
       }
@@ -536,6 +569,17 @@
         }
       }
     },
+    "BatteryPulse Is Up to Date": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установлена последняя версия BatteryPulse"
+          }
+        }
+      }
+    },
     "BatteryPulse isn't in the menu bar. Turn it on in General.": {
       "extractionState": "manual",
       "localizations": {
@@ -543,6 +587,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse не показан в строке меню. Включите его в разделе «Основные»."
+          }
+        }
+      }
+    },
+    "BatteryPulse looks for a new version once a day. Turn it off in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse раз в день проверяет, вышла ли новая версия. Отключить проверку можно в разделе «Настройки» → «Основные»."
           }
         }
       }
@@ -921,6 +976,61 @@
         }
       }
     },
+    "Check for updates automatically": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически проверять обновления"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить обновления…"
+          }
+        }
+      }
+    },
+    "Check Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить сейчас"
+          }
+        }
+      }
+    },
+    "Check your internet connection and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверьте подключение к интернету и повторите попытку."
+          }
+        }
+      }
+    },
+    "Checking for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка обновлений…"
+          }
+        }
+      }
+    },
     "Chemistry ID used by the gauging algorithm; equals ChemID on every Mac sampled.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -944,6 +1054,17 @@
         }
       }
     },
+    "Close": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Закрыть"
+          }
+        }
+      }
+    },
     "Coarse battery health rating: Good, Fair, Poor or Check Battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -963,6 +1084,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить"
           }
         }
       }
@@ -1052,6 +1184,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скопировать значение"
+          }
+        }
+      }
+    },
+    "Couldn't Check for Updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось проверить обновления"
           }
         }
       }
@@ -1318,6 +1461,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Готово"
+          }
+        }
+      }
+    },
+    "Double-click a row in Raw Data to read its full value, decoding and description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дважды нажмите строку в разделе «Исходные данные», чтобы увидеть её значение, расшифровку и описание целиком."
+          }
+        }
+      }
+    },
+    "Download": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузить"
           }
         }
       }
@@ -2249,6 +2414,18 @@
         }
       }
     },
+    "Last checked %@": {
+      "extractionState": "manual",
+      "comment": "%@ is a relative date such as 'yesterday'",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последняя проверка: %@"
+          }
+        }
+      }
+    },
     "Legacy IOPMPowerSource adapter-info field; Apple silicon always leaves it at 0.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2711,6 +2888,17 @@
         }
       }
     },
+    "Not checked yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё не проверялось"
+          }
+        }
+      }
+    },
     "Number of battery cell disconnect events the gauge has recorded.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3045,6 +3233,17 @@
         }
       }
     },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ОК"
+          }
+        }
+      }
+    },
     "On": {
       "extractionState": "manual",
       "localizations": {
@@ -3108,6 +3307,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть «Объекты входа»…"
+          }
+        }
+      }
+    },
+    "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте загруженный DMG и перетащите BatteryPulse в папку «Программы», заменив эту копию. Перед первым запуском новой версии macOS один раз попросит разрешение в разделе «Конфиденциальность и безопасность»."
           }
         }
       }
@@ -3717,6 +3927,17 @@
         }
       }
     },
+    "Raw Data inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Инспектор исходных данных"
+          }
+        }
+      }
+    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3783,6 +4004,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшийся заряд в мА·ч по данным контроллера (до macOS 27)."
+          }
+        }
+      }
+    },
+    "Remind Me Later": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напомнить позже"
           }
         }
       }
@@ -4158,6 +4390,17 @@
         }
       }
     },
+    "Skip This Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пропустить эту версию"
+          }
+        }
+      }
+    },
     "Sleep/wake bookkeeping for the port controller (Apple sleepWakeInfo struct).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4178,6 +4421,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Медленная зарядка"
+          }
+        }
+      }
+    },
+    "Software Update": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновление ПО"
           }
         }
       }
@@ -4591,6 +4845,17 @@
         }
       }
     },
+    "Try Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повторить попытку"
+          }
+        }
+      }
+    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -4633,6 +4898,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Неизвестно"
+          }
+        }
+      }
+    },
+    "Update available: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступно обновление: %@"
+          }
+        }
+      }
+    },
+    "Update check": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка обновлений"
           }
         }
       }
@@ -4756,6 +5043,17 @@
         }
       }
     },
+    "Version %@ is the latest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия %@ — последняя."
+          }
+        }
+      }
+    },
     "Voltage": {
       "extractionState": "manual",
       "localizations": {
@@ -4833,6 +5131,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добро пожаловать в BatteryPulse"
+          }
+        }
+      }
+    },
+    "What's New": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нового"
+          }
+        }
+      }
+    },
+    "What's New in BatteryPulse": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нового в BatteryPulse"
           }
         }
       }

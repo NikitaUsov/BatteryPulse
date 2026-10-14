@@ -107,9 +107,21 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 | Tab | What it controls |
 |-----|------------------|
-| General | Menu bar item, Dock icon, open at login, the welcome window, language |
+| General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language |
 | Menu Bar | Show percentage, battery power, both, or just the icon; icon size (standard, large, hidden) |
 | Advanced | The Developer section (Raw Data and Demo Mode), a link to this guide |
+
+### Updates
+
+BatteryPulse checks GitHub for a new version once a day (turn it off in Settings → General), and
+**BatteryPulse → Check for Updates…** checks right away. When a new version is out, a window
+shows its release notes with **Download**, **Remind Me Later** and **Skip This Version**.
+Download opens the DMG in your browser: open it, drag BatteryPulse onto Applications to replace
+the old copy, and approve the new version once in Privacy & Security (see
+[First launch](#first-launch)). The check sends nothing about your Mac, and it's the only network
+request BatteryPulse makes.
+
+After an update, a **What's New** window lists the new features once; it's also in the Help menu.
 
 ## Language
 
