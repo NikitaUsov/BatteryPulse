@@ -7,8 +7,8 @@
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A lightweight, native battery and charging inspector for macOS: charge, health, cycle count,
-capacity in mAh, live power flow, and power adapter details down to its USB Power Delivery
-profiles. Built with SwiftUI and Liquid Glass, in English and Russian, with no third-party
+capacity in mAh, temperature and cell voltages, live power flow, history, and power adapter
+details down to its USB Power Delivery profiles. Built with SwiftUI and Liquid Glass, in English and Russian, with no third-party
 dependencies.
 
 > **Status: early development**, verified on a MacBook Air M5 with macOS 27. The iOS app comes
@@ -35,7 +35,8 @@ dependencies.
 - Power flow: adapter → Mac → battery while plugged in, battery → Mac on battery, in live watts.
 
 **Power**
-- Battery voltage, current and power, time remaining and optimized charging.
+- Battery voltage, current, power and temperature, time remaining and optimized charging, and
+  while charging the current and voltage the battery asks the charger for.
 - The power adapter: name, maker, rated power, the negotiated voltage × current, and every USB
   Power Delivery voltage it offers.
 - System: power from the adapter, system load, adapter loss, Low Power Mode, thermal state.
@@ -45,9 +46,14 @@ dependencies.
   battery often holds more than 100 %).
 - Condition, cycle count, how much of the rated cycle life is used, design, nominal,
   full-charge and remaining capacity, and the gauge chip.
+- The voltage of each cell and the spread between them.
+
+**Compact window**
+- A small, fixed-size window with the essentials, like coconutBattery's; it can be the window
+  BatteryPulse opens.
 
 **History**
-- Charge and power (battery and Mac) over the last 24 hours or 7 days, with plugged-in stretches
+- Charge, power (battery and Mac) and temperature over the last 24 hours or 7 days, with plugged-in stretches
   shaded and a readout under the pointer.
 - The period's average drain per hour, time on battery, energy from the battery and charging
   sessions; capacity and cycle count day by day.
@@ -58,6 +64,10 @@ dependencies.
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
   to 10–30 %, when battery service is recommended, and when the Mac runs hot.
 
+**Widget** (new in 0.3, experimental until BatteryPulse is notarized)
+- Small and medium widgets for the desktop and Notification Center: charge, state, when the
+  battery will be full or empty, maximum capacity, cycles and temperature.
+
 **Menu bar**
 - Percentage, power, both or just the icon, with a standard, large or hidden battery icon.
 - A popover with charge, state, time, maximum capacity, cycles, adapter and system load.
@@ -65,8 +75,8 @@ dependencies.
   opening at login.
 
 **Developer section** (off by default; Settings → Advanced)
-- *Raw Data*: every value from `AppleSmartBattery`, the IOPS power source and the adapter in one
-  table, decoded into units, durations, dates, bit fields and USB-PD offers and contracts, with
+- *Raw Data*: every value from `AppleSmartBattery` and the entries below it (pack, cells,
+  charger), the IOPS power source, the adapter and the SMC's battery keys in one table, decoded into units, durations, dates, bit fields and USB-PD offers and contracts, with
   what each key means where that's known. An inspector shows the selected row in full. Filter,
   copy rows with ⌘C, Copy JSON, and Export Capture for bug reports (serial numbers redacted).
 - *Demo Mode*: twelve simulated scenes — fast charging, low and critical battery, optimized
@@ -79,8 +89,9 @@ dependencies.
 - English and Russian, chosen like any Mac app in System Settings → Language & Region.
 - A welcome window with the starting settings on first launch.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
-  updates are event-driven, so it uses almost no CPU in the background. The only network request
-  is an optional daily update check against GitHub releases, which sends nothing about your Mac.
+  the SMC is only ever read. Updates are event-driven, so it uses almost no CPU in the
+  background. The only network request is an optional daily update check against GitHub
+  releases, which sends nothing about your Mac.
 - *Check for Updates…* in the app menu, a daily automatic check (Settings → General), and a
   What's New window after each update.
 
@@ -103,6 +114,7 @@ swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
+swift run bpulse --smc        # the SMC's battery and charger keys with types and raw bytes
 ```
 
 Real output on a MacBook Air M5 (macOS 27) while charging:
@@ -140,18 +152,20 @@ Building requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 | Health, cycle count, capacity (mAh)    | ✅    | via analytics import*   |
 | Voltage, current, battery power        | ✅    | —                       |
 | System input, load, adapter loss       | ✅    | —                       |
-| Cell voltages, battery temperature     | —†    | via analytics import*   |
+| Cell voltages, battery temperature     | ✅†   | via analytics import*   |
 | Power adapter details                  | ✅    | —                       |
 | Low Power Mode, thermal state          | ✅    | ✅                      |
 
 \* iOS doesn't expose these to App Store apps. The planned workaround is to import the
 analytics file that iOS lets you export from Settings. No private APIs are involved.
 
-† macOS 27 no longer publishes them in `AppleSmartBattery`. Reading them from the SMC is on
-the roadmap.
+† macOS 27 moved them from `AppleSmartBattery` to the registry entries below it (the pack and
+one bank per cell). BatteryPulse reads those, and the SMC's battery keys as a second source for
+the cell voltages.
 
-On macOS everything is read from the public IOKit power-source API and the
-`AppleSmartBattery` registry entry. No root or kernel extension is needed.
+On macOS everything is read from the public IOKit power-source API, the `AppleSmartBattery`
+registry entry and its children, and, read-only, the SMC. No root or kernel extension is
+needed.
 
 ## Architecture
 

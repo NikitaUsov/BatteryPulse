@@ -1,8 +1,17 @@
 import Foundation
 
+/// Why a sample was taken outside the regular minute, so a gap before it can be explained.
+public enum HistoryEvent: String, Sendable, Codable {
+    /// The first sample after BatteryPulse started: before it, the app wasn't running.
+    case launch
+    /// The first sample after the Mac woke: before it, the Mac slept.
+    case wake
+}
+
 /// One recorded moment of the battery. Stored one per line as compact JSON.
 public struct HistorySample: Sendable, Equatable, Codable {
     public var time: Date
+    public var event: HistoryEvent?
     public var percent: Double?
     public var state: ChargeState
     public var isExternalPowerConnected: Bool?
@@ -10,58 +19,81 @@ public struct HistorySample: Sendable, Equatable, Codable {
     public var batteryWatts: Double?
     public var systemLoadWatts: Double?
     public var temperatureCelsius: Double?
+    /// The gauge's remaining and full-charge capacity, for rates that don't depend on the
+    /// whole-number percentage.
+    public var remainingMAh: Int?
+    public var fullChargeMAh: Int?
 
     public init(
-        time: Date, percent: Double?, state: ChargeState, isExternalPowerConnected: Bool? = nil,
-        batteryWatts: Double? = nil, systemLoadWatts: Double? = nil, temperatureCelsius: Double? = nil
+        time: Date, event: HistoryEvent? = nil, percent: Double?, state: ChargeState,
+        isExternalPowerConnected: Bool? = nil, batteryWatts: Double? = nil, systemLoadWatts: Double? = nil,
+        temperatureCelsius: Double? = nil, remainingMAh: Int? = nil, fullChargeMAh: Int? = nil
     ) {
         self.time = time
+        self.event = event
         self.percent = percent
         self.state = state
         self.isExternalPowerConnected = isExternalPowerConnected
         self.batteryWatts = batteryWatts
         self.systemLoadWatts = systemLoadWatts
         self.temperatureCelsius = temperatureCelsius
+        self.remainingMAh = remainingMAh
+        self.fullChargeMAh = fullChargeMAh
     }
 
-    public init(_ snapshot: BatterySnapshot, at time: Date) {
+    public init(_ snapshot: BatterySnapshot, at time: Date, event: HistoryEvent? = nil) {
         self.init(
             time: time,
+            event: event,
             percent: snapshot.chargePercent,
             state: snapshot.chargeState,
             isExternalPowerConnected: snapshot.isExternalPowerConnected,
             batteryWatts: snapshot.batteryPowerWatts.map { ($0 * 100).rounded() / 100 },
             systemLoadWatts: snapshot.systemLoadWatts.map { ($0 * 100).rounded() / 100 },
-            temperatureCelsius: snapshot.temperatureCelsius.map { ($0 * 10).rounded() / 10 }
+            temperatureCelsius: snapshot.temperatureCelsius.map { ($0 * 10).rounded() / 10 },
+            remainingMAh: snapshot.currentCapacityMAh,
+            fullChargeMAh: snapshot.fullChargeCapacityMAh
         )
     }
 
-    // Short keys and whole seconds keep a day of minute samples around 100 KB.
+    /// On battery: by the external-power flag, or by the charge state when that is missing.
+    public var isOnBattery: Bool {
+        isExternalPowerConnected.map { !$0 } ?? (state == .discharging)
+    }
+
+    // Short keys and whole seconds keep a day of minute samples around 150 KB.
     enum CodingKeys: String, CodingKey {
-        case time = "t", percent = "p", state = "s", isExternalPowerConnected = "x"
+        case time = "t", event = "e", percent = "p", state = "s", isExternalPowerConnected = "x"
         case batteryWatts = "b", systemLoadWatts = "l", temperatureCelsius = "c"
+        case remainingMAh = "r", fullChargeMAh = "f"
     }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         time = Date(timeIntervalSince1970: try c.decode(Double.self, forKey: .time))
+        event = try? c.decodeIfPresent(HistoryEvent.self, forKey: .event)
         percent = try c.decodeIfPresent(Double.self, forKey: .percent)
-        state = try c.decodeIfPresent(ChargeState.self, forKey: .state) ?? .unknown
+        state = (try? c.decodeIfPresent(ChargeState.self, forKey: .state)) ?? .unknown
         isExternalPowerConnected = try c.decodeIfPresent(Bool.self, forKey: .isExternalPowerConnected)
         batteryWatts = try c.decodeIfPresent(Double.self, forKey: .batteryWatts)
         systemLoadWatts = try c.decodeIfPresent(Double.self, forKey: .systemLoadWatts)
         temperatureCelsius = try c.decodeIfPresent(Double.self, forKey: .temperatureCelsius)
+        remainingMAh = try c.decodeIfPresent(Int.self, forKey: .remainingMAh)
+        fullChargeMAh = try c.decodeIfPresent(Int.self, forKey: .fullChargeMAh)
     }
 
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(time.timeIntervalSince1970.rounded(), forKey: .time)
+        try c.encodeIfPresent(event, forKey: .event)
         try c.encodeIfPresent(percent, forKey: .percent)
         try c.encode(state, forKey: .state)
         try c.encodeIfPresent(isExternalPowerConnected, forKey: .isExternalPowerConnected)
         try c.encodeIfPresent(batteryWatts, forKey: .batteryWatts)
         try c.encodeIfPresent(systemLoadWatts, forKey: .systemLoadWatts)
         try c.encodeIfPresent(temperatureCelsius, forKey: .temperatureCelsius)
+        try c.encodeIfPresent(remainingMAh, forKey: .remainingMAh)
+        try c.encodeIfPresent(fullChargeMAh, forKey: .fullChargeMAh)
     }
 }
 
@@ -122,7 +154,7 @@ public enum HistoryPolicy {
     public static let maximumGap: TimeInterval = 10 * 60
 
     public static func shouldRecord(_ sample: HistorySample, after last: HistorySample?) -> Bool {
-        guard let last else { return true }
+        guard let last, sample.event == nil else { return true }
         let elapsed = sample.time.timeIntervalSince(last.time)
         if elapsed >= interval || elapsed < 0 { return true }
         let changed =
@@ -132,35 +164,109 @@ public enum HistoryPolicy {
     }
 }
 
-/// Figures for a stretch of history.
+/// Figures for a stretch of history. Intervals longer than ``HistoryPolicy/maximumGap`` (sleep,
+/// or BatteryPulse not running) count for nothing.
 public struct HistoryStatistics: Sendable, Equatable {
-    /// Average drop in charge per hour while on battery.
+    /// Average drop in charge per hour while on battery; `nil` until there is enough to go on
+    /// (``minimumDrainTime`` on battery and ``minimumDrainPercent`` used), because the whole-number
+    /// percentage makes short stretches misleading.
     public var averageDrainPercentPerHour: Double?
     public var timeOnBattery: TimeInterval
-    /// Energy the battery delivered while on battery, in watt-hours.
+    /// Energy the battery delivered, in watt-hours, including any drawn while plugged in.
     public var energyFromBatteryWattHours: Double
-    /// Times the Mac started charging.
+    /// Times the Mac was plugged in; an unplug shorter than ``sessionMergeGap`` doesn't start a
+    /// new session, and a held charge (Optimized Charging) doesn't either.
     public var chargingSessions: Int
 
+    public static let minimumDrainTime: TimeInterval = 30 * 60
+    public static let minimumDrainPercent = 3.0
+    public static let sessionMergeGap: TimeInterval = 2 * 60
+
     public init(samples: [HistorySample]) {
-        var drop = 0.0
         var onBattery: TimeInterval = 0
+        var drained = 0.0
         var energy = 0.0
         var sessions = 0
-        for (previous, sample) in zip(samples, samples.dropFirst()) {
-            if sample.state == .charging, previous.state != .charging { sessions += 1 }
-            let elapsed = sample.time.timeIntervalSince(previous.time)
-            guard elapsed > 0, elapsed <= HistoryPolicy.maximumGap,
-                previous.state == .discharging, sample.state == .discharging
-            else { continue }
-            onBattery += elapsed
-            if let before = previous.percent, let after = sample.percent { drop += max(0, before - after) }
-            if let watts = previous.batteryWatts, watts < 0 { energy += -watts * elapsed / 3600 }
+        var lastUnplug: Date?
+        // The current unplugged run: where it started and where it has got to.
+        var runStart: HistorySample?
+        var runEnd: HistorySample?
+
+        func closeRun() {
+            if let first = runStart?.percent, let last = runEnd?.percent { drained += first - last }
+            runStart = nil
+            runEnd = nil
         }
-        averageDrainPercentPerHour = onBattery >= 15 * 60 ? drop / (onBattery / 3600) : nil
+
+        for (previous, sample) in zip(samples, samples.dropFirst()) {
+            // Plug-ins, including across a gap (plugged in while asleep).
+            if previous.isOnBattery, !sample.isOnBattery {
+                let merged = lastUnplug.map { sample.time.timeIntervalSince($0) < Self.sessionMergeGap } ?? false
+                if !merged { sessions += 1 }
+            } else if !previous.isOnBattery, sample.isOnBattery {
+                lastUnplug = sample.time
+            }
+
+            let elapsed = sample.time.timeIntervalSince(previous.time)
+            guard elapsed > 0, elapsed <= HistoryPolicy.maximumGap else {
+                closeRun()
+                continue
+            }
+            // Trapezoid rule over the power out of the battery.
+            if let before = previous.batteryWatts, let after = sample.batteryWatts {
+                energy += (max(0, -before) + max(0, -after)) / 2 * elapsed / 3600
+            }
+            if previous.isOnBattery, sample.isOnBattery {
+                onBattery += elapsed
+                if runStart == nil { runStart = previous }
+                runEnd = sample
+            } else {
+                closeRun()
+            }
+        }
+        closeRun()
+
+        let enough = onBattery >= Self.minimumDrainTime && drained >= Self.minimumDrainPercent
+        averageDrainPercentPerHour = enough ? max(0, drained) / (onBattery / 3600) : nil
         timeOnBattery = onBattery
         energyFromBatteryWattHours = energy
         chargingSessions = sessions
+    }
+}
+
+/// A stretch on the power adapter, shaded behind the charge line.
+public struct HistorySpan: Sendable, Equatable, Identifiable {
+    public enum Kind: Sendable, Equatable {
+        case charging
+        /// Plugged in but not charging: full, or the charge held by macOS.
+        case pluggedIn
+    }
+
+    public var start: Date
+    public var end: Date
+    public var kind: Kind
+    public var id: Date { start }
+
+    public init(start: Date, end: Date, kind: Kind) {
+        self.start = start
+        self.end = end
+        self.kind = kind
+    }
+
+    /// Spans from raw samples (not chart buckets), never across a gap in the record.
+    public static func spans(from samples: [HistorySample]) -> [HistorySpan] {
+        var spans: [HistorySpan] = []
+        for (previous, sample) in zip(samples, samples.dropFirst()) {
+            let elapsed = sample.time.timeIntervalSince(previous.time)
+            guard !previous.isOnBattery, elapsed > 0, elapsed <= HistoryPolicy.maximumGap else { continue }
+            let kind: Kind = previous.state == .charging ? .charging : .pluggedIn
+            if let last = spans.last, last.kind == kind, last.end == previous.time {
+                spans[spans.count - 1].end = sample.time
+            } else {
+                spans.append(HistorySpan(start: previous.time, end: sample.time, kind: kind))
+            }
+        }
+        return spans
     }
 }
 
@@ -176,6 +282,18 @@ public struct HistoryPoint: Sendable, Equatable, Identifiable {
     public var segment: Int
 
     public var id: Date { time }
+
+    /// The point closest to `date` in time-sorted `points`, found by binary search.
+    public static func nearest(in points: [HistoryPoint], to date: Date) -> HistoryPoint? {
+        var low = 0
+        var high = points.count
+        while low < high {
+            let middle = (low + high) / 2
+            if points[middle].time < date { low = middle + 1 } else { high = middle }
+        }
+        let candidates = [low - 1, low].filter { points.indices.contains($0) }.map { points[$0] }
+        return candidates.min { abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date)) }
+    }
 
     /// Averages samples into `bucket`-long slots (none for the 24-hour view of minute samples),
     /// and starts a new segment after a gap longer than ``HistoryPolicy/maximumGap``.

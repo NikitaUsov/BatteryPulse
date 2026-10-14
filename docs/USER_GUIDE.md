@@ -1,14 +1,17 @@
 # BatteryPulse User Guide
 
 BatteryPulse shows what your Mac's battery and charger are really doing: charge, health, cycle
-count, capacity in mAh, live power, and the power adapter. It is a native macOS app with no
-third-party code, and it reads only public system data.
+count, capacity in mAh, temperature and cell voltages, live power, and the power adapter. It is
+a native macOS app with no third-party code; it only reads system data and needs no
+administrator rights.
 
 - [Install](#install)
 - [Where BatteryPulse lives](#where-batterypulse-lives)
 - [The main window](#the-main-window)
+- [Compact window](#compact-window)
 - [History](#history)
 - [Notifications](#notifications)
+- [Widget](#widget)
 - [Demo Mode](#demo-mode)
 - [Settings](#settings)
 - [Language](#language)
@@ -61,19 +64,23 @@ Spotlight also brings up its window.
 - **Overview** — charge with a battery drawn to the exact level, what the battery is doing
   ("Charging at 31.3 W"), time remaining, gauges for charge, maximum capacity and cycle count,
   capacity bars in mAh, and a power-flow diagram from the adapter to the Mac and the battery.
-- **Power** — battery voltage, current and power; the power adapter (name, rated power,
+- **Power** — battery voltage, current, power and temperature, and while charging the current
+  and voltage the battery asks the charger for; the power adapter (name, rated power,
   negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
   adapter, system load, adapter loss, Low Power Mode and thermal state.
-- **History** — charge and power over time; see [History](#history).
+- **History** — charge, power and temperature over time; see [History](#history).
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
-  used, plus design, nominal, full-charge and remaining capacity.
+  used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
+  the spread between them.
 - **Developer** — a sidebar section, off by default (Settings → Advanced), with two pages:
   - **Raw Data** — every raw value macOS reports, in a table with a readable decoding (mAh,
-    volts, watts, times, dates, bit fields, USB Power Delivery offers and the active contract)
-    and a short description of what the key means where that's known. Filter by key, value or
-    description; select rows and press ⌘C (or right-click) to copy them. Double-click a row, or
-    click the inspector button in the toolbar, to see its full value, decoding and description.
-    **Copy JSON** and **Export Capture…** are in the toolbar.
+    volts, watts, temperatures, times, dates, bit fields, USB Power Delivery offers and the
+    active contract) and a short description of what the key means where that's known. Besides
+    `AppleSmartBattery` there are sections for the entries below it (the battery pack, each
+    cell, the charger), the power source, the adapter, and the battery keys read from the SMC.
+    Filter by key, value or description; select rows and press ⌘C (or right-click) to copy
+    them. Double-click a row, or click the inspector button in the toolbar, to see its full
+    value, decoding and description. **Copy JSON** and **Export Capture…** are in the toolbar.
   - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
 
 **Copy Report** in the toolbar copies a plain-text report without serial numbers.
@@ -82,22 +89,40 @@ Live values refresh every 2 seconds while a window or the menu bar popover is op
 10 seconds when the menu bar shows power. Otherwise BatteryPulse only updates when macOS reports
 a change, so it uses almost no CPU in the background.
 
+## Compact window
+
+For a quick look without the sidebar, BatteryPulse has a small window of a fixed size, like
+coconutBattery's: the charge, what the battery is doing, time remaining, capacity bars, maximum
+capacity, cycle count, battery power, temperature and the adapter. Open it with **Compact
+Window** in the main window's toolbar, and go back with **Full Window** in its own toolbar. To
+make it the window BatteryPulse opens, choose **Open BatteryPulse in: Compact window** in
+Settings → General.
+
 ## History
 
 BatteryPulse records the battery about once a minute while it runs (in the menu bar, the Dock,
-or at login), and right away when you plug in or unplug. The **History** page shows:
+or at login), and right away when you plug in, unplug or the charge state changes. The
+**History** page shows:
 
-- **Charge** over the last 24 hours or 7 days. Shaded stretches are times on the power adapter;
-  gaps are times the Mac slept or BatteryPulse wasn't running. Hover over a chart to read the
-  values at that moment.
+- **Charge** over the last 24 hours or 7 days. Shaded stretches are times on the power adapter,
+  a little stronger while charging than while the charge is full or held; gaps are times the Mac
+  slept or BatteryPulse wasn't running. Hover over a chart to read the values at that moment.
 - **Power**: what flows into (+) or out of (−) the battery, and what the whole Mac uses.
-- The period's **average drain** per hour on battery, **time on battery**, **energy** taken
-  from the battery, and **charging sessions**.
+- **Temperature** of the battery, when the Mac reports it.
+- The period's figures:
+  - **Average drain** per hour on battery, from the charge at the start and end of each stretch
+    on battery. It appears once there's at least half an hour on battery and 3 percent used;
+    shorter stretches are too coarse with whole percentages.
+  - **On battery**: time unplugged while the Mac was awake and BatteryPulse was recording.
+  - **Energy from battery** in watt-hours, including any the battery gave while plugged in to an
+    adapter too weak for the load.
+  - **Charging sessions**: times you plugged in. A held charge and an unplug of less than two
+    minutes don't count as new sessions.
 - **Battery Health**: capacity compared with design and the cycle count, one point per day,
   so you can watch the battery age over months.
 
-Minute-by-minute history is kept for 10 days and the daily summary for good, in
-`~/Library/Application Support/io.github.nikitausov.BatteryPulse/History` on your Mac only.
+Minute-by-minute history is kept for 10 days, one file per day, and the daily summary for good,
+in `~/Library/Application Support/io.github.nikitausov.BatteryPulse/History` on your Mac only.
 Turn recording off or clear it in Settings → Advanced. Nothing is recorded during Demo Mode.
 
 ## Notifications
@@ -109,12 +134,34 @@ In Settings → Notifications, BatteryPulse can tell you:
 - **When the battery falls to** 10, 20 or 30 % on battery.
 - **When battery service is recommended**, once each time macOS reports a condition other than
   Normal.
-- **When the Mac gets hot**, once each time the thermal state turns high or critical.
+- **When the Mac gets hot**, once each time the thermal state turns high or critical, at most
+  once an hour.
 
 Each notification comes once and only again after the battery has clearly moved away (5 points
 below the charge limit, or unplugged; 5 points above the low-battery level, or plugged in).
-macOS asks for permission the first time you turn one on; **Send Test Notification** shows what
-they look like. BatteryPulse has to be running to notify you.
+A low-battery notification disappears from Notification Center when you plug in, and a
+charge-level one when you unplug. macOS asks for permission the first time you turn one on;
+**Send Test Notification** shows what they look like. BatteryPulse has to be running to notify
+you.
+
+## Widget
+
+BatteryPulse has a widget for the desktop and Notification Center, in two sizes: the small one
+shows the charge, what the battery is doing and when it will be full or empty; the medium one
+adds maximum capacity, cycle count and temperature.
+
+1. Open BatteryPulse once after installing it, so macOS finds the widget.
+2. Control-click the desktop and choose **Edit Widgets…** (or click the date in the menu bar
+   and **Edit Widgets** at the bottom).
+3. Search for **BatteryPulse** and drag the widget where you want it.
+
+The widget reads the battery itself, so it keeps working while BatteryPulse isn't running.
+macOS limits how often widgets refresh, so it may lag a few minutes behind; while BatteryPulse
+runs, it refreshes the widget right away when you plug in or unplug.
+
+The widget is new and depends on how macOS treats apps that aren't notarized yet. If it doesn't
+appear in the widget gallery, please [report it](#reporting-a-problem); the main window, the
+compact window and the menu bar work either way.
 
 ## Demo Mode
 
@@ -157,8 +204,10 @@ BatteryPulse checks GitHub for a new version once a day (turn it off in Settings
 shows its release notes with **Download**, **Remind Me Later** and **Skip This Version**.
 Download opens the DMG in your browser: open it, drag BatteryPulse onto Applications to replace
 the old copy, and approve the new version once in Privacy & Security (see
-[First launch](#first-launch)). The check sends nothing about your Mac, and it's the only network
-request BatteryPulse makes.
+[First launch](#first-launch)). It's the only network request BatteryPulse makes: GitHub sees
+your IP address, the app's version and your language, as with any web request, and nothing else
+about your Mac is sent. If GitHub limits requests from your network, the check waits and tries
+again later.
 
 After an update, a **What's New** window lists the new features once; it's also in the Help menu.
 
@@ -187,7 +236,16 @@ language. To use a different language for BatteryPulse only:
   BatteryPulse estimates it from capacity and current and says *about*.
 - **Power flow**: on the adapter, power goes from the adapter into the Mac, and what the Mac
   doesn't use charges the battery. On battery, the battery powers the Mac.
-- **Battery temperature and cell voltages** aren't published by macOS 27, so they aren't shown.
+- **Temperature** is the battery pack's own sensor, and **cell voltages** come from each cell
+  of the pack. macOS 27 keeps both on registry entries below the battery rather than on the
+  battery itself; when a Mac doesn't have them, BatteryPulse reads the cell voltages from the
+  SMC instead and checks that they add up to the battery voltage. The temperature sensors near
+  the battery that the SMC also reports are shown in Raw Data only, since they can read several
+  degrees off.
+- **Spread** is the difference between the highest and lowest cell voltage. A few millivolts is
+  normal; a spread that keeps growing over months hints at an ageing or unbalanced battery.
+- **Requested charge current and voltage** are what the battery asks the charger for. They drop
+  as the battery fills up and while macOS holds the charge.
 
 ## Command-line report
 

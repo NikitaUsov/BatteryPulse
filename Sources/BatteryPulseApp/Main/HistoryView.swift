@@ -16,6 +16,7 @@ struct HistoryView: View {
 
     @State private var period: Period = .day
     @State private var points: [HistoryPoint] = []
+    @State private var spans: [HistorySpan] = []
     @State private var statistics: HistoryStatistics?
     @State private var days: [HistoryDay] = []
     @State private var hasLoaded = false
@@ -46,6 +47,9 @@ struct HistoryView: View {
                 } else {
                     Card("Charge") { chargeChart }
                     Card("Power") { powerChart }
+                    if points.contains(where: { $0.temperatureCelsius != nil }) {
+                        Card("Temperature") { temperatureChart }
+                    }
                     if let statistics { statisticsRow(statistics) }
                 }
                 Card("Battery Health") { healthCharts }
@@ -68,8 +72,9 @@ struct HistoryView: View {
     private func load() async {
         end = Date()
         let start = end.addingTimeInterval(-period.length)
-        let samples = (try? await AppHistory.store.samples(since: start)) ?? []
+        let samples = (try? await AppHistory.store.samples(from: start)) ?? []
         points = HistoryPoint.points(from: samples, bucket: period.bucket)
+        spans = HistorySpan.spans(from: samples)
         statistics = samples.isEmpty ? nil : HistoryStatistics(samples: samples)
         days = (try? await AppHistory.store.dailySummaries()) ?? []
         hasLoaded = true
@@ -79,44 +84,18 @@ struct HistoryView: View {
         end.addingTimeInterval(-period.length)...end
     }
 
-    /// Stretches where the Mac was on its power adapter, shaded behind the charge line.
-    private var pluggedInRanges: [ClosedRange<Date>] {
-        var ranges: [ClosedRange<Date>] = []
-        var start: Date?
-        var previous: HistoryPoint?
-        for point in points {
-            let pluggedIn = point.state == .charging || point.state == .charged || point.state == .notCharging
-            let continues = previous.map { $0.segment == point.segment } ?? false
-            if pluggedIn, start == nil || !continues {
-                if let start, let previous { ranges.append(start...previous.time) }
-                start = point.time
-            } else if !pluggedIn, let open = start, let previous {
-                ranges.append(open...previous.time)
-                start = nil
-            }
-            previous = point
-        }
-        if let start, let previous { ranges.append(start...previous.time) }
-        return ranges
-    }
-
-    private var selectedPoint: HistoryPoint? {
-        guard let selectedTime else { return nil }
-        return points.min {
-            abs($0.time.timeIntervalSince(selectedTime)) < abs($1.time.timeIntervalSince(selectedTime))
-        }
-    }
-
     // MARK: - Charts
 
     private var chargeChart: some View {
         Chart {
-            ForEach(Array(pluggedInRanges.enumerated()), id: \.offset) { _, range in
+            ForEach(spans) { span in
                 RectangleMark(
-                    xStart: .value("Start", range.lowerBound), xEnd: .value("End", range.upperBound),
+                    xStart: .value("Start", span.start), xEnd: .value("End", span.end),
                     yStart: .value("Bottom", 0), yEnd: .value("Top", 100)
                 )
-                .foregroundStyle(.green.opacity(0.12))
+                // Charging a little stronger than holding the charge.
+                .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
+                .accessibilityHidden(true)
             }
             ForEach(points) { point in
                 if let percent = point.percent {
@@ -127,13 +106,6 @@ struct HistoryView: View {
                     .foregroundStyle(.green)
                     .interpolationMethod(.monotone)
                 }
-            }
-            if let point = selectedPoint, let percent = point.percent {
-                RuleMark(x: .value("Time", point.time))
-                    .foregroundStyle(.secondary)
-                    .annotation(position: .top, overflowResolution: .init(x: .fit, y: .disabled)) {
-                        readout(point.time, formatter.percent(percent))
-                    }
             }
         }
         .chartXScale(domain: domain)
@@ -148,6 +120,9 @@ struct HistoryView: View {
         }
         .chartXAxis { timeAxis }
         .chartXSelection(value: $selectedTime)
+        .chartOverlay { proxy in
+            selectionOverlay(proxy) { point in point.percent.map { formatter.percent($0) } }
+        }
         .frame(height: 200)
         .overlay(alignment: .topTrailing) {
             Label("On power adapter", systemImage: "square.fill")
@@ -177,16 +152,7 @@ struct HistoryView: View {
             }
             RuleMark(y: .value("Zero", 0))
                 .foregroundStyle(.secondary.opacity(0.5))
-            if let point = selectedPoint {
-                RuleMark(x: .value("Time", point.time))
-                    .foregroundStyle(.secondary)
-                    .annotation(position: .top, overflowResolution: .init(x: .fit, y: .disabled)) {
-                        readout(
-                            point.time,
-                            [point.batteryWatts, point.systemLoadWatts].compactMap { $0 }
-                                .map { formatter.watts($0, signed: true) }.joined(separator: " · "))
-                    }
-            }
+                .accessibilityHidden(true)
         }
         .chartForegroundStyleScale([String(localized: "Battery"): Color.blue, String(localized: "Mac"): Color.orange])
         .chartXScale(domain: domain)
@@ -200,28 +166,63 @@ struct HistoryView: View {
         }
         .chartXAxis { timeAxis }
         .chartXSelection(value: $selectedTime)
+        .chartOverlay { proxy in
+            selectionOverlay(proxy) { point in
+                let watts = [point.batteryWatts, point.systemLoadWatts].compactMap { $0 }
+                return watts.isEmpty ? nil : watts.map { formatter.watts($0, signed: true) }.joined(separator: " · ")
+            }
+        }
         .frame(height: 180)
     }
 
+    private var temperatureChart: some View {
+        Chart {
+            ForEach(points) { point in
+                if let celsius = point.temperatureCelsius {
+                    LineMark(
+                        x: .value("Time", point.time), y: .value("Temperature", celsius),
+                        series: .value("Segment", point.segment)
+                    )
+                    .foregroundStyle(.orange)
+                    .interpolationMethod(.monotone)
+                }
+            }
+        }
+        .chartXScale(domain: domain)
+        .chartYScale(domain: .automatic(includesZero: false))
+        .chartYAxis {
+            AxisMarks { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let celsius = value.as(Double.self) { Text(formatter.celsius(celsius)) }
+                }
+            }
+        }
+        .chartXAxis { timeAxis }
+        .chartXSelection(value: $selectedTime)
+        .chartOverlay { proxy in
+            selectionOverlay(proxy) { point in point.temperatureCelsius.map { formatter.celsius($0) } }
+        }
+        .frame(height: 140)
+    }
+
+    /// Few ticks on whole hours or days: tick generation is expensive, and labels on odd times
+    /// read badly.
     private var timeAxis: some AxisContent {
-        AxisMarks(values: .automatic(desiredCount: period == .day ? 6 : 7)) { _ in
+        AxisMarks(values: period == .day ? .stride(by: .hour, count: 6) : .stride(by: .day)) { _ in
             AxisGridLine()
-            AxisValueLabel(format: period == .day ? .dateTime.hour() : .dateTime.weekday(.abbreviated))
+            AxisValueLabel(
+                format: period == .day ? .dateTime.hour() : .dateTime.weekday(.abbreviated), centered: period == .week)
         }
     }
 
-    private func readout(_ time: Date, _ value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.callout.weight(.semibold))
-                .monospacedDigit()
-            Text(time.formatted(date: period == .day ? .omitted : .abbreviated, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(.background.secondary, in: .rect(cornerRadius: 6, style: .continuous))
+    /// The hover line and readout, drawn over the chart rather than in it, so moving the pointer
+    /// redraws only this overlay and not every mark.
+    private func selectionOverlay(
+        _ proxy: ChartProxy, _ value: @escaping (HistoryPoint) -> String?
+    ) -> some View {
+        SelectionOverlay(
+            proxy: proxy, points: points, selection: $selectedTime, showsDate: period == .week, value: value)
     }
 
     // MARK: - Figures
@@ -292,6 +293,52 @@ struct HistoryView: View {
                 .frame(height: 120)
             }
         }
+    }
+}
+
+/// The rule and readout for the point under the pointer.
+private struct SelectionOverlay: View {
+    let proxy: ChartProxy
+    let points: [HistoryPoint]
+    @Binding var selection: Date?
+    let showsDate: Bool
+    let value: (HistoryPoint) -> String?
+
+    var body: some View {
+        GeometryReader { geometry in
+            if let selection, let point = HistoryPoint.nearest(in: points, to: selection),
+                let text = value(point), let plotFrame = proxy.plotFrame,
+                let x = proxy.position(forX: point.time)
+            {
+                let frame = geometry[plotFrame]
+                let position = frame.minX + x
+                Rectangle()
+                    .fill(.secondary)
+                    .frame(width: 1, height: frame.height)
+                    .position(x: position, y: frame.midY)
+                readout(text, point.time)
+                    .fixedSize()
+                    // Keep the readout inside the plot near its edges.
+                    .position(x: min(max(position, frame.minX + 70), frame.maxX - 70), y: frame.minY + 20)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func readout(_ value: String, _ time: Date) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.callout.weight(.semibold))
+                .monospacedDigit()
+            Text(time.formatted(date: showsDate ? .abbreviated : .omitted, time: .shortened))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(.regularMaterial, in: .rect(cornerRadius: 6, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.separator, lineWidth: 0.5))
     }
 }
 

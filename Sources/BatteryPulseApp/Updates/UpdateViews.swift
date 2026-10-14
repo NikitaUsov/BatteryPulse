@@ -163,7 +163,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    static let version = AppVersion(parts: [0, 3, 0])
+    nonisolated static let version = AppVersion(parts: [0, 3, 0])
 
     struct Feature: Identifiable {
         let id: Int
