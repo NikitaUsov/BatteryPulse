@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import BatteryCore
 
 @Suite struct MacPowerParserTests {
@@ -110,23 +111,26 @@ import Testing
         #expect(text.contains("Hardware Serial Number = REDACTED"))
     }
 
-    @Test(arguments: [
-        (true, true, false, ChargeState.charging),
-        (false, true, true, .charged),
-        (false, true, false, .notCharging),
-        (false, false, false, .discharging),
-        (false, nil, nil, .discharging),
-    ] as [(Bool?, Bool?, Bool?, ChargeState)])
+    @Test(
+        arguments: [
+            (true, true, false, ChargeState.charging),
+            (false, true, true, .charged),
+            (false, true, false, .notCharging),
+            (false, false, false, .discharging),
+            (false, nil, nil, .discharging),
+        ] as [(Bool?, Bool?, Bool?, ChargeState)])
     func chargeState(isCharging: Bool?, external: Bool?, full: Bool?, expected: ChargeState) {
-        #expect(MacPowerParser.chargeState(
-            isCharging: isCharging, isExternalPowerConnected: external, isFullyCharged: full
-        ) == expected)
+        #expect(
+            MacPowerParser.chargeState(
+                isCharging: isCharging, isExternalPowerConnected: external, isFullyCharged: full
+            ) == expected)
     }
 
     @Test func unknownChargeStateWithoutSignals() {
-        #expect(MacPowerParser.chargeState(
-            isCharging: nil, isExternalPowerConnected: nil, isFullyCharged: nil
-        ) == .unknown)
+        #expect(
+            MacPowerParser.chargeState(
+                isCharging: nil, isExternalPowerConnected: nil, isFullyCharged: nil
+            ) == .unknown)
     }
 
     @Test func minuteSentinelsAreDropped() {
@@ -144,7 +148,7 @@ import Testing
     @Test func smartBatteryDateRejectsGarbage() {
         #expect(MacPowerParser.smartBatteryDate(20207) == DateComponents(year: 2019, month: 7, day: 15))
         #expect(MacPowerParser.smartBatteryDate(0) == nil)
-        #expect(MacPowerParser.smartBatteryDate(31) == nil) // month 0
+        #expect(MacPowerParser.smartBatteryDate(31) == nil)  // month 0
     }
 
     @Test func emptyInputsProduceEmptySnapshot() {

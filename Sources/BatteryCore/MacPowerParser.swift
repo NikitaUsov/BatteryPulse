@@ -62,10 +62,11 @@ extension BatteryReading {
             case .dictionary(let nested):
                 result[key] = .dictionary(redactingSerialNumbers(in: nested))
             case .array(let items):
-                result[key] = .array(items.map { item in
-                    guard case .dictionary(let nested) = item else { return item }
-                    return .dictionary(redactingSerialNumbers(in: nested))
-                })
+                result[key] = .array(
+                    items.map { item in
+                        guard case .dictionary(let nested) = item else { return item }
+                        return .dictionary(redactingSerialNumbers(in: nested))
+                    })
             default:
                 break
             }
@@ -108,9 +109,11 @@ enum MacPowerParser {
         let registryCurrent = sb["CurrentCapacity"]?.intValue
         let registryMax = sb["MaxCapacity"]?.intValue
         let registryUsesMAh = (registryMax ?? 0) > 100
-        s.currentCapacityMAh = sb["AppleRawCurrentCapacity"]?.intValue
+        s.currentCapacityMAh =
+            sb["AppleRawCurrentCapacity"]?.intValue
             ?? (registryUsesMAh ? registryCurrent : nil)
-        s.fullChargeCapacityMAh = sb["AppleRawMaxCapacity"]?.intValue
+        s.fullChargeCapacityMAh =
+            sb["AppleRawMaxCapacity"]?.intValue
             ?? (registryUsesMAh ? registryMax : nil)
         s.nominalChargeCapacityMAh = sb["NominalChargeCapacity"]?.intValue
         s.designCapacityMAh = sb["DesignCapacity"]?.intValue ?? batteryData["DesignCapacity"]?.intValue
@@ -129,7 +132,8 @@ enum MacPowerParser {
         // State
         let isCharging = ps["Is Charging"]?.boolValue ?? sb["IsCharging"]?.boolValue
         let isFullyCharged = sb["FullyCharged"]?.boolValue ?? ps["Is Charged"]?.boolValue
-        s.isExternalPowerConnected = sb["ExternalConnected"]?.boolValue
+        s.isExternalPowerConnected =
+            sb["ExternalConnected"]?.boolValue
             ?? ps["Power Source State"]?.stringValue.map { $0 == "AC Power" }
         s.chargeState = chargeState(
             isCharging: isCharging,
@@ -140,21 +144,25 @@ enum MacPowerParser {
 
         switch s.chargeState {
         case .discharging:
-            s.timeToEmptyMinutes = validMinutes(ps["Time to Empty"]?.intValue)
+            s.timeToEmptyMinutes =
+                validMinutes(ps["Time to Empty"]?.intValue)
                 ?? validMinutes(sb["AvgTimeToEmpty"]?.intValue)
         case .charging:
-            s.timeToFullMinutes = validMinutes(ps["Time to Full Charge"]?.intValue)
+            s.timeToFullMinutes =
+                validMinutes(ps["Time to Full Charge"]?.intValue)
                 ?? validMinutes(sb["AvgTimeToFull"]?.intValue)
         case .charged, .notCharging, .unknown:
             break
         }
 
         // Electrical
-        s.voltageMV = sb["Voltage"]?.intValue ?? batteryData["Voltage"]?.intValue
+        s.voltageMV =
+            sb["Voltage"]?.intValue ?? batteryData["Voltage"]?.intValue
             ?? sb["AppleRawBatteryVoltage"]?.intValue
         s.amperageMA = sb["Amperage"]?.intValue
         s.instantAmperageMA = sb["InstantAmperage"]?.intValue
-        s.cellVoltagesMV = (batteryData["CellVoltage"] ?? sb["CellVoltage"])?
+        s.cellVoltagesMV =
+            (batteryData["CellVoltage"] ?? sb["CellVoltage"])?
             .arrayValue?.compactMap(\.intValue).filter { $0 > 0 } ?? []
         s.temperatureCelsius = sb["Temperature"]?.intValue.flatMap(celsius(fromCentidegrees:))
 
@@ -165,15 +173,17 @@ enum MacPowerParser {
         s.systemPowerInMW = telemetry["SystemPowerIn"]?.intValue
         s.systemLoadMW = telemetry["SystemLoad"]?.intValue
         if s.isExternalPowerConnected != false {
-            s.adapter = adapter(from: adapterDetails.isEmpty
-                ? sb["AdapterDetails"]?.dictionaryValue ?? [:]
-                : adapterDetails)
+            s.adapter = adapter(
+                from: adapterDetails.isEmpty
+                    ? sb["AdapterDetails"]?.dictionaryValue ?? [:]
+                    : adapterDetails)
         }
 
         // Identity
         s.deviceName = sb["DeviceName"]?.stringValue
         s.manufacturer = sb["Manufacturer"]?.stringValue
-        s.serialNumber = sb["Serial"]?.stringValue
+        s.serialNumber =
+            sb["Serial"]?.stringValue
             ?? sb["BatterySerialNumber"]?.stringValue
             ?? ps["Hardware Serial Number"]?.stringValue
         s.manufactureDate = smartBatteryDate(sb["ManufactureDate"]?.intValue)

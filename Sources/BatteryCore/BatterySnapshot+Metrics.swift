@@ -7,7 +7,7 @@ extension BatterySnapshot {
     /// otherwise the gauge's measured full-charge capacity.
     public var healthPercent: Double? {
         guard let design = designCapacityMAh, design > 0,
-              let full = nominalChargeCapacityMAh ?? fullChargeCapacityMAh
+            let full = nominalChargeCapacityMAh ?? fullChargeCapacityMAh
         else { return nil }
         return Double(full) / Double(design) * 100
     }
@@ -45,8 +45,8 @@ extension BatterySnapshot {
     public var estimatedTimeToEmptyMinutes: Int? {
         if let timeToEmptyMinutes { return timeToEmptyMinutes }
         guard chargeState == .discharging,
-              let capacity = currentCapacityMAh,
-              let amperage = amperageMA, amperage < -Self.minimumMeaningfulCurrentMA
+            let capacity = currentCapacityMAh,
+            let amperage = amperageMA, amperage < -Self.minimumMeaningfulCurrentMA
         else { return nil }
         return Int((Double(capacity) / Double(-amperage) * 60).rounded())
     }
@@ -56,8 +56,8 @@ extension BatterySnapshot {
     public var estimatedTimeToFullMinutes: Int? {
         if let timeToFullMinutes { return timeToFullMinutes }
         guard chargeState == .charging,
-              let capacity = currentCapacityMAh, let full = fullChargeCapacityMAh, full > capacity,
-              let amperage = amperageMA, amperage > Self.minimumMeaningfulCurrentMA
+            let capacity = currentCapacityMAh, let full = fullChargeCapacityMAh, full > capacity,
+            let amperage = amperageMA, amperage > Self.minimumMeaningfulCurrentMA
         else { return nil }
         return Int((Double(full - capacity) / Double(amperage) * 60).rounded())
     }

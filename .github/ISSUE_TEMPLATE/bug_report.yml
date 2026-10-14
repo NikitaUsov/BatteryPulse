@@ -1,0 +1,37 @@
+name: Bug report
+description: Wrong or missing battery data, crashes, or other problems
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: "MacBook Pro 14\" M3 Pro, 2023 / iPhone 15 Pro"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS version
+      placeholder: macOS 26.1 / iOS 26.1
+    validations:
+      required: true
+  - type: textarea
+    id: capture
+    attributes:
+      label: Raw capture (macOS)
+      description: |
+        Run `swift run bpulse --raw > capture.plist` and attach the file (drag it here).
+        Serial numbers are redacted automatically. If the problem is with a specific reading,
+        also paste the output of `swift run bpulse`.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?

@@ -1,13 +1,14 @@
 import Foundation
 import Testing
+
 @testable import BatteryCore
 
 @Suite struct PropertyValueTests {
     private func parse(_ body: String) throws -> PropertyDictionary {
         let xml = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <plist version="1.0"><dict>\(body)</dict></plist>
-        """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <plist version="1.0"><dict>\(body)</dict></plist>
+            """
         let root = try PropertyListSerialization.propertyList(from: Data(xml.utf8), format: nil)
         return try #require(PropertyValue.dictionary(fromAny: root))
     }
@@ -20,7 +21,8 @@ import Testing
     }
 
     @Test func booleansAndIntegersStayDistinct() throws {
-        let dict = try parse("""
+        let dict = try parse(
+            """
             <key>Flag</key><true/>
             <key>One</key><integer>1</integer>
             <key>Real</key><real>1.5</real>
@@ -44,7 +46,8 @@ import Testing
     }
 
     @Test func nestedContainers() throws {
-        let dict = try parse("""
+        let dict = try parse(
+            """
             <key>BatteryData</key><dict>
                 <key>CellVoltage</key><array><integer>4100</integer><integer>4101</integer></array>
                 <key>Name</key><string>bq</string>

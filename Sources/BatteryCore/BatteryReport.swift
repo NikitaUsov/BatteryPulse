@@ -87,7 +87,8 @@ public enum BatteryReport {
     public static func text(for snapshot: BatterySnapshot) -> String {
         let lines = lines(for: snapshot)
         let width = lines.map(\.label.count).max() ?? 0
-        return lines
+        return
+            lines
             .map { $0.label.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.value }
             .joined(separator: "\n")
     }

@@ -1,6 +1,6 @@
+import BatteryCore
 import Foundation
 import Testing
-import BatteryCore
 
 /// Loads raw captures from `Fixtures/` (same format as `bpulse --raw`).
 enum Fixture: String, CaseIterable {

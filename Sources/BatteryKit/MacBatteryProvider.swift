@@ -44,8 +44,9 @@ public final class MacBatteryProvider: BatteryProvider {
             let box = Unmanaged<HandlerBox>.fromOpaque(context).takeUnretainedValue()
             MainActor.assumeIsolated { box.handler() }
         }
-        guard let source = IOPSNotificationCreateRunLoopSource(callback, context.toOpaque())?
-            .takeRetainedValue()
+        guard
+            let source = IOPSNotificationCreateRunLoopSource(callback, context.toOpaque())?
+                .takeRetainedValue()
         else {
             context.release()
             return BatteryObservation(onCancel: removeObservers)
@@ -70,19 +71,20 @@ public final class MacBatteryProvider: BatteryProvider {
 
         var properties: Unmanaged<CFMutableDictionary>?
         guard IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-              let dictionary = properties?.takeRetainedValue() as? [String: Any]
+            let dictionary = properties?.takeRetainedValue() as? [String: Any]
         else { return nil }
         return PropertyValue.dictionary(fromAny: dictionary)
     }
 
     static func internalBatteryDescription() -> PropertyDictionary? {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
+            let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
         else { return nil }
 
         for source in sources {
-            guard let description = IOPSGetPowerSourceDescription(info, source)?
-                .takeUnretainedValue() as? [String: Any],
+            guard
+                let description = IOPSGetPowerSourceDescription(info, source)?
+                    .takeUnretainedValue() as? [String: Any],
                 description["Type"] as? String == "InternalBattery"
             else { continue }
             return PropertyValue.dictionary(fromAny: description)

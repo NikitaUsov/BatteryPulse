@@ -1,6 +1,6 @@
+import BatteryCore
 import Foundation
 import Observation
-import BatteryCore
 
 /// Observable battery state for SwiftUI.
 ///

@@ -1,6 +1,6 @@
-import Foundation
 import BatteryCore
 import BatteryKit
+import Foundation
 
 let usage = """
     Usage: bpulse [--json | --raw] [--watch [seconds]] [--input capture.plist]
@@ -115,7 +115,7 @@ repeat {
         print("\u{1B}[H\u{1B}[2J", terminator: "")
     }
     print(output)
-    fflush(nil) // `stdout` is a global C var, which Swift 6 rejects; nil flushes all streams.
+    fflush(nil)  // `stdout` is a global C var, which Swift 6 rejects; nil flushes all streams.
 
     if let interval = options.watchInterval {
         try await Task.sleep(for: .seconds(interval))

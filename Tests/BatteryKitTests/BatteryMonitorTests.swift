@@ -1,6 +1,7 @@
+import BatteryCore
 import Foundation
 import Testing
-import BatteryCore
+
 @testable import BatteryKit
 
 @MainActor
@@ -38,11 +39,12 @@ final class Counter: @unchecked Sendable {
 }
 
 private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReading {
-    BatteryReading(snapshot: BatterySnapshot(
-        timestamp: Date(timeIntervalSince1970: seconds),
-        chargePercent: percent,
-        chargeState: .discharging
-    ))
+    BatteryReading(
+        snapshot: BatterySnapshot(
+            timestamp: Date(timeIntervalSince1970: seconds),
+            chargePercent: percent,
+            chargeState: .discharging
+        ))
 }
 
 @MainActor
@@ -94,7 +96,7 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let monitor = BatteryMonitor(provider: provider)
         monitor.start()
-        monitor.start() // idempotent
+        monitor.start()  // idempotent
         #expect(provider.readCount == 1)
 
         monitor.stop()

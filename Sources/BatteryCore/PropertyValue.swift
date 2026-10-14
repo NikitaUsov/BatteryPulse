@@ -143,7 +143,8 @@ extension PropertyValue: CustomStringConvertible {
         case .data(let value): "<\(value.map { String(format: "%02x", $0) }.joined())>"
         case .array(let values): "[" + values.map(\.description).joined(separator: ", ") + "]"
         case .dictionary(let values):
-            "{" + values.sorted { $0.key < $1.key }
+            "{"
+                + values.sorted { $0.key < $1.key }
                 .map { "\($0.key) = \($0.value)" }
                 .joined(separator: "; ") + "}"
         }
