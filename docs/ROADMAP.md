@@ -128,6 +128,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] macOS background recording about once a minute while the app runs
 - [x] Swift Charts: charge and power over 24 h / 7 days, capacity and cycles over time
 - [x] Statistics: average drain, time on battery, energy from the battery, charging sessions
+- [ ] Apps using the most energy (optional): which apps drain the battery most and at what
+  average power over the last hour or day, like Activity Monitor's Energy tab but in watts;
+  research which per-process energy data macOS gives without root first
 
 ### Stage 4: Widgets and notifications
 
