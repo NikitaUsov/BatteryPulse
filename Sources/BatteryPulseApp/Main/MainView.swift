@@ -5,13 +5,13 @@ import BatteryKit
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case overview, power, health
+    case overview, power, health, history
     /// Developer section: raw data and Demo Mode.
     case developer, demo
 
     var id: Self { self }
 
-    static let pages: [SidebarItem] = [.overview, .power, .health]
+    static let pages: [SidebarItem] = [.overview, .power, .health, .history]
     static let developerPages: [SidebarItem] = [.developer, .demo]
 
     var title: LocalizedStringKey {
@@ -19,6 +19,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .overview: "Overview"
         case .power: "Power"
         case .health: "Health"
+        case .history: "History"
         case .developer: "Raw Data"
         case .demo: "Demo Mode"
         }
@@ -29,6 +30,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .overview: "gauge.with.dots.needle.67percent"
         case .power: "bolt.fill"
         case .health: "heart.text.square"
+        case .history: "chart.xyaxis.line"
         case .developer: "tablecells"
         case .demo: "play.rectangle.on.rectangle"
         }
@@ -39,6 +41,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 struct MainView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
+    @Environment(\.dismissWindow) private var dismissWindow
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
 
@@ -72,6 +75,13 @@ struct MainView: View {
                     ToolbarItem(placement: .primaryAction) {
                         CopyReportButton(monitor: monitor)
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Compact Window", systemImage: "arrow.down.right.and.arrow.up.left") {
+                            WindowOpener.switchWindowStyle(compact: true)
+                            dismissWindow(id: WindowID.main)
+                        }
+                        .help("Show the essentials in a small window")
+                    }
                 }
         }
         // DemoController stops the demo itself when the section is hidden.
@@ -100,12 +110,15 @@ private struct MainDetail: View {
     var body: some View {
         if selection == .demo {
             DemoView()
+        } else if selection == .history {
+            // History is on disk, so it shows even when there is no live reading.
+            HistoryView()
         } else if let snapshot = monitor.snapshot {
             switch selection {
             case .overview: OverviewView(snapshot: snapshot)
             case .power: PowerView(snapshot: snapshot)
             case .health: HealthView(snapshot: snapshot)
-            case .developer, .demo: DeveloperView(monitor: monitor)
+            case .developer, .demo, .history: DeveloperView(monitor: monitor)
             }
         } else if monitor.hasBattery == false {
             ContentUnavailableView(

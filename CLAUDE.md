@@ -12,22 +12,29 @@ through the App Store. Reference hardware: MacBook Air M5.
 
 - `Sources/BatteryCore` — platform-independent: `PropertyValue` (normalized plist/CF values),
   `BatterySnapshot` model, `MacPowerParser` (AppleSmartBattery + IOPS + adapter dictionaries),
-  metrics, `BatteryReport` text output, `RawValueDecoding`/`RawKeyGlossary` (Developer table),
-  `DemoBattery` (Demo Mode scenes that expand into M5-style raw dictionaries). Must stay free of
-  Apple-only frameworks.
-- `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit),
-  `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`, `BatteryMonitor` (@Observable,
-  event-driven + optional polling; `setOverride` swaps in the demo).
+  `RegistryChildren` (the pack, banks and charger entries below AppleSmartBattery), `SMC` (wire
+  format and battery keys of the read-only SMC client), metrics, `BatteryReport` text output,
+  `RawValueDecoding`/`RawKeyGlossary` (Developer table), `History`/`HistoryStore`,
+  `BatteryAlerts`, `Updates`, `DemoBattery` (Demo Mode scenes that expand into M5-style raw
+  dictionaries). Must stay free of Apple-only frameworks.
+- `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
+  children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
+  `BatteryMonitor` (@Observable, event-driven + optional polling; `setOverride` swaps in the
+  demo).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
   keys, Dock icon policy, localized phrases, `DemoController`), `Main/` (sidebar window:
-  Overview, Power, Health, and the Developer section with Raw Data and Demo Mode), `MenuBar/`,
-  `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
+  Overview, Power, History, Health, and the Developer section with Raw Data and Demo Mode; the
+  compact window), `Updates/` (update check, Software Update and What's New windows),
+  `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
   `main` keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
   (numbers/units per locale) live in BatteryCore so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
   `Resources/AppIcon.svg` is the icon source (`AppIcon.png` is rendered from it, and
   `AppIconView` draws the same design in SwiftUI).
+- `Sources/BatteryPulseWidget` — the WidgetKit extension: a SwiftPM executable linked with
+  `-e _NSExtensionMain`, wrapped into `BatteryPulse.app/Contents/PlugIns/*.appex` and signed
+  with only the app-sandbox entitlement by `scripts/build-app.sh`.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
-  renders a capture (works on Linux).
+  renders a capture (works on Linux); `--smc` lists the SMC's battery keys.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 
@@ -52,8 +59,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
 
 - Units live in property names: `MAh`, `MV`, `MA`, `MW`. Signed current: negative = discharging.
 - macOS 27 layout: mAh values live in `AppleSmartBattery` → `BatteryData` (`RemainingCapacity`,
-  `FullChargeCapacity`, `NominalChargeCapacity`, `DesignCapacity`); there is no `Temperature` or
-  `CellVoltage`. Health is capped at 100 % like System Settings; no condition key means "Normal".
+  `FullChargeCapacity`, `NominalChargeCapacity`, `DesignCapacity`); `Temperature` and
+  `CellVoltage` moved to the child entries (`RegistryChildren`). Health is capped at 100 % like
+  System Settings; no condition key (or an empty one) means "Normal".
+- The SMC is read-only: only commands 5, 8 and 9 through selector 2, never a write.
 - Linux Foundation quirk: NSNumber 0/1 casts to `Bool`, and `Int` in `Any` doesn't cast to
   `Int64` — go through `PropertyValue(any:)`, never cast raw values directly.
 - Tests use swift-testing (`import Testing`, `@Test`, `#expect`).

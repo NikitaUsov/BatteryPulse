@@ -158,6 +158,7 @@ public enum RawKeyGlossary {
                 .minutes, "Gauge estimate of minutes until full at the average charge current.",
                 sentinels: [65535: .notAvailable])
         ),
+        ("BankID", Info(.identifier, "Position of this cell in the series string of the pack.")),
         (
             "BatteryCellDisconnectCount",
             Info(.count, "Number of battery cell disconnect events the gauge has recorded.")
@@ -300,8 +301,16 @@ public enum RawKeyGlossary {
         ),
         ("BatteryData.SystemPower", Info(.other, "Power consumed by the system, in watts (floating point).")),
         (
+            "BatteryData.Temperature",
+            Info(.centidegreesCelsius, "Battery pack temperature from the gauge, in hundredths of a degree Celsius.")
+        ),
+        (
             "BatteryData.TrueRemainingCapacity",
             Info(.other, "Gauge capacity field that reads 0 on every Apple silicon Mac sampled.")
+        ),
+        (
+            "BatteryData.VirtualTemperature",
+            Info(.centidegreesCelsius, "Battery temperature estimate in hundredths of a degree Celsius.")
         ),
         ("BatteryData.Voltage", Info(.millivolts, "Battery pack voltage as seen by the gauge.")),
         ("BatteryInstalled", Info(.boolean, "True when a battery is present.")),
@@ -772,10 +781,17 @@ public enum RawKeyGlossary {
                 .microwattHoursPerSecond,
                 "Estimated wall-socket energy in the last 1 s sample, in µWh: adapter output plus adapter loss.")
         ),
+        ("SMC.B0AC", Info(.milliamps, "Battery current read from the SMC; positive while charging.")),
+        (
+            "SMC.B0AT",
+            Info(.other, "Gauge temperature read from the SMC; whether it counts 0.1 K or 0.01 °C is not settled yet.")
+        ),
+        ("SMC.B0AV", Info(.millivolts, "Battery pack voltage read from the SMC.")),
+        ("SMC.BNCB", Info(.count, "Number of cells in series, read from the SMC.")),
         ("Serial", Info(.identifier, "Serial number of the battery pack.")),
         (
             "Temperature",
-            Info(.other, "Battery temperature in tenths of a kelvin (Smart Battery format): 3100 is about 36.9 °C.")
+            Info(.centidegreesCelsius, "Battery temperature in hundredths of a degree Celsius: 3100 is 31 °C.")
         ),
         (
             "TimeRemaining",
@@ -790,7 +806,8 @@ public enum RawKeyGlossary {
         ),
         (
             "VirtualTemperature",
-            Info(.other, "Battery temperature in hundredths of a degree Celsius, as reported via the SMC.")
+            Info(
+                .centidegreesCelsius, "Battery temperature in hundredths of a degree Celsius, as reported via the SMC.")
         ),
         ("Voltage", Info(.millivolts, "Battery pack voltage (sum of the cell voltages).")),
         ("built-in", Info(.boolean, "Marks the battery as built into the Mac.")),
@@ -843,6 +860,12 @@ public enum RawKeyGlossary {
                 .other,
                 "Running sum of the matching once-a-second telemetry value; some totals carry spurious 2^32 jumps.")
         ),
+        ("SMC.BC", Info(.millivolts, "Voltage of one series cell, read from the SMC.")),
+        ("SMC.SBA", Info(.millivolts, "Voltage of one series cell as a floating-point value, read from the SMC.")),
+        (
+            "SMC.TB",
+            Info(.celsius, "Battery-area temperature sensor read from the SMC, in °C; TB0T sits at the hotspot.")
+        ),
     ]
 }
 
@@ -868,30 +891,81 @@ public struct RawSection: Sendable, Identifiable, Equatable {
     public var title: String
     public var rows: [RawRow]
 
-    /// Sections for a raw capture, in a fixed order, skipping empty dictionaries.
+    /// Sections for a raw capture, in a fixed order, skipping empty dictionaries:
+    /// `AppleSmartBattery`, one section per child entry below it, IOPS, the adapter and the SMC.
     public static func sections(for capture: PropertyDictionary) -> [RawSection] {
+        var sections: [RawSection] = []
+        if var smartBattery = capture[BatteryReading.CaptureKey.smartBattery]?.dictionaryValue {
+            let children = RegistryChildren.entries(in: smartBattery)
+            smartBattery[RegistryChildren.childrenKey] = nil
+            sections += section(smartBattery, id: BatteryReading.CaptureKey.smartBattery, title: "AppleSmartBattery")
+            let counts = Dictionary(children.map { ($0.className, 1) }, uniquingKeysWith: +)
+            var seen: [String: Int] = [:]
+            for child in children {
+                seen[child.className, default: 0] += 1
+                // Banks repeat once per cell, so number them in registry order.
+                let ordinal = seen[child.className] ?? 1
+                let title = (counts[child.className] ?? 0) > 1 ? "\(child.className) \(ordinal)" : child.className
+                let id =
+                    BatteryReading.CaptureKey.smartBattery + "/" + child.path.joined(separator: "/") + "#\(ordinal)"
+                sections += section(child.properties, id: id, title: title, glossaryPrefix: child.className)
+            }
+        }
         let sources = [
-            (BatteryReading.CaptureKey.smartBattery, "AppleSmartBattery"),
             (BatteryReading.CaptureKey.powerSource, "IOPowerSources"),
             (BatteryReading.CaptureKey.adapterDetails, "IOPSCopyExternalPowerAdapterDetails"),
         ]
-        return sources.compactMap { captureKey, title in
-            guard let dictionary = capture[captureKey]?.dictionaryValue, !dictionary.isEmpty else { return nil }
-            let rows = RawEntry.flatten(dictionary).map { entry in
-                let key = RawKeyGlossary.canonicalKey(captureKey: captureKey, path: entry.path)
-                let info = RawKeyGlossary.info(for: key)
-                return RawRow(
-                    id: captureKey + ":" + entry.path,
-                    path: entry.path,
-                    key: key,
-                    property: entry.property,
-                    info: info,
-                    decoded: info.flatMap {
-                        RawValueDecoder.decode(entry.property, as: $0.kind, sentinels: $0.sentinels)
-                    }
-                )
-            }
-            return RawSection(id: captureKey, title: title, rows: rows)
+        for (captureKey, title) in sources {
+            sections += section(capture[captureKey]?.dictionaryValue ?? [:], id: captureKey, title: title)
         }
+        if let smc = capture[BatteryReading.CaptureKey.smc]?.dictionaryValue {
+            sections += smcSection(smc)
+        }
+        return sections
+    }
+
+    /// `glossaryPrefix` is the class of a child entry: its keys are looked up as
+    /// `AppleSmartBatteryBank.BankID` first and then as the same path on `AppleSmartBattery`.
+    private static func section(
+        _ dictionary: PropertyDictionary, id: String, title: String, glossaryPrefix: String? = nil
+    ) -> [RawSection] {
+        guard !dictionary.isEmpty else { return [] }
+        let rows = RawEntry.flatten(dictionary).map { entry in
+            let plainKey = RawKeyGlossary.canonicalKey(captureKey: glossaryPrefix == nil ? id : "", path: entry.path)
+            let prefixedKey = glossaryPrefix.map { $0 + "." + plainKey }
+            let info = prefixedKey.flatMap(RawKeyGlossary.info(for:)) ?? RawKeyGlossary.info(for: plainKey)
+            return row(id: id, path: entry.path, key: prefixedKey ?? plainKey, property: entry.property, info: info)
+        }
+        return [RawSection(id: id, title: title, rows: rows)]
+    }
+
+    /// One row per SMC key, valued as a number in the key's own unit.
+    private static func smcSection(_ smc: PropertyDictionary) -> [RawSection] {
+        let rows = SMCBattery.values(in: smc).map { value in
+            let name = value.key.description
+            let key = "SMC." + name
+            let property: PropertyValue =
+                SMCBattery.displayNumber(value).map { number in
+                    number.rounded() == number && abs(number) < 1e15 ? .int(Int64(number)) : .double(number)
+                } ?? .data(Data(value.payload))
+            return row(
+                id: BatteryReading.CaptureKey.smc, path: name, key: key, property: property,
+                info: RawKeyGlossary.info(for: key))
+        }
+        guard !rows.isEmpty else { return [] }
+        return [RawSection(id: BatteryReading.CaptureKey.smc, title: "AppleSMC", rows: rows)]
+    }
+
+    private static func row(
+        id: String, path: String, key: String, property: PropertyValue, info: RawKeyGlossary.Info?
+    ) -> RawRow {
+        RawRow(
+            id: id + ":" + path,
+            path: path,
+            key: key,
+            property: property,
+            info: info,
+            decoded: info.flatMap { RawValueDecoder.decode(property, as: $0.kind, sentinels: $0.sentinels) }
+        )
     }
 }

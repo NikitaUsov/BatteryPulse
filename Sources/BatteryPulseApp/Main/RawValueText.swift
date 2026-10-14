@@ -11,6 +11,7 @@ enum RawValueText {
         case .milliamps(let value): f.milliamps(value)
         case .milliwatts(let value): f.watts(Double(value) / 1000, fractionDigits: 2)
         case .percent(let value): f.percent(value)
+        case .celsius(let value): f.celsius(value)
         case .minutes(let value): f.duration(minutes: value)
         case .seconds(let value): f.duration(seconds: value)
         case .date(let date): date.formatted(date: .abbreviated, time: .standard)

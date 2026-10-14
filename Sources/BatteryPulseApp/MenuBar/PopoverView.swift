@@ -8,6 +8,7 @@ import SwiftUI
 struct PopoverView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
+    @Environment(UpdateChecker.self) private var updater
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
@@ -24,6 +25,15 @@ struct PopoverView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
+            }
+
+            if let release = updater.pendingRelease {
+                Button {
+                    WindowOpener.show(WindowID.update)
+                } label: {
+                    Label("Update available: \(release.version.description)", systemImage: "arrow.down.circle.fill")
+                }
+                .buttonStyle(.borderless)
             }
 
             if demo.isActive {

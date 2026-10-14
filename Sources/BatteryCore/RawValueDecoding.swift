@@ -5,6 +5,10 @@ public enum RawValueKind: String, Sendable, CaseIterable {
     case milliampHours, millivolts, milliamps, milliwatts, percent
     /// Energy per one-second telemetry sample in µWh, shown as power (1 µWh/s = 3.6 mW).
     case microwattHoursPerSecond
+    /// Degrees Celsius.
+    case celsius
+    /// Hundredths of a degree Celsius, the unit of the gauge's `Temperature`.
+    case centidegreesCelsius
     case minutes, seconds, unixTime
     case boolean, count, hex, flags
     /// USB Power Delivery Power Data Object: one voltage/current offer of a USB-C source.
@@ -31,6 +35,7 @@ public enum DecodedRawValue: Sendable, Equatable {
     case milliamps(Int)
     case milliwatts(Int)
     case percent(Double)
+    case celsius(Double)
     case minutes(Int)
     case seconds(Int)
     case date(Date)
@@ -59,6 +64,8 @@ public enum RawValueDecoder {
         case .microwattHoursPerSecond:
             return value.intValue.map { .milliwatts(Int((Double($0) * 3.6).rounded())) }
         case .percent: return value.doubleValue.map(DecodedRawValue.percent)
+        case .celsius: return value.doubleValue.map(DecodedRawValue.celsius)
+        case .centidegreesCelsius: return value.doubleValue.map { .celsius($0 / 100) }
         case .minutes: return value.intValue.map(DecodedRawValue.minutes)
         case .seconds: return value.intValue.map(DecodedRawValue.seconds)
         case .unixTime:

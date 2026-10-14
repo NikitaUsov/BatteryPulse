@@ -15,6 +15,7 @@ extension BatteryFormatter {
             case .watts: String(localized: "W", comment: "Unit symbol: watts")
             case .milliampHours: String(localized: "mAh", comment: "Unit symbol: milliampere-hours")
             case .volts: String(localized: "V", comment: "Unit symbol: volts")
+            case .millivolts: String(localized: "mV", comment: "Unit symbol: millivolts")
             case .milliamps: String(localized: "mA", comment: "Unit symbol: milliamperes")
             case .amps: String(localized: "A", comment: "Unit symbol: amperes")
             }

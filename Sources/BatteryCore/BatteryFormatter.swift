@@ -8,7 +8,7 @@ import Foundation
 /// not available in swift-corelibs-foundation, where this type is tested).
 public struct BatteryFormatter: Sendable {
     public enum Unit: Sendable, CaseIterable {
-        case watts, milliampHours, volts, milliamps, amps
+        case watts, milliampHours, volts, millivolts, milliamps, amps
     }
 
     public var locale: Locale
@@ -27,6 +27,7 @@ public struct BatteryFormatter: Sendable {
         case .watts: "W"
         case .milliampHours: "mAh"
         case .volts: "V"
+        case .millivolts: "mV"
         case .milliamps: "mA"
         case .amps: "A"
         }
@@ -52,6 +53,11 @@ public struct BatteryFormatter: Sendable {
         withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), .volts)
     }
 
+    /// `6` → "6 mV", for small differences such as the spread between cells.
+    public func millivolts(_ value: Int) -> String {
+        withUnit(value.formatted(.number.locale(locale)), .millivolts)
+    }
+
     /// `2990` mA → "2.99 A".
     public func amps(milliamps: Int, fractionDigits: Int = 2) -> String {
         withUnit(number(Double(milliamps) / 1000, fractionDigits: fractionDigits), .amps)
@@ -74,6 +80,11 @@ public struct BatteryFormatter: Sendable {
         var style = Duration.UnitsFormatStyle(allowedUnits: [.hours, .minutes, .seconds], width: .abbreviated)
         style.locale = locale
         return Duration.seconds(seconds).formatted(style)
+    }
+
+    /// `31.24` → "31.2 °C".
+    public func celsius(_ value: Double) -> String {
+        number(value, fractionDigits: 1) + "\u{00A0}°C"
     }
 
     /// Plain number with the locale's separators.

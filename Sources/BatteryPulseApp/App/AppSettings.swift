@@ -15,6 +15,17 @@ enum AppSettings {
     static let showDeveloperKey = "showDeveloperSection"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
+    static let checkForUpdatesKey = "checkForUpdates"
+    static let lastUpdateCheckKey = "lastUpdateCheck"
+    static let skippedVersionKey = "skippedVersion"
+    static let lastSeenVersionKey = "lastSeenVersion"
+    static let recordHistoryKey = "recordHistory"
+    static let prefersCompactWindowKey = "prefersCompactWindow"
+    static let alertChargeLimitKey = "alertChargeLimit"
+    static let alertLowBatteryKey = "alertLowBattery"
+    static let alertServiceKey = "alertService"
+    static let alertHeatKey = "alertHeat"
+    static let alertStateKey = "alertState"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -24,10 +35,56 @@ enum AppSettings {
         UserDefaults.standard.bool(forKey: showDockIconKey)
     }
 
+    /// Percentages of 0 mean off; everything is off until the user turns it on.
+    static var alerts: AlertSettings {
+        let defaults = UserDefaults.standard
+        let chargeLimit = defaults.integer(forKey: alertChargeLimitKey)
+        let lowBattery = defaults.integer(forKey: alertLowBatteryKey)
+        return AlertSettings(
+            chargeLimit: chargeLimit > 0 ? chargeLimit : nil,
+            lowBattery: lowBattery > 0 ? lowBattery : nil,
+            serviceRecommended: defaults.bool(forKey: alertServiceKey),
+            highTemperature: defaults.bool(forKey: alertHeatKey)
+        )
+    }
+
+    /// Which window Open BatteryPulse, the Dock icon and a windowed launch show.
+    static var prefersCompactWindow: Bool {
+        UserDefaults.standard.bool(forKey: prefersCompactWindowKey)
+    }
+
+    static var recordsHistory: Bool {
+        UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
+    }
+
+    /// On by default; the welcome window and Settings → General show the switch.
+    static var checksForUpdates: Bool {
+        UserDefaults.standard.object(forKey: checkForUpdatesKey) as? Bool ?? true
+    }
+
     /// The welcome window always appears on first launch, later only if the user asked for it.
     static var shouldShowWelcomeAtLaunch: Bool {
         let defaults = UserDefaults.standard
         return !defaults.bool(forKey: hasSeenWelcomeKey) || defaults.bool(forKey: showWelcomeAtLaunchKey)
+    }
+}
+
+/// What's New appears once after an update. Installs from before 0.3 have no recorded version,
+/// so an earlier welcome window counts as 0.2.
+enum WhatsNewPolicy {
+    static func showsAtLaunch(current: AppVersion) -> Bool {
+        let defaults = UserDefaults.standard
+        let lastSeen =
+            defaults.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
+            ?? (defaults.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
+        return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current, features: WhatsNew.version)
+    }
+
+    /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
+    /// release would show What's New twice.
+    static func markSeen(_ version: AppVersion) {
+        guard version != AppVersion(parts: [0, 0, 0]) else { return }
+        UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }
 
@@ -37,6 +94,10 @@ enum AppLinks {
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+    /// System Settings → Notifications.
+    // swift-format-ignore: NeverForceUnwrap
+    static let notificationSettings = URL(
+        string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
 }
 
 /// Whether BatteryPulse shows a Dock icon.
@@ -81,9 +142,20 @@ enum WindowOpener {
     /// Captured from any view that appears; `OpenWindowAction` works from any scene.
     static var openWindow: OpenWindowAction?
 
+    /// The full or the compact window, whichever the user prefers.
     static func showMainWindow() {
+        show(AppSettings.prefersCompactWindow ? WindowID.compact : WindowID.main)
+    }
+
+    /// Remembers the choice and opens that window; the caller closes its own.
+    static func switchWindowStyle(compact: Bool) {
+        UserDefaults.standard.set(compact, forKey: AppSettings.prefersCompactWindowKey)
+        show(compact ? WindowID.compact : WindowID.main)
+    }
+
+    static func show(_ id: String) {
         DockIconPolicy.prepareToShowWindow()
-        openWindow?(id: WindowID.main)
+        openWindow?(id: id)
         NSApp.activate()
     }
 }

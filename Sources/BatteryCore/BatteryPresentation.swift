@@ -115,3 +115,52 @@ public struct RawEntry: Sendable, Equatable, Identifiable {
         return entries
     }
 }
+
+/// Identifiers shared by the app and its widget extension.
+public enum BatteryWidgetKind {
+    /// The battery widget; the app asks WidgetKit to reload it when the battery changes.
+    public static let battery = "io.github.nikitausov.BatteryPulse.battery"
+}
+
+/// When the app asks WidgetKit to reload the widget. The budget is about 40–70 reloads a day,
+/// so plugging in, unplugging and a change of charge state go through at once, while the
+/// percentage only after it moved ``percentStep`` points and ``minimumInterval`` has passed.
+public struct WidgetReloadPolicy: Sendable {
+    public static let percentStep = 5
+    public static let minimumInterval: TimeInterval = 30 * 60
+
+    private struct Shown: Equatable {
+        var state: ChargeState
+        var isExternalPowerConnected: Bool?
+        var percent: Int?
+    }
+
+    private var shown: Shown?
+    private var lastReload: Date?
+
+    public init() {}
+
+    /// Whether `snapshot` warrants a reload now; records it as shown when it does.
+    public mutating func shouldReload(for snapshot: BatterySnapshot, at date: Date) -> Bool {
+        let next = Shown(
+            state: snapshot.chargeState,
+            isExternalPowerConnected: snapshot.isExternalPowerConnected,
+            percent: snapshot.chargePercent.map { Int($0.rounded()) })
+        guard let shown else {
+            record(next, at: date)
+            return true
+        }
+        let stateChanged =
+            next.state != shown.state || next.isExternalPowerConnected != shown.isExternalPowerConnected
+        let percentMoved = abs((next.percent ?? 0) - (shown.percent ?? 0)) >= Self.percentStep
+        let intervalPassed = lastReload.map { date.timeIntervalSince($0) >= Self.minimumInterval } ?? true
+        guard stateChanged || (percentMoved && intervalPassed) else { return false }
+        record(next, at: date)
+        return true
+    }
+
+    private mutating func record(_ next: Shown, at date: Date) {
+        shown = next
+        lastReload = date
+    }
+}

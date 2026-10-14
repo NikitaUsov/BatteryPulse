@@ -243,16 +243,20 @@ public struct BatteryReading: Sendable, Equatable {
     public var powerSource: PropertyDictionary
     /// `IOPSCopyExternalPowerAdapterDetails` (macOS only).
     public var adapterDetails: PropertyDictionary
+    /// Battery keys read from the SMC, as ``SMCRawValue/captureValue`` entries (macOS only).
+    public var smc: PropertyDictionary
 
     public init(
         snapshot: BatterySnapshot,
         smartBattery: PropertyDictionary = [:],
         powerSource: PropertyDictionary = [:],
-        adapterDetails: PropertyDictionary = [:]
+        adapterDetails: PropertyDictionary = [:],
+        smc: PropertyDictionary = [:]
     ) {
         self.snapshot = snapshot
         self.smartBattery = smartBattery
         self.powerSource = powerSource
         self.adapterDetails = adapterDetails
+        self.smc = smc
     }
 }

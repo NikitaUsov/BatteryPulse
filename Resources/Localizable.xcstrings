@@ -47,6 +47,30 @@
         }
       }
     },
+    "%@ per hour": {
+      "extractionState": "manual",
+      "comment": "Average drain, e.g. 8.5% per hour",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ в час"
+          }
+        }
+      }
+    },
+    "%@ Wh": {
+      "extractionState": "manual",
+      "comment": "Energy in watt-hours",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ Вт·ч"
+          }
+        }
+      }
+    },
     "1 when the Mac lets the battery charge from the adapter; 0 on battery or while charging is paused.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -55,6 +79,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "1, если Mac разрешает заряжать аккумулятор от адаптера; 0 при работе от аккумулятора или при приостановленной зарядке."
+          }
+        }
+      }
+    },
+    "24 Hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 часа"
+          }
+        }
+      }
+    },
+    "7 Days": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 дней"
           }
         }
       }
@@ -95,6 +141,28 @@
         }
       }
     },
+    "A New Version of BatteryPulse Is Available": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступна новая версия BatteryPulse"
+          }
+        }
+      }
+    },
+    "A small window with just the essentials. Switch in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Маленькое окно только с самым важным. Переключается в разделе «Настройки» → «Основные»."
+          }
+        }
+      }
+    },
     "About %@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -102,6 +170,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Осталось примерно %@"
+          }
+        }
+      }
+    },
+    "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Примерно раз в минуту, пока работает BatteryPulse, за последние 10 дней, а также ёмкость и циклы аккумулятора раз в день. Данные остаются на этом Mac."
           }
         }
       }
@@ -200,13 +279,13 @@
         }
       }
     },
-    "Adds raw IORegistry data, charger reason codes and capture export to the main window.": {
+    "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Добавляет в главное окно необработанные данные IORegistry, коды причин зарядки и экспорт снимка."
+            "value": "Добавляет в главное окно исходные данные (все значения, которые сообщает macOS, с расшифровкой и описанием) и демо-режим."
           }
         }
       }
@@ -304,6 +383,18 @@
         }
       }
     },
+    "Average drain": {
+      "extractionState": "manual",
+      "comment": "Average battery drain per hour",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Средний расход"
+          }
+        }
+      }
+    },
     "Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -339,6 +430,17 @@
         }
       }
     },
+    "Battery Charged to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумулятор заряжен до %@"
+          }
+        }
+      }
+    },
     "Battery current in mA from powerd, negative when discharging.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -347,6 +449,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ток аккумулятора в мА по данным powerd; при разрядке отрицательный."
+          }
+        }
+      }
+    },
+    "Battery current read from the SMC; positive while charging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток аккумулятора по данным SMC; положительный во время зарядки."
           }
         }
       }
@@ -397,6 +510,17 @@
         }
       }
     },
+    "Battery pack temperature from the gauge, in hundredths of a degree Celsius.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора по данным контроллера аккумулятора, в сотых долях градуса Цельсия."
+          }
+        }
+      }
+    },
     "Battery pack voltage (sum of the cell voltages).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -417,6 +541,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Напряжение аккумулятора по данным контроллера."
+          }
+        }
+      }
+    },
+    "Battery pack voltage read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора по данным SMC."
           }
         }
       }
@@ -456,6 +591,28 @@
         }
       }
     },
+    "Battery Service Recommended": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рекомендуется обслуживание аккумулятора"
+          }
+        }
+      }
+    },
+    "Battery temperature estimate in hundredths of a degree Celsius.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расчётная температура аккумулятора в сотых долях градуса Цельсия."
+          }
+        }
+      }
+    },
     "Battery temperature in hundredths of a degree Celsius, as reported via the SMC.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -468,14 +625,13 @@
         }
       }
     },
-    "Battery temperature in tenths of a kelvin (Smart Battery format): 3100 is about 36.9 °C.": {
+    "Battery temperature in hundredths of a degree Celsius: 3100 is 31 °C.": {
       "extractionState": "manual",
-      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Температура аккумулятора в десятых долях кельвина (формат Smart Battery): 3100 — около 36,9 °C."
+            "value": "Температура аккумулятора в сотых долях градуса Цельсия: 3100 — это 31 °C."
           }
         }
       }
@@ -492,6 +648,17 @@
         }
       }
     },
+    "Battery-area temperature sensor read from the SMC, in °C; TB0T sits at the hotspot.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Датчик температуры рядом с аккумулятором по данным SMC, в °C; TB0T стоит в самой горячей точке."
+          }
+        }
+      }
+    },
     "BatteryPulse": {
       "extractionState": "manual",
       "localizations": {
@@ -499,6 +666,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse"
+          }
+        }
+      }
+    },
+    "BatteryPulse %@ is available; you have %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступна версия BatteryPulse %@; у вас установлена %@."
           }
         }
       }
@@ -536,6 +714,17 @@
         }
       }
     },
+    "BatteryPulse Is Up to Date": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установлена последняя версия BatteryPulse"
+          }
+        }
+      }
+    },
     "BatteryPulse isn't in the menu bar. Turn it on in General.": {
       "extractionState": "manual",
       "localizations": {
@@ -543,6 +732,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse не показан в строке меню. Включите его в разделе «Основные»."
+          }
+        }
+      }
+    },
+    "BatteryPulse looks for a new version once a day. Turn it off in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse раз в день проверяет, вышла ли новая версия. Отключить проверку можно в разделе «Настройки» → «Основные»."
+          }
+        }
+      }
+    },
+    "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse записывает состояние аккумулятора примерно раз в минуту, пока работает. Загляните сюда через несколько минут."
           }
         }
       }
@@ -687,6 +898,28 @@
         }
       }
     },
+    "Capacity and cycles appear here after BatteryPulse has run on two different days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость и циклы появятся здесь, когда BatteryPulse поработает хотя бы два разных дня."
+          }
+        }
+      }
+    },
+    "Capacity compared with design": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость относительно расчётной"
+          }
+        }
+      }
+    },
     "Capacity held back below 0 % that is not counted in FullChargeCapacity.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -723,6 +956,17 @@
         }
       }
     },
+    "Cell %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элемент %@"
+          }
+        }
+      }
+    },
     "Cell impedance at depth-of-discharge grid points 0-9, in units of 1/1024 ohm.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -747,6 +991,17 @@
         }
       }
     },
+    "Cells": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы"
+          }
+        }
+      }
+    },
     "Change in System Settings…": {
       "extractionState": "manual",
       "localizations": {
@@ -765,6 +1020,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд"
+          }
+        }
+      }
+    },
+    "Charge and battery health on the desktop or in Notification Center.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд и состояние аккумулятора на рабочем столе или в Центре уведомлений."
           }
         }
       }
@@ -853,6 +1119,28 @@
         }
       }
     },
+    "Charge, power and temperature over the last 24 hours or 7 days, with figures for the period.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, мощность и температура за последние 24 часа или 7 дней с итогами за период."
+          }
+        }
+      }
+    },
+    "Charge, time remaining and battery health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, оставшееся время и состояние аккумулятора."
+          }
+        }
+      }
+    },
     "Charger type label, e.g. \"pd charger\" for a USB Power Delivery charger.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -910,6 +1198,17 @@
         }
       }
     },
+    "Charging sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сеансы зарядки"
+          }
+        }
+      }
+    },
     "Check Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -917,6 +1216,61 @@
           "stringUnit": {
             "state": "translated",
             "value": "Проверьте аккумулятор"
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически проверять обновления"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить обновления…"
+          }
+        }
+      }
+    },
+    "Check Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить сейчас"
+          }
+        }
+      }
+    },
+    "Check your internet connection and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверьте подключение к интернету и повторите попытку."
+          }
+        }
+      }
+    },
+    "Checking for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка обновлений…"
           }
         }
       }
@@ -944,6 +1298,50 @@
         }
       }
     },
+    "Clear History": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Очистить историю"
+          }
+        }
+      }
+    },
+    "Clear History…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Очистить историю…"
+          }
+        }
+      }
+    },
+    "Clear the battery history?": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Очистить историю аккумулятора?"
+          }
+        }
+      }
+    },
+    "Close": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Закрыть"
+          }
+        }
+      }
+    },
     "Coarse battery health rating: Good, Fair, Poor or Check Battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -956,6 +1354,28 @@
         }
       }
     },
+    "Compact Window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Компактное окно"
+          }
+        }
+      }
+    },
+    "Compact window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Компактное окно"
+          }
+        }
+      }
+    },
     "Condition": {
       "extractionState": "manual",
       "localizations": {
@@ -963,6 +1383,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние"
+          }
+        }
+      }
+    },
+    "Connect the power adapter soon.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скоро подключите адаптер питания."
+          }
+        }
+      }
+    },
+    "Continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить"
           }
         }
       }
@@ -1052,6 +1494,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скопировать значение"
+          }
+        }
+      }
+    },
+    "Couldn't Check for Updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось проверить обновления"
           }
         }
       }
@@ -1173,6 +1626,17 @@
         }
       }
     },
+    "Cycles": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Циклы"
+          }
+        }
+      }
+    },
     "Daily maximum state of charge logged by the gauge; it is not updated live.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1193,6 +1657,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Минимальный за день уровень заряда по журналу контроллера."
+          }
+        }
+      }
+    },
+    "Day": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "День"
           }
         }
       }
@@ -1322,6 +1797,28 @@
         }
       }
     },
+    "Double-click a row in Raw Data to read its full value, decoding and description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дважды нажмите строку в разделе «Исходные данные», чтобы увидеть её значение, расшифровку и описание целиком."
+          }
+        }
+      }
+    },
+    "Download": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузить"
+          }
+        }
+      }
+    },
     "Drain to empty": {
       "extractionState": "manual",
       "comment": "Demo animation",
@@ -1353,6 +1850,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Повышенное"
+          }
+        }
+      }
+    },
+    "Energy from battery": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Энергия от аккумулятора"
           }
         }
       }
@@ -1594,6 +2102,17 @@
         }
       }
     },
+    "Full at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полная зарядка к %@"
+          }
+        }
+      }
+    },
     "Full charge": {
       "extractionState": "manual",
       "localizations": {
@@ -1694,6 +2213,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "До полной зарядки примерно %@"
+          }
+        }
+      }
+    },
+    "Full Window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полное окно"
+          }
+        }
+      }
+    },
+    "Full window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полное окно"
           }
         }
       }
@@ -1804,6 +2345,17 @@
         }
       }
     },
+    "Gauge temperature read from the SMC; whether it counts 0.1 K or 0.01 °C is not settled yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура контроллера аккумулятора по данным SMC; пока не установлено, в чём она измеряется: в 0,1 K или в 0,01 °C."
+          }
+        }
+      }
+    },
     "Gauge-predicted capacity when full, excluding the reserve (PackReserve).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1834,6 +2386,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Основные"
+          }
+        }
+      }
+    },
+    "GitHub is limiting requests from your network. Try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub ограничивает запросы из вашей сети. Повторите попытку позже."
           }
         }
       }
@@ -1962,6 +2525,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Максимальное напряжение аккумулятора за весь срок службы."
+          }
+        }
+      }
+    },
+    "History": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История"
           }
         }
       }
@@ -2131,6 +2705,18 @@
         }
       }
     },
+    "Inspector": {
+      "extractionState": "manual",
+      "comment": "Toolbar button that shows the Raw Data inspector",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Инспектор"
+          }
+        }
+      }
+    },
     "Instantaneous battery current; negative while discharging.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2237,6 +2823,29 @@
         }
       }
     },
+    "Last checked %@": {
+      "extractionState": "manual",
+      "comment": "%@ is a relative date such as 'yesterday'",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последняя проверка: %@"
+          }
+        }
+      }
+    },
+    "Lasts until about %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
     "Legacy IOPMPowerSource adapter-info field; Apple silicon always leaves it at 0.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2269,6 +2878,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Низкий заряд"
+          }
+        }
+      }
+    },
+    "Low Battery: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Низкий заряд аккумулятора: %@"
           }
         }
       }
@@ -2374,6 +2994,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "macOS ещё оценивает время до полной зарядки."
+          }
+        }
+      }
+    },
+    "macOS reports the battery's condition as %@. It may hold less charge than when it was new.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS сообщает, что состояние аккумулятора — «%@». Он может держать меньше заряда, чем новый."
           }
         }
       }
@@ -2495,6 +3126,29 @@
         }
       }
     },
+    "Multiple Rows Selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрано несколько строк"
+          }
+        }
+      }
+    },
+    "mV": {
+      "extractionState": "manual",
+      "comment": "Unit symbol: millivolts",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "мВ"
+          }
+        }
+      }
+    },
     "Name": {
       "extractionState": "manual",
       "localizations": {
@@ -2570,6 +3224,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без аккумулятора"
+          }
+        }
+      }
+    },
+    "No battery information": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет данных об аккумуляторе"
+          }
+        }
+      }
+    },
+    "No description for this key yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для этого ключа пока нет описания."
+          }
+        }
+      }
+    },
+    "No History Yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Истории пока нет"
+          }
+        }
+      }
+    },
+    "No Row Selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка не выбрана"
           }
         }
       }
@@ -2666,6 +3364,72 @@
         }
       }
     },
+    "Not checked yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё не проверялось"
+          }
+        }
+      }
+    },
+    "Notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления"
+          }
+        }
+      }
+    },
+    "Notifications Are On": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления включены"
+          }
+        }
+      }
+    },
+    "Notifications are turned off for BatteryPulse in System Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления для BatteryPulse выключены в Системных настройках."
+          }
+        }
+      }
+    },
+    "Notifications work in the packaged app, not under swift run.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления работают в собранном приложении, а не при запуске через swift run."
+          }
+        }
+      }
+    },
+    "Notify Me": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомлять"
+          }
+        }
+      }
+    },
     "Number of battery cell disconnect events the gauge has recorded.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2686,6 +3450,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Число аккумуляторов под управлением драйвера; на MacBook — 1."
+          }
+        }
+      }
+    },
+    "Number of cells in series, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число последовательно соединённых элементов по данным SMC."
           }
         }
       }
@@ -3000,6 +3775,17 @@
         }
       }
     },
+    "OK": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ОК"
+          }
+        }
+      }
+    },
     "On": {
       "extractionState": "manual",
       "localizations": {
@@ -3018,6 +3804,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "От аккумулятора"
+          }
+        }
+      }
+    },
+    "On power adapter": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "От адаптера питания"
+          }
+        }
+      }
+    },
+    "Once a day, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раз в день BatteryPulse спрашивает у GitHub, вышла ли новая версия. GitHub видит ваш IP-адрес, версию приложения и язык, как при любом запросе в интернете."
           }
         }
       }
@@ -3063,6 +3871,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть «Объекты входа»…"
+          }
+        }
+      }
+    },
+    "Open Notification Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть настройки уведомлений"
+          }
+        }
+      }
+    },
+    "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте загруженный DMG и перетащите BatteryPulse в папку «Программы», заменив эту копию. Перед первым запуском новой версии macOS один раз попросит разрешение в разделе «Конфиденциальность и безопасность»."
           }
         }
       }
@@ -3228,6 +4058,17 @@
         }
       }
     },
+    "Period": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Период"
+          }
+        }
+      }
+    },
     "Play": {
       "extractionState": "manual",
       "localizations": {
@@ -3378,6 +4219,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Прерывания контроллера порта при подключении и при отключении разъёма."
+          }
+        }
+      }
+    },
+    "Position of this cell in the series string of the pack.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер этого элемента в последовательной цепочке аккумулятора."
           }
         }
       }
@@ -3581,6 +4433,18 @@
         }
       }
     },
+    "Preview": {
+      "extractionState": "manual",
+      "comment": "Settings row with a button that sends a sample notification",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пример"
+          }
+        }
+      }
+    },
     "Previous Scene": {
       "extractionState": "manual",
       "localizations": {
@@ -3672,6 +4536,17 @@
         }
       }
     },
+    "Raw Data inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Инспектор исходных данных"
+          }
+        }
+      }
+    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3692,6 +4567,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Необработанные таблицы импеданса элементов из контроллера, по одному 32-байтовому блоку на элемент."
+          }
+        }
+      }
+    },
+    "Record battery history": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записывать историю аккумулятора"
+          }
+        }
+      }
+    },
+    "Recorded history": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записанная история"
+          }
+        }
+      }
+    },
+    "Recording is off. Turn it on in Settings → Advanced.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись выключена. Включить её можно в разделе «Настройки» → «Дополнения»."
           }
         }
       }
@@ -3742,6 +4650,17 @@
         }
       }
     },
+    "Remind Me Later": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напомнить позже"
+          }
+        }
+      }
+    },
     "Rendering or gaming: high power draw and an elevated thermal state.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -3750,6 +4669,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Рендеринг или игры: большое потребление и повышенное тепловое состояние."
+          }
+        }
+      }
+    },
+    "Requested charge current": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрошенный ток зарядки"
+          }
+        }
+      }
+    },
+    "Requested charge voltage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрошенное напряжение зарядки"
           }
         }
       }
@@ -3968,6 +4909,39 @@
         }
       }
     },
+    "Select a row to see its full value, decoding and description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите строку, чтобы увидеть её значение, расшифровку и описание целиком."
+          }
+        }
+      }
+    },
+    "Select a single row to see it in full.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите одну строку, чтобы увидеть её целиком."
+          }
+        }
+      }
+    },
+    "Send Test Notification": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить тестовое уведомление"
+          }
+        }
+      }
+    },
     "Serial number of the battery pack.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4035,6 +5009,28 @@
         }
       }
     },
+    "Show every detail in the full window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать все подробности в полном окне"
+          }
+        }
+      }
+    },
+    "Show in Inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в инспекторе"
+          }
+        }
+      }
+    },
     "Show in menu bar": {
       "extractionState": "manual",
       "localizations": {
@@ -4042,6 +5038,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывать в строке меню"
+          }
+        }
+      }
+    },
+    "Show or hide the selected row in full": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать или скрыть выбранную строку целиком"
+          }
+        }
+      }
+    },
+    "Show the essentials in a small window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать главное в маленьком окне"
           }
         }
       }
@@ -4069,6 +5087,17 @@
         }
       }
     },
+    "Skip This Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пропустить эту версию"
+          }
+        }
+      }
+    },
     "Sleep/wake bookkeeping for the port controller (Apple sleepWakeInfo struct).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4089,6 +5118,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Медленная зарядка"
+          }
+        }
+      }
+    },
+    "Software Update": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновление ПО"
+          }
+        }
+      }
+    },
+    "Source": {
+      "extractionState": "manual",
+      "comment": "Which system dictionary a raw value comes from",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Источник"
+          }
+        }
+      }
+    },
+    "Spread": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс"
           }
         }
       }
@@ -4160,6 +5223,28 @@
         }
       }
     },
+    "Temperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура"
+          }
+        }
+      }
+    },
+    "Temperature and cells": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура и элементы"
+          }
+        }
+      }
+    },
     "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly.": {
       "extractionState": "manual",
       "localizations": {
@@ -4171,6 +5256,39 @@
         }
       }
     },
+    "The battery has cells in series. A spread that keeps growing hints at an ageing or unbalanced battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы аккумулятора соединены последовательно. Если разброс между ними растёт, аккумулятор стареет или разбалансирован."
+          }
+        }
+      }
+    },
+    "The battery's temperature and the voltage of each cell, on the Health and Power pages.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора и напряжение каждого элемента на страницах «Состояние» и «Питание»."
+          }
+        }
+      }
+    },
+    "The charts start over. This can't be undone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Графики начнутся заново. Это действие нельзя отменить."
+          }
+        }
+      }
+    },
     "The icon can only be hidden when the menu bar also shows text.": {
       "extractionState": "manual",
       "localizations": {
@@ -4178,6 +5296,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Значок можно скрыть, только если в строке меню показан текст."
+          }
+        }
+      }
+    },
+    "The thermal state is %@. Charging may slow down until it cools.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тепловое состояние: %@. Зарядка может замедлиться, пока Mac не остынет."
           }
         }
       }
@@ -4204,6 +5333,17 @@
         }
       }
     },
+    "This is how battery alerts will look.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Так будут выглядеть уведомления об аккумуляторе."
+          }
+        }
+      }
+    },
     "This Mac has no internal battery.": {
       "extractionState": "manual",
       "localizations": {
@@ -4211,6 +5351,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "У этого Mac нет встроенного аккумулятора."
+          }
+        }
+      }
+    },
+    "Time": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время"
           }
         }
       }
@@ -4490,6 +5641,17 @@
         }
       }
     },
+    "Try Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повторить попытку"
+          }
+        }
+      }
+    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -4532,6 +5694,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Неизвестно"
+          }
+        }
+      }
+    },
+    "Unplugging at around 80 percent most of the time slows battery aging. BatteryPulse must be running to notify you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если обычно отключать адаптер примерно на 80 процентах, аккумулятор стареет медленнее. Чтобы уведомлять вас, BatteryPulse должен быть запущен."
+          }
+        }
+      }
+    },
+    "Update available: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступно обновление: %@"
+          }
+        }
+      }
+    },
+    "Update check": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка обновлений"
           }
         }
       }
@@ -4655,6 +5850,17 @@
         }
       }
     },
+    "Version %@ is the latest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия %@ — последняя."
+          }
+        }
+      }
+    },
     "Voltage": {
       "extractionState": "manual",
       "localizations": {
@@ -4686,6 +5892,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Напряжение каждого последовательного элемента; в сумме они дают напряжение аккумулятора."
+          }
+        }
+      }
+    },
+    "Voltage of one series cell as a floating-point value, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение одного последовательного элемента в виде дробного числа по данным SMC."
+          }
+        }
+      }
+    },
+    "Voltage of one series cell, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение одного последовательного элемента по данным SMC."
           }
         }
       }
@@ -4725,6 +5953,17 @@
         }
       }
     },
+    "Watts": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность"
+          }
+        }
+      }
+    },
     "Welcome to BatteryPulse": {
       "extractionState": "manual",
       "localizations": {
@@ -4732,6 +5971,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добро пожаловать в BatteryPulse"
+          }
+        }
+      }
+    },
+    "What's New": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нового"
+          }
+        }
+      }
+    },
+    "What's New in BatteryPulse": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нового в BatteryPulse"
+          }
+        }
+      }
+    },
+    "When battery service is recommended": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда рекомендуется обслуживание аккумулятора"
+          }
+        }
+      }
+    },
+    "When charged to": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При зарядке до"
+          }
+        }
+      }
+    },
+    "When the battery falls to": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При разрядке до"
+          }
+        }
+      }
+    },
+    "When the battery reaches a charge level, runs low, needs service or the Mac gets hot.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда аккумулятор зарядится до нужного уровня, разрядится, потребует обслуживания или Mac перегреется."
           }
         }
       }
@@ -4808,6 +6113,17 @@
         }
       }
     },
+    "When the Mac gets hot": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда Mac сильно нагревается"
+          }
+        }
+      }
+    },
     "Where power comes from: \"AC Power\" when plugged in, \"Battery Power\" otherwise.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4868,6 +6184,28 @@
         }
       }
     },
+    "Widget": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет"
+          }
+        }
+      }
+    },
+    "Window to open": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открывать"
+          }
+        }
+      }
+    },
     "Wireless": {
       "extractionState": "manual",
       "localizations": {
@@ -4909,6 +6247,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Да"
+          }
+        }
+      }
+    },
+    "You can unplug the power adapter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Можно отключить адаптер питания."
+          }
+        }
+      }
+    },
+    "You have BatteryPulse %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У вас BatteryPulse %@."
+          }
+        }
+      }
+    },
+    "Your Mac Is Running Hot": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac сильно нагрелся"
           }
         }
       }

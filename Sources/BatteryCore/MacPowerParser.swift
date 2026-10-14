@@ -1,16 +1,19 @@
 import Foundation
 
 extension BatteryReading {
-    /// Parses the three dictionaries macOS exposes about the internal battery.
+    /// Parses the dictionaries macOS exposes about the internal battery.
     ///
     /// - Parameters:
-    ///   - smartBattery: `AppleSmartBattery` IORegistry properties.
+    ///   - smartBattery: `AppleSmartBattery` IORegistry properties, with its children under
+    ///     ``RegistryChildren/childrenKey``.
     ///   - powerSource: `IOPSGetPowerSourceDescription` of the internal battery.
     ///   - adapterDetails: `IOPSCopyExternalPowerAdapterDetails`.
+    ///   - smc: battery keys read from the SMC (``SMCBattery/capture(_:)``).
     public init(
         smartBattery: PropertyDictionary,
         powerSource: PropertyDictionary = [:],
         adapterDetails: PropertyDictionary = [:],
+        smc: PropertyDictionary = [:],
         timestamp: Date
     ) {
         self.init(
@@ -18,11 +21,13 @@ extension BatteryReading {
                 smartBattery: smartBattery,
                 powerSource: powerSource,
                 adapterDetails: adapterDetails,
+                smc: smc,
                 timestamp: timestamp
             ),
             smartBattery: smartBattery,
             powerSource: powerSource,
-            adapterDetails: adapterDetails
+            adapterDetails: adapterDetails,
+            smc: smc
         )
     }
 }
@@ -35,15 +40,19 @@ extension BatteryReading {
         public static let smartBattery = "AppleSmartBattery"
         public static let powerSource = "PowerSource"
         public static let adapterDetails = "AdapterDetails"
+        public static let smc = "AppleSMC"
     }
 
-    /// The raw dictionaries bundled into one property list.
+    /// The raw dictionaries bundled into one property list. `AppleSMC` is left out when the SMC
+    /// wasn't read, so older captures and new ones look the same.
     public var rawCapture: PropertyDictionary {
-        [
+        var capture: PropertyDictionary = [
             CaptureKey.smartBattery: .dictionary(smartBattery),
             CaptureKey.powerSource: .dictionary(powerSource),
             CaptureKey.adapterDetails: .dictionary(adapterDetails),
         ]
+        if !smc.isEmpty { capture[CaptureKey.smc] = .dictionary(smc) }
+        return capture
     }
 
     /// ``rawCapture`` with serial numbers replaced, safe to attach to public bug reports.
@@ -81,6 +90,7 @@ extension BatteryReading {
             smartBattery: rawCapture[CaptureKey.smartBattery]?.dictionaryValue ?? [:],
             powerSource: rawCapture[CaptureKey.powerSource]?.dictionaryValue ?? [:],
             adapterDetails: rawCapture[CaptureKey.adapterDetails]?.dictionaryValue ?? [:],
+            smc: rawCapture[CaptureKey.smc]?.dictionaryValue ?? [:],
             timestamp: timestamp
         )
     }
@@ -90,9 +100,11 @@ extension BatteryReading {
 ///
 /// macOS 27 (checked on a MacBook Air M5) keeps the gauge's mAh values in the `BatteryData`
 /// sub-dictionary (`RemainingCapacity`, `FullChargeCapacity`, `NominalChargeCapacity`,
-/// `DesignCapacity`); top-level `CurrentCapacity`/`MaxCapacity` are percentages. Earlier Apple
-/// Silicon releases exposed `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`, `Temperature` and
-/// `CellVoltage` at the top level; those remain as fallbacks.
+/// `DesignCapacity`); top-level `CurrentCapacity`/`MaxCapacity` are percentages. The temperature,
+/// cell voltages and charger targets moved to child entries (``RegistryChildren``), with the SMC
+/// (``SMCBattery``) as a second source for the cells. Earlier Apple silicon releases exposed
+/// `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`, `Temperature` and `CellVoltage` at the top
+/// level; those remain as fallbacks.
 enum MacPowerParser {
     /// IORegistry's "unknown" marker for minute counters.
     static let invalidMinutes = 65535
@@ -101,10 +113,13 @@ enum MacPowerParser {
         smartBattery sb: PropertyDictionary,
         powerSource ps: PropertyDictionary,
         adapterDetails: PropertyDictionary,
+        smc: PropertyDictionary = [:],
         timestamp: Date
     ) -> BatterySnapshot {
         let batteryData = sb["BatteryData"]?.dictionaryValue ?? [:]
-        let chargerData = sb["ChargerData"]?.dictionaryValue ?? [:]
+        // The charger's own entry first: on macOS 27 the top-level `ChargerData` lacks the targets.
+        let chargerData = RegistryChildren.chargerData(in: sb).merging(
+            sb["ChargerData"]?.dictionaryValue ?? [:], uniquingKeysWith: { child, _ in child })
         let telemetry = sb["PowerTelemetryData"]?.dictionaryValue ?? [:]
 
         var s = BatterySnapshot(timestamp: timestamp)
@@ -122,9 +137,10 @@ enum MacPowerParser {
         s.designCycleCount = sb["DesignCycleCount9C"]?.intValue
         // macOS only publishes a condition when something is wrong; System Information shows
         // "Normal" when the key is absent.
-        s.healthCondition =
-            ps["BatteryHealthCondition"]?.stringValue ?? ps["BatteryHealth"]?.stringValue
-            ?? (ps.isEmpty ? nil : "Normal")
+        // An empty condition means normal too.
+        let condition = [ps["BatteryHealthCondition"], ps["BatteryHealth"]].lazy
+            .compactMap { $0?.stringValue }.first { !$0.isEmpty }
+        s.healthCondition = condition ?? (ps.isEmpty ? nil : "Normal")
         s.permanentFailureStatus = sb["PermanentFailureStatus"]?.intValue
 
         // Charge percent: prefer the power-source value, which is what the menu bar shows.
@@ -166,7 +182,13 @@ enum MacPowerParser {
         s.cellVoltagesMV =
             (batteryData["CellVoltage"] ?? sb["CellVoltage"])?
             .arrayValue?.compactMap(\.intValue).filter { $0 > 0 } ?? []
-        s.temperatureCelsius = sb["Temperature"]?.intValue.flatMap(celsius(fromCentidegrees:))
+        if s.cellVoltagesMV.isEmpty { s.cellVoltagesMV = RegistryChildren.cellVoltagesMV(in: sb) }
+        if s.cellVoltagesMV.isEmpty {
+            s.cellVoltagesMV = SMCBattery.cellVoltagesMV(in: smc, packVoltageMV: s.voltageMV)
+        }
+        s.temperatureCelsius =
+            sb["Temperature"]?.intValue.flatMap(celsius(fromCentidegrees:))
+            ?? RegistryChildren.temperatureCelsius(in: sb)
 
         // Charger & telemetry
         s.chargingCurrentMA = chargerData["ChargingCurrent"]?.intValue

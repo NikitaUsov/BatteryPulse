@@ -124,6 +124,8 @@ import Testing
         #expect(condition([:]) == nil)
         #expect(condition(["Type": .string("InternalBattery")]) == "Normal")
         #expect(condition(["BatteryHealthCondition": .string("Service Recommended")]) == "Service Recommended")
+        #expect(condition(["BatteryHealthCondition": .string("")]) == "Normal")
+        #expect(condition(["BatteryHealthCondition": .string(""), "BatteryHealth": .string("Good")]) == "Good")
     }
 
     @Test func rawCaptureRoundTrips() throws {

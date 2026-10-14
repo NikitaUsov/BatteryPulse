@@ -16,6 +16,9 @@ struct HealthView: View {
             }
             healthSection
             capacitySection
+            if !snapshot.cellVoltagesMV.isEmpty {
+                cellsSection
+            }
             if snapshot.deviceName != nil || snapshot.manufacturer != nil {
                 Section("Battery") {
                     if let name = snapshot.deviceName {
@@ -78,6 +81,23 @@ struct HealthView: View {
                     "macOS caps maximum capacity at \(formatter.percent(100)). The battery currently holds \(formatter.percent(ratio, fractionDigits: 1)) of its design capacity."
                 )
             }
+        }
+    }
+
+    private var cellsSection: some View {
+        Section {
+            ForEach(Array(snapshot.cellVoltagesMV.enumerated()), id: \.offset) { index, millivolts in
+                ValueRow("Cell \((index + 1).formatted())", formatter.volts(millivolts: millivolts, fractionDigits: 3))
+            }
+            if let spread = snapshot.cellVoltageSpreadMV {
+                ValueRow("Spread", formatter.millivolts(spread))
+            }
+        } header: {
+            Text("Cells")
+        } footer: {
+            Text(
+                "The battery has cells in series. A spread that keeps growing hints at an ageing or unbalanced battery."
+            )
         }
     }
 
