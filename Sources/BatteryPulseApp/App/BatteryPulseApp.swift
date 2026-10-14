@@ -10,6 +10,7 @@ struct BatteryPulseApp: App {
     @State private var monitor: BatteryMonitor
     @State private var demo: DemoController
     @State private var updater: UpdateChecker
+    private let historyRecorder: HistoryRecorder
     @State private var launchAtLogin = LaunchAtLoginModel()
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     private let showsWelcome: Bool
@@ -23,6 +24,8 @@ struct BatteryPulseApp: App {
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
         self.monitor = monitor
         self.demo = DemoController(monitor: monitor)
+        historyRecorder = HistoryRecorder(monitor: monitor)
+        historyRecorder.start()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar

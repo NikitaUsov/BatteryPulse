@@ -156,15 +156,39 @@ struct MenuBarSettings: View {
     }
 }
 
-/// Extra sections for the curious.
+/// History, the Developer section and help.
 struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
+    @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
+    @State private var confirmsClearing = false
 
     var body: some View {
         Section {
+            Toggle("Record battery history", isOn: $recordsHistory)
+            LabeledContent("Recorded history") {
+                Button("Clear History…", role: .destructive) { confirmsClearing = true }
+            }
+        } header: {
+            Text("History")
+        } footer: {
+            Text(
+                "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac."
+            )
+        }
+        .confirmationDialog("Clear the battery history?", isPresented: $confirmsClearing) {
+            Button("Clear History", role: .destructive) {
+                Task { try? await AppHistory.store.clear() }
+            }
+        } message: {
+            Text("The charts start over. This can't be undone.")
+        }
+
+        Section {
             Toggle("Show Developer section", isOn: $showsDeveloper)
         } footer: {
-            Text("Adds raw IORegistry data, charger reason codes and capture export to the main window.")
+            Text(
+                "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window."
+            )
         }
 
         Section {

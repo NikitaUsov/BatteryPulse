@@ -17,7 +17,7 @@ import Testing
 
     /// Literals passed to these calls are localization keys.
     private static var localizingCall: Regex<(Substring, Substring)> {
-        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|Card|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(\s*localized:|\btitle:|\bdetail:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
+        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|figure|Card|confirmationDialog|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(\s*localized:|\btitle:|\bdetail:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
     }
 
     /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches and

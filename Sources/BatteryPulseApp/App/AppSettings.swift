@@ -19,6 +19,7 @@ enum AppSettings {
     static let lastUpdateCheckKey = "lastUpdateCheck"
     static let skippedVersionKey = "skippedVersion"
     static let lastSeenVersionKey = "lastSeenVersion"
+    static let recordHistoryKey = "recordHistory"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -26,6 +27,10 @@ enum AppSettings {
 
     static var showDockIcon: Bool {
         UserDefaults.standard.bool(forKey: showDockIconKey)
+    }
+
+    static var recordsHistory: Bool {
+        UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
     }
 
     /// On by default; the welcome window and Settings → General show the switch.
