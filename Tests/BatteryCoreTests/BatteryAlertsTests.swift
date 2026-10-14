@@ -6,10 +6,10 @@ import Testing
 @Suite struct BatteryAlertsTests {
     private func snapshot(
         _ percent: Double, pluggedIn: Bool, state: ChargeState? = nil, condition: String? = "Normal",
-        thermal: ThermalState = .nominal
+        thermal: ThermalState = .nominal, minutes: Double = 0
     ) -> BatterySnapshot {
         var s = BatterySnapshot(
-            timestamp: .now, chargePercent: percent,
+            timestamp: Date(timeIntervalSince1970: 1_800_000_000 + minutes * 60), chargePercent: percent,
             chargeState: state ?? (pluggedIn ? .charging : .discharging))
         s.isExternalPowerConnected = pluggedIn
         s.healthCondition = condition
@@ -63,12 +63,23 @@ import Testing
                 snapshot(50, pluggedIn: false, condition: "Service Recommended", thermal: .fair),  // not yet cool
                 snapshot(50, pluggedIn: false, condition: "Service Recommended", thermal: .serious),
                 snapshot(50, pluggedIn: false, condition: "Normal", thermal: .nominal),
-                snapshot(50, pluggedIn: false, condition: "Check Battery", thermal: .serious),
+                snapshot(50, pluggedIn: false, condition: "Check Battery", thermal: .serious, minutes: 61),
             ], settings)
         #expect(
             alerts == [
                 [], [.serviceRecommended, .highTemperature], [], [], [], [], [.serviceRecommended, .highTemperature],
             ])
+    }
+
+    @Test func heatWaitsAnHourBetweenAlerts() {
+        let alerts = run(
+            [
+                snapshot(50, pluggedIn: false, thermal: .serious),
+                snapshot(50, pluggedIn: false, thermal: .nominal, minutes: 5),
+                snapshot(50, pluggedIn: false, thermal: .serious, minutes: 10),  // re-armed, but too soon
+                snapshot(50, pluggedIn: false, thermal: .serious, minutes: 60),
+            ], AlertSettings(highTemperature: true))
+        #expect(alerts == [[.highTemperature], [], [], [.highTemperature]])
     }
 
     @Test func nothingFiresWhenOff() {

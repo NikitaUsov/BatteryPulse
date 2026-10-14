@@ -25,6 +25,15 @@ public final class SMCClient {
     /// `IOConnectCallStructMethod` selector 2 (`kSMCHandleYPCEvent`); the command rides in `data8`.
     private static let selector: UInt32 = 2
 
+    /// `kIOReturnNotPrivileged`: this key needs an entitlement we don't have.
+    private static let notPrivileged = kern_return_t(bitPattern: 0xE000_02C1)
+    /// Errors that mean the connection itself is gone (`MACH_SEND_INVALID_DEST`,
+    /// `kIOReturnNotOpen`, `kIOReturnNoDevice`), so it is reopened on the next call. Any other
+    /// error belongs to the one key.
+    private static let connectionLost: Set<kern_return_t> = [
+        0x1000_0003, kern_return_t(bitPattern: 0xE000_02CD), kern_return_t(bitPattern: 0xE000_02C0),
+    ]
+
     /// Closes the port when the client goes away, without touching main-actor state from deinit.
     private final class Port {
         var value: io_connect_t = 0
@@ -50,6 +59,10 @@ public final class SMCClient {
                 isUnavailable = true  // no AppleSMC, or the sandbox refused: stop trying
                 return nil
             } catch .keyNotFound, .unreadable, .unsupportedSize {
+                missing.insert(key)
+                return nil
+            } catch .call(let status) where status == Self.notPrivileged {
+                // macOS 27 refuses some keys to unprivileged clients; the rest keep working.
                 missing.insert(key)
                 return nil
             } catch {
@@ -107,9 +120,10 @@ public final class SMCClient {
             }
         }
         guard status == kIOReturnSuccess else {
-            // A stale port (the driver restarted, say) is reopened on the next call.
-            IOServiceClose(connection)
-            port.value = 0
+            if Self.connectionLost.contains(status) {
+                IOServiceClose(connection)
+                port.value = 0
+            }
             throw .call(status)
         }
         // A short reply would decode as zeros, and a zero result byte reads as success.

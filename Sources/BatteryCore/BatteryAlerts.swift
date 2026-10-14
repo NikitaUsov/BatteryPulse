@@ -40,13 +40,18 @@ public struct AlertState: Sendable, Equatable, Codable {
     public var lowBatteryArmed = true
     public var serviceAnnounced = false
     public var highTemperatureArmed = true
+    public var lastHighTemperatureAlert: Date?
 
     public init() {}
 }
 
 public enum BatteryAlerts {
-    /// How far the charge has to move back before a percentage alert can fire again.
+    /// How far the charge has to move back before a percentage alert can fire again. macOS's own
+    /// Charge Limit resumes charging after the same 5 percent.
     public static let rearmMargin = 5.0
+    /// The shortest time between two heat alerts, so a Mac hovering around the threshold doesn't
+    /// keep notifying.
+    public static let highTemperatureCooldown: TimeInterval = 60 * 60
 
     /// The alerts `snapshot` calls for, updating `state`.
     public static func evaluate(
@@ -88,12 +93,18 @@ public enum BatteryAlerts {
             }
         }
 
-        // Heat: on serious or critical thermal state, again only after it cooled to normal.
+        // Heat: on serious or critical thermal state, again only after it cooled to normal and
+        // an hour has passed.
         if settings.highTemperature {
             if snapshot.thermalState == .serious || snapshot.thermalState == .critical {
-                if state.highTemperatureArmed {
+                let cooledDown =
+                    state.lastHighTemperatureAlert.map {
+                        snapshot.timestamp.timeIntervalSince($0) >= highTemperatureCooldown || snapshot.timestamp < $0
+                    } ?? true
+                if state.highTemperatureArmed, cooledDown {
                     alerts.append(.highTemperature)
                     state.highTemperatureArmed = false
+                    state.lastHighTemperatureAlert = snapshot.timestamp
                 }
             } else if snapshot.thermalState == .nominal {
                 state.highTemperatureArmed = true

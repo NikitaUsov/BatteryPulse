@@ -66,6 +66,8 @@ public final class MacBatteryProvider: BatteryProvider {
     ]
 
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
+        // Apple: "you must access the thermalState prior to registering for the notification."
+        _ = ProcessInfo.processInfo.thermalState
         let removeObservers = observeNotifications(systemStateNotifications, handler: handler)
 
         // notify(3) rather than IOPSNotificationCreateRunLoopSource: invalidating that run loop

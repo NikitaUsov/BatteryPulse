@@ -77,10 +77,13 @@ enum WhatsNewPolicy {
         let lastSeen =
             defaults.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
             ?? (defaults.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
-        return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current)
+        return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current, features: WhatsNew.version)
     }
 
+    /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
+    /// release would show What's New twice.
     static func markSeen(_ version: AppVersion) {
+        guard version != AppVersion(parts: [0, 0, 0]) else { return }
         UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }

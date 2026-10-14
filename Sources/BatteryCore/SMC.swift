@@ -152,10 +152,10 @@ public struct SMCKeyInfo: Sendable, Equatable {
     /// Attribute bit 0x80.
     public var isReadable: Bool { attributes & 0x80 != 0 }
 
-    /// On Apple silicon, plain integers with attribute bit 0x04 set are little-endian and the
-    /// rest big-endian (`#KEY`). Seen on one M4 Max, so decoded values are still checked for
-    /// plausibility.
-    public var integerByteOrder: SMCByteOrder { attributes & 0x04 != 0 ? .little : .big }
+    /// On Apple silicon, values with attribute bit 0x04 set are little-endian and the rest
+    /// big-endian (`#KEY`, and one byte-reversed float Asahi lists). Seen on one M4 Max, so
+    /// decoded values are still checked for plausibility.
+    public var byteOrder: SMCByteOrder { attributes & 0x04 != 0 ? .little : .big }
 }
 
 public enum SMCByteOrder: Sendable {
@@ -163,27 +163,27 @@ public enum SMCByteOrder: Sendable {
 }
 
 public enum SMCValueDecoder {
-    /// Decodes a numeric value. `order` overrides the byte order of plain integers only: `flt `
-    /// and `ioft` are little-endian on Apple silicon, `sp78` and `fpe2` big-endian by definition.
+    /// Decodes a numeric value. `order` overrides the key's ``SMCKeyInfo/byteOrder`` for
+    /// integers, `flt ` and `ioft`; `sp78` and `fpe2` are big-endian by definition.
     public static func number(_ payload: [UInt8], info: SMCKeyInfo, order: SMCByteOrder? = nil) -> Double? {
         let count = Int(info.size)
         guard count > 0, count <= payload.count else { return nil }
         let bytes = Array(payload.prefix(count))
-        let integerOrder = order ?? info.integerByteOrder
+        let order = order ?? info.byteOrder
         switch info.type.description {
         case "flt ":
             guard count == 4 else { return nil }
-            let value = Float(bitPattern: UInt32(truncatingIfNeeded: unsigned(bytes, .little)))
+            let value = Float(bitPattern: UInt32(truncatingIfNeeded: unsigned(bytes, order)))
             return value.isFinite ? Double(value) : nil
         case "ioft":
             guard count == 8 else { return nil }
-            return Double(Int64(bitPattern: unsigned(bytes, .little))) / 65_536
+            return Double(Int64(bitPattern: unsigned(bytes, order))) / 65_536
         case "ui8 ", "ui16", "ui32", "ui64":
             guard count <= 8 else { return nil }
-            return Double(unsigned(bytes, integerOrder))
+            return Double(unsigned(bytes, order))
         case "si8 ", "si16", "si32", "si64":
             guard count <= 8 else { return nil }
-            return Double(signed(bytes, integerOrder))
+            return Double(signed(bytes, order))
         case "flag":
             return bytes[0] == 0 ? 0 : 1
         case "sp78":
@@ -259,20 +259,21 @@ public struct SMCRawValue: Sendable, Equatable {
 /// tried, and if neither fits the value is dropped rather than shown.
 public enum SMCBattery {
     public static let plausibleCellVoltage = 2_500...4_700
-    public static let plausibleTemperature = -20.0...85.0
 
     /// Cells in series (`ui8`).
     public static let cellCountKey: SMCFourCC = "BNCB"
     public static let cellVoltageKeys: [SMCFourCC] = ["BC1V", "BC2V", "BC3V", "BC4V"]
     /// Cell voltages as floats, reported on earlier Apple silicon.
     public static let floatCellVoltageKeys: [SMCFourCC] = ["SBA1", "SBA2", "SBA3", "SBA4"]
-    /// Battery-area temperature sensors (`flt `, °C). Linux labels `TB0T` "Battery Hotspot"; they
-    /// read within a few degrees of the gauge's own temperature.
+    /// Battery-area temperature sensors (`flt `, °C). Not the battery's temperature: Linux labels
+    /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and Stats found
+    /// them clearly wrong on a MacBook Neo under macOS 27. Shown in Raw Data only.
     public static let temperatureKeys: [SMCFourCC] = ["TB0T", "TB1T", "TB2T", "TB3T"]
 
-    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. The
-    /// pack voltage (`B0AV`), current (`B0AC`) and the gauge's own temperature (`B0AT`, whose unit
-    /// is still disputed) are shown in Raw Data only.
+    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. Only the
+    /// cell voltages feed the snapshot. The pack voltage (`B0AV`), current (`B0AC`), the gauge's
+    /// own temperature (`B0AT`, whose unit is still disputed) and the area sensors are shown in
+    /// Raw Data.
     public static let keys: [SMCFourCC] =
         [cellCountKey, "B0AV", "B0AC", "B0AT"] + cellVoltageKeys + floatCellVoltageKeys + temperatureKeys
 
@@ -315,15 +316,5 @@ public enum SMCBattery {
             return millivolts
         }
         return nil
-    }
-
-    /// The mean of the battery-area sensors in °C, or `nil` when none reads plausibly.
-    public static func temperatureCelsius(in capture: PropertyDictionary) -> Double? {
-        let readings = values(in: capture)
-            .filter { temperatureKeys.contains($0.key) && $0.info.type == "flt " }
-            .compactMap(\.number)
-            .filter(plausibleTemperature.contains)
-        guard !readings.isEmpty else { return nil }
-        return readings.reduce(0, +) / Double(readings.count)
     }
 }

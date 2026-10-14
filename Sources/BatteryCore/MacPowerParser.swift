@@ -102,7 +102,7 @@ extension BatteryReading {
 /// sub-dictionary (`RemainingCapacity`, `FullChargeCapacity`, `NominalChargeCapacity`,
 /// `DesignCapacity`); top-level `CurrentCapacity`/`MaxCapacity` are percentages. The temperature,
 /// cell voltages and charger targets moved to child entries (``RegistryChildren``), with the SMC
-/// (``SMCBattery``) as a second source. Earlier Apple silicon releases exposed
+/// (``SMCBattery``) as a second source for the cells. Earlier Apple silicon releases exposed
 /// `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`, `Temperature` and `CellVoltage` at the top
 /// level; those remain as fallbacks.
 enum MacPowerParser {
@@ -137,9 +137,10 @@ enum MacPowerParser {
         s.designCycleCount = sb["DesignCycleCount9C"]?.intValue
         // macOS only publishes a condition when something is wrong; System Information shows
         // "Normal" when the key is absent.
-        s.healthCondition =
-            ps["BatteryHealthCondition"]?.stringValue ?? ps["BatteryHealth"]?.stringValue
-            ?? (ps.isEmpty ? nil : "Normal")
+        // An empty condition means normal too.
+        let condition = [ps["BatteryHealthCondition"], ps["BatteryHealth"]].lazy
+            .compactMap { $0?.stringValue }.first { !$0.isEmpty }
+        s.healthCondition = condition ?? (ps.isEmpty ? nil : "Normal")
         s.permanentFailureStatus = sb["PermanentFailureStatus"]?.intValue
 
         // Charge percent: prefer the power-source value, which is what the menu bar shows.
@@ -187,7 +188,7 @@ enum MacPowerParser {
         }
         s.temperatureCelsius =
             sb["Temperature"]?.intValue.flatMap(celsius(fromCentidegrees:))
-            ?? RegistryChildren.temperatureCelsius(in: sb) ?? SMCBattery.temperatureCelsius(in: smc)
+            ?? RegistryChildren.temperatureCelsius(in: sb)
 
         // Charger & telemetry
         s.chargingCurrentMA = chargerData["ChargingCurrent"]?.intValue

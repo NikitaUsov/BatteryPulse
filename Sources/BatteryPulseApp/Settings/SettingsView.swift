@@ -115,7 +115,9 @@ struct GeneralSettings: View {
                 }
             }
         } footer: {
-            Text("BatteryPulse asks GitHub once a day whether a newer version exists. Nothing about your Mac is sent.")
+            Text(
+                "Once a day, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request."
+            )
         }
 
         Section {
@@ -194,7 +196,10 @@ struct NotificationSettings: View {
         }
 
         Section {
-            if isDenied {
+            if !BatteryNotifier.isAvailable {
+                Text("Notifications work in the packaged app, not under swift run.")
+                    .foregroundStyle(.secondary)
+            } else if isDenied {
                 Text("Notifications are turned off for BatteryPulse in System Settings.")
                     .foregroundStyle(.secondary)
                 Button("Open Notification Settings") { NSWorkspace.shared.open(AppLinks.notificationSettings) }

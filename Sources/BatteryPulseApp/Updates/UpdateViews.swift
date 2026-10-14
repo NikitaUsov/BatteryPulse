@@ -25,11 +25,22 @@ struct UpdateView: View {
     private var content: some View {
         let current = updater.currentVersion.description
         switch updater.status {
-        case .idle, .checking:
+        case .checking:
             Text("Checking for Updates…")
                 .font(.title3.weight(.semibold))
             ProgressView()
                 .progressViewStyle(.linear)
+        case .idle:
+            Text("Software Update")
+                .font(.title3.weight(.semibold))
+            Text("You have BatteryPulse \(current).")
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Close") { close() }
+                Button("Check Now") { updater.checkNow() }
+                    .keyboardShortcut(.defaultAction)
+            }
         case .upToDate:
             Text("BatteryPulse Is Up to Date")
                 .font(.title3.weight(.semibold))
@@ -40,11 +51,17 @@ struct UpdateView: View {
                 Button("OK") { close() }
                     .keyboardShortcut(.defaultAction)
             }
-        case .failed:
+        case .failed, .rateLimited:
             Text("Couldn't Check for Updates")
                 .font(.title3.weight(.semibold))
-            Text("Check your internet connection and try again.")
-                .foregroundStyle(.secondary)
+            Group {
+                if updater.status == .rateLimited {
+                    Text("GitHub is limiting requests from your network. Try again later.")
+                } else {
+                    Text("Check your internet connection and try again.")
+                }
+            }
+            .foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("Close") { close() }
@@ -92,8 +109,10 @@ struct UpdateView: View {
 
     private func notes(_ release: ReleaseInfo) -> AttributedString {
         let markdown = ReleaseNotes.inlineMarkdown(release.notes)
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(release.notes)
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
+        return (try? AttributedString(markdown: markdown, options: options, baseURL: release.pageURL))
+            ?? AttributedString(release.notes)
     }
 
     private func close() {
@@ -142,6 +161,10 @@ struct WhatsNewView: View {
 /// The features of this version, for What's New.
 @MainActor
 enum WhatsNew {
+    /// The version these features arrived in; What's New appears once after updating to it or
+    /// past it, and not again for later bug-fix releases.
+    static let version = AppVersion(parts: [0, 3, 0])
+
     struct Feature: Identifiable {
         let id: Int
         let symbol: String
@@ -151,10 +174,25 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "sidebar.trailing", title: "Raw Data inspector",
+            id: 1, symbol: "chart.xyaxis.line", title: "History",
+            detail: "Charge, power and temperature over the last 10 days, with daily statistics."),
+        Feature(
+            id: 2, symbol: "thermometer.medium", title: "Temperature and cells",
+            detail: "The battery's temperature and the voltage of each cell, on the Health and Power pages."),
+        Feature(
+            id: 3, symbol: "bell.badge", title: "Notifications",
+            detail: "When the battery reaches a charge level, runs low, needs service or the Mac gets hot."),
+        Feature(
+            id: 4, symbol: "widget.small", title: "Widget",
+            detail: "Charge and battery health on the desktop or in Notification Center."),
+        Feature(
+            id: 5, symbol: "rectangle.compress.vertical", title: "Compact window",
+            detail: "A small window with just the essentials. Switch in Settings → General."),
+        Feature(
+            id: 6, symbol: "sidebar.trailing", title: "Raw Data inspector",
             detail: "Double-click a row in Raw Data to read its full value, decoding and description."),
         Feature(
-            id: 2, symbol: "arrow.down.circle", title: "Update check",
+            id: 7, symbol: "arrow.down.circle", title: "Update check",
             detail: "BatteryPulse looks for a new version once a day. Turn it off in Settings → General."),
     ]
 }

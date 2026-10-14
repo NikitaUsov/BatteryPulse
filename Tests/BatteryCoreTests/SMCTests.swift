@@ -112,17 +112,23 @@ struct SMCTests {
         #expect(SMCBattery.cellVoltagesMV(in: capture, packVoltageMV: nil) == [3902, 3899])
     }
 
-    @Test func temperatureIsTheMeanOfPlausibleSensors() throws {
+    @Test func areaSensorsAreNotTheBatteryTemperature() {
         let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84)
-        func sensor(_ key: SMCFourCC, _ celsius: Float) -> SMCRawValue {
-            SMCRawValue(
-                key: key, info: float, payload: withUnsafeBytes(of: celsius.bitPattern.littleEndian, Array.init))
-        }
-        let capture = SMCBattery.capture([sensor("TB0T", 31), sensor("TB1T", 29), sensor("TB2T", -128)])
-        let celsius = try #require(SMCBattery.temperatureCelsius(in: capture))
-        #expect(abs(celsius - 30) < 0.001)
-        #expect(SMCBattery.temperatureCelsius(in: SMCBattery.capture([sensor("TB0T", 200)])) == nil)
-        #expect(SMCBattery.temperatureCelsius(in: [:]) == nil)
+        let sensor = SMCRawValue(
+            key: "TB0T", info: float, payload: withUnsafeBytes(of: Float(31).bitPattern.littleEndian, Array.init))
+        let reading = BatteryReading(
+            smartBattery: ["Voltage": .int(12_000)], smc: SMCBattery.capture([sensor]), timestamp: Fixture.timestamp)
+        #expect(reading.snapshot.temperatureCelsius == nil)
+        // Raw Data still shows it, in °C.
+        let row = RawSection.sections(for: reading.rawCapture).last?.rows.first
+        #expect(row?.decoded == .celsius(31))
+    }
+
+    @Test func floatsFollowTheAttributeByteOrderToo() {
+        let bytes = withUnsafeBytes(of: Float(25.5).bitPattern.bigEndian, Array.init)
+        #expect(SMCValueDecoder.number(bytes, info: SMCKeyInfo(size: 4, type: "flt ", attributes: 0x80)) == 25.5)
+        #expect(
+            SMCValueDecoder.number(bytes.reversed(), info: SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84)) == 25.5)
     }
 
     @Test func captureEntriesRoundTripThroughAPropertyList() throws {

@@ -152,6 +152,17 @@
         }
       }
     },
+    "A small window with just the essentials. Switch in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Маленькое окно только с самым важным. Переключается в Настройках → Основные."
+          }
+        }
+      }
+    },
     "About %@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -419,7 +430,7 @@
         }
       }
     },
-    "Battery charged to %@": {
+    "Battery Charged to %@": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
@@ -495,17 +506,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние режима Kiosk Mode и счётчики времени, проведённого аккумулятором при высоком заряде."
-          }
-        }
-      }
-    },
-    "Battery low: %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Низкий заряд аккумулятора: %@"
           }
         }
       }
@@ -591,7 +591,7 @@
         }
       }
     },
-    "Battery service recommended": {
+    "Battery Service Recommended": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
@@ -692,17 +692,6 @@
         }
       }
     },
-    "BatteryPulse asks GitHub once a day whether a newer version exists. Nothing about your Mac is sent.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Раз в день BatteryPulse спрашивает у GitHub, вышла ли новая версия. Никакие данные о вашем Mac не отправляются."
-          }
-        }
-      }
-    },
     "BatteryPulse Help": {
       "extractionState": "manual",
       "localizations": {
@@ -754,17 +743,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse раз в день проверяет, вышла ли новая версия. Отключить проверку можно в разделе «Настройки» → «Основные»."
-          }
-        }
-      }
-    },
-    "BatteryPulse notifications are on": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Уведомления BatteryPulse включены"
           }
         }
       }
@@ -1046,6 +1024,17 @@
         }
       }
     },
+    "Charge and battery health on the desktop or in Notification Center.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд и состояние аккумулятора на рабочем столе или в Центре уведомлений."
+          }
+        }
+      }
+    },
     "Charge current the gauge is asking the charger for.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1126,6 +1115,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд, прошедший с последнего измерения DOD0; положительный — разрядка, отрицательный — зарядка."
+          }
+        }
+      }
+    },
+    "Charge, power and temperature over the last 10 days, with daily statistics.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, мощность и температура за последние 10 дней со статистикой по дням."
           }
         }
       }
@@ -2368,6 +2368,17 @@
         }
       }
     },
+    "GitHub is limiting requests from your network. Try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub ограничивает запросы из вашей сети. Повторите попытку позже."
+          }
+        }
+      }
+    },
     "Hardware revision string reported by the adapter.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2845,6 +2856,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Низкий заряд"
+          }
+        }
+      }
+    },
+    "Low Battery: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Низкий заряд аккумулятора: %@"
           }
         }
       }
@@ -3342,6 +3364,17 @@
         }
       }
     },
+    "Notifications Are On": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления включены"
+          }
+        }
+      }
+    },
     "Notifications are turned off for BatteryPulse in System Settings.": {
       "extractionState": "manual",
       "localizations": {
@@ -3349,6 +3382,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Уведомления для BatteryPulse выключены в Системных настройках."
+          }
+        }
+      }
+    },
+    "Notifications work in the packaged app, not under swift run.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомления работают в собранном приложении, а не при запуске через swift run."
           }
         }
       }
@@ -3749,6 +3793,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "От адаптера питания"
+          }
+        }
+      }
+    },
+    "Once a day, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раз в день BatteryPulse спрашивает у GitHub, вышла ли новая версия. GitHub видит ваш IP-адрес, версию приложения и язык, как при любом запросе в интернете."
           }
         }
       }
@@ -5157,6 +5212,17 @@
         }
       }
     },
+    "Temperature and cells": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура и элементы"
+          }
+        }
+      }
+    },
     "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly.": {
       "extractionState": "manual",
       "localizations": {
@@ -5175,6 +5241,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Элементы аккумулятора соединены последовательно. Если разброс между ними растёт, аккумулятор стареет или разбалансирован."
+          }
+        }
+      }
+    },
+    "The battery's temperature and the voltage of each cell, on the Health and Power pages.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора и напряжение каждого элемента на страницах «Состояние» и «Питание»."
           }
         }
       }
@@ -5909,6 +5986,17 @@
         }
       }
     },
+    "When the battery reaches a charge level, runs low, needs service or the Mac gets hot.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда аккумулятор зарядится до нужного уровня, разрядится, потребует обслуживания или Mac перегреется."
+          }
+        }
+      }
+    },
     "When the driver last finished a 'full' poll (adds cycle count, failure status, etc.).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6052,6 +6140,17 @@
         }
       }
     },
+    "Widget": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет"
+          }
+        }
+      }
+    },
     "Wireless": {
       "extractionState": "manual",
       "localizations": {
@@ -6108,7 +6207,18 @@
         }
       }
     },
-    "Your Mac is running hot": {
+    "You have BatteryPulse %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У вас BatteryPulse %@."
+          }
+        }
+      }
+    },
+    "Your Mac Is Running Hot": {
       "extractionState": "manual",
       "localizations": {
         "ru": {

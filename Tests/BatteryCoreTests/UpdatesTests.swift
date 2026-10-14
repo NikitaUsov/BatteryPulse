@@ -84,9 +84,21 @@ import Testing
                 == "**Install**\n\nRequires macOS 27.\n**First launch**\n#hashtag stays")
     }
 
+    @Test func notesWithWindowsLineEndingsKeepTheirLines() {
+        #expect(ReleaseNotes.inlineMarkdown("## Install\r\n\r\nOne\rTwo") == "**Install**\n\nOne\nTwo")
+    }
+
     @Test func whatsNewOnlyAfterAnUpdate() {
-        #expect(!UpdatePolicy.showsWhatsNew(lastSeen: nil, current: AppVersion("0.3.0")!), "fresh install")
-        #expect(UpdatePolicy.showsWhatsNew(lastSeen: AppVersion("0.2.0"), current: AppVersion("0.3.0")!))
-        #expect(!UpdatePolicy.showsWhatsNew(lastSeen: AppVersion("0.3.0"), current: AppVersion("0.3.0")!))
+        let features = AppVersion("0.3.0")!
+        func shows(_ lastSeen: String?, _ current: String) -> Bool {
+            UpdatePolicy.showsWhatsNew(
+                lastSeen: lastSeen.flatMap(AppVersion.init), current: AppVersion(current)!, features: features)
+        }
+        #expect(!shows(nil, "0.3.0"), "fresh install")
+        #expect(shows("0.2.0", "0.3.0"))
+        #expect(!shows("0.3.0", "0.3.0"))
+        #expect(shows("0.2.0", "0.3.1"), "skipped 0.3.0")
+        #expect(!shows("0.3.0", "0.3.1"), "bug-fix release")
+        #expect(!shows("0.2.0", "0.2.5"), "features not in this build")
     }
 }

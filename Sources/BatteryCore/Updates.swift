@@ -138,10 +138,12 @@ public enum UpdatePolicy {
         return userInitiated || skipped.map { release.version > $0 } ?? true
     }
 
-    /// The "What's New" sheet appears once after an update, not after a fresh install.
-    public static func showsWhatsNew(lastSeen: AppVersion?, current: AppVersion) -> Bool {
+    /// The "What's New" window appears once after an update that brought the listed features
+    /// (`features`, the version they arrived in), not after a fresh install and not again for a
+    /// later bug-fix release.
+    public static func showsWhatsNew(lastSeen: AppVersion?, current: AppVersion, features: AppVersion) -> Bool {
         guard let lastSeen else { return false }
-        return current > lastSeen
+        return lastSeen < features && features <= current
     }
 }
 
@@ -149,7 +151,10 @@ public enum UpdatePolicy {
 /// line breaks but shows headings literally: headings become bold lines.
 public enum ReleaseNotes {
     public static func inlineMarkdown(_ notes: String) -> String {
-        notes.split(separator: "\n", omittingEmptySubsequences: false).map { line in
+        // Notes edited on github.com can use CRLF, which `split(separator: "\n")` would miss: in
+        // Swift "\r\n" is a single Character.
+        let normalized = notes.replacing("\r\n", with: "\n").replacing("\r", with: "\n")
+        return normalized.split(separator: "\n", omittingEmptySubsequences: false).map { line in
             let heading = line.drop { $0 == "#" }
             guard heading.count < line.count, heading.first == " " else { return String(line) }
             return "**" + heading.trimmingCharacters(in: .whitespaces) + "**"
