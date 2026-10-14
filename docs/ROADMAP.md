@@ -43,11 +43,19 @@ charging state.
 | Voltage, current, battery power              | ✅       | —                     |
 | Adapter: watts, volts, amps, model           | ✅       | —                     |
 | System input, system load, adapter loss      | ✅       | —                     |
-| Cell voltages, battery temperature           | SMC (planned) | analytics import |
+| Cell voltages, battery temperature           | ✅†      | analytics import      |
 | Low Power Mode, thermal state                | ✅       | ✅                    |
 
 On a MacBook Air M5 with macOS 27, `AppleSmartBattery` keeps the mAh values in its
 `BatteryData` dictionary and no longer publishes `Temperature` or `CellVoltage`.
+
+† macOS 27 moved them to the entries below `AppleSmartBattery`: `AppleSmartBatteryPack`
+(`BatteryData.Temperature` in 0.01 °C), one `AppleSmartBatteryBank` per cell (`CellVoltage`),
+and `AppleChargerData` (the charge current and voltage targets). Evidence: Stats' macOS 27 fix
+and a macOS 27 `ioreg` capture in MacDashboard, not yet an M5 Air. The SMC (read-only:
+`BC1V`… cell voltages, checked against the pack voltage) is the second source. Its battery-area
+sensors `TB*T` are not the battery's temperature and stay in Raw Data, and `B0AT`'s unit
+(0.1 K or 0.01 °C) is unsettled.
 
 \* Read from IOPS `Optimized Battery Charging Engaged`, which macOS only publishes while the
 charge is on hold; not yet seen in a macOS 27 capture.
@@ -59,7 +67,7 @@ Data), without private APIs. The format still has to be checked against a real f
 ## Architecture
 
 ```
-BatteryCore  (Linux + Apple)   models, parsing, metrics, text report; later history
+BatteryCore  (Linux + Apple)   models, parsing, metrics, text report, history, SMC wire format
      ▲
 BatteryKit   (Apple)           IOKit (macOS) / UIDevice (iOS), BatteryMonitor (@Observable)
      ▲
@@ -99,8 +107,10 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1.1: macOS polish and missing readings (0.3)
 
-- [ ] Battery temperature and cell voltages from the SMC (read-only, no root), shown on Health
-  and Overview
+- [x] Battery temperature and cell voltages: from the registry entries below
+  `AppleSmartBattery`, with the SMC (read-only, no root) as a second source for the cells; shown
+  on Power, Health, the compact window, the widget and in History; `bpulse --smc` lists the
+  SMC's battery keys
 - [x] Raw Data inspector for the full description, value and decoding of a row
 - [x] Check for updates against the latest GitHub release (no third-party updater) and show
   what's new
@@ -108,7 +118,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Notifications: charge limit, low battery, battery service, heat (see Stage 4)
 - [x] Compact mode: a small, fixed-size window with the essentials, like coconutBattery's; switch
   from the toolbar, and choose which window Open BatteryPulse shows
-- [ ] WidgetKit widget, if an ad-hoc signed app can ship one
+- [x] WidgetKit widget (small and medium), built by SwiftPM and wrapped into an `.appex` by
+  `build-app.sh`; sandboxed, reading IOKit itself since ad-hoc signing rules out an App Group.
+  Experimental until it is confirmed to appear for a downloaded, quarantined copy
+- [ ] Verify on the M5: the registry children and their keys (`ioreg -r -c AppleSmartBattery
+  -l -a`), `bpulse --smc` (and that no battery key is privilege-gated on 27), the widget in the
+  gallery after Open Anyway and after an update, notification permission for the ad-hoc app,
+  and a `bpulse --raw` capture at the macOS Charge Limit stop point
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
@@ -128,13 +144,24 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] macOS background recording about once a minute while the app runs
 - [x] Swift Charts: charge and power over 24 h / 7 days, capacity and cycles over time
 - [x] Statistics: average drain, time on battery, energy from the battery, charging sessions
+- [x] One sample file per UTC day, compacted daily summaries, launch and wake markers,
+  samples on state changes, shading from raw samples, hover readout as an overlay, temperature
+- [ ] Accessibility chart descriptors (hourly or daily summaries for VoiceOver)
+- [ ] Measure App Nap's effect on the minute timer, and how often the mAh values change
 - [ ] Apps using the most energy (optional): which apps drain the battery most and at what
-  average power over the last hour or day, like Activity Monitor's Energy tab but in watts;
-  research which per-process energy data macOS gives without root first
+  average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
+  Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in
+  nanojoules without root on macOS 26, through private but exported calls that Chromium also
+  uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers only the user's own
+  processes and only the CPU. Nobody has shown the coalition calls working without root on
+  macOS 27 yet, so a one-day spike on the M5 comes first. Show watts and Wh with an
+  "unattributed" remainder (display, memory, radios, idle); history only from when
+  BatteryPulse runs
 
 ### Stage 4: Widgets and notifications
 
-- [ ] WidgetKit (macOS + iOS): charge, health
+- [x] WidgetKit (macOS): charge, state, time to full or empty, health, cycles, temperature
+- [ ] WidgetKit (iOS)
 - [ ] iOS Live Activity while charging
 - [x] Notifications (macOS): charge threshold reached, low battery, overheating, "Service
   Recommended"
@@ -142,8 +169,16 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 ### Stage 5: iPhone and iPad battery health on the Mac
 
 - [ ] Read the battery of an iPhone or iPad connected by USB or Wi-Fi, like coconutBattery:
-  charge, maximum capacity, cycles, design and full-charge capacity, temperature. Needs Apple's
-  private MobileDevice framework (fine outside the App Store); research first.
+  charge, maximum capacity, cycles, design and full-charge capacity, temperature. Researched:
+  load Apple's private MobileDevice framework with `dlopen` (no entitlements; the app isn't
+  sandboxed), list devices with `AMDeviceNotificationSubscribe`, and ask the
+  `com.apple.mobile.diagnostics_relay` service for the device's `AppleSmartBattery` registry
+  entry, the same data the Mac has. WhatBattery, an open-source Mac app, does this on iOS 17
+  to iPadOS 27. Rely on the trust the user already gave in Finder; no pairing of our own in the
+  first version, and no promise that health matches iOS Settings until checked on a real
+  iPhone. Keep the transport behind a protocol so the usbmuxd/lockdown protocol can replace
+  the framework if Apple breaks it. Start with half a day on the Mac to confirm the calls and
+  the iOS 27 keys.
 - [ ] Remember each device and keep its history next to the Mac's
 
 ### Stage 6: Later (optional)
@@ -159,6 +194,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 | Version | Date       | Highlights |
 |---------|------------|------------|
 | 0.2.0   | 2026-10-14 | Main window (Overview, Power, Health), optional menu bar and Dock presence, Developer section with decoded and explained Raw Data and Demo Mode, English and Russian |
+| 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
 
 ## Development environment
 
