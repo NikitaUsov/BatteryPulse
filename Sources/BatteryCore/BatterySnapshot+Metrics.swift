@@ -18,6 +18,13 @@ extension BatterySnapshot {
         capacityToDesignPercent.map { min(100, $0) }
     }
 
+    /// Charge measured by the gauge (remaining / full-charge mAh). It can differ a little from
+    /// the macOS percentage, which keeps a reserve and smooths the value.
+    public var hardwareChargePercent: Double? {
+        guard let current = currentCapacityMAh, let full = fullChargeCapacityMAh, full > 0 else { return nil }
+        return min(100, Double(current) / Double(full) * 100)
+    }
+
     /// Capacity lost relative to design, in percent.
     public var wearPercent: Double? {
         healthPercent.map { max(0, 100 - $0) }

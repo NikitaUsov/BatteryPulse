@@ -14,14 +14,18 @@ public final class BatteryMonitor {
     /// Latest parsed state. Only reassigned when something other than the timestamp changes,
     /// so views reading it don't re-render on identical readings.
     public private(set) var snapshot: BatterySnapshot?
-    /// Latest reading including raw dictionaries, updated whenever it differs.
+    /// Latest reading including raw dictionaries. Like ``snapshot``, only reassigned when more
+    /// than the timestamp changed.
     public private(set) var reading: BatteryReading?
     /// `false` once a read found no battery; `nil` before the first read.
     public private(set) var hasBattery: Bool?
     public private(set) var isRunning = false
     public private(set) var liveRefreshInterval: Duration?
+    /// `true` while readings come from an override provider (Demo Mode) instead of the device.
+    public private(set) var isOverridden = false
 
     @ObservationIgnored private let provider: any BatteryProvider
+    @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
     @ObservationIgnored private var observation: BatteryObservation?
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
@@ -33,9 +37,24 @@ public final class BatteryMonitor {
     public func start() {
         guard !isRunning else { return }
         isRunning = true
-        observation = provider.observeChanges { [weak self] in self?.refresh() }
+        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
         refresh()
         scheduleLiveRefresh()
+    }
+
+    /// Shows readings from `provider` instead of the device until called with `nil`. Polling
+    /// requests carry over; the device's change notifications pause meanwhile.
+    public func setOverride(_ provider: (any BatteryProvider)?) {
+        overrideProvider = provider
+        isOverridden = provider != nil
+        guard isRunning else { return }
+        observation?.cancel()
+        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
+        refresh()
+    }
+
+    private var activeProvider: any BatteryProvider {
+        overrideProvider ?? provider
     }
 
     public func stop() {
@@ -61,10 +80,16 @@ public final class BatteryMonitor {
     }
 
     public func refresh() {
-        let new = provider.read()
+        let new = activeProvider.read()
         if hasBattery != (new != nil) { hasBattery = new != nil }
-        if new != reading { reading = new }
+        if !Self.isSameReading(new, reading) { reading = new }
         if !Self.isSameState(new?.snapshot, snapshot) { snapshot = new?.snapshot }
+    }
+
+    static func isSameReading(_ lhs: BatteryReading?, _ rhs: BatteryReading?) -> Bool {
+        guard var lhs, let rhs else { return lhs == nil && rhs == nil }
+        lhs.snapshot.timestamp = rhs.snapshot.timestamp
+        return lhs == rhs
     }
 
     static func isSameState(_ lhs: BatterySnapshot?, _ rhs: BatterySnapshot?) -> Bool {

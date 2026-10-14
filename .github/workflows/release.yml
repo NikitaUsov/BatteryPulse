@@ -1,9 +1,15 @@
 name: Release
 
-# Pushing a tag such as v0.1.0 publishes BatteryPulse.dmg on the Releases page.
+# Publishes BatteryPulse.dmg on the Releases page, either by pushing a tag such as v0.2.0 or
+# by running this workflow from the Actions tab with a version number.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, without the v (for example 0.2.0)
+        required: true
 
 permissions:
   contents: write
@@ -16,11 +22,29 @@ jobs:
       - uses: actions/checkout@v5
       - name: Test
         run: swift test
+      - name: Resolve version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: '$version' is not a version like 0.2.0" >&2
+            exit 1
+          fi
+          # A manual run must not attach a DMG built from this commit to an existing release.
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]] && gh release view "v$version" >/dev/null 2>&1; then
+            echo "error: release v$version already exists" >&2
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Package app (DMG)
-        run: VERSION="${GITHUB_REF_NAME#v}" BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+        # The DMG keeps a stable name, so releases/latest/download/BatteryPulse.dmg always works.
         run: |
-          gh release create "$GITHUB_REF_NAME" build/BatteryPulse.dmg \
-            --title "BatteryPulse $GITHUB_REF_NAME" --generate-notes --verify-tag
+          gh release create "v$VERSION" build/BatteryPulse.dmg \
+            --target "$GITHUB_SHA" --title "BatteryPulse $VERSION" \
+            --notes-file .github/release-notes.md --generate-notes

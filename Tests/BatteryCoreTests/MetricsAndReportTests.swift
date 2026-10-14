@@ -14,6 +14,13 @@ import Testing
         #expect(s.cycleLifeUsed == 0.048)
     }
 
+    @Test func hardwareChargeFromCapacity() throws {
+        // macOS shows 70 %; the gauge holds 3901 of 5862 mAh (66.5 %).
+        let s = try Fixture.m5OnBattery.snapshot()
+        #expect(abs(try #require(s.hardwareChargePercent) - 3901.0 / 5862.0 * 100) < 0.0001)
+        #expect(BatterySnapshot(timestamp: .now).hardwareChargePercent == nil)
+    }
+
     @Test func healthBelowDesign() throws {
         let s = try Fixture.legacyDischarging.snapshot()
         let health = try #require(s.healthPercent)
@@ -32,7 +39,8 @@ import Testing
         let charging = try Fixture.m5Charging.snapshot()
         #expect(abs(try #require(charging.batteryPowerWatts) - 4.708608) < 0.000001)
         #expect(charging.systemPowerInWatts == 18.545)
-        #expect(charging.adapterEfficiencyLossWatts == 0.453)
+        // 453 µWh per one-second sample = 1.631 W.
+        #expect(charging.adapterEfficiencyLossWatts == 1.631)
     }
 
     @Test func cellSpread() throws {
@@ -102,7 +110,7 @@ import Testing
         #expect(value("Battery power", in: s) == "+4.7 W  (12.26 V × 384 mA)")
         #expect(value("Adapter", in: s) == "60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A")
         #expect(value("System input", in: s) == "18.5 W")
-        #expect(value("Adapter loss", in: s) == "0.5 W")
+        #expect(value("Adapter loss", in: s) == "1.6 W")
     }
 
     @Test func legacyReport() throws {

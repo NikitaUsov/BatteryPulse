@@ -70,12 +70,18 @@ import Testing
         #expect(adapter.adapterDescription == "pd charger")
         #expect(adapter.serialNumber == "REDACTED")
         #expect(adapter.isWireless == false)
+        // USB-PD menu of the real 60 W adapter: 5/9/15/20 V at ~3 A, 20 V negotiated.
+        #expect(adapter.profiles.map(\.voltageMV) == [5000, 9000, 15000, 20000])
+        #expect(adapter.profiles.map(\.maxCurrentMA) == [2960, 2970, 2980, 2990])
+        #expect(adapter.activeProfile == PowerProfile(index: 3, voltageMV: 20000, maxCurrentMA: 2990))
+        #expect(abs(try #require(adapter.activeProfile).maxWatts - 59.8) < 0.0001)
+        #expect(s.gaugeUpdatedAt == Date(timeIntervalSince1970: 1_791_994_651))
 
         #expect(s.notChargingReason == 0)
         #expect(s.chargingCurrentMA == nil, "ChargerData no longer has ChargingCurrent")
         #expect(s.systemPowerInMW == 18545)
         #expect(s.systemLoadMW == 13974)
-        #expect(s.adapterEfficiencyLossMW == 453)
+        #expect(s.adapterEfficiencyLossMW == 1631, "453 µWh per one-second sample")
     }
 
     @Test func legacyAppleSiliconLayout() throws {

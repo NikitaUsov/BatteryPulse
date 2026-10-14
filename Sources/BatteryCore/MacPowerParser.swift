@@ -175,7 +175,12 @@ enum MacPowerParser {
         s.slowChargingReason = chargerData["SlowChargingReason"]?.intValue
         s.systemPowerInMW = telemetry["SystemPowerIn"]?.intValue
         s.systemLoadMW = telemetry["SystemLoad"]?.intValue
-        s.adapterEfficiencyLossMW = telemetry["AdapterEfficiencyLoss"]?.intValue
+        // Not milliwatts: energy lost in the adapter during a one-second sample, in µWh, the same
+        // unit as SystemEnergyConsumed (= SystemPowerIn / 3.6). WallEnergyEstimate is their sum,
+        // which the real M5 captures match exactly. 1 µWh per second = 3.6 mW.
+        s.adapterEfficiencyLossMW = telemetry["AdapterEfficiencyLoss"]?.intValue.map {
+            Int((Double($0) * 3.6).rounded())
+        }
         if s.isExternalPowerConnected != false {
             s.adapter = adapter(
                 from: adapterDetails.isEmpty
@@ -187,6 +192,9 @@ enum MacPowerParser {
         s.deviceName = sb["DeviceName"]?.stringValue
         s.manufacturer = sb["Manufacturer"]?.stringValue
         s.serialNumber = sb["Serial"]?.stringValue ?? ps["Hardware Serial Number"]?.stringValue
+        s.gaugeUpdatedAt = sb["UpdateTime"]?.intValue.flatMap {
+            $0 > 0 ? Date(timeIntervalSince1970: TimeInterval($0)) : nil
+        }
 
         return s
     }
@@ -228,6 +236,15 @@ enum MacPowerParser {
         return (-40...150).contains(celsius) ? celsius : nil
     }
 
+    static func powerProfile(_ value: PropertyValue) -> PowerProfile? {
+        guard let d = value.dictionaryValue,
+            let index = d["Index"]?.intValue,
+            let voltage = d["MaxVoltage"]?.intValue, voltage > 0,
+            let current = d["MaxCurrent"]?.intValue, current > 0
+        else { return nil }
+        return PowerProfile(index: index, voltageMV: voltage, maxCurrentMA: current)
+    }
+
     static func adapter(from d: PropertyDictionary) -> PowerAdapter? {
         let adapter = PowerAdapter(
             watts: d["Watts"]?.intValue,
@@ -237,7 +254,11 @@ enum MacPowerParser {
             manufacturer: d["Manufacturer"]?.stringValue,
             adapterDescription: d["Description"]?.stringValue,
             serialNumber: d["SerialString"]?.stringValue ?? d["SerialNumber"]?.stringValue,
-            isWireless: d["IsWireless"]?.boolValue
+            isWireless: d["IsWireless"]?.boolValue,
+            profiles: (d["UsbHvcMenu"]?.arrayValue ?? []).compactMap(powerProfile).sorted {
+                $0.voltageMV < $1.voltageMV
+            },
+            activeProfileIndex: d["UsbHvcHvcIndex"]?.intValue
         )
         // A stale or empty entry (no wattage, no name) means nothing is plugged in.
         guard (adapter.watts ?? 0) > 0 || adapter.name != nil else { return nil }
