@@ -442,6 +442,17 @@
         }
       }
     },
+    "Battery current read from the SMC; positive while charging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток аккумулятора по данным SMC; положительный во время зарядки."
+          }
+        }
+      }
+    },
     "Battery design capacity of the device on this port, from USB PD, in 0.1 Wh units.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -499,6 +510,17 @@
         }
       }
     },
+    "Battery pack temperature from the gauge, in hundredths of a degree Celsius.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора по данным контроллера аккумулятора, в сотых долях градуса Цельсия."
+          }
+        }
+      }
+    },
     "Battery pack voltage (sum of the cell voltages).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -519,6 +541,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Напряжение аккумулятора по данным контроллера."
+          }
+        }
+      }
+    },
+    "Battery pack voltage read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора по данным SMC."
           }
         }
       }
@@ -569,6 +602,17 @@
         }
       }
     },
+    "Battery temperature estimate in hundredths of a degree Celsius.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расчётная температура аккумулятора в сотых долях градуса Цельсия."
+          }
+        }
+      }
+    },
     "Battery temperature in hundredths of a degree Celsius, as reported via the SMC.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -581,14 +625,13 @@
         }
       }
     },
-    "Battery temperature in tenths of a kelvin (Smart Battery format): 3100 is about 36.9 °C.": {
+    "Battery temperature in hundredths of a degree Celsius: 3100 is 31 °C.": {
       "extractionState": "manual",
-      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Температура аккумулятора в десятых долях кельвина (формат Smart Battery): 3100 — около 36,9 °C."
+            "value": "Температура аккумулятора в сотых долях градуса Цельсия: 3100 — это 31 °C."
           }
         }
       }
@@ -601,6 +644,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Дата первого использования аккумулятора, сохранённая в SMC."
+          }
+        }
+      }
+    },
+    "Battery-area temperature sensor read from the SMC, in °C; TB0T sits at the hotspot.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Датчик температуры рядом с аккумулятором по данным SMC, в °C; TB0T стоит в самой горячей точке."
           }
         }
       }
@@ -924,6 +978,17 @@
         }
       }
     },
+    "Cell %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элемент %@"
+          }
+        }
+      }
+    },
     "Cell impedance at depth-of-discharge grid points 0-9, in units of 1/1024 ohm.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -944,6 +1009,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Импеданс элемента в узлах сетки глубины разряда 10-14, в единицах 1/1024 Ом."
+          }
+        }
+      }
+    },
+    "Cells": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы"
           }
         }
       }
@@ -2225,6 +2301,17 @@
         }
       }
     },
+    "Gauge temperature read from the SMC; whether it counts 0.1 K or 0.01 °C is not settled yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура контроллера аккумулятора по данным SMC; пока не установлено, в чем она измеряется: в 0,1 K или в 0,01 °C."
+          }
+        }
+      }
+    },
     "Gauge-predicted capacity when full, excluding the reserve (PackReserve).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2973,6 +3060,18 @@
         }
       }
     },
+    "mV": {
+      "extractionState": "manual",
+      "comment": "Unit symbol: millivolts",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "мВ"
+          }
+        }
+      }
+    },
     "Name": {
       "extractionState": "manual",
       "localizations": {
@@ -3241,6 +3340,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Число аккумуляторов под управлением драйвера; на MacBook — 1."
+          }
+        }
+      }
+    },
+    "Number of cells in series, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число последовательно соединённых элементов по данным SMC."
           }
         }
       }
@@ -4003,6 +4113,17 @@
         }
       }
     },
+    "Position of this cell in the series string of the pack.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер этого элемента в последовательной цепочке аккумулятора."
+          }
+        }
+      }
+    },
     "Power": {
       "extractionState": "manual",
       "localizations": {
@@ -4427,6 +4548,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Рендеринг или игры: большое потребление и повышенное тепловое состояние."
+          }
+        }
+      }
+    },
+    "Requested charge current": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрошенный ток зарядки"
+          }
+        }
+      }
+    },
+    "Requested charge voltage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрошенное напряжение зарядки"
           }
         }
       }
@@ -4881,6 +5024,17 @@
         }
       }
     },
+    "Spread": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс"
+          }
+        }
+      }
+    },
     "Standard": {
       "extractionState": "manual",
       "localizations": {
@@ -4966,6 +5120,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Собственное измерение контроллера аккумулятора: оставшаяся ёмкость ÷ ёмкость полного заряда. macOS держит небольшой резерв, поэтому значения немного различаются."
+          }
+        }
+      }
+    },
+    "The battery has cells in series. A spread that keeps growing hints at an ageing or unbalanced battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы аккумулятора соединены последовательно. Если разброс между ними растёт, аккумулятор стареет или разбалансирован."
           }
         }
       }
@@ -5573,6 +5738,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Напряжение каждого последовательного элемента; в сумме они дают напряжение аккумулятора."
+          }
+        }
+      }
+    },
+    "Voltage of one series cell as a floating-point value, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение одного последовательного элемента в виде дробного числа по данным SMC."
+          }
+        }
+      }
+    },
+    "Voltage of one series cell, read from the SMC.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение одного последовательного элемента по данным SMC."
           }
         }
       }

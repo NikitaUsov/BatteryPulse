@@ -4,6 +4,7 @@ import Foundation
 
 let usage = """
     Usage: bpulse [--json | --raw] [--watch [seconds]] [--input capture.plist]
+           bpulse --smc
 
       (no options)      Human-readable battery report
       --json            Parsed snapshot as JSON (one compact object per line with --watch)
@@ -11,13 +12,15 @@ let usage = """
                         redacted — attach this to bug reports; it is also the test fixture format
       --watch [sec]     Repeat every N seconds (default 2, max 86400) until interrupted
       --input <file>    Read a capture saved with --raw instead of this Mac's battery
+      --smc             List the SMC's battery and charger keys with their types and raw
+                        bytes (macOS); read-only, for finding the keys on a new Mac model
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found.
     """
 
 enum OutputFormat {
-    case text, json, raw
+    case text, json, raw, smc
 }
 
 struct Options {
@@ -33,6 +36,7 @@ func parseOptions(_ arguments: [String]) -> Options? {
         switch argument {
         case "--json": options.format = .json
         case "--raw": options.format = .raw
+        case "--smc": options.format = .smc
         case "--watch":
             if let next = remaining.first, let seconds = Double(next) {
                 // `Duration.seconds` traps on inf and values beyond ~1e19 s.
@@ -67,7 +71,43 @@ func render(_ reading: BatteryReading, as format: OutputFormat, compact: Bool) t
             options: 0
         )
         return String(decoding: data, as: UTF8.self)
+    case .smc:
+        return ""
     }
+}
+
+/// Lists the SMC keys that look battery-related. Every listed key's type is read; values only for
+/// the battery prefixes, because a few SMC keys change state when read.
+@MainActor
+func smcKeyList() -> String {
+    #if os(macOS)
+    let listedPrefixes = ["B", "TB", "SB", "CH", "AC"]
+    let readPrefixes = ["B0", "BC", "BN", "TB", "SBA"]
+    let smc = SMCClient()
+    let count: Int
+    do {
+        count = try smc.keyCount()
+    } catch {
+        fail("bpulse: cannot read the SMC key table (\(error)).", code: 2)
+    }
+    var lines = ["key   type  size  attr  bytes  value"]
+    for index in 0..<count {
+        guard let key = try? smc.key(at: index), listedPrefixes.contains(where: key.description.hasPrefix),
+            let info = try? smc.info(for: key)
+        else { continue }
+        var fields = [
+            key.description, info.type.description, String(info.size), "0x" + String(info.attributes, radix: 16),
+        ]
+        if readPrefixes.contains(where: key.description.hasPrefix), let value = try? smc.read(key) {
+            fields.append(value.payload.map { String(format: "%02x", $0) }.joined())
+            fields += value.number.map { [String($0)] } ?? []
+        }
+        lines.append(fields.joined(separator: "  "))
+    }
+    return lines.joined(separator: "\n")
+    #else
+    fail("bpulse: the SMC is only available on macOS.", code: 2)
+    #endif
 }
 
 func fail(_ message: String, code: Int32) -> Never {
@@ -82,6 +122,11 @@ if arguments.contains("-h") || arguments.contains("--help") {
 }
 guard let options = parseOptions(arguments) else {
     fail(usage, code: 1)
+}
+if options.format == .smc {
+    guard options.inputPath == nil, options.watchInterval == nil else { fail(usage, code: 1) }
+    print(smcKeyList())
+    exit(0)
 }
 func loadCapture(at path: String) -> BatteryReading {
     do {

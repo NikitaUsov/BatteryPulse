@@ -8,7 +8,7 @@ import Foundation
 /// not available in swift-corelibs-foundation, where this type is tested).
 public struct BatteryFormatter: Sendable {
     public enum Unit: Sendable, CaseIterable {
-        case watts, milliampHours, volts, milliamps, amps
+        case watts, milliampHours, volts, millivolts, milliamps, amps
     }
 
     public var locale: Locale
@@ -27,6 +27,7 @@ public struct BatteryFormatter: Sendable {
         case .watts: "W"
         case .milliampHours: "mAh"
         case .volts: "V"
+        case .millivolts: "mV"
         case .milliamps: "mA"
         case .amps: "A"
         }
@@ -50,6 +51,11 @@ public struct BatteryFormatter: Sendable {
     /// `12176` mV → "12.18 V".
     public func volts(millivolts: Int, fractionDigits: Int = 2) -> String {
         withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), .volts)
+    }
+
+    /// `6` → "6 mV", for small differences such as the spread between cells.
+    public func millivolts(_ value: Int) -> String {
+        withUnit(value.formatted(.number.locale(locale)), .millivolts)
     }
 
     /// `2990` mA → "2.99 A".

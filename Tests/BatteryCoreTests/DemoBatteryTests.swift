@@ -113,6 +113,18 @@ import Testing
         #expect(DemoAnimation.drainToEmpty.battery(progress: 1).percent == 2)
     }
 
+    @Test func demoHasTemperatureCellsAndChargerTargets() throws {
+        let charging = try #require(DemoScenario.allCases.compactMap(\.battery).first { $0.isCharging })
+        let s = charging.reading(at: now).snapshot
+        let temperature = try #require(s.temperatureCelsius)
+        #expect((25...45).contains(temperature))
+        #expect(s.cellVoltagesMV.count == 3)
+        #expect(abs(s.cellVoltagesMV.reduce(0, +) - (s.voltageMV ?? 0)) <= 3)
+        #expect((s.chargingCurrentMA ?? 0) > 0)
+        let hot = charging.with { $0.thermalState = .serious }.reading(at: now).snapshot
+        #expect((hot.temperatureCelsius ?? 0) > temperature)
+    }
+
     @Test func variationIsSmallAndRepeatable() throws {
         let battery = try #require(DemoScenario.onBattery.battery)
         for tick in 0..<50 {
@@ -124,7 +136,9 @@ import Testing
     }
 
     /// The demo must look like real data: every key it produces exists in the real M5 captures,
-    /// apart from the IOPS keys macOS only adds in those states.
+    /// apart from the IOPS keys macOS only adds in those states. The child entries below
+    /// AppleSmartBattery postdate those captures; their keys follow a macOS 27 `ioreg` capture
+    /// published by MacDashboard (see `RegistryChildren`).
     @Test func demoKeysExistOnARealMac() throws {
         var realKeys: Set<String> = []
         for fixture in [Fixture.m5OnBattery, .m5Charging] {
@@ -135,7 +149,9 @@ import Testing
         for scenario in DemoScenario.allCases {
             guard let battery = scenario.battery else { continue }
             let rows = RawSection.sections(for: battery.reading(at: now).rawCapture).flatMap(\.rows)
+            let childPrefixes = [RegistryChildren.packClass, RegistryChildren.bankClass, RegistryChildren.chargerClass]
             let invented = Set(rows.map(\.key)).subtracting(realKeys).subtracting(stateOnlyKeys)
+                .filter { key in !childPrefixes.contains { key.hasPrefix($0 + ".") } }
             #expect(invented.isEmpty, "\(scenario): \(invented.sorted())")
         }
     }

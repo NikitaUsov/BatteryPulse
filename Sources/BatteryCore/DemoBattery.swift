@@ -136,6 +136,8 @@ public struct DemoBattery: Sendable, Equatable {
             "Voltage": .int(Int64(voltage)),
             "built-in": .bool(true),
         ]
+        smartBattery[RegistryChildren.childrenKey] = .array(
+            children(voltageMV: voltage, chargeCurrentMA: isCharging ? max(0, amperage) : 0))
         if let adapter {
             smartBattery["AdapterDetails"] = .dictionary(adapter.details)
             smartBattery["AppleRawAdapterDetails"] = .array([.dictionary(adapter.details)])
@@ -174,6 +176,51 @@ public struct DemoBattery: Sendable, Equatable {
         // The thermal state comes from the system, not from these dictionaries.
         reading.snapshot.thermalState = thermalState
         return reading
+    }
+}
+
+extension DemoBattery {
+    /// The pack temperature: warmer under load and while charging, hot when macOS throttles.
+    var temperatureCelsius: Double {
+        let thermal: Double =
+            switch thermalState {
+            case .nominal: 0
+            case .fair: 4
+            case .serious: 12
+            case .critical: 18
+            }
+        return 29 + abs(batteryWatts) * 0.18 + thermal
+    }
+
+    /// The registry entries macOS 27 keeps below `AppleSmartBattery`: the pack with its
+    /// temperature, one bank per cell, and the charger's targets.
+    func children(voltageMV: Int, chargeCurrentMA: Int) -> [PropertyValue] {
+        // Three cells in series, a few millivolts apart like a healthy pack.
+        let cells = [voltageMV / 3 + 2, voltageMV / 3 - 3, voltageMV - 2 * (voltageMV / 3) + 1]
+        let banks: [PropertyValue] = cells.enumerated().map { index, millivolts in
+            .dictionary([
+                RegistryChildren.classKey: .string(RegistryChildren.bankClass),
+                "BankID": .int(Int64(index)),
+                "BatteryData": .dictionary(["CellVoltage": .int(Int64(millivolts))]),
+            ])
+        }
+        let centidegrees = Int64((temperatureCelsius * 100).rounded())
+        return [
+            .dictionary([
+                RegistryChildren.classKey: .string(RegistryChildren.packClass),
+                "BatteryData": .dictionary([
+                    "Temperature": .int(centidegrees), "VirtualTemperature": .int(centidegrees),
+                ]),
+                RegistryChildren.childrenKey: .array(banks),
+            ]),
+            .dictionary([
+                RegistryChildren.classKey: .string(RegistryChildren.chargerClass),
+                "ChargerData": .dictionary([
+                    "ChargingCurrent": .int(Int64(chargeCurrentMA)),
+                    "ChargingVoltage": .int(chargeCurrentMA > 0 ? 13_050 : 0),
+                ]),
+            ]),
+        ]
     }
 }
 

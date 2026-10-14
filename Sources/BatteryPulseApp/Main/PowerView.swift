@@ -36,6 +36,15 @@ struct PowerView: View {
             if let current = snapshot.amperageMA {
                 ValueRow("Current", formatter.milliamps(current, signed: true))
             }
+            if let temperature = snapshot.temperatureCelsius {
+                ValueRow("Temperature", formatter.celsius(temperature))
+            }
+            if snapshot.chargeState == .charging, let current = snapshot.chargingCurrentMA, current > 0 {
+                ValueRow("Requested charge current", formatter.milliamps(current))
+            }
+            if snapshot.chargeState == .charging, let voltage = snapshot.chargingVoltageMV, voltage > 0 {
+                ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
+            }
             if let optimized = snapshot.isOptimizedChargingEngaged {
                 // `false` means the feature isn't holding the charge right now, not that it's off.
                 ValueRow(
