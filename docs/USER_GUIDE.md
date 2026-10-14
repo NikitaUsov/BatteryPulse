@@ -7,6 +7,7 @@ third-party code, and it reads only public system data.
 - [Install](#install)
 - [Where BatteryPulse lives](#where-batterypulse-lives)
 - [The main window](#the-main-window)
+- [Demo Mode](#demo-mode)
 - [Settings](#settings)
 - [Language](#language)
 - [Understanding the numbers](#understanding-the-numbers)
@@ -63,17 +64,40 @@ Spotlight also brings up its window.
   adapter, system load, adapter loss, Low Power Mode and thermal state.
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used, plus design, nominal, full-charge and remaining capacity.
-- **Developer** — off by default (Settings → Advanced). Every raw value macOS reports, in a
-  table with a readable decoding (mAh, volts, watts, times, USB Power Delivery offers and the
-  active contract) and a short description of what the key means where that's known. Filter by
-  key, value or description; select rows and press ⌘C to copy them. **Copy JSON** and
-  **Export Capture…** are in the toolbar.
+- **Developer** — a sidebar section, off by default (Settings → Advanced), with two pages:
+  - **Raw Data** — every raw value macOS reports, in a table with a readable decoding (mAh,
+    volts, watts, times, dates, bit fields, USB Power Delivery offers and the active contract)
+    and a short description of what the key means where that's known. Filter by key, value or
+    description; select rows and press ⌘C (or right-click) to copy them. **Copy JSON** and
+    **Export Capture…** are in the toolbar.
+  - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
 
 **Copy Report** in the toolbar copies a plain-text report without serial numbers.
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open, and every
 10 seconds when the menu bar shows power. Otherwise BatteryPulse only updates when macOS reports
 a change, so it uses almost no CPU in the background.
+
+## Demo Mode
+
+Demo Mode fills BatteryPulse with simulated data, so you can see how it handles every state
+without touching the charger: in the main window, in the menu bar and in its popover. Nothing on
+your Mac changes, and real readings come back as soon as you stop.
+
+Open it from the sidebar (Developer → Demo Mode; turn the section on in Settings → Advanced):
+
+- **Start Tour** plays every scene and animation in turn and switches to the page that shows
+  each one best, then starts over. Choose how long each scene stays under **Scene length**.
+- Click a **scene** to show it by hand: fast charging, on battery, low battery, critical
+  battery, fully charged, optimized charging, just plugged in, a worn battery, heavy load, a slow
+  charger, Low Power Mode, or a Mac without a battery.
+- Click an **animation** to watch the battery charge from empty or drain to empty in 20
+  seconds.
+
+While the demo runs, a bar at the bottom of the window shows the current scene with buttons for
+the previous scene, play/pause, the next scene and stopping the demo, and the menu bar popover
+shows a **Demo** badge with **Stop Demo**. The demo also stops when you quit or turn the
+Developer section off.
 
 ## Settings
 
@@ -83,7 +107,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 |-----|------------------|
 | General | Menu bar item, Dock icon, open at login, the welcome window, language |
 | Menu Bar | Show percentage, battery power, both, or just the icon; icon size (standard, large, hidden) |
-| Advanced | The Developer section, a link to this guide |
+| Advanced | The Developer section (Raw Data and Demo Mode), a link to this guide |
 
 ## Language
 
@@ -120,5 +144,5 @@ The repository also has `bpulse`, a command-line report (`swift run bpulse`). Se
 ## Reporting a problem
 
 Open an [issue](https://github.com/NikitaUsov/BatteryPulse/issues/new/choose) and attach a
-capture: turn on the Developer section, then **Export Capture…** (or run
+capture: turn on the Developer section, then **Raw Data → Export Capture…** (or run
 `swift run bpulse --raw > capture.xml`). Serial numbers are removed from captures and reports.

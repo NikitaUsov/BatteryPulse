@@ -12,12 +12,16 @@ through the App Store. Reference hardware: MacBook Air M5.
 
 - `Sources/BatteryCore` — platform-independent: `PropertyValue` (normalized plist/CF values),
   `BatterySnapshot` model, `MacPowerParser` (AppleSmartBattery + IOPS + adapter dictionaries),
-  metrics, `BatteryReport` text output. Must stay free of Apple-only frameworks.
+  metrics, `BatteryReport` text output, `RawValueDecoding`/`RawKeyGlossary` (Developer table),
+  `DemoBattery` (Demo Mode scenes that expand into M5-style raw dictionaries). Must stay free of
+  Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit),
-  `IOSBatteryProvider` (UIDevice), `BatteryMonitor` (@Observable, event-driven + optional polling).
+  `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`, `BatteryMonitor` (@Observable,
+  event-driven + optional polling; `setOverride` swaps in the demo).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
-  keys, Dock icon policy, localized phrases), `Main/` (sidebar window: Overview, Power, Health,
-  Developer), `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
+  keys, Dock icon policy, localized phrases, `DemoController`), `Main/` (sidebar window:
+  Overview, Power, Health, and the Developer section with Raw Data and Demo Mode), `MenuBar/`,
+  `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
   `main` keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
   (numbers/units per locale) live in BatteryCore so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
   `Resources/AppIcon.svg` is the icon source (`AppIcon.png` is rendered from it, and

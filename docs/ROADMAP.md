@@ -95,6 +95,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] One-click GitHub release with first-launch instructions
 - [x] Verify the new UI on the M5 and polish it from screenshots (English and Russian)
 - [x] Developer section: raw values decoded (units, times, USB-PD offers) and explained
+- [x] Demo Mode: simulated scenes and animations everywhere in the app, by hand or as a tour
 - [ ] Battery temperature and cell voltages from the SMC
 - [ ] Profile in Instruments against the resource targets
 - [ ] Developer ID signing and notarization

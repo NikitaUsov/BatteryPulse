@@ -24,16 +24,50 @@ dependencies.
 > the BatteryPulse message. You do this once for each version you download. Details are in the
 > [User Guide](docs/USER_GUIDE.md#first-launch).
 
-## The app
+## Features
 
-- **Main window** with a sidebar: *Overview* (charge, gauges for charge, maximum capacity and
-  cycles, capacity bars, power flow), *Power* (battery electrical values, the adapter and its
-  USB-PD profiles, system power), *Health* (maximum capacity, condition, cycles, capacities),
-  and an optional *Developer* section that decodes and explains the raw IORegistry data.
-- **Menu bar item** with percentage, power, both or just an icon, and a popover with the
-  essentials. It can be turned off; BatteryPulse then lives in the Dock.
-- **Settings** for the menu bar, the Dock icon, opening at login and the Developer section.
-- **English and Russian**, chosen like any Mac app in System Settings → Language & Region.
+**Overview**
+- Charge with a battery drawn to the exact level, what the battery is doing ("Charging at
+  31.3 W") and the time remaining, or *Calculating time…* right after you plug in.
+- Ring gauges for charge (with the gauge chip's own reading), maximum capacity (coloured by the
+  battery's condition) and cycle count out of the rated 1,000.
+- Capacity bars in mAh — remaining, full charge and design — on one scale.
+- Power flow: adapter → Mac → battery while plugged in, battery → Mac on battery, in live watts.
+
+**Power**
+- Battery voltage, current and power, time remaining and optimized charging.
+- The power adapter: name, maker, rated power, the negotiated voltage × current, and every USB
+  Power Delivery voltage it offers.
+- System: power from the adapter, system load, adapter loss, Low Power Mode, thermal state.
+
+**Health**
+- Maximum capacity as System Settings shows it, plus the real ratio to design capacity (a new
+  battery often holds more than 100 %).
+- Condition, cycle count, how much of the rated cycle life is used, design, nominal,
+  full-charge and remaining capacity, and the gauge chip.
+
+**Menu bar**
+- Percentage, power, both or just the icon, with a standard, large or hidden battery icon.
+- A popover with charge, state, time, maximum capacity, cycles, adapter and system load.
+- Optional: without it BatteryPulse lives in the Dock. Dock icon on demand, a Dock menu, and
+  opening at login.
+
+**Developer section** (off by default; Settings → Advanced)
+- *Raw Data*: every value from `AppleSmartBattery`, the IOPS power source and the adapter in one
+  table, decoded into units, durations, dates, bit fields and USB-PD offers and contracts, with
+  what each key means where that's known. Filter, copy rows with ⌘C, Copy JSON, and Export
+  Capture for bug reports (serial numbers redacted).
+- *Demo Mode*: twelve simulated scenes — fast charging, low and critical battery, optimized
+  charging, a worn battery, heavy load, a slow charger, Low Power Mode, no battery and more — and
+  two animations, shown everywhere in the app. Pick them by hand or play a tour that switches
+  pages by itself; floating controls step through it, and real readings return when you stop.
+
+**Also**
+- *Copy Report*: a plain-text report without serial numbers.
+- English and Russian, chosen like any Mac app in System Settings → Language & Region.
+- A welcome window with the starting settings on first launch.
+- Native SwiftUI with Liquid Glass and no third-party code. No network access, no root, no
+  kernel extension; updates are event-driven, so it uses almost no CPU in the background.
 
 Build it from source:
 
@@ -107,8 +141,9 @@ On macOS everything is read from the public IOKit power-source API and the
 ## Architecture
 
 ```text
-BatteryCore   platform-independent models, parsing, metrics, text report (tested on Linux)
-BatteryKit    IOKit (macOS) / UIDevice (iOS) providers + an @Observable BatteryMonitor
+BatteryCore   platform-independent models, parsing, metrics, raw-value decoding, demo data,
+              text report (tested on Linux)
+BatteryKit    IOKit (macOS) / UIDevice (iOS) / demo providers + an @Observable BatteryMonitor
 BatteryPulse  SwiftUI app: main window, menu bar item, settings (Sources/BatteryPulseApp)
 Resources     app icon and the String Catalog with the Russian translation
 bpulse        command-line report for macOS
@@ -130,8 +165,9 @@ Linux and builds and tests everything on macOS, including an iOS build of `Batte
 ## Contributing
 
 Raw captures from different Macs are the most valuable contribution right now. They become
-test fixtures, so the parser is checked against real hardware. Run
-`swift run bpulse --raw > capture.xml` and attach the file to a
+test fixtures, so the parser is checked against real hardware. In BatteryPulse, turn on
+Settings → Advanced → Show Developer section and choose Raw Data → Export Capture… (or run
+`swift run bpulse --raw > capture.xml`), then attach the file to a
 [bug report](https://github.com/NikitaUsov/BatteryPulse/issues/new/choose) together with your
 Mac model and macOS version. Serial numbers are redacted automatically.
 
