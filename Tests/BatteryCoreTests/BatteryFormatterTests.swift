@@ -41,6 +41,8 @@ import Testing
         #expect(plain(russian.amps(milliamps: 2990)) == "2,99 A-ru")
         #expect(plain(english.volts(millivolts: 20000, fractionDigits: 0)) == "20 V")
         #expect(plain(english.watts(60, fractionDigits: 0)) == "60 W")
+        #expect(plain(english.celsius(31.24)) == "31.2 °C")
+        #expect(plain(russian.celsius(31.24)) == "31,2 °C")
     }
 
     @Test func durations() {

@@ -1267,6 +1267,28 @@
         }
       }
     },
+    "Compact Window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Компактное окно"
+          }
+        }
+      }
+    },
+    "Compact window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "компактном окне"
+          }
+        }
+      }
+    },
     "Condition": {
       "extractionState": "manual",
       "localizations": {
@@ -2071,6 +2093,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "До полной зарядки примерно %@"
+          }
+        }
+      }
+    },
+    "Full Window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полное окно"
+          }
+        }
+      }
+    },
+    "Full window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "полном окне"
           }
         }
       }
@@ -3589,6 +3633,17 @@
         }
       }
     },
+    "Open BatteryPulse in": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открывать BatteryPulse в"
+          }
+        }
+      }
+    },
     "Open Login Items…": {
       "extractionState": "manual",
       "localizations": {
@@ -4690,6 +4745,17 @@
         }
       }
     },
+    "Show every detail in the full window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать все подробности в полном окне"
+          }
+        }
+      }
+    },
     "Show in Inspector": {
       "extractionState": "manual",
       "localizations": {
@@ -4719,6 +4785,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показать или скрыть выбранную строку целиком"
+          }
+        }
+      }
+    },
+    "Show the essentials in a small window": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать главное в маленьком окне"
           }
         }
       }
@@ -4867,6 +4944,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нагрузка системы"
+          }
+        }
+      }
+    },
+    "Temperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура"
           }
         }
       }

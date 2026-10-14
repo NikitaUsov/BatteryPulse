@@ -42,6 +42,7 @@ struct GeneralSettings: View {
     @AppStorage(AppSettings.showDockIconKey) private var showDockIcon = false
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
     @AppStorage(AppSettings.checkForUpdatesKey) private var checksForUpdates = true
+    @AppStorage(AppSettings.prefersCompactWindowKey) private var prefersCompactWindow = false
     @Environment(LaunchAtLoginModel.self) private var launchAtLogin
     @Environment(UpdateChecker.self) private var updater
 
@@ -90,6 +91,10 @@ struct GeneralSettings: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                 }
+            }
+            Picker("Open BatteryPulse in", selection: $prefersCompactWindow) {
+                Text("Full window").tag(false)
+                Text("Compact window").tag(true)
             }
             Toggle("Show welcome window at startup", isOn: $showWelcomeAtLaunch)
         }

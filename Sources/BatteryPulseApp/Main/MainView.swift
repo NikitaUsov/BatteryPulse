@@ -41,6 +41,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 struct MainView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
+    @Environment(\.dismissWindow) private var dismissWindow
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
 
@@ -73,6 +74,13 @@ struct MainView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         CopyReportButton(monitor: monitor)
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Compact Window", systemImage: "arrow.down.right.and.arrow.up.left") {
+                            WindowOpener.switchWindowStyle(compact: true)
+                            dismissWindow(id: WindowID.main)
+                        }
+                        .help("Show the essentials in a small window")
                     }
                 }
         }

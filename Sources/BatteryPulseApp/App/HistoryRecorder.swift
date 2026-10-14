@@ -39,7 +39,7 @@ final class HistoryRecorder {
         monitor.refresh()
         guard let snapshot = monitor.snapshot else { return }
         let now = Date()
-        try? await store.record(HistorySample(snapshot, at: now))
+        _ = try? await store.record(HistorySample(snapshot, at: now))
         try? await store.record(HistoryDay(snapshot, day: HistoryDay.key(for: now)))
     }
 }

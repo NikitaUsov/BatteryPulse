@@ -46,7 +46,7 @@ struct BatteryPulseApp: App {
                 .environment(demo)
         }
         .defaultSize(width: 860, height: 640)
-        .defaultLaunchBehavior(showsMainWindow ? .presented : .suppressed)
+        .defaultLaunchBehavior(showsMainWindow && !AppSettings.prefersCompactWindow ? .presented : .suppressed)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates…") { updater.checkNow() }
@@ -56,6 +56,14 @@ struct BatteryPulseApp: App {
                 Button("What's New in BatteryPulse") { WindowOpener.show(WindowID.whatsNew) }
             }
         }
+
+        Window("Compact Window", id: WindowID.compact) {
+            CompactView(monitor: monitor)
+                .environment(demo)
+        }
+        // Fixed size, like coconutBattery's window.
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(showsMainWindow && AppSettings.prefersCompactWindow ? .presented : .suppressed)
 
         MenuBarExtra(isInserted: $showInMenuBar) {
             PopoverView(monitor: monitor)
@@ -101,6 +109,7 @@ struct BatteryPulseApp: App {
 
 enum WindowID {
     static let main = "main"
+    static let compact = "compact"
     static let welcome = "welcome"
     static let settings = "settings"
     static let update = "update"

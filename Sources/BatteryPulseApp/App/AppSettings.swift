@@ -20,6 +20,7 @@ enum AppSettings {
     static let skippedVersionKey = "skippedVersion"
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
+    static let prefersCompactWindowKey = "prefersCompactWindow"
     static let alertChargeLimitKey = "alertChargeLimit"
     static let alertLowBatteryKey = "alertLowBattery"
     static let alertServiceKey = "alertService"
@@ -45,6 +46,11 @@ enum AppSettings {
             serviceRecommended: defaults.bool(forKey: alertServiceKey),
             highTemperature: defaults.bool(forKey: alertHeatKey)
         )
+    }
+
+    /// Which window Open BatteryPulse, the Dock icon and a windowed launch show.
+    static var prefersCompactWindow: Bool {
+        UserDefaults.standard.bool(forKey: prefersCompactWindowKey)
     }
 
     static var recordsHistory: Bool {
@@ -133,8 +139,15 @@ enum WindowOpener {
     /// Captured from any view that appears; `OpenWindowAction` works from any scene.
     static var openWindow: OpenWindowAction?
 
+    /// The full or the compact window, whichever the user prefers.
     static func showMainWindow() {
-        show(WindowID.main)
+        show(AppSettings.prefersCompactWindow ? WindowID.compact : WindowID.main)
+    }
+
+    /// Remembers the choice and opens that window; the caller closes its own.
+    static func switchWindowStyle(compact: Bool) {
+        UserDefaults.standard.set(compact, forKey: AppSettings.prefersCompactWindowKey)
+        show(compact ? WindowID.compact : WindowID.main)
     }
 
     static func show(_ id: String) {

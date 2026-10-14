@@ -71,7 +71,7 @@ final class BatteryNotifier: NSObject {
             content.title = String(localized: "Your Mac is running hot")
             content.body = String(
                 localized:
-                    "The thermal state is \(Phrases.thermal(snapshot.thermalState)). Charging may slow down until it cools."
+                    "The thermal state is \(Phrases.thermal(snapshot.thermalState ?? .serious)). Charging may slow down until it cools."
             )
         }
         content.sound = .default
