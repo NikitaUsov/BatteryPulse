@@ -20,6 +20,11 @@ enum AppSettings {
     static let skippedVersionKey = "skippedVersion"
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
+    static let alertChargeLimitKey = "alertChargeLimit"
+    static let alertLowBatteryKey = "alertLowBattery"
+    static let alertServiceKey = "alertService"
+    static let alertHeatKey = "alertHeat"
+    static let alertStateKey = "alertState"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -27,6 +32,19 @@ enum AppSettings {
 
     static var showDockIcon: Bool {
         UserDefaults.standard.bool(forKey: showDockIconKey)
+    }
+
+    /// Percentages of 0 mean off; everything is off until the user turns it on.
+    static var alerts: AlertSettings {
+        let defaults = UserDefaults.standard
+        let chargeLimit = defaults.integer(forKey: alertChargeLimitKey)
+        let lowBattery = defaults.integer(forKey: alertLowBatteryKey)
+        return AlertSettings(
+            chargeLimit: chargeLimit > 0 ? chargeLimit : nil,
+            lowBattery: lowBattery > 0 ? lowBattery : nil,
+            serviceRecommended: defaults.bool(forKey: alertServiceKey),
+            highTemperature: defaults.bool(forKey: alertHeatKey)
+        )
     }
 
     static var recordsHistory: Bool {
@@ -67,6 +85,10 @@ enum AppLinks {
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+    /// System Settings → Notifications.
+    // swift-format-ignore: NeverForceUnwrap
+    static let notificationSettings = URL(
+        string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
 }
 
 /// Whether BatteryPulse shows a Dock icon.

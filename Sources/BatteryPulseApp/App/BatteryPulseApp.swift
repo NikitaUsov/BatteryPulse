@@ -11,6 +11,7 @@ struct BatteryPulseApp: App {
     @State private var demo: DemoController
     @State private var updater: UpdateChecker
     private let historyRecorder: HistoryRecorder
+    private let notifier: BatteryNotifier
     @State private var launchAtLogin = LaunchAtLoginModel()
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     private let showsWelcome: Bool
@@ -26,6 +27,8 @@ struct BatteryPulseApp: App {
         self.demo = DemoController(monitor: monitor)
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
+        notifier = BatteryNotifier(monitor: monitor)
+        notifier.start()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar

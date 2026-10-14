@@ -46,6 +46,18 @@ dependencies.
 - Condition, cycle count, how much of the rated cycle life is used, design, nominal,
   full-charge and remaining capacity, and the gauge chip.
 
+**History**
+- Charge and power (battery and Mac) over the last 24 hours or 7 days, with plugged-in stretches
+  shaded and a readout under the pointer.
+- The period's average drain per hour, time on battery, energy from the battery and charging
+  sessions; capacity and cycle count day by day.
+- Recorded about once a minute while BatteryPulse runs; kept on your Mac for 10 days (daily
+  summaries for good).
+
+**Notifications** (Settings → Notifications, all off until you turn them on)
+- When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
+  to 10–30 %, when battery service is recommended, and when the Mac runs hot.
+
 **Menu bar**
 - Percentage, power, both or just the icon, with a standard, large or hidden battery icon.
 - A popover with charge, state, time, maximum capacity, cycles, adapter and system load.
@@ -55,8 +67,8 @@ dependencies.
 **Developer section** (off by default; Settings → Advanced)
 - *Raw Data*: every value from `AppleSmartBattery`, the IOPS power source and the adapter in one
   table, decoded into units, durations, dates, bit fields and USB-PD offers and contracts, with
-  what each key means where that's known. Filter, copy rows with ⌘C, Copy JSON, and Export
-  Capture for bug reports (serial numbers redacted).
+  what each key means where that's known. An inspector shows the selected row in full. Filter,
+  copy rows with ⌘C, Copy JSON, and Export Capture for bug reports (serial numbers redacted).
 - *Demo Mode*: twelve simulated scenes — fast charging, low and critical battery, optimized
   charging, a worn battery, heavy load, a slow charger, Low Power Mode, no battery and more — and
   two animations, shown everywhere in the app. Pick them by hand or play a tour that switches

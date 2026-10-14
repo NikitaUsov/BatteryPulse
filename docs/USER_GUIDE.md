@@ -7,6 +7,8 @@ third-party code, and it reads only public system data.
 - [Install](#install)
 - [Where BatteryPulse lives](#where-batterypulse-lives)
 - [The main window](#the-main-window)
+- [History](#history)
+- [Notifications](#notifications)
 - [Demo Mode](#demo-mode)
 - [Settings](#settings)
 - [Language](#language)
@@ -62,14 +64,16 @@ Spotlight also brings up its window.
 - **Power** — battery voltage, current and power; the power adapter (name, rated power,
   negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
   adapter, system load, adapter loss, Low Power Mode and thermal state.
+- **History** — charge and power over time; see [History](#history).
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used, plus design, nominal, full-charge and remaining capacity.
 - **Developer** — a sidebar section, off by default (Settings → Advanced), with two pages:
   - **Raw Data** — every raw value macOS reports, in a table with a readable decoding (mAh,
     volts, watts, times, dates, bit fields, USB Power Delivery offers and the active contract)
     and a short description of what the key means where that's known. Filter by key, value or
-    description; select rows and press ⌘C (or right-click) to copy them. **Copy JSON** and
-    **Export Capture…** are in the toolbar.
+    description; select rows and press ⌘C (or right-click) to copy them. Double-click a row, or
+    click the inspector button in the toolbar, to see its full value, decoding and description.
+    **Copy JSON** and **Export Capture…** are in the toolbar.
   - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
 
 **Copy Report** in the toolbar copies a plain-text report without serial numbers.
@@ -77,6 +81,40 @@ Spotlight also brings up its window.
 Live values refresh every 2 seconds while a window or the menu bar popover is open, and every
 10 seconds when the menu bar shows power. Otherwise BatteryPulse only updates when macOS reports
 a change, so it uses almost no CPU in the background.
+
+## History
+
+BatteryPulse records the battery about once a minute while it runs (in the menu bar, the Dock,
+or at login), and right away when you plug in or unplug. The **History** page shows:
+
+- **Charge** over the last 24 hours or 7 days. Shaded stretches are times on the power adapter;
+  gaps are times the Mac slept or BatteryPulse wasn't running. Hover over a chart to read the
+  values at that moment.
+- **Power**: what flows into (+) or out of (−) the battery, and what the whole Mac uses.
+- The period's **average drain** per hour on battery, **time on battery**, **energy** taken
+  from the battery, and **charging sessions**.
+- **Battery Health**: capacity compared with design and the cycle count, one point per day,
+  so you can watch the battery age over months.
+
+Minute-by-minute history is kept for 10 days and the daily summary for good, in
+`~/Library/Application Support/io.github.nikitausov.BatteryPulse/History` on your Mac only.
+Turn recording off or clear it in Settings → Advanced. Nothing is recorded during Demo Mode.
+
+## Notifications
+
+In Settings → Notifications, BatteryPulse can tell you:
+
+- **When charged to** 80, 85, 90, 95 or 100 %. Unplugging around 80 % most of the time slows
+  battery aging.
+- **When the battery falls to** 10, 20 or 30 % on battery.
+- **When battery service is recommended**, once each time macOS reports a condition other than
+  Normal.
+- **When the Mac gets hot**, once each time the thermal state turns high or critical.
+
+Each notification comes once and only again after the battery has clearly moved away (5 points
+below the charge limit, or unplugged; 5 points above the low-battery level, or plugged in).
+macOS asks for permission the first time you turn one on; **Send Test Notification** shows what
+they look like. BatteryPulse has to be running to notify you.
 
 ## Demo Mode
 
@@ -109,7 +147,8 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 |-----|------------------|
 | General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language |
 | Menu Bar | Show percentage, battery power, both, or just the icon; icon size (standard, large, hidden) |
-| Advanced | The Developer section (Raw Data and Demo Mode), a link to this guide |
+| Notifications | Charge limit, low battery, battery service and heat notifications |
+| Advanced | Recording and clearing history, the Developer section (Raw Data and Demo Mode), a link to this guide |
 
 ### Updates
 
