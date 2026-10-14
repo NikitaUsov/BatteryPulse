@@ -77,6 +77,22 @@ import Testing
         #expect(RawValueDecoder.decode(.int(0), as: .usbRDO) == .sentinel(.none))
     }
 
+    /// Every glossary entry with a display kind must decode the real M5 values it describes.
+    @Test(arguments: [Fixture.m5OnBattery, .m5Charging])
+    func glossaryKindsDecodeRealValues(fixture: Fixture) throws {
+        for row in RawSection.sections(for: try fixture.reading().rawCapture).flatMap(\.rows) {
+            guard let info = row.info else { continue }
+            switch (info.kind, row.property) {
+            case (.count, _), (.text, _), (.identifier, _), (.other, _):
+                continue
+            case (.hex, .data), (.hex, .string):
+                continue  // binary blobs (and redacted ones) stay as they are
+            default:
+                #expect(row.decoded != nil, "\(row.key) = \(row.value) as \(info.kind)")
+            }
+        }
+    }
+
     @Test(arguments: [
         ("AppleSmartBattery", "BatteryData.DesignCapacity", "BatteryData.DesignCapacity"),
         (

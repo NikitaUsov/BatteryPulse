@@ -47,6 +47,18 @@
         }
       }
     },
+    "1 when the Mac lets the battery charge from the adapter; 0 on battery or while charging is paused.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1, если Mac разрешает заряжать аккумулятор от адаптера; 0 при работе от аккумулятора или при приостановленной зарядке."
+          }
+        }
+      }
+    },
     "A": {
       "extractionState": "manual",
       "comment": "Unit symbol: amperes",
@@ -105,6 +117,30 @@
         }
       }
     },
+    "Adapter error bits, e.g. insufficient power or a foreign object on a wireless charger.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Биты ошибок адаптера, например нехватка мощности или посторонний предмет на беспроводном зарядном устройстве."
+          }
+        }
+      }
+    },
+    "Adapter family code: 0xE000400A is USB-C Power Delivery, 0 means nothing is connected.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Код семейства адаптера: 0xE000400A — USB-C Power Delivery, 0 — ничего не подключено."
+          }
+        }
+      }
+    },
     "Adapter loss": {
       "extractionState": "manual",
       "localizations": {
@@ -112,6 +148,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "Потери в адаптере"
+          }
+        }
+      }
+    },
+    "Adapter maker's name as reported by the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название производителя, которое сообщает адаптер."
+          }
+        }
+      }
+    },
+    "Adapter model ID as a hex string; the same value as AdapterID.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор модели адаптера в виде шестнадцатеричной строки; совпадает с AdapterID."
+          }
+        }
+      }
+    },
+    "Adapter model ID; Model shows the same number in hex (28702 = 0x701E).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор модели адаптера; Model показывает то же число в шестнадцатеричном виде (28702 = 0x701E)."
+          }
+        }
+      }
+    },
+    "Adapter serial number.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Серийный номер адаптера."
+          }
+        }
+      }
+    },
+    "Adapter's own product name.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собственное название продукта адаптера."
           }
         }
       }
@@ -184,6 +280,30 @@
         }
       }
     },
+    "Average battery current from the gauge; negative while discharging, positive while charging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Средний ток аккумулятора по данным контроллера; отрицательный при разрядке, положительный при зарядке."
+          }
+        }
+      }
+    },
+    "Average battery temperature over the pack's life, in tenths of a degree Celsius.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Средняя температура аккумулятора за весь срок службы, в десятых долях градуса Цельсия."
+          }
+        }
+      }
+    },
     "Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -203,6 +323,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Батарейный %@, %@"
+          }
+        }
+      }
+    },
+    "Battery charge level of the device attached to this port, as reported over USB PD.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень заряда аккумулятора устройства, подключённого к этому порту, по данным USB PD."
+          }
+        }
+      }
+    },
+    "Battery current from power management, negative when discharging; read 0 here in both states.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток аккумулятора по данным управления питанием, отрицательный при разрядке; здесь в обоих состояниях равен 0."
+          }
+        }
+      }
+    },
+    "Battery design capacity of the device on this port, from USB PD, in 0.1 Wh units.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расчётная ёмкость аккумулятора устройства на этом порту по данным USB PD, в единицах 0,1 Вт·ч."
           }
         }
       }
@@ -229,6 +385,66 @@
         }
       }
     },
+    "Battery Kiosk Mode state and its counters of time spent at high charge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Состояние режима Kiosk Mode и счётчики времени, проведённого аккумулятором при высоком заряде."
+          }
+        }
+      }
+    },
+    "Battery pack voltage (sum of the cell voltages).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора (сумма напряжений элементов)."
+          }
+        }
+      }
+    },
+    "Battery pack voltage as seen by the gauge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора по данным контроллера."
+          }
+        }
+      }
+    },
+    "Battery pack voltage; reads the same as Voltage on Apple silicon.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора; на Mac с чипом Apple совпадает с Voltage."
+          }
+        }
+      }
+    },
+    "Battery position for multi-battery machines; 0 on single-battery Macs.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер аккумулятора в системах с несколькими аккумуляторами; 0 на Mac с одним аккумулятором."
+          }
+        }
+      }
+    },
     "Battery power": {
       "extractionState": "manual",
       "localizations": {
@@ -236,6 +452,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Мощность аккумулятора"
+          }
+        }
+      }
+    },
+    "Battery temperature in hundredths of a degree Celsius, as reported via the SMC.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора в сотых долях градуса Цельсия по данным SMC."
+          }
+        }
+      }
+    },
+    "Battery temperature in tenths of a kelvin (Smart Battery format): 3100 is about 36.9 °C.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора в десятых долях кельвина (формат Smart Battery): 3100 — около 36,9 °C."
+          }
+        }
+      }
+    },
+    "Battery's date of first use as stored in the SMC.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дата первого использования аккумулятора, сохранённая в SMC."
           }
         }
       }
@@ -330,6 +582,78 @@
         }
       }
     },
+    "Binary histogram of time spent at high state of charge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двоичная гистограмма времени, проведённого при высоком уровне заряда."
+          }
+        }
+      }
+    },
+    "Bitfield of reasons charging is being slowed; Apple does not document the bits.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Битовое поле причин замедления зарядки; Apple не документирует эти биты."
+          }
+        }
+      }
+    },
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты."
+          }
+        }
+      }
+    },
+    "Bitfield of reasons the charger itself is inhibited.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Битовое поле причин, по которым заблокирован сам контроллер зарядки."
+          }
+        }
+      }
+    },
+    "Boot status flags reported by the USB-C port controller firmware.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Флаги состояния загрузки, которые сообщает прошивка контроллера порта USB-C."
+          }
+        }
+      }
+    },
+    "Boot-voltage register; reads 0 on every Apple silicon Mac sampled.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Регистр напряжения при загрузке; на всех проверенных Mac с чипом Apple равен 0."
+          }
+        }
+      }
+    },
     "Calculating time…": {
       "extractionState": "manual",
       "localizations": {
@@ -363,6 +687,66 @@
         }
       }
     },
+    "Capacity held back below 0 % that is not counted in FullChargeCapacity.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость, резервируемая ниже 0 % и не учитываемая в FullChargeCapacity."
+          }
+        }
+      }
+    },
+    "Capacity the battery was designed to hold when new (pre-macOS 27 top level).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость, на которую рассчитан новый аккумулятор (верхний уровень до macOS 27)."
+          }
+        }
+      }
+    },
+    "Capacity the battery was designed to hold when new.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость, на которую рассчитан новый аккумулятор."
+          }
+        }
+      }
+    },
+    "Cell impedance at depth-of-discharge grid points 0-9, in units of 1/1024 ohm.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импеданс элемента в узлах сетки глубины разряда 0-9, в единицах 1/1024 Ом."
+          }
+        }
+      }
+    },
+    "Cell impedance at depth-of-discharge grid points 10-14, in units of 1/1024 ohm.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импеданс элемента в узлах сетки глубины разряда 10-14, в единицах 1/1024 Ом."
+          }
+        }
+      }
+    },
     "Change in System Settings…": {
       "extractionState": "manual",
       "localizations": {
@@ -385,6 +769,18 @@
         }
       }
     },
+    "Charge current the gauge is asking the charger for.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток зарядки, который контроллер аккумулятора запрашивает у контроллера зарядки."
+          }
+        }
+      }
+    },
     "Charge from empty": {
       "extractionState": "manual",
       "comment": "Demo animation",
@@ -393,6 +789,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Зарядка с нуля"
+          }
+        }
+      }
+    },
+    "Charge left in the battery as predicted by the gauge, excluding the reserve.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшийся заряд аккумулятора по прогнозу контроллера, без учёта резерва."
+          }
+        }
+      }
+    },
+    "Charge level as a percentage on Apple silicon (the IOKit header still says mAh).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень заряда в процентах на Mac с чипом Apple (в заголовке IOKit по-прежнему указаны мА·ч)."
+          }
+        }
+      }
+    },
+    "Charge level shown to the user, as a percentage (same as top-level CurrentCapacity).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень заряда для пользователя в процентах (как CurrentCapacity верхнего уровня)."
+          }
+        }
+      }
+    },
+    "Charge level that macOS shows in the menu bar.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень заряда, который macOS показывает в строке меню."
+          }
+        }
+      }
+    },
+    "Charge moved since the last DOD0 reading; positive = discharged, negative = charged.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, прошедший с последнего измерения DOD0; положительный — разрядка, отрицательный — зарядка."
+          }
+        }
+      }
+    },
+    "Charger type label, e.g. \"pd charger\" for a USB Power Delivery charger.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тип зарядного устройства, например «pd charger» для зарядного устройства USB Power Delivery."
+          }
+        }
+      }
+    },
+    "Charger-side charging flag; mirrors top-level IsCharging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Флаг зарядки от контроллера зарядки; повторяет IsCharging верхнего уровня."
           }
         }
       }
@@ -441,6 +921,18 @@
         }
       }
     },
+    "Chemistry ID used by the gauging algorithm; equals ChemID on every Mac sampled.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор химии, который использует алгоритм контроллера; на всех проверенных Mac равен ChemID."
+          }
+        }
+      }
+    },
     "Choose BatteryPulse under Applications in Language & Region.": {
       "extractionState": "manual",
       "localizations": {
@@ -448,6 +940,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите BatteryPulse в разделе «Приложения» настроек «Язык и регион»."
+          }
+        }
+      }
+    },
+    "Coarse battery health estimate: Good, Fair or Poor.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Грубая оценка состояния аккумулятора: Good, Fair или Poor."
           }
         }
       }
@@ -507,6 +1011,18 @@
         }
       }
     },
+    "Copy of AvgTimeToEmpty inside the macOS 27 BatteryData dictionary.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Копия AvgTimeToEmpty внутри словаря BatteryData в macOS 27."
+          }
+        }
+      }
+    },
     "Copy Report": {
       "extractionState": "manual",
       "localizations": {
@@ -536,6 +1052,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скопировать значение"
+          }
+        }
+      }
+    },
+    "Count of port-controller interrupts of one event type (plug, PD message, status change).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число прерываний контроллера порта одного типа событий (подключение, сообщение PD, смена состояния)."
           }
         }
       }
@@ -574,6 +1102,30 @@
         }
       }
     },
+    "Current flowing into the Mac from the external power adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток, поступающий в Mac от внешнего адаптера питания."
+          }
+        }
+      }
+    },
+    "Current limit of the negotiated contract, equal to MaxCurrent of the active profile.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение тока согласованного контракта, равное MaxCurrent активного профиля."
+          }
+        }
+      }
+    },
     "Cycle count": {
       "extractionState": "manual",
       "localizations": {
@@ -581,6 +1133,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "Циклы перезарядки"
+          }
+        }
+      }
+    },
+    "Cycle count as reported inside BatteryData.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число циклов перезарядки внутри BatteryData."
+          }
+        }
+      }
+    },
+    "Cycle count at the gauge's most recent Qmax (capacity) update.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число циклов перезарядки при последнем обновлении Qmax (ёмкости) контроллером."
+          }
+        }
+      }
+    },
+    "Cycle count the battery is rated for (gauge register 0x9C).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расчётное число циклов перезарядки аккумулятора (регистр контроллера 0x9C)."
+          }
+        }
+      }
+    },
+    "Daily maximum state of charge logged by the gauge; it is not updated live.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальный за день уровень заряда по журналу контроллера; обновляется не в реальном времени."
+          }
+        }
+      }
+    },
+    "Daily minimum state of charge logged by the gauge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Минимальный за день уровень заряда по журналу контроллера."
           }
         }
       }
@@ -665,6 +1277,18 @@
         }
       }
     },
+    "Details of the connected power adapter; empty when the Mac runs on battery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сведения о подключённом адаптере питания; пусто, когда Mac работает от аккумулятора."
+          }
+        }
+      }
+    },
     "Developer": {
       "extractionState": "manual",
       "localizations": {
@@ -710,6 +1334,18 @@
         }
       }
     },
+    "Driver time estimate: time to empty on battery, time to full on power.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка времени драйвером: до разрядки от аккумулятора, до полной зарядки от адаптера."
+          }
+        }
+      }
+    },
     "Elevated": {
       "extractionState": "manual",
       "localizations": {
@@ -717,6 +1353,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Повышенное"
+          }
+        }
+      }
+    },
+    "Energy taken from the adapter in the last 1 s sample, in µWh (SystemPowerIn ÷ 3.6).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Энергия, полученная от адаптера за последний замер (1 с), в мкВт·ч (SystemPowerIn ÷ 3,6)."
+          }
+        }
+      }
+    },
+    "Error flags for the saved shutdown record; nonzero means the record is invalid.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Флаги ошибок сохранённой записи о выключении; ненулевое значение означает, что запись недействительна."
+          }
+        }
+      }
+    },
+    "Estimated adapter loss over the last 1 s sample in µWh (× 3.6 = mW); negative at light load.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка потерь в адаптере за последний замер (1 с) в мкВт·ч (× 3,6 = мВт); при малой нагрузке отрицательная."
+          }
+        }
+      }
+    },
+    "Estimated time left on battery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка оставшегося времени работы от аккумулятора."
+          }
+        }
+      }
+    },
+    "Estimated time until the battery is full.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка времени до полной зарядки аккумулятора."
+          }
+        }
+      }
+    },
+    "Estimated wall-socket energy in the last 1 s sample, in µWh: adapter output plus adapter loss.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка энергии из розетки за последний замер (1 с), в мкВт·ч: выход адаптера плюс потери в нём."
           }
         }
       }
@@ -740,6 +1448,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспортировать снимок…"
+          }
+        }
+      }
+    },
+    "External power seen right now, without the 1-second unplug debounce of ExternalConnected.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наличие внешнего питания прямо сейчас; в отличие от ExternalConnected, без задержки 1 с при отключении."
+          }
+        }
+      }
+    },
+    "Failed exchanges of USB PD Vendor Data Objects (VDOs) with the device on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Неудачные обмены объектами USB PD Vendor Data Objects (VDO) с устройством на этом порту."
           }
         }
       }
@@ -778,6 +1510,42 @@
         }
       }
     },
+    "Firmware version of the battery gauge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия прошивки контроллера аккумулятора."
+          }
+        }
+      }
+    },
+    "Firmware version of the USB-C port controller.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия прошивки контроллера порта USB-C."
+          }
+        }
+      }
+    },
+    "Firmware version string reported by the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка версии прошивки, которую сообщает адаптер."
+          }
+        }
+      }
+    },
     "Fixed %@ × %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery fixed-voltage offer: voltage × current",
@@ -786,6 +1554,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Фиксированный %@ × %@"
+          }
+        }
+      }
+    },
+    "Fixed voltage of this USB-PD profile offered by the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Фиксированное напряжение этого профиля USB-PD, предлагаемого адаптером."
           }
         }
       }
@@ -836,6 +1616,66 @@
         }
       }
     },
+    "Full charge capacity in mAh (pre-macOS 27); excludes the reserve.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда в мА·ч (до macOS 27), без учёта резерва."
+          }
+        }
+      }
+    },
+    "Full charge capacity including the reserve: AppleRawMaxCapacity plus PackReserve.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда вместе с резервом: AppleRawMaxCapacity плюс PackReserve."
+          }
+        }
+      }
+    },
+    "Full charge capacity including the reserve: FullChargeCapacity plus PackReserve.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда вместе с резервом: FullChargeCapacity плюс PackReserve."
+          }
+        }
+      }
+    },
+    "Full charge capacity with powerd's VAC-T mitigation applied.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда с учётом компенсации VAC-T в powerd."
+          }
+        }
+      }
+    },
+    "Full charge capacity without powerd's VAC-T mitigation.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда без компенсации VAC-T в powerd."
+          }
+        }
+      }
+    },
     "Full in %@": {
       "extractionState": "manual",
       "localizations": {
@@ -869,6 +1709,30 @@
         }
       }
     },
+    "Gauge capacity field that reads 0 on every Apple silicon Mac sampled.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поле ёмкости контроллера, равное 0 на всех проверенных Mac с чипом Apple."
+          }
+        }
+      }
+    },
+    "Gauge chemistry ID: selects the cell voltage/impedance model used for gauging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор химического состава: выбирает модель напряжения/импеданса элемента для расчёта заряда контроллером."
+          }
+        }
+      }
+    },
     "Gauge chip": {
       "extractionState": "manual",
       "localizations": {
@@ -876,6 +1740,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Микросхема контроллера"
+          }
+        }
+      }
+    },
+    "Gauge estimate of minutes until empty at the average discharge current.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка контроллера: минут до разрядки при среднем токе разрядки."
+          }
+        }
+      }
+    },
+    "Gauge estimate of minutes until full at the average charge current.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка контроллера: минут до полной зарядки при среднем токе зарядки."
+          }
+        }
+      }
+    },
+    "Gauge permanent-failure bitfield; any nonzero bit means the battery needs service.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Битовое поле необратимых отказов контроллера; любой ненулевой бит означает, что аккумулятору нужно обслуживание."
+          }
+        }
+      }
+    },
+    "Gauge snapshot saved at the last battery-related shutdown (voltage, capacities, temperature).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимок данных контроллера при последнем выключении из-за аккумулятора (напряжение, ёмкости, температура)."
+          }
+        }
+      }
+    },
+    "Gauge state of charge: RemainingCapacity as a share of FullChargeCapacity.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень заряда по данным контроллера: доля RemainingCapacity от FullChargeCapacity."
+          }
+        }
+      }
+    },
+    "Gauge-predicted capacity when full, excluding the reserve (PackReserve).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прогнозируемая контроллером ёмкость при полном заряде, без учёта резерва (PackReserve)."
           }
         }
       }
@@ -902,6 +1838,18 @@
         }
       }
     },
+    "Hardware revision string reported by the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка версии оборудования, которую сообщает адаптер."
+          }
+        }
+      }
+    },
     "Health": {
       "extractionState": "manual",
       "localizations": {
@@ -909,6 +1857,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние"
+          }
+        }
+      }
+    },
+    "Health warning such as \"Check Battery\"; absent or empty when the battery is normal.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Предупреждение о состоянии, например «Check Battery»; отсутствует или пусто, если аккумулятор в норме."
           }
         }
       }
@@ -958,6 +1918,54 @@
         }
       }
     },
+    "Highest battery temperature seen over the pack's life.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная температура аккумулятора за весь срок службы."
+          }
+        }
+      }
+    },
+    "Highest charge current seen over the pack's life.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальный ток зарядки за весь срок службы аккумулятора."
+          }
+        }
+      }
+    },
+    "Highest discharge current seen over the pack's life (negative).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальный ток разрядки за весь срок службы аккумулятора (отрицательный)."
+          }
+        }
+      }
+    },
+    "Highest pack voltage seen over the battery's life.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальное напряжение аккумулятора за весь срок службы."
+          }
+        }
+      }
+    },
     "Holding charge": {
       "extractionState": "manual",
       "localizations": {
@@ -981,6 +1989,30 @@
         }
       }
     },
+    "How the source reports data: \"Internal\" for a built-in battery, USB or Serial for a UPS.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Способ передачи данных источником: «Internal» для встроенного аккумулятора, USB или Serial для ИБП."
+          }
+        }
+      }
+    },
+    "I2C communication errors between the Mac and this port controller.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ошибки связи I2C между Mac и этим контроллером порта."
+          }
+        }
+      }
+    },
     "Icon only": {
       "extractionState": "manual",
       "localizations": {
@@ -999,6 +2031,138 @@
           "stringUnit": {
             "state": "translated",
             "value": "Используется"
+          }
+        }
+      }
+    },
+    "Index into AppleRawAdapterDetails of the adapter macOS chose; AdapterDetails mirrors it.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Индекс выбранного macOS адаптера в AppleRawAdapterDetails; AdapterDetails повторяет его."
+          }
+        }
+      }
+    },
+    "Input current limit currently programmed into the charger.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входного тока, заданное сейчас в контроллере зарядки."
+          }
+        }
+      }
+    },
+    "Input current limit last applied by the PMU (pre-macOS 27 location).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последнее ограничение входного тока, применённое PMU (расположение до macOS 27)."
+          }
+        }
+      }
+    },
+    "Input current limit last applied by the PMU; equals ChargerConfiguration while charging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входного тока, последним применённое PMU; во время зарядки равно ChargerConfiguration."
+          }
+        }
+      }
+    },
+    "Input current limit requested for the active adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входного тока, запрошенное для активного адаптера."
+          }
+        }
+      }
+    },
+    "Input current limit the Mac sets for the adapter; can be lower than the adapter's rated current.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входного тока, которое Mac задаёт для адаптера; может быть ниже номинального тока адаптера."
+          }
+        }
+      }
+    },
+    "Input power limit, IPDInputVoltage × IPDInputCurrent; not the measured draw or the adapter rating.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входной мощности, IPDInputVoltage × IPDInputCurrent; не измеренное потребление и не номинал адаптера."
+          }
+        }
+      }
+    },
+    "Instantaneous battery current; negative while discharging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мгновенный ток аккумулятора; отрицательный при разрядке."
+          }
+        }
+      }
+    },
+    "IOKit's list of clients registered for notifications from this service; not battery data.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Список клиентов IOKit, подписанных на уведомления этой службы; это не данные аккумулятора."
+          }
+        }
+      }
+    },
+    "IOReporting channel entry [ID, type, name]: here the BatteryCycleCount channel.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись канала IOReporting [ID, тип, имя]: здесь канал BatteryCycleCount."
+          }
+        }
+      }
+    },
+    "IOReporting group the battery channels belong to (\"Battery\").": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группа IOReporting, к которой относятся каналы аккумулятора («Battery»)."
           }
         }
       }
@@ -1027,6 +2191,18 @@
         }
       }
     },
+    "Kind of power source: InternalBattery or UPS.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тип источника питания: InternalBattery или UPS."
+          }
+        }
+      }
+    },
     "Language": {
       "extractionState": "manual",
       "localizations": {
@@ -1045,6 +2221,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Крупный"
+          }
+        }
+      }
+    },
+    "Legacy IOPMPowerSource adapter-info field; Apple silicon always leaves it at 0.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устаревшее поле сведений об адаптере в IOPMPowerSource; на Mac с чипом Apple всегда 0."
+          }
+        }
+      }
+    },
+    "Lifetime extremes and counters kept by the gauge (temperatures, currents, voltages, Qmax, FCC).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экстремумы и счётчики за срок службы, которые хранит контроллер (температуры, токи, напряжения, Qmax, FCC)."
           }
         }
       }
@@ -1068,6 +2268,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Режим энергосбережения"
+          }
+        }
+      }
+    },
+    "Lower per-cell voltage of the Carrier Mode charge window.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нижнее напряжение элемента в окне заряда Carrier Mode."
+          }
+        }
+      }
+    },
+    "Lowest battery temperature seen over the pack's life.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Минимальная температура аккумулятора за весь срок службы."
+          }
+        }
+      }
+    },
+    "Lowest pack voltage seen over the battery's life.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Минимальное напряжение аккумулятора за весь срок службы."
           }
         }
       }
@@ -1153,6 +2389,42 @@
         }
       }
     },
+    "Marks a source that supplies its own time estimates; always true for the internal battery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отмечает источник, который сам оценивает оставшееся время; у встроенного аккумулятора всегда «Да»."
+          }
+        }
+      }
+    },
+    "Marks the battery as built into the Mac.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отмечает, что аккумулятор встроен в Mac."
+          }
+        }
+      }
+    },
+    "Marks this service's IOReporting channels as publicly visible to reporting tools.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отмечает каналы IOReporting этой службы как общедоступные для инструментов отчётности."
+          }
+        }
+      }
+    },
     "Maximum capacity": {
       "extractionState": "manual",
       "localizations": {
@@ -1164,6 +2436,30 @@
         }
       }
     },
+    "Maximum current the adapter offers at this profile's voltage.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальный ток, который адаптер предлагает при напряжении этого профиля."
+          }
+        }
+      }
+    },
+    "Maximum power of the charging contract currently active on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная мощность контракта зарядки, действующего сейчас на этом порту."
+          }
+        }
+      }
+    },
     "Menu Bar": {
       "extractionState": "manual",
       "localizations": {
@@ -1171,6 +2467,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Строка меню"
+          }
+        }
+      }
+    },
+    "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель микросхемы контроллера аккумулятора (например, TI bq40z651)."
           }
         }
       }
@@ -1193,6 +2501,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Текущий режим"
+          }
+        }
+      }
+    },
+    "Negotiated adapter voltage that the power-distribution logic budgets with.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Согласованное напряжение адаптера, по которому логика распределения питания рассчитывает бюджет."
           }
         }
       }
@@ -1334,6 +2654,306 @@
         }
       }
     },
+    "Number of battery cell disconnect events the gauge has recorded.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз контроллер зафиксировал отключение элемента аккумулятора."
+          }
+        }
+      }
+    },
+    "Number of battery packs the driver manages; 1 on MacBooks.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число аккумуляторов под управлением драйвера; на MacBook — 1."
+          }
+        }
+      }
+    },
+    "Number of charger units the battery driver manages; 1 on MacBooks.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число контроллеров зарядки под управлением драйвера аккумулятора; на MacBook — 1."
+          }
+        }
+      }
+    },
+    "Number of charging samples added to AccumulatedBatteryPower.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров при зарядке, добавленных в AccumulatedBatteryPower."
+          }
+        }
+      }
+    },
+    "Number of discharging samples added to AccumulatedBatteryDischarge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров при разрядке, добавленных в AccumulatedBatteryDischarge."
+          }
+        }
+      }
+    },
+    "Number of Extended Power Range (EPR, above 20 V) PDOs the source on this port offered.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число PDO расширенного диапазона (EPR, выше 20 В), предложенных источником на этом порту."
+          }
+        }
+      }
+    },
+    "Number of failed USB PD data-role swaps on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число неудачных смен роли данных USB PD на этом порту."
+          }
+        }
+      }
+    },
+    "Number of failed USB PD power-role swaps on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число неудачных смен роли питания USB PD на этом порту."
+          }
+        }
+      }
+    },
+    "Number of full charge-discharge cycles the battery has gone through.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число полных циклов перезарядки, которые прошёл аккумулятор."
+          }
+        }
+      }
+    },
+    "Number of roughly once-a-second samples added to AccumulatedSystemLoad.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров (примерно раз в секунду), добавленных в AccumulatedSystemLoad."
+          }
+        }
+      }
+    },
+    "Number of samples added to AccumSystemEffectiveTotalLoad; Macs leave it at 0.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров, добавленных в AccumSystemEffectiveTotalLoad; на Mac всегда 0."
+          }
+        }
+      }
+    },
+    "Number of samples added to AccumulatedAdapterEfficiencyLoss and the wall-energy total.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров, добавленных в AccumulatedAdapterEfficiencyLoss и в сумму энергии из розетки."
+          }
+        }
+      }
+    },
+    "Number of samples with adapter input added to AccumulatedSystemPowerIn.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров с питанием от адаптера, добавленных в AccumulatedSystemPowerIn."
+          }
+        }
+      }
+    },
+    "Number of short-circuit detections on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число обнаружений короткого замыкания на этом порту."
+          }
+        }
+      }
+    },
+    "Number of standard-range (SPR) PDOs the source on this port offered.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число PDO стандартного диапазона (SPR), предложенных источником на этом порту."
+          }
+        }
+      }
+    },
+    "Number of temperature samples behind the lifetime average.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров температуры, по которым вычислено среднее за срок службы."
+          }
+        }
+      }
+    },
+    "Number of times something was plugged into this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз к этому порту что-то подключали."
+          }
+        }
+      }
+    },
+    "Number of times something was unplugged from this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз от этого порта что-то отключали."
+          }
+        }
+      }
+    },
+    "Number of times the charger has been reset.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз сбрасывался контроллер зарядки."
+          }
+        }
+      }
+    },
+    "Number of times the gauge disabled impedance (Ra) updates.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз контроллер отключал обновление импеданса (Ra)."
+          }
+        }
+      }
+    },
+    "Number of USB PD data-role swaps (host/device) on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число смен роли данных USB PD (хост/устройство) на этом порту."
+          }
+        }
+      }
+    },
+    "Number of USB PD Hard Resets on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число сбросов USB PD Hard Reset на этом порту."
+          }
+        }
+      }
+    },
+    "Number of USB PD power-role swaps (source/sink) on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число смен роли питания USB PD (источник/приёмник) на этом порту."
+          }
+        }
+      }
+    },
+    "Number of writes the gauge has made to its data flash.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число записей контроллера в его флеш-память данных."
+          }
+        }
+      }
+    },
+    "Numeric copy of FullyCharged: 1 when the gauge reports a full charge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Числовая копия FullyCharged: 1, когда контроллер сообщает о полном заряде."
+          }
+        }
+      }
+    },
     "of %@ rated": {
       "extractionState": "manual",
       "localizations": {
@@ -1386,6 +3006,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "От аккумулятора"
+          }
+        }
+      }
+    },
+    "Opaque manufacturer data block read from the battery gauge at boot.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Непрозрачный блок данных производителя, считанный из контроллера аккумулятора при загрузке."
           }
         }
       }
@@ -1490,6 +3122,78 @@
         }
       }
     },
+    "Per-cell charge voltage limit; ChargingVoltage stays at or below it.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Предел напряжения зарядки на элемент; ChargingVoltage не превышает его."
+          }
+        }
+      }
+    },
+    "Per-cell charge voltage target the gauge requests.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Целевое напряжение зарядки на элемент, которое запрашивает контроллер."
+          }
+        }
+      }
+    },
+    "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100 %.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Глубина разряда каждого элемента при последнем измерении напряжения в покое, в масштабе 16384 = 100 %."
+          }
+        }
+      }
+    },
+    "Per-cell depth of discharge right now, as a percentage of that cell's Qmax.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текущая глубина разряда каждого элемента в процентах от его Qmax."
+          }
+        }
+      }
+    },
+    "Per-cell maximum chemical capacity learned by the gauge (no-load, full to empty).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная химическая ёмкость каждого элемента, определённая контроллером (без нагрузки, от полного до нуля)."
+          }
+        }
+      }
+    },
+    "Per-port USB-C/MagSafe port-controller telemetry the SMC publishes; one array entry per port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Телеметрия контроллеров портов USB-C/MagSafe, которую публикует SMC; по одной записи массива на порт."
+          }
+        }
+      }
+    },
     "Percentage": {
       "extractionState": "manual",
       "localizations": {
@@ -1546,6 +3250,126 @@
         }
       }
     },
+    "Port-controller 'PD Status Update' interrupts.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания «PD Status Update» контроллера порта."
+          }
+        }
+      }
+    },
+    "Port-controller 'Power Status Update' interrupts.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания «Power Status Update» контроллера порта."
+          }
+        }
+      }
+    },
+    "Port-controller 'Status Update' interrupts.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания «Status Update» контроллера порта."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts for Discover Identity responses received from the partner.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта по ответам Discover Identity от подключённого устройства."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts for Request (RDO) messages received from a sink.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта по сообщениям Request (RDO) от приёмника."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts for Sink_Capabilities messages received.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта по полученным сообщениям Sink_Capabilities."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts for Source_Capabilities messages received from a charger.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта по сообщениям Source_Capabilities от зарядного устройства."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts for USB PD Hard Reset.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта по USB PD Hard Reset."
+          }
+        }
+      }
+    },
+    "Port-controller interrupts from Liquid Detection and Corrosion Mitigation (LDCM).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта от системы обнаружения жидкости и защиты от коррозии (LDCM)."
+          }
+        }
+      }
+    },
+    "Port-controller plug interrupts (both plug-in and unplug).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прерывания контроллера порта при подключении и при отключении разъёма."
+          }
+        }
+      }
+    },
     "Power": {
       "extractionState": "manual",
       "localizations": {
@@ -1579,6 +3403,54 @@
         }
       }
     },
+    "Power consumed by the system, in watts (floating point).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, потребляемая системой, в ваттах (число с плавающей точкой)."
+          }
+        }
+      }
+    },
+    "Power Data Objects (offers) the charger on this port last advertised; slots 1-7 SPR, 8 and up EPR.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объекты Power Data Objects (предложения), которые зарядное устройство на этом порту объявило последними; слоты 1–7 — SPR, с 8 — EPR."
+          }
+        }
+      }
+    },
+    "Power drawn from the adapter, in watts (floating point).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, потребляемая от адаптера, в ваттах (число с плавающей точкой)."
+          }
+        }
+      }
+    },
+    "Power entering the Mac from the adapter, after the adapter's own losses.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, поступающая в Mac от адаптера, за вычетом потерь в самом адаптере."
+          }
+        }
+      }
+    },
     "Power Flow": {
       "extractionState": "manual",
       "localizations": {
@@ -1586,6 +3458,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Поток энергии"
+          }
+        }
+      }
+    },
+    "Power flowing into (+) or out of (-) the battery, voltage times current.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, поступающая в аккумулятор (+) или отдаваемая им (-): произведение напряжения на ток."
+          }
+        }
+      }
+    },
+    "Power flowing into the battery (positive) or out of it (negative).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, поступающая в аккумулятор (положительная) или отдаваемая им (отрицательная)."
           }
         }
       }
@@ -1601,6 +3497,54 @@
         }
       }
     },
+    "Power of the negotiated contract in watts (voltage x current), not the label rating.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность согласованного контракта в ваттах (напряжение × ток), а не номинал на маркировке."
+          }
+        }
+      }
+    },
+    "Power role of the Mac on this port: 0 = sink (being charged), 1 = source (supplying power).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Роль Mac по питанию на этом порту: 0 = приёмник (заряжается), 1 = источник (отдаёт питание)."
+          }
+        }
+      }
+    },
+    "Power source name; the first internal battery is InternalBattery-0.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Имя источника питания; первый встроенный аккумулятор — InternalBattery-0."
+          }
+        }
+      }
+    },
+    "Power the whole Mac is using: adapter input minus battery charging power.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность, которую потребляет весь Mac: вход от адаптера минус мощность зарядки аккумулятора."
+          }
+        }
+      }
+    },
     "PPS %@ × %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery Programmable Power Supply offer: voltage range × current",
@@ -1609,6 +3553,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "PPS %@ × %@"
+          }
+        }
+      }
+    },
+    "Present battery capacity of the device on this port, from USB PD, in 0.1 Wh units.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текущая ёмкость аккумулятора устройства на этом порту по данным USB PD, в единицах 0,1 Вт·ч."
           }
         }
       }
@@ -1668,6 +3624,18 @@
         }
       }
     },
+    "Raw 64-byte charger status block.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необработанный 64-байтовый блок состояния контроллера зарядки."
+          }
+        }
+      }
+    },
     "Raw Data": {
       "extractionState": "manual",
       "comment": "Sidebar item: the raw IORegistry and power-source values",
@@ -1676,6 +3644,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Исходные данные"
+          }
+        }
+      }
+    },
+    "Raw log of recent port-controller events, ordered oldest to newest.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необработанный журнал последних событий контроллера порта, от старых к новым."
+          }
+        }
+      }
+    },
+    "Raw per-cell impedance tables from the gauge, one 32-byte block per cell.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необработанные таблицы импеданса элементов из контроллера, по одному 32-байтовому блоку на элемент."
           }
         }
       }
@@ -1714,6 +3706,18 @@
         }
       }
     },
+    "Remaining charge in mAh, as reported by the gauge (pre-macOS 27).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшийся заряд в мА·ч по данным контроллера (до macOS 27)."
+          }
+        }
+      }
+    },
     "Rendering or gaming: high power draw and an elevated thermal state.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -1737,6 +3741,114 @@
         }
       }
     },
+    "Running sum of negative BatteryPower samples in mW; ÷ its count gives average discharge power.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма отрицательных замеров BatteryPower в мВт; ÷ их число даёт среднюю мощность разрядки."
+          }
+        }
+      }
+    },
+    "Running sum of positive (charging) BatteryPower samples in mW; ÷ its count gives average.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма положительных (при зарядке) замеров BatteryPower в мВт; ÷ их число даёт среднее."
+          }
+        }
+      }
+    },
+    "Running sum of SystemEffectiveTotalLoad samples; Macs leave it at 0.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма замеров SystemEffectiveTotalLoad; на Mac всегда 0."
+          }
+        }
+      }
+    },
+    "Running sum of SystemLoad samples in mW; ÷ SystemLoadAccumulatorCount gives average load.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма замеров SystemLoad в мВт; ÷ SystemLoadAccumulatorCount даёт среднюю нагрузку."
+          }
+        }
+      }
+    },
+    "Running sum of SystemPowerIn samples in mW; compare readings by their difference modulo 2^32.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма замеров SystemPowerIn в мВт; сравнивайте показания по их разности по модулю 2^32."
+          }
+        }
+      }
+    },
+    "Running sum of the matching once-a-second telemetry value; some totals carry spurious 2^32 jumps.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма соответствующего ежесекундного значения телеметрии; в некоторых суммах бывают ложные скачки на 2^32."
+          }
+        }
+      }
+    },
+    "Running total of AdapterEfficiencyLoss in µWh; reduce it modulo 2^32 to get the real sum.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма AdapterEfficiencyLoss в мкВт·ч; для реальной суммы возьмите остаток по модулю 2^32."
+          }
+        }
+      }
+    },
+    "Running total of SystemEnergyConsumed in µWh; ignore steps of about 1193046471 (2^32 ÷ 3.6).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма SystemEnergyConsumed в мкВт·ч; игнорируйте скачки около 1193046471 (2^32 ÷ 3,6)."
+          }
+        }
+      }
+    },
+    "Running total of WallEnergyEstimate: estimated µWh drawn from the wall socket.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма WallEnergyEstimate: оценка мкВт·ч, полученных из розетки."
+          }
+        }
+      }
+    },
     "Save the raw data for a bug report. Serial numbers are redacted.": {
       "extractionState": "manual",
       "localizations": {
@@ -1744,6 +3856,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранить необработанные данные для отчёта об ошибке. Серийные номера скрыты."
+          }
+        }
+      }
+    },
+    "Scale for Current Capacity; always 100 for the internal battery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Шкала для Current Capacity; для встроенного аккумулятора всегда 100."
+          }
+        }
+      }
+    },
+    "Scale for CurrentCapacity on Apple silicon; always 100.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Шкала для CurrentCapacity на Mac с чипом Apple; всегда 100."
           }
         }
       }
@@ -1768,6 +3904,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сцены"
+          }
+        }
+      }
+    },
+    "Seconds a calibration tool should let the battery settle after a full charge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько секунд программа калибровки должна ждать стабилизации аккумулятора после полной зарядки."
+          }
+        }
+      }
+    },
+    "Seconds a calibration tool should let the battery settle after a full discharge.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько секунд программа калибровки должна ждать стабилизации аккумулятора после полной разрядки."
+          }
+        }
+      }
+    },
+    "Seconds after wake during which the time-remaining estimate is unreliable.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько секунд после выхода из сна оценка оставшегося времени ненадёжна."
+          }
+        }
+      }
+    },
+    "Serial number of the battery pack.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Серийный номер аккумулятора."
           }
         }
       }
@@ -1857,6 +4041,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывается"
+          }
+        }
+      }
+    },
+    "Sleep/wake bookkeeping for the port controller (Apple sleepWakeInfo struct).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Учёт сна и пробуждения контроллера порта (структура Apple sleepWakeInfo)."
           }
         }
       }
@@ -1995,6 +4191,18 @@
         }
       }
     },
+    "Time during which charging was limited for thermal reasons.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время, в течение которого зарядка ограничивалась из-за температуры."
+          }
+        }
+      }
+    },
     "Time remaining": {
       "extractionState": "manual",
       "localizations": {
@@ -2002,6 +4210,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшееся время"
+          }
+        }
+      }
+    },
+    "Times a sleep command to this port controller failed.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз не выполнилась команда сна для этого контроллера порта."
+          }
+        }
+      }
+    },
+    "Times a wake command to this port controller failed.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз не выполнилась команда пробуждения для этого контроллера порта."
+          }
+        }
+      }
+    },
+    "Times enabling this port's input power switch (FET) failed.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз не удалось включить входной ключ питания (FET) этого порта."
+          }
+        }
+      }
+    },
+    "Times the controller rejected a 'ready to sink power' (SRDY) request.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз контроллер отклонял запрос «готов принимать питание» (SRDY)."
+          }
+        }
+      }
+    },
+    "Times the Mac told the controller it is ready to sink power (TI 'SRDY' task).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз Mac сообщал контроллеру о готовности принимать питание (задача TI «SRDY»)."
+          }
+        }
+      }
+    },
+    "Times this port controller failed to wake.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз этот контроллер порта не смог выйти из сна."
+          }
+        }
+      }
+    },
+    "Times waking this port controller timed out.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько раз истекло ожидание пробуждения этого контроллера порта."
+          }
+        }
+      }
+    },
+    "Total hours the battery gauge has been running since manufacture.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько часов проработал контроллер аккумулятора с момента производства."
           }
         }
       }
@@ -2018,6 +4322,138 @@
         }
       }
     },
+    "True when a battery is present.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если аккумулятор присутствует."
+          }
+        }
+      }
+    },
+    "True when Low Power Mode is on.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если включён режим энергосбережения."
+          }
+        }
+      }
+    },
+    "True when plugged in and the battery counts as fully charged.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если адаптер подключён и аккумулятор считается полностью заряженным."
+          }
+        }
+      }
+    },
+    "True when the battery is actually being charged right now.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если аккумулятор действительно заряжается прямо сейчас."
+          }
+        }
+      }
+    },
+    "True when the battery is critically low and macOS forces sleep or shutdown.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если заряд критически низкий и macOS принудительно переводит Mac в режим сна или выключает его."
+          }
+        }
+      }
+    },
+    "True when the battery is installed.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если аккумулятор установлен."
+          }
+        }
+      }
+    },
+    "True when the connected power source can charge the battery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если подключённый источник питания может заряжать аккумулятор."
+          }
+        }
+      }
+    },
+    "True when the gauge reports the battery fully charged.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если контроллер сообщает, что аккумулятор полностью заряжен."
+          }
+        }
+      }
+    },
+    "True when the Mac is drawing external power (disconnects debounced by 1 s).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если Mac получает внешнее питание (отключение учитывается с задержкой 1 с)."
+          }
+        }
+      }
+    },
+    "True while charging at 99 % or more, when macOS shows \"Finishing Charge\".": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да при зарядке от 99 % и выше, когда macOS показывает «Завершение зарядки»."
+          }
+        }
+      }
+    },
+    "True while the battery is actually charging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, пока аккумулятор действительно заряжается."
+          }
+        }
+      }
+    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -2025,6 +4461,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Тип"
+          }
+        }
+      }
+    },
+    "Unique source ID: powerd's process ID in the high 16 bits, 99 for the battery in the low 16.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уникальный ID источника: ID процесса powerd в старших 16 битах, 99 для аккумулятора в младших 16."
+          }
+        }
+      }
+    },
+    "Unit of the battery IOReport channel; 0 means dimensionless (a plain count).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Единица канала IOReport аккумулятора; 0 — безразмерная величина (простой счётчик)."
           }
         }
       }
@@ -2040,6 +4500,54 @@
         }
       }
     },
+    "Upper per-cell voltage of the Carrier Mode charge window.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Верхнее напряжение элемента в окне заряда Carrier Mode."
+          }
+        }
+      }
+    },
+    "USB PD 3 details about the device last connected to this USB-C port, read from the SMC.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Данные USB PD 3 о последнем устройстве, подключённом к этому порту USB-C, считанные из SMC."
+          }
+        }
+      }
+    },
+    "USB PD Request Data Object of the last power contract the Mac negotiated on this port.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объект Request Data Object USB PD для последнего контракта питания, согласованного Mac на этом порту."
+          }
+        }
+      }
+    },
+    "USB PD revision of the device on this port, encoded as in the PD message header.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ревизия USB PD устройства на этом порту в кодировке заголовка сообщения PD."
+          }
+        }
+      }
+    },
     "USB Power Delivery": {
       "extractionState": "manual",
       "localizations": {
@@ -2047,6 +4555,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "USB Power Delivery"
+          }
+        }
+      }
+    },
+    "USB product ID of the device on this port, from its USB PD messages.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор продукта USB устройства на этом порту из его сообщений USB PD."
+          }
+        }
+      }
+    },
+    "USB-IF vendor ID of the device on this port, from its USB PD messages.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор производителя USB-IF устройства на этом порту из его сообщений USB PD."
           }
         }
       }
@@ -2098,6 +4630,42 @@
         }
       }
     },
+    "Voltage at the Mac's power input from the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение на входе питания Mac от адаптера."
+          }
+        }
+      }
+    },
+    "Voltage of each series cell; together they add up to the pack voltage.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение каждого последовательного элемента; в сумме они дают напряжение аккумулятора."
+          }
+        }
+      }
+    },
+    "Voltage of the power contract currently negotiated with the adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение контракта питания, согласованного сейчас с адаптером."
+          }
+        }
+      }
+    },
     "Voltages the adapter offers. The checkmark shows the one in use.": {
       "extractionState": "manual",
       "localizations": {
@@ -2128,6 +4696,138 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добро пожаловать в BatteryPulse"
+          }
+        }
+      }
+    },
+    "When the driver last finished a 'full' poll (adds cycle count, failure status, etc.).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда драйвер последний раз завершил «полный» опрос (включая число циклов, состояние отказов и т. д.)."
+          }
+        }
+      }
+    },
+    "When the driver last finished a complete poll of every battery register (done at boot).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда драйвер последний раз завершил опрос всех регистров аккумулятора (выполняется при загрузке)."
+          }
+        }
+      }
+    },
+    "When the driver last finished its frequent poll of user-visible values.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда драйвер последний раз завершил частый опрос значений, видимых пользователю."
+          }
+        }
+      }
+    },
+    "When the driver last refreshed the battery data.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда драйвер последний раз обновил данные аккумулятора."
+          }
+        }
+      }
+    },
+    "When the last battery-triggered shutdown happened, as stored by the SMC.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время последнего выключения из-за аккумулятора, сохранённое SMC."
+          }
+        }
+      }
+    },
+    "When the lifetime data was last refreshed.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда последний раз обновлялись данные за срок службы."
+          }
+        }
+      }
+    },
+    "Where power comes from: \"AC Power\" when plugged in, \"Battery Power\" otherwise.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Источник питания: «AC Power» при подключении к сети, иначе «Battery Power»."
+          }
+        }
+      }
+    },
+    "Whether Carrier Mode (a charge hold between two cell voltages) is active.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активен ли режим Carrier Mode (удержание заряда между двумя напряжениями элемента)."
+          }
+        }
+      }
+    },
+    "Whether the last USB PD device on this port can both supply and sink power (dual-role power).": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Может ли последнее устройство USB PD на этом порту и отдавать, и принимать питание (dual-role power)."
+          }
+        }
+      }
+    },
+    "Whether the last USB PD device on this port reported external (wall) power; kept after unplugging.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сообщило ли последнее устройство USB PD на этом порту о внешнем (сетевом) питании; сохраняется после отключения."
+          }
+        }
+      }
+    },
+    "Whether this port controller is allowed to enter its low-power sleep state.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешён ли этому контроллеру порта переход в режим сна с низким энергопотреблением."
           }
         }
       }
@@ -2173,6 +4873,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Да"
+          }
+        }
+      }
+    },
+    "Zero-based position of the negotiated USB-PD power profile in the adapter's offer.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер согласованного профиля питания USB-PD в предложении адаптера, начиная с 0."
+          }
+        }
+      }
+    },
+    "Zero-based position of this USB-PD profile in the adapter's offer list.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер этого профиля USB-PD в списке предложений адаптера, начиная с 0."
           }
         }
       }
