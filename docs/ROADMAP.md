@@ -211,7 +211,8 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   app can reportedly set it through the private `PowerUISmartChargeClient` without root, so
   BatteryPulse could offer that limit in its own UI plus a read-only report of what the firmware
   allows. Below 80 %, forced discharge and the MagSafe LED need a root helper and are disputed
-  on macOS 27: not now. (The adversarial check of this item is still to be finished.)
+  on macOS 27: not now. Macs on the same firmware with macOS 15.8 have no built-in limit, so no
+  charge control at all there.
 - [ ] **Homebrew.** The official homebrew/cask needs notarization and some popularity. A personal
   tap (`brew install --cask nikitausov/tap/batterypulse`) works today, but every install and
   upgrade still needs Open Anyway. Worth it after notarization.
