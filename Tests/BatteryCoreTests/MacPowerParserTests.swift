@@ -4,94 +4,122 @@ import Testing
 @testable import BatteryCore
 
 @Suite struct MacPowerParserTests {
-    @Test func appleSiliconOnBattery() throws {
-        let s = try Fixture.appleSiliconDischarging.snapshot()
+    @Test func m5OnBattery() throws {
+        let s = try Fixture.m5OnBattery.snapshot()
 
         #expect(s.timestamp == Fixture.timestamp)
-        #expect(s.chargePercent == 87)
+        #expect(s.chargePercent == 70)
         #expect(s.chargeState == .discharging)
         #expect(s.isExternalPowerConnected == false)
-        // The power-source estimate wins over the registry's AvgTimeToEmpty (296).
-        #expect(s.timeToEmptyMinutes == 291)
+        // The power-source estimate wins over the registry's AvgTimeToEmpty (339).
+        #expect(s.timeToEmptyMinutes == 342)
         #expect(s.timeToFullMinutes == nil)
 
+        // macOS 27 keeps mAh values in BatteryData.
+        #expect(s.currentCapacityMAh == 3901)
+        #expect(s.fullChargeCapacityMAh == 5862)
+        #expect(s.nominalChargeCapacityMAh == 6006)
+        #expect(s.designCapacityMAh == 5760)
+        #expect(s.cycleCount == 48)
+        #expect(s.designCycleCount == 1000, "IOPS DesignCycleCount (300) must not win")
+        #expect(s.healthCondition == "Normal")
+        #expect(s.permanentFailureStatus == nil)
+
+        #expect(s.voltageMV == 12176)
+        #expect(s.amperageMA == -612)
+        #expect(s.instantAmperageMA == -612)
+        // Not exposed on macOS 27.
+        #expect(s.cellVoltagesMV.isEmpty)
+        #expect(s.temperatureCelsius == nil)
+
+        #expect(s.adapter == nil)
+        #expect(s.notChargingReason == 0x80)
+        #expect(s.slowChargingReason == 0)
+        #expect(s.systemPowerInMW == 0)
+        #expect(s.systemLoadMW == 7499)
+        #expect(s.adapterEfficiencyLossMW == 0)
+        #expect(s.isLowPowerModeEnabled == false)
+
+        #expect(s.deviceName == "bq40z651")
+        #expect(s.manufacturer == nil)
+        #expect(s.serialNumber == "REDACTED")
+    }
+
+    @Test func m5Charging() throws {
+        let s = try Fixture.m5Charging.snapshot()
+
+        #expect(s.chargePercent == 70)
+        #expect(s.chargeState == .charging)
+        #expect(s.isExternalPowerConnected == true)
+        // IOPS says -1 (calculating) and AvgTimeToFull is 65535; AvgTimeToEmpty (403) is valid
+        // but must be ignored while charging.
+        #expect(s.timeToFullMinutes == nil)
+        #expect(s.timeToEmptyMinutes == nil)
+        #expect(s.currentCapacityMAh == 3896)
+        #expect(s.fullChargeCapacityMAh == 5866)
+        #expect(s.amperageMA == 384)
+
+        let adapter = try #require(s.adapter)
+        #expect(adapter.watts == 60)
+        #expect(adapter.voltageMV == 20000, "IOPS adapter details only have AdapterVoltage")
+        #expect(adapter.currentMA == 2990)
+        #expect(adapter.name == "40W Pwr Adapter 60W Max")
+        #expect(adapter.manufacturer == "Apple Inc.")
+        #expect(adapter.adapterDescription == "pd charger")
+        #expect(adapter.serialNumber == "REDACTED")
+        #expect(adapter.isWireless == false)
+
+        #expect(s.notChargingReason == 0)
+        #expect(s.chargingCurrentMA == nil, "ChargerData no longer has ChargingCurrent")
+        #expect(s.systemPowerInMW == 18545)
+        #expect(s.systemLoadMW == 13974)
+        #expect(s.adapterEfficiencyLossMW == 453)
+    }
+
+    @Test func legacyAppleSiliconLayout() throws {
+        let s = try Fixture.legacyDischarging.snapshot()
+
+        #expect(s.chargePercent == 87)
+        #expect(s.chargeState == .discharging)
+        #expect(s.timeToEmptyMinutes == 291)
         #expect(s.currentCapacityMAh == 5051)
         #expect(s.fullChargeCapacityMAh == 5807)
         #expect(s.nominalChargeCapacityMAh == 6024)
         #expect(s.designCapacityMAh == 6249)
         #expect(s.cycleCount == 214)
-        #expect(s.designCycleCount == 1000)
         #expect(s.healthCondition == "Good")
         #expect(s.permanentFailureStatus == 0)
-
-        #expect(s.voltageMV == 12433)
         #expect(s.amperageMA == -1024)
         #expect(s.instantAmperageMA == -1061)
         #expect(s.cellVoltagesMV == [4144, 4143, 4146])
         #expect(s.temperatureCelsius == 31.12)
-
-        #expect(s.adapter == nil, "stale AdapterDetails must be ignored on battery")
-        #expect(s.chargingCurrentMA == 0)
-        #expect(s.systemLoadMW == 12843)
-
-        #expect(s.deviceName == "bq40z651")
         #expect(s.manufacturer == "SMP")
         #expect(s.serialNumber == "F8Y0000SYNTHETIC")
-        #expect(s.manufactureDate == nil)
     }
 
-    @Test func appleSiliconCharging() throws {
-        let s = try Fixture.appleSiliconCharging.snapshot()
+    @Test func legacyAppleSiliconCharging() throws {
+        let s = try Fixture.legacyCharging.snapshot()
 
-        #expect(s.chargePercent == 54)
         #expect(s.chargeState == .charging)
-        #expect(s.isExternalPowerConnected == true)
         #expect(s.timeToFullMinutes == 52)
-        #expect(s.timeToEmptyMinutes == nil)
-        #expect(s.amperageMA == 3920)
-
         // IOPSCopyExternalPowerAdapterDetails is preferred over the registry copy.
-        let adapter = try #require(s.adapter)
-        #expect(adapter.watts == 96)
-        #expect(adapter.voltageMV == 20000)
-        #expect(adapter.currentMA == 4700)
-        #expect(adapter.name == "96W USB-C Power Adapter")
-        #expect(adapter.manufacturer == "Apple Inc.")
-        #expect(adapter.serialNumber == "C4H0000SYNTHETIC")
-        #expect(adapter.isWireless == false)
-
+        #expect(s.adapter?.watts == 96)
+        #expect(s.adapter?.serialNumber == "C4H0000SYNTHETIC")
         #expect(s.chargingCurrentMA == 4000)
         #expect(s.chargingVoltageMV == 13050)
-        #expect(s.systemPowerInMW == 73210)
-        #expect(s.systemLoadMW == 22480)
     }
 
-    @Test func intelHoldingChargeOnAdapter() throws {
-        let s = try Fixture.intelNotCharging.snapshot()
-
-        #expect(s.chargePercent == 80)
-        #expect(s.chargeState == .notCharging)
-        #expect(s.isOptimizedChargingEngaged == true)
-        #expect(s.timeToEmptyMinutes == nil)
-        #expect(s.timeToFullMinutes == nil)
-
-        // Intel reports capacities in mAh directly in CurrentCapacity/MaxCapacity.
-        #expect(s.currentCapacityMAh == 4152)
-        #expect(s.fullChargeCapacityMAh == 5190)
-        #expect(s.nominalChargeCapacityMAh == nil)
-        #expect(s.designCapacityMAh == 6669)
-        #expect(s.healthCondition == "Service Recommended")
-
-        #expect(s.cellVoltagesMV == [4034, 4035, 4019])
-        #expect(s.temperatureCelsius == 30.45)
-        #expect(s.serialNumber == "D86000SYNTHETIC")
-        #expect(s.manufactureDate == DateComponents(year: 2019, month: 7, day: 15))
-        #expect(s.adapter?.watts == 87)
-        #expect(s.adapter?.voltageMV == 20000)
+    @Test func conditionDefaultsToNormalOnlyWithPowerSourceData() {
+        func condition(_ ps: PropertyDictionary) -> String? {
+            BatteryReading(smartBattery: [:], powerSource: ps, timestamp: Fixture.timestamp).snapshot.healthCondition
+        }
+        #expect(condition([:]) == nil)
+        #expect(condition(["Type": .string("InternalBattery")]) == "Normal")
+        #expect(condition(["BatteryHealthCondition": .string("Service Recommended")]) == "Service Recommended")
     }
 
     @Test func rawCaptureRoundTrips() throws {
-        let reading = try Fixture.appleSiliconCharging.reading()
+        let reading = try Fixture.m5Charging.reading()
         let reparsed = BatteryReading(rawCapture: reading.rawCapture, timestamp: Fixture.timestamp)
         #expect(reparsed == reading)
     }
@@ -157,7 +185,7 @@ import Testing
     }
 
     @Test func redactedCaptureHidesSerialNumbers() throws {
-        let reading = try Fixture.appleSiliconCharging.reading()
+        let reading = try Fixture.legacyCharging.reading()
         let redacted = BatteryReading(rawCapture: reading.redactedRawCapture, timestamp: Fixture.timestamp)
         #expect(redacted.adapterDetails["SerialString"] == .string("REDACTED"))
         #expect(redacted.snapshot.adapter?.serialNumber == "REDACTED")
@@ -165,7 +193,7 @@ import Testing
         #expect(redacted.snapshot.adapter?.watts == 96)
         #expect(redacted.snapshot.cycleCount == reading.snapshot.cycleCount)
 
-        let discharging = try Fixture.appleSiliconDischarging.reading()
+        let discharging = try Fixture.legacyDischarging.reading()
         let text = PropertyValue.dictionary(discharging.redactedRawCapture).description
         #expect(!text.contains("F8Y0000SYNTHETIC"))
         #expect(text.contains("Hardware Serial Number = REDACTED"))
@@ -203,12 +231,6 @@ import Testing
     @Test func implausibleTemperatureIsDropped() {
         #expect(MacPowerParser.celsius(fromCentidegrees: 3112) == 31.12)
         #expect(MacPowerParser.celsius(fromCentidegrees: 29_815) == nil)
-    }
-
-    @Test func smartBatteryDateRejectsGarbage() {
-        #expect(MacPowerParser.smartBatteryDate(20207) == DateComponents(year: 2019, month: 7, day: 15))
-        #expect(MacPowerParser.smartBatteryDate(0) == nil)
-        #expect(MacPowerParser.smartBatteryDate(31) == nil)  // month 0
     }
 
     @Test func emptyInputsProduceEmptySnapshot() {

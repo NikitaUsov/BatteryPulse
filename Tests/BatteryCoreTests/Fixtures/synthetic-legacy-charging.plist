@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- SYNTHETIC: modeled on a 14" Apple Silicon MacBook Pro charging from a 96 W USB-C adapter. -->
+<!-- SYNTHETIC: pre-macOS 27 Apple Silicon layout while charging from a 96 W adapter, written from
+     memory. Kept to cover the parser's fallback keys. -->
 <plist version="1.0">
 <dict>
 	<key>AppleSmartBattery</key>

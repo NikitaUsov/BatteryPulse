@@ -1,15 +1,21 @@
 import Foundation
 
 extension BatterySnapshot {
-    /// Full-charge capacity relative to design capacity, in percent — macOS's "Maximum Capacity".
+    /// Full-charge capacity relative to design capacity, in percent, unclamped: a new battery
+    /// often holds more than its design capacity (an M5 at 48 cycles reads 104 %).
     ///
-    /// Uses the nominal capacity when available (matches System Settings on Apple Silicon),
+    /// Uses the nominal capacity when available (it backs "Maximum Capacity" on Apple Silicon),
     /// otherwise the gauge's measured full-charge capacity.
-    public var healthPercent: Double? {
+    public var capacityToDesignPercent: Double? {
         guard let design = designCapacityMAh, design > 0,
             let full = nominalChargeCapacityMAh ?? fullChargeCapacityMAh
         else { return nil }
         return Double(full) / Double(design) * 100
+    }
+
+    /// "Maximum Capacity" as macOS shows it: ``capacityToDesignPercent`` capped at 100 %.
+    public var healthPercent: Double? {
+        capacityToDesignPercent.map { min(100, $0) }
     }
 
     /// Capacity lost relative to design, in percent.
@@ -31,6 +37,7 @@ extension BatterySnapshot {
 
     public var systemPowerInWatts: Double? { systemPowerInMW.map { Double($0) / 1000 } }
     public var systemLoadWatts: Double? { systemLoadMW.map { Double($0) / 1000 } }
+    public var adapterEfficiencyLossWatts: Double? { adapterEfficiencyLossMW.map { Double($0) / 1000 } }
 
     /// Difference between the highest and lowest cell voltage. A growing spread hints at an
     /// ageing or unbalanced pack.

@@ -1,114 +1,118 @@
-# BatteryPulse — план разработки
+# BatteryPulse roadmap
 
-Лёгкое нативное приложение на Swift/SwiftUI для macOS и iOS, показывающее расширенное
-состояние батареи и зарядки.
+A lightweight native Swift/SwiftUI app for macOS and iOS that shows detailed battery and
+charging state.
 
-## Принципы
+## Decisions
 
-- **Ноль сторонних зависимостей.** Только системные фреймворки.
-- **Event-driven.** Данные обновляются по системным уведомлениям об изменении питания. Частый
-  опрос (раз в 2 с) включается, только пока на экране «живые» значения (ток, мощность).
-- **Ядро отдельно от платформы.** `BatteryCore` не зависит от Apple-фреймворков и покрыто
-  тестами на Linux и macOS. Парсер проверяется на реальных выгрузках (`bpulse --raw`).
-- **Swift 6, строгая конкурентность.** Минимальные ОС — macOS 14 / iOS 17 (`@Observable`,
-  `MenuBarExtra`, Swift Charts).
-- **Цели по ресурсам (macOS):** в простое ≈0 % CPU, < 30 МБ RAM, бинарь < 5 МБ.
+- **Platforms:** macOS 27 and iOS 27 minimum. On the Mac this means Apple Silicon only, since
+  macOS 27 no longer runs on Intel Macs. No Intel code paths.
+- **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
+  (and later charge limiting) are possible. A notarized DMG needs a paid Apple Developer
+  account; without one, users have to approve the app in Privacy & Security.
+- **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
+  (re-signed every 7 days); TestFlight and the App Store need the paid account.
+- **Reference hardware:** MacBook Air M5 running macOS 27.
 
-## Что вообще доступно
+## Principles
 
-| Параметр                                  | macOS | iOS                      |
-|-------------------------------------------|:-----:|:------------------------:|
-| Заряд, %                                  | ✅    | ✅ `UIDevice`            |
-| Состояние: зарядка / разрядка / полная    | ✅    | ✅                       |
-| Удержание заряда (Optimized Charging)     | ✅    | —                        |
-| Время до разряда / до полной              | ✅    | 🟡 считаем сами          |
-| Ёмкость, мА·ч (текущая/полная/проектная)  | ✅    | 🟡 импорт аналитики      |
-| Здоровье (Maximum Capacity), %            | ✅    | 🟡 импорт аналитики      |
-| Циклы                                     | ✅    | 🟡 импорт аналитики      |
-| Напряжение, ток, мощность                 | ✅    | —                        |
-| Напряжения ячеек и разброс                | ✅    | —                        |
-| Температура батареи                       | ✅    | 🟡 импорт аналитики      |
-| Адаптер: Вт, В, А, модель                 | ✅    | —                        |
-| Потребление системы (Apple Silicon)       | ✅    | —                        |
-| Low Power Mode, thermal state             | ✅    | ✅                       |
+- **No third-party dependencies.** System frameworks only.
+- **Event-driven.** Readings update on OS power notifications. Fast polling (every 2 s) runs
+  only while a view shows live values such as current or power.
+- **Platform-independent core.** `BatteryCore` has no Apple-only dependencies and is tested on
+  Linux and macOS against real captures (`bpulse --raw`).
+- **Swift 6 with strict concurrency.**
+- **Resource targets (macOS):** about 0 % CPU when idle, under 30 MB RAM, binary under 5 MB.
 
-На iOS публичное API отдаёт только уровень и состояние. Остальное можно получить, не нарушая
-правил App Store, импортом файла аналитики (*Настройки → Конфиденциальность и безопасность →
-Аналитика и улучшения → Данные аналитики*). Формат нужно сверить с реальным файлом.
+## What the platforms expose
 
-## Архитектура
+| Reading                                      | macOS 27 | iOS 27                |
+|----------------------------------------------|:--------:|:---------------------:|
+| Charge level, charging state                 | ✅       | ✅ `UIDevice`          |
+| Optimized charging hold                      | ✅       | —                     |
+| Time to empty / full                         | ✅       | estimated by the app  |
+| Capacity in mAh (remaining / full / design)  | ✅       | analytics import      |
+| Health (Maximum Capacity), cycle count       | ✅       | analytics import      |
+| Voltage, current, battery power              | ✅       | —                     |
+| Adapter: watts, volts, amps, model           | ✅       | —                     |
+| System input, system load, adapter loss      | ✅       | —                     |
+| Cell voltages, battery temperature           | SMC (planned) | analytics import |
+| Low Power Mode, thermal state                | ✅       | ✅                    |
+
+On a MacBook Air M5 with macOS 27, `AppleSmartBattery` keeps the mAh values in its
+`BatteryData` dictionary and no longer publishes `Temperature` or `CellVoltage`.
+
+On iOS the public API only provides level and state. The rest can come from the analytics file
+iOS lets users export (Settings → Privacy & Security → Analytics & Improvements → Analytics
+Data), without private APIs. The format still has to be checked against a real file.
+
+## Architecture
 
 ```
-BatteryCore  (Linux + Apple)   модели, парсеры, метрики, текстовый отчёт, позже история
+BatteryCore  (Linux + Apple)   models, parsing, metrics, text report; later history
      ▲
 BatteryKit   (Apple)           IOKit (macOS) / UIDevice (iOS), BatteryMonitor (@Observable)
      ▲
-bpulse (CLI, macOS)    App (SwiftUI: строка меню macOS + iOS)    Виджеты
+bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 ```
 
-## Этапы
+## Stages
 
-### Этап 0 — Фундамент ✅
+### Stage 0: Foundation ✅
 
-- [x] Swift Package: `BatteryCore`, `BatteryKit`, `bpulse`
-- [x] Парсер AppleSmartBattery + IOPowerSources + адаптера (Intel и Apple Silicon)
-- [x] Метрики: здоровье, износ, мощность, разброс ячеек, оценки времени
-- [x] `BatteryMonitor`: обновления по событиям ОС + живой режим по запросу
-- [x] CLI `bpulse` (`--json`, `--raw`, `--watch`, `--input`)
-- [x] CI: Linux (тесты ядра) + macOS (сборка, тесты, сборка BatteryKit под iOS)
-- [ ] **Проверить на реальном Mac**: `swift run bpulse`, затем `bpulse --raw` → реальные фикстуры
+- [x] Swift package: `BatteryCore`, `BatteryKit`, `bpulse`
+- [x] Parser for AppleSmartBattery, IOPowerSources and adapter details
+- [x] Metrics: health, wear, power, cell spread, time estimates
+- [x] `BatteryMonitor`: OS-event updates plus an on-demand live mode
+- [x] `bpulse` CLI (`--json`, `--raw`, `--watch`, `--input`)
+- [x] CI: Linux (core tests and lint) and macOS 27 (build, tests, iOS build of BatteryKit)
+- [x] Verified on a real MacBook Air M5 (macOS 27); real captures are the test fixtures
 
-### Этап 1 — macOS MVP (приложение в строке меню)
+### Stage 1: macOS MVP (menu-bar app)
 
-- [ ] `project.yml` для XcodeGen: таргет приложения macOS, `LSUIElement`
-- [ ] `MenuBarExtra`: иконка + % или ватты в строке меню (настраивается)
-- [ ] Поповер: заряд, состояние, время, мощность, здоровье, циклы, температура, адаптер
-- [ ] Окно «Подробно»: все параметры, сырые ключи IORegistry с поиском, «Скопировать отчёт»
-- [ ] Настройки: что показывать в строке меню, автозапуск (`SMAppService`)
-- [ ] Локализация RU/EN (String Catalog)
-- [ ] Замер в Instruments и подгонка под цели по ресурсам
+- [ ] Xcode project (XcodeGen `project.yml`): macOS app target, `LSUIElement`
+- [ ] `MenuBarExtra`: icon plus percent or watts in the menu bar (configurable)
+- [ ] Popover: charge, state, time, power, health, cycles, adapter
+- [ ] Details window: every reading, searchable raw IORegistry keys, "Copy report"
+- [ ] Settings: menu-bar content, launch at login (`SMAppService`)
+- [ ] Battery temperature and cell voltages from the SMC
+- [ ] String Catalog for localization
+- [ ] Profile in Instruments against the resource targets
+- [ ] DMG packaging
 
-### Этап 2 — iOS MVP
+### Stage 2: iOS MVP
 
-- [ ] iOS-таргет (общие SwiftUI-компоненты с macOS)
-- [ ] Экран: заряд, состояние, Low Power Mode, thermal state
-- [ ] Сессия зарядки, пока приложение открыто: скорость %/мин, оценка до 100 %
-- [ ] Импорт файла аналитики (Share Sheet / Files): циклы, здоровье, ёмкость, температура
+- [ ] iOS target sharing SwiftUI components with macOS
+- [ ] Screen: charge, state, Low Power Mode, thermal state
+- [ ] Charging session while the app is open: %/min, estimate to 100 %
+- [ ] Analytics file import (Share Sheet / Files): cycles, health, capacity, temperature
 
-### Этап 3 — История и графики
+### Stage 3: History and charts
 
-- [ ] Компактное хранилище сэмплов в `BatteryCore` (append-only, тестируется на Linux)
-- [ ] macOS: фоновая запись (приложение и так живёт в строке меню)
-- [ ] Swift Charts: заряд и мощность за 24 ч / 7 дней, здоровье и циклы во времени
-- [ ] Статистика: средний расход, время от батареи, сессии зарядки
+- [ ] Compact sample store in `BatteryCore` (append-only, tested on Linux)
+- [ ] macOS background recording (the app lives in the menu bar anyway)
+- [ ] Swift Charts: charge and power over 24 h / 7 days, health and cycles over time
+- [ ] Statistics: average drain, time on battery, charging sessions
 
-### Этап 4 — Виджеты и уведомления
+### Stage 4: Widgets and notifications
 
-- [ ] WidgetKit (macOS + iOS): заряд, здоровье
-- [ ] iOS Live Activity во время зарядки
-- [ ] Уведомления: достигнут порог заряда, перегрев, «Service Recommended»
+- [ ] WidgetKit (macOS + iOS): charge, health
+- [ ] iOS Live Activity while charging
+- [ ] Notifications: charge threshold reached, overheating, "Service Recommended"
 
-### Этап 5 — Дальше (по желанию)
+### Stage 5: Later (optional)
 
-- [ ] Батарея Mac на iPhone через iCloud
-- [ ] Батареи Bluetooth-устройств на macOS (AirPods, мышь, клавиатура)
-- [ ] Экспорт CSV/JSON
-- [ ] Ограничение заряда (как AlDente): нужен привилегированный helper и запись в SMC,
-      в App Store так нельзя
-- [ ] Публикация: App Store и/или подписанный DMG + Homebrew cask
+- [ ] Mac battery on the iPhone via iCloud
+- [ ] Bluetooth device batteries on macOS (AirPods, mouse, keyboard)
+- [ ] CSV/JSON export
+- [ ] Charge limiting (like AlDente): needs a privileged helper and SMC writes
+- [ ] Notarized DMG and a Homebrew cask
 
-## Открытые вопросы
+## Development environment
 
-1. **Распространение**: App Store (sandbox) или напрямую (DMG/Homebrew)? Чтение IORegistry
-   работает в обоих вариантах; SMC и ограничение заряда — только вне App Store.
-2. **Минимальные ОС**: сейчас macOS 14 / iOS 17. Поднять до 26, чтобы опираться на Liquid
-   Glass без `if #available`?
-3. **Железо для проверки**: какие Mac (Intel / Apple Silicon) и iPhone есть под рукой?
-
-## Окружение разработки
-
-- **Облачная сессия Claude** (Linux, Swift 6.4): `swift build`, `swift test`. Собирается и
-  тестируется всё, кроме кода под `#if os(macOS)` / `#if os(iOS)`.
-- **CI** (`macos-26`, Xcode 26.6): собирает и тестирует Darwin-код, собирает `BatteryKit` под iOS.
-- **Твой Mac**: запуск и UI. Сейчас `swift run bpulse`, позже
+- **Claude cloud sessions** (Linux, Swift 6.4): `swift build`, `swift test`. Everything builds
+  and tests except code under `#if os(macOS)` / `#if os(iOS)`.
+- **CI** (`xcode-27` runner: macOS 27, Xcode 27): builds and tests the Darwin code and builds
+  `BatteryKit` for iOS.
+- **The maintainer's Mac:** running the tools and the UI. Today `swift run bpulse`; later
   `xcodegen && open BatteryPulse.xcodeproj`.

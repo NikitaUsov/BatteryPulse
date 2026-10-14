@@ -4,9 +4,13 @@ import Testing
 
 /// Loads raw captures from `Fixtures/` (same format as `bpulse --raw`).
 enum Fixture: String, CaseIterable {
-    case appleSiliconDischarging = "apple-silicon-discharging"
-    case appleSiliconCharging = "apple-silicon-charging"
-    case intelNotCharging = "intel-not-charging"
+    /// Real: MacBook Air M5, macOS 27, on battery.
+    case m5OnBattery = "m5-macos27-on-battery"
+    /// Real: MacBook Air M5, macOS 27, charging from a 60 W adapter.
+    case m5Charging = "m5-macos27-charging"
+    /// Synthetic pre-macOS 27 layout, for fallback keys.
+    case legacyDischarging = "synthetic-legacy-discharging"
+    case legacyCharging = "synthetic-legacy-charging"
 
     static let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
 

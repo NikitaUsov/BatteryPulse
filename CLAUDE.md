@@ -1,7 +1,10 @@
 # BatteryPulse — notes for Claude
 
 Native battery/charging inspector for macOS and iOS. Swift 6, SwiftUI, zero dependencies.
-Plan and status: `docs/ROADMAP.md` (Russian; the maintainer speaks Russian, so reply in Russian).
+Plan, decisions and status: `docs/ROADMAP.md`. Everything in the repository is English only.
+
+Targets: macOS 27 / iOS 27, Apple Silicon only (no Intel code). macOS ships as a DMG, not
+through the App Store. Reference hardware: MacBook Air M5.
 
 ## Layout
 
@@ -12,16 +15,16 @@ Plan and status: `docs/ROADMAP.md` (Russian; the maintainer speaks Russian, so r
   `IOSBatteryProvider` (UIDevice), `BatteryMonitor` (@Observable, event-driven + optional polling).
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux).
-- `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures. Current ones are synthetic; replace
-  or add real ones from `bpulse --raw` when available.
+- `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
+  real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 
 ## Environment
 
 - Cloud sessions run on Linux: `swift build` and `swift test` work, but anything under
   `#if os(macOS)` / `#if os(iOS)` (IOKit, UIKit, SwiftUI) is NOT compiled here.
-- Darwin code is verified only by CI (`.github/workflows/ci.yml`, `macos-26`, Xcode 26.6 /
-  Swift 6.3). After touching Darwin code, push and check the macOS job.
-- Keep `swift-tools-version: 6.0` and avoid Swift 6.4-only features: CI's macOS toolchain is 6.3.
+- Darwin code is verified only by CI (`.github/workflows/ci.yml`, runner `xcode-27`: macOS 27,
+  Xcode 27, Swift 6.4) and on the maintainer's Mac. After touching Darwin code, push and check
+  the macOS job.
 
 ## Commands
 
@@ -35,6 +38,9 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
 ## Conventions
 
 - Units live in property names: `MAh`, `MV`, `MA`, `MW`. Signed current: negative = discharging.
+- macOS 27 layout: mAh values live in `AppleSmartBattery` → `BatteryData` (`RemainingCapacity`,
+  `FullChargeCapacity`, `NominalChargeCapacity`, `DesignCapacity`); there is no `Temperature` or
+  `CellVoltage`. Health is capped at 100 % like System Settings; no condition key means "Normal".
 - Linux Foundation quirk: NSNumber 0/1 casts to `Bool`, and `Int` in `Any` doesn't cast to
   `Int64` — go through `PropertyValue(any:)`, never cast raw values directly.
 - Tests use swift-testing (`import Testing`, `@Test`, `#expect`).

@@ -3,7 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "BatteryPulse",
-    platforms: [.macOS(.v14), .iOS(.v17)],
+    // Apple Silicon only: macOS 27 no longer runs on Intel Macs.
+    platforms: [.macOS("27.0"), .iOS("27.0")],
     products: [
         // Platform-independent models, parsing and metrics. Builds and tests on Linux.
         .library(name: "BatteryCore", targets: ["BatteryCore"]),

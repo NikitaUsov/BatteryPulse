@@ -2,15 +2,17 @@
 
 [![CI](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
-![Platforms](https://img.shields.io/badge/platforms-macOS%2014%2B%20%7C%20iOS%2017%2B-lightgrey)
+![Platforms](https://img.shields.io/badge/platforms-macOS%2027%2B%20%7C%20iOS%2027%2B-lightgrey)
+![Apple Silicon](https://img.shields.io/badge/Mac-Apple%20Silicon-black?logo=apple)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
 A lightweight, native battery and charging inspector for macOS and iOS: health, cycle
-count, capacity in mAh, live power draw, cell voltages, temperature and charger details.
-Built with Swift and SwiftUI, with no third-party dependencies.
+count, capacity in mAh, live power draw, charger and adapter details. Built with Swift and
+SwiftUI, with no third-party dependencies.
 
-> **Status: early development.** The `bpulse` command-line tool works on macOS today. The
-> menu-bar app and the iOS app come next. See the [roadmap](docs/ROADMAP.md) (in Russian).
+> **Status: early development.** The `bpulse` command-line tool works on macOS today. It is
+> verified on a MacBook Air M5 running macOS 27. The menu-bar app (distributed as a DMG) and
+> the iOS app come next. See the [roadmap](docs/ROADMAP.md).
 
 ## Try it on your Mac
 
@@ -20,28 +22,31 @@ cd BatteryPulse
 swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
-swift run bpulse --raw > battery.plist   # raw IOKit data, serial numbers redacted
+swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
 ```
 
-Example output (from a test fixture):
+Example output (MacBook Air M5, macOS 27, charging):
 
 ```text
-Charge           54 %  (3136 of 5807 mAh)
-State            Charging
-Time to full     52 min
-Battery power    +49.6 W  (12.65 V × 3920 mA)
-Health           96.4 %  (6024 of 6249 mAh design)
-Condition        Good
-Cycles           214 of 1000  (21 % of rated life)
-Temperature      33.5 °C
-Cells            4012 / 4015 / 4011 mV  (spread 4 mV)
-Adapter          96 W · 96W USB-C Power Adapter · 20.0 V × 4.70 A
-Charger request  4000 mA at 13.05 V
-System input     73.2 W
-System load      22.5 W
+Battery         bq40z651
+Charge          70 %  (3896 of 5866 mAh)
+State           Charging
+Time to full    ≈ 5 h 8 min
+Battery power   +4.7 W  (12.26 V × 384 mA)
+Health          100.0 %  (6010 of 5760 mAh design = 104.3 %)
+Condition       Normal
+Cycles          48 of 1000  (5 % of rated life)
+Adapter         60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A
+System input    18.5 W
+System load     14.0 W
+Adapter loss    0.5 W
+Low Power Mode  off
 ```
 
-Requires Xcode 16 or later (Swift 6 toolchain) on macOS 14 or later.
+`≈` marks values the app derives itself (here macOS was still calculating). Health is capped
+at 100 % the way System Settings shows it; the real ratio to design capacity follows it.
+
+Requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 
 ## What each platform exposes
 
@@ -50,16 +55,20 @@ Requires Xcode 16 or later (Swift 6 toolchain) on macOS 14 or later.
 | Charge level and charging state        | ✅    | ✅                      |
 | Time to empty / full                   | ✅    | estimated by the app    |
 | Health, cycle count, capacity (mAh)    | ✅    | via analytics import*   |
-| Voltage, current, power, cell voltages | ✅    | —                       |
-| Battery temperature                    | ✅    | via analytics import*   |
+| Voltage, current, battery power        | ✅    | —                       |
+| System input, load, adapter loss       | ✅    | —                       |
+| Cell voltages, battery temperature     | —†    | via analytics import*   |
 | Power adapter details                  | ✅    | —                       |
 | Low Power Mode, thermal state          | ✅    | ✅                      |
 
 \* iOS doesn't expose these to App Store apps. The planned workaround is to import the
 analytics file that iOS lets you export from Settings. No private APIs are involved.
 
+† macOS 27 no longer publishes them in `AppleSmartBattery`. Reading them from the SMC is on
+the roadmap.
+
 On macOS everything is read from the public IOKit power-source API and the
-`AppleSmartBattery` registry entry. No root, kernel extension or SMC access is needed.
+`AppleSmartBattery` registry entry. No root or kernel extension is needed.
 
 ## Architecture
 

@@ -4,44 +4,51 @@ import Testing
 @testable import BatteryCore
 
 @Suite struct MetricsTests {
-    @Test func healthPrefersNominalCapacity() throws {
-        let s = try Fixture.appleSiliconDischarging.snapshot()
+    @Test func healthIsCappedLikeMacOS() throws {
+        // A new M5 battery holds more than its design capacity; macOS still shows 100 %.
+        let s = try Fixture.m5OnBattery.snapshot()
+        let ratio = try #require(s.capacityToDesignPercent)
+        #expect(abs(ratio - 6006.0 / 5760.0 * 100) < 0.0001)
+        #expect(s.healthPercent == 100)
+        #expect(s.wearPercent == 0)
+        #expect(s.cycleLifeUsed == 0.048)
+    }
+
+    @Test func healthBelowDesign() throws {
+        let s = try Fixture.legacyDischarging.snapshot()
         let health = try #require(s.healthPercent)
         #expect(abs(health - 6024.0 / 6249.0 * 100) < 0.0001)
         #expect(abs(try #require(s.wearPercent) - (100 - health)) < 0.0001)
-        #expect(s.cycleLifeUsed == 0.214)
     }
 
     @Test func healthFallsBackToFullChargeCapacity() throws {
-        let s = try Fixture.intelNotCharging.snapshot()
-        #expect(abs(try #require(s.healthPercent) - 5190.0 / 6669.0 * 100) < 0.0001)
+        let s = BatterySnapshot(timestamp: .now, fullChargeCapacityMAh: 4500, designCapacityMAh: 5000)
+        #expect(s.healthPercent == 90)
     }
 
     @Test func batteryPowerIsSigned() throws {
-        let discharging = try Fixture.appleSiliconDischarging.snapshot()
-        #expect(abs(try #require(discharging.batteryPowerWatts) - (-12.731392)) < 0.000001)
-        let charging = try Fixture.appleSiliconCharging.snapshot()
-        #expect(abs(try #require(charging.batteryPowerWatts) - 49.588) < 0.000001)
-        #expect(charging.systemPowerInWatts == 73.21)
+        let discharging = try Fixture.m5OnBattery.snapshot()
+        #expect(abs(try #require(discharging.batteryPowerWatts) - (-7.451712)) < 0.000001)
+        let charging = try Fixture.m5Charging.snapshot()
+        #expect(abs(try #require(charging.batteryPowerWatts) - 4.708608) < 0.000001)
+        #expect(charging.systemPowerInWatts == 18.545)
+        #expect(charging.adapterEfficiencyLossWatts == 0.453)
     }
 
     @Test func cellSpread() throws {
-        #expect(try Fixture.appleSiliconDischarging.snapshot().cellVoltageSpreadMV == 3)
-        #expect(try Fixture.intelNotCharging.snapshot().cellVoltageSpreadMV == 16)
+        #expect(try Fixture.legacyDischarging.snapshot().cellVoltageSpreadMV == 3)
+        #expect(try Fixture.m5OnBattery.snapshot().cellVoltageSpreadMV == nil)
         #expect(BatterySnapshot(timestamp: .now, cellVoltagesMV: [4100]).cellVoltageSpreadMV == nil)
     }
 
-    @Test func timeEstimatesFallBackToCurrent() {
+    @Test func timeEstimatesFallBackToCurrent() throws {
         let discharging = BatterySnapshot(
             timestamp: .now, chargeState: .discharging, currentCapacityMAh: 3000, amperageMA: -1500
         )
         #expect(discharging.estimatedTimeToEmptyMinutes == 120)
 
-        let charging = BatterySnapshot(
-            timestamp: .now, chargeState: .charging,
-            currentCapacityMAh: 3000, fullChargeCapacityMAh: 5000, amperageMA: 4000
-        )
-        #expect(charging.estimatedTimeToFullMinutes == 30)
+        // Real M5: macOS is still "calculating"; (5866 - 3896) mAh at 384 mA ≈ 308 min.
+        #expect(try Fixture.m5Charging.snapshot().estimatedTimeToFullMinutes == 308)
 
         let idle = BatterySnapshot(
             timestamp: .now, chargeState: .discharging, currentCapacityMAh: 3000, amperageMA: -5
@@ -50,8 +57,8 @@ import Testing
     }
 
     @Test func osEstimateWins() throws {
-        let s = try Fixture.appleSiliconDischarging.snapshot()
-        #expect(s.estimatedTimeToEmptyMinutes == 291)
+        let s = try Fixture.m5OnBattery.snapshot()
+        #expect(s.estimatedTimeToEmptyMinutes == 342)
     }
 }
 
@@ -60,42 +67,56 @@ import Testing
         BatteryReport.lines(for: s).first { $0.label == label }?.value
     }
 
-    @Test func dischargingReport() throws {
-        let s = try Fixture.appleSiliconDischarging.snapshot()
+    @Test func m5OnBatteryReport() throws {
+        let s = try Fixture.m5OnBattery.snapshot()
+        #expect(value("Battery", in: s) == "bq40z651")
+        #expect(value("Charge", in: s) == "70 %  (3901 of 5862 mAh)")
+        #expect(value("State", in: s) == "Discharging")
+        #expect(value("Time to empty", in: s) == "5 h 42 min")
+        #expect(value("Battery power", in: s) == "-7.5 W  (12.18 V × -612 mA)")
+        #expect(value("Health", in: s) == "100.0 %  (6006 of 5760 mAh design = 104.3 %)")
+        #expect(value("Condition", in: s) == "Normal")
+        #expect(value("Cycles", in: s) == "48 of 1000  (5 % of rated life)")
+        // Noise seen on real hardware that must stay hidden on battery.
+        #expect(value("Not charging reason", in: s) == nil)
+        #expect(value("System input", in: s) == nil)
+        #expect(value("Adapter loss", in: s) == nil)
+        #expect(value("Temperature", in: s) == nil)
+        #expect(value("Cells", in: s) == nil)
+    }
+
+    @Test func m5ChargingReport() throws {
+        let s = try Fixture.m5Charging.snapshot()
+        #expect(value("Time to full", in: s) == "≈ 5 h 8 min")
+        #expect(value("Battery power", in: s) == "+4.7 W  (12.26 V × 384 mA)")
+        #expect(value("Adapter", in: s) == "60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A")
+        #expect(value("System input", in: s) == "18.5 W")
+        #expect(value("Adapter loss", in: s) == "0.5 W")
+    }
+
+    @Test func legacyReport() throws {
+        let s = try Fixture.legacyDischarging.snapshot()
         #expect(value("Battery", in: s) == "bq40z651 · SMP")
         #expect(!BatteryReport.text(for: s).contains("F8Y0000SYNTHETIC"), "serials must not leak into reports")
-        #expect(value("Charge", in: s) == "87 %  (5051 of 5807 mAh)")
-        #expect(value("State", in: s) == "Discharging")
-        #expect(value("Time to empty", in: s) == "4 h 51 min")
-        #expect(value("Battery power", in: s) == "-12.7 W  (12.43 V × -1024 mA)")
         #expect(value("Health", in: s) == "96.4 %  (6024 of 6249 mAh design)")
-        #expect(value("Cycles", in: s) == "214 of 1000  (21 % of rated life)")
         #expect(value("Temperature", in: s) == "31.1 °C")
         #expect(value("Cells", in: s) == "4144 / 4143 / 4146 mV  (spread 3 mV)")
-        #expect(value("Adapter", in: s) == nil)
-        #expect(value("Permanent failure", in: s) == nil)
+        #expect(try value("Charger request", in: Fixture.legacyCharging.snapshot()) == "4000 mA at 13.05 V")
     }
 
-    @Test func chargingReport() throws {
-        let s = try Fixture.appleSiliconCharging.snapshot()
-        #expect(value("Time to full", in: s) == "52 min")
-        #expect(value("Battery power", in: s) == "+49.6 W  (12.65 V × 3920 mA)")
-        #expect(value("Adapter", in: s) == "96 W · 96W USB-C Power Adapter · 20.0 V × 4.70 A")
-        #expect(value("Charger request", in: s) == "4000 mA at 13.05 V")
-        #expect(value("System input", in: s) == "73.2 W")
-    }
-
-    @Test func intelReport() throws {
-        let s = try Fixture.intelNotCharging.snapshot()
+    @Test func notChargingOnAdapter() {
+        let s = BatterySnapshot(
+            timestamp: .now, chargeState: .notCharging, isExternalPowerConnected: true,
+            isOptimizedChargingEngaged: true, voltageMV: 12100, amperageMA: 0, notChargingReason: 0x80
+        )
         #expect(value("State", in: s) == "On power adapter, not charging")
         #expect(value("Optimized charging", in: s) == "holding charge")
+        #expect(value("Not charging reason", in: s) == "0x80")
         #expect(value("Battery power", in: s) == "0.0 W  (12.10 V × 0 mA)")
-        #expect(value("Manufactured", in: s) == "2019-07-15")
-        #expect(value("Adapter", in: s) == "87 W · pd charger · 20.0 V × 4.30 A")
     }
 
     @Test func textAlignsValuesInOneColumn() throws {
-        let s = try Fixture.appleSiliconDischarging.snapshot()
+        let s = try Fixture.m5Charging.snapshot()
         let lines = BatteryReport.lines(for: s)
         let column = (lines.map(\.label.count).max() ?? 0) + 2
         let rows = BatteryReport.text(for: s).split(separator: "\n", omittingEmptySubsequences: false)

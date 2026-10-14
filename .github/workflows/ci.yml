@@ -26,7 +26,9 @@ jobs:
 
   macos:
     name: macOS · build & test
-    runs-on: macos-26
+    # macOS 27 + Xcode 27 image (preview label): the package targets macOS 27, so its tests
+    # can't run on older hosts.
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v5
       - name: Toolchain

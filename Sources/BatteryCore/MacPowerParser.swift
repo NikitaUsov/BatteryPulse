@@ -88,8 +88,11 @@ extension BatteryReading {
 
 /// Maps macOS power dictionaries onto ``BatterySnapshot``.
 ///
-/// Intel Macs report `CurrentCapacity`/`MaxCapacity` in mAh; Apple Silicon reports them in
-/// percent and moves the mAh values to `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`.
+/// macOS 27 (checked on a MacBook Air M5) keeps the gauge's mAh values in the `BatteryData`
+/// sub-dictionary (`RemainingCapacity`, `FullChargeCapacity`, `NominalChargeCapacity`,
+/// `DesignCapacity`); top-level `CurrentCapacity`/`MaxCapacity` are percentages. Earlier Apple
+/// Silicon releases exposed `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`, `Temperature` and
+/// `CellVoltage` at the top level; those remain as fallbacks.
 enum MacPowerParser {
     /// IORegistry's "unknown" marker for minute counters.
     static let invalidMinutes = 65535
@@ -106,27 +109,28 @@ enum MacPowerParser {
 
         var s = BatterySnapshot(timestamp: timestamp)
 
-        // Capacity
-        let registryCurrent = sb["CurrentCapacity"]?.intValue
-        let registryMax = sb["MaxCapacity"]?.intValue
-        let registryUsesMAh = (registryMax ?? 0) > 100
+        // Capacity (mAh)
         s.currentCapacityMAh =
-            sb["AppleRawCurrentCapacity"]?.intValue
-            ?? (registryUsesMAh ? registryCurrent : nil)
+            batteryData["RemainingCapacity"]?.intValue ?? sb["AppleRawCurrentCapacity"]?.intValue
         s.fullChargeCapacityMAh =
-            sb["AppleRawMaxCapacity"]?.intValue
-            ?? (registryUsesMAh ? registryMax : nil)
-        s.nominalChargeCapacityMAh = sb["NominalChargeCapacity"]?.intValue
-        s.designCapacityMAh = sb["DesignCapacity"]?.intValue ?? batteryData["DesignCapacity"]?.intValue
+            batteryData["FullChargeCapacity"]?.intValue ?? sb["AppleRawMaxCapacity"]?.intValue
+        s.nominalChargeCapacityMAh =
+            batteryData["NominalChargeCapacity"]?.intValue ?? sb["NominalChargeCapacity"]?.intValue
+        s.designCapacityMAh = batteryData["DesignCapacity"]?.intValue ?? sb["DesignCapacity"]?.intValue
         s.cycleCount = sb["CycleCount"]?.intValue ?? batteryData["CycleCount"]?.intValue
-        s.designCycleCount = sb["DesignCycleCount9C"]?.intValue ?? sb["DesignCycleCount70"]?.intValue
-        s.healthCondition = ps["BatteryHealthCondition"]?.stringValue ?? ps["BatteryHealth"]?.stringValue
+        // IOPS also has `DesignCycleCount`, but it reads 300 on an M5 rated for 1000 cycles.
+        s.designCycleCount = sb["DesignCycleCount9C"]?.intValue
+        // macOS only publishes a condition when something is wrong; System Information shows
+        // "Normal" when the key is absent.
+        s.healthCondition =
+            ps["BatteryHealthCondition"]?.stringValue ?? ps["BatteryHealth"]?.stringValue
+            ?? (ps.isEmpty ? nil : "Normal")
         s.permanentFailureStatus = sb["PermanentFailureStatus"]?.intValue
 
         // Charge percent: prefer the power-source value, which is what the menu bar shows.
         if let current = ps["Current Capacity"]?.intValue, let max = ps["Max Capacity"]?.intValue, max > 0 {
             s.chargePercent = percent(current, of: max)
-        } else if let current = registryCurrent, let max = registryMax, max > 0 {
+        } else if let current = sb["CurrentCapacity"]?.intValue, let max = sb["MaxCapacity"]?.intValue, max > 0 {
             s.chargePercent = percent(current, of: max)
         }
 
@@ -142,6 +146,7 @@ enum MacPowerParser {
             isFullyCharged: isFullyCharged
         )
         s.isOptimizedChargingEngaged = ps["Optimized Battery Charging Engaged"]?.boolValue
+        s.isLowPowerModeEnabled = ps["LPM Active"]?.boolValue
 
         switch s.chargeState {
         case .discharging:
@@ -157,9 +162,7 @@ enum MacPowerParser {
         }
 
         // Electrical
-        s.voltageMV =
-            sb["Voltage"]?.intValue ?? batteryData["Voltage"]?.intValue
-            ?? sb["AppleRawBatteryVoltage"]?.intValue
+        s.voltageMV = sb["Voltage"]?.intValue ?? sb["AppleRawBatteryVoltage"]?.intValue
         s.amperageMA = sb["Amperage"]?.intValue
         s.instantAmperageMA = sb["InstantAmperage"]?.intValue
         s.cellVoltagesMV =
@@ -171,8 +174,10 @@ enum MacPowerParser {
         s.chargingCurrentMA = chargerData["ChargingCurrent"]?.intValue
         s.chargingVoltageMV = chargerData["ChargingVoltage"]?.intValue
         s.notChargingReason = chargerData["NotChargingReason"]?.intValue
+        s.slowChargingReason = chargerData["SlowChargingReason"]?.intValue
         s.systemPowerInMW = telemetry["SystemPowerIn"]?.intValue
         s.systemLoadMW = telemetry["SystemLoad"]?.intValue
+        s.adapterEfficiencyLossMW = telemetry["AdapterEfficiencyLoss"]?.intValue
         if s.isExternalPowerConnected != false {
             s.adapter = adapter(
                 from: adapterDetails.isEmpty
@@ -183,11 +188,7 @@ enum MacPowerParser {
         // Identity
         s.deviceName = sb["DeviceName"]?.stringValue
         s.manufacturer = sb["Manufacturer"]?.stringValue
-        s.serialNumber =
-            sb["Serial"]?.stringValue
-            ?? sb["BatterySerialNumber"]?.stringValue
-            ?? ps["Hardware Serial Number"]?.stringValue
-        s.manufactureDate = smartBatteryDate(sb["ManufactureDate"]?.intValue)
+        s.serialNumber = sb["Serial"]?.stringValue ?? ps["Hardware Serial Number"]?.stringValue
 
         return s
     }
@@ -219,18 +220,6 @@ enum MacPowerParser {
     static func celsius(fromCentidegrees raw: Int) -> Double? {
         let celsius = Double(raw) / 100
         return (-40...150).contains(celsius) ? celsius : nil
-    }
-
-    /// Smart Battery Data spec date: `(year - 1980) << 9 | month << 5 | day`.
-    static func smartBatteryDate(_ raw: Int?) -> DateComponents? {
-        guard let raw, raw > 0 else { return nil }
-        let day = raw & 0x1F
-        let month = (raw >> 5) & 0x0F
-        let year = 1980 + (raw >> 9)
-        guard (1...31).contains(day), (1...12).contains(month), (2000...2100).contains(year) else {
-            return nil
-        }
-        return DateComponents(year: year, month: month, day: day)
     }
 
     static func adapter(from d: PropertyDictionary) -> PowerAdapter? {

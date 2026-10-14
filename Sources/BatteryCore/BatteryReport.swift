@@ -28,16 +28,20 @@ public enum BatteryReport {
             add("Charge", value)
         }
         add("State", stateDescription(s))
-        add("Time to empty", s.estimatedTimeToEmptyMinutes.map(duration))
-        add("Time to full", s.estimatedTimeToFullMinutes.map(duration))
+        // OS estimates are shown as is; values derived from capacity and current get "≈".
+        add("Time to empty", timeRemaining(os: s.timeToEmptyMinutes, derived: s.estimatedTimeToEmptyMinutes))
+        add("Time to full", timeRemaining(os: s.timeToFullMinutes, derived: s.estimatedTimeToFullMinutes))
 
         if let watts = s.batteryPowerWatts, let voltage = s.voltageMV, let amperage = s.amperageMA {
             add("Battery power", "\(signed(watts, 1)) W  (\(fixed(Double(voltage) / 1000, 2)) V × \(amperage) mA)")
         }
 
-        if let health = s.healthPercent, let design = s.designCapacityMAh {
+        if let health = s.healthPercent, let ratio = s.capacityToDesignPercent, let design = s.designCapacityMAh {
             let full = s.nominalChargeCapacityMAh ?? s.fullChargeCapacityMAh ?? 0
-            add("Health", "\(fixed(health, 1)) %  (\(full) of \(design) mAh design)")
+            var value = "\(fixed(health, 1)) %  (\(full) of \(design) mAh design"
+            // macOS caps "Maximum Capacity" at 100 %; show the real ratio when it is higher.
+            value += ratio > health ? " = \(fixed(ratio, 1)) %)" : ")"
+            add("Health", value)
         }
         add("Condition", s.healthCondition)
         if let failure = s.permanentFailureStatus, failure != 0 {
@@ -71,18 +75,22 @@ public enum BatteryReport {
         if let current = s.chargingCurrentMA, let voltage = s.chargingVoltageMV, current > 0 {
             add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V")
         }
-        if let reason = s.notChargingReason, reason != 0 {
+        // The gauge reports a "not charging" reason on battery too; it only means something
+        // while an adapter is connected.
+        if let reason = s.notChargingReason, reason != 0, s.isExternalPowerConnected == true {
             add("Not charging reason", String(format: "0x%X", reason))
         }
-        add("System input", s.systemPowerInWatts.map { "\(fixed($0, 1)) W" })
+        if let reason = s.slowChargingReason, reason != 0, s.chargeState == .charging {
+            add("Slow charging reason", String(format: "0x%X", reason))
+        }
+        add("System input", s.systemPowerInWatts.flatMap { $0 > 0 ? "\(fixed($0, 1)) W" : nil })
         add("System load", s.systemLoadWatts.map { "\(fixed($0, 1)) W" })
+        if s.isExternalPowerConnected == true, let loss = s.adapterEfficiencyLossWatts, loss > 0 {
+            add("Adapter loss", "\(fixed(loss, 1)) W")
+        }
         add("Optimized charging", s.isOptimizedChargingEngaged.map { $0 ? "holding charge" : "inactive" })
         add("Low Power Mode", s.isLowPowerModeEnabled.map { $0 ? "on" : "off" })
         add("Thermal state", s.thermalState?.rawValue)
-
-        if let date = s.manufactureDate, let year = date.year, let month = date.month, let day = date.day {
-            add("Manufactured", String(format: "%04d-%02d-%02d", year, month, day))
-        }
         return lines
     }
 
@@ -105,6 +113,11 @@ public enum BatteryReport {
         case .notCharging: "On power adapter, not charging"
         case .unknown: "Unknown"
         }
+    }
+
+    static func timeRemaining(os: Int?, derived: Int?) -> String? {
+        if let os { return duration(os) }
+        return derived.map { "≈ " + duration($0) }
     }
 
     /// `75` → "1 h 15 min", `40` → "40 min".

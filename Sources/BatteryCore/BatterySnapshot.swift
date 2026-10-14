@@ -2,8 +2,8 @@ import Foundation
 
 /// One point-in-time reading of the battery and power state.
 ///
-/// Every field is optional: macOS exposes far more than iOS, and the set of IORegistry
-/// keys differs between Intel and Apple Silicon Macs. Units are encoded in property names
+/// Every field is optional: macOS exposes far more than iOS, and the set of IORegistry keys
+/// changes between macOS releases (macOS 27 dropped battery temperature and cell voltages). Units are encoded in property names
 /// (`MAh` = milliamp-hours, `MV` = millivolts, `MA` = milliamps, `MW` = milliwatts).
 public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var timestamp: Date
@@ -55,17 +55,20 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var chargingVoltageMV: Int?
     /// Raw bitmask explaining why the battery isn't charging while on external power.
     public var notChargingReason: Int?
+    /// Raw code explaining why charging is throttled (0 = not throttled).
+    public var slowChargingReason: Int?
     /// Power drawn from the adapter by the whole machine (Apple Silicon telemetry).
     public var systemPowerInMW: Int?
     /// Power consumed by the system, regardless of source (Apple Silicon telemetry).
     public var systemLoadMW: Int?
+    /// Power lost converting adapter input (Apple Silicon telemetry).
+    public var adapterEfficiencyLossMW: Int?
 
     // MARK: Identity
 
     public var deviceName: String?
     public var manufacturer: String?
     public var serialNumber: String?
-    public var manufactureDate: DateComponents?
 
     // MARK: System
 
@@ -97,12 +100,13 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         chargingCurrentMA: Int? = nil,
         chargingVoltageMV: Int? = nil,
         notChargingReason: Int? = nil,
+        slowChargingReason: Int? = nil,
         systemPowerInMW: Int? = nil,
         systemLoadMW: Int? = nil,
+        adapterEfficiencyLossMW: Int? = nil,
         deviceName: String? = nil,
         manufacturer: String? = nil,
         serialNumber: String? = nil,
-        manufactureDate: DateComponents? = nil,
         isLowPowerModeEnabled: Bool? = nil,
         thermalState: ThermalState? = nil
     ) {
@@ -130,12 +134,13 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         self.chargingCurrentMA = chargingCurrentMA
         self.chargingVoltageMV = chargingVoltageMV
         self.notChargingReason = notChargingReason
+        self.slowChargingReason = slowChargingReason
         self.systemPowerInMW = systemPowerInMW
         self.systemLoadMW = systemLoadMW
+        self.adapterEfficiencyLossMW = adapterEfficiencyLossMW
         self.deviceName = deviceName
         self.manufacturer = manufacturer
         self.serialNumber = serialNumber
-        self.manufactureDate = manufactureDate
         self.isLowPowerModeEnabled = isLowPowerModeEnabled
         self.thermalState = thermalState
     }
