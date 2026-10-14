@@ -184,11 +184,37 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 6: Later (optional)
 
-- [ ] Mac battery on the iPhone via iCloud
-- [ ] Bluetooth device batteries on macOS (AirPods, mouse, keyboard)
-- [ ] CSV/JSON export
-- [ ] Charge limiting (like AlDente): needs a privileged helper and SMC writes
-- [ ] Homebrew cask (after notarization)
+Researched in October 2026 (each with an adversarial check). A paid Apple Developer account
+($99 a year) comes up in every item: it brings Developer ID signing and notarization, which
+remove Open Anyway, keep permissions across updates and unlock iCloud.
+
+- [ ] **Mac battery on the iPhone via iCloud.** Needs the paid account: CloudKit and push are
+  unavailable to ad-hoc and free-team builds on both platforms. With it: a CloudKit private
+  database written by the Developer ID Mac app, silent pushes and a widget on the iPhone
+  (refresh about every 15–60 minutes), and visible alerts through `CKQuerySubscription` (those
+  read record fields, so the alerting fields can't also be encrypted). Without it, only the local
+  network or Bluetooth LE, which iOS won't relaunch for after a force-quit. Blocked on Stage 2
+  (iOS app) anyway.
+- [ ] **Bluetooth device batteries on macOS** (keyboard, mouse, trackpad, headphones): feasible
+  without the paid account. powerd publishes accessory batteries through the private
+  `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
+  prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
+  notifications), with `pmset -g accps -xml` as a fallback. Seen working for Magic Keyboard and
+  Mouse, a Logitech BLE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
+  (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
+  Bluetooth permission, which ad-hoc signing loses on every update.
+- [ ] **CSV/JSON export** of history: public APIs only (`fileExporter`), about two days,
+  formatting tested on Linux; CSV dialect follows the locale's decimal separator.
+- [ ] **Charge limiting.** The old SMC route is closed: on macOS 27 firmware the charge-inhibit
+  keys AlDente and others used are gone or behind an Apple-private entitlement, even for root
+  and even with a paid account. macOS 26.4+ has its own Charge Limit (80–100 %); a third-party
+  app can reportedly set it through the private `PowerUISmartChargeClient` without root, so
+  BatteryPulse could offer that limit in its own UI plus a read-only report of what the firmware
+  allows. Below 80 %, forced discharge and the MagSafe LED need a root helper and are disputed
+  on macOS 27: not now. (The adversarial check of this item is still to be finished.)
+- [ ] **Homebrew.** The official homebrew/cask needs notarization and some popularity. A personal
+  tap (`brew install --cask nikitausov/tap/batterypulse`) works today, but every install and
+  upgrade still needs Open Anyway. Worth it after notarization.
 
 ## Releases
 
