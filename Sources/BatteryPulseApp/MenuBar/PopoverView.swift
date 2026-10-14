@@ -7,6 +7,7 @@ import SwiftUI
 /// The window that opens from the menu bar item: a compact summary and ways into the app.
 struct PopoverView: View {
     let monitor: BatteryMonitor
+    @Environment(DemoController.self) private var demo
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
@@ -23,6 +24,18 @@ struct PopoverView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
+            }
+
+            if demo.isActive {
+                // The numbers above are simulated; say so and offer the way out.
+                HStack {
+                    Label("Demo", systemImage: "play.rectangle.on.rectangle")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Button("Stop Demo") { demo.stop() }
+                        .controlSize(.small)
+                }
             }
 
             Divider()

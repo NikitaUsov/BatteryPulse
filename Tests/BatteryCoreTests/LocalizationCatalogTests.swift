@@ -20,7 +20,8 @@ import Testing
         #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|Card|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(\s*localized:|\btitle:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
     }
 
-    /// Literal cases of `var title: LocalizedStringKey` switches and `("Label", value, color)` rows.
+    /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches and
+    /// `("Label", value, color)` rows.
     private static var caseLiteral: Regex<(Substring, Substring)> {
         #/case \.\w+:\s*"((?:[^"\\]|\\.)*)"/#
     }
@@ -61,7 +62,7 @@ import Testing
             let source = try String(contentsOf: url, encoding: .utf8)
             var literals = source.matches(of: Self.localizingCall).map { String($0.output.1) }
             literals += source.matches(of: Self.tupleLiteral).map { String($0.output.1) }
-            for block in source.matches(of: #/var title: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
+            for block in source.matches(of: #/var \w+: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
                 literals += block.output.body.matches(of: Self.caseLiteral).map { String($0.output.1) }
             }
             for literal in literals where !Self.verbatim.contains(literal) {

@@ -98,6 +98,32 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         #expect(monitor.snapshot?.timestamp == Date(timeIntervalSince1970: 1))
     }
 
+    @Test func overrideReplacesReadingsUntilCleared() {
+        let device = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = BatteryMonitor(provider: device)
+        monitor.start()
+
+        let demo = DemoBatteryProvider(battery: DemoScenario.lowBattery.battery)
+        monitor.setOverride(demo)
+        #expect(monitor.isOverridden)
+        #expect(monitor.snapshot?.chargePercent == 17)
+        #expect(device.cancellations.value == 1, "device notifications pause during the demo")
+
+        // Changing the demo updates the monitor at once, without a device event.
+        demo.battery = DemoScenario.criticalBattery.battery
+        #expect(monitor.snapshot?.chargePercent == 6)
+        demo.battery = nil
+        #expect(monitor.hasBattery == false)
+
+        monitor.setOverride(nil)
+        #expect(!monitor.isOverridden)
+        #expect(monitor.snapshot?.chargePercent == 80)
+        #expect(monitor.hasBattery == true)
+        device.next = reading(percent: 79, at: 2)
+        device.simulateSystemChange()
+        #expect(monitor.snapshot?.chargePercent == 79, "device notifications resume")
+    }
+
     @Test func missingBatteryIsReported() {
         let provider = MockBatteryProvider(next: nil)
         let monitor = BatteryMonitor(provider: provider)

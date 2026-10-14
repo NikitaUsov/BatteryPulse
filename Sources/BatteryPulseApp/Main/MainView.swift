@@ -5,16 +5,22 @@ import BatteryKit
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case overview, power, health, developer
+    case overview, power, health
+    /// Developer section: raw data and Demo Mode.
+    case developer, demo
 
     var id: Self { self }
+
+    static let pages: [SidebarItem] = [.overview, .power, .health]
+    static let developerPages: [SidebarItem] = [.developer, .demo]
 
     var title: LocalizedStringKey {
         switch self {
         case .overview: "Overview"
         case .power: "Power"
         case .health: "Health"
-        case .developer: "Developer"
+        case .developer: "Raw Data"
+        case .demo: "Demo Mode"
         }
     }
 
@@ -23,7 +29,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .overview: "gauge.with.dots.needle.67percent"
         case .power: "bolt.fill"
         case .health: "heart.text.square"
-        case .developer: "hammer"
+        case .developer: "tablecells"
+        case .demo: "play.rectangle.on.rectangle"
         }
     }
 }
@@ -31,23 +38,32 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 /// The main window: a sidebar of sections and their content.
 struct MainView: View {
     let monitor: BatteryMonitor
+    @Environment(DemoController.self) private var demo
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
 
-    private var items: [SidebarItem] {
-        SidebarItem.allCases.filter { $0 != .developer || showsDeveloper }
-    }
-
     var body: some View {
         NavigationSplitView {
-            List(items, selection: $selection) { item in
-                Label(item.title, systemImage: item.symbol)
-                    .tag(item)
+            List(selection: $selection) {
+                ForEach(SidebarItem.pages) { item in
+                    Label(item.title, systemImage: item.symbol)
+                }
+                if showsDeveloper {
+                    Section("Developer") {
+                        ForEach(SidebarItem.developerPages) { item in
+                            Label(item.title, systemImage: item.symbol)
+                        }
+                    }
+                }
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             MainDetail(monitor: monitor, selection: selection)
                 .navigationTitle(selection.title)
+                // Floats over every page while Demo Mode is on.
+                .safeAreaInset(edge: .bottom) {
+                    DemoControlBar()
+                }
                 // The minimum size belongs on the column: a minimum on the whole split view makes
                 // the sidebar's show/hide animation stutter.
                 .frame(minWidth: 520, minHeight: 540)
@@ -58,7 +74,13 @@ struct MainView: View {
                 }
         }
         .onChange(of: showsDeveloper) { _, shows in
-            if !shows, selection == .developer { selection = .overview }
+            guard !shows else { return }
+            demo.stop()
+            if SidebarItem.developerPages.contains(selection) { selection = .overview }
+        }
+        // The demo tour switches pages by itself.
+        .onChange(of: demo.pageRequest) { _, request in
+            if let request { selection = request.page }
         }
         .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "main") }
         .onDisappear { monitor.setLiveRefreshInterval(nil, for: "main") }
@@ -74,12 +96,14 @@ private struct MainDetail: View {
     let selection: SidebarItem
 
     var body: some View {
-        if let snapshot = monitor.snapshot {
+        if selection == .demo {
+            DemoView()
+        } else if let snapshot = monitor.snapshot {
             switch selection {
             case .overview: OverviewView(snapshot: snapshot)
             case .power: PowerView(snapshot: snapshot)
             case .health: HealthView(snapshot: snapshot)
-            case .developer: DeveloperView(monitor: monitor)
+            case .developer, .demo: DeveloperView(monitor: monitor)
             }
         } else if monitor.hasBattery == false {
             ContentUnavailableView(

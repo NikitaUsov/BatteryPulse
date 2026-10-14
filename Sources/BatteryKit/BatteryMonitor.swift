@@ -21,8 +21,11 @@ public final class BatteryMonitor {
     public private(set) var hasBattery: Bool?
     public private(set) var isRunning = false
     public private(set) var liveRefreshInterval: Duration?
+    /// `true` while readings come from an override provider (Demo Mode) instead of the device.
+    public private(set) var isOverridden = false
 
     @ObservationIgnored private let provider: any BatteryProvider
+    @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
     @ObservationIgnored private var observation: BatteryObservation?
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
@@ -34,9 +37,24 @@ public final class BatteryMonitor {
     public func start() {
         guard !isRunning else { return }
         isRunning = true
-        observation = provider.observeChanges { [weak self] in self?.refresh() }
+        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
         refresh()
         scheduleLiveRefresh()
+    }
+
+    /// Shows readings from `provider` instead of the device until called with `nil`. Polling
+    /// requests carry over; the device's change notifications pause meanwhile.
+    public func setOverride(_ provider: (any BatteryProvider)?) {
+        overrideProvider = provider
+        isOverridden = provider != nil
+        guard isRunning else { return }
+        observation?.cancel()
+        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
+        refresh()
+    }
+
+    private var activeProvider: any BatteryProvider {
+        overrideProvider ?? provider
     }
 
     public func stop() {
@@ -62,7 +80,7 @@ public final class BatteryMonitor {
     }
 
     public func refresh() {
-        let new = provider.read()
+        let new = activeProvider.read()
         if hasBattery != (new != nil) { hasBattery = new != nil }
         if !Self.isSameReading(new, reading) { reading = new }
         if !Self.isSameState(new?.snapshot, snapshot) { snapshot = new?.snapshot }

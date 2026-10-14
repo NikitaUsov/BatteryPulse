@@ -8,6 +8,7 @@ import SwiftUI
 struct BatteryPulseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var monitor: BatteryMonitor
+    @State private var demo: DemoController
     @State private var launchAtLogin = LaunchAtLoginModel()
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     private let showsWelcome: Bool
@@ -19,6 +20,7 @@ struct BatteryPulseApp: App {
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
         self.monitor = monitor
+        self.demo = DemoController(monitor: monitor)
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar
@@ -27,6 +29,7 @@ struct BatteryPulseApp: App {
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
             MainView(monitor: monitor)
+                .environment(demo)
         }
         .defaultSize(width: 860, height: 640)
         .defaultLaunchBehavior(showsMainWindow ? .presented : .suppressed)
@@ -38,6 +41,7 @@ struct BatteryPulseApp: App {
 
         MenuBarExtra(isInserted: $showInMenuBar) {
             PopoverView(monitor: monitor)
+                .environment(demo)
         } label: {
             MenuBarLabel(monitor: monitor)
         }

@@ -59,6 +59,30 @@
         }
       }
     },
+    "A 15 W phone charger barely keeps up.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядное устройство от телефона на 15 Вт едва справляется."
+          }
+        }
+      }
+    },
+    "A 60 W USB-C adapter charges the battery.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Адаптер USB-C на 60 Вт заряжает аккумулятор."
+          }
+        }
+      }
+    },
     "About %@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -121,6 +145,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Чтобы завершить, разрешите BatteryPulse в разделе «Объекты входа»."
+          }
+        }
+      }
+    },
+    "Animations": {
+      "extractionState": "manual",
+      "comment": "Demo Mode section",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Анимации"
           }
         }
       }
@@ -270,6 +306,30 @@
         }
       }
     },
+    "Below 10 percent, the charge turns red.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ниже 10 процентов заряд становится красным."
+          }
+        }
+      }
+    },
+    "Below 20 percent, the charge turns orange.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ниже 20 процентов заряд становится оранжевым."
+          }
+        }
+      }
+    },
     "Calculating time…": {
       "extractionState": "manual",
       "localizations": {
@@ -321,6 +381,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд"
+          }
+        }
+      }
+    },
+    "Charge from empty": {
+      "extractionState": "manual",
+      "comment": "Demo animation",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка с нуля"
           }
         }
       }
@@ -479,6 +551,18 @@
         }
       }
     },
+    "Critical battery": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Критический заряд"
+          }
+        }
+      }
+    },
     "Current": {
       "extractionState": "manual",
       "localizations": {
@@ -509,6 +593,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расшифровка"
+          }
+        }
+      }
+    },
+    "Demo": {
+      "extractionState": "manual",
+      "comment": "Badge shown while Demo Mode is on",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Демо"
+          }
+        }
+      }
+    },
+    "Demo Mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Демо-режим"
+          }
+        }
+      }
+    },
+    "Demo Mode fills BatteryPulse with simulated data, so you can see every state — charging, low battery, a worn battery and more — without touching the charger. The menu bar shows it too. Nothing on your Mac changes, and real readings come back when you stop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Демо-режим наполняет BatteryPulse смоделированными данными, чтобы можно было увидеть любое состояние — зарядку, низкий заряд, изношенный аккумулятор и другие — не трогая адаптер. Строка меню тоже показывает демо. На Mac ничего не меняется, а настоящие показания вернутся, когда вы остановите демо."
           }
         }
       }
@@ -580,6 +698,18 @@
         }
       }
     },
+    "Drain to empty": {
+      "extractionState": "manual",
+      "comment": "Demo animation",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрядка до нуля"
+          }
+        }
+      }
+    },
     "Elevated": {
       "extractionState": "manual",
       "localizations": {
@@ -587,6 +717,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Повышенное"
+          }
+        }
+      }
+    },
+    "Everyday work, unplugged.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обычная работа без адаптера."
           }
         }
       }
@@ -613,6 +755,18 @@
         }
       }
     },
+    "Fast charging": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрая зарядка"
+          }
+        }
+      }
+    },
     "Filter keys, values and descriptions": {
       "extractionState": "manual",
       "localizations": {
@@ -632,6 +786,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Фиксированный %@ × %@"
+          }
+        }
+      }
+    },
+    "From 2 percent to full in 20 seconds, with the charge power tapering near the top.": {
+      "extractionState": "manual",
+      "comment": "Demo animation subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "От 2 процентов до полной зарядки за 20 секунд; ближе к концу мощность зарядки снижается."
+          }
+        }
+      }
+    },
+    "From full to 2 percent in 20 seconds, through the low and critical levels.": {
+      "extractionState": "manual",
+      "comment": "Demo animation subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "От полной до 2 процентов за 20 секунд, через низкий и критический уровни."
           }
         }
       }
@@ -735,6 +913,18 @@
         }
       }
     },
+    "Heavy load": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Высокая нагрузка"
+          }
+        }
+      }
+    },
     "Help": {
       "extractionState": "manual",
       "localizations": {
@@ -779,6 +969,18 @@
         }
       }
     },
+    "How BatteryPulse looks on a Mac without a battery.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Так BatteryPulse выглядит на Mac без аккумулятора."
+          }
+        }
+      }
+    },
     "Icon only": {
       "extractionState": "manual",
       "localizations": {
@@ -797,6 +999,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Используется"
+          }
+        }
+      }
+    },
+    "Just plugged in": {
+      "extractionState": "manual",
+      "comment": "Demo scene: the adapter was just connected",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только что подключён"
           }
         }
       }
@@ -831,6 +1045,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Крупный"
+          }
+        }
+      }
+    },
+    "Low battery": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Низкий заряд"
           }
         }
       }
@@ -876,6 +1102,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "macOS ограничивает максимальную ёмкость значением %@. Сейчас аккумулятор вмещает %@ от расчётной ёмкости."
+          }
+        }
+      }
+    },
+    "macOS holds the charge at 80 percent to slow battery aging.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS удерживает заряд на 80 процентах, чтобы аккумулятор медленнее старел."
+          }
+        }
+      }
+    },
+    "macOS is still estimating the time to full.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS ещё оценивает время до полной зарядки."
           }
         }
       }
@@ -947,6 +1197,17 @@
         }
       }
     },
+    "Next Scene": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Следующая сцена"
+          }
+        }
+      }
+    },
     "No": {
       "extractionState": "manual",
       "localizations": {
@@ -965,6 +1226,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нет аккумулятора"
+          }
+        }
+      }
+    },
+    "No battery": {
+      "extractionState": "manual",
+      "comment": "Demo scene: a Mac without a battery",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без аккумулятора"
           }
         }
       }
@@ -1171,6 +1444,40 @@
         }
       }
     },
+    "Past its rated cycles and below 80 percent capacity: service recommended.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Циклов больше расчётного, ёмкость ниже 80 процентов: рекомендуется обслуживание."
+          }
+        }
+      }
+    },
+    "Pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пауза"
+          }
+        }
+      }
+    },
+    "Pause Tour": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приостановить показ"
+          }
+        }
+      }
+    },
     "Percentage": {
       "extractionState": "manual",
       "localizations": {
@@ -1189,6 +1496,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Процент и мощность"
+          }
+        }
+      }
+    },
+    "Play": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Воспроизвести"
+          }
+        }
+      }
+    },
+    "Plugged in and full; the adapter powers the Mac.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключён и полностью заряжен: Mac работает от адаптера."
           }
         }
       }
@@ -1271,6 +1601,17 @@
         }
       }
     },
+    "Previous Scene": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Предыдущая сцена"
+          }
+        }
+      }
+    },
     "Quit": {
       "extractionState": "manual",
       "localizations": {
@@ -1315,6 +1656,30 @@
         }
       }
     },
+    "Raw Data": {
+      "extractionState": "manual",
+      "comment": "Sidebar item: the raw IORegistry and power-source values",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исходные данные"
+          }
+        }
+      }
+    },
+    "Reduced performance to make the battery last.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сниженная производительность, чтобы аккумулятор работал дольше."
+          }
+        }
+      }
+    },
     "Remaining": {
       "extractionState": "manual",
       "localizations": {
@@ -1337,6 +1702,29 @@
         }
       }
     },
+    "Rendering or gaming: high power draw and an elevated thermal state.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рендеринг или игры: большое потребление и повышенное тепловое состояние."
+          }
+        }
+      }
+    },
+    "Resume Tour": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить показ"
+          }
+        }
+      }
+    },
     "Save the raw data for a bug report. Serial numbers are redacted.": {
       "extractionState": "manual",
       "localizations": {
@@ -1344,6 +1732,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранить необработанные данные для отчёта об ошибке. Серийные номера скрыты."
+          }
+        }
+      }
+    },
+    "Scene length": {
+      "extractionState": "manual",
+      "comment": "How long the demo tour stays on each scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Длительность сцены"
+          }
+        }
+      }
+    },
+    "Scenes": {
+      "extractionState": "manual",
+      "comment": "Demo Mode section",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сцены"
           }
         }
       }
@@ -1425,6 +1837,30 @@
         }
       }
     },
+    "Showing": {
+      "extractionState": "manual",
+      "comment": "Accessibility: this demo scene is on screen",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывается"
+          }
+        }
+      }
+    },
+    "Slow charger": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Медленная зарядка"
+          }
+        }
+      }
+    },
     "Standard": {
       "extractionState": "manual",
       "localizations": {
@@ -1436,6 +1872,18 @@
         }
       }
     },
+    "Start Tour": {
+      "extractionState": "manual",
+      "comment": "Starts the automatic Demo Mode tour",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать показ"
+          }
+        }
+      }
+    },
     "State": {
       "extractionState": "manual",
       "localizations": {
@@ -1443,6 +1891,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Статус"
+          }
+        }
+      }
+    },
+    "Stop Demo": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить демо"
           }
         }
       }
@@ -1491,6 +1950,17 @@
         }
       }
     },
+    "The tour switches pages by itself and starts over after the last scene.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показ сам переключает страницы и начинается заново после последней сцены."
+          }
+        }
+      }
+    },
     "Thermal state": {
       "extractionState": "manual",
       "localizations": {
@@ -1520,6 +1990,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшееся время"
+          }
+        }
+      }
+    },
+    "Tour": {
+      "extractionState": "manual",
+      "comment": "Demo Mode section: the automatic tour",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автопоказ"
           }
         }
       }
@@ -1656,6 +2138,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Если выключено, значок всё равно появляется в Dock, пока открыто окно BatteryPulse."
+          }
+        }
+      }
+    },
+    "Worn battery": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изношенный аккумулятор"
           }
         }
       }
