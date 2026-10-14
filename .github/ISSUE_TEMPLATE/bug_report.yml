@@ -20,7 +20,8 @@ body:
     id: os
     attributes:
       label: OS version
-      placeholder: macOS 26.1 / iOS 26.1
+      description: BatteryPulse requires macOS 27 on Apple Silicon, or iOS 27.
+      placeholder: macOS 27.0 / iOS 27.0
     validations:
       required: true
   - type: textarea

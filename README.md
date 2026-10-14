@@ -10,41 +10,64 @@ A lightweight, native battery and charging inspector for macOS and iOS: health, 
 count, capacity in mAh, live power draw, charger and adapter details. Built with Swift and
 SwiftUI, with no third-party dependencies.
 
-> **Status: early development.** The `bpulse` command-line tool works on macOS today. It is
-> verified on a MacBook Air M5 running macOS 27. The menu-bar app (distributed as a DMG) and
-> the iOS app come next. See the [roadmap](docs/ROADMAP.md).
+> **Status: early development.** The menu-bar app and the `bpulse` command-line tool run on
+> macOS today, verified on a MacBook Air M5 with macOS 27. The iOS app comes next. See the
+> [roadmap](docs/ROADMAP.md).
 
-## Try it on your Mac
+## Menu-bar app
 
 ```sh
 git clone https://github.com/NikitaUsov/BatteryPulse.git
 cd BatteryPulse
+swift run BatteryPulse        # run the app straight from the source
+scripts/build-app.sh          # or build build/BatteryPulse.app and build/BatteryPulse.dmg
+```
+
+- The menu bar shows the percentage, the battery power, both, or just the icon. The battery
+  icon can be standard, large or hidden.
+- Clicking it opens a popover with charge, time remaining and live power (refreshed every
+  2 s while open), plus health, cycles and the adapter.
+- **Details…** lists every reading by group, the raw IORegistry keys with a filter, and a
+  *Copy Report* button.
+- A welcome window on first launch sets the menu-bar content and launch at login.
+
+Released versions are on the [Releases](https://github.com/NikitaUsov/BatteryPulse/releases)
+page as `BatteryPulse.dmg`. CI runs also upload a DMG as a workflow artifact (needs a GitHub
+sign-in; kept for 90 days). The app is ad-hoc signed, not notarized, so approve it once in
+System Settings → Privacy & Security.
+
+## Command-line report
+
+```sh
 swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
 ```
 
-Example output (MacBook Air M5, macOS 27, charging):
+Real output on a MacBook Air M5 (macOS 27) while charging:
 
 ```text
 Battery         bq40z651
-Charge          70 %  (3896 of 5866 mAh)
+Charge          78 %  (4514 of 5862 mAh)
 State           Charging
-Time to full    ≈ 5 h 8 min
-Battery power   +4.7 W  (12.26 V × 384 mA)
-Health          100.0 %  (6010 of 5760 mAh design = 104.3 %)
+Time to full    1 h 17 min
+Battery power   +31.3 W  (12.87 V × 2432 mA)
+Health          100.0 %  (6006 of 5760 mAh design = 104.3 %)
 Condition       Normal
 Cycles          48 of 1000  (5 % of rated life)
 Adapter         60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A
-System input    18.5 W
-System load     14.0 W
-Adapter loss    0.5 W
+System input    54.7 W
+System load     24.9 W
+Adapter loss    1.6 W
 Low Power Mode  off
+Thermal state   fair
 ```
 
-`≈` marks values the app derives itself (here macOS was still calculating). Health is capped
-at 100 % the way System Settings shows it; the real ratio to design capacity follows it.
+Health is capped at 100 % the way System Settings shows it; the real ratio to design capacity
+follows it. While macOS is still working out the time remaining, the report says
+`calculating…`. When macOS gives no estimate at all, the app derives one from capacity and
+current and marks it with `≈`.
 
 Requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 
@@ -75,6 +98,7 @@ On macOS everything is read from the public IOKit power-source API and the
 ```text
 BatteryCore   platform-independent models, parsing, metrics, text report (tested on Linux)
 BatteryKit    IOKit (macOS) / UIDevice (iOS) providers + an @Observable BatteryMonitor
+BatteryPulse  SwiftUI menu-bar app (Sources/BatteryPulseApp)
 bpulse        command-line report for macOS
 ```
 

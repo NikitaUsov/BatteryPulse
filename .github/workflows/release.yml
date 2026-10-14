@@ -1,0 +1,26 @@
+name: Release
+
+# Pushing a tag such as v0.1.0 publishes BatteryPulse.dmg on the Releases page.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish DMG
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v5
+      - name: Test
+        run: swift test
+      - name: Package app (DMG)
+        run: VERSION="${GITHUB_REF_NAME#v}" BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/BatteryPulse.dmg \
+            --title "BatteryPulse $GITHUB_REF_NAME" --generate-notes --verify-tag

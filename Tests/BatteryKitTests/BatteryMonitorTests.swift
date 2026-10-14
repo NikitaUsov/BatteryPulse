@@ -119,6 +119,25 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         #expect(provider.readCount == readsAfterDisabling)
     }
 
+    @Test func shortestLiveRefreshRequestWins() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = BatteryMonitor(provider: provider)
+        monitor.start()
+
+        monitor.setLiveRefreshInterval(.seconds(15), for: "menuBar")
+        monitor.setLiveRefreshInterval(.seconds(2), for: "popover")
+        #expect(monitor.liveRefreshInterval == .seconds(2))
+        // Opening a view refreshes right away instead of after the first interval.
+        #expect(provider.readCount == 3)
+
+        monitor.setLiveRefreshInterval(nil, for: "popover")
+        #expect(monitor.liveRefreshInterval == .seconds(15))
+        monitor.setLiveRefreshInterval(nil, for: "menuBar")
+        #expect(monitor.liveRefreshInterval == nil)
+        #expect(provider.readCount == 3)
+        monitor.stop()
+    }
+
     @Test func liveRefreshStopsWithMonitor() async throws {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let monitor = BatteryMonitor(provider: provider)

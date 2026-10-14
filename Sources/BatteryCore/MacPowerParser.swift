@@ -150,13 +150,11 @@ enum MacPowerParser {
 
         switch s.chargeState {
         case .discharging:
-            s.timeToEmptyMinutes =
-                validMinutes(ps["Time to Empty"]?.intValue)
-                ?? validMinutes(sb["AvgTimeToEmpty"]?.intValue)
+            (s.timeToEmptyMinutes, s.isTimeRemainingCalculating) = timeRemaining(
+                powerSource: ps["Time to Empty"], gauge: sb["AvgTimeToEmpty"])
         case .charging:
-            s.timeToFullMinutes =
-                validMinutes(ps["Time to Full Charge"]?.intValue)
-                ?? validMinutes(sb["AvgTimeToFull"]?.intValue)
+            (s.timeToFullMinutes, s.isTimeRemainingCalculating) = timeRemaining(
+                powerSource: ps["Time to Full Charge"], gauge: sb["AvgTimeToFull"])
         case .charged, .notCharging, .unknown:
             break
         }
@@ -204,6 +202,14 @@ enum MacPowerParser {
         case false?: return .discharging
         case nil: return isCharging == false ? .discharging : .unknown
         }
+    }
+
+    /// IOPS reports -1 while macOS is still calculating, e.g. for the first minute after
+    /// plugging in, when the charge current hasn't settled. Follow macOS and show nothing then;
+    /// the gauge's average is only a fallback when IOPS has no value at all.
+    static func timeRemaining(powerSource: PropertyValue?, gauge: PropertyValue?) -> (Int?, calculating: Bool) {
+        if powerSource?.intValue == -1 { return (nil, true) }
+        return (validMinutes(powerSource?.intValue) ?? validMinutes(gauge?.intValue), false)
     }
 
     static func validMinutes(_ minutes: Int?) -> Int? {

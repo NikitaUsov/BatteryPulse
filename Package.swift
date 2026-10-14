@@ -12,11 +12,14 @@ let package = Package(
         .library(name: "BatteryKit", targets: ["BatteryKit"]),
         // Command-line battery report for macOS (`swift run bpulse`).
         .executable(name: "bpulse", targets: ["bpulse"]),
+        // The menu-bar app (`swift run BatteryPulse`; `scripts/build-app.sh` packages it).
+        .executable(name: "BatteryPulse", targets: ["BatteryPulseApp"]),
     ],
     targets: [
         .target(name: "BatteryCore"),
         .target(name: "BatteryKit", dependencies: ["BatteryCore"]),
         .executableTarget(name: "bpulse", dependencies: ["BatteryCore", "BatteryKit"]),
+        .executableTarget(name: "BatteryPulseApp", dependencies: ["BatteryCore", "BatteryKit"]),
         .testTarget(
             name: "BatteryCoreTests",
             dependencies: ["BatteryCore"],

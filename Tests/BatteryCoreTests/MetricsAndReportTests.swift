@@ -47,13 +47,24 @@ import Testing
         )
         #expect(discharging.estimatedTimeToEmptyMinutes == 120)
 
-        // Real M5: macOS is still "calculating"; (5866 - 3896) mAh at 384 mA ≈ 308 min.
-        #expect(try Fixture.m5Charging.snapshot().estimatedTimeToFullMinutes == 308)
+        let charging = BatterySnapshot(
+            timestamp: .now, chargeState: .charging,
+            currentCapacityMAh: 3000, fullChargeCapacityMAh: 5000, amperageMA: 4000
+        )
+        #expect(charging.estimatedTimeToFullMinutes == 30)
 
         let idle = BatterySnapshot(
             timestamp: .now, chargeState: .discharging, currentCapacityMAh: 3000, amperageMA: -5
         )
         #expect(idle.estimatedTimeToEmptyMinutes == nil, "near-zero current would explode the estimate")
+    }
+
+    @Test func noDerivedEstimateWhileMacOSIsCalculating() throws {
+        // Real M5 a minute after plugging in: IOPS says -1 and the current (384 mA) is still
+        // ramping, so (5866 - 3896) mAh / 384 mA ≈ 5 h would be badly wrong.
+        let s = try Fixture.m5Charging.snapshot()
+        #expect(s.isTimeRemainingCalculating)
+        #expect(s.estimatedTimeToFullMinutes == nil)
     }
 
     @Test func osEstimateWins() throws {
@@ -87,7 +98,7 @@ import Testing
 
     @Test func m5ChargingReport() throws {
         let s = try Fixture.m5Charging.snapshot()
-        #expect(value("Time to full", in: s) == "≈ 5 h 8 min")
+        #expect(value("Time to full", in: s) == "calculating…")
         #expect(value("Battery power", in: s) == "+4.7 W  (12.26 V × 384 mA)")
         #expect(value("Adapter", in: s) == "60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A")
         #expect(value("System input", in: s) == "18.5 W")
@@ -102,6 +113,40 @@ import Testing
         #expect(value("Temperature", in: s) == "31.1 °C")
         #expect(value("Cells", in: s) == "4144 / 4143 / 4146 mV  (spread 3 mV)")
         #expect(try value("Charger request", in: Fixture.legacyCharging.snapshot()) == "4000 mA at 13.05 V")
+    }
+
+    @Test func derivedTimeIsMarked() {
+        let s = BatterySnapshot(
+            timestamp: .now, chargeState: .discharging, currentCapacityMAh: 3000, amperageMA: -1500
+        )
+        #expect(value("Time to empty", in: s) == "≈ 2 h 0 min")
+    }
+
+    @Test func slowChargingReasonOnlyWhileCharging() {
+        let charging = BatterySnapshot(timestamp: .now, chargeState: .charging, slowChargingReason: 0x4)
+        #expect(value("Slow charging reason", in: charging) == "0x4")
+        let holding = BatterySnapshot(timestamp: .now, chargeState: .notCharging, slowChargingReason: 0x4)
+        #expect(value("Slow charging reason", in: holding) == nil)
+    }
+
+    @Test func adapterLossOnlyWithAdapterAndLoss() {
+        let onBattery = BatterySnapshot(
+            timestamp: .now, chargeState: .discharging, isExternalPowerConnected: false,
+            adapterEfficiencyLossMW: 500
+        )
+        #expect(value("Adapter loss", in: onBattery) == nil)
+        let lossless = BatterySnapshot(
+            timestamp: .now, chargeState: .notCharging, isExternalPowerConnected: true,
+            adapterEfficiencyLossMW: 0
+        )
+        #expect(value("Adapter loss", in: lossless) == nil)
+    }
+
+    @Test func sectionsGroupTheFlatReport() throws {
+        let s = try Fixture.m5Charging.snapshot()
+        let sections = BatteryReport.sections(for: s)
+        #expect(sections.map(\.title) == ["Charge", "Health", "Power", "System"])
+        #expect(sections.flatMap(\.lines) == BatteryReport.lines(for: s))
     }
 
     @Test func notChargingOnAdapter() {

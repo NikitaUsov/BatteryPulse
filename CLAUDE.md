@@ -13,6 +13,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   metrics, `BatteryReport` text output. Must stay free of Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit),
   `IOSBatteryProvider` (UIDevice), `BatteryMonitor` (@Observable, event-driven + optional polling).
+- `Sources/BatteryPulseApp` — SwiftUI menu-bar app (product `BatteryPulse`): `MenuBarExtra`
+  popover, Details, Settings and Welcome windows. Everything is inside `#if os(macOS)`; a stub
+  `main` keeps Linux builds working. Display strings live in `BatteryCore/BatteryPresentation`
+  so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
+  `Resources/AppIcon.svg` is the icon source (`AppIcon.png` is rendered from it, and
+  `AppIconView` draws the same design in SwiftUI).
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux).
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are

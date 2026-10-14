@@ -18,13 +18,17 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var timeToEmptyMinutes: Int?
     /// Minutes until full while charging, as estimated by the OS.
     public var timeToFullMinutes: Int?
+    /// macOS is still working out the time remaining (IOPS reports -1, e.g. right after
+    /// plugging in or unplugging). No estimate should be shown meanwhile.
+    public var isTimeRemainingCalculating: Bool
     /// macOS is holding the charge (usually at 80 %) to reduce battery ageing.
     public var isOptimizedChargingEngaged: Bool?
 
     // MARK: Capacity & health
 
     public var currentCapacityMAh: Int?
-    /// Capacity the battery can hold right now, as measured by the gauge (`AppleRawMaxCapacity`).
+    /// Capacity the battery can hold right now, as measured by the gauge
+    /// (`BatteryData.FullChargeCapacity`; `AppleRawMaxCapacity` before macOS 27).
     public var fullChargeCapacityMAh: Int?
     /// Gauge's nominal full-charge capacity; on Apple Silicon this backs "Maximum Capacity".
     public var nominalChargeCapacityMAh: Int?
@@ -32,7 +36,8 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var cycleCount: Int?
     /// Cycles the battery is rated for (1000 on modern MacBooks).
     public var designCycleCount: Int?
-    /// OS health verdict, e.g. "Good" or "Service Recommended".
+    /// OS health verdict: "Normal" when macOS reports no problem, otherwise e.g.
+    /// "Service Recommended".
     public var healthCondition: String?
     /// Non-zero when the gauge has latched a permanent failure.
     public var permanentFailureStatus: Int?
@@ -82,6 +87,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         isExternalPowerConnected: Bool? = nil,
         timeToEmptyMinutes: Int? = nil,
         timeToFullMinutes: Int? = nil,
+        isTimeRemainingCalculating: Bool = false,
         isOptimizedChargingEngaged: Bool? = nil,
         currentCapacityMAh: Int? = nil,
         fullChargeCapacityMAh: Int? = nil,
@@ -116,6 +122,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         self.isExternalPowerConnected = isExternalPowerConnected
         self.timeToEmptyMinutes = timeToEmptyMinutes
         self.timeToFullMinutes = timeToFullMinutes
+        self.isTimeRemainingCalculating = isTimeRemainingCalculating
         self.isOptimizedChargingEngaged = isOptimizedChargingEngaged
         self.currentCapacityMAh = currentCapacityMAh
         self.fullChargeCapacityMAh = fullChargeCapacityMAh

@@ -47,3 +47,11 @@ jobs:
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
+      - name: Package app (DMG)
+        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: BatteryPulse-${{ github.sha }}
+          path: build/BatteryPulse.dmg
+          if-no-files-found: error
