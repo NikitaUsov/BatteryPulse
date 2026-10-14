@@ -176,18 +176,6 @@
         }
       }
     },
-    "Adapter model ID; Model shows the same number in hex (28702 = 0x701E).": {
-      "extractionState": "manual",
-      "comment": "Developer table: what a raw key means",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Идентификатор модели адаптера; Model показывает то же число в шестнадцатеричном виде (28702 = 0x701E)."
-          }
-        }
-      }
-    },
     "Adapter serial number.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -253,6 +241,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Анимации"
+          }
+        }
+      }
+    },
+    "Apple's model ID for the adapter; the Model key shows the same number in hex.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор модели адаптера от Apple; ключ Model показывает то же число в шестнадцатеричном виде."
           }
         }
       }
@@ -339,14 +339,14 @@
         }
       }
     },
-    "Battery current from power management, negative when discharging; read 0 here in both states.": {
+    "Battery current in mA from powerd, negative when discharging.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ток аккумулятора по данным управления питанием, отрицательный при разрядке; здесь в обоих состояниях равен 0."
+            "value": "Ток аккумулятора в мА по данным powerd; при разрядке отрицательный."
           }
         }
       }
@@ -944,14 +944,14 @@
         }
       }
     },
-    "Coarse battery health estimate: Good, Fair or Poor.": {
+    "Coarse battery health rating: Good, Fair, Poor or Check Battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Грубая оценка состояния аккумулятора: Good, Fair или Poor."
+            "value": "Грубая оценка состояния аккумулятора: Good, Fair, Poor или Check Battery."
           }
         }
       }
@@ -1989,14 +1989,14 @@
         }
       }
     },
-    "How the source reports data: \"Internal\" for a built-in battery, USB or Serial for a UPS.": {
+    "How the source reports data: Internal for the built-in battery; USB, Serial or Ethernet for a UPS.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Способ передачи данных источником: «Internal» для встроенного аккумулятора, USB или Serial для ИБП."
+            "value": "Как источник передаёт данные: Internal — встроенный аккумулятор; USB, Serial или Ethernet — ИБП."
           }
         }
       }
@@ -2103,6 +2103,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ограничение входного тока, которое Mac задаёт для адаптера; может быть ниже номинального тока адаптера."
+          }
+        }
+      }
+    },
+    "Input current limit the Mac's charger is set to draw from this adapter.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ограничение входного тока, заданное контроллеру зарядки Mac для этого адаптера."
           }
         }
       }
@@ -3602,6 +3614,18 @@
         }
       }
     },
+    "Rated cycle count published by powerd; Apple silicon Macs show 300, not the battery's rating.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расчётное число циклов по данным powerd; Mac с чипом Apple показывают 300, а не реальный ресурс аккумулятора."
+          }
+        }
+      }
+    },
     "Rated cycle life used": {
       "extractionState": "manual",
       "localizations": {
@@ -4354,6 +4378,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Да, если адаптер подключён и аккумулятор считается полностью заряженным."
+          }
+        }
+      }
+    },
+    "True when power comes from a wireless (inductive) charger instead of a cable.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да, если питание поступает от беспроводного (индукционного) зарядного устройства, а не по кабелю."
           }
         }
       }

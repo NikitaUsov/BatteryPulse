@@ -60,7 +60,7 @@ public enum RawKeyGlossary {
         ("AdapterDetails", Info(.other, "Details of the connected power adapter; empty when the Mac runs on battery.")),
         (
             "AdapterDetails.AdapterID",
-            Info(.hex, "Adapter model ID; Model shows the same number in hex (28702 = 0x701E).")
+            Info(.hex, "Apple's model ID for the adapter; the Model key shows the same number in hex.")
         ),
         (
             "AdapterDetails.AdapterVoltage",
@@ -84,9 +84,17 @@ public enum RawKeyGlossary {
         ),
         ("AdapterDetails.FwVersion", Info(.text, "Firmware version string reported by the adapter.")),
         ("AdapterDetails.HwVersion", Info(.text, "Hardware revision string reported by the adapter.")),
+        (
+            "AdapterDetails.IsWireless",
+            Info(.boolean, "True when power comes from a wireless (inductive) charger instead of a cable.")
+        ),
         ("AdapterDetails.Manufacturer", Info(.text, "Adapter maker's name as reported by the adapter.")),
         ("AdapterDetails.Model", Info(.identifier, "Adapter model ID as a hex string; the same value as AdapterID.")),
         ("AdapterDetails.Name", Info(.text, "Adapter's own product name.")),
+        (
+            "AdapterDetails.PMUConfiguration",
+            Info(.milliamps, "Input current limit the Mac's charger is set to draw from this adapter.")
+        ),
         ("AdapterDetails.SerialString", Info(.identifier, "Adapter serial number.")),
         (
             "AdapterDetails.UsbHvcHvcIndex",
@@ -428,18 +436,18 @@ public enum RawKeyGlossary {
             "IOPS.Battery Provides Time Remaining",
             Info(.boolean, "Marks a source that supplies its own time estimates; always true for the internal battery.")
         ),
-        ("IOPS.BatteryHealth", Info(.text, "Coarse battery health estimate: Good, Fair or Poor.")),
+        ("IOPS.BatteryHealth", Info(.text, "Coarse battery health rating: Good, Fair, Poor or Check Battery.")),
         (
             "IOPS.BatteryHealthCondition",
             Info(.text, "Health warning such as \"Check Battery\"; absent or empty when the battery is normal.")
         ),
-        (
-            "IOPS.Current",
-            Info(
-                .milliamps,
-                "Battery current from power management, negative when discharging; read 0 here in both states.")
-        ),
+        ("IOPS.Current", Info(.milliamps, "Battery current in mA from powerd, negative when discharging.")),
         ("IOPS.Current Capacity", Info(.percent, "Charge level that macOS shows in the menu bar.")),
+        (
+            "IOPS.DesignCycleCount",
+            Info(
+                .count, "Rated cycle count published by powerd; Apple silicon Macs show 300, not the battery's rating.")
+        ),
         ("IOPS.Hardware Serial Number", Info(.identifier, "Serial number of the battery pack.")),
         ("IOPS.Is Charged", Info(.boolean, "True when plugged in and the battery counts as fully charged.")),
         ("IOPS.Is Charging", Info(.boolean, "True while the battery is actually charging.")),
@@ -468,7 +476,9 @@ public enum RawKeyGlossary {
         ),
         (
             "IOPS.Transport Type",
-            Info(.text, "How the source reports data: \"Internal\" for a built-in battery, USB or Serial for a UPS.")
+            Info(
+                .text,
+                "How the source reports data: Internal for the built-in battery; USB, Serial or Ethernet for a UPS.")
         ),
         ("IOPS.Type", Info(.text, "Kind of power source: InternalBattery or UPS.")),
         (
