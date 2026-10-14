@@ -48,11 +48,18 @@ struct RingGaugeStyle: GaugeStyle {
                 configuration.currentValueLabel
                     .font(.title2.weight(.semibold))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 configuration.label
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
             }
-            .padding(lineWidth)
+            // Keep the text inside the ring: roughly the square inscribed in its inner edge, so
+            // long labels (Russian ones especially) wrap instead of running into the stroke.
+            .frame(maxWidth: (diameter - lineWidth) * 0.74)
         }
         .frame(width: diameter, height: diameter)
     }
@@ -64,6 +71,7 @@ struct GaugeTile: View {
     let fraction: Double
     let value: String
     let caption: String?
+    var captionHelp: String?
     let tint: Color
 
     var body: some View {
@@ -80,9 +88,11 @@ struct GaugeTile: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .help(captionHelp ?? "")
                 }
             }
-            .frame(maxWidth: .infinity)
+            // Fill the row's height, so tiles stay equal when one caption wraps.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 }
@@ -99,24 +109,33 @@ struct BatteryGlyph: View {
             let terminalWidth = height * 0.12
             let bodyWidth = geometry.size.width - terminalWidth - height * 0.04
             let inset = height * 0.1
+            let fillWidth = max(0, (bodyWidth - inset * 2) * min(1, max(0, level)))
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: height * 0.24, style: .continuous)
                     .strokeBorder(.secondary, lineWidth: max(2, height * 0.06))
                     .frame(width: bodyWidth)
                 RoundedRectangle(cornerRadius: height * 0.15, style: .continuous)
                     .fill(tint.gradient)
-                    .frame(width: max(0, (bodyWidth - inset * 2) * min(1, max(0, level))), height: height - inset * 2)
+                    .frame(width: fillWidth, height: height - inset * 2)
                     .padding(.leading, inset)
                 RoundedRectangle(cornerRadius: terminalWidth / 2, style: .continuous)
                     .fill(.secondary)
                     .frame(width: terminalWidth, height: height * 0.36)
                     .offset(x: bodyWidth + height * 0.04)
                 if isCharging {
-                    Image(systemName: "bolt.fill")
+                    // Primary over the empty part of the battery, white over the fill, so the
+                    // bolt stays visible at any level in Light and Dark Mode.
+                    let bolt = Image(systemName: "bolt.fill")
                         .font(.system(size: height * 0.5, weight: .bold))
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.35), radius: 2)
                         .frame(width: bodyWidth)
+                    bolt
+                        .foregroundStyle(.primary)
+                    bolt
+                        .foregroundStyle(.white)
+                        .mask(alignment: .leading) {
+                            Rectangle()
+                                .frame(width: inset + fillWidth)
+                        }
                 }
             }
         }

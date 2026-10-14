@@ -80,10 +80,11 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1: macOS MVP (menu-bar app)
 
-- [x] SwiftUI app target built with SwiftPM (`swift run BatteryPulse`), no Dock icon
+- [x] SwiftUI app target built with SwiftPM (`swift run BatteryPulse`); starts without a Dock
+  icon (`LSUIElement`) and shows one only when needed
 - [x] `MenuBarExtra`: icon plus percentage and/or power (configurable)
 - [x] Popover: charge, state, time, live power, health, cycles, adapter
-- [x] Details window: every reading by group, filterable raw IORegistry keys, "Copy Report"
+- [x] Details window (later replaced by the main window), "Copy Report"
 - [x] Settings: menu-bar content, launch at login (`SMAppService`)
 - [x] App icon and first-launch welcome window with the starting settings
 - [x] DMG packaging (`scripts/build-app.sh`, built by CI)
@@ -92,7 +93,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Optional menu bar item and Dock icon, Dock menu, Help menu linking to the User Guide
 - [x] English and Russian (String Catalog, per-app language in System Settings)
 - [x] One-click GitHub release with first-launch instructions
-- [ ] Verify the new UI on the M5 and polish it from screenshots
+- [x] Verify the new UI on the M5 and polish it from screenshots (English and Russian)
+- [x] Developer section: raw values decoded (units, times, USB-PD offers) and explained
 - [ ] Battery temperature and cell voltages from the SMC
 - [ ] Profile in Instruments against the resource targets
 - [ ] Developer ID signing and notarization
@@ -107,7 +109,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 ### Stage 3: History and charts
 
 - [ ] Compact sample store in `BatteryCore` (append-only, tested on Linux)
-- [ ] macOS background recording (the app lives in the menu bar anyway)
+- [ ] macOS background recording (needs the app running: the menu bar item, the Dock, or a
+  login item)
 - [ ] Swift Charts: charge and power over 24 h / 7 days, health and cycles over time
 - [ ] Statistics: average drain, time on battery, charging sessions
 

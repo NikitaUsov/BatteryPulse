@@ -37,7 +37,10 @@ struct PowerView: View {
                 ValueRow("Current", formatter.milliamps(current, signed: true))
             }
             if let optimized = snapshot.isOptimizedChargingEngaged {
-                ValueRow("Optimized charging", optimized ? String(localized: "Holding charge") : Phrases.onOff(false))
+                // `false` means the feature isn't holding the charge right now, not that it's off.
+                ValueRow(
+                    "Optimized charging",
+                    optimized ? String(localized: "Holding charge") : String(localized: "Not active"))
             }
         }
     }

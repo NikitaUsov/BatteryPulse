@@ -15,7 +15,8 @@ BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time yo
 3. Next to *"BatteryPulse" was blocked to protect your Mac*, click **Open Anyway** and confirm
    with your password or Touch ID.
 
-You only need to do this once; after that BatteryPulse opens normally.
+Until BatteryPulse is notarized, you need to do this once for each new version you download;
+after that it opens normally.
 
 See the [User Guide](https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md)
 for everything else.

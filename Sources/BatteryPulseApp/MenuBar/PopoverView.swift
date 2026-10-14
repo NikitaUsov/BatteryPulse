@@ -87,7 +87,7 @@ private struct PopoverSummary: View {
                 }
             }
 
-            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+            VStack(spacing: 6) {
                 if let health = snapshot.healthPercent {
                     row("Maximum capacity", formatter.percent(health))
                 }
@@ -104,12 +104,18 @@ private struct PopoverSummary: View {
         }
     }
 
+    /// Label on the leading edge, value on the trailing edge, so longer translations never crowd
+    /// the numbers.
     private func row(_ label: LocalizedStringKey, _ value: String) -> some View {
-        GridRow {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(label)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
             Text(value)
                 .monospacedDigit()
+                .fixedSize()
         }
     }
 }

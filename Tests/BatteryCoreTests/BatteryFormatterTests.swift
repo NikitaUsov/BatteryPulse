@@ -5,14 +5,10 @@ import Testing
 
 @Suite struct BatteryFormatterTests {
     private let english = BatteryFormatter(locale: Locale(identifier: "en_US"))
-    private let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) { unit in
-        switch unit {
-        case .watts: "Вт"
-        case .milliampHours: "мА·ч"
-        case .volts: "В"
-        case .milliamps: "мА"
-        case .amps: "А"
-        }
+    /// Russian number formatting. The unit symbols are stand-ins: the app's real ones live in the
+    /// String Catalog, the only place in the repository with Russian text.
+    private let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) {
+        BatteryFormatter.englishSymbol($0) + "-ru"
     }
 
     /// Locales differ in which space they use; compare with all of them normalized.
@@ -29,7 +25,7 @@ import Testing
 
     @Test func watts() {
         #expect(plain(english.watts(-10.34, signed: true)) == "−10.3 W")
-        #expect(plain(russian.watts(-10.34, signed: true)) == "−10,3 Вт")
+        #expect(plain(russian.watts(-10.34, signed: true)) == "−10,3 W-ru")
         #expect(plain(english.watts(32.66, signed: true)) == "+32.7 W")
         #expect(plain(english.watts(60)) == "60.0 W")
         #expect(plain(english.watts(-0.04, signed: true)) == "0.0 W", "no sign on values that round to zero")
@@ -37,19 +33,22 @@ import Testing
 
     @Test func capacityAndElectrical() {
         #expect(plain(english.milliampHours(5862)) == "5,862 mAh")
-        #expect(plain(russian.milliampHours(5862)) == "5 862 мА·ч")
+        #expect(plain(russian.milliampHours(5862)) == "5 862 mAh-ru")
         #expect(plain(english.volts(millivolts: 12176)) == "12.18 V")
-        #expect(plain(russian.volts(millivolts: 12176)) == "12,18 В")
+        #expect(plain(russian.volts(millivolts: 12176)) == "12,18 V-ru")
         #expect(plain(english.milliamps(-612, signed: true)) == "−612 mA")
         #expect(plain(english.amps(milliamps: 2990)) == "2.99 A")
-        #expect(plain(russian.amps(milliamps: 2990)) == "2,99 А")
+        #expect(plain(russian.amps(milliamps: 2990)) == "2,99 A-ru")
         #expect(plain(english.volts(millivolts: 20000, fractionDigits: 0)) == "20 V")
         #expect(plain(english.watts(60, fractionDigits: 0)) == "60 W")
     }
 
     @Test func durations() {
         #expect(plain(english.duration(minutes: 342)) == "5 hr, 42 min")
-        #expect(plain(russian.duration(minutes: 342)) == "5 ч 42 мин")
+        // Foundation's Russian abbreviations for hours and minutes.
+        #expect(plain(russian.duration(minutes: 342)) == "5 \u{0447} 42 \u{043C}\u{0438}\u{043D}")
         #expect(plain(english.duration(minutes: 42)) == "42 min")
+        #expect(plain(english.duration(seconds: 150)) == "2 min, 30 sec")
+        #expect(plain(english.duration(seconds: 30)) == "30 sec")
     }
 }

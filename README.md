@@ -29,7 +29,7 @@ dependencies.
 - **Main window** with a sidebar: *Overview* (charge, gauges for charge, maximum capacity and
   cycles, capacity bars, power flow), *Power* (battery electrical values, the adapter and its
   USB-PD profiles, system power), *Health* (maximum capacity, condition, cycles, capacities),
-  and an optional *Developer* section with raw IORegistry data and capture export.
+  and an optional *Developer* section that decodes and explains the raw IORegistry data.
 - **Menu bar item** with percentage, power, both or just an icon, and a popover with the
   essentials. It can be turned off; BatteryPulse then lives in the Dock.
 - **Settings** for the menu bar, the Dock icon, opening at login and the Developer section.

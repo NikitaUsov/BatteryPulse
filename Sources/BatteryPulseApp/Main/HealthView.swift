@@ -34,15 +34,15 @@ struct HealthView: View {
         HStack(spacing: 40) {
             if let health = snapshot.healthPercent {
                 Gauge(value: health / 100) {
-                    Text("Maximum Capacity")
+                    Text("Maximum capacity")
                 } currentValueLabel: {
                     Text(formatter.percent(health))
                 }
-                .gaugeStyle(RingGaugeStyle(tint: .green, diameter: 128))
+                .gaugeStyle(RingGaugeStyle(tint: BatteryPresentation.healthTier(for: snapshot).color, diameter: 128))
             }
             if let cycles = snapshot.cycleCount {
                 Gauge(value: Double(cycles) / Double(snapshot.designCycleCount ?? 1000)) {
-                    Text("Cycle Count")
+                    Text("Cycle count")
                 } currentValueLabel: {
                     Text(cycles.formatted())
                 }

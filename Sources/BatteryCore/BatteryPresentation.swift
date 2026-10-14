@@ -68,13 +68,31 @@ public enum BatteryPresentation {
         guard let percent = s.chargePercent, s.chargeState != .charging, percent <= 20 else { return .normal }
         return percent > 10 ? .low : .critical
     }
+
+    /// Colour tier for maximum capacity: the condition macOS reports, then the capacity itself
+    /// (macOS recommends service below 80 %).
+    public static func healthTier(for s: BatterySnapshot) -> LevelTier {
+        switch s.healthCondition {
+        case "Poor", "Check Battery", "Permanent Battery Failure": return .critical
+        case "Fair", "Service Recommended": return .low
+        default: break
+        }
+        guard let health = s.healthPercent else { return .normal }
+        return health < 80 ? .low : .normal
+    }
 }
 
 /// One flattened raw IORegistry value, e.g. `AppleSmartBattery.BatteryData.DesignCapacity`.
 public struct RawEntry: Sendable, Equatable, Identifiable {
     public var path: String
-    public var value: String
+    public var property: PropertyValue
     public var id: String { path }
+    public var value: String { property.description }
+
+    public init(path: String, property: PropertyValue) {
+        self.path = path
+        self.property = property
+    }
 
     /// Flattens nested dictionaries and arrays into sorted key paths (`Array[0].Key`).
     public static func flatten(_ dictionary: PropertyDictionary, prefix: String = "") -> [RawEntry] {
@@ -90,7 +108,7 @@ public struct RawEntry: Sendable, Equatable, Identifiable {
                     visit(item, path: "\(path)[\(index)]")
                 }
             default:
-                entries.append(RawEntry(path: path, value: value.description))
+                entries.append(RawEntry(path: path, property: value))
             }
         }
         visit(.dictionary(dictionary), path: prefix)

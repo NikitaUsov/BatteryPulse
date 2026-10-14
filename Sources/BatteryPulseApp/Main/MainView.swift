@@ -44,12 +44,12 @@ struct MainView: View {
                 Label(item.title, systemImage: item.symbol)
                     .tag(item)
             }
-            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 260)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             detail
                 .navigationTitle(selection.title)
         }
-        .frame(minWidth: 720, minHeight: 520)
+        .frame(minWidth: 780, minHeight: 540)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Copy Report", systemImage: "doc.on.doc", action: copyReport)

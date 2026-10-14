@@ -68,22 +68,26 @@ struct OverviewView: View {
                     caption: snapshot.hardwareChargePercent.map {
                         String(localized: "Gauge: \(formatter.percent($0, fractionDigits: 1))")
                     },
+                    captionHelp: String(
+                        localized:
+                            "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly."
+                    ),
                     tint: tint
                 )
             }
             if let health = snapshot.healthPercent {
                 GaugeTile(
-                    title: "Maximum Capacity",
+                    title: "Maximum capacity",
                     fraction: health / 100,
                     value: formatter.percent(health),
                     caption: Phrases.condition(snapshot.healthCondition),
-                    tint: .green
+                    tint: BatteryPresentation.healthTier(for: snapshot).color
                 )
             }
             if let cycles = snapshot.cycleCount {
                 let rated = snapshot.designCycleCount ?? 1000
                 GaugeTile(
-                    title: "Cycle Count",
+                    title: "Cycle count",
                     fraction: Double(cycles) / Double(rated),
                     value: cycles.formatted(),
                     caption: String(localized: "of \(rated.formatted()) rated"),
@@ -91,6 +95,8 @@ struct OverviewView: View {
                 )
             }
         }
+        // Tiles share the tallest tile's height.
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 #endif

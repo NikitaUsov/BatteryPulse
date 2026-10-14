@@ -44,6 +44,9 @@ if ! ls "$APP/Contents/Resources/ru.lproj/"Localizable.* >/dev/null 2>&1; then
   exit 1
 fi
 
+# LSUIElement: launch without a Dock icon, so the default menu-bar mode (and Open at login)
+# never flashes one. DockIconPolicy promotes the app to a regular one at run time when the menu
+# bar item is off, the Dock icon is on, or a window is open.
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -62,7 +65,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>LSMinimumSystemVersion</key><string>27.0</string>
-  <key>NSHumanReadableCopyright</key><string>Licensed under the GNU GPL v3.</string>
+  <key>LSUIElement</key><true/>
+  <key>NSHumanReadableCopyright</key><string>GNU GPL v3</string>
 </dict>
 </plist>
 PLIST

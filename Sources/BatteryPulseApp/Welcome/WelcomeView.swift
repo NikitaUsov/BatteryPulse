@@ -41,8 +41,9 @@ struct WelcomeView: View {
                 Button("Quit") { NSApp.terminate(nil) }
                 Spacer()
                 Button("Open BatteryPulse") {
-                    dismissWindow(id: WindowID.welcome)
+                    // Open first, so the app always has a window and keeps its Dock icon.
                     WindowOpener.showMainWindow()
+                    dismissWindow(id: WindowID.welcome)
                 }
                 Button("Done") { dismissWindow(id: WindowID.welcome) }
                     .keyboardShortcut(.defaultAction)

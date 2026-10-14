@@ -29,10 +29,11 @@ body:
     attributes:
       label: Raw capture (macOS)
       description: |
-        Run `swift run bpulse --raw > capture.xml` and attach the file (drag it here; GitHub
-        doesn't accept the .plist extension). Serial numbers are redacted automatically. If the
-        problem is with a specific reading, also paste the output of `swift run bpulse`, which
-        contains no serial numbers.
+        In BatteryPulse, turn on Settings → Advanced → Show Developer section, then choose
+        Developer → Export Capture… and attach the file (drag it here). From a source checkout,
+        `swift run bpulse --raw > capture.xml` does the same. Serial numbers are redacted
+        automatically. If the problem is with a specific reading, also paste the report from
+        Copy Report in the main window's toolbar, which contains no serial numbers.
   - type: textarea
     id: extra
     attributes:

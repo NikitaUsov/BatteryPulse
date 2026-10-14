@@ -1,3 +1,4 @@
+import BatteryCore
 import Foundation
 import Testing
 
@@ -6,15 +7,17 @@ import Testing
 /// Xcode extracts strings automatically, but the app is built with SwiftPM, so the catalog is
 /// maintained by hand. This test finds the localized literals in `Sources/BatteryPulseApp` and
 /// checks that each has a Russian translation with matching placeholders, and that the catalog
-/// has no leftovers. Conventions it relies on (see `Localized.swift`): interpolations are always
-/// pre-formatted Strings, so every placeholder is `%@`.
+/// has no leftovers. The Developer section's ``RawKeyGlossary`` summaries are looked up by their
+/// English text at run time, so they count as UI strings too. Conventions it relies on (see
+/// `Localized.swift`): interpolations are always pre-formatted Strings, so every placeholder is
+/// `%@`.
 @Suite struct LocalizationCatalogTests {
     private static let repository = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     /// Literals passed to these calls are localization keys.
     private static var localizingCall: Regex<(Substring, Substring)> {
-        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|Card|Tab|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(localized:|\btitle:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
+        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|Card|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(\s*localized:|\btitle:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
     }
 
     /// Literal cases of `var title: LocalizedStringKey` switches and `("Label", value, color)` rows.
@@ -53,7 +56,7 @@ import Testing
     private func sourceKeys() throws -> Set<String> {
         let directory = Self.repository.appendingPathComponent("Sources/BatteryPulseApp")
         let enumerator = try #require(FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
-        var keys: Set<String> = []
+        var keys = RawKeyGlossary.summaries
         for case let url as URL in enumerator where url.pathExtension == "swift" {
             let source = try String(contentsOf: url, encoding: .utf8)
             var literals = source.matches(of: Self.localizingCall).map { String($0.output.1) }
@@ -113,6 +116,29 @@ import Testing
     @Test func catalogHasNoLeftovers() throws {
         let unused = Set(try catalog().strings.keys).subtracting(try sourceKeys()).sorted()
         #expect(unused.isEmpty, "Remove from Resources/Localizable.xcstrings: \(unused)")
+    }
+
+    /// The repository is English only; Russian lives in the String Catalog and nowhere else.
+    @Test func russianTextOnlyInTheCatalog() throws {
+        let cyrillic = #/[\u{0400}-\u{04FF}]/#
+        let textExtensions: Set<String> = ["swift", "md", "yml", "yaml", "sh", "json", "plist", "svg", "txt"]
+        var offenders: [String] = []
+        for folder in ["Sources", "Tests", "docs", "scripts", ".github", ".claude"] {
+            let directory = Self.repository.appendingPathComponent(folder)
+            guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil)
+            else { continue }
+            for case let url as URL in enumerator where textExtensions.contains(url.pathExtension) {
+                let text = try String(contentsOf: url, encoding: .utf8)
+                if text.contains(cyrillic) { offenders.append(url.path) }
+            }
+        }
+        for file in ["README.md", "CLAUDE.md", "CONTRIBUTING.md", "SECURITY.md", "Package.swift"] {
+            let url = Self.repository.appendingPathComponent(file)
+            if let text = try? String(contentsOf: url, encoding: .utf8), text.contains(cyrillic) {
+                offenders.append(url.path)
+            }
+        }
+        #expect(offenders.isEmpty, "Russian text outside Resources/Localizable.xcstrings: \(offenders)")
     }
 
     @Test func russianTranslationsAreCompleteAndKeepPlaceholders() throws {

@@ -85,10 +85,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    /// In the menu bar, BatteryPulse keeps running after its last window closes. Without the
-    /// menu bar item it behaves like a single-window utility and quits.
+    /// BatteryPulse keeps running when its last window closes: in the menu bar, or in the Dock
+    /// when the menu bar item is off (clicking the Dock icon reopens the main window). Quitting on
+    /// close would also end the app when the user turns the menu bar item off in Settings or the
+    /// welcome window and then closes it.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !AppSettings.showInMenuBar
+        false
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {

@@ -37,12 +37,12 @@ public struct BatteryFormatter: Sendable {
         (value / 100).formatted(.percent.precision(.fractionLength(fractionDigits)).locale(locale))
     }
 
-    /// `-10.34` → "−10.3 W" (en) or "−10,3 Вт" (ru, with Russian symbols).
+    /// `-10.34` → "−10.3 W" (en); Russian uses a decimal comma and its own unit symbol.
     public func watts(_ value: Double, fractionDigits: Int = 1, signed: Bool = false) -> String {
         withUnit(number(value, fractionDigits: fractionDigits, signed: signed), .watts)
     }
 
-    /// `5862` → "5,862 mAh" (en) or "5 862 мА·ч" (ru).
+    /// `5862` → "5,862 mAh" (en); Russian groups digits with a space.
     public func milliampHours(_ value: Int) -> String {
         withUnit(value.formatted(.number.locale(locale)), .milliampHours)
     }
@@ -62,11 +62,18 @@ public struct BatteryFormatter: Sendable {
         withUnit(number(Double(value), fractionDigits: 0, signed: signed), .milliamps)
     }
 
-    /// `342` → "5 hr, 42 min" (en) or "5 ч 42 мин" (ru).
+    /// `342` → "5 hr, 42 min" (en), with the locale's own abbreviations elsewhere.
     public func duration(minutes: Int) -> String {
         var style = Duration.UnitsFormatStyle(allowedUnits: [.hours, .minutes], width: .abbreviated)
         style.locale = locale
         return Duration.seconds(minutes * 60).formatted(style)
+    }
+
+    /// `150` → "2 min, 30 sec" (en).
+    public func duration(seconds: Int) -> String {
+        var style = Duration.UnitsFormatStyle(allowedUnits: [.hours, .minutes, .seconds], width: .abbreviated)
+        style.locale = locale
+        return Duration.seconds(seconds).formatted(style)
     }
 
     /// Plain number with the locale's separators.

@@ -31,7 +31,8 @@ BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time:
 3. Next to *"BatteryPulse" was blocked to protect your Mac*, click **Open Anyway** and confirm
    with your password or Touch ID.
 
-You only need to do this once. A copy you build yourself (see the README) opens without it.
+Until BatteryPulse is notarized, you need to do this once for each new version you download. A
+copy you build yourself (see the README) opens without it.
 
 ## Where BatteryPulse lives
 
@@ -45,8 +46,12 @@ You decide where it appears (Settings → General):
   a BatteryPulse window is open, so you can switch to it with ⌘-Tab.
 
 BatteryPulse never hides from both places: if it isn't in the menu bar, it always has a Dock
-icon. If the menu bar item disappears (for example, because it was turned off in System
-Settings → Menu Bar), open BatteryPulse from Applications or Spotlight.
+icon, and it keeps running after you close its window (click the Dock icon to bring the window
+back, or press ⌘Q to quit).
+
+If the menu bar item disappears because macOS hid it, allow BatteryPulse again in System
+Settings → Menu Bar. While BatteryPulse is running, opening it again from Applications or
+Spotlight also brings up its window.
 
 ## The main window
 
@@ -58,13 +63,17 @@ Settings → Menu Bar), open BatteryPulse from Applications or Spotlight.
   adapter, system load, adapter loss, Low Power Mode and thermal state.
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used, plus design, nominal, full-charge and remaining capacity.
-- **Developer** — off by default (Settings → Advanced). Raw IORegistry data with a filter,
-  charger reason codes, the gauge's last update, **Copy JSON** and **Export Capture…**.
+- **Developer** — off by default (Settings → Advanced). Every raw value macOS reports, in a
+  table with a readable decoding (mAh, volts, watts, times, USB Power Delivery offers and the
+  active contract) and a short description of what the key means where that's known. Filter by
+  key, value or description; select rows and press ⌘C to copy them. **Copy JSON** and
+  **Export Capture…** are in the toolbar.
 
 **Copy Report** in the toolbar copies a plain-text report without serial numbers.
 
-Live values refresh every 2 seconds while a window or the menu bar popover is open. Otherwise
-BatteryPulse only updates when macOS reports a change, so it uses no CPU in the background.
+Live values refresh every 2 seconds while a window or the menu bar popover is open, and every
+10 seconds when the menu bar shows power. Otherwise BatteryPulse only updates when macOS reports
+a change, so it uses almost no CPU in the background.
 
 ## Settings
 

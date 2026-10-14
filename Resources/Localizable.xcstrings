@@ -1,6 +1,30 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ (bit %@)": {
+      "extractionState": "manual",
+      "comment": "Hex code and the one bit that is set, e.g. 0x80 (bit 7)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (бит %@)"
+          }
+        }
+      }
+    },
+    "%@ (bits %@)": {
+      "extractionState": "manual",
+      "comment": "Hex code and the bits that are set, e.g. 0x81 (bits 0, 7)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (биты %@)"
+          }
+        }
+      }
+    },
     "%@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -101,6 +125,18 @@
         }
       }
     },
+    "Augmented %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery augmented power offer, shown as a hex code",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расширенный %@"
+          }
+        }
+      }
+    },
     "Available in the installed app. Build it with scripts/build-app.sh.": {
       "extractionState": "manual",
       "localizations": {
@@ -119,6 +155,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Аккумулятор"
+          }
+        }
+      }
+    },
+    "Battery %@, %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery battery-supply offer: voltage range, power",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Батарейный %@, %@"
           }
         }
       }
@@ -233,6 +281,17 @@
         }
       }
     },
+    "Calculating…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вычисляется…"
+          }
+        }
+      }
+    },
     "Capacity": {
       "extractionState": "manual",
       "localizations": {
@@ -332,6 +391,17 @@
         }
       }
     },
+    "Copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать"
+          }
+        }
+      }
+    },
     "Copy a plain-text report without serial numbers": {
       "extractionState": "manual",
       "localizations": {
@@ -350,6 +420,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скопировать JSON"
+          }
+        }
+      }
+    },
+    "Copy Key": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать ключ"
           }
         }
       }
@@ -376,6 +457,17 @@
         }
       }
     },
+    "Copy Value": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать значение"
+          }
+        }
+      }
+    },
     "Critical": {
       "extractionState": "manual",
       "localizations": {
@@ -398,7 +490,7 @@
         }
       }
     },
-    "Cycle Count": {
+    "Cycle count": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
@@ -409,13 +501,26 @@
         }
       }
     },
-    "Cycle count": {
+    "Decoded": {
       "extractionState": "manual",
+      "comment": "Developer table column: the raw value in readable form",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Количество циклов перезарядки"
+            "value": "Расшифровка"
+          }
+        }
+      }
+    },
+    "Description": {
+      "extractionState": "manual",
+      "comment": "Developer table column: what the key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Описание"
           }
         }
       }
@@ -508,13 +613,25 @@
         }
       }
     },
-    "Filter keys and values": {
+    "Filter keys, values and descriptions": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Фильтр по ключам и значениям"
+            "value": "Фильтр по ключам, значениям и описаниям"
+          }
+        }
+      }
+    },
+    "Fixed %@ × %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery fixed-voltage offer: voltage × current",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Фиксированный %@ × %@"
           }
         }
       }
@@ -570,29 +687,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Полностью заряжен"
-          }
-        }
-      }
-    },
-    "Gauge": {
-      "extractionState": "manual",
-      "comment": "The battery's fuel-gauge chip",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Контроллер"
-          }
-        }
-      }
-    },
-    "Gauge charge": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд по контроллеру"
           }
         }
       }
@@ -707,13 +801,14 @@
         }
       }
     },
-    "Instant current": {
+    "Key": {
       "extractionState": "manual",
+      "comment": "Developer table column: the raw key path",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Мгновенный ток"
+            "value": "Ключ"
           }
         }
       }
@@ -736,17 +831,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Крупный"
-          }
-        }
-      }
-    },
-    "Last gauge update": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Последнее обновление контроллера"
           }
         }
       }
@@ -819,17 +903,6 @@
         }
       }
     },
-    "Maximum Capacity": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Максимальная ёмкость"
-          }
-        }
-      }
-    },
     "Maximum capacity": {
       "extractionState": "manual",
       "localizations": {
@@ -874,6 +947,17 @@
         }
       }
     },
+    "No": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет"
+          }
+        }
+      }
+    },
     "No Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -907,6 +991,18 @@
         }
       }
     },
+    "None": {
+      "extractionState": "manual",
+      "comment": "An empty slot, unset timestamp or no override",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет"
+          }
+        }
+      }
+    },
     "Normal": {
       "extractionState": "manual",
       "comment": "Battery condition and thermal state",
@@ -914,7 +1010,30 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Норма"
+            "value": "Нормальное"
+          }
+        }
+      }
+    },
+    "Not active": {
+      "extractionState": "manual",
+      "comment": "Optimized charging is on but not holding the charge right now",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не активна"
+          }
+        }
+      }
+    },
+    "Not available": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет данных"
           }
         }
       }
@@ -926,17 +1045,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не заряжается"
-          }
-        }
-      }
-    },
-    "Not charging reason": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Причина остановки зарядки"
           }
         }
       }
@@ -959,6 +1067,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выкл."
+          }
+        }
+      }
+    },
+    "Offer %@: %@, max %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery request: which offer the Mac chose, operating and maximum current",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль %@: %@, макс. %@"
           }
         }
       }
@@ -1073,17 +1193,6 @@
         }
       }
     },
-    "Permanent failure status": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Код необратимого сбоя"
-          }
-        }
-      }
-    },
     "Poor": {
       "extractionState": "manual",
       "localizations": {
@@ -1146,6 +1255,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Мощность от адаптера"
+          }
+        }
+      }
+    },
+    "PPS %@ × %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery Programmable Power Supply offer: voltage range × current",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PPS %@ × %@"
           }
         }
       }
@@ -1227,17 +1348,6 @@
         }
       }
     },
-    "Serial numbers are redacted.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Серийные номера скрыты."
-          }
-        }
-      }
-    },
     "Service Recommended": {
       "extractionState": "manual",
       "localizations": {
@@ -1315,17 +1425,6 @@
         }
       }
     },
-    "Slow charging reason": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Причина замедления зарядки"
-          }
-        }
-      }
-    },
     "Standard": {
       "extractionState": "manual",
       "localizations": {
@@ -1366,6 +1465,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нагрузка системы"
+          }
+        }
+      }
+    },
+    "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собственное измерение контроллера аккумулятора: оставшаяся ёмкость ÷ ёмкость полного заряда. macOS держит небольшой резерв, поэтому значения немного различаются."
           }
         }
       }
@@ -1459,6 +1569,30 @@
         }
       }
     },
+    "Value": {
+      "extractionState": "manual",
+      "comment": "Developer table column: the raw value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значение"
+          }
+        }
+      }
+    },
+    "Variable %@ × %@": {
+      "extractionState": "manual",
+      "comment": "USB Power Delivery variable-supply offer: voltage range × current",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переменный %@ × %@"
+          }
+        }
+      }
+    },
     "Voltage": {
       "extractionState": "manual",
       "localizations": {
@@ -1522,6 +1656,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Если выключено, значок всё равно появляется в Dock, пока открыто окно BatteryPulse."
+          }
+        }
+      }
+    },
+    "Yes": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Да"
           }
         }
       }

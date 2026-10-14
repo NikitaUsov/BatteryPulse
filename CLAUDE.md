@@ -57,5 +57,6 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a
   ternary of literals to `Text` (it becomes a plain String). Add every new key with its Russian
   translation to `Resources/Localizable.xcstrings`; `LocalizationCatalogTests` fails on missing
-  or unused keys. Use Apple's Russian terminology ("аккумулятор", "Максимальная ёмкость").
+  or unused keys. Use Apple's Russian terminology (the words macOS uses in System Settings →
+  Battery); existing catalog entries show the conventions.
 - Liquid Glass: rely on standard components; don't put `glassEffect` on content cards.
