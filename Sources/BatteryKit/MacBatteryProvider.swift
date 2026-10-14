@@ -13,13 +13,10 @@ import BatteryCore
 ///   (percent, time remaining, health condition).
 /// - `IOPSCopyExternalPowerAdapterDetails` — the connected adapter.
 ///
-/// Changes are pushed via the `com.apple.system.powersources` notification, so no polling is
-/// needed unless the UI shows live current/power values.
+/// Changes are pushed by `IOPSNotificationCreateRunLoopSource`, so no polling is needed unless
+/// the UI shows live current/power values.
 @MainActor
 public final class MacBatteryProvider: BatteryProvider {
-    /// `kIOPSNotifyAnyPowerSource`: posted on any power-source update.
-    static let anyPowerSourceNotification = "com.apple.system.powersources"
-
     public init() {}
 
     public func read() -> BatteryReading? {
@@ -40,13 +37,26 @@ public final class MacBatteryProvider: BatteryProvider {
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
         let removeObservers = observeNotifications(systemStateNotifications, handler: handler)
 
-        var token: Int32 = 0
-        let status = notify_register_dispatch(Self.anyPowerSourceNotification, &token, .main) { _ in
-            MainActor.assumeIsolated { handler() }
+        // The C callback can't capture, so the handler travels through the context pointer.
+        let context = Unmanaged.passRetained(HandlerBox(handler))
+        let callback: IOPowerSourceCallbackType = { context in
+            guard let context else { return }
+            let box = Unmanaged<HandlerBox>.fromOpaque(context).takeUnretainedValue()
+            MainActor.assumeIsolated { box.handler() }
         }
-        let registered = status == 0
-        return BatteryObservation { [token] in
-            if registered { notify_cancel(token) }
+        guard let source = IOPSNotificationCreateRunLoopSource(callback, context.toOpaque())?
+            .takeRetainedValue()
+        else {
+            context.release()
+            return BatteryObservation(onCancel: removeObservers)
+        }
+        // Common modes keep updates flowing while a menu is open (event-tracking mode).
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+
+        let resources = UncheckedSendable(value: (source, context))
+        return BatteryObservation {
+            CFRunLoopSourceInvalidate(resources.value.0)
+            resources.value.1.release()
             removeObservers()
         }
     }
@@ -85,6 +95,14 @@ public final class MacBatteryProvider: BatteryProvider {
             return nil
         }
         return PropertyValue.dictionary(fromAny: details)
+    }
+}
+
+private final class HandlerBox: Sendable {
+    let handler: @MainActor @Sendable () -> Void
+
+    init(_ handler: @escaping @MainActor @Sendable () -> Void) {
+        self.handler = handler
     }
 }
 #endif

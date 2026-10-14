@@ -95,6 +95,21 @@ import Testing
         #expect(reparsed == reading)
     }
 
+    @Test func redactedCaptureHidesSerialNumbers() throws {
+        let reading = try Fixture.appleSiliconCharging.reading()
+        let redacted = BatteryReading(rawCapture: reading.redactedRawCapture, timestamp: Fixture.timestamp)
+        #expect(redacted.adapterDetails["SerialString"] == .string("REDACTED"))
+        #expect(redacted.snapshot.adapter?.serialNumber == "REDACTED")
+        // Everything else survives.
+        #expect(redacted.snapshot.adapter?.watts == 96)
+        #expect(redacted.snapshot.cycleCount == reading.snapshot.cycleCount)
+
+        let discharging = try Fixture.appleSiliconDischarging.reading()
+        let text = PropertyValue.dictionary(discharging.redactedRawCapture).description
+        #expect(!text.contains("F8Y0000SYNTHETIC"))
+        #expect(text.contains("Hardware Serial Number = REDACTED"))
+    }
+
     @Test(arguments: [
         (true, true, false, ChargeState.charging),
         (false, true, true, .charged),

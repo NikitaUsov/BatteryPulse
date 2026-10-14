@@ -46,6 +46,33 @@ extension BatteryReading {
         ]
     }
 
+    /// ``rawCapture`` with serial numbers replaced, safe to attach to public bug reports.
+    public var redactedRawCapture: PropertyDictionary {
+        Self.redactingSerialNumbers(in: rawCapture)
+    }
+
+    static let redactedPlaceholder = "REDACTED"
+
+    static func redactingSerialNumbers(in dictionary: PropertyDictionary) -> PropertyDictionary {
+        var result = dictionary
+        for (key, value) in dictionary {
+            switch value {
+            case .string where key.localizedCaseInsensitiveContains("serial"):
+                result[key] = .string(redactedPlaceholder)
+            case .dictionary(let nested):
+                result[key] = .dictionary(redactingSerialNumbers(in: nested))
+            case .array(let items):
+                result[key] = .array(items.map { item in
+                    guard case .dictionary(let nested) = item else { return item }
+                    return .dictionary(redactingSerialNumbers(in: nested))
+                })
+            default:
+                break
+            }
+        }
+        return result
+    }
+
     /// Re-parses a raw capture produced by ``rawCapture``.
     public init(rawCapture: PropertyDictionary, timestamp: Date) {
         self.init(

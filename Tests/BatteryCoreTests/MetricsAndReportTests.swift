@@ -87,6 +87,7 @@ import Testing
         let s = try Fixture.intelNotCharging.snapshot()
         #expect(value("State", in: s) == "On power adapter, not charging")
         #expect(value("Optimized charging", in: s) == "holding charge")
+        #expect(value("Battery power", in: s) == "0.0 W  (12.10 V × 0 mA)")
         #expect(value("Manufactured", in: s) == "2019-07-15")
         #expect(value("Adapter", in: s) == "87 W · pd charger · 20.0 V × 4.30 A")
     }
@@ -101,6 +102,12 @@ import Testing
             #expect(row.hasPrefix(line.label))
             #expect(String(row.dropFirst(column)) == line.value)
         }
+    }
+
+    @Test func signedValues() {
+        #expect(BatteryReport.signed(12.34, 1) == "+12.3")
+        #expect(BatteryReport.signed(-0.04, 1) == "0.0")
+        #expect(BatteryReport.signed(-3.25, 1) == "-3.2")
     }
 
     @Test func durations() {

@@ -115,8 +115,10 @@ public enum BatteryReport {
         String(format: "%.\(digits)f", value)
     }
 
+    /// Explicit sign, except for values that round to zero ("0.0", not "+0.0" or "-0.0").
     static func signed(_ value: Double, _ digits: Int) -> String {
-        String(format: "%+.\(digits)f", value)
+        let unsigned = fixed(value, digits)
+        return Double(unsigned) == 0 ? fixed(0, digits) : String(format: "%+.\(digits)f", value)
     }
 
     private static func joined(_ parts: [String?]) -> String? {
