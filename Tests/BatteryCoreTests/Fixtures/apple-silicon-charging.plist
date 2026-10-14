@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SYNTHETIC: modeled on a 14" Apple Silicon MacBook Pro charging from a 96 W USB-C adapter. -->
+<plist version="1.0">
+<dict>
+	<key>AppleSmartBattery</key>
+	<dict>
+		<key>AdapterDetails</key>
+		<dict>
+			<key>AdapterVoltage</key>
+			<integer>20000</integer>
+			<key>Current</key>
+			<integer>4700</integer>
+			<key>Description</key>
+			<string>pd charger</string>
+			<key>IsWireless</key>
+			<false/>
+			<key>Manufacturer</key>
+			<string>Apple Inc.</string>
+			<key>Name</key>
+			<string>96W USB-C Power Adapter</string>
+			<key>Watts</key>
+			<integer>96</integer>
+		</dict>
+		<key>Amperage</key>
+		<integer>3920</integer>
+		<key>AppleRawCurrentCapacity</key>
+		<integer>3136</integer>
+		<key>AppleRawMaxCapacity</key>
+		<integer>5807</integer>
+		<key>AvgTimeToEmpty</key>
+		<integer>65535</integer>
+		<key>AvgTimeToFull</key>
+		<integer>48</integer>
+		<key>BatteryData</key>
+		<dict>
+			<key>CellVoltage</key>
+			<array>
+				<integer>4012</integer>
+				<integer>4015</integer>
+				<integer>4011</integer>
+			</array>
+			<key>CycleCount</key>
+			<integer>214</integer>
+			<key>DesignCapacity</key>
+			<integer>6249</integer>
+		</dict>
+		<key>ChargerData</key>
+		<dict>
+			<key>ChargingCurrent</key>
+			<integer>4000</integer>
+			<key>ChargingVoltage</key>
+			<integer>13050</integer>
+			<key>NotChargingReason</key>
+			<integer>0</integer>
+		</dict>
+		<key>CurrentCapacity</key>
+		<integer>54</integer>
+		<key>CycleCount</key>
+		<integer>214</integer>
+		<key>DesignCapacity</key>
+		<integer>6249</integer>
+		<key>DesignCycleCount9C</key>
+		<integer>1000</integer>
+		<key>ExternalConnected</key>
+		<true/>
+		<key>FullyCharged</key>
+		<false/>
+		<key>InstantAmperage</key>
+		<integer>3950</integer>
+		<key>IsCharging</key>
+		<true/>
+		<key>MaxCapacity</key>
+		<integer>100</integer>
+		<key>NominalChargeCapacity</key>
+		<integer>6024</integer>
+		<key>PowerTelemetryData</key>
+		<dict>
+			<key>BatteryPower</key>
+			<integer>49590</integer>
+			<key>SystemLoad</key>
+			<integer>22480</integer>
+			<key>SystemPowerIn</key>
+			<integer>73210</integer>
+		</dict>
+		<key>Temperature</key>
+		<integer>3355</integer>
+		<key>Voltage</key>
+		<integer>12650</integer>
+	</dict>
+	<key>PowerSource</key>
+	<dict>
+		<key>BatteryHealth</key>
+		<string>Good</string>
+		<key>Current Capacity</key>
+		<integer>54</integer>
+		<key>Is Charging</key>
+		<true/>
+		<key>Max Capacity</key>
+		<integer>100</integer>
+		<key>Power Source State</key>
+		<string>AC Power</string>
+		<key>Time to Empty</key>
+		<integer>0</integer>
+		<key>Time to Full Charge</key>
+		<integer>52</integer>
+		<key>Type</key>
+		<string>InternalBattery</string>
+	</dict>
+	<key>AdapterDetails</key>
+	<dict>
+		<key>Current</key>
+		<integer>4700</integer>
+		<key>Description</key>
+		<string>pd charger</string>
+		<key>IsWireless</key>
+		<false/>
+		<key>Manufacturer</key>
+		<string>Apple Inc.</string>
+		<key>Name</key>
+		<string>96W USB-C Power Adapter</string>
+		<key>SerialString</key>
+		<string>C4H0000SYNTHETIC</string>
+		<key>Voltage</key>
+		<integer>20000</integer>
+		<key>Watts</key>
+		<integer>96</integer>
+	</dict>
+</dict>
+</plist>

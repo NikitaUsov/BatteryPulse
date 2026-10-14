@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SYNTHETIC: modeled on a 14" Apple Silicon MacBook Pro running on battery. -->
+<plist version="1.0">
+<dict>
+	<key>AppleSmartBattery</key>
+	<dict>
+		<key>AdapterDetails</key>
+		<dict>
+			<key>FamilyCode</key>
+			<integer>0</integer>
+		</dict>
+		<key>Amperage</key>
+		<integer>18446744073709550592</integer>
+		<key>AppleRawCurrentCapacity</key>
+		<integer>5051</integer>
+		<key>AppleRawMaxCapacity</key>
+		<integer>5807</integer>
+		<key>AvgTimeToEmpty</key>
+		<integer>296</integer>
+		<key>AvgTimeToFull</key>
+		<integer>65535</integer>
+		<key>BatteryData</key>
+		<dict>
+			<key>CellVoltage</key>
+			<array>
+				<integer>4144</integer>
+				<integer>4143</integer>
+				<integer>4146</integer>
+			</array>
+			<key>CycleCount</key>
+			<integer>214</integer>
+			<key>DesignCapacity</key>
+			<integer>6249</integer>
+			<key>Qmax</key>
+			<array>
+				<integer>6102</integer>
+				<integer>6098</integer>
+				<integer>6110</integer>
+			</array>
+			<key>StateOfCharge</key>
+			<integer>87</integer>
+			<key>Voltage</key>
+			<integer>12433</integer>
+		</dict>
+		<key>ChargerData</key>
+		<dict>
+			<key>ChargingCurrent</key>
+			<integer>0</integer>
+			<key>ChargingVoltage</key>
+			<integer>13050</integer>
+			<key>NotChargingReason</key>
+			<integer>0</integer>
+		</dict>
+		<key>CurrentCapacity</key>
+		<integer>87</integer>
+		<key>CycleCount</key>
+		<integer>214</integer>
+		<key>DesignCapacity</key>
+		<integer>6249</integer>
+		<key>DesignCycleCount9C</key>
+		<integer>1000</integer>
+		<key>DeviceName</key>
+		<string>bq40z651</string>
+		<key>ExternalConnected</key>
+		<false/>
+		<key>FullyCharged</key>
+		<false/>
+		<key>InstantAmperage</key>
+		<integer>18446744073709550555</integer>
+		<key>IsCharging</key>
+		<false/>
+		<key>Manufacturer</key>
+		<string>SMP</string>
+		<key>MaxCapacity</key>
+		<integer>100</integer>
+		<key>NominalChargeCapacity</key>
+		<integer>6024</integer>
+		<key>PermanentFailureStatus</key>
+		<integer>0</integer>
+		<key>PowerTelemetryData</key>
+		<dict>
+			<key>BatteryPower</key>
+			<integer>12731</integer>
+			<key>SystemLoad</key>
+			<integer>12843</integer>
+			<key>SystemPowerIn</key>
+			<integer>0</integer>
+		</dict>
+		<key>Serial</key>
+		<string>F8Y0000SYNTHETIC</string>
+		<key>Temperature</key>
+		<integer>3112</integer>
+		<key>TimeRemaining</key>
+		<integer>296</integer>
+		<key>Voltage</key>
+		<integer>12433</integer>
+	</dict>
+	<key>PowerSource</key>
+	<dict>
+		<key>BatteryHealth</key>
+		<string>Good</string>
+		<key>Current Capacity</key>
+		<integer>87</integer>
+		<key>Hardware Serial Number</key>
+		<string>F8Y0000SYNTHETIC</string>
+		<key>Is Charging</key>
+		<false/>
+		<key>Is Present</key>
+		<true/>
+		<key>Max Capacity</key>
+		<integer>100</integer>
+		<key>Name</key>
+		<string>InternalBattery-0</string>
+		<key>Power Source State</key>
+		<string>Battery Power</string>
+		<key>Time to Empty</key>
+		<integer>291</integer>
+		<key>Time to Full Charge</key>
+		<integer>0</integer>
+		<key>Transport Type</key>
+		<string>Internal</string>
+		<key>Type</key>
+		<string>InternalBattery</string>
+	</dict>
+	<key>AdapterDetails</key>
+	<dict/>
+</dict>
+</plist>
