@@ -11,9 +11,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Defaults to the latest release tag, so a local build of main doesn't look outdated to the
-# update check.
-VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')}"
-VERSION="${VERSION:-0.0.0}"
+# update check. CI's shallow checkout has no tags; it gets 0.0.0.
+if [ -z "${VERSION:-}" ]; then
+  VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
+  VERSION="${VERSION#v}"
+fi
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 BUILD_DIR="build"
