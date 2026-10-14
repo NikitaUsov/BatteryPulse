@@ -7,15 +7,6 @@ public enum MenuBarStyle: String, Sendable, CaseIterable, Codable {
     case percentAndPower
     case iconOnly
 
-    public var title: String {
-        switch self {
-        case .percent: "Percentage"
-        case .power: "Battery power"
-        case .percentAndPower: "Percentage and power"
-        case .iconOnly: "Icon only"
-        }
-    }
-
     /// Power changes continuously, so these styles need periodic refreshes.
     public var showsPower: Bool {
         self == .power || self == .percentAndPower
@@ -27,19 +18,10 @@ public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
     case standard
     case large
     case hidden
-
-    public var title: String {
-        switch self {
-        case .standard: "Standard"
-        case .large: "Large"
-        case .hidden: "Hidden"
-        }
-    }
 }
 
-/// Short, display-ready strings for the app's menu bar and popover.
-///
-/// Kept in BatteryCore (rather than the SwiftUI target) so it is tested on Linux.
+/// Display decisions that don't depend on the UI language. Wording lives in the app's String
+/// Catalog; numbers and units go through ``BatteryFormatter``.
 public enum BatteryPresentation {
     /// SF Symbol for the current level; the bolt variant while charging.
     public static func symbolName(for s: BatterySnapshot?) -> String {
@@ -60,10 +42,13 @@ public enum BatteryPresentation {
         icon != .hidden || title.isEmpty
     }
 
-    public static func menuBarTitle(for s: BatterySnapshot?, style: MenuBarStyle) -> String {
+    /// "70% · −7.5 W", localized through `formatter`.
+    public static func menuBarTitle(
+        for s: BatterySnapshot?, style: MenuBarStyle, formatter: BatteryFormatter
+    ) -> String {
         guard let s else { return "" }
-        let percent = s.chargePercent.map(percentText)
-        let power = s.batteryPowerWatts.map(powerText)
+        let percent = s.chargePercent.map { formatter.percent($0) }
+        let power = s.batteryPowerWatts.map { formatter.watts($0, signed: true) }
         let parts: [String?] =
             switch style {
             case .percent: [percent]
@@ -74,67 +59,14 @@ public enum BatteryPresentation {
         return parts.compactMap { $0 }.joined(separator: " · ")
     }
 
-    /// `78.4` → "78%".
-    public static func percentText(_ percent: Double) -> String {
-        "\(BatteryReport.fixed(percent, 0))%"
+    /// Level colors used by the app: green above 20 % or while charging, then orange, then red.
+    public enum LevelTier: Sendable, Equatable {
+        case normal, low, critical
     }
 
-    /// `31.25` → "+31.3 W", `-7.45` → "−7.5 W" (typographic minus).
-    public static func powerText(_ watts: Double) -> String {
-        BatteryReport.signed(watts, 1).replacingOccurrences(of: "-", with: "−") + " W"
-    }
-
-    public static func stateTitle(for s: BatterySnapshot) -> String {
-        switch s.chargeState {
-        case .charging: "Charging"
-        case .discharging: "On battery"
-        case .charged: "Fully charged"
-        case .notCharging: s.isOptimizedChargingEngaged == true ? "Charging on hold" : "Not charging"
-        case .unknown: "Unknown"
-        }
-    }
-
-    /// "5 h 42 min left", "Full in 1 h 17 min", or "≈"-prefixed when derived by the app.
-    public static func timeText(for s: BatterySnapshot) -> String? {
-        if s.isTimeRemainingCalculating { return "Calculating time…" }
-        return switch s.chargeState {
-        case .discharging:
-            BatteryReport.timeRemaining(os: s.timeToEmptyMinutes, derived: s.estimatedTimeToEmptyMinutes)
-                .map { "\($0) left" }
-        case .charging:
-            BatteryReport.timeRemaining(os: s.timeToFullMinutes, derived: s.estimatedTimeToFullMinutes)
-                .map { "Full in \($0)" }
-        case .charged, .notCharging, .unknown:
-            nil
-        }
-    }
-}
-
-extension BatteryPresentation {
-    /// The handful of readings shown in the menu-bar popover.
-    public static func summaryLines(for s: BatterySnapshot) -> [BatteryReport.Line] {
-        var lines: [BatteryReport.Line] = []
-        func add(_ label: String, _ value: String?) {
-            if let value { lines.append(BatteryReport.Line(label: label, value: value)) }
-        }
-        add("Battery power", s.batteryPowerWatts.map(powerText))
-        if let health = s.healthPercent {
-            add("Health", [percentText(health), s.healthCondition].compactMap { $0 }.joined(separator: " · "))
-        } else {
-            add("Condition", s.healthCondition)
-        }
-        if let cycles = s.cycleCount {
-            add("Cycles", s.designCycleCount.map { "\(cycles) of \($0)" } ?? String(cycles))
-        }
-        add("Temperature", s.temperatureCelsius.map { "\(BatteryReport.fixed($0, 1)) °C" })
-        if let adapter = s.adapter {
-            add("Adapter", adapter.watts.map { "\($0) W" } ?? adapter.name ?? "Connected")
-        }
-        if s.isExternalPowerConnected == true, let input = s.systemPowerInWatts, input > 0 {
-            add("System input", "\(BatteryReport.fixed(input, 1)) W")
-        }
-        add("System load", s.systemLoadWatts.map { "\(BatteryReport.fixed($0, 1)) W" })
-        return lines
+    public static func levelTier(for s: BatterySnapshot) -> LevelTier {
+        guard let percent = s.chargePercent, s.chargeState != .charging, percent <= 20 else { return .normal }
+        return percent > 10 ? .low : .critical
     }
 }
 

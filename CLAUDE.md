@@ -1,7 +1,9 @@
 # BatteryPulse — notes for Claude
 
 Native battery/charging inspector for macOS and iOS. Swift 6, SwiftUI, zero dependencies.
-Plan, decisions and status: `docs/ROADMAP.md`. Everything in the repository is English only.
+Plan, decisions and status: `docs/ROADMAP.md`. User-facing docs: `docs/USER_GUIDE.md`.
+Everything in the repository is English only, except the Russian translations in
+`Resources/Localizable.xcstrings`.
 
 Targets: macOS 27 / iOS 27, Apple Silicon only (no Intel code). macOS ships as a DMG, not
 through the App Store. Reference hardware: MacBook Air M5.
@@ -13,10 +15,11 @@ through the App Store. Reference hardware: MacBook Air M5.
   metrics, `BatteryReport` text output. Must stay free of Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit),
   `IOSBatteryProvider` (UIDevice), `BatteryMonitor` (@Observable, event-driven + optional polling).
-- `Sources/BatteryPulseApp` — SwiftUI menu-bar app (product `BatteryPulse`): `MenuBarExtra`
-  popover, Details, Settings and Welcome windows. Everything is inside `#if os(macOS)`; a stub
-  `main` keeps Linux builds working. Display strings live in `BatteryCore/BatteryPresentation`
-  so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
+- `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
+  keys, Dock icon policy, localized phrases), `Main/` (sidebar window: Overview, Power, Health,
+  Developer), `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
+  `main` keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
+  (numbers/units per locale) live in BatteryCore so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
   `Resources/AppIcon.svg` is the icon source (`AppIcon.png` is rendered from it, and
   `AppIconView` draws the same design in SwiftUI).
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
@@ -50,3 +53,9 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
 - Linux Foundation quirk: NSNumber 0/1 casts to `Bool`, and `Int` in `Any` doesn't cast to
   `Int64` — go through `PropertyValue(any:)`, never cast raw values directly.
 - Tests use swift-testing (`import Testing`, `@Test`, `#expect`).
+- Localization: UI literals are `LocalizedStringKey`/`String(localized:)` keyed by the English
+  text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a
+  ternary of literals to `Text` (it becomes a plain String). Add every new key with its Russian
+  translation to `Resources/Localizable.xcstrings`; `LocalizationCatalogTests` fails on missing
+  or unused keys. Use Apple's Russian terminology ("аккумулятор", "Максимальная ёмкость").
+- Liquid Glass: rely on standard components; don't put `glassEffect` on content cards.

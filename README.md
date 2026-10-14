@@ -6,35 +6,46 @@
 ![Apple Silicon](https://img.shields.io/badge/Mac-Apple%20Silicon-black?logo=apple)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
-A lightweight, native battery and charging inspector for macOS and iOS: health, cycle
-count, capacity in mAh, live power draw, charger and adapter details. Built with Swift and
-SwiftUI, with no third-party dependencies.
+A lightweight, native battery and charging inspector for macOS: charge, health, cycle count,
+capacity in mAh, live power flow, and power adapter details down to its USB Power Delivery
+profiles. Built with SwiftUI and Liquid Glass, in English and Russian, with no third-party
+dependencies.
 
-> **Status: early development.** The menu-bar app and the `bpulse` command-line tool run on
-> macOS today, verified on a MacBook Air M5 with macOS 27. The iOS app comes next. See the
-> [roadmap](docs/ROADMAP.md).
+> **Status: early development**, verified on a MacBook Air M5 with macOS 27. The iOS app comes
+> later. See the [roadmap](docs/ROADMAP.md) and the [User Guide](docs/USER_GUIDE.md).
 
-## Menu-bar app
+## Download
+
+**[Download BatteryPulse.dmg](https://github.com/NikitaUsov/BatteryPulse/releases/latest/download/BatteryPulse.dmg)**
+— requires a Mac with Apple silicon and macOS 27.
+
+> **First launch:** BatteryPulse is not notarized yet, so macOS blocks it the first time. Click
+> **Done**, then go to **System Settings → Privacy & Security** and click **Open Anyway** next to
+> the BatteryPulse message. You only do this once. Details are in the
+> [User Guide](docs/USER_GUIDE.md#first-launch).
+
+## The app
+
+- **Main window** with a sidebar: *Overview* (charge, gauges for charge, maximum capacity and
+  cycles, capacity bars, power flow), *Power* (battery electrical values, the adapter and its
+  USB-PD profiles, system power), *Health* (maximum capacity, condition, cycles, capacities),
+  and an optional *Developer* section with raw IORegistry data and capture export.
+- **Menu bar item** with percentage, power, both or just an icon, and a popover with the
+  essentials. It can be turned off; BatteryPulse then lives in the Dock.
+- **Settings** for the menu bar, the Dock icon, opening at login and the Developer section.
+- **English and Russian**, chosen like any Mac app in System Settings → Language & Region.
+
+Build it from source:
 
 ```sh
 git clone https://github.com/NikitaUsov/BatteryPulse.git
 cd BatteryPulse
-swift run BatteryPulse        # run the app straight from the source
-scripts/build-app.sh          # or build build/BatteryPulse.app and build/BatteryPulse.dmg
+swift run BatteryPulse        # run straight from the source (English only, no login item)
+scripts/build-app.sh          # build build/BatteryPulse.app and build/BatteryPulse.dmg
 ```
 
-- The menu bar shows the percentage, the battery power, both, or just the icon. The battery
-  icon can be standard, large or hidden.
-- Clicking it opens a popover with charge, time remaining and live power (refreshed every
-  2 s while open), plus health, cycles and the adapter.
-- **Details…** lists every reading by group, the raw IORegistry keys with a filter, and a
-  *Copy Report* button.
-- A welcome window on first launch sets the menu-bar content and launch at login.
-
-Released versions are on the [Releases](https://github.com/NikitaUsov/BatteryPulse/releases)
-page as `BatteryPulse.dmg`. CI runs also upload a DMG as a workflow artifact (needs a GitHub
-sign-in; kept for 90 days). The app is ad-hoc signed, not notarized, so approve it once in
-System Settings → Privacy & Security.
+A copy you build yourself opens without the first-launch step. CI also uploads a DMG for every
+run as a workflow artifact (needs a GitHub sign-in; kept for 90 days).
 
 ## Command-line report
 
@@ -69,7 +80,7 @@ follows it. While macOS is still working out the time remaining, the report says
 `calculating…`. When macOS gives no estimate at all, the app derives one from capacity and
 current and marks it with `≈`.
 
-Requires an Apple Silicon Mac with macOS 27 and Xcode 27.
+Building requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 
 ## What each platform exposes
 
@@ -98,7 +109,8 @@ On macOS everything is read from the public IOKit power-source API and the
 ```text
 BatteryCore   platform-independent models, parsing, metrics, text report (tested on Linux)
 BatteryKit    IOKit (macOS) / UIDevice (iOS) providers + an @Observable BatteryMonitor
-BatteryPulse  SwiftUI menu-bar app (Sources/BatteryPulseApp)
+BatteryPulse  SwiftUI app: main window, menu bar item, settings (Sources/BatteryPulseApp)
+Resources     app icon and the String Catalog with the Russian translation
 bpulse        command-line report for macOS
 ```
 

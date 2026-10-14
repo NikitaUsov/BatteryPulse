@@ -13,6 +13,13 @@ charging state.
 - **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
+- **App shape:** a regular app with a main window (sidebar: Overview, Power, Health, optional
+  Developer) plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
+  never hidden from both. Liquid Glass comes from standard components only (sidebar, toolbar,
+  controls); content uses standard fills, per Apple's HIG.
+- **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
+  app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
+  place with Russian.
 
 ## Principles
 
@@ -80,9 +87,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Settings: menu-bar content, launch at login (`SMAppService`)
 - [x] App icon and first-launch welcome window with the starting settings
 - [x] DMG packaging (`scripts/build-app.sh`, built by CI)
-- [ ] Verify the UI on the M5 and polish it from screenshots
+- [x] Main window with a sidebar (Overview, Power, Health, Developer), gauges, capacity bars and
+      a power-flow diagram
+- [x] Optional menu bar item and Dock icon, Dock menu, Help menu linking to the User Guide
+- [x] English and Russian (String Catalog, per-app language in System Settings)
+- [x] One-click GitHub release with first-launch instructions
+- [ ] Verify the new UI on the M5 and polish it from screenshots
 - [ ] Battery temperature and cell voltages from the SMC
-- [ ] String Catalog for localization
 - [ ] Profile in Instruments against the resource targets
 - [ ] Developer ID signing and notarization
 

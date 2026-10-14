@@ -9,9 +9,10 @@ struct MenuBarLabel: View {
     let monitor: BatteryMonitor
     @AppStorage(AppSettings.menuBarStyleKey) private var style: MenuBarStyle = .percent
     @AppStorage(AppSettings.menuBarIconKey) private var iconStyle: MenuBarIconStyle = .standard
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        let title = BatteryPresentation.menuBarTitle(for: monitor.snapshot, style: style)
+        let title = BatteryPresentation.menuBarTitle(for: monitor.snapshot, style: style, formatter: .app)
         Group {
             if BatteryPresentation.showsIcon(iconStyle, title: title) {
                 icon(BatteryPresentation.symbolName(for: monitor.snapshot))
@@ -20,10 +21,12 @@ struct MenuBarLabel: View {
                 Text(title)
             }
         }
+        .onAppear { WindowOpener.openWindow = openWindow }
         .onChange(of: style, initial: true) { _, style in
             // Power changes without OS notifications, so poll gently while it is shown.
             monitor.setLiveRefreshInterval(style.showsPower ? .seconds(10) : nil, for: "menuBar")
         }
+        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
     }
 
     @ViewBuilder
@@ -39,7 +42,7 @@ struct MenuBarLabel: View {
     /// pre-rendered at a bigger point size. Template images keep the menu bar's tinting.
     private static func largeSymbol(_ name: String) -> NSImage? {
         let configuration = NSImage.SymbolConfiguration(pointSize: 17, weight: .regular)
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: "Battery")?
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(configuration)
         image?.isTemplate = true
         return image

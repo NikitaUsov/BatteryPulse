@@ -11,6 +11,7 @@ import Testing
         case .milliampHours: "мА·ч"
         case .volts: "В"
         case .milliamps: "мА"
+        case .amps: "А"
         }
     }
 
@@ -40,6 +41,10 @@ import Testing
         #expect(plain(english.volts(millivolts: 12176)) == "12.18 V")
         #expect(plain(russian.volts(millivolts: 12176)) == "12,18 В")
         #expect(plain(english.milliamps(-612, signed: true)) == "−612 mA")
+        #expect(plain(english.amps(milliamps: 2990)) == "2.99 A")
+        #expect(plain(russian.amps(milliamps: 2990)) == "2,99 А")
+        #expect(plain(english.volts(millivolts: 20000, fractionDigits: 0)) == "20 V")
+        #expect(plain(english.watts(60, fractionDigits: 0)) == "60 W")
     }
 
     @Test func durations() {

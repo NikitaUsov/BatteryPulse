@@ -8,7 +8,7 @@ import Foundation
 /// not available in swift-corelibs-foundation, where this type is tested).
 public struct BatteryFormatter: Sendable {
     public enum Unit: Sendable, CaseIterable {
-        case watts, milliampHours, volts, milliamps
+        case watts, milliampHours, volts, milliamps, amps
     }
 
     public var locale: Locale
@@ -28,6 +28,7 @@ public struct BatteryFormatter: Sendable {
         case .milliampHours: "mAh"
         case .volts: "V"
         case .milliamps: "mA"
+        case .amps: "A"
         }
     }
 
@@ -37,8 +38,8 @@ public struct BatteryFormatter: Sendable {
     }
 
     /// `-10.34` → "−10.3 W" (en) or "−10,3 Вт" (ru, with Russian symbols).
-    public func watts(_ value: Double, signed: Bool = false) -> String {
-        withUnit(number(value, fractionDigits: 1, signed: signed), .watts)
+    public func watts(_ value: Double, fractionDigits: Int = 1, signed: Bool = false) -> String {
+        withUnit(number(value, fractionDigits: fractionDigits, signed: signed), .watts)
     }
 
     /// `5862` → "5,862 mAh" (en) or "5 862 мА·ч" (ru).
@@ -47,8 +48,13 @@ public struct BatteryFormatter: Sendable {
     }
 
     /// `12176` mV → "12.18 V".
-    public func volts(millivolts: Int) -> String {
-        withUnit(number(Double(millivolts) / 1000, fractionDigits: 2), .volts)
+    public func volts(millivolts: Int, fractionDigits: Int = 2) -> String {
+        withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), .volts)
+    }
+
+    /// `2990` mA → "2.99 A".
+    public func amps(milliamps: Int, fractionDigits: Int = 2) -> String {
+        withUnit(number(Double(milliamps) / 1000, fractionDigits: fractionDigits), .amps)
     }
 
     /// `-612` → "−612 mA".
