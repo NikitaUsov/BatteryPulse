@@ -6,7 +6,7 @@ import Testing
 ///
 /// Xcode extracts strings automatically, but the app is built with SwiftPM, so the catalog is
 /// maintained by hand. This test finds the localized literals in `Sources/BatteryPulseApp` and
-/// checks that each has a Russian translation with matching placeholders, and that the catalog
+/// `Sources/BatteryPulseWidget` (whose bundle gets the same compiled catalog) and checks that each has a Russian translation with matching placeholders, and that the catalog
 /// has no leftovers. The Developer section's ``RawKeyGlossary`` summaries are looked up by their
 /// English text at run time, so they count as UI strings too. Conventions it relies on (see
 /// `Localized.swift`): interpolations are always pre-formatted Strings, so every placeholder is
@@ -17,7 +17,7 @@ import Testing
 
     /// Literals passed to these calls are localization keys.
     private static var localizingCall: Regex<(Substring, Substring)> {
-        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|figure|Card|confirmationDialog|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel)\(|String\(\s*localized:|\btitle:|\bdetail:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
+        #/(?:\b(?:Text|Label|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|figure|Card|confirmationDialog|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel|configurationDisplayName|description)\(|String\(\s*localized:|\btitle:|\bdetail:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
     }
 
     /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches and
@@ -55,10 +55,15 @@ import Testing
     }
 
     private func sourceKeys() throws -> Set<String> {
-        let directory = Self.repository.appendingPathComponent("Sources/BatteryPulseApp")
-        let enumerator = try #require(FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
         var keys = RawKeyGlossary.summaries
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        var files: [URL] = []
+        for target in ["BatteryPulseApp", "BatteryPulseWidget"] {
+            let directory = Self.repository.appendingPathComponent("Sources/" + target)
+            let enumerator = try #require(
+                FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
+            files += enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+        }
+        for url in files {
             let source = try String(contentsOf: url, encoding: .utf8)
             var literals = source.matches(of: Self.localizingCall).map { String($0.output.1) }
             literals += source.matches(of: Self.tupleLiteral).map { String($0.output.1) }

@@ -23,7 +23,9 @@ APP="$BUILD_DIR/BatteryPulse.app"
 DMG="$BUILD_DIR/BatteryPulse.dmg"
 
 swift build -c release --product BatteryPulse
-BINARY="$(swift build -c release --product BatteryPulse --show-bin-path)/BatteryPulse"
+swift build -c release --product BatteryPulseWidget
+BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
+BINARY="$BIN_PATH/BatteryPulse"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -77,8 +79,63 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 
+# The widget extension: the SwiftPM executable wrapped into an .appex with its own Info.plist,
+# strings and sandbox entitlement. WidgetKit caches by CFBundleVersion, so it matches the app's.
+APPEX="$APP/Contents/PlugIns/BatteryPulseWidget.appex"
+WIDGET="$APPEX/Contents/MacOS/BatteryPulseWidget"
+mkdir -p "$APPEX/Contents/MacOS" "$APPEX/Contents/Resources"
+cp "$BIN_PATH/BatteryPulseWidget" "$WIDGET"
+cp -R "$APP/Contents/Resources/"*.lproj "$APPEX/Contents/Resources/"
+cat > "$APPEX/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleDisplayName</key><string>BatteryPulse</string>
+  <key>CFBundleExecutable</key><string>BatteryPulseWidget</string>
+  <key>CFBundleIdentifier</key><string>$BUNDLE_ID.Widget</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
+  <key>CFBundleName</key><string>BatteryPulseWidget</string>
+  <key>CFBundlePackageType</key><string>XPC!</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleSupportedPlatforms</key><array><string>MacOSX</string></array>
+  <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
+  <key>LSMinimumSystemVersion</key><string>27.0</string>
+  <key>NSExtension</key>
+  <dict>
+    <key>NSExtensionPointIdentifier</key><string>com.apple.widgetkit-extension</string>
+  </dict>
+</dict>
+</plist>
+PLIST
+plutil -lint "$APPEX/Contents/Info.plist" >/dev/null
+
+# Both halves of the extension entry point must be there: linked to start in _NSExtensionMain,
+# and the WidgetBundle kept in the binary by @main. Output is captured first so an early grep
+# exit can't fail the pipeline.
+SYMBOLS="$(nm -m "$WIDGET")"
+if ! grep -F "_NSExtensionMain" <<<"$SYMBOLS" >/dev/null; then
+  echo "error: the widget is not linked through _NSExtensionMain" >&2
+  exit 1
+fi
+DEMANGLED="$(nm "$WIDGET" | xcrun swift-demangle)"
+if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null; then
+  echo "error: the WidgetBundle is missing from the widget binary" >&2
+  exit 1
+fi
+
+# Inside out, and never --deep when signing: it would re-sign the widget without its
+# entitlements.
+codesign --force --sign - --options runtime --entitlements Resources/BatteryPulseWidget.entitlements "$APPEX"
 codesign --force --sign - --options runtime "$APP"
-codesign --verify --strict "$APP"
+codesign --verify --strict --deep "$APP"
+ENTITLEMENTS="$(codesign -d --entitlements - "$APPEX" 2>/dev/null)"
+if ! grep -F "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" >/dev/null; then
+  echo "error: the widget is not sandboxed" >&2
+  exit 1
+fi
 
 # Drag-to-install DMG: the app next to a link to /Applications.
 STAGING="$BUILD_DIR/dmg"

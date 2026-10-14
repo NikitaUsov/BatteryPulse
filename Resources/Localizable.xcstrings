@@ -1130,6 +1130,17 @@
         }
       }
     },
+    "Charge, time remaining and battery health.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, оставшееся время и состояние аккумулятора."
+          }
+        }
+      }
+    },
     "Charger type label, e.g. \"pd charger\" for a USB Power Delivery charger.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2069,6 +2080,17 @@
         }
       }
     },
+    "Full at %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полная зарядка к %@"
+          }
+        }
+      }
+    },
     "Full charge": {
       "extractionState": "manual",
       "localizations": {
@@ -2780,6 +2802,17 @@
         }
       }
     },
+    "Lasts until about %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
     "Legacy IOPMPowerSource adapter-info field; Apple silicon always leaves it at 0.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3147,6 +3180,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без аккумулятора"
+          }
+        }
+      }
+    },
+    "No battery information": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет данных об аккумуляторе"
           }
         }
       }
