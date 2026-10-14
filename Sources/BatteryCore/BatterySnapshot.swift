@@ -69,6 +69,9 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     /// Power lost converting adapter input (Apple Silicon telemetry).
     public var adapterEfficiencyLossMW: Int?
 
+    /// When the gauge last refreshed its readings (`UpdateTime`).
+    public var gaugeUpdatedAt: Date?
+
     // MARK: Identity
 
     public var deviceName: String?
@@ -113,6 +116,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         deviceName: String? = nil,
         manufacturer: String? = nil,
         serialNumber: String? = nil,
+        gaugeUpdatedAt: Date? = nil,
         isLowPowerModeEnabled: Bool? = nil,
         thermalState: ThermalState? = nil
     ) {
@@ -148,6 +152,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         self.deviceName = deviceName
         self.manufacturer = manufacturer
         self.serialNumber = serialNumber
+        self.gaugeUpdatedAt = gaugeUpdatedAt
         self.isLowPowerModeEnabled = isLowPowerModeEnabled
         self.thermalState = thermalState
     }
@@ -176,6 +181,10 @@ public struct PowerAdapter: Sendable, Equatable, Codable {
     public var adapterDescription: String?
     public var serialNumber: String?
     public var isWireless: Bool?
+    /// USB Power Delivery profiles the adapter offers (`UsbHvcMenu`), lowest voltage first.
+    public var profiles: [PowerProfile]
+    /// `PowerProfile.index` of the negotiated profile (`UsbHvcHvcIndex`).
+    public var activeProfileIndex: Int?
 
     public init(
         watts: Int? = nil,
@@ -185,7 +194,9 @@ public struct PowerAdapter: Sendable, Equatable, Codable {
         manufacturer: String? = nil,
         adapterDescription: String? = nil,
         serialNumber: String? = nil,
-        isWireless: Bool? = nil
+        isWireless: Bool? = nil,
+        profiles: [PowerProfile] = [],
+        activeProfileIndex: Int? = nil
     ) {
         self.watts = watts
         self.voltageMV = voltageMV
@@ -195,7 +206,29 @@ public struct PowerAdapter: Sendable, Equatable, Codable {
         self.adapterDescription = adapterDescription
         self.serialNumber = serialNumber
         self.isWireless = isWireless
+        self.profiles = profiles
+        self.activeProfileIndex = activeProfileIndex
     }
+
+    /// The negotiated USB-PD profile, if known.
+    public var activeProfile: PowerProfile? {
+        profiles.first { $0.index == activeProfileIndex }
+    }
+}
+
+/// One USB Power Delivery voltage/current pair an adapter advertises.
+public struct PowerProfile: Sendable, Equatable, Codable {
+    public var index: Int
+    public var voltageMV: Int
+    public var maxCurrentMA: Int
+
+    public init(index: Int, voltageMV: Int, maxCurrentMA: Int) {
+        self.index = index
+        self.voltageMV = voltageMV
+        self.maxCurrentMA = maxCurrentMA
+    }
+
+    public var maxWatts: Double { Double(voltageMV) * Double(maxCurrentMA) / 1_000_000 }
 }
 
 /// A snapshot together with the raw dictionaries it was parsed from.

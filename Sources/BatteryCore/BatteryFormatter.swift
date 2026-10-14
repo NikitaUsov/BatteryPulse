@@ -1,0 +1,83 @@
+import Foundation
+
+/// Locale-aware formatting for the app's UI. The CLI and "Copy Report" stay in English through
+/// ``BatteryReport``, so bug reports read the same for everyone.
+///
+/// Numbers, percentages and durations use Foundation format styles. Unit symbols come from the
+/// caller, so the app can localize them through its String Catalog (`Measurement` formatting is
+/// not available in swift-corelibs-foundation, where this type is tested).
+public struct BatteryFormatter: Sendable {
+    public enum Unit: Sendable, CaseIterable {
+        case watts, milliampHours, volts, milliamps
+    }
+
+    public var locale: Locale
+    public var symbol: @Sendable (Unit) -> String
+
+    public init(
+        locale: Locale = .current,
+        symbol: @escaping @Sendable (Unit) -> String = BatteryFormatter.englishSymbol
+    ) {
+        self.locale = locale
+        self.symbol = symbol
+    }
+
+    public static func englishSymbol(_ unit: Unit) -> String {
+        switch unit {
+        case .watts: "W"
+        case .milliampHours: "mAh"
+        case .volts: "V"
+        case .milliamps: "mA"
+        }
+    }
+
+    /// `91` → "91%" (en) or "91 %" (ru).
+    public func percent(_ value: Double, fractionDigits: Int = 0) -> String {
+        (value / 100).formatted(.percent.precision(.fractionLength(fractionDigits)).locale(locale))
+    }
+
+    /// `-10.34` → "−10.3 W" (en) or "−10,3 Вт" (ru, with Russian symbols).
+    public func watts(_ value: Double, signed: Bool = false) -> String {
+        withUnit(number(value, fractionDigits: 1, signed: signed), .watts)
+    }
+
+    /// `5862` → "5,862 mAh" (en) or "5 862 мА·ч" (ru).
+    public func milliampHours(_ value: Int) -> String {
+        withUnit(value.formatted(.number.locale(locale)), .milliampHours)
+    }
+
+    /// `12176` mV → "12.18 V".
+    public func volts(millivolts: Int) -> String {
+        withUnit(number(Double(millivolts) / 1000, fractionDigits: 2), .volts)
+    }
+
+    /// `-612` → "−612 mA".
+    public func milliamps(_ value: Int, signed: Bool = false) -> String {
+        withUnit(number(Double(value), fractionDigits: 0, signed: signed), .milliamps)
+    }
+
+    /// `342` → "5 hr, 42 min" (en) or "5 ч 42 мин" (ru).
+    public func duration(minutes: Int) -> String {
+        var style = Duration.UnitsFormatStyle(allowedUnits: [.hours, .minutes], width: .abbreviated)
+        style.locale = locale
+        return Duration.seconds(minutes * 60).formatted(style)
+    }
+
+    /// Plain number with the locale's separators.
+    public func number(_ value: Double, fractionDigits: Int, signed: Bool = false) -> String {
+        // Round first so values like -0.04 print as "0.0", not "−0.0" or "+0.0".
+        let scale = pow(10, Double(fractionDigits))
+        let rounded = (value * scale).rounded() / scale
+        let shown = rounded == 0 ? 0 : rounded
+        let sign: NumberFormatStyleConfiguration.SignDisplayStrategy =
+            signed && shown != 0 ? .always() : .automatic
+        return
+            shown
+            .formatted(.number.precision(.fractionLength(fractionDigits)).sign(strategy: sign).locale(locale))
+            .replacingOccurrences(of: "-", with: "\u{2212}")
+    }
+
+    private func withUnit(_ number: String, _ unit: Unit) -> String {
+        number + "\u{00A0}" + symbol(unit)
+    }
+}

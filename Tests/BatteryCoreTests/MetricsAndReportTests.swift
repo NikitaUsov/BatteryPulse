@@ -14,6 +14,13 @@ import Testing
         #expect(s.cycleLifeUsed == 0.048)
     }
 
+    @Test func hardwareChargeFromCapacity() throws {
+        // macOS shows 70 %; the gauge holds 3901 of 5862 mAh (66.5 %).
+        let s = try Fixture.m5OnBattery.snapshot()
+        #expect(abs(try #require(s.hardwareChargePercent) - 3901.0 / 5862.0 * 100) < 0.0001)
+        #expect(BatterySnapshot(timestamp: .now).hardwareChargePercent == nil)
+    }
+
     @Test func healthBelowDesign() throws {
         let s = try Fixture.legacyDischarging.snapshot()
         let health = try #require(s.healthPercent)
