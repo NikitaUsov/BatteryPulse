@@ -121,7 +121,8 @@ public struct DemoBattery: Sendable, Equatable {
             "IsCharging": .bool(isCharging),
             "MaxCapacity": .int(100),
             "PowerTelemetryData": .dictionary([
-                "AdapterEfficiencyLoss": .int(Int64(lossMW)),
+                // µWh per one-second sample, like the real telemetry (see MacPowerParser).
+                "AdapterEfficiencyLoss": .int(Int64((Double(lossMW) / 3.6).rounded())),
                 "BatteryPower": .int(Int64(batteryMW)),
                 "SystemCurrentIn": .int(Int64(inputMA)),
                 "SystemLoad": .int(Int64(loadMW)),

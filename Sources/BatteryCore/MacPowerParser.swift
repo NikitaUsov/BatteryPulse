@@ -175,7 +175,12 @@ enum MacPowerParser {
         s.slowChargingReason = chargerData["SlowChargingReason"]?.intValue
         s.systemPowerInMW = telemetry["SystemPowerIn"]?.intValue
         s.systemLoadMW = telemetry["SystemLoad"]?.intValue
-        s.adapterEfficiencyLossMW = telemetry["AdapterEfficiencyLoss"]?.intValue
+        // Not milliwatts: energy lost in the adapter during a one-second sample, in µWh, the same
+        // unit as SystemEnergyConsumed (= SystemPowerIn / 3.6). WallEnergyEstimate is their sum,
+        // which the real M5 captures match exactly. 1 µWh per second = 3.6 mW.
+        s.adapterEfficiencyLossMW = telemetry["AdapterEfficiencyLoss"]?.intValue.map {
+            Int((Double($0) * 3.6).rounded())
+        }
         if s.isExternalPowerConnected != false {
             s.adapter = adapter(
                 from: adapterDetails.isEmpty

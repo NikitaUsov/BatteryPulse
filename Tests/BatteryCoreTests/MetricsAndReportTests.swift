@@ -39,7 +39,8 @@ import Testing
         let charging = try Fixture.m5Charging.snapshot()
         #expect(abs(try #require(charging.batteryPowerWatts) - 4.708608) < 0.000001)
         #expect(charging.systemPowerInWatts == 18.545)
-        #expect(charging.adapterEfficiencyLossWatts == 0.453)
+        // 453 µWh per one-second sample = 1.631 W.
+        #expect(charging.adapterEfficiencyLossWatts == 1.631)
     }
 
     @Test func cellSpread() throws {
@@ -109,7 +110,7 @@ import Testing
         #expect(value("Battery power", in: s) == "+4.7 W  (12.26 V × 384 mA)")
         #expect(value("Adapter", in: s) == "60 W · 40W Pwr Adapter 60W Max · 20.0 V × 2.99 A")
         #expect(value("System input", in: s) == "18.5 W")
-        #expect(value("Adapter loss", in: s) == "0.5 W")
+        #expect(value("Adapter loss", in: s) == "1.6 W")
     }
 
     @Test func legacyReport() throws {

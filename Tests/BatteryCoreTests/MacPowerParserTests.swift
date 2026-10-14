@@ -81,7 +81,7 @@ import Testing
         #expect(s.chargingCurrentMA == nil, "ChargerData no longer has ChargingCurrent")
         #expect(s.systemPowerInMW == 18545)
         #expect(s.systemLoadMW == 13974)
-        #expect(s.adapterEfficiencyLossMW == 453)
+        #expect(s.adapterEfficiencyLossMW == 1631, "453 µWh per one-second sample")
     }
 
     @Test func legacyAppleSiliconLayout() throws {
