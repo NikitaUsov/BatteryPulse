@@ -97,14 +97,18 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Developer section: raw values decoded (units, times, USB-PD offers) and explained
 - [x] Demo Mode: simulated scenes and animations everywhere in the app, by hand or as a tour
 
-### Stage 1.1: macOS polish and missing readings (0.2.x–0.3)
+### Stage 1.1: macOS polish and missing readings (0.3)
 
-- [ ] Raw Data: show the full description, value and decoding of the selected row in an
-  inspector; the Description column cuts long text off (feedback on 0.2.0, English and Russian)
 - [ ] Battery temperature and cell voltages from the SMC (read-only, no root), shown on Health
   and Overview
-- [ ] Check for updates against the latest GitHub release (no third-party updater) and show
+- [x] Raw Data inspector for the full description, value and decoding of a row
+- [x] Check for updates against the latest GitHub release (no third-party updater) and show
   what's new
+- [x] History and charts (see Stage 3)
+- [x] Notifications: charge limit, low battery, battery service, heat (see Stage 4)
+- [ ] Compact mode: a small, fixed-size window with the essentials, like coconutBattery's; switch
+  from the toolbar or the View menu, and choose which window Open BatteryPulse shows
+- [ ] WidgetKit widget, if an ad-hoc signed app can ship one
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
@@ -120,19 +124,26 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 3: History and charts
 
-- [ ] Compact sample store in `BatteryCore` (append-only, tested on Linux)
-- [ ] macOS background recording (needs the app running: the menu bar item, the Dock, or a
-  login item)
-- [ ] Swift Charts: charge and power over 24 h / 7 days, health and cycles over time
-- [ ] Statistics: average drain, time on battery, charging sessions
+- [x] Compact sample store in `BatteryCore` (append-only JSON Lines, tested on Linux)
+- [x] macOS background recording about once a minute while the app runs
+- [x] Swift Charts: charge and power over 24 h / 7 days, capacity and cycles over time
+- [x] Statistics: average drain, time on battery, energy from the battery, charging sessions
 
 ### Stage 4: Widgets and notifications
 
 - [ ] WidgetKit (macOS + iOS): charge, health
 - [ ] iOS Live Activity while charging
-- [ ] Notifications: charge threshold reached, overheating, "Service Recommended"
+- [x] Notifications (macOS): charge threshold reached, low battery, overheating, "Service
+  Recommended"
 
-### Stage 5: Later (optional)
+### Stage 5: iPhone and iPad battery health on the Mac
+
+- [ ] Read the battery of an iPhone or iPad connected by USB or Wi-Fi, like coconutBattery:
+  charge, maximum capacity, cycles, design and full-charge capacity, temperature. Needs Apple's
+  private MobileDevice framework (fine outside the App Store); research first.
+- [ ] Remember each device and keep its history next to the Mac's
+
+### Stage 6: Later (optional)
 
 - [ ] Mac battery on the iPhone via iCloud
 - [ ] Bluetooth device batteries on macOS (AirPods, mouse, keyboard)
