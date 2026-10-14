@@ -27,16 +27,23 @@ struct GeneralSettings: View {
             }
         }
 
-        Toggle("Launch at login", isOn: $launchAtLogin)
-            .disabled(!LaunchAtLogin.isAvailable)
-            .help(LaunchAtLogin.isAvailable ? "" : "Available in the packaged app")
-            .onChange(of: launchAtLogin) { _, enabled in
-                do {
-                    try LaunchAtLogin.set(enabled)
-                } catch {
-                    launchAtLogin = LaunchAtLogin.isEnabled
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Launch at login", isOn: $launchAtLogin)
+                .disabled(!LaunchAtLogin.isAvailable)
+                .onChange(of: launchAtLogin) { _, enabled in
+                    do {
+                        try LaunchAtLogin.set(enabled)
+                    } catch {
+                        launchAtLogin = LaunchAtLogin.isEnabled
+                    }
                 }
+            if !LaunchAtLogin.isAvailable {
+                // `swift run` starts a bare executable, which macOS can't register as a login item.
+                Text("Available in the installed app. Build it with scripts/build-app.sh.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
+        }
 
         Toggle("Show the welcome window when BatteryPulse starts", isOn: $showWelcomeAtLaunch)
     }
