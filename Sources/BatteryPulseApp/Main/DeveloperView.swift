@@ -11,6 +11,7 @@ struct DeveloperView: View {
     let monitor: BatteryMonitor
     @State private var filter = ""
     @State private var selection: Set<RawRow.ID> = []
+    @State private var showsInspector = false
 
     var body: some View {
         let sections = filteredSections
@@ -26,7 +27,17 @@ struct DeveloperView: View {
                 }
             }
             .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
+            // The table cuts long values and descriptions off; the inspector shows the selected
+            // row in full.
+            .inspector(isPresented: $showsInspector) {
+                RawRowInspector(selection: inspectedRows)
+                    .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
+            }
             .toolbar {
+                ToolbarItem {
+                    Button("Inspector", systemImage: "sidebar.trailing") { showsInspector.toggle() }
+                        .help("Show or hide the selected row in full")
+                }
                 ToolbarItemGroup {
                     // Exports are for bug reports, so they are off while the data is simulated.
                     Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
@@ -94,11 +105,27 @@ struct DeveloperView: View {
             }
         }
         .contextMenu(forSelectionType: RawRow.ID.self) { ids in
+            Button("Show in Inspector") {
+                selection = ids
+                showsInspector = true
+            }
+            Divider()
             Button("Copy") { copy(ids, as: \.line) }
             Button("Copy Key") { copy(ids, as: \.path) }
             Button("Copy Value") { copy(ids, as: \.value) }
+        } primaryAction: { ids in
+            // Double-click opens the row in the inspector.
+            selection = ids
+            showsInspector = true
         }
         .onCopyCommand { providers(for: selection) }
+    }
+
+    /// The selected rows with the title of the dictionary each comes from.
+    private var inspectedRows: [(row: RawRow, source: String)] {
+        allSections.flatMap { section in
+            section.rows.filter { selection.contains($0.id) }.map { (row: $0, source: section.title) }
+        }
     }
 
     private var allSections: [RawSection] {
@@ -171,6 +198,59 @@ struct DeveloperView: View {
         let plist = PropertyValue.dictionary(reading.redactedRawCapture).foundationValue
         if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
             try? data.write(to: url, options: .atomic)
+        }
+    }
+}
+
+/// The selected raw value in full: key, source, description, value and decoding.
+private struct RawRowInspector: View {
+    let selection: [(row: RawRow, source: String)]
+
+    var body: some View {
+        if selection.count == 1, let row = selection.first?.row, let source = selection.first?.source {
+            Form {
+                Section("Key") {
+                    Text(verbatim: row.path)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                    LabeledContent("Source") {
+                        Text(verbatim: source)
+                    }
+                }
+                Section("Description") {
+                    if let summary = row.info?.summary {
+                        Text(RawValueText.summary(summary))
+                            .textSelection(.enabled)
+                    } else {
+                        Text("No description for this key yet.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Section("Value") {
+                    Text(verbatim: row.value)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
+                if let decoded = row.decoded {
+                    Section("Decoded") {
+                        Text(RawValueText.string(for: decoded))
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+            .formStyle(.grouped)
+        } else if selection.isEmpty {
+            ContentUnavailableView(
+                "No Row Selected",
+                systemImage: "sidebar.trailing",
+                description: Text("Select a row to see its full value, decoding and description.")
+            )
+        } else {
+            ContentUnavailableView(
+                "Multiple Rows Selected",
+                systemImage: "square.stack",
+                description: Text("Select a single row to see it in full.")
+            )
         }
     }
 }

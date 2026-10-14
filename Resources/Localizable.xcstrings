@@ -2131,6 +2131,18 @@
         }
       }
     },
+    "Inspector": {
+      "extractionState": "manual",
+      "comment": "Toolbar button that shows the Raw Data inspector",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Инспектор"
+          }
+        }
+      }
+    },
     "Instantaneous battery current; negative while discharging.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2495,6 +2507,17 @@
         }
       }
     },
+    "Multiple Rows Selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрано несколько строк"
+          }
+        }
+      }
+    },
     "Name": {
       "extractionState": "manual",
       "localizations": {
@@ -2570,6 +2593,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без аккумулятора"
+          }
+        }
+      }
+    },
+    "No description for this key yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для этого ключа пока нет описания."
+          }
+        }
+      }
+    },
+    "No Row Selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка не выбрана"
           }
         }
       }
@@ -3968,6 +4013,28 @@
         }
       }
     },
+    "Select a row to see its full value, decoding and description.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите строку, чтобы увидеть её значение, расшифровку и описание целиком."
+          }
+        }
+      }
+    },
+    "Select a single row to see it in full.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите одну строку, чтобы увидеть её целиком."
+          }
+        }
+      }
+    },
     "Serial number of the battery pack.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4035,6 +4102,17 @@
         }
       }
     },
+    "Show in Inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в инспекторе"
+          }
+        }
+      }
+    },
     "Show in menu bar": {
       "extractionState": "manual",
       "localizations": {
@@ -4042,6 +4120,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывать в строке меню"
+          }
+        }
+      }
+    },
+    "Show or hide the selected row in full": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать или скрыть выбранную строку целиком"
           }
         }
       }
@@ -4089,6 +4178,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Медленная зарядка"
+          }
+        }
+      }
+    },
+    "Source": {
+      "extractionState": "manual",
+      "comment": "Which system dictionary a raw value comes from",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Источник"
           }
         }
       }
