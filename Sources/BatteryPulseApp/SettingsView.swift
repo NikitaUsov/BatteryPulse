@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import BatteryCore
 import SwiftUI
 
@@ -19,7 +20,7 @@ struct GeneralSettings: View {
     @AppStorage(AppSettings.menuBarStyleKey) private var menuBarStyle: MenuBarStyle = .percent
     @AppStorage(AppSettings.menuBarIconKey) private var menuBarIcon: MenuBarIconStyle = .standard
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
-    @State private var launchAtLogin = LaunchAtLogin.isEnabled
+    @Environment(LaunchAtLoginModel.self) private var launchAtLogin
 
     var body: some View {
         Picker("Menu bar shows:", selection: $menuBarStyle) {
@@ -36,16 +37,13 @@ struct GeneralSettings: View {
         .help("Hidden only applies when the menu bar also shows text.")
 
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Launch at login", isOn: $launchAtLogin)
-                .disabled(!LaunchAtLogin.isAvailable)
-                .onChange(of: launchAtLogin) { _, enabled in
-                    do {
-                        try LaunchAtLogin.set(enabled)
-                    } catch {
-                        launchAtLogin = LaunchAtLogin.isEnabled
-                    }
-                }
-            if !LaunchAtLogin.isAvailable {
+            // A plain Binding, not .onChange: a refresh must never (un)register as a side effect.
+            Toggle(
+                "Launch at login",
+                isOn: Binding(get: { launchAtLogin.isEnabled }, set: { launchAtLogin.set($0) })
+            )
+            .disabled(!launchAtLogin.isAvailable)
+            if !launchAtLogin.isAvailable {
                 // `swift run` starts a bare executable, which macOS can't register as a login item.
                 Text("Available in the installed app. Build it with scripts/build-app.sh.")
                     .font(.footnote)
@@ -54,6 +52,10 @@ struct GeneralSettings: View {
         }
 
         Toggle("Show the welcome window when BatteryPulse starts", isOn: $showWelcomeAtLaunch)
+            .onAppear { launchAtLogin.refresh() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                launchAtLogin.refresh()
+            }
     }
 }
 #endif

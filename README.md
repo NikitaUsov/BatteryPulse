@@ -31,8 +31,10 @@ scripts/build-app.sh          # or build build/BatteryPulse.app and build/Batter
   *Copy Report* button.
 - A welcome window on first launch sets the menu-bar content and launch at login.
 
-CI builds the DMG for every commit; download it from the run's artifacts. It is ad-hoc
-signed, not notarized, so approve it once in System Settings → Privacy & Security.
+Released versions are on the [Releases](https://github.com/NikitaUsov/BatteryPulse/releases)
+page as `BatteryPulse.dmg`. CI runs also upload a DMG as a workflow artifact (needs a GitHub
+sign-in; kept for 90 days). The app is ad-hoc signed, not notarized, so approve it once in
+System Settings → Privacy & Security.
 
 ## Command-line report
 

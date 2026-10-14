@@ -8,6 +8,7 @@ import SwiftUI
 struct BatteryPulseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var monitor: BatteryMonitor
+    @State private var launchAtLogin = LaunchAtLoginModel()
     private let showsWelcome: Bool
 
     init() {
@@ -27,6 +28,7 @@ struct BatteryPulseApp: App {
 
         Window("Welcome to BatteryPulse", id: WindowID.welcome) {
             WelcomeView()
+                .environment(launchAtLogin)
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(showsWelcome ? .presented : .suppressed)
@@ -41,6 +43,7 @@ struct BatteryPulseApp: App {
 
         Settings {
             SettingsView()
+                .environment(launchAtLogin)
         }
     }
 }
