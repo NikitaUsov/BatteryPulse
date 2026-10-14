@@ -32,6 +32,14 @@ import Testing
         #expect(BatteryPresentation.menuBarTitle(for: nil, style: .percent) == "")
     }
 
+    @Test func iconHidesOnlyWhenTextRemains() {
+        #expect(BatteryPresentation.showsIcon(.standard, title: "70%"))
+        #expect(BatteryPresentation.showsIcon(.large, title: "70%"))
+        #expect(!BatteryPresentation.showsIcon(.hidden, title: "70%"))
+        // Icon-only style (or no data yet): hiding would leave an empty, unclickable item.
+        #expect(BatteryPresentation.showsIcon(.hidden, title: ""))
+    }
+
     @Test func onlyPowerStylesNeedPolling() {
         #expect(MenuBarStyle.allCases.filter(\.showsPower) == [.power, .percentAndPower])
     }

@@ -17,6 +17,7 @@ struct SettingsView: View {
 /// Settings shared by the Settings window and the welcome window.
 struct GeneralSettings: View {
     @AppStorage(AppSettings.menuBarStyleKey) private var menuBarStyle: MenuBarStyle = .percent
+    @AppStorage(AppSettings.menuBarIconKey) private var menuBarIcon: MenuBarIconStyle = .standard
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
 
@@ -26,6 +27,13 @@ struct GeneralSettings: View {
                 Text(style.title).tag(style)
             }
         }
+
+        Picker("Battery icon:", selection: $menuBarIcon) {
+            ForEach(MenuBarIconStyle.allCases, id: \.self) { icon in
+                Text(icon.title).tag(icon)
+            }
+        }
+        .help("Hidden only applies when the menu bar also shows text.")
 
         VStack(alignment: .leading, spacing: 4) {
             Toggle("Launch at login", isOn: $launchAtLogin)

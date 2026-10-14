@@ -23,8 +23,8 @@ swift run BatteryPulse        # run the app straight from the source
 scripts/build-app.sh          # or build build/BatteryPulse.app and build/BatteryPulse.dmg
 ```
 
-- The menu bar shows a battery icon with the percentage, the battery power, both, or just
-  the icon.
+- The menu bar shows the percentage, the battery power, both, or just the icon. The battery
+  icon can be standard, large or hidden.
 - Clicking it opens a popover with charge, time remaining and live power (refreshed every
   2 s while open), plus health, cycles and the adapter.
 - **Details…** lists every reading by group, the raw IORegistry keys with a filter, and a

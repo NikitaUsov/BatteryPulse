@@ -6,6 +6,7 @@ import ServiceManagement
 /// UserDefaults keys and launch-time decisions.
 enum AppSettings {
     static let menuBarStyleKey = "menuBarStyle"
+    static let menuBarIconKey = "menuBarIcon"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
 

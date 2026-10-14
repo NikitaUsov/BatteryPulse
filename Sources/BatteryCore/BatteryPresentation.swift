@@ -22,6 +22,21 @@ public enum MenuBarStyle: String, Sendable, CaseIterable, Codable {
     }
 }
 
+/// How the battery symbol appears in the menu bar.
+public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
+    case standard
+    case large
+    case hidden
+
+    public var title: String {
+        switch self {
+        case .standard: "Standard"
+        case .large: "Large"
+        case .hidden: "Hidden"
+        }
+    }
+}
+
 /// Short, display-ready strings for the app's menu bar and popover.
 ///
 /// Kept in BatteryCore (rather than the SwiftUI target) so it is tested on Linux.
@@ -37,6 +52,12 @@ public enum BatteryPresentation {
         case 13..<38: return "battery.25percent"
         default: return "battery.0percent"
         }
+    }
+
+    /// The icon can only be hidden when there is text to show instead; an empty status item
+    /// would leave nothing to click.
+    public static func showsIcon(_ icon: MenuBarIconStyle, title: String) -> Bool {
+        icon != .hidden || title.isEmpty
     }
 
     public static func menuBarTitle(for s: BatterySnapshot?, style: MenuBarStyle) -> String {
