@@ -15,7 +15,9 @@ enum AppSettings {
     static let showDeveloperKey = "showDeveloperSection"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
-    static let checkForUpdatesKey = "checkForUpdates"
+    /// The on/off switch for update checks before 0.4; ``updateFrequencyKey`` replaced it.
+    static let legacyCheckForUpdatesKey = "checkForUpdates"
+    static let updateFrequencyKey = "updateFrequency"
     static let lastUpdateCheckKey = "lastUpdateCheck"
     static let skippedVersionKey = "skippedVersion"
     static let lastSeenVersionKey = "lastSeenVersion"
@@ -57,9 +59,23 @@ enum AppSettings {
         UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
     }
 
-    /// On by default; the welcome window and Settings → General show the switch.
-    static var checksForUpdates: Bool {
-        UserDefaults.standard.object(forKey: checkForUpdatesKey) as? Bool ?? true
+    /// Daily by default; Settings → General shows the choice.
+    static var updateFrequency: UpdateFrequency {
+        let defaults = UserDefaults.standard
+        return .stored(
+            defaults.string(forKey: updateFrequencyKey),
+            legacyEnabled: defaults.object(forKey: legacyCheckForUpdatesKey) as? Bool)
+    }
+
+    /// Settings renamed since an earlier version keep the user's choice.
+    static func migrate() {
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: updateFrequencyKey) == nil,
+            defaults.object(forKey: legacyCheckForUpdatesKey) != nil
+        {
+            defaults.set(updateFrequency.rawValue, forKey: updateFrequencyKey)
+            defaults.removeObject(forKey: legacyCheckForUpdatesKey)
+        }
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.

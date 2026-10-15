@@ -201,8 +201,9 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 ### Updates
 
-BatteryPulse checks GitHub for a new version once a day (turn it off in Settings → General), and
-**BatteryPulse → Check for Updates…** checks right away. When a new version is out, the first
+BatteryPulse checks GitHub for a new version daily, weekly, monthly or never, as you choose in
+Settings → General (daily at first), and **BatteryPulse → Check for Updates…** checks right
+away with any choice. When a new version is out, the first
 check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
 Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
 available** in the menu bar popover instead, which opens the same window.

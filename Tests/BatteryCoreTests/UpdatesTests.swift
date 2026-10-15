@@ -59,12 +59,31 @@ import Testing
         }
     }
 
-    @Test func checksRunOnceADay() {
+    @Test func checksFollowTheChosenFrequency() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        #expect(UpdatePolicy.isCheckDue(lastCheck: nil, now: now))
-        #expect(!UpdatePolicy.isCheckDue(lastCheck: now.addingTimeInterval(-3600), now: now))
-        #expect(UpdatePolicy.isCheckDue(lastCheck: now.addingTimeInterval(-86_400), now: now))
-        #expect(UpdatePolicy.isCheckDue(lastCheck: now.addingTimeInterval(3600), now: now), "clock moved back")
+        let day: TimeInterval = 86_400
+        func due(_ ago: TimeInterval?, _ frequency: UpdateFrequency) -> Bool {
+            UpdatePolicy.isCheckDue(lastCheck: ago.map { now.addingTimeInterval(-$0) }, now: now, frequency: frequency)
+        }
+        #expect(due(nil, .daily))
+        #expect(!due(3600, .daily))
+        #expect(due(day, .daily))
+        #expect(due(-3600, .daily), "clock moved back")
+        #expect(!due(6 * day, .weekly))
+        #expect(due(7 * day, .weekly))
+        #expect(!due(29 * day, .monthly))
+        #expect(due(30 * day, .monthly))
+        #expect(due(-3600, .monthly), "clock moved back")
+        #expect(!due(nil, .never))
+        #expect(!due(365 * day, .never))
+    }
+
+    @Test func frequencyFollowsTheOldSwitchUntilChosen() {
+        #expect(UpdateFrequency.stored(nil, legacyEnabled: nil) == .daily)
+        #expect(UpdateFrequency.stored(nil, legacyEnabled: true) == .daily)
+        #expect(UpdateFrequency.stored(nil, legacyEnabled: false) == .never)
+        #expect(UpdateFrequency.stored("weekly", legacyEnabled: false) == .weekly)
+        #expect(UpdateFrequency.stored("hourly", legacyEnabled: nil) == .daily)
     }
 
     @Test func offersOnlyNewerVersionsAndRespectsSkipping() throws {

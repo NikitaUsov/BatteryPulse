@@ -41,7 +41,7 @@ struct GeneralSettings: View {
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     @AppStorage(AppSettings.showDockIconKey) private var showDockIcon = false
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
-    @AppStorage(AppSettings.checkForUpdatesKey) private var checksForUpdates = true
+    @AppStorage(AppSettings.updateFrequencyKey) private var updateFrequency = UpdateFrequency.daily
     @AppStorage(AppSettings.prefersCompactWindowKey) private var prefersCompactWindow = false
     @Environment(LaunchAtLoginModel.self) private var launchAtLogin
     @Environment(UpdateChecker.self) private var updater
@@ -104,7 +104,12 @@ struct GeneralSettings: View {
         }
 
         Section {
-            Toggle("Check for updates automatically", isOn: $checksForUpdates)
+            Picker("Check for updates", selection: $updateFrequency) {
+                Text("Daily").tag(UpdateFrequency.daily)
+                Text("Weekly").tag(UpdateFrequency.weekly)
+                Text("Monthly").tag(UpdateFrequency.monthly)
+                Text("Never").tag(UpdateFrequency.never)
+            }
             LabeledContent {
                 Button("Check Now") { updater.checkNow() }
             } label: {
@@ -116,7 +121,7 @@ struct GeneralSettings: View {
             }
         } footer: {
             Text(
-                "Once a day, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request."
+                "To check, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request. Check Now works with any choice."
             )
         }
 

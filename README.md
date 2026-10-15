@@ -89,10 +89,10 @@ dependencies.
 - A welcome window with the starting settings on first launch.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only network request is an optional daily update check against GitHub
+  history while recording is on, so it uses almost no CPU in the background. The only network request is an optional update check against GitHub
   releases, which sends nothing about your Mac.
-- *Check for Updates…* in the app menu, a daily automatic check (Settings → General), and a
-  What's New window after updates that add features.
+- *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
+  (Settings → General), and a What's New window after updates that add features.
 
 Build it from source:
 

@@ -118,12 +118,32 @@ public struct ReleaseInfo: Sendable, Equatable {
     }
 }
 
+/// How often BatteryPulse checks for updates on its own. Check for Updates works with any of them.
+public enum UpdateFrequency: String, Sendable, CaseIterable {
+    case daily, weekly, monthly, never
+
+    /// The time between automatic checks; `nil` for never.
+    public var interval: TimeInterval? {
+        switch self {
+        case .daily: 24 * 60 * 60
+        case .weekly: 7 * 24 * 60 * 60
+        case .monthly: 30 * 24 * 60 * 60
+        case .never: nil
+        }
+    }
+
+    /// The stored setting, or else the on/off switch that came before it: off becomes never,
+    /// on or unset becomes daily.
+    public static func stored(_ rawValue: String?, legacyEnabled: Bool?) -> UpdateFrequency {
+        if let rawValue, let frequency = UpdateFrequency(rawValue: rawValue) { return frequency }
+        return legacyEnabled == false ? .never : .daily
+    }
+}
+
 /// When to check for updates and what to tell the user.
 public enum UpdatePolicy {
-    /// Automatic checks run at most once a day.
-    public static let interval: TimeInterval = 24 * 60 * 60
-
-    public static func isCheckDue(lastCheck: Date?, now: Date) -> Bool {
+    public static func isCheckDue(lastCheck: Date?, now: Date, frequency: UpdateFrequency) -> Bool {
+        guard let interval = frequency.interval else { return false }
         guard let lastCheck else { return true }
         // A clock moved backwards also makes a check due.
         return now.timeIntervalSince(lastCheck) >= interval || now < lastCheck

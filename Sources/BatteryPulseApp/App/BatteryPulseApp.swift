@@ -21,6 +21,7 @@ struct BatteryPulseApp: App {
 
     init() {
         UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
+        AppSettings.migrate()
         let monitor = BatteryMonitor(provider: MacBatteryProvider())
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.

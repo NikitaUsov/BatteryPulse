@@ -1231,13 +1231,13 @@
         }
       }
     },
-    "Check for updates automatically": {
+    "Check for updates": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Автоматически проверять обновления"
+            "value": "Проверять обновления"
           }
         }
       }
@@ -1644,6 +1644,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Циклы"
+          }
+        }
+      }
+    },
+    "Daily": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ежедневно"
           }
         }
       }
@@ -3126,6 +3137,17 @@
         }
       }
     },
+    "Monthly": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ежемесячно"
+          }
+        }
+      }
+    },
     "Multiple Rows Selected": {
       "extractionState": "manual",
       "localizations": {
@@ -3179,6 +3201,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Согласованное напряжение адаптера, по которому логика распределения питания рассчитывает бюджет."
+          }
+        }
+      }
+    },
+    "Never": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Никогда"
           }
         }
       }
@@ -3815,17 +3848,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "От адаптера питания"
-          }
-        }
-      }
-    },
-    "Once a day, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Раз в день BatteryPulse спрашивает у GitHub, вышла ли новая версия. GitHub видит ваш IP-адрес, версию приложения и язык, как при любом запросе в интернете."
           }
         }
       }
@@ -5484,6 +5506,17 @@
         }
       }
     },
+    "To check, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request. Check Now works with any choice.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для проверки BatteryPulse спрашивает у GitHub, вышла ли новая версия. GitHub видит ваш IP-адрес, версию приложения и язык, как при любом запросе в интернете. «Проверить сейчас» работает при любом выборе."
+          }
+        }
+      }
+    },
     "Total hours the battery gauge has been running since manufacture.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5971,6 +6004,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Мощность"
+          }
+        }
+      }
+    },
+    "Weekly": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Еженедельно"
           }
         }
       }
