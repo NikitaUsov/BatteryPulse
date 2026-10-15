@@ -93,7 +93,7 @@ dependencies.
 - A welcome window with the starting settings on first launch.
 - Motion that follows the battery: the charge rolls, gauges fill and the bolt draws in when
   charging starts, with fades under Reduce Motion and nothing animating in windows you can't
-  see. Liquid Glass on the controls (glass toolbar switches and the Demo Mode bar), plain cards.
+  see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar), plain cards.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
   history while recording is on, so it uses almost no CPU in the background. The only network requests are an optional

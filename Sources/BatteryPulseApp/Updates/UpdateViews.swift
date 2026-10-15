@@ -321,7 +321,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 4, 0])
+    nonisolated static let version = AppVersion(parts: [0, 5, 0])
 
     struct Feature: Identifiable {
         let id: Int
@@ -332,28 +332,21 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "menubar.rectangle", title: "Menu bar styles",
+            id: 1, symbol: "wand.and.sparkles", title: "Motion that follows the battery",
             detail:
-                "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar."
+                "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place."
         ),
         Feature(
-            id: 2, symbol: "arrow.down.app", title: "Install updates from the app",
+            id: 2, symbol: "capsule.on.rectangle", title: "Liquid Glass controls",
             detail:
-                "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General."
+                "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass."
         ),
         Feature(
-            id: 3, symbol: "bolt.fill", title: "Charging at once",
-            detail: "Charging and the battery's power show a few seconds after you plug in, read live from the battery."
-        ),
+            id: 3, symbol: "leaf", title: "Easy on the battery",
+            detail: "Windows you can't see stop reading the battery and stop animating."),
         Feature(
-            id: 4, symbol: "thermometer.medium", title: "Temperature in the menu bar",
-            detail: "The battery's temperature in the menu bar and its popover."),
-        Feature(
-            id: 5, symbol: "info.circle", title: "About BatteryPulse",
-            detail: "The version, links and license, from the BatteryPulse menu or the popover."),
-        Feature(
-            id: 6, symbol: "list.bullet.rectangle", title: "More explanations in Raw Data",
-            detail: "The battery pack, its cells and the charger entries now explain their keys."),
+            id: 4, symbol: "line.3.horizontal.decrease.circle", title: "Raw Data by source",
+            detail: "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar."),
     ]
 }
 #endif

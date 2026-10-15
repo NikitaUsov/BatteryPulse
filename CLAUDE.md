@@ -89,8 +89,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (the selection of the icon-style picker) and `Main/Components.swift` (the Developer option
   "Glass Cards", off by default); `MotionGuardTests` enforces the list.
 - Motion: through `\.motion` (`App/Motion.swift`), keyed on `BatteryMotionKey` or UI state, never
-  on `snapshot`/`reading`. No repeating or per-frame animation; nothing animates in the menu bar
-  label or in a hidden window. `MotionGuardTests` enforces this.
+  on `snapshot`/`reading`. `change` moves things and is `nil` under Reduce Motion; `crossfade` is
+  for opacity and colour only. No repeating or per-frame animation, no hard-coded animation
+  outside `Motion.swift`; nothing animates in the menu bar label or in a hidden window.
+  `MotionGuardTests` enforces this.
 - Never name third-party apps, their projects or makers anywhere: code, comments, tests, docs,
   commit messages, PRs, issues, release notes. Describe the technique or the evidence instead
   ("a public capture from an M4 Max"). Apple's own apps and frameworks are fine.

@@ -105,7 +105,7 @@ cycles, temperature, the adapter and the system load.
     active contract) and a short description of what the key means where that's known. Besides
     `AppleSmartBattery` there are sections for the entries below it (the battery pack, each
     cell, the charger), the power source, the adapter, and the battery keys read from the SMC.
-    Filter by key, value or description, or pick one source with the switch in the toolbar;
+    Filter by key, value or description, or pick one source from the menu in the toolbar;
     select rows and press ⌘C (or right-click) to copy them. Double-click a row, or click the inspector button in the toolbar, to see its full
     value, decoding and description. **Copy JSON** and **Export Capture…** are in the toolbar.
   - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
@@ -122,9 +122,9 @@ off in Settings → Advanced), so it uses almost no CPU in the background.
 
 Numbers roll to their new value, the battery and the rings fill, and the bolt draws in when
 charging starts; changes that come every two seconds (watts, volts, temperatures) stay instant.
-With **Reduce Motion** on (System Settings → Accessibility → Display), movement becomes a short
-fade, and in Low Power Mode the decorative touches are skipped. Windows you can't see don't
-animate. The toolbar switches and the Demo Mode bar use Liquid Glass; the cards stay plain.
+With **Reduce Motion** on (System Settings → Accessibility → Display), nothing moves: changes
+fade in place, and in Low Power Mode the decorative touches are skipped. Windows you can't see don't
+animate. The History switch and the Demo Mode bar use Liquid Glass; the cards stay plain.
 With the Developer section on, **Glass Cards** in Settings → Advanced draws them in glass, as an
 experiment (it uses more energy and can be harder to read).
 

@@ -794,18 +794,6 @@
         }
       }
     },
-    "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BatteryPulse загружает новую версию, проверяет её подпись и открывается снова. Как часто проверять, выбирается в разделе «Настройки» → «Основные»."
-          }
-        }
-      }
-    },
     "BatteryPulse downloads the update, checks its signature, replaces this copy and opens again.": {
       "extractionState": "manual",
       "localizations": {
@@ -1327,18 +1315,6 @@
         }
       }
     },
-    "Charging and the battery's power show a few seconds after you plug in, read live from the battery.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зарядка и мощность аккумулятора видны через несколько секунд после подключения: они считываются с аккумулятора в реальном времени."
-          }
-        }
-      }
-    },
     "Charging at %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1346,18 +1322,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряжается мощностью %@"
-          }
-        }
-      }
-    },
-    "Charging at once": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зарядка видна сразу"
           }
         }
       }
@@ -2106,6 +2070,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оценка времени драйвером: до разрядки от аккумулятора, до полной зарядки от адаптера."
+          }
+        }
+      }
+    },
+    "Easy on the battery": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бережнее к аккумулятору"
           }
         }
       }
@@ -3152,18 +3128,6 @@
         }
       }
     },
-    "Install updates from the app": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Установка обновлений из приложения"
-          }
-        }
-      }
-    },
     "Installing…": {
       "extractionState": "manual",
       "localizations": {
@@ -3313,6 +3277,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экстремумы и счётчики за срок службы, которые хранит контроллер (температуры, токи, напряжения, Qmax, FCC)."
+          }
+        }
+      }
+    },
+    "Liquid Glass controls": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы управления в стиле Liquid Glass"
           }
         }
       }
@@ -3584,18 +3560,6 @@
         }
       }
     },
-    "Menu bar styles": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стили строки меню"
-          }
-        }
-      }
-    },
     "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3630,14 +3594,14 @@
         }
       }
     },
-    "More explanations in Raw Data": {
+    "Motion that follows the battery": {
       "extractionState": "manual",
       "comment": "What's New: feature title",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Больше пояснений в исходных данных"
+            "value": "Движение вслед за аккумулятором"
           }
         }
       }
@@ -4680,6 +4644,18 @@
         }
       }
     },
+    "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите аккумулятор, его блок, контроллер зарядки, адаптер или SMC в панели инструментов."
+          }
+        }
+      }
+    },
     "Play": {
       "extractionState": "manual",
       "localizations": {
@@ -5167,6 +5143,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Исходные данные"
+          }
+        }
+      }
+    },
+    "Raw Data by source": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исходные данные по источникам"
           }
         }
       }
@@ -5727,18 +5715,6 @@
         }
       }
     },
-    "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Любое сочетание значка аккумулятора, заряда, мощности и температуры и новые стили значка, нарисованные точно по уровню заряда. «Настройки» → «Строка меню»."
-          }
-        }
-      }
-    },
     "Show Developer section": {
       "extractionState": "manual",
       "localizations": {
@@ -5998,18 +5974,6 @@
         }
       }
     },
-    "Temperature in the menu bar": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Температура в строке меню"
-          }
-        }
-      }
-    },
     "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly.": {
       "extractionState": "manual",
       "localizations": {
@@ -6032,26 +5996,14 @@
         }
       }
     },
-    "The battery pack, its cells and the charger entries now explain their keys.": {
+    "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place.": {
       "extractionState": "manual",
       "comment": "What's New: feature detail",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Теперь объяснены и ключи блока аккумулятора, его элементов и контроллера зарядки."
-          }
-        }
-      }
-    },
-    "The battery's temperature in the menu bar and its popover.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Температура аккумулятора в строке меню и в её всплывающем окне."
+            "value": "Заряд плавно перекатывается к новому значению, шкалы заполняются, а молния прорисовывается, когда начинается зарядка. С параметром «Уменьшение движения» всё остаётся на месте."
           }
         }
       }
@@ -6096,6 +6048,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загруженный файл повреждён."
+          }
+        }
+      }
+    },
+    "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переключатель периода в Истории переехал в панель инструментов со скользящим стеклянным выделением, а панель Демо-режима парит в стекле."
           }
         }
       }
@@ -6173,18 +6137,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подпись обновления недействительна, поэтому оно не установлено."
-          }
-        }
-      }
-    },
-    "The version, links and license, from the BatteryPulse menu or the popover.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Версия, ссылки и лицензия — из меню BatteryPulse или всплывающего окна."
           }
         }
       }
@@ -7195,6 +7147,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открывать"
+          }
+        }
+      }
+    },
+    "Windows you can't see stop reading the battery and stop animating.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Окна, которых не видно, перестают опрашивать аккумулятор и не анимируются."
           }
         }
       }

@@ -234,7 +234,7 @@ discrete parts of a reading, never on the 2 s values, and goes through one polic
 stays on controls; the glass bubbles come from standard segmented controls.
 
 - [x] Foundation: `MotionPolicy` and `BatteryMotionKey` in BatteryCore (percent, tier, plugged
-  in, charge state, symbol, power flow with the label's 0.05 W dead band, Low Power Mode), tested
+  in, charge state, symbol, power flow with a 0.15 W dead band, just above the current's noise, Low Power Mode), tested
   on Linux against the M5 captures
 - [x] `\.motion` on every window and the menu bar panel: fades under Reduce Motion and Prefer
   Cross-Fade Transitions, no one-off extras under Low Power Mode or when macOS asks apps to save
@@ -259,9 +259,13 @@ stays on controls; the glass bubbles come from standard segmented controls.
 - [x] History: the period switch moves into the toolbar as a segmented control with the
   system's sliding glass selection; the charts crossfade on a period switch without morphing the
   lines; the minute reload pauses in a hidden window
-- [x] Raw Data: a source switch in the toolbar (All, Battery, Pack, Banks, Charger, IOPS,
+- [x] Raw Data: a source menu in the toolbar (All, Battery, Pack, Banks, Charger, IOPS,
   Adapter, SMC — only those present) that filters the table, since a SwiftUI Table can't be
-  scrolled to a section; rows never animate
+  scrolled to a section; a pop-up rather than segments, because seven or eight segments don't
+  fit the default window (in Russian even five don't); rows never animate
+- [x] Review fixes: under Reduce Motion layout snaps and only opacity and colour fade (also in
+  Demo Mode); scene variations don't animate the 2 s values; the update window swaps status and
+  install phases in place; Copy Report takes a fresh reading on pages that don't poll
 - [x] Demo Mode: one transaction per change; the demo bar materializes and morphs in interactive
   glass; Play and Pause as one button; the demo clock sleeps while paused and ticks once a
   second on scenes

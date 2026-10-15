@@ -4,13 +4,14 @@
   fill smoothly, the bolt draws in when charging starts, the adapter slides into the power flow
   when you plug in, and the battery bounces once when it's full. Watts, volts and temperatures
   still change instantly, so nothing jitters every two seconds.
-- **Liquid Glass controls:** the History period and the Raw Data source switch sit in the
-  toolbar with the system's sliding glass selection, the Demo Mode bar floats in glass, and the
-  menu bar icon style picker has a glass selection that flows from style to style.
+- **Liquid Glass controls:** the History period switch sits in the toolbar with the system's
+  sliding glass selection, Raw Data gets a source menu there, the Demo Mode bar floats in glass,
+  and the menu bar icon style picker has a glass selection that flows from style to style.
 - **Easy on the battery:** windows that are minimized, covered or on another Space stop reading
   the battery and stop animating, Demo Mode no longer wakes the app five times a second while
   paused, and the menu bar item never animates.
-- **Reduce Motion** turns movement into fades, and Low Power Mode skips the decorative extras.
+- **Reduce Motion** keeps everything in place and only fades, and Low Power Mode skips the
+  decorative extras.
 - **Glass Cards** (experimental, Settings → Advanced with the Developer section on) draws the
   cards in Liquid Glass, if you want to compare.
 - **iPhone and iPad (command-line preview):** `bpulse --device` now shows Maximum capacity as
