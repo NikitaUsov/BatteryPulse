@@ -11,18 +11,20 @@ struct CompactView: View {
     private let formatter = BatteryFormatter.app
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let snapshot = monitor.snapshot {
-                content(snapshot)
-            } else if monitor.hasBattery == false {
-                ContentUnavailableView(
-                    "No Battery",
-                    systemImage: "battery.0percent",
-                    description: Text("This Mac has no internal battery.")
-                )
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: 200)
+        CardGroup {
+            VStack(alignment: .leading, spacing: 14) {
+                if let snapshot = monitor.snapshot {
+                    content(snapshot)
+                } else if monitor.hasBattery == false {
+                    ContentUnavailableView(
+                        "No Battery",
+                        systemImage: "battery.0percent",
+                        description: Text("This Mac has no internal battery.")
+                    )
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                }
             }
         }
         .padding(18)

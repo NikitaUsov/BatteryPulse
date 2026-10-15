@@ -37,16 +37,18 @@ struct HistoryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                // Switching the period crossfades the charts rather than morphing the lines: a day
-                // and a week have different points on different time axes. The ZStack keeps both
-                // periods on top of each other while they fade.
-                ZStack(alignment: .top) {
-                    periodContent
-                        .id(loadedPeriod)
-                        .transition(.opacity)
+            CardGroup {
+                VStack(spacing: 16) {
+                    // Switching the period crossfades the charts rather than morphing the lines: a day
+                    // and a week have different points on different time axes. The ZStack keeps both
+                    // periods on top of each other while they fade.
+                    ZStack(alignment: .top) {
+                        periodContent
+                            .id(loadedPeriod)
+                            .transition(.opacity)
+                    }
+                    Card("Battery Health") { healthCharts }
                 }
-                Card("Battery Health") { healthCharts }
             }
             .padding(20)
             .frame(maxWidth: 820)

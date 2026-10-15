@@ -301,6 +301,18 @@
         }
       }
     },
+    "All": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: show every source",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все"
+          }
+        }
+      }
+    },
     "Allow BatteryPulse in Login Items to finish.": {
       "extractionState": "manual",
       "localizations": {
@@ -391,6 +403,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Средний расход"
+          }
+        }
+      }
+    },
+    "Banks": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the cell bank entries (AppleSmartBatteryBank) and their cells",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группы"
           }
         }
       }
@@ -1228,6 +1252,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд, оставшееся время и состояние аккумулятора."
+          }
+        }
+      }
+    },
+    "Charger": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the charger controller entry (AppleChargerData). Short for the segmented control; the glossary's longer term is «контроллер зарядки»",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка"
           }
         }
       }
@@ -2204,6 +2240,18 @@
         }
       }
     },
+    "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read.": {
+      "extractionState": "manual",
+      "comment": "Settings → Advanced: note under the Glass Cards toggle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспериментальная функция: карточки отображаются в стиле Liquid Glass. Расходует больше энергии, текст может читаться хуже."
+          }
+        }
+      }
+    },
     "Export Capture…": {
       "extractionState": "manual",
       "localizations": {
@@ -2700,6 +2748,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "GitHub ограничивает запросы из вашей сети. Повторите попытку позже."
+          }
+        }
+      }
+    },
+    "Glass Cards": {
+      "extractionState": "manual",
+      "comment": "Settings → Advanced, Developer option (shown only with the Developer section): draws the content cards in Liquid Glass",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стеклянные карточки"
           }
         }
       }
@@ -4457,6 +4517,18 @@
         }
       }
     },
+    "Pack": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the battery pack entry (AppleSmartBatteryPack)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Блок"
+          }
+        }
+      }
+    },
     "Pack voltage in AppleSmartBatteryPack (macOS 27); equals Voltage and AppleRawBatteryVoltage.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5283,6 +5355,18 @@
         }
       }
     },
+    "Report copied": {
+      "extractionState": "manual",
+      "comment": "VoiceOver announcement after Copy Report",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отчёт скопирован"
+          }
+        }
+      }
+    },
     "Requested charge current": {
       "extractionState": "manual",
       "localizations": {
@@ -5706,6 +5790,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывать в строке меню"
+          }
+        }
+      }
+    },
+    "Show only the values from one source": {
+      "extractionState": "manual",
+      "comment": "Help for the Raw Data toolbar switch",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать только значения из одного источника"
           }
         }
       }
