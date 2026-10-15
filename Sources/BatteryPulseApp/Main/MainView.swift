@@ -337,6 +337,7 @@ private struct MainDetail: View {
                 systemImage: "battery.0percent",
                 description: Text("This Mac has no internal battery.")
             )
+            .sheetContent()
         } else {
             ProgressView()
         }

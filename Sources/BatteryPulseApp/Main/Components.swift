@@ -139,6 +139,31 @@ private struct SheetTextLevels: ViewModifier {
     }
 }
 
+extension View {
+    /// Content that sits straight on the glass sheet, outside a ``Card`` and a ``LookForm`` (the
+    /// Raw Data table, a page's empty state, a footnote): the sheet's text levels and Clear's
+    /// treatment, as one group. Nothing in the other styles.
+    func sheetContent() -> some View {
+        modifier(SheetContentModifier())
+    }
+}
+
+private struct SheetContentModifier: ViewModifier {
+    @Environment(\.windowLook) private var look
+    @Environment(\.tones) private var tones
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if look.usesGlassSheet {
+            content
+                .modifier(SheetTextLevels(tones: tones))
+                .contentTreatment()
+        } else {
+            content
+        }
+    }
+}
+
 /// Frosted's group surface: one faint, lighter layer with a hairline rim on the frosted window,
 /// like the banner of the macOS widget gallery. A plain fill, not a second material: the frost
 /// behind it is already blurred, and a material on a material only adds a blur pass.

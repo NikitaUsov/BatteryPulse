@@ -46,6 +46,8 @@ struct DeveloperView: View {
                 }
                 .animation(motion.crossfade, value: sections.isEmpty)
             }
+            // Clear's treatment goes on the table as one group, with the sheet's text levels.
+            .sheetContent()
             .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
             // The table cuts long values and descriptions off; the inspector shows the selected
             // row in full.

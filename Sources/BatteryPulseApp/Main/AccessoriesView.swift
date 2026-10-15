@@ -23,6 +23,7 @@ struct AccessoriesView: View {
                 systemImage: AccessoryKind.fallbackSymbolName,
                 description: Text("This version of macOS doesn't report accessory batteries to apps.")
             )
+            .sheetContent()
         } else if monitor.isAvailable == nil {
             ProgressView()
         } else if monitor.accessories.isEmpty {
@@ -32,6 +33,7 @@ struct AccessoriesView: View {
                 description: Text(
                     "Connect a Bluetooth keyboard, mouse, trackpad or headphones to see its battery here.")
             )
+            .sheetContent()
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -45,6 +47,7 @@ struct AccessoriesView: View {
                     Text("Accessories show here while they're connected to this Mac.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .sheetContent()
                 }
                 .padding(20)
                 .frame(maxWidth: 820)
@@ -79,14 +82,17 @@ private struct AccessoryCard: View {
     }
 }
 
-/// A part's label, its state, its charge and a level bar in the tones of the Mac's battery.
+/// A part's label, its state, its charge and a level bar in the colours of the Mac's battery,
+/// through the window's tones: white in Clear, where a low part's charge is in the inverted badge.
 private struct AccessoryPartRow: View {
     let part: AccessoryPart
     let hasParts: Bool
-    @Environment(\.tones) private var tones
     private let formatter = BatteryFormatter.app
+    @Environment(\.tones) private var tones
 
     var body: some View {
+        let tier = BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging)
+        let percent = formatter.percent(Double(part.percent))
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: Phrases.accessoryPart(part.role, hasParts: hasParts))
@@ -99,22 +105,19 @@ private struct AccessoryPartRow: View {
                     InvertedBadge(text: Text("Low battery"))
                 }
                 Spacer(minLength: 8)
-                Text(verbatim: formatter.percent(Double(part.percent)))
-                    .monospacedDigit()
-                    .numericValue(Double(part.percent))
+                // Clear has no orange or red: a low part shows its charge in the badge. An
+                // offline part's last charge stays plain, as its bar stays dimmed.
+                if !part.isOffline, tones.badge(for: tier) == .inverted {
+                    InvertedBadge(text: Text(verbatim: percent).monospacedDigit())
+                } else {
+                    Text(verbatim: percent)
+                        .monospacedDigit()
+                        .numericValue(Double(part.percent))
+                }
             }
             ProgressView(value: Double(part.percent), total: 100)
-                .tint(tint)
+                .tint(tones.color(part.isOffline ? .text(.secondary) : .level(tier)))
         }
-    }
-
-    private var tier: BatteryPresentation.LevelTier {
-        BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging)
-    }
-
-    /// An offline part shows its last charge, dimmed.
-    private var tint: Color {
-        tones.color(part.isOffline ? .text(.secondary) : .level(tier))
     }
 }
 
