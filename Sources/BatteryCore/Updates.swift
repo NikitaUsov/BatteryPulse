@@ -191,46 +191,226 @@ public enum UpdatePolicy {
 /// line breaks but shows headings literally: headings become bold lines.
 public enum ReleaseNotes {
     /// Headings become bold lines, and the lines of a paragraph or list item wrapped in the
-    /// source are joined, since inline-only Markdown would keep every line break.
+    /// source are joined, since inline-only Markdown would keep every line break. Code blocks and
+    /// tables keep their lines, and so does a line that ends with a hard line break.
     public static func inlineMarkdown(_ notes: String) -> String {
         // Notes edited on github.com can use CRLF, which `split(separator: "\n")` would miss: in
         // Swift "\r\n" is a single Character.
         let normalized = notes.replacing("\r\n", with: "\n").replacing("\r", with: "\n")
-        var lines: [String] = []
-        var joinsNext = false
-        var inCodeBlock = false
-        for line in normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+        let source = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        var joiner = LineJoiner()
+        for (index, line) in source.enumerated() {
+            joiner.add(line, next: index + 1 < source.count ? source[index + 1] : nil)
+        }
+        return joiner.lines.joined(separator: "\n")
+    }
+}
+
+extension ReleaseNotes {
+    /// Reads GitHub Markdown line by line with just enough of its block structure to tell a line
+    /// wrapped inside a paragraph, list item or quote from one that starts a block or has to keep
+    /// its line break.
+    struct LineJoiner {
+        /// How the last line of the open paragraph ends.
+        enum LineEnd {
+            case softWrap
+            /// Two trailing spaces, Markdown's explicit line break.
+            case spaces
+            /// A trailing backslash, the other explicit line break. It's dropped once the next
+            /// line continues the paragraph, since inline rendering keeps the line break anyway.
+            case backslash
+        }
+
+        /// The start of a list item.
+        struct ListMarker {
+            /// The start number of an ordered item; nil for a bullet.
+            var number: Int?
+            /// The column the item's text starts at.
+            var contentIndent: Int
+        }
+
+        private(set) var lines: [String] = []
+        /// The last of `lines` holds the text of a paragraph, list item or quote that the next
+        /// line can continue.
+        private var paragraph = false
+        private var paragraphEnd = LineEnd.softWrap
+        /// The open paragraph started with `>`.
+        private var quoted = false
+        /// The content indent of each open list item, outermost first.
+        private var listItems: [Int] = []
+        /// The fence of the open fenced code block.
+        private var fence: (character: Character, length: Int)?
+        /// The indent that the lines of the open indented code block are 4 or more columns past.
+        private var indentedCode: Int?
+        private var table = false
+
+        mutating func add(_ line: String, next: String?) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("```") { inCodeBlock.toggle() }
-            if inCodeBlock || trimmed.hasPrefix("```") {
+            if let fence {
+                if Self.closes(fence, trimmed) { self.fence = nil }
                 lines.append(line)
-                joinsNext = false
-            } else if let heading = heading(trimmed) {
-                lines.append("**" + heading + "**")
-                joinsNext = false
-            } else if joinsNext, !trimmed.isEmpty, !startsBlock(trimmed), let last = lines.popLast() {
-                lines.append(last + " " + trimmed)
-                joinsNext = !line.hasSuffix("  ")
+                return
+            }
+            // A table goes on as long as its lines have a pipe.
+            if table, trimmed.contains("|") {
+                lines.append(line)
+                return
+            }
+            table = false
+            let indent = Self.indentation(of: line)
+            if let base = indentedCode, trimmed.isEmpty || indent >= base + 4 {
+                lines.append(line)
+                return
+            }
+            indentedCode = nil
+            if trimmed.isEmpty {
+                lines.append(line)
+                paragraph = false
+                return
+            }
+            let marker = Self.listMarker(line, indent: indent)
+            if paragraph, !startsBlock(trimmed, marker: marker, indent: indent, next: next) {
+                continueParagraph(line, trimmed: trimmed)
             } else {
-                lines.append(line)
-                // Two trailing spaces are Markdown's explicit line break.
-                joinsNext = !trimmed.isEmpty && !line.hasSuffix("  ")
+                startBlock(line, trimmed: trimmed, marker: marker, indent: indent, next: next)
             }
         }
-        return lines.joined(separator: "\n")
-    }
 
-    /// The text of an ATX heading such as `## Install`; `#hashtag` is not one.
-    static func heading(_ line: String) -> String? {
-        let text = line.drop { $0 == "#" }
-        guard text.count < line.count, text.first == " " else { return nil }
-        return text.trimmingCharacters(in: .whitespaces)
-    }
+        /// Whether a line below the text of a paragraph starts a block instead of continuing it.
+        private func startsBlock(_ trimmed: String, marker: ListMarker?, indent: Int, next: String?) -> Bool {
+            if [">", "|"].contains(where: trimmed.hasPrefix) || Self.openingFence(trimmed) != nil
+                || Self.heading(trimmed) != nil || Self.isDelimiterRow(trimmed) || Self.isDelimiterRow(next)
+            {
+                return true
+            }
+            guard let marker else { return false }
+            // Like a bullet, an ordered list can interrupt a paragraph, but only from 1, so a line
+            // such as "2020. Older ones too." continues a sentence. Any number starts an item where
+            // the paragraph's list item or quote ends, such as "2." below the text of "1.".
+            guard let number = marker.number, number != 1 else { return true }
+            return quoted || indent < (listItems.last ?? 0)
+        }
 
-    /// A line that starts its own block: a list item, quote or table row.
-    static func startsBlock(_ line: String) -> Bool {
-        if ["- ", "* ", "+ ", ">", "|"].contains(where: line.hasPrefix) { return true }
-        let digits = line.prefix { $0.isNumber }
-        return !digits.isEmpty && line.dropFirst(digits.count).hasPrefix(". ")
+        private mutating func continueParagraph(_ line: String, trimmed: String) {
+            switch paragraphEnd {
+            case .softWrap:
+                lines[lines.count - 1] += " " + trimmed
+            case .spaces:
+                lines.append(line)
+            case .backslash:
+                lines[lines.count - 1].removeLast()
+                lines.append(line)
+            }
+            paragraphEnd = Self.end(of: line)
+        }
+
+        private mutating func startBlock(
+            _ line: String, trimmed: String, marker: ListMarker?, indent: Int, next: String?
+        ) {
+            // A line that doesn't reach a list item's text (and doesn't continue its paragraph)
+            // ends the item.
+            while let item = listItems.last, item > indent { listItems.removeLast() }
+            let interruptsParagraph = paragraph
+            paragraph = false
+            let base = listItems.last ?? 0
+            if !interruptsParagraph, indent >= base + 4 {
+                indentedCode = base
+                lines.append(line)
+            } else if let opening = Self.openingFence(trimmed) {
+                fence = opening
+                lines.append(line)
+            } else if let heading = Self.heading(trimmed) {
+                lines.append("**" + heading + "**")
+            } else if Self.isDelimiterRow(trimmed) || Self.isDelimiterRow(next) {
+                // A table: its header, delimiter row and the rows below it.
+                table = true
+                lines.append(line)
+            } else {
+                if let marker { listItems.append(marker.contentIndent) }
+                lines.append(line)
+                paragraph = true
+                paragraphEnd = Self.end(of: line)
+                quoted = trimmed.hasPrefix(">")
+            }
+        }
+
+        /// The text of an ATX heading such as `## Install`; `#hashtag` is not one.
+        static func heading(_ line: String) -> String? {
+            let text = line.drop { $0 == "#" }
+            guard text.count < line.count, text.first == " " else { return nil }
+            return text.trimmingCharacters(in: .whitespaces)
+        }
+
+        static func end(of line: String) -> LineEnd {
+            if line.hasSuffix("  ") { return .spaces }
+            // A backslash escapes the one before it: only an odd run ends in a line break.
+            let backslashes = line.reversed().prefix { $0 == "\\" }.count
+            return backslashes.isMultiple(of: 2) ? .softWrap : .backslash
+        }
+
+        /// The width of the line's leading whitespace in columns, with tab stops every 4.
+        static func indentation(of line: String) -> Int {
+            var columns = 0
+            for character in line {
+                if character == " " {
+                    columns += 1
+                } else if character == "\t" {
+                    columns += 4 - columns % 4
+                } else {
+                    break
+                }
+            }
+            return columns
+        }
+
+        /// A bullet (`-`, `*`, `+`) or an ordered marker (`1.`, `1)`) followed by a space and text.
+        static func listMarker(_ line: String, indent: Int) -> ListMarker? {
+            let text = line.drop { $0 == " " || $0 == "\t" }
+            var number: Int?
+            let width: Int
+            if let first = text.first, "-*+".contains(first) {
+                width = 1
+            } else {
+                let digits = text.prefix { $0.isASCII && $0.isNumber }
+                guard (1...9).contains(digits.count), let delimiter = text.dropFirst(digits.count).first,
+                    delimiter == "." || delimiter == ")"
+                else { return nil }
+                number = Int(digits)
+                width = digits.count + 1
+            }
+            let rest = text.dropFirst(width)
+            let spaces = rest.prefix { $0 == " " || $0 == "\t" }.count
+            // An item with no text can't interrupt a paragraph; past 4 spaces the text is code.
+            guard spaces > 0, spaces < rest.count else { return nil }
+            return ListMarker(number: number, contentIndent: indent + width + (spaces > 4 ? 1 : spaces))
+        }
+
+        /// The fence that opens a fenced code block: 3 or more backticks or tildes. A backtick
+        /// fence's info string has no backtick, which tells it from a line starting with inline code.
+        static func openingFence(_ trimmed: String) -> (character: Character, length: Int)? {
+            guard let character = trimmed.first, character == "`" || character == "~" else { return nil }
+            let length = trimmed.prefix { $0 == character }.count
+            guard length >= 3, character == "~" || !trimmed.dropFirst(length).contains("`") else { return nil }
+            return (character, length)
+        }
+
+        /// Whether a line closes `fence`: the same character, at least as many times, alone.
+        static func closes(_ fence: (character: Character, length: Int), _ trimmed: String) -> Bool {
+            trimmed.count >= fence.length && trimmed.allSatisfy { $0 == fence.character }
+        }
+
+        /// A table's delimiter row such as `--- | :---:`, with or without the outer pipes.
+        static func isDelimiterRow(_ line: String?) -> Bool {
+            guard let line, line.contains("|") else { return false }
+            var row = Substring(line.trimmingCharacters(in: .whitespaces))
+            if row.first == "|" { row.removeFirst() }
+            if row.last == "|" { row.removeLast() }
+            return row.split(separator: "|", omittingEmptySubsequences: false).allSatisfy { cell in
+                var dashes = Substring(cell.trimmingCharacters(in: .whitespaces))
+                if dashes.first == ":" { dashes.removeFirst() }
+                if dashes.last == ":" { dashes.removeLast() }
+                return !dashes.isEmpty && dashes.allSatisfy { $0 == "-" }
+            }
+        }
     }
 }
