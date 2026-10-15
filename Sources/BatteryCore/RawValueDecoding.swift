@@ -9,6 +9,8 @@ public enum RawValueKind: String, Sendable, CaseIterable {
     case celsius
     /// Hundredths of a degree Celsius, the unit of the gauge's `Temperature`.
     case centidegreesCelsius
+    /// Tenths of a kelvin, the Smart Battery unit the SMC's `B0AT` uses.
+    case decikelvin
     case minutes, seconds, unixTime
     case boolean, count, hex, flags
     /// USB Power Delivery Power Data Object: one voltage/current offer of a USB-C source.
@@ -66,6 +68,7 @@ public enum RawValueDecoder {
         case .percent: return value.doubleValue.map(DecodedRawValue.percent)
         case .celsius: return value.doubleValue.map(DecodedRawValue.celsius)
         case .centidegreesCelsius: return value.doubleValue.map { .celsius($0 / 100) }
+        case .decikelvin: return value.doubleValue.map { .celsius((($0 / 10 - 273.15) * 100).rounded() / 100) }
         case .minutes: return value.intValue.map(DecodedRawValue.minutes)
         case .seconds: return value.intValue.map(DecodedRawValue.seconds)
         case .unixTime:

@@ -191,6 +191,69 @@ struct SMCTests {
         #expect(BatteryReading(smartBattery: [:], timestamp: Fixture.timestamp).rawCapture.count == 3)
     }
 
+    /// MacBook Air M5 on macOS 27: the float cells are in volts, B0AT counts tenths of a kelvin,
+    /// and the area sensors read an ulp or two below a round value.
+    @Test func realM5Values() throws {
+        let reading = try Fixture.m5OnBatterySMC.reading()
+        let smc = try #require(reading.rawCapture[BatteryReading.CaptureKey.smc]?.dictionaryValue)
+        let section = RawSection.sections(for: [BatteryReading.CaptureKey.smc: .dictionary(smc)]).first
+        let rows = Dictionary(uniqueKeysWithValues: (section?.rows ?? []).map { ($0.path, $0) })
+        #expect(rows.count == 13)
+        #expect(rows["SBA1"]?.property == .int(3836))
+        #expect(rows["SBA1"]?.decoded == .millivolts(3836))
+        #expect(rows["SBA3"]?.property == .int(3833))
+        #expect(rows["BC3V"]?.decoded == .millivolts(3833))
+        #expect(rows["B0AT"]?.property == .int(3069))
+        #expect(rows["B0AT"]?.decoded == .celsius(33.75))
+        #expect(rows["TB0T"]?.property == .double(33.7))
+        #expect(rows["TB2T"]?.decoded == .celsius(32.6))
+        #expect(rows["B0AC"]?.decoded == .milliamps(-720))
+        #expect(rows["B0AV"]?.decoded == .millivolts(11501))
+        #expect(rows["BNCB"]?.property == .int(3))
+        // The float cells alone give the integer cells' voltages.
+        let floats = smc.filter { $0.key.hasPrefix("SBA") || $0.key == "BNCB" }
+        #expect(SMCBattery.cellVoltagesMV(in: floats, packVoltageMV: 11_511) == [3836, 3836, 3833])
+        let sba1 = try #require(SMCBattery.values(in: smc).first { $0.key == "SBA1" })
+        #expect(sba1.number == 3.836)
+    }
+
+    @Test func gaugeTemperatureMustBePlausible() {
+        func temperature(_ raw: Int) -> Double? {
+            SMCBattery.temperatureCelsius(
+                in: SMCBattery.capture([
+                    SMCRawValue(key: "B0AT", info: Self.ui16, payload: [UInt8(raw & 0xFF), UInt8(raw >> 8)])
+                ]))
+        }
+        #expect(temperature(3067) == 33.55)  // Wattly, M5 MacBook Pro
+        #expect(temperature(2731) == -0.05)
+        #expect(temperature(31) == nil, "°C, not tenths of a kelvin")
+        #expect(temperature(3700) == nil, "96.85 °C")
+        // Only when the IORegistry has none.
+        let smc = SMCBattery.capture([SMCRawValue(key: "B0AT", info: Self.ui16, payload: [0xFB, 0x0B])])
+        let fallback = BatteryReading(smartBattery: [:], smc: smc, timestamp: Fixture.timestamp).snapshot
+        #expect(fallback.temperatureCelsius == 33.55)
+        let registry = BatteryReading(smartBattery: ["Temperature": .int(3100)], smc: smc, timestamp: Fixture.timestamp)
+        #expect(registry.snapshot.temperatureCelsius == 31)
+    }
+
+    @Test func floatCellsInVoltsOrMillivolts() {
+        let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84)
+        func cells(_ values: [Float]) -> PropertyDictionary {
+            SMCBattery.capture(
+                values.enumerated().map { index, value in
+                    SMCRawValue(
+                        key: SMCBattery.floatCellVoltageKeys[index], info: float,
+                        payload: withUnsafeBytes(of: value.bitPattern.littleEndian, Array.init))
+                })
+        }
+        #expect(SMCBattery.cellVoltagesMV(in: cells([3.9015, 3.899]), packVoltageMV: 7_800) == [3902, 3899])
+        #expect(SMCBattery.cellVoltagesMV(in: cells([3901.5, 3899]), packVoltageMV: 7_800) == [3902, 3899])
+        #expect(SMCBattery.cellVoltagesMV(in: cells([0.0039, 0.0039]), packVoltageMV: nil) == [])
+        // Integer keys are never taken for volts.
+        let volts = SMCRawValue(key: "BC1V", info: Self.ui16, payload: [4, 0])
+        #expect(SMCBattery.cellVoltagesMV(in: SMCBattery.capture([volts]), packVoltageMV: nil) == [])
+    }
+
     @Test func appReadsOnlyReadOnlyBatteryKeys() {
         #expect(Set(SMCBattery.keys).count == SMCBattery.keys.count)
         #expect(SMCBattery.keys.allSatisfy { ["B", "T", "S"].contains($0.description.first.map(String.init)) })

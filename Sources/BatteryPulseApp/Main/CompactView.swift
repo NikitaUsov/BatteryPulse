@@ -105,8 +105,11 @@ struct CompactView: View {
 
     private func row(_ label: LocalizedStringKey, _ value: String) -> some View {
         GridRow {
+            // The label keeps its full width and a long value is shortened instead: Grid
+            // otherwise truncated the longer Russian labels.
             Text(label)
                 .foregroundStyle(.secondary)
+                .fixedSize()
             Text(value)
                 .monospacedDigit()
                 .lineLimit(1)

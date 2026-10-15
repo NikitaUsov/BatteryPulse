@@ -243,14 +243,15 @@ language. To use a different language for BatteryPulse only:
   doesn't use charges the battery. On battery, the battery powers the Mac.
 - **Temperature** is the battery pack's own sensor, and **cell voltages** come from each cell
   of the pack. macOS 27 keeps both on registry entries below the battery rather than on the
-  battery itself; when a Mac doesn't have them, BatteryPulse reads the cell voltages from the
-  SMC instead and checks that they add up to the battery voltage. The temperature sensors near
+  battery itself; when a Mac doesn't have them, BatteryPulse reads them from the SMC instead
+  and checks that the cell voltages add up to the battery voltage. The temperature sensors near
   the battery that the SMC also reports are shown in Raw Data only, since they can read several
   degrees off.
 - **Spread** is the difference between the highest and lowest cell voltage. A few millivolts is
   normal; a spread that keeps growing over months hints at an ageing or unbalanced battery.
 - **Requested charge current and voltage** are what the battery asks the charger for, shown
-  while charging. They drop as the battery fills up.
+  while charging. The current drops as the battery fills up. Macs with Apple silicon ask for the
+  voltage of one cell (4.47 V on a MacBook Air M5), so the label says "per cell".
 
 ## Command-line report
 

@@ -193,7 +193,8 @@ extension DemoBattery {
     }
 
     /// The registry entries macOS 27 keeps below `AppleSmartBattery`: the pack with its
-    /// temperature, one bank per cell, and the charger's targets.
+    /// temperature, one bank per series cell, and the charger's targets. Like a real M5, the
+    /// charger asks for 4.47 V per cell whether or not it is charging.
     func children(voltageMV: Int, chargeCurrentMA: Int) -> [PropertyValue] {
         // Three cells in series, a few millivolts apart like a healthy pack.
         let cells = [voltageMV / 3 + 2, voltageMV / 3 - 3, voltageMV - 2 * (voltageMV / 3) + 1]
@@ -217,7 +218,7 @@ extension DemoBattery {
                 RegistryChildren.classKey: .string(RegistryChildren.chargerClass),
                 "ChargerData": .dictionary([
                     "ChargingCurrent": .int(Int64(chargeCurrentMA)),
-                    "ChargingVoltage": .int(chargeCurrentMA > 0 ? 13_050 : 0),
+                    "ChargingVoltage": .int(4_470),
                 ]),
             ]),
         ]

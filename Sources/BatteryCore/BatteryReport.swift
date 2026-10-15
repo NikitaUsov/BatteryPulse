@@ -94,7 +94,8 @@ public enum BatteryReport {
             add("Adapter", parts.isEmpty ? "connected" : parts.joined(separator: " · "))
         }
         if let current = s.chargingCurrentMA, let voltage = s.chargingVoltageMV, current > 0 {
-            add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V")
+            let perCell = s.isChargingVoltagePerCell ? " per cell" : ""
+            add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V" + perCell)
         }
         // The gauge reports a "not charging" reason on battery too; it only means something
         // while an adapter is connected.

@@ -8,6 +8,9 @@ enum Fixture: String, CaseIterable {
     case m5OnBattery = "m5-macos27-on-battery"
     /// Real: MacBook Air M5, macOS 27, charging from a 60 W adapter.
     case m5Charging = "m5-macos27-charging"
+    /// Real: the same Mac, captured by BatteryPulse 0.3 with the registry children below
+    /// AppleSmartBattery and the SMC's battery keys, on battery at 47 %.
+    case m5OnBatterySMC = "m5-macos27-on-battery-smc"
     /// Synthetic pre-macOS 27 layout, for fallback keys.
     case legacyDischarging = "synthetic-legacy-discharging"
     case legacyCharging = "synthetic-legacy-charging"

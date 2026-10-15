@@ -46,6 +46,42 @@ import Testing
         #expect(s.serialNumber == "REDACTED")
     }
 
+    /// Captured by 0.3, which also walks the registry children and reads the SMC.
+    @Test func m5OnBatteryWithChildrenAndSMC() throws {
+        let reading = try Fixture.m5OnBatterySMC.reading()
+        let s = reading.snapshot
+
+        #expect(s.chargePercent == 47)
+        #expect(s.chargeState == .discharging)
+        #expect(s.timeToEmptyMinutes == 214)
+        #expect(s.currentCapacityMAh == 2618)
+        #expect(s.fullChargeCapacityMAh == 5863)
+        #expect(s.nominalChargeCapacityMAh == 6007)
+        #expect(s.cycleCount == 49)
+        #expect(s.voltageMV == 11511)
+        #expect(s.amperageMA == -713)
+        // From AppleSmartBatteryPack and the three AppleSmartBatteryBank entries; they add up to
+        // the pack voltage.
+        #expect(s.temperatureCelsius == 33.69)
+        #expect(s.cellVoltagesMV == [3837, 3836, 3837])
+        #expect(s.cellVoltagesMV.reduce(0, +) == 11510)
+        // From AppleChargerData: the gauge asks for 4.47 V per cell even while discharging.
+        #expect(s.chargingCurrentMA == 0)
+        #expect(s.chargingVoltageMV == 4470)
+        #expect(s.notChargingReason == 0x80)
+        #expect(s.systemLoadMW == 8321)
+
+        // The SMC agrees with the registry: the same cells, and B0AT in tenths of a kelvin.
+        let smc = try #require(reading.rawCapture[BatteryReading.CaptureKey.smc]?.dictionaryValue)
+        #expect(SMCBattery.cellVoltagesMV(in: smc, packVoltageMV: s.voltageMV) == [3836, 3836, 3833])
+        #expect(SMCBattery.temperatureCelsius(in: smc) == 33.75)
+        var withoutRegistry = reading.smartBattery
+        withoutRegistry[RegistryChildren.childrenKey] = nil
+        let fallback = BatteryReading(smartBattery: withoutRegistry, smc: smc, timestamp: Fixture.timestamp).snapshot
+        #expect(fallback.cellVoltagesMV == [3836, 3836, 3833])
+        #expect(fallback.temperatureCelsius == 33.75)
+    }
+
     @Test func m5Charging() throws {
         let s = try Fixture.m5Charging.snapshot()
 

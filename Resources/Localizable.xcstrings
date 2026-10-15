@@ -476,6 +476,17 @@
         }
       }
     },
+    "Battery gauge temperature read from the SMC, in tenths of a kelvin: 3069 is 33.75 °C.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура контроллера аккумулятора по данным SMC, в десятых долях кельвина: 3069 — это 33,75 °C."
+          }
+        }
+      }
+    },
     "Battery Health": {
       "extractionState": "manual",
       "localizations": {
@@ -2341,17 +2352,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Уровень заряда по данным контроллера: доля RemainingCapacity от FullChargeCapacity."
-          }
-        }
-      }
-    },
-    "Gauge temperature read from the SMC; whether it counts 0.1 K or 0.01 °C is not settled yet.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Температура контроллера аккумулятора по данным SMC; пока не установлено, в чём она измеряется: в 0,1 K или в 0,01 °C."
           }
         }
       }
@@ -4695,6 +4695,17 @@
         }
       }
     },
+    "Requested charge voltage per cell": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрошенное напряжение зарядки на элемент"
+          }
+        }
+      }
+    },
     "Resume Tour": {
       "extractionState": "manual",
       "localizations": {
@@ -5896,13 +5907,13 @@
         }
       }
     },
-    "Voltage of one series cell as a floating-point value, read from the SMC.": {
+    "Voltage of one series cell, read from the SMC as a floating-point number; shown in mV.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Напряжение одного последовательного элемента в виде дробного числа по данным SMC."
+            "value": "Напряжение одного последовательного элемента по данным SMC в виде дробного числа; показано в мВ."
           }
         }
       }

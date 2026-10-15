@@ -20,7 +20,7 @@ struct RegistryChildrenTests {
         ]
         let charger: [String: Any] = [
             "IOObjectClass": "AppleChargerData",
-            "ChargerData": ["ChargingCurrent": 2990, "ChargingVoltage": 13_050],
+            "ChargerData": ["ChargingCurrent": 2990, "ChargingVoltage": 4_470],
         ]
         let dictionary: [String: Any] = [
             "Voltage": 12_294,
@@ -70,7 +70,7 @@ struct RegistryChildrenTests {
         #expect(s.cellVoltageSpreadMV == 6)
         // The charger's own entry wins over the stale top-level ChargerData.
         #expect(s.chargingCurrentMA == 2990)
-        #expect(s.chargingVoltageMV == 13_050)
+        #expect(s.chargingVoltageMV == 4_470)
         #expect(s.notChargingReason == 0)
     }
 
@@ -94,11 +94,25 @@ struct RegistryChildrenTests {
         #expect(children.snapshot.cellVoltagesMV == [4098, 4095, 4101])
     }
 
-    @Test func realM5CapturesHaveNoChildrenYet() throws {
-        // The checked-in M5 captures predate the children walk: nothing changes for them.
+    @Test func realM5CapturesBeforeTheChildrenWalkHaveNone() throws {
         let reading = try Fixture.m5Charging.reading()
         #expect(RegistryChildren.entries(in: reading.smartBattery).isEmpty)
         #expect(reading.snapshot.temperatureCelsius == nil)
+    }
+
+    /// The MacBook Air M5 has three series banks of two parallel cells (3S2P).
+    @Test func realM5Children() throws {
+        let sb = try Fixture.m5OnBatterySMC.reading().smartBattery
+        let entries = RegistryChildren.entries(in: sb)
+        let bank = [RegistryChildren.bankClass, "AppleSmartBatteryCell", "AppleSmartBatteryCell"]
+        #expect(
+            entries.map(\.className) == [RegistryChildren.packClass] + bank + bank + bank + [
+                RegistryChildren.chargerClass
+            ])
+        #expect(entries[2].path == [RegistryChildren.packClass, RegistryChildren.bankClass, "AppleSmartBatteryCell"])
+        #expect(RegistryChildren.temperatureCelsius(in: sb) == 33.69)
+        #expect(RegistryChildren.cellVoltagesMV(in: sb) == [3837, 3836, 3837])
+        #expect(RegistryChildren.chargerData(in: sb)["ChargingVoltage"] == .int(4470))
     }
 
     @Test func rawDataShowsEachChildAndTheSMC() throws {

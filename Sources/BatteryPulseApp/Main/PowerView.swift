@@ -43,7 +43,11 @@ struct PowerView: View {
                 ValueRow("Requested charge current", formatter.milliamps(current))
             }
             if snapshot.chargeState == .charging, let voltage = snapshot.chargingVoltageMV, voltage > 0 {
-                ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
+                if snapshot.isChargingVoltagePerCell {
+                    ValueRow("Requested charge voltage per cell", formatter.volts(millivolts: voltage))
+                } else {
+                    ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
+                }
             }
             if let optimized = snapshot.isOptimizedChargingEngaged {
                 // `false` means the feature isn't holding the charge right now, not that it's off.

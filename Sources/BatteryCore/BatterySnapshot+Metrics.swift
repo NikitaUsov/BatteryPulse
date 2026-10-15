@@ -55,6 +55,15 @@ extension BatterySnapshot {
         return high - low
     }
 
+    /// Whether ``chargingVoltageMV`` is for one cell rather than the whole pack. Apple silicon on
+    /// macOS 27 requests it per cell (4470 mV on a MacBook Air M5); a value above any cell's
+    /// voltage is for the pack.
+    public var isChargingVoltagePerCell: Bool {
+        chargingVoltageMV.map { $0 <= Self.maximumCellChargeVoltageMV } ?? false
+    }
+
+    static let maximumCellChargeVoltageMV = 5_000
+
     /// The OS estimate when available, otherwise derived from remaining capacity and current.
     /// `nil` while macOS is still calculating.
     public var estimatedTimeToEmptyMinutes: Int? {

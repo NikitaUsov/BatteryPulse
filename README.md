@@ -161,7 +161,7 @@ analytics file that iOS lets you export from Settings. No private APIs are invol
 
 † macOS 27 moved them from `AppleSmartBattery` to the registry entries below it (the pack and
 one bank per cell). BatteryPulse reads those, and the SMC's battery keys as a second source for
-the cell voltages.
+the cell voltages and the temperature.
 
 On macOS everything is read from the public IOKit power-source API, the `AppleSmartBattery`
 registry entry and its children, and, read-only, the SMC. No root or kernel extension is

@@ -189,6 +189,7 @@ enum MacPowerParser {
         s.temperatureCelsius =
             sb["Temperature"]?.intValue.flatMap(celsius(fromCentidegrees:))
             ?? RegistryChildren.temperatureCelsius(in: sb)
+            ?? SMCBattery.temperatureCelsius(in: smc)
 
         // Charger & telemetry
         s.chargingCurrentMA = chargerData["ChargingCurrent"]?.intValue

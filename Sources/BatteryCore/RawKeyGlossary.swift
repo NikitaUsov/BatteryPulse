@@ -784,7 +784,7 @@ public enum RawKeyGlossary {
         ("SMC.B0AC", Info(.milliamps, "Battery current read from the SMC; positive while charging.")),
         (
             "SMC.B0AT",
-            Info(.other, "Gauge temperature read from the SMC; whether it counts 0.1 K or 0.01 °C is not settled yet.")
+            Info(.decikelvin, "Battery gauge temperature read from the SMC, in tenths of a kelvin: 3069 is 33.75 °C.")
         ),
         ("SMC.B0AV", Info(.millivolts, "Battery pack voltage read from the SMC.")),
         ("SMC.BNCB", Info(.count, "Number of cells in series, read from the SMC.")),
@@ -861,7 +861,10 @@ public enum RawKeyGlossary {
                 "Running sum of the matching once-a-second telemetry value; some totals carry spurious 2^32 jumps.")
         ),
         ("SMC.BC", Info(.millivolts, "Voltage of one series cell, read from the SMC.")),
-        ("SMC.SBA", Info(.millivolts, "Voltage of one series cell as a floating-point value, read from the SMC.")),
+        (
+            "SMC.SBA",
+            Info(.millivolts, "Voltage of one series cell, read from the SMC as a floating-point number; shown in mV.")
+        ),
         (
             "SMC.TB",
             Info(.celsius, "Battery-area temperature sensor read from the SMC, in °C; TB0T sits at the hotspot.")

@@ -121,6 +121,13 @@ import Testing
         #expect(value("Temperature", in: s) == "31.1 °C")
         #expect(value("Cells", in: s) == "4144 / 4143 / 4146 mV  (spread 3 mV)")
         #expect(try value("Charger request", in: Fixture.legacyCharging.snapshot()) == "4000 mA at 13.05 V")
+        // macOS 27 on Apple silicon asks for a per-cell voltage.
+        var m5 = try Fixture.m5OnBatterySMC.snapshot()
+        #expect(m5.isChargingVoltagePerCell)
+        #expect(try !Fixture.legacyCharging.snapshot().isChargingVoltagePerCell)
+        #expect(value("Charger request", in: m5) == nil, "not charging")
+        m5.chargingCurrentMA = 2990
+        #expect(value("Charger request", in: m5) == "2990 mA at 4.47 V per cell")
     }
 
     @Test func derivedTimeIsMarked() {

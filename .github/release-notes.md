@@ -1,3 +1,15 @@
+## What's new in 0.3.1
+
+Fixes from the first run on a MacBook Air M5:
+
+- **Power page:** while charging, the requested charge voltage is labeled as per cell (a
+  MacBook Air M5 asks for 4.47 V per cell), not mistaken for the whole battery's.
+- **Compact window:** long labels such as "Battery power" in Russian are no longer cut off.
+- **Raw Data:** the SMC's floating-point cell voltages (`SBA1`…) show as voltages instead of
+  raw bytes, `B0AT` is decoded as a temperature, and temperature sensors no longer show values
+  like 33.69999694824219.
+- **Temperature** also comes from the SMC on Macs whose battery doesn't report it elsewhere.
+
 ## What's new in 0.3
 
 - **Temperature and cells**: the battery's temperature on the Power page, in the compact window,
@@ -7,8 +19,8 @@
   count day by day.
 - **Notifications** when the battery reaches a charge level, runs low, needs service, or the
   Mac gets hot (Settings → Notifications; all off until you turn them on).
-- **Widget** for the desktop and Notification Center, in two sizes. It's experimental until
-  BatteryPulse is notarized: if it doesn't show up in Edit Widgets, please open an issue.
+- **Widget** for the desktop and Notification Center, in two sizes. If it doesn't show up in
+  Edit Widgets, please open an issue.
 - **Compact window**: a small window with just the essentials.
 - **Raw Data inspector** and sections for the battery pack, each cell, the charger and the SMC.
 - **Update check** once a day (Settings → General), and a What's New window after updating.

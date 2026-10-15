@@ -51,12 +51,14 @@ On a MacBook Air M5 with macOS 27, `AppleSmartBattery` keeps the mAh values in i
 `BatteryData` dictionary and no longer publishes `Temperature` or `CellVoltage`.
 
 † macOS 27 moved them to the entries below `AppleSmartBattery`: `AppleSmartBatteryPack`
-(`BatteryData.Temperature` in 0.01 °C), one `AppleSmartBatteryBank` per cell (`CellVoltage`),
-and `AppleChargerData` (the charge current and voltage targets). Evidence: Stats' macOS 27 fix
-and a macOS 27 `ioreg` capture in MacDashboard, not yet an M5 Air. The SMC (read-only:
-`BC1V`… cell voltages, checked against the pack voltage) is the second source. Its battery-area
-sensors `TB*T` are not the battery's temperature and stay in Raw Data, and `B0AT`'s unit
-(0.1 K or 0.01 °C) is unsettled.
+(`BatteryData.Temperature` in 0.01 °C), one `AppleSmartBatteryBank` per series cell
+(`CellVoltage`; on the M5 Air each bank has two parallel `AppleSmartBatteryCell` entries, 3S2P),
+and `AppleChargerData` (the charge current target and a per-cell charge voltage, 4470 mV).
+Confirmed by a capture from the M5 Air (`m5-macos27-on-battery-smc` fixture). The SMC
+(read-only) is the second source: `BC1V`… or `SBA1`… (floats in volts) for the cells, checked
+against the pack voltage, and `B0AT` for the temperature, in 0.1 K (3069 = 33.75 °C with the
+pack at 33.69 °C). Its battery-area sensors `TB*T` matched the pack on the M5 Air but not on
+other Macs, so they stay in Raw Data.
 
 \* Read from IOPS `Optimized Battery Charging Engaged`, which macOS only publishes while the
 charge is on hold; not yet seen in a macOS 27 capture.
@@ -121,11 +123,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   from the toolbar, and choose which window Open BatteryPulse shows
 - [x] WidgetKit widget (small and medium), built by SwiftPM and wrapped into an `.appex` by
   `build-app.sh`; sandboxed, reading IOKit itself since ad-hoc signing rules out an App Group.
-  Experimental until it is confirmed to appear for a downloaded, quarantined copy
-- [ ] Verify on the M5: the registry children and their keys (`ioreg -r -c AppleSmartBattery
-  -l -a`), `bpulse --smc` (and that no battery key is privilege-gated on 27), the widget in the
-  gallery after Open Anyway and after an update, notification permission for the ad-hoc app,
-  and a `bpulse --raw` capture at the macOS Charge Limit stop point
+  Appears in the gallery for a downloaded copy after Open Anyway (M5 Air, 0.3.0)
+- [x] Verify on the M5 (0.3.0): the registry children and their keys, all SMC battery keys
+  readable without privileges, the widget, notification permission for the ad-hoc app
+- [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
+  0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
+- [ ] Verify on the M5: the widget after an update, and a capture at the macOS Charge Limit stop
+  point
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
@@ -223,6 +227,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 |---------|------------|------------|
 | 0.2.0   | 2026-10-14 | Main window (Overview, Power, Health), optional menu bar and Dock presence, Developer section with decoded and explained Raw Data and Demo Mode, English and Russian |
 | 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
+| 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 
 ## Development environment
 
