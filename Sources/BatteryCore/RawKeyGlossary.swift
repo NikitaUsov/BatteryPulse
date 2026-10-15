@@ -30,7 +30,7 @@ public enum RawKeyGlossary {
     /// folded into `AdapterDetails`, adapter details prefixed `AdapterDetails.` and IOPS keys
     /// prefixed `IOPS.`.
     public static func canonicalKey(captureKey: String, path: String) -> String {
-        var key = path.replacing(#/\[\d+\]/#, with: "")
+        var key = removingArrayIndices(path)
         switch captureKey {
         case BatteryReading.CaptureKey.adapterDetails:
             key = "AdapterDetails." + key
@@ -42,6 +42,28 @@ public enum RawKeyGlossary {
             }
         }
         return key
+    }
+
+    /// `UsbHvcMenu[2].MaxVoltage` → `UsbHvcMenu.MaxVoltage`: drops every `[digits]`. A plain scan,
+    /// since a Regex took most of the time to build the Developer table's 600 rows.
+    static func removingArrayIndices(_ path: String) -> String {
+        guard path.contains("[") else { return path }
+        var result = Substring()
+        var rest = path[...]
+        while let open = rest.firstIndex(of: "[") {
+            let digits = rest.index(after: open)
+            if let close = rest[digits...].firstIndex(of: "]"), close > digits,
+                rest[digits..<close].allSatisfy({ $0.isASCII && $0.isNumber })
+            {
+                result += rest[..<open]
+                rest = rest[rest.index(after: close)...]
+            } else {
+                result += rest[...open]
+                rest = rest[digits...]
+            }
+        }
+        result += rest
+        return String(result)
     }
 
     public static func info(for key: String) -> Info? {

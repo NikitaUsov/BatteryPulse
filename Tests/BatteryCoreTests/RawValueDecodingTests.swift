@@ -109,4 +109,19 @@ import Testing
     func canonicalKeys(captureKey: String, path: String, expected: String) {
         #expect(RawKeyGlossary.canonicalKey(captureKey: captureKey, path: path) == expected)
     }
+
+    /// Only `[digits]` is an array index; other brackets stay.
+    @Test(arguments: [
+        ("UsbHvcMenu[12].MaxVoltage", "UsbHvcMenu.MaxVoltage"),
+        ("A[0][1]", "A"),
+        ("[3]", ""),
+        ("Key[]", "Key[]"),
+        ("Key[x1].Value", "Key[x1].Value"),
+        ("[[1]]", "[]"),
+        ("Open[2", "Open[2"),
+        ("Plain", "Plain"),
+    ])
+    func arrayIndicesAreRemoved(path: String, expected: String) {
+        #expect(RawKeyGlossary.removingArrayIndices(path) == expected)
+    }
 }
