@@ -17,10 +17,20 @@ charging state.
   optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
   system's sidebar, toolbar and controls, plus custom glass only on controls that float over
-  content (the Demo Mode bar, the selection of the menu bar icon style picker). Content uses
-  standard fills; glass cards are a Developer option, off by default. Motion is short, plays
-  once on a battery event or a user action, turns into fades under Reduce Motion, and stops in
-  windows that can't be seen and in the menu bar label.
+  content (the Demo Mode bar, the selection of the tile pickers in Settings). Content uses
+  standard fills and is never glass. Motion is short, plays once on a battery event or a user
+  action, turns into fades under Reduce Motion, and stops in windows that can't be seen and in
+  the menu bar label.
+- **Window styles (0.6):** the main and compact windows offer Standard (default), Frosted,
+  Translucent and Clear (Settings → General). Standard and Frosted follow the HIG: Frosted is a
+  standard material as the app background. Translucent and Clear knowingly go against it (Liquid
+  Glass in the content layer, a window-sized sheet, glass under the system's glass, and for
+  Clear contrast below the HIG minimum over parts of a bright wallpaper and a dark appearance
+  chosen by the style), because they were asked for; they are opt-in, never the default, say
+  what they cost in Settings, apply only to the main and compact windows and give way to
+  Standard under Reduce Transparency or Increase Contrast. The sidebar stays the system's in
+  every style; Frosted stays frosted in inactive windows; no Low Power Mode fallback until the
+  energy is measured.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -285,6 +295,45 @@ stays on controls; the glass bubbles come from standard segmented controls.
   Profiler), legibility with the Liquid Glass slider at both ends, and Reduce Motion, Prefer
   Cross-Fade Transitions, Reduce Transparency, Increase Contrast and Show Borders
 
+### Stage 1.5: Window styles (0.6)
+
+Standard, Frosted, Translucent and Clear for the main and compact windows. Built without the
+planned spike on the M5 (the maintainer checks after release); the open points are in the check
+below.
+
+- [x] `WindowLook` and `WindowLookPolicy` in BatteryCore (the code avoids SwiftUI's
+  `WindowStyle`): the background, group surface and sheet rules per style, Reduce Transparency
+  and Increase Contrast giving Standard, the glass sheet's tint per system appearance, Clear's
+  content treatment; tested on Linux
+- [x] `ToneMap`: every colour the windows draw is a role (level, cycles, capacity bars, chart
+  lines, spans, track, hairline, accent, warning, Demo Mode steps, text); today's colours in
+  colour, white at fixed steps and an inverted badge in Clear. `MotionGuardTests` keeps system
+  colour names out of `Main/`, the level and Demo Mode tints
+- [x] The Developer option Glass Cards removed (its stored value deleted, not mapped); the main
+  window's page kept in scene storage, so a style change that rebuilds the window keeps it
+- [x] Settings → General: Window Style, four static preview tiles in the generalised tile
+  picker (the icon styles use it too, drawn at 2.5×), footers for each style and for the
+  accessibility override
+- [x] Frosted: a standard material behind the window, active also in inactive windows; frost
+  layers for the cards; Forms without their background; the Raw Data table opaque
+- [x] Translucent: one clear glass sheet with a 45 % dimming tint; no card surfaces, hairlines
+  between groups, bold numbers and medium text, no tertiary text, defined ring channels, Form rows
+  and Raw Data rows on the sheet
+- [x] Clear: the window in the dark appearance (that window only), graphite control tint, the
+  monochrome tone map, a shadow and halo under each group, the inverted badge for a low level or
+  a worn battery, a dashed second line in the power chart
+- [x] `MotionGuardTests`: window backgrounds and appearance overrides only in
+  `App/WindowLook.swift`, nothing animated there, never a white tint
+- [ ] Check on the M5: whether the glass sheet samples the desktop and how the system sidebar,
+  toolbar, inspector and Demo Mode bar look on it (fallback for Translucent: a thin
+  behind-window material with the dimming layer); the material against the widget gallery; the
+  graphite tint on the sidebar selection; that the dark appearance stays in its window; Form
+  section fills and table stripes; the scroll edge under the title; full screen; contrast with
+  Accessibility Inspector; energy of each style in Instruments (and whether Clear's shadows show
+  up there); screenshots for the user guide
+- [ ] Not done yet: thicker chart lines and wider area fills on the sheet (the charts keep their
+  default line width), and the content treatment on the Raw Data table (an AppKit-backed table)
+
 ### Stage 2: iOS MVP
 
 - [ ] iOS target sharing SwiftUI components with macOS
@@ -416,7 +465,8 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 
 Next: **0.6.0** is about the other devices: iPhone and iPad in the app, remembered with their
 history (Stage 5), the batteries of Bluetooth accessories (Stage 6), and CSV/JSON export of the
-history; plus the open checks on the M5 (a capture at the Charge Limit stop point, a profile in
+history; plus window styles (Standard, Frosted, Translucent, Clear; Stage 1.5) and the open
+checks on the M5 (a capture at the Charge Limit stop point, a profile in
 Instruments, menu bar icons on light and dark menu bars, widgets across an in-app update).
 **0.6.1** reworks the drawn menu bar icon styles (Stage 1.3). Optional, if a one-day spike on
 the M5 works: the apps using the most energy. Not planned: an iOS app, charge limiting, and

@@ -128,8 +128,32 @@ charging starts; changes that come every two seconds (watts, volts, temperatures
 With **Reduce Motion** on (System Settings → Accessibility → Display), nothing moves: changes
 fade in place, and in Low Power Mode the decorative touches are skipped. Windows you can't see don't
 animate. The History switch and the Demo Mode bar use Liquid Glass; the cards stay plain.
-With the Developer section on, **Glass Cards** in Settings → Advanced draws them in glass, as an
-experiment (it uses more energy and can be harder to read).
+
+### Window style
+
+**Window Style** in Settings → General chooses how the main window and the compact window look,
+from the most opaque to the most transparent. Each tile in the picker shows a little window in
+that style:
+
+| Style | What it looks like |
+|-------|--------------------|
+| **Standard** | An opaque window with cards, as in earlier versions. The default. |
+| **Frosted** | The desktop shows through the window, blurred and frosted, like the widget gallery of macOS. The cards become faint, lighter layers; the Raw Data table stays opaque. The frost stays when the window is in the background. |
+| **Translucent** | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
+| **Clear** | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through almost sharp, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark, while the glass is a little lighter or smokier with the system appearance. |
+
+The change applies at once to both windows. Settings, the menu bar popover, the welcome window
+and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
+The see-through styles redraw when something behind the window changes, so Translucent and
+Clear use more energy than Standard; Clear is also the hardest to read over a bright or busy
+wallpaper, and Translucent is the better choice there.
+
+With **Reduce transparency** or **Increase contrast** on (System Settings → Accessibility →
+Display), both windows use Standard whatever the choice, and Settings says so under the picker.
+You can still pick a style for when those settings are off.
+
+0.5's Developer option **Glass Cards** is gone; Window Style replaces it, and a stored Glass
+Cards choice is cleared rather than turned into a style.
 
 ## Compact window
 
@@ -384,7 +408,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 | Tab | What it controls |
 |-----|------------------|
-| General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language, reading iPhones and iPads |
+| General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service and heat notifications |
 | Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
