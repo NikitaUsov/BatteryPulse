@@ -214,8 +214,9 @@ menu, and everything BatteryPulse keeps of it (about the last 10 days of reading
 day's health), whatever period the charts show. Export works on what was already recorded when
 recording is off, and in Demo Mode too, since History keeps showing the recorded data. The
 file name tells what's in it and the day of the export, such as
-`BatteryPulse-Mac-samples-2026-10-15.csv`; no file or file name contains your Mac's name or
-serial number.
+`BatteryPulse-Mac-samples-2026-10-15.csv`; a device's file names its model, such as
+`BatteryPulse-iPhone-17-Pro-Max-samples-2026-10-15.csv` (or just `iPhone` or `iPad`). No file or
+file name contains your Mac's or device's name or serial number.
 
 **CSV for spreadsheets.** The file follows your region's number format (System Settings →
 General → Language & Region) at the moment of export, so spreadsheet apps such as Numbers
@@ -264,11 +265,14 @@ where a reading was taken: after a trip, the readings appear in the current time
 the clocks go back, `localTime` repeats an hour, and `time` tells those readings apart.
 
 **JSON.** All History writes one object with `format` (`"BatteryPulse history"`),
-`formatVersion` (1), `exportedAt`, `generator` (BatteryPulse and its version), `source` (what
-the history belongs to: `kind` `"mac"` and the macOS version as `osVersion`), `units` (the unit
-of every key that has one), then `samples` and `days`. Their keys are the CSV columns, without
-`localTime`. Every key is always present: a missing value is `null`, yes and no are `true` and
-`false`, and numbers always use a decimal point.
+`formatVersion` (1), `exportedAt`, `generator` (BatteryPulse and its version; `"bpulse"` from
+[`bpulse --export`](#history-export)), `source` (what the history belongs to: `kind` `"mac"`,
+`"iPhone"` or `"iPad"`; for a device `productType` such as `"iPhone18,2"` and `modelName` such
+as `"iPhone 17 Pro Max"`, both `null` for the Mac; and the system version as `osVersion`, for a
+device the one it had when last seen), `units` (the unit of every key that has one), then
+`samples` and `days`. Their keys are the CSV columns, without `localTime`. Every key is always
+present: a missing value is `null`, yes and no are `true` and `false`, and numbers always use a
+decimal point.
 
 **Compatibility.** Columns and keys are only ever added at the end. If a column is renamed or
 removed, or its meaning changes, `formatVersion` goes up and the release notes say so. Scripts
