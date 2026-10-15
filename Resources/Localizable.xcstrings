@@ -882,6 +882,17 @@
         }
       }
     },
+    "BatteryPulse records an iPhone or iPad every 5 minutes while it's connected by cable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse записывает данные iPhone или iPad каждые 5 минут, пока устройство подключено кабелем."
+          }
+        }
+      }
+    },
     "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes.": {
       "extractionState": "manual",
       "localizations": {
@@ -6100,6 +6111,17 @@
         }
       }
     },
+    "Show in History": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в истории"
+          }
+        }
+      }
+    },
     "Show in Inspector": {
       "extractionState": "manual",
       "localizations": {
@@ -6522,6 +6544,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Так будут выглядеть уведомления об аккумуляторе."
+          }
+        }
+      }
+    },
+    "This Mac": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac"
           }
         }
       }

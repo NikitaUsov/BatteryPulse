@@ -66,6 +66,8 @@ struct MainView: View {
     @Environment(\.motion) private var motion
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
+    /// Whose history the History page shows; kept while switching pages.
+    @State private var historySource: HistorySource = .mac
     private let formatter = BatteryFormatter.app
 
     /// The Devices section's iPhones and iPads: in Demo Mode only the simulated one, so
@@ -78,6 +80,16 @@ struct MainView: View {
     /// on the batteries.
     private var deviceRowIDs: [DeviceKey] {
         deviceEntries.map(\.id)
+    }
+
+    private var rememberedIDs: [DeviceKey] {
+        devices.remembered.map(\.id)
+    }
+
+    /// Show in History on a device page: History with that device's source.
+    private func showInHistory(_ key: DeviceKey) {
+        historySource = .device(key)
+        selection = .history
     }
 
     var body: some View {
@@ -116,9 +128,12 @@ struct MainView: View {
             // 0.15 s fade, no slide. The ZStack keeps the old and the new page on top of each
             // other while they fade.
             ZStack {
-                MainDetail(monitor: monitor, selection: selection)
-                    .id(selection)
-                    .transition(.opacity)
+                MainDetail(
+                    monitor: monitor, selection: selection, historySource: $historySource,
+                    showInHistory: showInHistory
+                )
+                .id(selection)
+                .transition(.opacity)
             }
             .animation(motion.quickFade, value: selection)
             .navigationTitle(navigationTitle)
@@ -161,6 +176,10 @@ struct MainView: View {
             default:
                 break
             }
+        }
+        // A forgotten device's history is gone: History goes back to this Mac.
+        .onChange(of: rememberedIDs) { _, ids in
+            if case .device(let key) = historySource, !ids.contains(key) { historySource = .mac }
         }
         // The demo tour switches pages by itself, but never to a hidden one. The page changes in
         // one transaction with the demo's data; the detail still fades through `quickFade` when
@@ -216,6 +235,8 @@ private struct DeviceRow: View {
 private struct MainDetail: View {
     let monitor: BatteryMonitor
     let selection: SidebarItem
+    @Binding var historySource: HistorySource
+    let showInHistory: @MainActor (DeviceKey) -> Void
 
     var body: some View {
         // History and the Devices section come from disk and other devices, so they show even
@@ -224,11 +245,11 @@ private struct MainDetail: View {
         case .demo:
             DemoView()
         case .history:
-            HistoryView()
+            HistoryView(source: $historySource)
         case .devicesIntro:
             DevicesIntroView()
         case .device(let key):
-            DevicePage(key: key)
+            DevicePage(key: key, showInHistory: showInHistory)
         case .overview, .power, .health, .developer:
             snapshotPage
         }
@@ -258,12 +279,13 @@ private struct MainDetail: View {
 /// A device's page, from the entry the Devices section shows for its key.
 private struct DevicePage: View {
     let key: DeviceKey
+    let showInHistory: @MainActor (DeviceKey) -> Void
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(DemoController.self) private var demo
 
     var body: some View {
         if let entry = AppDevices.shownEntries(devices, demo: demo).first(where: { $0.id == key }) {
-            DeviceView(entry: entry)
+            DeviceView(entry: entry, showInHistory: showInHistory)
         } else {
             DevicesIntroView()
         }

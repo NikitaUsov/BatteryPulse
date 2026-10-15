@@ -11,6 +11,8 @@ import SwiftUI
 /// or the battery themselves.
 struct DeviceView: View {
     let entry: IDeviceEntry
+    /// Opens History with this device as its source.
+    let showInHistory: @MainActor (DeviceKey) -> Void
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.motion) private var motion
     @State private var confirmsForgetting = false
@@ -69,6 +71,8 @@ struct DeviceView: View {
             ToolbarItem(placement: .primaryAction) {
                 // A Label, not Menu("…"): the catalog test finds the title in a Label.
                 Menu {
+                    Button("Show in History") { showInHistory(entry.id) }
+                        .disabled(isDemo || !entry.isRemembered)
                     Button("Forget This Device…") { confirmsForgetting = true }
                         .disabled(isDemo)
                 } label: {
