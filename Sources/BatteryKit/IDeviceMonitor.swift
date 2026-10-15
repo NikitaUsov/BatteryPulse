@@ -103,7 +103,6 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var unconfirmedMisses: Set<DeviceKey> = []
     @ObservationIgnored private var attachTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
-    @ObservationIgnored private var debounceSawTermination = false
     @ObservationIgnored private var debounceSawArrival = false
     @ObservationIgnored private var confirmTask: Task<Void, Never>?
     @ObservationIgnored private var scheduleTask: Task<Void, Never>?
@@ -629,14 +628,14 @@ public final class IDeviceMonitor {
         }
     }
 
-    /// Each USB event restarts the wait; a termination during the wait wins.
+    /// Each USB event restarts the wait. After a termination the list detaches a missing USB
+    /// device at once; after an arrival a list that finds no newly attached USB device is
+    /// confirmed, so a cable re-seated within one wait is read again once usbmuxd catches up.
     private func attachChanged(_ change: IDeviceAttachChange) {
         guard isEnabled else { return }
         switch change {
         case .arrived: debounceSawArrival = true
-        case .terminated:
-            debounceSawTermination = true
-            terminationPending = true
+        case .terminated: terminationPending = true
         }
         debounceTask?.cancel()
         let until = clock.now().addingTimeInterval(IDeviceReadPolicy.attachDebounce)
@@ -648,9 +647,8 @@ public final class IDeviceMonitor {
 
     private func debounceEnded() {
         debounceTask = nil
-        let afterArrival = debounceSawArrival && !debounceSawTermination
+        let afterArrival = debounceSawArrival
         debounceSawArrival = false
-        debounceSawTermination = false
         requestList(ListRequest(afterArrival: afterArrival))
     }
 

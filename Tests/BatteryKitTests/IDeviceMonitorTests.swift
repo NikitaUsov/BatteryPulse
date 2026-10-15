@@ -470,6 +470,25 @@ struct MonitorHarness {
         #expect(await h.count("list") == 2, "no confirming list")
     }
 
+    @Test func terminationAndArrivalTogetherAreConfirmed() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        // The cable is re-seated within one debounce, and usbmuxd hasn't registered the phone again.
+        await h.transport.detachAll()
+        await h.deliver(.terminated)
+        await h.advance(by: 0.5)
+        await h.send(.arrived)
+        #expect(await h.count("list") == 2)
+        #expect(h.monitor.entries.first?.connection == nil)
+        // usbmuxd catches up: the confirming list finds it newly attached and reads it.
+        await phoneAttached(h)
+        await h.advance(by: IDeviceReadPolicy.confirmDelay)
+        #expect(await h.transport.calls == ["list", "capture 801C", "list", "list", "capture 801C"])
+        #expect(h.monitor.entries.first?.connection == .usb)
+    }
+
     @Test func wifiDeviceIsListedButNotReadOrShownUntilChecked() async throws {
         let h = MonitorHarness(initialArrival: false)
         defer { h.cleanUp() }
