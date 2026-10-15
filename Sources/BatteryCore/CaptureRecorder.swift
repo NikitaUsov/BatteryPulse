@@ -122,9 +122,9 @@ public struct ChargeStateFingerprint: Equatable, Sendable {
 /// A capture is written at the start, just before and after every change of the charging state
 /// (``ChargeStateFingerprint``) and after ``defaultHeartbeat`` without one. Changes closer than
 /// `minimumSpacing` to the last capture are deferred, and a path found by name (not one of the
-/// watched paths) that has caused `flapLimit` captures no longer causes any, so a key that keeps
-/// flipping can't use up `maxCaptures` before the moment that matters. The timeline lists every
-/// reading and every change regardless.
+/// watched paths) that has caused `flapLimit` captures without a watched path changing no longer
+/// causes any, so a key that keeps flipping can't use up `maxCaptures` before the moment that
+/// matters. The timeline lists every reading and every change regardless.
 public struct CaptureRecorder: Sendable {
     public enum Reason: String, Sendable {
         case start, before, change, heartbeat
@@ -209,7 +209,7 @@ public struct CaptureRecorder: Sendable {
     private var previousWasWritten = false
     /// The reading of the last capture written for its own moment (not a `before`).
     private var lastWritten: Moment?
-    /// Captures caused per path found by name.
+    /// Captures caused per path found by name, counting only captures no watched path made due.
     private var capturesPerPath: [String: Int] = [:]
     /// Paths that no longer make a capture due.
     private var demotedPaths: Set<String> = []
@@ -265,8 +265,11 @@ public struct CaptureRecorder: Sendable {
         }
         let wroteCurrent = captures.contains { $0.reason != .before }
         if wroteCurrent { lastWritten = current }
-        if captures.contains(where: { $0.reason == .change }) {
-            for change in changesSinceWritten where !ChargeStateFingerprint.watchedPaths.contains(change.path) {
+        // A capture that a watched path made due would have been written anyway, so the paths found
+        // by name that changed with it (a plug-in changes the charger's reasons) don't count.
+        let isCausedByName = !changesSinceWritten.contains { ChargeStateFingerprint.watchedPaths.contains($0.path) }
+        if isCausedByName, captures.contains(where: { $0.reason == .change }) {
+            for change in changesSinceWritten {
                 capturesPerPath[change.path, default: 0] += 1
                 if capturesPerPath[change.path] == flapLimit {
                     demotedPaths.insert(change.path)

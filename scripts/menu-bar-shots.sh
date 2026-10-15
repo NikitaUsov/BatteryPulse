@@ -19,9 +19,9 @@
 # displays.txt (display metrics, once per folder), <tag>-state.txt (pmset -g batt) and
 # restore.txt (what the run found and puts back).
 #
-# When it ends, also after Control-C, it puts back BatteryPulse's menu bar settings, the
-# appearance and the wallpapers. The first run asks for Screen Recording (for Terminal: grant it
-# and run again) and for Automation of System Events (allow it).
+# When it ends, also after Control-C, it puts back BatteryPulse's menu bar settings, and the
+# appearance and the wallpapers once it has changed them. The first run asks for Screen
+# Recording (for Terminal: grant it and run again) and for Automation of System Events (allow it).
 set -euo pipefail
 
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
@@ -153,6 +153,9 @@ osascript -e 'set out to ""' \
 was_running=false
 app_running && was_running=true
 wallpaper_set=false
+# Set just before the first look: until then the appearance and wallpapers are left alone, since
+# setting them again turns off Auto appearance and can leave a dynamic wallpaper still.
+look_changed=false
 {
   echo "== $(date '+%Y-%m-%d %H:%M:%S') $tag"
   echo "BatteryPulse settings (key, type, value):"
@@ -164,7 +167,7 @@ wallpaper_set=false
 
 restore() {
   set +e
-  echo "Putting back the settings, appearance and wallpapers."
+  echo "Putting back BatteryPulse's settings."
   quit_app
   while IFS=$'\t' read -r key type value; do
     case "$type" in
@@ -175,6 +178,12 @@ restore() {
       *) defaults write "$BUNDLE_ID" "$key" -string "$value" ;;
     esac
   done < "$tmp/settings.tsv"
+  $was_running && open -g -b "$BUNDLE_ID"
+  if ! $look_changed; then
+    rm -rf "$tmp"
+    return
+  fi
+  echo "Putting back the appearance and wallpapers."
   if [ "$dark_mode" = true ] || [ "$dark_mode" = false ]; then
     osascript -e 'on run argv' \
       -e 'tell application "System Events" to tell appearance preferences to set dark mode to (item 1 of argv is "true")' \
@@ -197,7 +206,6 @@ restore() {
   if $wallpaper_set && [ "$index" -eq 0 ]; then
     echo "Couldn't read the wallpapers before the run; choose them in System Settings → Wallpaper."
   fi
-  $was_running && open -g -b "$BUNDLE_ID"
   if [ "$auto_appearance" = 1 ]; then
     echo "Set Appearance back to Auto in System Settings → Appearance."
   fi
@@ -218,6 +226,7 @@ for look in "${look_list[@]}"; do
     light-darkmode) dark=true wallpaper=light ;;
     dark-lightmode) dark=false wallpaper=dark ;;
   esac
+  look_changed=true
   if set_look "$dark" "$tmp/$wallpaper.png"; then
     wallpaper_set=true
   else
