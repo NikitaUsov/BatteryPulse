@@ -126,7 +126,7 @@ public enum IDeviceRoster {
     public static func connection(of session: IDeviceSession, now: Date) -> IDeviceConnection? {
         if session.connections.contains(.usb) { return .usb }
         guard let listedAt = session.listedAt,
-            now.timeIntervalSince(listedAt) <= IDeviceReadPolicy.wifiPresenceLifetime
+            now.timeIntervalSince(listedAt) < IDeviceReadPolicy.wifiPresenceLifetime
         else { return nil }
         if session.connections.contains(.wifi) { return .wifi }
         return session.connections.isEmpty ? nil : .unknown
