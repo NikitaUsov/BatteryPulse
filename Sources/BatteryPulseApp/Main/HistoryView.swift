@@ -26,6 +26,8 @@ struct HistoryView: View {
     @State private var hasLoaded = false
     @State private var selectedTime: Date?
     @State private var end = Date()
+    /// The Export menu's pick while its file is prepared.
+    @State private var exportRequest: HistoryExportRequest?
     @Environment(\.motion) private var motion
     private let formatter = BatteryFormatter.app
 
@@ -67,7 +69,14 @@ struct HistoryView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
+            // Unrelated to the window's actions: its own glass capsule. It exports everything
+            // History keeps, whatever the period.
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            ToolbarItem(placement: .primaryAction) {
+                HistoryExportMenu(request: $exportRequest, isEnabled: hasLoaded && !(points.isEmpty && days.isEmpty))
+            }
         }
+        .modifier(HistoryExporter(request: $exportRequest, target: exportTarget))
         .task(id: ReloadKey(period: period, isVisible: motion.isVisible)) {
             // Reload as new samples arrive, but not while the window can't be seen; it reloads
             // as soon as it can again.
@@ -107,6 +116,11 @@ struct HistoryView: View {
     }
 
     // MARK: - Data
+
+    /// This Mac's history. Demo Mode doesn't change it: History shows what was recorded.
+    private var exportTarget: HistoryExportTarget? {
+        HistoryExportTarget(store: AppHistory.store, source: .mac(ProcessInfo.processInfo.operatingSystemVersion))
+    }
 
     private func load() async {
         let period = self.period

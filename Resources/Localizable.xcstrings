@@ -313,6 +313,18 @@
         }
       }
     },
+    "All History…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the minute readings and the daily health as JSON",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вся история…"
+          }
+        }
+      }
+    },
     "Allow BatteryPulse in Login Items to finish.": {
       "extractionState": "manual",
       "localizations": {
@@ -540,6 +552,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние аккумулятора"
+          }
+        }
+      }
+    },
+    "Battery Health by Day…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the daily battery health as CSV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Состояние аккумулятора по дням…"
           }
         }
       }
@@ -1683,6 +1707,18 @@
         }
       }
     },
+    "Couldn't Export History": {
+      "extractionState": "manual",
+      "comment": "Alert title when the history file can't be read or saved",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось экспортировать историю"
+          }
+        }
+      }
+    },
     "Count of port-controller interrupts of one event type (plug, PD message, status change).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2224,6 +2260,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспериментальная функция: карточки отображаются в стиле Liquid Glass. Расходует больше энергии, текст может читаться хуже."
+          }
+        }
+      }
+    },
+    "Export": {
+      "extractionState": "manual",
+      "comment": "History toolbar: the menu that saves the recorded history as a file",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспортировать"
           }
         }
       }
@@ -5195,6 +5243,18 @@
         }
       }
     },
+    "Readings by Minute…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the minute readings as CSV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поминутные показания…"
+          }
+        }
+      }
+    },
     "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5549,6 +5609,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранить необработанные данные для отчёта об ошибке. Серийные номера скрыты."
+          }
+        }
+      }
+    },
+    "Save the recorded history as a CSV or JSON file": {
+      "extractionState": "manual",
+      "comment": "Tooltip of History's Export menu",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранить записанную историю в файл CSV или JSON"
           }
         }
       }
