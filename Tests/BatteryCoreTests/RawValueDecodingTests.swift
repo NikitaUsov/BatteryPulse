@@ -78,7 +78,7 @@ import Testing
     }
 
     /// Every glossary entry with a display kind must decode the real M5 values it describes.
-    @Test(arguments: [Fixture.m5OnBattery, .m5Charging, .m5OnBatterySMC])
+    @Test(arguments: [Fixture.m5OnBattery, .m5Charging, .m5OnBatterySMC, .m5PluggedIn10s, .m5Unplugged])
     func glossaryKindsDecodeRealValues(fixture: Fixture) throws {
         for row in RawSection.sections(for: try fixture.reading().rawCapture).flatMap(\.rows) {
             guard let info = row.info else { continue }
@@ -108,5 +108,20 @@ import Testing
     ])
     func canonicalKeys(captureKey: String, path: String, expected: String) {
         #expect(RawKeyGlossary.canonicalKey(captureKey: captureKey, path: path) == expected)
+    }
+
+    /// Only `[digits]` is an array index; other brackets stay.
+    @Test(arguments: [
+        ("UsbHvcMenu[12].MaxVoltage", "UsbHvcMenu.MaxVoltage"),
+        ("A[0][1]", "A"),
+        ("[3]", ""),
+        ("Key[]", "Key[]"),
+        ("Key[x1].Value", "Key[x1].Value"),
+        ("[[1]]", "[]"),
+        ("Open[2", "Open[2"),
+        ("Plain", "Plain"),
+    ])
+    func arrayIndicesAreRemoved(path: String, expected: String) {
+        #expect(RawKeyGlossary.removingArrayIndices(path) == expected)
     }
 }

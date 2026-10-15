@@ -15,12 +15,16 @@ through the App Store. Reference hardware: MacBook Air M5.
   `RegistryChildren` (the pack, banks and charger entries below AppleSmartBattery), `SMC` (wire
   format and battery keys of the read-only SMC client), metrics, `BatteryReport` text output,
   `RawValueDecoding`/`RawKeyGlossary` (Developer table), `History`/`HistoryStore`,
-  `BatteryAlerts`, `Updates`, `DemoBattery` (Demo Mode scenes that expand into M5-style raw
+  `BatteryAlerts`, `Updates`, `UpdateInstall` (install policy, integrity, errors) and
+  `ReleaseSigning` (the Ed25519 public key), `MenuBarContent`/`BatteryIcon` (menu bar items and
+  icon geometry), `IDevice*` (iPhone/iPad: device list, diagnostics relay capture, battery
+  parser, report), `DemoBattery` (Demo Mode scenes that expand into M5-style raw
   dictionaries). Must stay free of Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
   children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
   `BatteryMonitor` (@Observable, event-driven + optional polling; `setOverride` swaps in the
-  demo).
+  demo), `UpdateSignatureVerifier` (CryptoKit), `IDeviceTransport` and `MobileDevice/` (the
+  private MobileDevice framework through `dlopen`, never linked; no pairing calls).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
   keys, Dock icon policy, localized phrases, `DemoController`), `Main/` (sidebar window:
   Overview, Power, History, Health, and the Developer section with Raw Data and Demo Mode; the
@@ -34,7 +38,11 @@ through the App Store. Reference hardware: MacBook Air M5.
   `-e _NSExtensionMain`, wrapped into `BatteryPulse.app/Contents/PlugIns/*.appex` and signed
   with only the app-sandbox entitlement by `scripts/build-app.sh`.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
-  renders a capture (works on Linux); `--smc` lists the SMC's battery keys.
+  renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
+  `--device <n> [--json | --raw]` read a connected iPhone or iPad.
+- Releases: `release.yml` signs the DMG with `scripts/sign-update.swift` and the
+  `UPDATE_SIGNING_KEY` secret of the `release` environment (`BatteryPulse.dmg.sig`); the app's `Updates/UpdateInstaller`
+  refuses an update without a valid signature. Never ask for or handle the private key.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 

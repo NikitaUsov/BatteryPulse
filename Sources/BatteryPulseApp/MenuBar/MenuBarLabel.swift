@@ -4,54 +4,62 @@ import BatteryCore
 import BatteryKit
 import SwiftUI
 
-/// The status item: a battery symbol plus percentage and/or power, as configured.
+/// The status item: any combination of the battery icon, the charge, the battery power and the
+/// battery temperature, in that order (``MenuBarContent``).
 struct MenuBarLabel: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
-    @AppStorage(AppSettings.menuBarStyleKey) private var style: MenuBarStyle = .percent
-    @AppStorage(AppSettings.menuBarIconKey) private var iconStyle: MenuBarIconStyle = .standard
+    // The defaults of MenuBarContent: the icon and the charge.
+    @AppStorage(AppSettings.menuBarShowsIconKey) private var showsIcon = true
+    @AppStorage(AppSettings.menuBarShowsChargeKey) private var showsCharge = true
+    @AppStorage(AppSettings.menuBarShowsPowerKey) private var showsPower = false
+    @AppStorage(AppSettings.menuBarShowsTemperatureKey) private var showsTemperature = false
+    @AppStorage(AppSettings.menuBarIconStyleKey) private var iconStyle = MenuBarIconStyle.default
     @Environment(\.openWindow) private var openWindow
 
+    private var content: MenuBarContent {
+        MenuBarContent(
+            showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
+    }
+
     var body: some View {
-        let title = BatteryPresentation.menuBarTitle(for: monitor.snapshot, style: style, formatter: .app)
+        let snapshot = monitor.snapshot
+        let title = content.title(for: snapshot, formatter: .app)
         Group {
             if demo.isActive {
                 // The values next to it are simulated.
                 Image(systemName: "play.rectangle.on.rectangle")
                     .accessibilityLabel("Demo Mode")
             }
-            if BatteryPresentation.showsIcon(iconStyle, title: title) {
-                icon(BatteryPresentation.symbolName(for: monitor.snapshot))
+            if content.showsIcon(title: title) {
+                icon(for: snapshot)
             }
             if !title.isEmpty {
                 Text(title)
             }
         }
         .onAppear { WindowOpener.openWindow = openWindow }
-        .onChange(of: style, initial: true) { _, style in
+        .onChange(of: content.liveRefreshInterval, initial: true) { _, interval in
             // Power changes without OS notifications, so poll gently while it is shown.
-            monitor.setLiveRefreshInterval(style.showsPower ? .seconds(10) : nil, for: "menuBar")
+            monitor.setLiveRefreshInterval(interval, for: "menuBar")
         }
         .onDisappear { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
     }
 
+    /// A drawn battery rendered to an image, since the status item doesn't reliably draw shapes;
+    /// the SF Symbol for that style, or if rendering fails.
     @ViewBuilder
-    private func icon(_ symbolName: String) -> some View {
-        if iconStyle == .large, let image = Self.largeSymbol(symbolName) {
+    private func icon(for snapshot: BatterySnapshot?) -> some View {
+        let state = BatteryIconState(snapshot: snapshot)
+        let description = Phrases.batteryIcon(snapshot, .app)
+        if let image = MenuBarIconRenderer.image(style: iconStyle, state: state) {
             Image(nsImage: image)
+                .renderingMode(state.isMonochrome ? .template : .original)
+                .accessibilityLabel(description)
         } else {
-            Image(systemName: symbolName)
+            Image(systemName: BatteryPresentation.symbolName(for: snapshot))
+                .accessibilityLabel(description)
         }
-    }
-
-    /// The menu bar draws `Image(systemName:)` at a fixed size, so the large variant is
-    /// pre-rendered at a bigger point size. Template images keep the menu bar's tinting.
-    private static func largeSymbol(_ name: String) -> NSImage? {
-        let configuration = NSImage.SymbolConfiguration(pointSize: 17, weight: .regular)
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
-            .withSymbolConfiguration(configuration)
-        image?.isTemplate = true
-        return image
     }
 }
 #endif

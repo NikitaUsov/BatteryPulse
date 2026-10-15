@@ -10,14 +10,25 @@ import SwiftUI
 enum AppSettings {
     static let showInMenuBarKey = "showInMenuBar"
     static let showDockIconKey = "showDockIcon"
-    static let menuBarStyleKey = "menuBarStyle"
-    static let menuBarIconKey = "menuBarIcon"
+    static let menuBarShowsIconKey = "menuBarShowsIcon"
+    static let menuBarShowsChargeKey = "menuBarShowsCharge"
+    static let menuBarShowsPowerKey = "menuBarShowsPower"
+    static let menuBarShowsTemperatureKey = "menuBarShowsTemperature"
+    static let menuBarIconStyleKey = "menuBarIconStyle"
+    /// The menu bar's single content choice and its icon choice before 0.4; ``migrate()`` turns
+    /// them into the toggles above.
+    static let legacyMenuBarStyleKey = "menuBarStyle"
+    static let legacyMenuBarIconKey = "menuBarIcon"
     static let showDeveloperKey = "showDeveloperSection"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
-    static let checkForUpdatesKey = "checkForUpdates"
+    /// The on/off switch for update checks before 0.4; ``updateFrequencyKey`` replaced it.
+    static let legacyCheckForUpdatesKey = "checkForUpdates"
+    static let updateFrequencyKey = "updateFrequency"
     static let lastUpdateCheckKey = "lastUpdateCheck"
     static let skippedVersionKey = "skippedVersion"
+    /// Where an in-app update put the previous version, to delete at the next launch.
+    static let updateLeftoverKey = "updateLeftover"
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
     static let prefersCompactWindowKey = "prefersCompactWindow"
@@ -57,9 +68,38 @@ enum AppSettings {
         UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
     }
 
-    /// On by default; the welcome window and Settings → General show the switch.
-    static var checksForUpdates: Bool {
-        UserDefaults.standard.object(forKey: checkForUpdatesKey) as? Bool ?? true
+    /// Daily by default; Settings → General shows the choice.
+    static var updateFrequency: UpdateFrequency {
+        let defaults = UserDefaults.standard
+        return .stored(
+            defaults.string(forKey: updateFrequencyKey),
+            legacyEnabled: defaults.object(forKey: legacyCheckForUpdatesKey) as? Bool)
+    }
+
+    /// Settings renamed since an earlier version keep the user's choice.
+    static func migrate() {
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: updateFrequencyKey) == nil,
+            defaults.object(forKey: legacyCheckForUpdatesKey) != nil
+        {
+            defaults.set(updateFrequency.rawValue, forKey: updateFrequencyKey)
+            defaults.removeObject(forKey: legacyCheckForUpdatesKey)
+        }
+        let menuBarKeys = [
+            menuBarShowsIconKey, menuBarShowsChargeKey, menuBarShowsPowerKey, menuBarShowsTemperatureKey,
+        ]
+        if menuBarKeys.allSatisfy({ defaults.object(forKey: $0) == nil }),
+            let content = MenuBarContent.migrated(
+                legacyStyle: defaults.string(forKey: legacyMenuBarStyleKey),
+                legacyIcon: defaults.string(forKey: legacyMenuBarIconKey))
+        {
+            defaults.set(content.showsIcon, forKey: menuBarShowsIconKey)
+            defaults.set(content.showsCharge, forKey: menuBarShowsChargeKey)
+            defaults.set(content.showsPower, forKey: menuBarShowsPowerKey)
+            defaults.set(content.showsTemperature, forKey: menuBarShowsTemperatureKey)
+        }
+        defaults.removeObject(forKey: legacyMenuBarStyleKey)
+        defaults.removeObject(forKey: legacyMenuBarIconKey)
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.
@@ -90,10 +130,21 @@ enum WhatsNewPolicy {
 
 enum AppLinks {
     // swift-format-ignore: NeverForceUnwrap
+    static let project = URL(string: "https://github.com/NikitaUsov/BatteryPulse")!
+    // swift-format-ignore: NeverForceUnwrap
+    static let releases = URL(string: "https://github.com/NikitaUsov/BatteryPulse/releases")!
+    // swift-format-ignore: NeverForceUnwrap
+    static let license = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/LICENSE")!
+    // swift-format-ignore: NeverForceUnwrap
     static let help = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")!
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+    /// System Settings → Menu Bar, where the battery item macOS shows is turned off. Since macOS 26
+    /// this pane replaces Control Center but keeps its identifier.
+    // swift-format-ignore: NeverForceUnwrap
+    static let menuBarSettings = URL(
+        string: "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension")!
     /// System Settings → Notifications.
     // swift-format-ignore: NeverForceUnwrap
     static let notificationSettings = URL(

@@ -1,25 +1,5 @@
 import Foundation
 
-/// What the menu bar shows next to the battery icon.
-public enum MenuBarStyle: String, Sendable, CaseIterable, Codable {
-    case percent
-    case power
-    case percentAndPower
-    case iconOnly
-
-    /// Power changes continuously, so these styles need periodic refreshes.
-    public var showsPower: Bool {
-        self == .power || self == .percentAndPower
-    }
-}
-
-/// How the battery symbol appears in the menu bar.
-public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
-    case standard
-    case large
-    case hidden
-}
-
 /// Display decisions that don't depend on the UI language. Wording lives in the app's String
 /// Catalog; numbers and units go through ``BatteryFormatter``.
 public enum BatteryPresentation {
@@ -34,29 +14,6 @@ public enum BatteryPresentation {
         case 13..<38: return "battery.25percent"
         default: return "battery.0percent"
         }
-    }
-
-    /// The icon can only be hidden when there is text to show instead; an empty status item
-    /// would leave nothing to click.
-    public static func showsIcon(_ icon: MenuBarIconStyle, title: String) -> Bool {
-        icon != .hidden || title.isEmpty
-    }
-
-    /// "70% · −7.5 W", localized through `formatter`.
-    public static func menuBarTitle(
-        for s: BatterySnapshot?, style: MenuBarStyle, formatter: BatteryFormatter
-    ) -> String {
-        guard let s else { return "" }
-        let percent = s.chargePercent.map { formatter.percent($0) }
-        let power = s.batteryPowerWatts.map { formatter.watts($0, signed: true) }
-        let parts: [String?] =
-            switch style {
-            case .percent: [percent]
-            case .power: [power]
-            case .percentAndPower: [percent, power]
-            case .iconOnly: []
-            }
-        return parts.compactMap { $0 }.joined(separator: " · ")
     }
 
     /// Level colors used by the app: green above 20 % or while charging, then orange, then red.

@@ -21,6 +21,7 @@ struct BatteryPulseApp: App {
 
     init() {
         UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
+        AppSettings.migrate()
         let monitor = BatteryMonitor(provider: MacBatteryProvider())
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
@@ -35,6 +36,8 @@ struct BatteryPulseApp: App {
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar
+        // The version an in-app update replaced, and its download.
+        UpdateInstaller.cleanUpAfterUpdate()
         let updater = UpdateChecker()
         self.updater = updater
         // A fresh install has no last-seen version, so What's New only follows a real update, even
@@ -53,7 +56,8 @@ struct BatteryPulseApp: App {
         .defaultSize(width: 860, height: 640)
         .defaultLaunchBehavior(showsMainWindow && !AppSettings.prefersCompactWindow ? .presented : .suppressed)
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(replacing: .appInfo) {
+                Button("About BatteryPulse") { WindowOpener.show(WindowID.about) }
                 Button("Check for Updates…") { updater.checkNow() }
             }
             CommandGroup(replacing: .help) {
@@ -97,6 +101,14 @@ struct BatteryPulseApp: App {
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
 
+        Window("About BatteryPulse", id: WindowID.about) {
+            AboutView()
+                .environment(updater)
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
+        .restorationBehavior(.disabled)
+
         Window("What's New", id: WindowID.whatsNew) {
             WhatsNewView()
         }
@@ -119,6 +131,7 @@ enum WindowID {
     static let settings = "settings"
     static let update = "update"
     static let whatsNew = "whatsNew"
+    static let about = "about"
 }
 
 @MainActor
@@ -154,9 +167,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// Saves the day's battery summary, which is otherwise written at most hourly, before quitting.
+    /// Lets an update being installed finish, and saves the day's battery summary, which is
+    /// otherwise written at most hourly, before quitting.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
+            await UpdateInstaller.current?.finishBeforeQuitting()
             try? await AppHistory.store.flush()
             NSApp.reply(toApplicationShouldTerminate: true)
         }

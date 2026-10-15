@@ -57,6 +57,14 @@ struct PopoverView: View {
                 }
                 Spacer()
                 Button {
+                    WindowOpener.openWindow = openWindow
+                    WindowOpener.show(WindowID.about)
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .help("About BatteryPulse")
+                .accessibilityLabel("About BatteryPulse")
+                Button {
                     DockIconPolicy.prepareToShowWindow()
                     openSettings()
                     NSApp.activate()
@@ -116,6 +124,9 @@ private struct PopoverSummary: View {
                 }
                 if let cycles = snapshot.cycleCount {
                     row("Cycle count", cycles.formatted())
+                }
+                if let temperature = snapshot.temperatureCelsius {
+                    row("Temperature", formatter.celsius(temperature))
                 }
                 if let adapter = snapshot.adapter, let watts = adapter.watts {
                     row("Power adapter", formatter.watts(Double(watts), fractionDigits: 0))

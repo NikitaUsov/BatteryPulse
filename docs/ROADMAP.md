@@ -128,22 +128,94 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   readable without privileges, the widget, notification permission for the ad-hoc app
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
-- [ ] Verify on the M5: the widget after an update, and a capture at the macOS Charge Limit stop
-  point
+- [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
+- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point
+- [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
+  macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
 - [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
   first launch needs no Open Anyway
 
-### Stage 1.2: Updates (0.4)
+### Stage 1.2: Updates and About (0.4)
 
-- [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
+- [x] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
+- [x] Release notes in the Software Update window: join the lines of a wrapped paragraph or
+  list item, which now break mid-sentence (seen with 0.3.1's notes)
 - [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
-  relaunch, instead of sending the user to the browser. A download made by the app itself may
-  skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
-  permission for an ad-hoc signed app
+  relaunch, instead of sending the user to the browser. Built in 0.4.0; the first real test is
+  0.4.0 → 0.4.1 on the M5. Researched (October 2026, with an adversarial check):
+  - A file a non-sandboxed app downloads with URLSession isn't quarantined (no
+    `LSFileQuarantineEnabled` in our Info.plist), and neither is what it copies out of that
+    DMG. Gatekeeper only asks for Open Anyway on quarantined apps: an unquarantined ad-hoc app
+    opened without a prompt in tests on macOS 15 and 26. macOS 27 is untested; check on the M5
+    and run `xattr -l` on the download.
+  - App Management: an app without a Team ID replacing its own bundle by rename didn't prompt
+    on macOS 26.2 in a public probe; undocumented, so on any error fall back to the browser.
+  - Integrity: GitHub computes a SHA-256 `digest` for every release asset (0.3.1's matches the
+    DMG); it catches a broken download but not a swapped one. An Ed25519 signature from CryptoKit,
+    made in CI with a secret key and checked against a public key built into the app, proves the
+    update is ours. Also check the bundle ID, the version and `codesign --verify --strict`.
+  - Mechanics: mount with `hdiutil attach -nobrowse -readonly`, copy next to the app on the same
+    volume, then a small detached step waits for the app to quit, swaps the two bundles
+    atomically (`renamex_np` with `RENAME_SWAP`), deletes the old copy, registers the new one
+    with Launch Services and relaunches it. Skip when the app runs translocated or outside a
+    writable folder.
+  - Ad-hoc identity changes with every build, so permissions tied to it (not notifications,
+    which follow the bundle ID) would be asked for again; Developer ID fixes that for good.
+
+  As built: Install and Relaunch downloads the DMG with URLSession into
+  `~/Library/Caches/<bundle ID>/Updates` and checks GitHub's SHA-256 digest when the release has
+  one and, always, an Ed25519 signature of the DMG (`BatteryPulse.dmg.sig`, made by
+  `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret of
+  the `release` environment, which needs the maintainer's approval for each run,
+  checked against the key in `ReleaseSigning.swift`). It mounts the DMG at a private mount
+  point, copies the app into a temporary folder on the app's volume, clears quarantine, and
+  checks the bundle ID, that the version is exactly the release's and newer than the running
+  one (so a signed old build can't be installed over a newer one), and a strict code-signature
+  validation. Then it swaps the bundles with `renamex_np(RENAME_SWAP)`, registers the new one
+  with `LSRegisterURL` and relaunches through `/bin/sh`, which waits for the old process to end
+  and runs `open -n`; the old copy is deleted at the next launch. Translocated copies, folders
+  the user can't write, development builds, releases without a signature and any error fall
+  back to Download in the browser. There is one built-in key and no rotation yet: a lost key
+  means one manual DMG install with the new key's build. Follow-ups: re-register the login item
+  and reload the widget timelines on the first launch after an update.
+- [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
+  removed them; the gallery still offered the widget, and it worked once added again. The
+  in-place swap above keeps the path, registers the new copy and raises
+  `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
+  keeps them or only a stable Developer ID signature does, and until then tell the user to add
+  them again
+- [x] An About BatteryPulse window: version and build, license, links to the project, the User
+  Guide and the release notes, and Check for Updates; from the app menu, the menu bar
+  popover and Settings
+- [x] The first half minute after plugging in. A timeline from the M5 Air (`pmset` and
+  `ioreg` every 2 s): macOS itself reports "AC attached; not charging" for 29 s, and the
+  registry keeps the last discharge current (−661 mA) until then. Captures taken 10–40 s after
+  plugging in show the SMC's `B0AC` already at +1.9 A, and just after unplugging the registry
+  still reads +250 mA while `B0AC` reads −562 mA. So current and voltage now come live from the
+  SMC, "not charging" becomes "charging" as soon as it measures a charge current, and the
+  monitor reads again 3–60 s after the adapter is plugged in or out
+
+### Stage 1.3: Menu bar icon styles (0.4)
+
+- [x] Choose what the menu bar shows, in any combination: the battery icon, the charge, the
+  battery power and the battery temperature; the popover shows the temperature too
+
+- [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
+  (turned off in System Settings → Menu Bar → Battery; BatteryPulse can't hide it itself,
+  so Settings explains this and links there). Built in 0.4.0, to verify on the M5: Symbol (the
+  SF Symbol, as before), Modern (like macOS 27: a capsule without an outline, the empty part
+  translucent), Classic (outlined), Percentage Inside (like macOS 26) and Ring; the ring has
+  only the state colors, no color or monochrome choice. Sizes are in `BatteryIconLayout`
+- [ ] Draw the battery to the exact level with SwiftUI shapes, not the five steps of the SF
+  Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
+  charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
+  to verify on the M5
+- [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
+  bar's height on displays with a notch
 
 ### Stage 2: iOS MVP
 
@@ -166,8 +238,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
   Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in
   nanojoules without root on macOS 26, through private but exported calls that shipping
-  software already uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers only the user's own
-  processes and only the CPU. Nobody has shown the coalition calls working without root on
+  software already uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers
+  only the user's own processes and only the CPU. Nobody has shown the coalition calls working without root on
   macOS 27 yet, so a one-day spike on the M5 comes first. Show watts and Wh with an
   "unattributed" remainder (display, memory, radios, idle); history only from when
   BatteryPulse runs
@@ -186,12 +258,25 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   cycles, design and full-charge capacity, temperature. Researched: load Apple's private
   MobileDevice framework with `dlopen` (no entitlements; the app isn't sandboxed), list devices
   with `AMDeviceNotificationSubscribe`, and ask the `com.apple.mobile.diagnostics_relay` service
-  for the device's `AppleSmartBattery` registry entry, the same data the Mac has. This is known
-  to work on iOS 17 to iPadOS 27. Rely on the trust the user already gave in Finder; no pairing
+  for the device's `AppleSmartBattery` registry entry, the same data the Mac has. Public
+  captures cover iPhones on iOS 26.6 and iPads on iPadOS 17.7 and 27.0.1; iPhones on iOS 27
+  still need checking. Rely on the trust the user already gave in Finder; no pairing
   of our own in the first version, and no promise that health matches iOS Settings until checked
   on a real iPhone. Keep the transport behind a protocol so the usbmuxd/lockdown protocol can
   replace the framework if Apple breaks it. Start with half a day on the Mac to confirm the
   calls and the iOS 27 keys.
+  - [x] Spike in `bpulse` (0.4.0, preview): `--devices` and `--device <n> [--json | --raw]`.
+    MobileDevice is loaded with `dlopen` from `/Library/Apple` first, then `/System`, and
+    nothing is linked. Devices come from the notifications plus `AMDCreateDeviceList`; every
+    call runs on one serial queue while subscribed. No pairing calls. The relay is asked for
+    `AppleSmartBattery` (`IOPMPowerSource` as a fallback), then `AppleSmartBatteryPack`,
+    `AppleSmartBatteryBank` and `AppleChargerData`, then Goodbye, with 5 s socket timeouts
+    and 30/60 s deadlines. The transport sits behind `IDeviceTransport`/`IDeviceLink`. The
+    parser is tested with synthetic data until real captures exist
+  - [ ] Captures from an iPhone 17 Pro Max and an iPad (9th generation) on 27.0.1 as fixtures;
+    choose the health formula (nominal or full-charge ÷ design) against Settings → Battery →
+    Battery Health
+  - [ ] The device in the app's UI
 - [ ] Remember each device and keep its history next to the Mac's
 
 ### Stage 6: Later (optional)
@@ -212,7 +297,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
   prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
   notifications), with `pmset -g accps -xml` as a fallback. Seen working for Magic Keyboard and
-  Mouse, a Logitech BLE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
+  Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
   (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
   Bluetooth permission, which ad-hoc signing loses on every update.
 - [ ] **CSV/JSON export** of history: public APIs only (`fileExporter`), about two days,
@@ -225,9 +310,9 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   allows. Below 80 %, forced discharge and the MagSafe LED need a root helper and are disputed
   on macOS 27: not now. Macs on the same firmware with macOS 15.8 have no built-in limit, so no
   charge control at all there.
-- [ ] **Homebrew.** The official homebrew/cask needs notarization and some popularity. A personal
-  tap (`brew install --cask nikitausov/tap/batterypulse`) works today, but every install and
-  upgrade still needs Open Anyway. Worth it after notarization.
+- [ ] **A package manager.** The main macOS package manager's official catalog needs
+  notarization and some popularity. A personal catalog of our own works today, but every install
+  and upgrade still needs Open Anyway. Worth it after notarization.
 
 ## Releases
 
@@ -237,9 +322,11 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 
-Next: **0.4.0** brings the battery of a connected iPhone or iPad (Stage 5), a choice of how
-often to check for updates, and installing updates from the app (Stage 1.2). Everything else
-waits for later versions.
+Next: **0.4.0** brings a choice of how often to check for updates, installing updates from
+the app, an About window and fixes from the 0.3.1 update (Stage 1.2), menu bar content and
+icon styles that can stand in for the system battery item (Stage 1.3), and a first
+command-line preview of a connected iPhone or iPad's battery (Stage 5). Everything else waits
+for later versions.
 
 ## Development environment
 

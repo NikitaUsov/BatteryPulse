@@ -12,6 +12,10 @@ struct DeveloperView: View {
     @State private var filter = ""
     @State private var selection: Set<RawRow.ID> = []
     @State private var showsInspector = false
+    /// The table for the current reading. Built off the main actor when the reading changes, not
+    /// on every body evaluation: showing the inspector or typing in the filter re-evaluates the
+    /// body, and the main window reads the battery every 2 s.
+    @State private var allSections: [RawSection] = []
 
     var body: some View {
         let sections = filteredSections
@@ -55,6 +59,20 @@ struct DeveloperView: View {
                 }
             }
             .disabled(monitor.reading == nil)
+            .task(id: monitor.reading) { await rebuild() }
+    }
+
+    private func rebuild() async {
+        guard let reading = monitor.reading else {
+            allSections = []
+            return
+        }
+        let sections = await Task.detached(priority: .userInitiated) {
+            RawSection.sections(for: reading.redactedRawCapture)
+        }.value
+        // Identical readings leave the table alone.
+        guard !Task.isCancelled, sections != allSections else { return }
+        allSections = sections
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
@@ -126,10 +144,6 @@ struct DeveloperView: View {
         allSections.flatMap { section in
             section.rows.filter { selection.contains($0.id) }.map { (row: $0, source: section.title) }
         }
-    }
-
-    private var allSections: [RawSection] {
-        monitor.reading.map { RawSection.sections(for: $0.redactedRawCapture) } ?? []
     }
 
     private var filteredSections: [RawSection] {

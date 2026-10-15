@@ -29,6 +29,14 @@ public final class BatteryMonitor {
     @ObservationIgnored private var observation: BatteryObservation?
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
+    @ObservationIgnored private var followUpTask: Task<Void, Never>?
+
+    /// When extra reads follow the adapter being plugged in or out, counted from that moment.
+    /// The OS posts one notification, but its own state and the registry take up to a minute to
+    /// catch up, while the SMC shows the new current within seconds.
+    @ObservationIgnored var powerChangeFollowUps: [Duration] = [
+        .seconds(3), .seconds(8), .seconds(15), .seconds(30), .seconds(60),
+    ]
 
     public init(provider: any BatteryProvider) {
         self.provider = provider
@@ -63,6 +71,8 @@ public final class BatteryMonitor {
         observation = nil
         liveRefreshTask?.cancel()
         liveRefreshTask = nil
+        followUpTask?.cancel()
+        followUpTask = nil
     }
 
     /// Requests polling at `interval` on behalf of `client` (e.g. "popover"); `nil` withdraws the
@@ -81,9 +91,27 @@ public final class BatteryMonitor {
 
     public func refresh() {
         let new = activeProvider.read()
+        let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) { hasBattery = new != nil }
         if !Self.isSameReading(new, reading) { reading = new }
         if !Self.isSameState(new?.snapshot, snapshot) { snapshot = new?.snapshot }
+        if let wasConnected, let isConnected = new?.snapshot.isExternalPowerConnected, isConnected != wasConnected {
+            scheduleFollowUps()
+        }
+    }
+
+    private func scheduleFollowUps() {
+        followUpTask?.cancel()
+        let delays = powerChangeFollowUps
+        followUpTask = Task { [weak self] in
+            var elapsed = Duration.zero
+            for delay in delays {
+                try? await Task.sleep(for: delay - elapsed)
+                elapsed = delay
+                guard !Task.isCancelled, let self, self.isRunning else { return }
+                self.refresh()
+            }
+        }
     }
 
     static func isSameReading(_ lhs: BatteryReading?, _ rhs: BatteryReading?) -> Bool {

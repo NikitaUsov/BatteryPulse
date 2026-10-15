@@ -281,9 +281,10 @@ public enum SMCBattery {
     public static let gaugeTemperatureKey: SMCFourCC = "B0AT"
     static let plausibleTemperature: ClosedRange<Double> = -20...85
 
-    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. The cell
-    /// voltages and the gauge temperature feed the snapshot when the IORegistry lacks them. The
-    /// pack voltage (`B0AV`), current (`B0AC`) and the area sensors are shown in Raw Data.
+    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. The pack
+    /// voltage (`B0AV`) and current (`B0AC`) are the live electrical readings; the cell voltages
+    /// and the gauge temperature feed the snapshot when the IORegistry lacks them. The area
+    /// sensors are shown in Raw Data.
     public static let keys: [SMCFourCC] =
         [cellCountKey, "B0AV", "B0AC", gaugeTemperatureKey] + cellVoltageKeys + floatCellVoltageKeys
         + temperatureKeys
@@ -325,6 +326,32 @@ public enum SMCBattery {
     static func celsius(decikelvin: Double) -> Double? {
         let celsius = ((decikelvin / 10 - 273.15) * 100).rounded() / 100
         return plausibleTemperature.contains(celsius) ? celsius : nil
+    }
+
+    /// The pack voltage (`B0AV`, mV) and current (`B0AC`, mA, positive while charging) as the SMC
+    /// reads them now. The IORegistry copy can be a minute old: on a MacBook Air M5 it still
+    /// showed −679 mA 40 s after the adapter was plugged in, while `B0AC` read +1898 mA after 10 s.
+    public static func liveElectrical(in capture: PropertyDictionary) -> (voltageMV: Int, currentMA: Int)? {
+        let values = Dictionary(uniqueKeysWithValues: Self.values(in: capture).map { ($0.key, $0) })
+        guard let voltage = values["B0AV"].flatMap({ plausibleInteger($0, in: plausiblePackVoltage) }),
+            let current = values["B0AC"].flatMap({ plausibleInteger($0, in: plausibleCurrent) })
+        else { return nil }
+        return (voltage, current)
+    }
+
+    static let plausiblePackVoltage = 2_500...20_000
+    static let plausibleCurrent = -15_000...15_000
+
+    /// An integer reading in the attribute byte order, or else the other one, inside `range`.
+    static func plausibleInteger(_ value: SMCRawValue, in range: ClosedRange<Int>) -> Int? {
+        for order in [nil, SMCByteOrder.little, .big] {
+            if let number = SMCValueDecoder.number(value.payload, info: value.info, order: order),
+                number.isFinite, abs(number) < 1e9, range.contains(Int(number))
+            {
+                return Int(number)
+            }
+        }
+        return nil
     }
 
     /// The gauge temperature (`B0AT`) in °C, in the byte order that gives a plausible reading.

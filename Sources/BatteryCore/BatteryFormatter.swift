@@ -82,9 +82,9 @@ public struct BatteryFormatter: Sendable {
         return Duration.seconds(seconds).formatted(style)
     }
 
-    /// `31.24` → "31.2 °C".
-    public func celsius(_ value: Double) -> String {
-        number(value, fractionDigits: 1) + "\u{00A0}°C"
+    /// `31.24` → "31.2 °C"; with no fraction digits, "31 °C".
+    public func celsius(_ value: Double, fractionDigits: Int = 1) -> String {
+        number(value, fractionDigits: fractionDigits) + "\u{00A0}°C"
     }
 
     /// Plain number with the locale's separators.
