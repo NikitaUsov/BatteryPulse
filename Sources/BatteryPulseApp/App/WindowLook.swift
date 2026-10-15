@@ -9,8 +9,9 @@ import SwiftUI
 //
 // Only the background differs in view structure between the styles. Switching it rebuilds the
 // window's content, which happens only when the person changes the setting or an accessibility
-// setting; the main window's page survives in scene storage. Everything else (the policy, the
-// tones) reaches the content as values. Nothing here animates: a background swap is not a motion
+// setting; the main window's page survives in scene storage, and the window's registrations (live
+// refresh, the Dock icon policy) sit outside the modifier, so a rebuild never drops or repeats
+// them. Everything else (the policy, the tones) reaches the content as values. Nothing here animates: a background swap is not a motion
 // event, and a crossfade of materials would cost a blur pass per frame.
 
 extension EnvironmentValues {
@@ -25,7 +26,8 @@ extension EnvironmentValues {
 extension View {
     /// Applies the window style setting to this window: its background, and the policy and tones
     /// its content reads. Apply it once at the root of the main and compact windows, inside
-    /// `.motionPolicy()`.
+    /// `.motionPolicy()`, `.liveRefresh(…)` and `.trackedWindow(_:)`: a style change rebuilds what
+    /// it wraps, which would run their appear and disappear actions in an undefined order.
     func windowLook() -> some View {
         modifier(WindowLookModifier())
     }

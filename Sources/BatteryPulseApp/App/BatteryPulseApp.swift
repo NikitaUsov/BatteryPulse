@@ -56,14 +56,15 @@ struct BatteryPulseApp: App {
 
     // Every window and the menu bar panel get `.motionPolicy()` here, outside their root view, so
     // the root view's own `@Environment(\.motion)` sees the window's policy too. The main and
-    // compact windows also get `.windowLook()`, the window style; inside the motion policy, so a
-    // style change that rebuilds the window's content keeps the window's visibility state.
+    // compact windows also follow the window style (`.windowLook()`), inside the motion policy and
+    // inside the window's registrations (live refresh, the Dock icon policy): a style change
+    // rebuilds the content below it, and a rebuilt registration could end up dropped or bring the
+    // app forward. The main window applies it in `MainView`, whose page decides its refresh.
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
             MainView(monitor: monitor)
                 .environment(demo)
                 .environment(AppDevices.monitor)
-                .windowLook()
                 .motionPolicy()
         }
         .defaultSize(width: 860, height: 640)
@@ -83,6 +84,8 @@ struct BatteryPulseApp: App {
             CompactView(monitor: monitor)
                 .environment(demo)
                 .windowLook()
+                .liveRefresh(monitor, every: .seconds(2), client: "compact")
+                .trackedWindow(WindowID.compact)
                 .motionPolicy()
         }
         // Fixed size: the window fits its content.

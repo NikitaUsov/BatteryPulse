@@ -229,6 +229,9 @@ struct MainView: View {
             let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
             withAnimation(motion.change) { selection = isHidden ? .overview : request.page }
         }
+        // The window style. A style change rebuilds everything above; the registrations below
+        // stay put, so they are never dropped or repeated by it.
+        .windowLook()
         // Polls every 2 s while the window can be seen and the page shows live values.
         .liveRefresh(monitor, every: .seconds(2), client: "main", isEnabled: selection.showsLiveValues)
         .trackedWindow(WindowID.main)

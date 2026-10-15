@@ -53,8 +53,6 @@ struct CompactView: View {
                 .help("Show every detail in the full window")
             }
         }
-        .liveRefresh(monitor, every: .seconds(2), client: "compact")
-        .trackedWindow(WindowID.compact)
     }
 
     @ViewBuilder
