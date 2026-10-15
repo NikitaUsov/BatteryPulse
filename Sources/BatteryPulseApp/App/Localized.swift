@@ -132,6 +132,15 @@ enum Phrases {
         }
     }
 
+    /// The words on Clear's warning badge for a health tier: the condition macOS reports, or what
+    /// the tier means when only the capacity (below 80 %) warns.
+    static func healthWarning(_ tier: BatteryPresentation.LevelTier, condition raw: String?) -> String {
+        if let raw, raw != "Normal", raw != "Good", let text = condition(raw) { return text }
+        return tier == .critical
+            ? String(localized: "Check Battery", comment: "Battery condition")
+            : String(localized: "Service Recommended", comment: "Battery condition")
+    }
+
     static func thermal(_ state: ThermalState) -> String {
         switch state {
         case .nominal: String(localized: "Normal", comment: "Thermal state")
@@ -204,6 +213,17 @@ enum Phrases {
     }
 }
 
+extension WindowLook {
+    var title: LocalizedStringKey {
+        switch self {
+        case .standard: "Standard"
+        case .frosted: "Frosted"
+        case .translucent: "Translucent"
+        case .clear: "Clear"
+        }
+    }
+}
+
 extension MenuBarIconStyle {
     var title: LocalizedStringKey {
         switch self {
@@ -212,16 +232,6 @@ extension MenuBarIconStyle {
         case .classic: "Classic"
         case .percentageInside: "Percentage Inside"
         case .ring: "Ring"
-        }
-    }
-}
-
-extension BatteryPresentation.LevelTier {
-    var color: Color {
-        switch self {
-        case .normal: .green
-        case .low: .orange
-        case .critical: .red
         }
     }
 }

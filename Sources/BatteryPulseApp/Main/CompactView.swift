@@ -8,6 +8,8 @@ struct CompactView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     private let formatter = BatteryFormatter.app
 
     var body: some View {
@@ -39,7 +41,7 @@ struct CompactView: View {
                 ToolbarItem(placement: .status) {
                     Text("Demo")
                         .font(.callout.weight(.semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(tones.style(.warning))
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
@@ -51,8 +53,6 @@ struct CompactView: View {
                 .help("Show every detail in the full window")
             }
         }
-        .liveRefresh(monitor, every: .seconds(2), client: "compact")
-        .trackedWindow(WindowID.compact)
     }
 
     @ViewBuilder
@@ -61,24 +61,31 @@ struct CompactView: View {
             BatteryGlyph(
                 level: (s.chargePercent ?? 0) / 100,
                 isCharging: s.chargeState == .charging,
-                tint: BatteryPresentation.levelTier(for: s).color
+                tint: tones.color(.level(BatteryPresentation.levelTier(for: s)))
             )
             .frame(width: 84)
             VStack(alignment: .leading, spacing: 2) {
                 Text(s.chargePercent.map { formatter.percent($0) } ?? "—")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .font(.system(size: 34, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                     .monospacedDigit()
                     .numericValue(s.chargePercent)
                 Text(Phrases.stateWithPower(s, formatter))
-                    .font(.callout)
+                    .font(look.boldNumerals ? .callout.weight(.medium) : .callout)
                 if let time = Phrases.timeRemaining(s, formatter) {
                     Text(time)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                // Clear has no orange or red: a low level says so in its badge.
+                if tones.badge(for: BatteryPresentation.levelTier(for: s)) == .inverted {
+                    InvertedBadge(text: Text("Low battery"))
+                        .padding(.top, 4)
+                }
             }
             Spacer(minLength: 0)
         }
+        // Not in a card: the readout is a group of its own.
+        .contentTreatment()
         .accessibilityElement(children: .combine)
         // The "Demo" badge sits in the toolbar, away from the numbers; VoiceOver still hears
         // with the readout that it is simulated. Two Text values, not a ternary of literals, so

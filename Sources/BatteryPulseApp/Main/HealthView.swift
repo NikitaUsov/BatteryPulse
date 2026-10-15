@@ -7,6 +7,7 @@ struct HealthView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
     /// Set once this view has let its rings fill; see ``ringsHaveFilledThisLaunch``.
     @State private var ringsFilled = false
     /// The rings fill from zero once per launch, on the first visit to this page. Pages switch
@@ -14,7 +15,7 @@ struct HealthView: View {
     @MainActor private static var ringsHaveFilledThisLaunch = false
 
     var body: some View {
-        Form {
+        LookForm {
             if snapshot.healthPercent != nil || snapshot.cycleCount != nil {
                 Section {
                     gauges
@@ -36,7 +37,6 @@ struct HealthView: View {
                 }
             }
         }
-        .formStyle(.grouped)
     }
 
     /// The rings animate to a new value through `RingGaugeStyle` (rarely: maximum capacity and
@@ -53,7 +53,9 @@ struct HealthView: View {
                     Text(formatter.percent(health))
                         .numericValue(health)
                 }
-                .gaugeStyle(RingGaugeStyle(tint: BatteryPresentation.healthTier(for: snapshot).color, diameter: 128))
+                .gaugeStyle(
+                    RingGaugeStyle(
+                        tint: tones.color(.level(BatteryPresentation.healthTier(for: snapshot))), diameter: 128))
             }
             if let cycles = snapshot.cycleCount {
                 Gauge(value: Double(cycles) / Double(snapshot.designCycleCount ?? 1000) * filled) {
@@ -62,7 +64,7 @@ struct HealthView: View {
                     Text(cycles.formatted())
                         .numericValue(Double(cycles))
                 }
-                .gaugeStyle(RingGaugeStyle(tint: .blue, diameter: 128))
+                .gaugeStyle(RingGaugeStyle(tint: tones.color(.cycles), diameter: 128))
             }
         }
         .frame(maxWidth: .infinity)
@@ -73,6 +75,13 @@ struct HealthView: View {
             // The arcs animate from zero to their values (`RingGaugeStyle`); without one-off
             // extras they were full from the start and nothing changes.
             ringsFilled = true
+        }
+        .contentTreatment()
+        // Clear has no orange or red: a worn battery says so in its badge, under the rings.
+        let tier = BatteryPresentation.healthTier(for: snapshot)
+        if tones.badge(for: tier) == .inverted {
+            InvertedBadge(text: Text(Phrases.healthWarning(tier, condition: snapshot.healthCondition)))
+                .frame(maxWidth: .infinity)
         }
     }
 

@@ -45,6 +45,8 @@ struct HistoryView: View {
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     private let formatter = BatteryFormatter.app
 
     init(source: Binding<HistorySource>) {
@@ -278,7 +280,7 @@ struct HistoryView: View {
                         yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
                     )
                     // Charging a little stronger than holding the charge.
-                    .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
+                    .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
                     .accessibilityHidden(true)
                 }
                 ForEach(points) { point in
@@ -287,7 +289,7 @@ struct HistoryView: View {
                             x: .value("Time", point.time), y: .value("Charge", percent),
                             series: .value(ChartKey.segment, point.segment)
                         )
-                        .foregroundStyle(.green)
+                        .foregroundStyle(tones.style(.chart(.charge)))
                         .interpolationMethod(.monotone)
                     }
                 }
@@ -310,34 +312,30 @@ struct HistoryView: View {
             .frame(height: 200)
             Label("On power adapter", systemImage: "square.fill")
                 .font(.caption)
-                .foregroundStyle(.green.opacity(0.6))
+                .foregroundStyle(tones.style(.spanLegend))
                 .labelStyle(.titleAndIcon)
         }
     }
 
+    @ViewBuilder
     private var powerChart: some View {
-        Chart {
+        let chart = Chart {
             ForEach(points) { point in
                 if let watts = point.batteryWatts {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Watts", watts),
-                        series: .value(ChartKey.series, "battery-\(point.segment)")
-                    )
-                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Battery")))
+                    powerLine(point, watts: watts, series: "battery", name: String(localized: "Battery"))
                 }
                 if let load = point.systemLoadWatts {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Watts", load),
-                        series: .value(ChartKey.series, "load-\(point.segment)")
-                    )
-                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Mac")))
+                    powerLine(point, watts: load, series: "load", name: String(localized: "Mac"))
                 }
             }
             RuleMark(y: .value(ChartKey.zero, 0))
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
         }
-        .chartForegroundStyleScale([String(localized: "Battery"): Color.blue, String(localized: "Mac"): Color.orange])
+        .chartForegroundStyleScale([
+            String(localized: "Battery"): tones.color(.chart(.batteryPower)),
+            String(localized: "Mac"): tones.color(.chart(.systemLoad)),
+        ])
         // A device has the battery's line alone: no legend naming the Mac.
         .chartLegend(shownSource == .mac ? .automatic : .hidden)
         .chartXScale(domain: domain)
@@ -358,6 +356,34 @@ struct HistoryView: View {
             }
         }
         .frame(height: 180)
+        if tones.isMonochrome {
+            // Clear: every line is white, so the Mac's is dashed and fainter, in the legend too.
+            chart.chartLineStyleScale([
+                String(localized: "Battery"): lineStyle(.batteryPower),
+                String(localized: "Mac"): lineStyle(.systemLoad),
+            ])
+        } else {
+            chart
+        }
+    }
+
+    /// One point of a power line. In Clear the line's dash encodes its series as well as its tone.
+    @ChartContentBuilder
+    private func powerLine(_ point: HistoryPoint, watts: Double, series: String, name: String) -> some ChartContent {
+        let mark = LineMark(
+            x: .value("Time", point.time), y: .value("Watts", watts),
+            series: .value(ChartKey.series, "\(series)-\(point.segment)")
+        )
+        .foregroundStyle(by: .value(ChartKey.line, name))
+        if tones.isMonochrome {
+            mark.lineStyle(by: .value(ChartKey.line, name))
+        } else {
+            mark
+        }
+    }
+
+    private func lineStyle(_ line: ChartLine) -> StrokeStyle {
+        StrokeStyle(lineWidth: 2, lineCap: .round, dash: tones.dash(for: line).map { CGFloat($0) })
     }
 
     private var temperatureChart: some View {
@@ -368,7 +394,7 @@ struct HistoryView: View {
                         x: .value("Time", point.time), y: .value("Temperature", celsius),
                         series: .value(ChartKey.segment, point.segment)
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(tones.style(.chart(.temperature)))
                     .interpolationMethod(.monotone)
                 }
             }
@@ -436,7 +462,7 @@ struct HistoryView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text(value)
-                    .font(.title3.weight(.semibold))
+                    .font(.title3.weight(look.boldNumerals ? .bold : .semibold))
                     .monospacedDigit()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -457,9 +483,9 @@ struct HistoryView: View {
                 Chart(dated) { entry in
                     if let capacity = entry.day.capacityToDesignPercent {
                         LineMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(tones.style(.chart(.capacity)))
                         PointMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(tones.style(.chart(.capacity)))
                             .symbolSize(16)
                     }
                 }
@@ -472,7 +498,7 @@ struct HistoryView: View {
                     if let cycles = entry.day.cycleCount {
                         LineMark(x: .value("Day", entry.date), y: .value("Cycles", cycles))
                             .interpolationMethod(.stepEnd)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(tones.style(.chart(.cycles)))
                     }
                 }
                 .chartYScale(domain: .automatic(includesZero: false))

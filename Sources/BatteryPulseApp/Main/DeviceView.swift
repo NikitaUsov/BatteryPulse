@@ -15,6 +15,8 @@ struct DeviceView: View {
     let showInHistory: @MainActor (DeviceKey) -> Void
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     @State private var confirmsForgetting = false
     private let formatter = BatteryFormatter.app
 
@@ -102,7 +104,8 @@ struct DeviceView: View {
     // MARK: - Hero
 
     private func hero(_ battery: IDeviceBattery) -> some View {
-        let tint = BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState).color
+        let tint = tones.color(
+            .level(BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState)))
         return Card {
             HStack(spacing: 24) {
                 BatteryGlyph(
@@ -113,13 +116,20 @@ struct DeviceView: View {
                 .frame(width: 132)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(battery.chargePercent.map { formatter.percent($0) } ?? "—")
-                        .font(.system(size: 46, weight: .semibold, design: .rounded))
+                        .font(.system(size: 46, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(battery.chargePercent)
                     Text(statePhrase(battery))
-                        .font(.title3)
+                        .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
                     Text(verbatim: subtitle)
                         .foregroundStyle(.secondary)
+                    // Clear has no orange or red: a low level says so in its badge.
+                    if tones.badge(
+                        for: BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState))
+                        == .inverted
+                    {
+                        InvertedBadge(text: Text("Low battery"))
+                    }
                     HStack(spacing: 6) {
                         timeLine
                             .foregroundStyle(.secondary)
@@ -184,7 +194,8 @@ struct DeviceView: View {
                     value: formatter.percent(percent),
                     number: percent,
                     caption: chargeCaption(battery),
-                    tint: BatteryPresentation.levelTier(percent: percent, state: battery.chargeState).color
+                    tint: tones.color(
+                        .level(BatteryPresentation.levelTier(percent: percent, state: battery.chargeState)))
                 )
             }
             if let health = battery.maximumCapacityPercent {
@@ -195,7 +206,8 @@ struct DeviceView: View {
                     value: formatter.percent(health),
                     number: health,
                     caption: condition(tier),
-                    tint: tier.color
+                    tint: tones.color(.level(tier)),
+                    badge: tones.badge(for: tier) == .inverted ? condition(tier) : nil
                 )
             }
             if let cycles = battery.cycleCount {
@@ -209,7 +221,7 @@ struct DeviceView: View {
                     value: cycles.formatted(),
                     number: Double(cycles),
                     caption: String(localized: "of \(rated.formatted()) rated"),
-                    tint: .blue
+                    tint: tones.color(.cycles)
                 )
             }
         }
@@ -334,7 +346,7 @@ struct DeviceView: View {
         Card {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(tones.style(.warning))
                     .accessibilityHidden(true)
                 Text(problem.text)
                     .fixedSize(horizontal: false, vertical: true)

@@ -7,6 +7,8 @@ struct OverviewView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
 
     var body: some View {
         ScrollView {
@@ -35,7 +37,7 @@ struct OverviewView: View {
     }
 
     private var tint: Color {
-        BatteryPresentation.levelTier(for: snapshot).color
+        tones.color(.level(BatteryPresentation.levelTier(for: snapshot)))
     }
 
     private var hero: some View {
@@ -49,16 +51,20 @@ struct OverviewView: View {
                 .frame(width: 132)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(snapshot.chargePercent.map { formatter.percent($0) } ?? "—")
-                        .font(.system(size: 46, weight: .semibold, design: .rounded))
+                        .font(.system(size: 46, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(snapshot.chargePercent)
                     // No animation of its own: the watts in it change with every reading.
                     Text(Phrases.stateWithPower(snapshot, formatter))
-                        .font(.title3)
+                        .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .foregroundStyle(.secondary)
                             .transition(motion.fadeTransition)
+                    }
+                    // Clear has no orange or red: a low level says so in its badge.
+                    if tones.badge(for: BatteryPresentation.levelTier(for: snapshot)) == .inverted {
+                        InvertedBadge(text: Text("Low battery"))
                     }
                 }
                 Spacer(minLength: 0)
@@ -86,13 +92,16 @@ struct OverviewView: View {
                 )
             }
             if let health = snapshot.healthPercent {
+                let tier = BatteryPresentation.healthTier(for: snapshot)
                 GaugeTile(
                     title: "Maximum capacity",
                     fraction: health / 100,
                     value: formatter.percent(health),
                     number: health,
                     caption: Phrases.condition(snapshot.healthCondition),
-                    tint: BatteryPresentation.healthTier(for: snapshot).color
+                    tint: tones.color(.level(tier)),
+                    badge: tones.badge(for: tier) == .inverted
+                        ? Phrases.healthWarning(tier, condition: snapshot.healthCondition) : nil
                 )
             }
             if let cycles = snapshot.cycleCount {
@@ -103,7 +112,7 @@ struct OverviewView: View {
                     value: cycles.formatted(),
                     number: Double(cycles),
                     caption: String(localized: "of \(rated.formatted()) rated"),
-                    tint: .blue
+                    tint: tones.color(.cycles)
                 )
             }
         }
