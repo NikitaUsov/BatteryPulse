@@ -376,6 +376,139 @@ import Testing
                 """)
     }
 
+    /// A thematic break keeps its line, and a `=` or `-` line right below text makes that text a
+    /// heading, in bold like `##`.
+    @Test func breaksAndUnderlinedHeadingsKeepTheirLines() {
+        let changelog = "**Full Changelog**: https://github.com/o/r/compare/v1...v2"
+        #expect(
+            ReleaseNotes.inlineMarkdown("Thanks to everyone who tested the beta.\n---\n" + changelog)
+                == "**Thanks to everyone who tested the beta.**\n" + changelog)
+        #expect(ReleaseNotes.inlineMarkdown("Highlights\n==========\nA paragraph.") == "**Highlights**\nA paragraph.")
+        #expect(ReleaseNotes.inlineMarkdown("---\nText\nwrapped.") == "---\nText wrapped.")
+        #expect(ReleaseNotes.inlineMarkdown("Intro\n\n* * *\nText after.") == "Intro\n\n* * *\nText after.")
+        #expect(ReleaseNotes.inlineMarkdown("Notes\n---\n2. Two") == "**Notes**\n2. Two")
+        let notes = """
+            A heading that
+            wraps
+            ---
+            - An item
+              ---
+            - Ends at a break
+            ***
+            Text above a break
+            ___
+            - - -
+            ===
+            Text and a line
+                ---
+            indented past a break.
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                **A heading that wraps**
+                - **An item**
+                - Ends at a break
+                ***
+                Text above a break
+                ___
+                - - -
+                ===
+                Text and a line --- indented past a break.
+                """)
+    }
+
+    /// Inside a code span a backslash or two spaces at the end of a line are no line break: the
+    /// span keeps the backslash and the lines join with a space.
+    @Test func aCodeSpanAcrossLinesHasNoLineBreak() {
+        #expect(ReleaseNotes.inlineMarkdown("Run `a\\\nb` now.") == "Run `a\\ b` now.")
+        let notes = #"""
+            Run `bpulse --raw >\
+            capture.plist` first.
+            Then ``a ` tick\
+            inside`` ends\
+            here.
+            An escaped \`tick\
+            breaks.
+            """#
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == #"""
+                Run `bpulse --raw >\ capture.plist` first. Then ``a ` tick\ inside`` ends
+                here. An escaped \`tick
+                breaks.
+                """#)
+        #expect(ReleaseNotes.inlineMarkdown("Two `spaces  \njoined` too.") == "Two `spaces   joined` too.")
+    }
+
+    /// A fenced code block in a list item ends with the item, even when its fence isn't closed.
+    @Test func aFenceInAListItemEndsWithTheItem() {
+        let notes = """
+            - Item with a fence that is never closed:
+              ```
+              code
+            - Next item text that
+              wraps.
+
+            Paragraph
+            ```
+            fenced
+            ```
+            More text
+            that wraps.
+
+            1. Run:
+               ```
+               bpulse --smc
+
+               ```
+               Both read
+               the SMC.
+            2. Next
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                - Item with a fence that is never closed:
+                  ```
+                  code
+                - Next item text that wraps.
+
+                Paragraph
+                ```
+                fenced
+                ```
+                More text that wraps.
+
+                1. Run:
+                   ```
+                   bpulse --smc
+
+                   ```
+                   Both read the SMC.
+                2. Next
+                """)
+    }
+
+    /// A heading's closing `#`s are dropped, but only as a run of their own.
+    @Test func headingsLoseTheirClosingHashes() {
+        let notes = ##"""
+            ## Install ##
+            ## C#
+            ## C# #
+            # Title #####
+            ### Escaped \#
+            ## Path C:\
+            """##
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == ##"""
+                **Install**
+                **C#**
+                **C#**
+                **Title**
+                **Escaped \#**
+                **Path C:\\**
+                """##)
+        #expect(ReleaseNotes.inlineMarkdown("## #\nText") == "\nText")
+    }
+
     /// Trimmed from `.github/release-notes.md` for 0.4.0, which renders as it did before fences,
     /// tables, indented code and hard breaks were told apart.
     @Test func theReleaseNotesRenderAsBefore() {
