@@ -267,7 +267,7 @@ stays on controls; the glass bubbles come from standard segmented controls.
   Low Power Mode and thermal state; rings (optionally filling once per launch)
 - [x] Developer option "Glass Cards" (Settings → Advanced, with the Developer section): the cards
   in Liquid Glass, one `GlassEffectContainer` per page, plain when off or under Reduce
-  Transparency; off by default
+  Transparency; off by default (replaced by window styles in 0.6, Stage 1.5)
 - [x] Main window: polling only while visible and on pages with live values, a short page fade,
   toolbar grouping, feedback and a VoiceOver announcement for Copy Report, the tour's page switch
   in one transaction
