@@ -92,10 +92,10 @@ off in Settings → Advanced), so it uses almost no CPU in the background.
 
 ## Compact window
 
-For a quick look without the sidebar, BatteryPulse has a small window of a fixed size, like
-coconutBattery's: the charge, what the battery is doing, time remaining, capacity bars, maximum
-capacity, cycle count, battery power, temperature and the adapter. Open it with **Compact
-Window** in the main window's toolbar, and go back with **Full Window** in its own toolbar. To
+For a quick look without the sidebar, BatteryPulse has a small window of a fixed size: the
+charge, what the battery is doing, time remaining, capacity bars, maximum capacity, cycle
+count, battery power, temperature and the adapter. Open it with **Compact Window** in the main
+window's toolbar, and go back with **Full Window** in its own toolbar. To
 make it the window BatteryPulse opens, choose **Window to open: Compact window** in
 Settings → General.
 

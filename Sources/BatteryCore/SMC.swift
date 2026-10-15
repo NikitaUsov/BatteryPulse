@@ -120,7 +120,7 @@ public enum SMCParamBlock {
 }
 
 /// The `result` byte: success, error and key-not-found from Apple's PowerManagement source, the
-/// rest from VirtualSMC's `AppleSmc.h`.
+/// rest as the SMC protocol is commonly documented.
 public enum SMCResult: UInt8, Sendable {
     case success = 0x00
     case error = 0x01
@@ -153,7 +153,7 @@ public struct SMCKeyInfo: Sendable, Equatable {
     public var isReadable: Bool { attributes & 0x80 != 0 }
 
     /// On Apple silicon, values with attribute bit 0x04 set are little-endian and the rest
-    /// big-endian (`#KEY`, and one byte-reversed float Asahi lists). Seen on one M4 Max, so
+    /// big-endian (`#KEY`, and one byte-reversed float in Linux's key list). Seen on one M4 Max, so
     /// decoded values are still checked for plausibility.
     public var byteOrder: SMCByteOrder { attributes & 0x04 != 0 ? .little : .big }
 }
@@ -268,8 +268,8 @@ public enum SMCBattery {
     /// (`SBA1` 3.836 with `BC1V` at 3836 mV); millivolt values are accepted too.
     public static let floatCellVoltageKeys: [SMCFourCC] = ["SBA1", "SBA2", "SBA3", "SBA4"]
     /// Battery-area temperature sensors (`flt `, °C). Not the battery's temperature: Linux labels
-    /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and Stats found
-    /// them clearly wrong on a MacBook Neo under macOS 27 (on a MacBook Air M5 they matched).
+    /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and were reported
+    /// clearly wrong on a MacBook Neo under macOS 27 (on a MacBook Air M5 they matched).
     /// Shown in Raw Data only.
     public static let temperatureKeys: [SMCFourCC] = ["TB0T", "TB1T", "TB2T", "TB3T"]
     /// The gauge's own temperature, in tenths of a kelvin like the Smart Battery `Temperature()`

@@ -73,3 +73,6 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   or unused keys. Use Apple's Russian terminology (the words macOS uses in System Settings →
   Battery); existing catalog entries show the conventions.
 - Liquid Glass: rely on standard components; don't put `glassEffect` on content cards.
+- Never name third-party apps, their projects or makers anywhere: code, comments, tests, docs,
+  commit messages, PRs, issues, release notes. Describe the technique or the evidence instead
+  ("a public capture from an M4 Max"). Apple's own apps and frameworks are fine.

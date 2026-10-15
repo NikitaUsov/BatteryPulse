@@ -3,7 +3,7 @@ import BatteryCore
 import BatteryKit
 import SwiftUI
 
-/// A small, fixed-size window with the essentials, in the spirit of coconutBattery.
+/// A small, fixed-size window with the essentials.
 struct CompactView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo

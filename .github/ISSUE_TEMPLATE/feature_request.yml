@@ -19,4 +19,4 @@ body:
     id: notes
     attributes:
       label: Notes
-      description: Links to APIs, IORegistry keys or similar apps are welcome.
+      description: Links to APIs or IORegistry keys are welcome.

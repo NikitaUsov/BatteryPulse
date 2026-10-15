@@ -3,8 +3,8 @@ import Testing
 
 @testable import BatteryCore
 
-/// The child entries are shaped like MacDashboard's fixture, "trimmed from a real
-/// `ioreg -r -c AppleSmartBattery -a -l` capture on macOS 27".
+/// The child entries are shaped like the real MacBook Air M5 capture (`m5-macos27-on-battery-smc`),
+/// trimmed to the keys BatteryPulse reads.
 struct RegistryChildrenTests {
     static func bank(_ id: Int, _ millivolts: Int) -> [String: Any] {
         ["IOObjectClass": "AppleSmartBatteryBank", "BankID": id, "BatteryData": ["CellVoltage": millivolts]]

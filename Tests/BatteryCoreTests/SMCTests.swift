@@ -3,8 +3,8 @@ import Testing
 
 @testable import BatteryCore
 
-/// Byte captures come from other projects' reads on real Macs: iSMC's raw dumps, Aeolus (M4 Max,
-/// macOS 26) and Wattly (M5 MacBook Pro, macOS 27).
+/// Byte captures come from public reads on real Macs (an M5 Pro, an M4 Max on macOS 26, an M5
+/// MacBook Pro on macOS 27) and from the MacBook Air M5 fixture.
 struct SMCTests {
     static let ui16 = SMCKeyInfo(size: 2, type: "ui16", attributes: 0x84)
 
@@ -45,12 +45,12 @@ struct SMCTests {
         #expect(reply.result == 0)
         #expect(reply.info == SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84))
         let celsius = try #require(SMCValueDecoder.number(reply.payload, info: reply.info))
-        #expect(abs(celsius - 25.8) < 0.01)  // iSMC, M5 Pro: TB0T bytes 60 66 ce 41
+        #expect(abs(celsius - 25.8) < 0.01)  // M5 Pro: TB0T bytes 60 66 ce 41
         #expect(SMCParamBlock.reply(from: Array(block.prefix(79))) == nil)
     }
 
     @Test func integersFollowTheAttributeByteOrder() {
-        // Aeolus, M4 Max: #KEY 00 00 0d 39 is 3385 keys (attributes 0x80, big-endian).
+        // M4 Max: #KEY 00 00 0d 39 is 3385 keys (attributes 0x80, big-endian).
         #expect(
             SMCValueDecoder.number([0, 0, 0x0D, 0x39], info: SMCKeyInfo(size: 4, type: "ui32", attributes: 0x80))
                 == 3385)
@@ -75,7 +75,7 @@ struct SMCTests {
     }
 
     @Test func cellsMustBePlausibleAndAddUpToThePack() {
-        // Aeolus, M4 Max: 4009 + 4011 + 4009 = B0AV 12029 mV.
+        // M4 Max: 4009 + 4011 + 4009 = B0AV 12029 mV.
         let cells = [Self.cell("BC1V", 4009), Self.cell("BC2V", 4011), Self.cell("BC3V", 4009)]
         let capture = SMCBattery.capture(cells)
         #expect(SMCBattery.cellVoltagesMV(in: capture, packVoltageMV: 12_029) == [4009, 4011, 4009])
@@ -167,7 +167,7 @@ struct SMCTests {
     }
 
     @Test func captureEntriesRoundTripThroughAPropertyList() throws {
-        // Wattly, M5 MacBook Pro on macOS 27: B0AT reads 3067.
+        // M5 MacBook Pro on macOS 27: B0AT reads 3067.
         let value = SMCRawValue(key: "B0AT", info: Self.ui16, payload: [0xFB, 0x0B])
         let capture = SMCBattery.capture([value])
         let data = try PropertyListSerialization.data(
@@ -224,7 +224,7 @@ struct SMCTests {
                     SMCRawValue(key: "B0AT", info: Self.ui16, payload: [UInt8(raw & 0xFF), UInt8(raw >> 8)])
                 ]))
         }
-        #expect(temperature(3067) == 33.55)  // Wattly, M5 MacBook Pro
+        #expect(temperature(3067) == 33.55)  // an M5 MacBook Pro
         #expect(temperature(2731) == -0.05)
         #expect(temperature(31) == nil, "°C, not tenths of a kelvin")
         #expect(temperature(3700) == nil, "96.85 °C")

@@ -119,8 +119,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   what's new
 - [x] History and charts (see Stage 3)
 - [x] Notifications: charge limit, low battery, battery service, heat (see Stage 4)
-- [x] Compact mode: a small, fixed-size window with the essentials, like coconutBattery's; switch
-  from the toolbar, and choose which window Open BatteryPulse shows
+- [x] Compact mode: a small, fixed-size window with the essentials; switch from the toolbar, and
+  choose which window Open BatteryPulse shows
 - [x] WidgetKit widget (small and medium), built by SwiftPM and wrapped into an `.appex` by
   `build-app.sh`; sandboxed, reading IOKit itself since ad-hoc signing rules out an App Group.
   Appears in the gallery for a downloaded copy after Open Anyway (M5 Air, 0.3.0)
@@ -165,8 +165,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] Apps using the most energy (optional): which apps drain the battery most and at what
   average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
   Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in
-  nanojoules without root on macOS 26, through private but exported calls that Chromium also
-  uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers only the user's own
+  nanojoules without root on macOS 26, through private but exported calls that shipping
+  software already uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers only the user's own
   processes and only the CPU. Nobody has shown the coalition calls working without root on
   macOS 27 yet, so a one-day spike on the M5 comes first. Show watts and Wh with an
   "unattributed" remainder (display, memory, radios, idle); history only from when
@@ -182,17 +182,16 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 5: iPhone and iPad battery health on the Mac (0.4)
 
-- [ ] Read the battery of an iPhone or iPad connected by USB or Wi-Fi, like coconutBattery:
-  charge, maximum capacity, cycles, design and full-charge capacity, temperature. Researched:
-  load Apple's private MobileDevice framework with `dlopen` (no entitlements; the app isn't
-  sandboxed), list devices with `AMDeviceNotificationSubscribe`, and ask the
-  `com.apple.mobile.diagnostics_relay` service for the device's `AppleSmartBattery` registry
-  entry, the same data the Mac has. WhatBattery, an open-source Mac app, does this on iOS 17
-  to iPadOS 27. Rely on the trust the user already gave in Finder; no pairing of our own in the
-  first version, and no promise that health matches iOS Settings until checked on a real
-  iPhone. Keep the transport behind a protocol so the usbmuxd/lockdown protocol can replace
-  the framework if Apple breaks it. Start with half a day on the Mac to confirm the calls and
-  the iOS 27 keys.
+- [ ] Read the battery of an iPhone or iPad connected by USB or Wi-Fi: charge, maximum capacity,
+  cycles, design and full-charge capacity, temperature. Researched: load Apple's private
+  MobileDevice framework with `dlopen` (no entitlements; the app isn't sandboxed), list devices
+  with `AMDeviceNotificationSubscribe`, and ask the `com.apple.mobile.diagnostics_relay` service
+  for the device's `AppleSmartBattery` registry entry, the same data the Mac has. This is known
+  to work on iOS 17 to iPadOS 27. Rely on the trust the user already gave in Finder; no pairing
+  of our own in the first version, and no promise that health matches iOS Settings until checked
+  on a real iPhone. Keep the transport behind a protocol so the usbmuxd/lockdown protocol can
+  replace the framework if Apple breaks it. Start with half a day on the Mac to confirm the
+  calls and the iOS 27 keys.
 - [ ] Remember each device and keep its history next to the Mac's
 
 ### Stage 6: Later (optional)
@@ -219,7 +218,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 - [ ] **CSV/JSON export** of history: public APIs only (`fileExporter`), about two days,
   formatting tested on Linux; CSV dialect follows the locale's decimal separator.
 - [ ] **Charge limiting.** The old SMC route is closed: on macOS 27 firmware the charge-inhibit
-  keys AlDente and others used are gone or behind an Apple-private entitlement, even for root
+  keys that charge limiters used are gone or behind an Apple-private entitlement, even for root
   and even with a paid account. macOS 26.4+ has its own Charge Limit (80–100 %); a third-party
   app can reportedly set it through the private `PowerUISmartChargeClient` without root, so
   BatteryPulse could offer that limit in its own UI plus a read-only report of what the firmware

@@ -49,8 +49,7 @@ dependencies.
 - The voltage of each cell and the spread between them.
 
 **Compact window**
-- A small, fixed-size window with the essentials, like coconutBattery's; it can be the window
-  BatteryPulse opens.
+- A small, fixed-size window with the essentials; it can be the window BatteryPulse opens.
 
 **History**
 - Charge, power (battery and Mac) and temperature over the last 24 hours or 7 days, with plugged-in stretches
