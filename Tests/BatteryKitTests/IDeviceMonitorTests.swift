@@ -470,6 +470,25 @@ struct MonitorHarness {
         #expect(await h.count("list") == 2, "no confirming list")
     }
 
+    @Test func terminationAndArrivalTogetherAreConfirmed() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        // The cable is re-seated within one debounce, and usbmuxd hasn't registered the phone again.
+        await h.transport.detachAll()
+        await h.deliver(.terminated)
+        await h.advance(by: 0.5)
+        await h.send(.arrived)
+        #expect(await h.count("list") == 2)
+        #expect(h.monitor.entries.first?.connection == nil)
+        // usbmuxd catches up: the confirming list finds it newly attached and reads it.
+        await phoneAttached(h)
+        await h.advance(by: IDeviceReadPolicy.confirmDelay)
+        #expect(await h.transport.calls == ["list", "capture 801C", "list", "list", "capture 801C"])
+        #expect(h.monitor.entries.first?.connection == .usb)
+    }
+
     @Test func wifiDeviceIsListedButNotReadOrShownUntilChecked() async throws {
         let h = MonitorHarness(initialArrival: false)
         defer { h.cleanUp() }
@@ -638,6 +657,26 @@ struct MonitorHarness {
         #expect(try await h.registry().count == 1)
     }
 
+    @Test func forgottenOverWiFiComesBackWhenPluggedIn() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        // Unplugged, but still seen over Wi-Fi.
+        await h.transport.attach(Self.phone, [.wifi], capture: TestCaptures.ok(Self.phone, connection: .wifi))
+        await h.send(.terminated)
+        #expect(h.monitor.entries.first?.connection == .wifi)
+        await h.monitor.forget(Self.phoneKey)
+        #expect(h.monitor.entries.isEmpty)
+        // Plugging it in by cable is the reconnect.
+        await h.transport.attach(Self.phone, [.usb, .wifi], capture: TestCaptures.ok(Self.phone))
+        await h.send(.arrived)
+        #expect(await h.count("capture") == 2)
+        #expect(h.monitor.entries.map(\.id) == [Self.phoneKey])
+        #expect(h.monitor.entries.first?.connection == .usb)
+        #expect(try await h.registry().count == 1)
+    }
+
     @Test func forgetDropsLateResult() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }
@@ -778,6 +817,27 @@ struct MonitorHarness {
         #expect(!h.monitor.isStalled)
         #expect(h.monitor.entries.first?.problem == nil)
         #expect(h.clock.nextWake != nil)
+    }
+
+    @Test func timeOutAfterToggleStillStalls() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        await h.transport.script(Self.phone, [.failure(.timedOut(seconds: 60))])
+        await h.transport.hold()
+        h.monitor.read(Self.phoneKey)
+        await h.transport.waitForCalls(4)
+        // Turned off and on while the read is stuck; the initial USB scan wants a list.
+        h.monitor.setEnabled(false)
+        h.monitor.setEnabled(true)
+        let debounceEnd = h.clock.now.addingTimeInterval(IDeviceReadPolicy.attachDebounce)
+        await h.clock.waitForSleeper(until: debounceEnd)
+        h.clock.advance(to: debounceEnd)
+        await h.transport.release()
+        await h.settle()
+        #expect(h.monitor.isStalled, "the stuck call still holds the transport")
+        #expect(await h.transport.calls == ["list", "capture 801C", "list", "capture 801C"])
     }
 
     @Test func deviceNotFoundMeansDetached() async throws {

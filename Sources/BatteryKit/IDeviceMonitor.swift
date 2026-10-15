@@ -81,7 +81,8 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var udids: [DeviceKey: String] = [:]
     /// This session's latest capture per attached device, for Copy Report.
     @ObservationIgnored private var captures: [DeviceKey: IDeviceCapture] = [:]
-    /// Forgotten while attached: not shown, read or remembered again until it detaches.
+    /// Forgotten while attached: not shown, read or remembered again until it detaches or is
+    /// plugged in by cable.
     @ObservationIgnored private var hidden: Set<DeviceKey> = []
     /// The device whose page is on screen.
     @ObservationIgnored private var visiblePage: DeviceKey?
@@ -103,7 +104,6 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var unconfirmedMisses: Set<DeviceKey> = []
     @ObservationIgnored private var attachTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
-    @ObservationIgnored private var debounceSawTermination = false
     @ObservationIgnored private var debounceSawArrival = false
     @ObservationIgnored private var confirmTask: Task<Void, Never>?
     @ObservationIgnored private var scheduleTask: Task<Void, Never>?
@@ -237,7 +237,8 @@ public final class IDeviceMonitor {
     }
 
     /// Forgets a device: its entry, its history and this session's capture and UDID. A device
-    /// that is still attached isn't shown or remembered again until it detaches.
+    /// that is still attached isn't shown or remembered again until it detaches or is plugged in
+    /// by cable.
     public func forget(_ id: DeviceKey) async {
         if let session = sessions[id], !session.connections.isEmpty {
             hidden.insert(id)
@@ -411,7 +412,10 @@ public final class IDeviceMonitor {
         if generation == self.generation, case .success(let infos) = result, !infos.isEmpty { await prepareKeys() }
         operation = nil
         isListing = false
-        guard generation == self.generation else { return pump() }
+        guard generation == self.generation else {
+            if Self.timedOut(result) { stall() }
+            return pump()
+        }
         switch result {
         case .failure(let error):
             switch error as? IDeviceError {
@@ -440,7 +444,10 @@ public final class IDeviceMonitor {
             udids[key] = info.id
             var session = sessions[key] ?? IDeviceSession()
             if info.connections.contains(.usb), !session.connections.contains(.usb) {
-                // A new attachment: a replug reads at once, whatever came before.
+                // A new attachment: a replug reads at once, whatever came before. It is also the
+                // reconnect that brings back a forgotten device; one forgotten while on USB still has
+                // .usb here, so it stays hidden until it is unplugged.
+                hidden.remove(key)
                 session.lastAttempt = nil
                 session.problem = nil
                 session.consecutiveFailures = 0
@@ -480,6 +487,7 @@ public final class IDeviceMonitor {
         sessions[key]?.isReading = false
         // Turned off or forgotten meanwhile: the result is dropped.
         guard generation == self.generation, !hidden.contains(key), var session = sessions[key] else {
+            if Self.timedOut(result) { stall() }
             recomputeEntries()
             return pump()
         }
@@ -593,6 +601,13 @@ public final class IDeviceMonitor {
         }
     }
 
+    /// A call that timed out still holds the transport's queue, even when its result is dropped
+    /// because reading was turned off or the device forgotten meanwhile.
+    private static func timedOut<Success>(_ result: Result<Success, any Error>) -> Bool {
+        if case .failure(let error) = result, case .timedOut? = error as? IDeviceError { return true }
+        return false
+    }
+
     private func stall() {
         isStalled = true
         if pendingList?.isUser != true { pendingList = nil }
@@ -629,14 +644,14 @@ public final class IDeviceMonitor {
         }
     }
 
-    /// Each USB event restarts the wait; a termination during the wait wins.
+    /// Each USB event restarts the wait. After a termination the list detaches a missing USB
+    /// device at once; after an arrival a list that finds no newly attached USB device is
+    /// confirmed, so a cable re-seated within one wait is read again once usbmuxd catches up.
     private func attachChanged(_ change: IDeviceAttachChange) {
         guard isEnabled else { return }
         switch change {
         case .arrived: debounceSawArrival = true
-        case .terminated:
-            debounceSawTermination = true
-            terminationPending = true
+        case .terminated: terminationPending = true
         }
         debounceTask?.cancel()
         let until = clock.now().addingTimeInterval(IDeviceReadPolicy.attachDebounce)
@@ -648,9 +663,8 @@ public final class IDeviceMonitor {
 
     private func debounceEnded() {
         debounceTask = nil
-        let afterArrival = debounceSawArrival && !debounceSawTermination
+        let afterArrival = debounceSawArrival
         debounceSawArrival = false
-        debounceSawTermination = false
         requestList(ListRequest(afterArrival: afterArrival))
     }
 
