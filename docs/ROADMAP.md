@@ -212,20 +212,25 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
   (turned off in System Settings → Menu Bar → Battery; BatteryPulse can't hide it itself,
   so Settings explains this and links there). Built in 0.4.0, to verify on the M5: Symbol (the
-  SF Symbol, as before), Modern (like macOS 27: a capsule without an outline, the empty part
-  translucent), Classic (outlined), Percentage Inside (like macOS 26) and Ring; the ring has
-  only the state colors, no color or monochrome choice. Sizes are in `BatteryIconLayout`
+  SF Symbol, as before), Modern (like macOS 27: a rounded battery without an outline, the empty
+  part translucent), Classic (outlined), Percentage Inside (like macOS 27 with the percentage on)
+  and Ring; the ring has only the state colors, no color or monochrome choice. Sizes are in
+  `BatteryIconLayout`
 - [ ] Draw the battery to the exact level with SwiftUI shapes, not the five steps of the SF
   Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
   charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
   to verify on the M5
 - [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
   bar's height on displays with a notch
-- [ ] 0.6.1: rework the drawn styles. On the M5 (0.4.0) they look off next to the system item:
-  Modern is thicker and larger than the macOS 27 battery, Percentage Inside's digits are taller
-  than the body and change colour at the fill edge, the previews in Settings differ in size, and
-  the ring is thin. Render `BatteryIconLayout` on Linux and match it to screenshots of the
-  system item before changing the app
+- [ ] 0.6.0: rework the drawn styles. On the M5 (0.4.0) they looked off next to the system item:
+  Modern read heavier (a full capsule, a darker track, a small thin bolt) although it was
+  smaller, Percentage Inside's digits changed colour at the fill edge, the previews in Settings
+  differed in size, and the ring was thin. Matched to 2x screenshots of the system item,
+  measured on the M5: a 23 × 12 pt body, 4 pt corners, a 1.375 × 4 pt terminal, a 14 pt bolt,
+  and 7.4 pt digits knocked out of the battery, scaled down uniformly for "100"; every bar style
+  shares one 26 × 14 pt canvas, the ring has a 3 pt stroke, and the Settings previews share one
+  size. Built in 0.6.0; to tick after the checks on the M5 next to the system item (light and
+  dark bars, the plug, 100 % on power, Percentage Inside with 1–3 digits)
 
 ### Stage 1.4: Liquid Glass and motion (0.5)
 

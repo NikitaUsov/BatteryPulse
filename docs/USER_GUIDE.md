@@ -70,10 +70,10 @@ shown; the charge and temperature change when macOS reports new values.
 
 **Icon Style** draws the battery to the exact level:
 
-- **Modern** (the default) looks like the battery item of macOS 27: a capsule without an
-  outline whose empty part is translucent.
-- **Classic** has an outline, **Percentage Inside** puts the charge inside the battery as
-  macOS 26 did, and **Ring** is a small round gauge.
+- **Modern** (the default) looks like the battery item of macOS 27: a rounded battery without
+  an outline whose empty part is translucent.
+- **Classic** has an outline, **Percentage Inside** shows the charge inside the battery as
+  macOS 27 does with the percentage turned on, and **Ring** is a small round gauge.
 - **Symbol** is the SF Symbol BatteryPulse used before 0.4, in five steps.
 
 The drawn styles show a bolt while charging, a plug while on power but not charging (full, on
