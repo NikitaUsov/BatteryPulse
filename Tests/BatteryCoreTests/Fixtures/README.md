@@ -11,7 +11,12 @@ Raw captures in the `bpulse --raw` format (serial numbers redacted).
 | `m5-macos27-unplugged.plist` | Real: same Mac just after unplugging; the registry still shows +250 mA, the SMC −562 mA |
 | `iphone17promax-ios27.0.1-usb.plist` | Real: iPhone 17 Pro Max (iPhone18,2), iOS 27.0.1, over USB while charging from a 15 W adapter (`bpulse --device 1 --raw`); its Settings showed Maximum Capacity 95 %, 278 cycles, first use October 2025. The pack's `UUID` was redacted by hand |
 | `synthetic-legacy-*.plist` | Hand-written pre-macOS 27 Apple Silicon layout; covers fallback keys |
+| `synthetic-accessories.plist` | Hand-written accessory capture (`bpulse --accessories --raw` format, `AccessoryFixture.swift`): the power source keys macOS publishes for accessories, made-up names and identifiers; covers grouping, parts, kinds and the sources that are dropped |
 
 To add a capture: `swift run bpulse --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-<state>.plist`,
 then add a case to `Fixture.swift`.
 To catch a transition (plugging in, the Charge Limit stop), use `bpulse --record <folder>` and pick the capture.
+For accessories:
+`swift run bpulse --accessories --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-accessories-<setup>.plist`
+(names and identifiers are already pseudonyms; check that no real name is left), then add a case
+to `AccessoryFixture.swift`, not to `Fixture`, whose cases are Mac captures.

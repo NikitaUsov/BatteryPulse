@@ -37,6 +37,20 @@ import Testing
 
     @Test(
         arguments: [
+            (21.0 as Double?, false, BatteryPresentation.LevelTier.normal),
+            (20, false, .low),
+            (11, false, .low),
+            (10, false, .critical),
+            (0, false, .critical),
+            (5, true, .normal),
+            (nil, false, .normal),
+        ])
+    func levelTierForPercent(percent: Double?, isCharging: Bool, expected: BatteryPresentation.LevelTier) {
+        #expect(BatteryPresentation.levelTier(percent: percent, isCharging: isCharging) == expected)
+    }
+
+    @Test(
+        arguments: [
             (nil as String?, 5760, BatteryPresentation.LevelTier.normal),
             ("Normal", 4600, .low),
             ("Fair", 5760, .low),

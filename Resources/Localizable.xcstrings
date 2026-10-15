@@ -70,6 +70,18 @@
         }
       }
     },
+    "%@ remaining. Charge it soon.": {
+      "extractionState": "manual",
+      "comment": "Notification body for an accessory's low battery: its charge, e.g. 15%",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Осталось %@. Скоро потребуется зарядка."
+          }
+        }
+      }
+    },
     "%@ Wh": {
       "extractionState": "manual",
       "comment": "Energy in watt-hours",
@@ -78,6 +90,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ Вт·ч"
+          }
+        }
+      }
+    },
+    "%@, charging": {
+      "extractionState": "manual",
+      "comment": "VoiceOver value of an accessory part in the menu bar panel: its charge, then that it charges",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, заряжается"
           }
         }
       }
@@ -192,6 +216,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Примерно раз в минуту, пока работает BatteryPulse, за последние 10 дней, а также ёмкость и циклы аккумулятора раз в день. Данные остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "Accessories": {
+      "extractionState": "manual",
+      "comment": "Sidebar row, page title and menu bar panel caption: batteries of Bluetooth keyboards, mice, headphones",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары"
+          }
+        }
+      }
+    },
+    "Accessories show here while they're connected to this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары показаны здесь, пока они подключены к этому Mac."
+          }
+        }
+      }
+    },
+    "Accessories Unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары недоступны"
+          }
+        }
+      }
+    },
+    "Accessory": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory that macOS doesn't name",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуар"
           }
         }
       }
@@ -1148,6 +1218,18 @@
         }
       }
     },
+    "Case": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the charging case",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футляр"
+          }
+        }
+      }
+    },
     "Cell %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1627,6 +1709,17 @@
         }
       }
     },
+    "Connect a Bluetooth keyboard, mouse, trackpad or headphones to see its battery here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите клавиатуру, мышь, трекпад или наушники Bluetooth, и здесь появится уровень их заряда."
+          }
+        }
+      }
+    },
     "Connect an iPhone or iPad with a cable and unlock it. If it asks Trust This Computer?, tap Trust.": {
       "extractionState": "manual",
       "localizations": {
@@ -1689,6 +1782,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подключено по Wi-Fi"
+          }
+        }
+      }
+    },
+    "Connected to power": {
+      "extractionState": "manual",
+      "comment": "State of an accessory's battery: on its cable or in its case, not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено к питанию"
           }
         }
       }
@@ -2264,6 +2369,18 @@
         }
       }
     },
+    "Earbuds": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: both earbuds reported together, next to the case",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наушники"
+          }
+        }
+      }
+    },
     "Easy on the battery": {
       "extractionState": "manual",
       "comment": "What's New: feature title",
@@ -2810,6 +2927,18 @@
         }
       }
     },
+    "Game Controller": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Игровой контроллер"
+          }
+        }
+      }
+    },
     "Gauge capacity field that reads 0 on every Apple silicon Mac sampled.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2998,6 +3127,18 @@
         }
       }
     },
+    "Headphones": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наушники"
+          }
+        }
+      }
+    },
     "Health": {
       "extractionState": "manual",
       "localizations": {
@@ -3017,6 +3158,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Предупреждение о состоянии, например «Check Battery»; отсутствует или пусто, если аккумулятор в норме."
+          }
+        }
+      }
+    },
+    "Hearing Aid": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слуховой аппарат"
           }
         }
       }
@@ -3479,6 +3632,18 @@
         }
       }
     },
+    "Keyboard": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиатура"
+          }
+        }
+      }
+    },
     "Kind of power source: InternalBattery or UPS.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3514,6 +3679,18 @@
         }
       }
     },
+    "Last known charge": {
+      "extractionState": "manual",
+      "comment": "State of an accessory's battery that is out of reach: the charge shown is the last one reported",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последний известный заряд"
+          }
+        }
+      }
+    },
     "Last seen %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3532,6 +3709,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
+    "Left": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the left earbud",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Левый"
           }
         }
       }
@@ -3918,6 +4107,18 @@
         }
       }
     },
+    "Mouse": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мышь"
+          }
+        }
+      }
+    },
     "Multiple Rows Selected": {
       "extractionState": "manual",
       "localizations": {
@@ -4004,6 +4205,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нет"
+          }
+        }
+      }
+    },
+    "No Accessories": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет аксессуаров"
           }
         }
       }
@@ -5811,6 +6023,18 @@
         }
       }
     },
+    "Right": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the right earbud",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый"
+          }
+        }
+      }
+    },
     "Ring": {
       "extractionState": "manual",
       "localizations": {
@@ -6342,6 +6566,18 @@
         }
       }
     },
+    "Speaker": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Динамик"
+          }
+        }
+      }
+    },
     "Spread": {
       "extractionState": "manual",
       "localizations": {
@@ -6675,6 +6911,17 @@
         }
       }
     },
+    "This version of macOS doesn't report accessory batteries to apps.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта версия macOS не сообщает приложениям уровень заряда аксессуаров."
+          }
+        }
+      }
+    },
     "Time": {
       "extractionState": "manual",
       "localizations": {
@@ -6835,6 +7082,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Автопоказ"
+          }
+        }
+      }
+    },
+    "Trackpad": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Трекпад"
           }
         }
       }
@@ -7459,6 +7718,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Что нового в BatteryPulse"
+          }
+        }
+      }
+    },
+    "When an accessory falls to": {
+      "extractionState": "manual",
+      "comment": "Settings → Notifications: notify when a Bluetooth accessory's battery falls to a percentage",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При разрядке аксессуара до"
           }
         }
       }

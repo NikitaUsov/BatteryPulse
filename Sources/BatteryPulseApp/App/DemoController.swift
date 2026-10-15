@@ -7,7 +7,8 @@ import Observation
 import SwiftUI
 
 /// Demo Mode: simulated battery states shown everywhere in the app (main window, menu bar and
-/// popover), picked by hand or played as a tour that also switches pages.
+/// popover), picked by hand or played as a tour that also switches pages. Fixed demo accessories
+/// replace the connected ones meanwhile, so screenshots never show a person's accessory names.
 @MainActor
 @Observable
 final class DemoController {
@@ -55,6 +56,8 @@ final class DemoController {
 
     @ObservationIgnored private let monitor: BatteryMonitor
     @ObservationIgnored private let provider = DemoBatteryProvider()
+    @ObservationIgnored private let accessories: AccessoryMonitor
+    @ObservationIgnored private let accessoryProvider = DemoAccessoryProvider()
     /// Runs only while something moves: stopped while paused and once an animation shown by hand
     /// has finished.
     @ObservationIgnored private var clock: Task<Void, Never>?
@@ -79,8 +82,9 @@ final class DemoController {
         MotionPolicy(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
     }
 
-    init(monitor: BatteryMonitor) {
+    init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
+        self.accessories = accessories
         // Demo Mode lives in the Developer section: hiding the section ends the demo, even when
         // no window is open to notice.
         defaultsObserver = NotificationCenter.default.addObserver(
@@ -147,6 +151,9 @@ final class DemoController {
             isPlaying = false
             monitor.setOverride(nil)
         }
+        // Outside the transaction: accessory cards come and go without animation. One read
+        // brings the connected accessories back.
+        accessories.setOverride(nil)
         provider.battery = nil
     }
 
@@ -176,6 +183,7 @@ final class DemoController {
             provider.battery = battery(for: step, progress: 0)
             if !monitor.isOverridden { monitor.setOverride(provider) }
         }
+        if !accessories.isOverridden { accessories.setOverride(accessoryProvider) }
         startClock()
     }
 

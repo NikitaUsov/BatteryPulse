@@ -11,6 +11,7 @@ administrator rights.
 - [Compact window](#compact-window)
 - [History](#history)
 - [iPhone and iPad](#iphone-and-ipad)
+- [Accessories](#accessories)
 - [Notifications](#notifications)
 - [Widget](#widget)
 - [Demo Mode](#demo-mode)
@@ -85,7 +86,8 @@ BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its
 **Open Menu Bar Settings…** in Settings → Menu Bar and turn off **Battery** there.
 
 The popover that opens from the item shows charge, state, time remaining, maximum capacity,
-cycles, temperature, the adapter and the system load.
+cycles, temperature, the adapter and the system load, and below them the batteries of connected
+accessories (see [Accessories](#accessories)).
 
 ## The main window
 
@@ -100,7 +102,9 @@ cycles, temperature, the adapter and the system load.
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
   the spread between them.
-- **Devices** — your iPhones and iPads, one page each; see [iPhone and iPad](#iphone-and-ipad).
+- **Devices** — your iPhones and iPads, one page each (see [iPhone and iPad](#iphone-and-ipad)),
+  and **Accessories**, the batteries of your Bluetooth accessories (see
+  [Accessories](#accessories)).
 - **Developer** — a sidebar section, off by default (Settings → Advanced), with two pages:
   - **Raw Data** — every raw value macOS reports, in a table with a readable decoding (mAh,
     volts, watts, temperatures, times, dates, bit fields, USB Power Delivery offers and the
@@ -113,7 +117,9 @@ cycles, temperature, the adapter and the system load.
   - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
 
 **Copy Report** in the toolbar copies a plain-text report without serial numbers; on a device
-page, the report of the device's last read, without its name or identifier.
+page, the report of the device's last read, without its name or identifier. It is unavailable on
+the Accessories page; `bpulse --accessories --raw` saves what accessories report (see
+[Accessories from the command line](#accessories-from-the-command-line)).
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open and can be
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
@@ -313,6 +319,30 @@ each device's name (as its label), model, OS version, last values and history un
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
 device data are never written. Demo Mode shows a simulated iPhone in place of your devices.
 
+## Accessories
+
+**Accessories**, the last row of the sidebar's Devices section, shows the batteries of the
+accessories connected to this Mac: Bluetooth keyboards, mice, trackpads, headphones and game
+controllers, a card each with its name, its kind, how it's connected and the charge of each
+part. Earbuds such as AirPods show each bud and the case when macOS reports them separately, and
+one charge when it reports them together. The menu bar popover lists the same accessories below
+the Mac's battery, with a bolt next to a part that charges.
+
+BatteryPulse shows what macOS itself reports for accessories (the list `pmset -g accps` prints),
+so it needs no Bluetooth permission and asks for nothing. An accessory appears while it's
+connected to this Mac; one connected to another device, or one that reports no battery to macOS,
+doesn't. A part that is out of reach shows its last known charge, dimmed; a keyboard on its
+cable or a bud in its case shows **Connected to power** when it isn't charging. The charge
+changes when macOS reports a change, and BatteryPulse reads it again each time you open the
+page or the popover; it never polls. The page also works on a Mac without a battery. If this
+version of macOS doesn't report accessory batteries to apps, the page says **Accessories
+Unavailable** and the popover shows none.
+
+Accessories have no history and aren't exported: they report only their charge. Their names are
+shown as macOS reports them; Demo Mode replaces them with simulated accessories. Nothing about
+them is stored, except which accessories have already sent a low-battery notification while that
+notification is on.
+
 ## Notifications
 
 In Settings → Notifications, BatteryPulse can tell you:
@@ -324,13 +354,17 @@ In Settings → Notifications, BatteryPulse can tell you:
   Normal.
 - **When the Mac gets hot**, once each time the thermal state turns high or critical, at most
   once an hour.
+- **When an accessory falls to** 10, 20 or 30 %, once per discharge for each
+  [accessory](#accessories). For earbuds, the lowest bud in use counts, even while the other
+  charges in the case; the case itself and parts out of reach never notify. Off by default.
 
 Each notification comes once and only again after the battery has clearly moved away (5 points
-below the charge limit, or unplugged; 5 points above the low-battery level, or plugged in).
-A low-battery notification disappears from Notification Center when you plug in, and a
-charge-level one when you unplug. macOS asks for permission the first time you turn one on;
-**Send Test Notification** shows what they look like. BatteryPulse has to be running to notify
-you.
+below the charge limit, or unplugged; 5 points above the low-battery level, or plugged in; for an
+accessory, 5 points above or charging). A low-battery notification disappears from Notification
+Center when you plug in (an accessory's when it charges), and a charge-level one when you unplug.
+An accessory that disconnects and comes back at the same level doesn't notify again. macOS asks
+for permission the first time you turn one on; **Send Test Notification** shows what they look
+like. BatteryPulse has to be running to notify you.
 
 ## Widget
 
@@ -374,9 +408,10 @@ While the demo runs, a bar at the bottom of the window shows the current scene w
 the previous scene, play/pause (pause also freezes an animation), the next scene and stopping
 the demo. The menu bar shows a demo symbol next to the simulated values, and its popover shows a
 **Demo** badge with **Stop Demo**. The Devices section shows a simulated iPhone in place of
-your devices, and History shows the Mac only. Copy Report, Copy JSON and Export Capture are
-unavailable during the demo, so a bug report always contains real data. The demo stops when you quit or turn
-the Developer section off.
+your devices, the Accessories page and the popover show a simulated keyboard, mouse and AirPods
+in place of yours (so screenshots never show your accessories' names), and History shows the Mac
+only. Copy Report, Copy JSON and Export Capture are unavailable during the demo, so a bug report
+always contains real data. The demo stops when you quit or turn the Developer section off.
 
 ## Settings
 
@@ -386,7 +421,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 |-----|------------------|
 | General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
-| Notifications | Charge limit, low battery, battery service and heat notifications |
+| Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
 | Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
 
 ### Updates
@@ -548,8 +583,29 @@ with serial numbers, identifiers and the device's name removed (`--devices` itse
 name). When no device is found or it can't be read, `bpulse` says why (not trusted, locked, no
 answer) and exits with status 2.
 
+### Accessories from the command line
+
+`bpulse --accessories` lists the batteries macOS reports for connected accessories, one line
+each, the same as the [Accessories](#accessories) page:
+
+```
+Magic Keyboard (keyboard, Bluetooth): 76 %
+AirPods Pro (headphones, Bluetooth): left 64 %, right 61 %, case 90 % charging
+```
+
+`--json` prints the list as JSON. `bpulse --accessories --raw > accessories.xml` saves what macOS
+reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identifiers
+*group-1*, *accessory-1*, consistently, so the parts of an accessory still belong together;
+serial numbers and addresses are removed. `bpulse --input accessories.xml` shows a saved capture
+again, on any computer. When no accessory reports a battery, the list says so and `bpulse` exits
+with status 2 (`--raw` still saves the empty capture); on a macOS that doesn't report accessory
+batteries to apps it says that, also with status 2.
+
 ## Reporting a problem
 
 Open an [issue](https://github.com/NikitaUsov/BatteryPulse/issues/new/choose) and attach a
 capture: turn on the Developer section, then **Raw Data → Export Capture…** (or run
 `swift run bpulse --raw > capture.xml`). Serial numbers are removed from captures and reports.
+For a problem with accessories, attach `swift run bpulse --accessories --raw > accessories.xml`
+instead: their names and identifiers are replaced (see
+[Accessories from the command line](#accessories-from-the-command-line)).

@@ -35,6 +35,21 @@ import Testing
         #expect(s.isTimeRemainingCalculating == (scenario == .justPluggedIn))
     }
 
+    @Test func demoAccessoriesParse() throws {
+        let accessories = AccessoryParser.accessories(from: DemoAccessories.sources)
+        #expect(accessories.map(\.kind) == [.keyboard, .mouse, .headphones])
+        let mouse = try #require(accessories.first { $0.kind == .mouse })
+        let level = try #require(mouse.level)
+        #expect(BatteryPresentation.levelTier(percent: Double(level.percent), isCharging: level.isCharging) == .low)
+        let buds = try #require(accessories.last)
+        #expect(buds.parts.map(\.role) == [.left, .right, .case])
+        #expect(buds.parts.map(\.percent) == [64, 61, 90])
+        #expect(buds.parts.last?.isCharging == true)
+        #expect(buds.symbolName == "airpods")
+        // Product names only: no "Anna's AirPods".
+        #expect(!accessories.contains { $0.name.contains("'") || $0.name.contains("\u{2019}") })
+    }
+
     @Test func noBatteryScenarioHasNoReading() {
         #expect(DemoScenario.noBattery.battery == nil)
     }

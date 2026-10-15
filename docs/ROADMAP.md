@@ -382,14 +382,25 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   read record fields, so the alerting fields can't also be encrypted). Without it, only the local
   network or Bluetooth LE, which iOS won't relaunch for after a force-quit. Blocked on Stage 2
   (iOS app) anyway.
-- [ ] **Bluetooth device batteries on macOS** (0.6) (keyboard, mouse, trackpad, headphones): feasible
+- [x] **Bluetooth device batteries on macOS** (0.6) (keyboard, mouse, trackpad, headphones): feasible
   without the paid account. powerd publishes accessory batteries through the private
   `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
   prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
-  notifications), with `pmset -g accps -xml` as a fallback. Seen working for Magic Keyboard and
-  Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
-  (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
-  Bluetooth permission, which ad-hoc signing loses on every update.
+  notifications, a burst coalesced into one read, plus one read whenever the page or the panel
+  becomes visible; no polling). Shipped: the Accessories row in the sidebar's Devices section, a
+  block in the menu bar panel, an optional low-battery notification (once per discharge, on the
+  lowest part that drains), fixed demo accessories in Demo Mode, and `bpulse --accessories`
+  (`--raw` pseudonymizes names and identifiers). No history and no export rows: accessories
+  report only their charge. Seen working for Magic Keyboard and Mouse, a third-party Bluetooth LE
+  mouse and a classic Bluetooth headset on macOS 15. Earbuds ship as IOPS reports them: per part
+  (left, right, case) when published, a combined part otherwise; whether macOS publishes them at
+  all is still to check on the M5. `pmset -g accps -xml` is not a fallback (it calls the same
+  function); it is the contingency only if macOS 27 turns out to hide the list from apps, which
+  the M5 captures (`bpulse --accessories --raw` next to `pmset -g accps -xml`) decide. Still to
+  check on the M5: those captures (keyboard on Bluetooth and on its cable, earbuds in and out of
+  the case), the symbols, the Russian panel with three parts, and the energy profile with
+  accessories connected. Anything beyond IOPS needs Bluetooth permission, which ad-hoc signing
+  loses on every update.
 - [x] **CSV/JSON export** of history (0.6): an Export menu in History's toolbar (minute readings
   or daily health as CSV, both as JSON, everything the store keeps) and `bpulse --export`.
   Public APIs only (`fileExporter` with a `Transferable` file); the formatting is

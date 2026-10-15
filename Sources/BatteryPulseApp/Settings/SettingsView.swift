@@ -342,6 +342,7 @@ private struct MenuBarIconStylePicker: View {
 struct NotificationSettings: View {
     @AppStorage(AppSettings.alertChargeLimitKey) private var chargeLimit = 0
     @AppStorage(AppSettings.alertLowBatteryKey) private var lowBattery = 0
+    @AppStorage(AppSettings.alertAccessoryLowKey) private var accessoryLow = 0
     @AppStorage(AppSettings.alertServiceKey) private var service = false
     @AppStorage(AppSettings.alertHeatKey) private var heat = false
     @State private var isDenied = false
@@ -354,6 +355,11 @@ struct NotificationSettings: View {
                 ForEach([80, 85, 90, 95, 100], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
             }
             Picker("When the battery falls to", selection: $lowBattery) {
+                Text("Off").tag(0)
+                ForEach([10, 20, 30], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
+            }
+            // Bluetooth keyboards, mice, trackpads and headphones; once per discharge each.
+            Picker("When an accessory falls to", selection: $accessoryLow) {
                 Text("Off").tag(0)
                 ForEach([10, 20, 30], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
             }
@@ -387,7 +393,7 @@ struct NotificationSettings: View {
             }
         }
         .task { isDenied = await BatteryNotifier.isDenied() }
-        .onChange(of: [chargeLimit, lowBattery, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
+        .onChange(of: [chargeLimit, lowBattery, accessoryLow, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
             // Ask for permission the first time something is turned on.
             guard AppSettings.alerts.isAnyEnabled else { return }
             Task {

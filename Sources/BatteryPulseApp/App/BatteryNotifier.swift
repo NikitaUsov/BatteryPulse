@@ -6,7 +6,8 @@ import Observation
 @preconcurrency import UserNotifications
 
 /// Posts the battery notifications the user turned on in Settings → Notifications. It reacts to
-/// every new reading, so it needs no polling of its own, and stays quiet during Demo Mode.
+/// every new reading of the Mac's battery and every change of the accessories, so it needs no
+/// polling of its own, and stays quiet during Demo Mode.
 @MainActor
 final class BatteryNotifier: NSObject {
     /// UserNotifications raises an exception outside an app bundle, e.g. under
@@ -14,14 +15,23 @@ final class BatteryNotifier: NSObject {
     static let isAvailable = Bundle.main.bundleURL.pathExtension == "app"
 
     private let monitor: BatteryMonitor
+    private let accessories: AccessoryMonitor
     private var state: AlertState
     private var wasPluggedIn: Bool?
+    private var accessoryState: AccessoryAlertState
+    /// The accessory threshold last seen, so only a change of it re-evaluates.
+    private var lastAccessoryThreshold: Int?
+    private var defaultsObserver: NSObjectProtocol?
 
-    init(monitor: BatteryMonitor) {
+    init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
+        self.accessories = accessories
         state =
             UserDefaults.standard.data(forKey: AppSettings.alertStateKey)
             .flatMap { try? JSONDecoder().decode(AlertState.self, from: $0) } ?? AlertState()
+        accessoryState =
+            UserDefaults.standard.data(forKey: AppSettings.accessoryAlertStateKey)
+            .flatMap { try? JSONDecoder().decode(AccessoryAlertState.self, from: $0) } ?? AccessoryAlertState()
         super.init()
     }
 
@@ -29,6 +39,39 @@ final class BatteryNotifier: NSObject {
         guard Self.isAvailable else { return }
         UNUserNotificationCenter.current().delegate = self
         observe()
+        observeAccessories()
+        // An accessory can stay at the same level for an hour: one that is already low at launch
+        // alerts now, not at its next change.
+        evaluateAccessories()
+        // Turning the alert on with a mouse already below the threshold alerts at once. Any
+        // object, as in DemoController: the check is one comparison, and the notifier's own
+        // writes, which post this notification too, end there.
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let threshold = AppSettings.alerts.accessoryLowBattery
+                guard threshold != self.lastAccessoryThreshold else { return }
+                self.accessoryThresholdChanged(to: threshold)
+            }
+        }
+    }
+
+    /// Off clears the state at once. On, the evaluation waits for the answer to the permission
+    /// prompt Settings shows the first time an alert is turned on: a notification posted before
+    /// it is allowed is dropped, and the accessory would then stay quiet until it charges.
+    private func accessoryThresholdChanged(to threshold: Int?) {
+        lastAccessoryThreshold = threshold
+        guard threshold != nil else {
+            evaluateAccessories()
+            return
+        }
+        Task { [weak self] in
+            // Returns at once, without a prompt, once the user has answered.
+            _ = await BatteryNotifier.requestAuthorization()
+            self?.evaluateAccessories()
+        }
     }
 
     /// Re-arms on every change of the monitor's snapshot.
@@ -56,6 +99,66 @@ final class BatteryNotifier: NSObject {
         for alert in alerts {
             post(alert, snapshot)
         }
+    }
+
+    /// Re-arms on every change of the accessory list, which the monitor reassigns only when it
+    /// changed.
+    private func observeAccessories() {
+        withObservationTracking {
+            _ = accessories.accessories
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.evaluateAccessories()
+                self?.observeAccessories()
+            }
+        }
+    }
+
+    private func evaluateAccessories() {
+        let defaults = UserDefaults.standard
+        let threshold = AppSettings.alerts.accessoryLowBattery
+        lastAccessoryThreshold = threshold
+        guard let threshold else {
+            // Nothing is stored while the alert is off.
+            accessoryState = AccessoryAlertState()
+            if defaults.object(forKey: AppSettings.accessoryAlertStateKey) != nil {
+                defaults.removeObject(forKey: AppSettings.accessoryAlertStateKey)
+            }
+            return
+        }
+        guard !accessories.isOverridden else { return }
+        let previous = accessoryState
+        let changes = AccessoryAlerts.evaluate(
+            accessories.accessories, threshold: threshold, now: .now, state: &accessoryState)
+        // Every write posts UserDefaults.didChangeNotification, so only write real changes.
+        if accessoryState != previous {
+            if accessoryState.firedAt.isEmpty {
+                defaults.removeObject(forKey: AppSettings.accessoryAlertStateKey)
+            } else if let data = try? JSONEncoder().encode(accessoryState) {
+                defaults.set(data, forKey: AppSettings.accessoryAlertStateKey)
+            }
+        }
+        // Charging, or charged past the margin: the alert no longer applies.
+        if !changes.rearmed.isEmpty {
+            UNUserNotificationCenter.current().removeDeliveredNotifications(
+                withIdentifiers: changes.rearmed.map(AccessoryAlerts.notificationID(for:)))
+        }
+        for alert in changes.fired {
+            post(alert)
+        }
+    }
+
+    /// "Low Battery: Magic Mouse", "15% remaining. Charge it soon."
+    private func post(_ alert: AccessoryLowBattery) {
+        let name = alert.name.isEmpty ? Phrases.accessoryKind(alert.kind) : alert.name
+        let percentText = BatteryFormatter.app.percent(Double(alert.percent))
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Low Battery: \(name)")
+        content.body = String(localized: "\(percentText) remaining. Charge it soon.")
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: AccessoryAlerts.notificationID(for: alert.id), content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 
     /// "Battery low" is moot once the adapter is connected, and "charged" once it's unplugged.
