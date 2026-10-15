@@ -20,6 +20,28 @@ jobs:
     runs-on: xcode-27
     steps:
       - uses: actions/checkout@v5
+      - name: Check the update signing key
+        # The app installs an update itself only if the DMG is signed with the private half of
+        # ReleaseSigning.publicKey, so stop before building when the secret is missing or is
+        # another key.
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::The UPDATE_SIGNING_KEY secret is missing or empty. Add it in Settings > Secrets and variables > Actions (see scripts/sign-update.swift)."
+            exit 1
+          fi
+          expected="$(sed -n 's/^ *public static let publicKey = "\([^"]*\)"$/\1/p' Sources/BatteryCore/ReleaseSigning.swift)"
+          if [ -z "$expected" ]; then
+            echo "::error::Can't read ReleaseSigning.publicKey from Sources/BatteryCore/ReleaseSigning.swift."
+            exit 1
+          fi
+          actual="$(swift scripts/sign-update.swift --public-key)"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::UPDATE_SIGNING_KEY belongs to the public key $actual, but the app expects $expected (ReleaseSigning.publicKey)."
+            exit 1
+          fi
+          echo "UPDATE_PUBLIC_KEY=$expected" >> "$GITHUB_ENV"
       - name: Test
         run: swift test
       - name: Resolve version
@@ -40,11 +62,19 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Package app (DMG)
         run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Sign DMG
+        # Writes build/BatteryPulse.dmg.sig, which the in-app updater checks before installing.
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          swift scripts/sign-update.swift build/BatteryPulse.dmg
+          swift scripts/sign-update.swift --verify build/BatteryPulse.dmg "$UPDATE_PUBLIC_KEY"
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        # The DMG keeps a stable name, so releases/latest/download/BatteryPulse.dmg always works.
+        # The DMG and its signature keep stable names, so releases/latest/download/BatteryPulse.dmg
+        # always works and the app finds BatteryPulse.dmg.sig next to it.
         run: |
-          gh release create "v$VERSION" build/BatteryPulse.dmg \
+          gh release create "v$VERSION" build/BatteryPulse.dmg build/BatteryPulse.dmg.sig \
             --target "$GITHUB_SHA" --title "BatteryPulse $VERSION" \
             --notes-file .github/release-notes.md --generate-notes

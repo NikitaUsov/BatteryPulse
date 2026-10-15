@@ -6,8 +6,9 @@ import Observation
 
 /// Checks GitHub for a newer release: as often as the user chose, and whenever they ask.
 ///
-/// The only network request BatteryPulse makes. It asks GitHub for the latest release and sends
-/// nothing about the Mac beyond a User-Agent with the app's version (URLSession adds the
+/// The only network request BatteryPulse makes on its own; the other is downloading an update
+/// the user chose to install (``UpdateInstaller``). It asks GitHub for the latest release and
+/// sends nothing about the Mac beyond a User-Agent with the app's version (URLSession adds the
 /// language). Builds without a version (CI, `swift run`) never check on their own.
 @MainActor
 @Observable
@@ -34,6 +35,8 @@ final class UpdateChecker {
     private(set) var lastCheck: Date?
 
     let currentVersion: AppVersion
+    /// Installs the release the window offers, from inside the app.
+    let installer: UpdateInstaller
 
     /// Opens the Software Update window; set by the app.
     @ObservationIgnored var showWindow: (() -> Void)?
@@ -53,7 +56,9 @@ final class UpdateChecker {
 
     init(bundle: Bundle = .main) {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        currentVersion = version.flatMap(AppVersion.init) ?? AppVersion(parts: [0, 0, 0])
+        let current = version.flatMap(AppVersion.init) ?? AppVersion(parts: [0, 0, 0])
+        currentVersion = current
+        installer = UpdateInstaller(currentVersion: current, bundle: bundle)
         lastCheck = UserDefaults.standard.object(forKey: AppSettings.lastUpdateCheckKey) as? Date
     }
 
@@ -73,6 +78,8 @@ final class UpdateChecker {
     /// Checks now and shows the result in the Software Update window.
     func checkNow() {
         showWindow?()
+        // The window shows the installation in progress instead.
+        guard !installer.isBusy else { return }
         if status == .checking {
             userIsWaiting = true
             return
@@ -89,8 +96,11 @@ final class UpdateChecker {
     func dismiss() {
         pendingRelease = nil
         status = .idle
+        installer.reset()
     }
 
+    /// Opens the DMG's download in the browser: the way to update when the app can't install
+    /// the update itself.
     func download(_ release: ReleaseInfo) {
         NSWorkspace.shared.open(release.downloadURL ?? release.pageURL)
         dismiss()
@@ -106,7 +116,9 @@ final class UpdateChecker {
     }
 
     private func check(userInitiated: Bool) async {
-        guard status != .checking else { return }
+        // A check would replace the release being installed in the window.
+        guard status != .checking, !installer.isBusy else { return }
+        installer.reset()
         status = .checking
         userIsWaiting = userIsWaiting || userInitiated
         defer { userIsWaiting = false }

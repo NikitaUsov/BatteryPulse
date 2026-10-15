@@ -55,6 +55,23 @@ jobs:
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
         run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Smoke-test update signing
+        # The release signs with a secret this job doesn't get, so sign with a throwaway key:
+        # the signature must verify, and a changed DMG must not.
+        run: |
+          UPDATE_SIGNING_KEY="$(swift scripts/sign-update.swift --generate-key)"
+          export UPDATE_SIGNING_KEY
+          public_key="$(swift scripts/sign-update.swift --public-key)"
+          swift scripts/sign-update.swift build/BatteryPulse.dmg
+          swift scripts/sign-update.swift --verify build/BatteryPulse.dmg "$public_key"
+          cp build/BatteryPulse.dmg build/tampered.dmg
+          cp build/BatteryPulse.dmg.sig build/tampered.dmg.sig
+          printf 'x' >> build/tampered.dmg
+          if swift scripts/sign-update.swift --verify build/tampered.dmg "$public_key"; then
+            echo "error: a changed DMG passed verification" >&2
+            exit 1
+          fi
+          rm build/tampered.dmg build/tampered.dmg.sig build/BatteryPulse.dmg.sig
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
