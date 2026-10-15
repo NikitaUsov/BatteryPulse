@@ -210,6 +210,31 @@ import Testing
         #expect(key([Key.partIdentifier: .string("Case"), Key.name: .string("Buds")]) == "n:Buds")
     }
 
+    /// A source tied only by its per-boot `Power Source ID` keeps its id when powerd numbers it
+    /// again (a reboot or a reconnect), so its alert doesn't fire a second time.
+    @Test func perBootSourceKeepsItsIDAcrossReads() {
+        func mouse(_ number: Int64, percent: Int64 = 8) -> PropertyDictionary {
+            source("Mouse", category: "Mouse", percent: percent).merging([Key.powerSourceID: .int(number)]) { $1 }
+        }
+        let before = AccessoryParser.accessories(from: [mouse(9)])
+        let after = AccessoryParser.accessories(from: [mouse(42)])
+        #expect(before.count == 1)
+        #expect(before.map(\.id) == after.map(\.id))
+
+        var state = AccessoryAlertState()
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        #expect(AccessoryAlerts.evaluate(before, threshold: 20, now: start, state: &state).fired.count == 1)
+        #expect(AccessoryAlerts.evaluate(after, threshold: 20, now: start + 60, state: &state).fired.isEmpty)
+
+        // Two that say the same about themselves stay apart, ranked by their numbers.
+        let twins = AccessoryParser.accessories(from: [mouse(11, percent: 70), mouse(10)])
+        let renumbered = AccessoryParser.accessories(from: [mouse(30), mouse(31, percent: 70)])
+        #expect(Set(twins.map(\.id)).count == 2)
+        #expect(Set(twins.map(\.id)) == Set(renumbered.map(\.id)))
+        #expect(twins.first { $0.parts.first?.percent == 8 }?.id == before.first?.id)
+        #expect(renumbered.first { $0.parts.first?.percent == 8 }?.id == before.first?.id)
+    }
+
     @Test func levelIgnoresTheCase() throws {
         #expect(try accessory("Test Buds").level == AccessoryLevel(percent: 61, isCharging: false))
         let loneCase = AccessoryBattery(

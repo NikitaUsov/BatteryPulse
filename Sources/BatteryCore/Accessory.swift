@@ -119,8 +119,9 @@ public struct AccessoryPart: Sendable, Hashable, Encodable {
 
 /// One physical accessory with one or more parts (earbuds: left, right, case).
 public struct AccessoryBattery: Sendable, Hashable, Identifiable, Encodable {
-    /// "acc-" and 16 hex digits: FNV-1a 64 of the key that groups the accessory's power sources,
-    /// stable across launches. A local key for view identity, alert state and notification
+    /// "acc-" and 16 hex digits: FNV-1a 64 of the key that groups the accessory's power sources
+    /// (for a source known only by its per-boot number, of what it says about itself; see
+    /// ``AccessoryParser/identifiers(for:source:)``), stable across launches. A local key for view identity, alert state and notification
     /// identifiers only. It is not anonymous: a Bluetooth address behind it can be recovered by
     /// brute force, so it is never encoded, printed or put in a capture.
     public var id: String
