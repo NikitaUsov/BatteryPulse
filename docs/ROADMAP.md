@@ -182,6 +182,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1.3: Menu bar icon styles (0.4)
 
+- [ ] Choose what the menu bar shows, in any combination: the battery icon, the charge, the
+  battery power and the battery temperature; the popover shows the temperature too
+
 - [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
   (turned off in System Settings → Control Center → Battery; BatteryPulse can't hide it itself,
   so Settings explains this and links there):
