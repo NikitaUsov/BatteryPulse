@@ -268,7 +268,6 @@ private struct MenuBarIconStylePicker: View {
         } label: {
             VStack(spacing: 8) {
                 MenuBarIconPreview(style: style)
-                    .frame(height: 24)
                 Text(style.title)
                     .font(.caption)
                     .multilineTextAlignment(.center)
