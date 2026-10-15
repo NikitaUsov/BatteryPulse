@@ -303,7 +303,8 @@ public enum SMCBattery {
                 if let millivolts = cellMillivolts(number, key: value.key) { return Double(millivolts) }
             } else if value.key == gaugeTemperatureKey {
                 if celsius(decikelvin: number) != nil { return number }
-            } else if plausibleTemperature.contains(number) {
+            } else if plausibleTemperature.contains(number), number == 0 || abs(number) >= 0.005 {
+                // A tiny non-zero value is a wrong byte order (999.9 reversed is -1e-22), not 0 °C.
                 // To 0.01 °C: the sensors' floats sit an ulp or two off (TB0T 33.699997 on an M5).
                 return (number * 100).rounded() / 100
             }

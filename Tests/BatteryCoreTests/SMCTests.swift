@@ -160,9 +160,9 @@ struct SMCTests {
     }
 
     @Test func sentinelFloatsNeverBecomeZeroDegrees() {
-        // 100.0, NaN and infinity fail every byte order; reversed they are subnormal, not 0 °C.
+        // Out-of-range readings fail every byte order; reversed they are tiny, not 0 °C.
         let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x85)
-        for value in [Float(100), .nan, .infinity, -127] {
+        for value in [Float(100), .nan, .infinity, -127, 999.9, 120.5] {
             let sensor = SMCRawValue(
                 key: "TB0T", info: float, payload: withUnsafeBytes(of: value.bitPattern.littleEndian, Array.init))
             #expect(SMCBattery.displayNumber(sensor) == nil, "\(value)")
