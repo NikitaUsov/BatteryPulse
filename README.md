@@ -70,8 +70,8 @@ dependencies.
 **Menu bar**
 - Any mix of the battery icon, charge, battery power and temperature.
 - Icon styles drawn to the exact level — Modern (like macOS 27), Classic, Percentage Inside
-  (like macOS 26), Ring, or the SF Symbol — with charging, plugged-in, low and Low Power Mode
-  states, so it can take the place of the system battery item.
+  (like macOS 27 with the percentage on), Ring, or the SF Symbol — with charging, plugged-in,
+  low and Low Power Mode states, so it can take the place of the system battery item.
 - A popover with charge, state, time, maximum capacity, cycles, temperature, adapter and
   system load.
 - Optional: without it BatteryPulse lives in the Dock. Dock icon on demand, a Dock menu, and
