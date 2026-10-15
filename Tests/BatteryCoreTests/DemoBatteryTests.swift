@@ -135,13 +135,12 @@ import Testing
         }
     }
 
-    /// The demo must look like real data: every key it produces exists in the real M5 captures,
-    /// apart from the IOPS keys macOS only adds in those states. The child entries below
-    /// AppleSmartBattery postdate those captures; their keys follow a macOS 27 `ioreg` capture
-    /// published by MacDashboard (see `RegistryChildren`).
+    /// The demo must look like real data: every key it produces, the child entries below
+    /// AppleSmartBattery included, exists in the real M5 captures, apart from the IOPS keys
+    /// macOS only adds in those states.
     @Test func demoKeysExistOnARealMac() throws {
         var realKeys: Set<String> = []
-        for fixture in [Fixture.m5OnBattery, .m5Charging] {
+        for fixture in [Fixture.m5OnBattery, .m5Charging, .m5OnBatterySMC] {
             let rows = RawSection.sections(for: try fixture.reading().rawCapture).flatMap(\.rows)
             realKeys.formUnion(rows.map(\.key))
         }
@@ -149,10 +148,15 @@ import Testing
         for scenario in DemoScenario.allCases {
             guard let battery = scenario.battery else { continue }
             let rows = RawSection.sections(for: battery.reading(at: now).rawCapture).flatMap(\.rows)
-            let childPrefixes = [RegistryChildren.packClass, RegistryChildren.bankClass, RegistryChildren.chargerClass]
             let invented = Set(rows.map(\.key)).subtracting(realKeys).subtracting(stateOnlyKeys)
-                .filter { key in !childPrefixes.contains { key.hasPrefix($0 + ".") } }
             #expect(invented.isEmpty, "\(scenario): \(invented.sorted())")
         }
+    }
+
+    /// The demo's charger asks for a per-cell voltage, as a real M5 does.
+    @Test func demoChargerRequestsAPerCellVoltage() throws {
+        let real = try Fixture.m5OnBatterySMC.snapshot()
+        let charging = try #require(DemoScenario.allCases.compactMap(\.battery).first { $0.isCharging })
+        #expect(charging.reading(at: now).snapshot.chargingVoltageMV == real.chargingVoltageMV)
     }
 }

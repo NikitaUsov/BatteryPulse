@@ -138,7 +138,7 @@ public final class SMCClient {
     }
 
     /// Opens a connection of type 0 on the AppleSMC service, preferring the match named
-    /// `AppleSMCKeysEndpoint` the way macmon does; Stats and others take the first match.
+    /// `AppleSMCKeysEndpoint` over whichever match comes first.
     private static func openConnection() throws(Failure) -> io_connect_t {
         var iterator: io_iterator_t = 0
         guard

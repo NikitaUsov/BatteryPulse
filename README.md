@@ -49,8 +49,7 @@ dependencies.
 - The voltage of each cell and the spread between them.
 
 **Compact window**
-- A small, fixed-size window with the essentials, like coconutBattery's; it can be the window
-  BatteryPulse opens.
+- A small, fixed-size window with the essentials; it can be the window BatteryPulse opens.
 
 **History**
 - Charge, power (battery and Mac) and temperature over the last 24 hours or 7 days, with plugged-in stretches
@@ -64,7 +63,7 @@ dependencies.
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
   to 10–30 %, when battery service is recommended, and when the Mac runs hot.
 
-**Widget** (new in 0.3, experimental until BatteryPulse is notarized)
+**Widget** (new in 0.3)
 - Small and medium widgets for the desktop and Notification Center: charge, state, when the
   battery will be full or empty, maximum capacity, cycles and temperature.
 
@@ -161,7 +160,7 @@ analytics file that iOS lets you export from Settings. No private APIs are invol
 
 † macOS 27 moved them from `AppleSmartBattery` to the registry entries below it (the pack and
 one bank per cell). BatteryPulse reads those, and the SMC's battery keys as a second source for
-the cell voltages.
+the cell voltages and the temperature.
 
 On macOS everything is read from the public IOKit power-source API, the `AppleSmartBattery`
 registry entry and its children, and, read-only, the SMC. No root or kernel extension is

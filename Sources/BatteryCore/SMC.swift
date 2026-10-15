@@ -120,7 +120,7 @@ public enum SMCParamBlock {
 }
 
 /// The `result` byte: success, error and key-not-found from Apple's PowerManagement source, the
-/// rest from VirtualSMC's `AppleSmc.h`.
+/// rest as the SMC protocol is commonly documented.
 public enum SMCResult: UInt8, Sendable {
     case success = 0x00
     case error = 0x01
@@ -153,7 +153,7 @@ public struct SMCKeyInfo: Sendable, Equatable {
     public var isReadable: Bool { attributes & 0x80 != 0 }
 
     /// On Apple silicon, values with attribute bit 0x04 set are little-endian and the rest
-    /// big-endian (`#KEY`, and one byte-reversed float Asahi lists). Seen on one M4 Max, so
+    /// big-endian (`#KEY`, and one byte-reversed float in Linux's key list). Seen on one M4 Max, so
     /// decoded values are still checked for plausibility.
     public var byteOrder: SMCByteOrder { attributes & 0x04 != 0 ? .little : .big }
 }
@@ -174,7 +174,11 @@ public enum SMCValueDecoder {
         case "flt ":
             guard count == 4 else { return nil }
             let value = Float(bitPattern: UInt32(truncatingIfNeeded: unsigned(bytes, order)))
-            return value.isFinite ? Double(value) : nil
+            // A subnormal value is never a real reading: it is what a sentinel such as NaN or
+            // 100.0 becomes in the wrong byte order. Through the float's shortest decimal form:
+            // 3.836 rather than 3.8359999656677246.
+            guard value.isFinite, !value.isSubnormal else { return nil }
+            return Double(value.description) ?? Double(value)
         case "ioft":
             guard count == 8 else { return nil }
             return Double(Int64(bitPattern: unsigned(bytes, order))) / 65_536
@@ -242,7 +246,7 @@ public struct SMCRawValue: Sendable, Equatable {
 
     public init?(key: String, captureValue: PropertyValue) {
         guard let code = SMCFourCC(validating: key), let d = captureValue.dictionaryValue,
-            let type = d[CaptureField.type]?.stringValue.flatMap { SMCFourCC(validating: $0) },
+            let type = d[CaptureField.type]?.stringValue.flatMap({ SMCFourCC(validating: $0) }),
             let size = d[CaptureField.size]?.intValue, (1...SMCParamBlock.payloadCapacity).contains(size),
             case .data(let bytes)? = d[CaptureField.bytes], bytes.count >= size
         else { return nil }
@@ -260,40 +264,77 @@ public struct SMCRawValue: Sendable, Equatable {
 public enum SMCBattery {
     public static let plausibleCellVoltage = 2_500...4_700
 
-    /// Cells in series (`ui8`).
+    /// Cells in series (`ui8`; `si8 ` on a MacBook Air M5).
     public static let cellCountKey: SMCFourCC = "BNCB"
     public static let cellVoltageKeys: [SMCFourCC] = ["BC1V", "BC2V", "BC3V", "BC4V"]
-    /// Cell voltages as floats, reported on earlier Apple silicon.
+    /// Cell voltages as floats (`flt `). A MacBook Air M5 on macOS 27 reports them in volts
+    /// (`SBA1` 3.836 with `BC1V` at 3836 mV); millivolt values are accepted too.
     public static let floatCellVoltageKeys: [SMCFourCC] = ["SBA1", "SBA2", "SBA3", "SBA4"]
     /// Battery-area temperature sensors (`flt `, °C). Not the battery's temperature: Linux labels
-    /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and Stats found
-    /// them clearly wrong on a MacBook Neo under macOS 27. Shown in Raw Data only.
+    /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and were reported
+    /// clearly wrong on a MacBook Neo under macOS 27 (on a MacBook Air M5 `TB0T` and `TB1T` matched
+    /// the pack and `TB2T` read 1.1 °C low).
+    /// Shown in Raw Data only.
     public static let temperatureKeys: [SMCFourCC] = ["TB0T", "TB1T", "TB2T", "TB3T"]
+    /// The gauge's own temperature, in tenths of a kelvin like the Smart Battery `Temperature()`
+    /// command: 3069 on a MacBook Air M5 is 33.75 °C, with the pack reporting 33.69 °C.
+    public static let gaugeTemperatureKey: SMCFourCC = "B0AT"
+    static let plausibleTemperature: ClosedRange<Double> = -20...85
 
-    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. Only the
-    /// cell voltages feed the snapshot. The pack voltage (`B0AV`), current (`B0AC`), the gauge's
-    /// own temperature (`B0AT`, whose unit is still disputed) and the area sensors are shown in
-    /// Raw Data.
+    /// Every key the app reads: read-only, battery-related and safe to read repeatedly. The cell
+    /// voltages and the gauge temperature feed the snapshot when the IORegistry lacks them. The
+    /// pack voltage (`B0AV`), current (`B0AC`) and the area sensors are shown in Raw Data.
     public static let keys: [SMCFourCC] =
-        [cellCountKey, "B0AV", "B0AC", "B0AT"] + cellVoltageKeys + floatCellVoltageKeys + temperatureKeys
+        [cellCountKey, "B0AV", "B0AC", gaugeTemperatureKey] + cellVoltageKeys + floatCellVoltageKeys
+        + temperatureKeys
 
-    /// A key's value in its own unit for display. For the cell voltages and area sensors it is
-    /// decoded in the byte order that gives a plausible reading, as the snapshot does, and is
-    /// `nil` when no order does; other keys follow their attribute bits.
+    /// A key's value for display, in its own unit except for the float cell voltages, which are
+    /// shown in mV like the integer ones. The cell voltages and temperatures are decoded in the
+    /// byte order that gives a plausible reading, as the snapshot does, and are `nil` when no
+    /// order does; other keys follow their attribute bits.
     public static func displayNumber(_ value: SMCRawValue) -> Double? {
-        let range: ClosedRange<Double>
-        if cellVoltageKeys.contains(value.key) || floatCellVoltageKeys.contains(value.key) {
-            range = Double(plausibleCellVoltage.lowerBound)...Double(plausibleCellVoltage.upperBound)
-        } else if temperatureKeys.contains(value.key) {
-            range = -20...85
-        } else {
+        let isCell = cellVoltageKeys.contains(value.key) || floatCellVoltageKeys.contains(value.key)
+        guard isCell || temperatureKeys.contains(value.key) || value.key == gaugeTemperatureKey else {
             return value.number
         }
         for order in [nil, SMCByteOrder.little, .big] {
+            guard let number = SMCValueDecoder.number(value.payload, info: value.info, order: order) else { continue }
+            if isCell {
+                if let millivolts = cellMillivolts(number, key: value.key) { return Double(millivolts) }
+            } else if value.key == gaugeTemperatureKey {
+                if celsius(decikelvin: number) != nil { return number }
+            } else if plausibleTemperature.contains(number), number == 0 || abs(number) >= 0.005 {
+                // A tiny non-zero value is a wrong byte order (999.9 reversed is -1e-22), not 0 °C.
+                // To 0.01 °C: the sensors' floats sit an ulp or two off (TB0T 33.699997 on an M5).
+                return (number * 100).rounded() / 100
+            }
+        }
+        return nil
+    }
+
+    /// A decoded cell voltage in mV, or `nil` when it isn't a plausible one. Float keys may be in
+    /// volts. Checked as a Double first: a float read in the wrong byte order can be far beyond
+    /// Int's range, and converting it would trap.
+    static func cellMillivolts(_ value: Double, key: SMCFourCC) -> Int? {
+        guard value.isFinite, abs(value) < 1e9 else { return nil }
+        let millivolts = Int((floatCellVoltageKeys.contains(key) && value < 10 ? value * 1000 : value).rounded())
+        return plausibleCellVoltage.contains(millivolts) ? millivolts : nil
+    }
+
+    /// °C from tenths of a kelvin, or `nil` when implausible for a battery.
+    static func celsius(decikelvin: Double) -> Double? {
+        let celsius = ((decikelvin / 10 - 273.15) * 100).rounded() / 100
+        return plausibleTemperature.contains(celsius) ? celsius : nil
+    }
+
+    /// The gauge temperature (`B0AT`) in °C, in the byte order that gives a plausible reading.
+    public static func temperatureCelsius(in capture: PropertyDictionary) -> Double? {
+        guard let value = values(in: capture).first(where: { $0.key == gaugeTemperatureKey }) else { return nil }
+        for order in [nil, SMCByteOrder.little, .big] {
             if let number = SMCValueDecoder.number(value.payload, info: value.info, order: order),
-                range.contains(number)
+                let celsius = celsius(decikelvin: number)
             {
-                return number
+                return celsius
             }
         }
         return nil
@@ -308,7 +349,7 @@ public enum SMCBattery {
         Dictionary(uniqueKeysWithValues: values.map { ($0.key.description, $0.captureValue) })
     }
 
-    /// Cell voltages in mV from `BC1V`… (`ui16`) or else `SBA1`… (`flt `), limited to `BNCB`
+    /// Cell voltages in mV from `BC1V`… (`ui16`) or else `SBA1`… (`flt `, V or mV), limited to `BNCB`
     /// cells when it is present. With the pack voltage (AppleSmartBattery `Voltage`) the cells
     /// must add up to it, allowing for the readings not being simultaneous.
     public static func cellVoltagesMV(in capture: PropertyDictionary, packVoltageMV: Int?) -> [Int] {
@@ -330,17 +371,12 @@ public enum SMCBattery {
     static func cellVoltages(_ cells: [SMCRawValue], packVoltageMV: Int?) -> [Int]? {
         guard !cells.isEmpty else { return nil }
         for order in [nil, SMCByteOrder.little, .big] {
-            // Checked as a Double first: a float read in the wrong byte order can be far beyond
-            // Int's range, and converting it would trap.
-            let millivolts = cells.compactMap { cell -> Int? in
-                guard let value = SMCValueDecoder.number(cell.payload, info: cell.info, order: order),
-                    value.isFinite, abs(value) < 1e9
-                else { return nil }
-                return Int(value.rounded())
+            let millivolts = cells.compactMap { cell in
+                SMCValueDecoder.number(cell.payload, info: cell.info, order: order).flatMap {
+                    cellMillivolts($0, key: cell.key)
+                }
             }
-            guard millivolts.count == cells.count, millivolts.allSatisfy(plausibleCellVoltage.contains) else {
-                continue
-            }
+            guard millivolts.count == cells.count else { continue }
             if let pack = packVoltageMV, abs(millivolts.reduce(0, +) - pack) > 50 * cells.count + 100 { continue }
             return millivolts
         }

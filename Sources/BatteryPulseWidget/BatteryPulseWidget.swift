@@ -131,11 +131,14 @@ struct BatteryWidgetView: View {
 
     private func row(_ label: LocalizedStringKey, _ value: String) -> some View {
         GridRow {
+            // Russian labels are longer: they shrink a little before they would be cut off.
             Text(label)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             Text(verbatim: value)
                 .monospacedDigit()
+                .fixedSize()
                 .gridColumnAlignment(.trailing)
         }
     }

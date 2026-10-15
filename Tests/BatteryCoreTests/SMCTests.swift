@@ -3,8 +3,8 @@ import Testing
 
 @testable import BatteryCore
 
-/// Byte captures come from other projects' reads on real Macs: iSMC's raw dumps, Aeolus (M4 Max,
-/// macOS 26) and Wattly (M5 MacBook Pro, macOS 27).
+/// Byte captures come from public reads on real Macs (an M5 Pro, an M4 Max on macOS 26, an M5
+/// MacBook Pro on macOS 27) and from the MacBook Air M5 fixture.
 struct SMCTests {
     static let ui16 = SMCKeyInfo(size: 2, type: "ui16", attributes: 0x84)
 
@@ -45,12 +45,12 @@ struct SMCTests {
         #expect(reply.result == 0)
         #expect(reply.info == SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84))
         let celsius = try #require(SMCValueDecoder.number(reply.payload, info: reply.info))
-        #expect(abs(celsius - 25.8) < 0.01)  // iSMC, M5 Pro: TB0T bytes 60 66 ce 41
+        #expect(abs(celsius - 25.8) < 0.01)  // M5 Pro: TB0T bytes 60 66 ce 41
         #expect(SMCParamBlock.reply(from: Array(block.prefix(79))) == nil)
     }
 
     @Test func integersFollowTheAttributeByteOrder() {
-        // Aeolus, M4 Max: #KEY 00 00 0d 39 is 3385 keys (attributes 0x80, big-endian).
+        // M4 Max: #KEY 00 00 0d 39 is 3385 keys (attributes 0x80, big-endian).
         #expect(
             SMCValueDecoder.number([0, 0, 0x0D, 0x39], info: SMCKeyInfo(size: 4, type: "ui32", attributes: 0x80))
                 == 3385)
@@ -75,7 +75,7 @@ struct SMCTests {
     }
 
     @Test func cellsMustBePlausibleAndAddUpToThePack() {
-        // Aeolus, M4 Max: 4009 + 4011 + 4009 = B0AV 12029 mV.
+        // M4 Max: 4009 + 4011 + 4009 = B0AV 12029 mV.
         let cells = [Self.cell("BC1V", 4009), Self.cell("BC2V", 4011), Self.cell("BC3V", 4009)]
         let capture = SMCBattery.capture(cells)
         #expect(SMCBattery.cellVoltagesMV(in: capture, packVoltageMV: 12_029) == [4009, 4011, 4009])
@@ -159,6 +159,16 @@ struct SMCTests {
         #expect(row?.decoded == .celsius(31))
     }
 
+    @Test func sentinelFloatsNeverBecomeZeroDegrees() {
+        // Out-of-range readings fail every byte order; reversed they are tiny, not 0 °C.
+        let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x85)
+        for value in [Float(100), .nan, .infinity, -127, 999.9, 120.5] {
+            let sensor = SMCRawValue(
+                key: "TB0T", info: float, payload: withUnsafeBytes(of: value.bitPattern.littleEndian, Array.init))
+            #expect(SMCBattery.displayNumber(sensor) == nil, "\(value)")
+        }
+    }
+
     @Test func floatsFollowTheAttributeByteOrderToo() {
         let bytes = withUnsafeBytes(of: Float(25.5).bitPattern.bigEndian, Array.init)
         #expect(SMCValueDecoder.number(bytes, info: SMCKeyInfo(size: 4, type: "flt ", attributes: 0x80)) == 25.5)
@@ -167,7 +177,7 @@ struct SMCTests {
     }
 
     @Test func captureEntriesRoundTripThroughAPropertyList() throws {
-        // Wattly, M5 MacBook Pro on macOS 27: B0AT reads 3067.
+        // M5 MacBook Pro on macOS 27: B0AT reads 3067.
         let value = SMCRawValue(key: "B0AT", info: Self.ui16, payload: [0xFB, 0x0B])
         let capture = SMCBattery.capture([value])
         let data = try PropertyListSerialization.data(
@@ -189,6 +199,69 @@ struct SMCTests {
         #expect(reading.snapshot.cellVoltagesMV == [4009])
         // Without SMC values the capture keeps its old shape.
         #expect(BatteryReading(smartBattery: [:], timestamp: Fixture.timestamp).rawCapture.count == 3)
+    }
+
+    /// MacBook Air M5 on macOS 27: the float cells are in volts, B0AT counts tenths of a kelvin,
+    /// and the area sensors read an ulp or two below a round value.
+    @Test func realM5Values() throws {
+        let reading = try Fixture.m5OnBatterySMC.reading()
+        let smc = try #require(reading.rawCapture[BatteryReading.CaptureKey.smc]?.dictionaryValue)
+        let section = RawSection.sections(for: [BatteryReading.CaptureKey.smc: .dictionary(smc)]).first
+        let rows = Dictionary(uniqueKeysWithValues: (section?.rows ?? []).map { ($0.path, $0) })
+        #expect(rows.count == 13)
+        #expect(rows["SBA1"]?.property == .int(3836))
+        #expect(rows["SBA1"]?.decoded == .millivolts(3836))
+        #expect(rows["SBA3"]?.property == .int(3833))
+        #expect(rows["BC3V"]?.decoded == .millivolts(3833))
+        #expect(rows["B0AT"]?.property == .int(3069))
+        #expect(rows["B0AT"]?.decoded == .celsius(33.75))
+        #expect(rows["TB0T"]?.property == .double(33.7))
+        #expect(rows["TB2T"]?.decoded == .celsius(32.6))
+        #expect(rows["B0AC"]?.decoded == .milliamps(-720))
+        #expect(rows["B0AV"]?.decoded == .millivolts(11501))
+        #expect(rows["BNCB"]?.property == .int(3))
+        // The float cells alone give the integer cells' voltages.
+        let floats = smc.filter { $0.key.hasPrefix("SBA") || $0.key == "BNCB" }
+        #expect(SMCBattery.cellVoltagesMV(in: floats, packVoltageMV: 11_511) == [3836, 3836, 3833])
+        let sba1 = try #require(SMCBattery.values(in: smc).first { $0.key == "SBA1" })
+        #expect(sba1.number == 3.836)
+    }
+
+    @Test func gaugeTemperatureMustBePlausible() {
+        func temperature(_ raw: Int) -> Double? {
+            SMCBattery.temperatureCelsius(
+                in: SMCBattery.capture([
+                    SMCRawValue(key: "B0AT", info: Self.ui16, payload: [UInt8(raw & 0xFF), UInt8(raw >> 8)])
+                ]))
+        }
+        #expect(temperature(3067) == 33.55)  // an M5 MacBook Pro
+        #expect(temperature(2731) == -0.05)
+        #expect(temperature(31) == nil, "°C, not tenths of a kelvin")
+        #expect(temperature(3700) == nil, "96.85 °C")
+        // Only when the IORegistry has none.
+        let smc = SMCBattery.capture([SMCRawValue(key: "B0AT", info: Self.ui16, payload: [0xFB, 0x0B])])
+        let fallback = BatteryReading(smartBattery: [:], smc: smc, timestamp: Fixture.timestamp).snapshot
+        #expect(fallback.temperatureCelsius == 33.55)
+        let registry = BatteryReading(smartBattery: ["Temperature": .int(3100)], smc: smc, timestamp: Fixture.timestamp)
+        #expect(registry.snapshot.temperatureCelsius == 31)
+    }
+
+    @Test func floatCellsInVoltsOrMillivolts() {
+        let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x84)
+        func cells(_ values: [Float]) -> PropertyDictionary {
+            SMCBattery.capture(
+                values.enumerated().map { index, value in
+                    SMCRawValue(
+                        key: SMCBattery.floatCellVoltageKeys[index], info: float,
+                        payload: withUnsafeBytes(of: value.bitPattern.littleEndian, Array.init))
+                })
+        }
+        #expect(SMCBattery.cellVoltagesMV(in: cells([3.9015, 3.899]), packVoltageMV: 7_800) == [3902, 3899])
+        #expect(SMCBattery.cellVoltagesMV(in: cells([3901.5, 3899]), packVoltageMV: 7_800) == [3902, 3899])
+        #expect(SMCBattery.cellVoltagesMV(in: cells([0.0039, 0.0039]), packVoltageMV: nil) == [])
+        // Integer keys are never taken for volts.
+        let volts = SMCRawValue(key: "BC1V", info: Self.ui16, payload: [4, 0])
+        #expect(SMCBattery.cellVoltagesMV(in: SMCBattery.capture([volts]), packVoltageMV: nil) == [])
     }
 
     @Test func appReadsOnlyReadOnlyBatteryKeys() {

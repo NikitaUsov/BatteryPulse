@@ -66,7 +66,7 @@ struct BatteryPulseApp: App {
             CompactView(monitor: monitor)
                 .environment(demo)
         }
-        // Fixed size, like coconutBattery's window.
+        // Fixed size: the window fits its content.
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(showsMainWindow && AppSettings.prefersCompactWindow ? .presented : .suppressed)
 

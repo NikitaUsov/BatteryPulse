@@ -144,8 +144,7 @@ struct BatteryGlyph: View {
     }
 }
 
-/// Horizontal capacity bars in the spirit of coconutBattery: remaining, full and design mAh on
-/// one scale.
+/// Horizontal capacity bars: remaining, full and design mAh on one scale.
 struct CapacityBars: View {
     let snapshot: BatterySnapshot
     let formatter: BatteryFormatter
