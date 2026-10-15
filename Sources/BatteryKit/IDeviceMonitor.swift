@@ -81,7 +81,8 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var udids: [DeviceKey: String] = [:]
     /// This session's latest capture per attached device, for Copy Report.
     @ObservationIgnored private var captures: [DeviceKey: IDeviceCapture] = [:]
-    /// Forgotten while attached: not shown, read or remembered again until it detaches.
+    /// Forgotten while attached: not shown, read or remembered again until it detaches or is
+    /// plugged in by cable.
     @ObservationIgnored private var hidden: Set<DeviceKey> = []
     /// The device whose page is on screen.
     @ObservationIgnored private var visiblePage: DeviceKey?
@@ -236,7 +237,8 @@ public final class IDeviceMonitor {
     }
 
     /// Forgets a device: its entry, its history and this session's capture and UDID. A device
-    /// that is still attached isn't shown or remembered again until it detaches.
+    /// that is still attached isn't shown or remembered again until it detaches or is plugged in
+    /// by cable.
     public func forget(_ id: DeviceKey) async {
         if let session = sessions[id], !session.connections.isEmpty {
             hidden.insert(id)
@@ -439,7 +441,10 @@ public final class IDeviceMonitor {
             udids[key] = info.id
             var session = sessions[key] ?? IDeviceSession()
             if info.connections.contains(.usb), !session.connections.contains(.usb) {
-                // A new attachment: a replug reads at once, whatever came before.
+                // A new attachment: a replug reads at once, whatever came before. It is also the
+                // reconnect that brings back a forgotten device; one forgotten while on USB still has
+                // .usb here, so it stays hidden until it is unplugged.
+                hidden.remove(key)
                 session.lastAttempt = nil
                 session.problem = nil
                 session.consecutiveFailures = 0

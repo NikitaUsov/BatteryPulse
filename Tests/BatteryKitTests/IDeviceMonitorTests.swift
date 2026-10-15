@@ -657,6 +657,26 @@ struct MonitorHarness {
         #expect(try await h.registry().count == 1)
     }
 
+    @Test func forgottenOverWiFiComesBackWhenPluggedIn() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        // Unplugged, but still seen over Wi-Fi.
+        await h.transport.attach(Self.phone, [.wifi], capture: TestCaptures.ok(Self.phone, connection: .wifi))
+        await h.send(.terminated)
+        #expect(h.monitor.entries.first?.connection == .wifi)
+        await h.monitor.forget(Self.phoneKey)
+        #expect(h.monitor.entries.isEmpty)
+        // Plugging it in by cable is the reconnect.
+        await h.transport.attach(Self.phone, [.usb, .wifi], capture: TestCaptures.ok(Self.phone))
+        await h.send(.arrived)
+        #expect(await h.count("capture") == 2)
+        #expect(h.monitor.entries.map(\.id) == [Self.phoneKey])
+        #expect(h.monitor.entries.first?.connection == .usb)
+        #expect(try await h.registry().count == 1)
+    }
+
     @Test func forgetDropsLateResult() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }
