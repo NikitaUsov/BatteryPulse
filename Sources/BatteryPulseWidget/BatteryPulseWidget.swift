@@ -61,6 +61,8 @@ struct BatteryTimelineProvider: TimelineProvider {
 struct BatteryWidgetView: View {
     let entry: BatteryEntry
     @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let formatter = BatteryFormatter()
 
     var body: some View {
@@ -89,16 +91,22 @@ struct BatteryWidgetView: View {
     }
 
     private func charge(_ s: BatterySnapshot, _ percent: Double) -> some View {
+        // WidgetKit animates from one timeline entry to the next by itself; these say how the
+        // symbol and the number change. Nothing runs between entries.
         VStack(alignment: .leading, spacing: 4) {
             Image(systemName: BatteryPresentation.symbolName(for: s))
                 .font(.title2)
-                .foregroundStyle(tint(s))
+                // The level's colour only in full colour; in the accented and vibrant modes the
+                // system colours the symbol itself (it is in the accent group).
+                .foregroundStyle(renderingMode == .fullColor ? tint(s) : .primary)
                 .widgetAccentable()
+                .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
             Spacer(minLength: 0)
             Text(verbatim: formatter.percent(percent))
                 .font(.system(size: 34, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.7)
+                .contentTransition(reduceMotion ? .opacity : .numericText(value: percent))
             Text(state(s))
                 .font(.caption)
                 .foregroundStyle(.secondary)

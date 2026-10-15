@@ -27,7 +27,20 @@ struct CompactView: View {
         }
         .padding(18)
         .frame(width: 380)
+        // The window sizes to its content, so Demo Mode's animated changes stop here: rows that
+        // come and go, and with them the window's height, change at once. The percent and the
+        // battery glyph still animate through their own animations, keyed on whole values.
+        .transaction { $0.animation = nil }
         .toolbar {
+            if demo.isActive {
+                // A status readout, not a control, so it stays off the toolbar's glass.
+                ToolbarItem(placement: .status) {
+                    Text("Demo")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
             ToolbarItem {
                 Button("Full Window", systemImage: "arrow.up.left.and.arrow.down.right") {
                     WindowOpener.switchWindowStyle(compact: false)
@@ -36,8 +49,7 @@ struct CompactView: View {
                 .help("Show every detail in the full window")
             }
         }
-        .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "compact") }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "compact") }
+        .liveRefresh(monitor, every: .seconds(2), client: "compact")
         .trackedWindow(WindowID.compact)
     }
 
@@ -54,7 +66,7 @@ struct CompactView: View {
                 Text(s.chargePercent.map { formatter.percent($0) } ?? "—")
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .monospacedDigit()
-                    .contentTransition(.numericText())
+                    .numericValue(s.chargePercent)
                 Text(Phrases.stateWithPower(s, formatter))
                     .font(.callout)
                 if let time = Phrases.timeRemaining(s, formatter) {
@@ -64,11 +76,6 @@ struct CompactView: View {
                 }
             }
             Spacer(minLength: 0)
-            if demo.isActive {
-                Text("Demo")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
-            }
         }
         .accessibilityElement(children: .combine)
 

@@ -7,6 +7,40 @@ import SwiftUI
 struct UpdateView: View {
     @Environment(UpdateChecker.self) private var updater
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.motion) private var motion
+    /// Counts failed installs while the window is open; the warning symbol bounces on each.
+    @State private var failures = 0
+
+    /// The kinds of status, without their values: a new kind crossfades the window's content.
+    private enum StatusKind: Equatable {
+        case idle, checking, upToDate, failed, available
+    }
+
+    /// The installer's phases, without the download fraction that changes five times a second.
+    private enum PhaseKind: Equatable {
+        case idle, downloading, verifying, installing, relaunching, failed
+    }
+
+    private var statusKind: StatusKind {
+        switch updater.status {
+        case .idle: .idle
+        case .checking: .checking
+        case .upToDate: .upToDate
+        case .failed, .rateLimited: .failed
+        case .available: .available
+        }
+    }
+
+    private var phaseKind: PhaseKind {
+        switch updater.installer.phase {
+        case .idle: .idle
+        case .downloading: .downloading
+        case .verifying: .verifying
+        case .installing: .installing
+        case .relaunching: .relaunching
+        case .failed: .failed
+        }
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
@@ -16,9 +50,17 @@ struct UpdateView: View {
                 content
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            // A new status crossfades. The window sizes to its content, so its height changes at
+            // once: the fade is attached to the transition, and nothing else is animated.
+            .id(statusKind)
+            .transition(AnyTransition.opacity.animation(motion.change))
         }
         .padding(24)
         .frame(width: 540)
+        .onChange(of: phaseKind) { _, phase in
+            // One bounce of the warning symbol per failure; a one-off extra.
+            if phase == .failed, motion.allowsFlourish { failures += 1 }
+        }
         .trackedWindow(WindowID.update)
     }
 
@@ -83,7 +125,11 @@ struct UpdateView: View {
             }
             .frame(height: 220)
             .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
+            // A new phase crossfades its label; the download bar inside a phase is never animated,
+            // because its fraction changes five times a second.
             installStatus(release)
+                .id(phaseKind)
+                .transition(AnyTransition.opacity.animation(motion.change))
             installActions(release)
         }
     }
@@ -119,6 +165,7 @@ struct UpdateView: View {
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.yellow)
+                        .symbolEffect(.bounce, options: .nonRepeating, value: failures)
                 }
                 if error.fallsBackToDownload {
                     Text("You can download the update and install it from the DMG instead.")
@@ -213,15 +260,20 @@ struct UpdateView: View {
 /// Shown once after an update: what this version adds.
 struct WhatsNewView: View {
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.motion) private var motion
+    /// Set when the window appears: the rows enter, one after another, once.
+    @State private var hasEntered = false
 
     var body: some View {
+        // Only with one-off extras allowed; otherwise the rows are simply there.
+        let entrance = StaggeredEntrance(motion)
         VStack(spacing: 22) {
             AppIconView()
                 .frame(width: 88, height: 88)
             Text("What's New in BatteryPulse")
                 .font(.title.weight(.semibold))
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(WhatsNew.features) { feature in
+                ForEach(Array(WhatsNew.features.enumerated()), id: \.element.id) { index, feature in
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: feature.symbol)
                             .font(.title2)
@@ -236,6 +288,12 @@ struct WhatsNewView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    // Fades in and rises a few points, a moment after the row above; the layout
+                    // never changes, so the window keeps its size.
+                    .opacity(hasEntered ? 1 : entrance.opacityBeforeEntering)
+                    .offset(y: hasEntered ? 0 : entrance.offsetBeforeEntering)
+                    .animation(
+                        entrance.plays ? motion.change?.delay(entrance.delay(forRow: index)) : nil, value: hasEntered)
                 }
             }
             Button("Continue") { dismissWindow(id: WindowID.whatsNew) }
@@ -244,6 +302,7 @@ struct WhatsNewView: View {
         }
         .padding(32)
         .frame(width: 520)
+        .onAppear { hasEntered = true }
         .trackedWindow(WindowID.whatsNew)
     }
 }

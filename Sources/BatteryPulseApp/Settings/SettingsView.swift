@@ -36,6 +36,36 @@ private struct SettingsPage<Content: View>: View {
     }
 }
 
+/// Two alternatives in one place, such as a note that depends on a setting: switching crossfades
+/// between them. Both keep their space, so the height never changes and the windows that size to
+/// their content (Settings, Welcome) don't jump. VoiceOver reads only the one shown.
+struct Crossfade<First: View, Second: View>: View {
+    private let showsFirst: Bool
+    private let first: First
+    private let second: Second
+    @Environment(\.motion) private var motion
+
+    init(
+        showsFirst: Bool, @ViewBuilder _ first: () -> First, @ViewBuilder otherwise second: () -> Second
+    ) {
+        self.showsFirst = showsFirst
+        self.first = first()
+        self.second = second()
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            first
+                .opacity(showsFirst ? 1 : 0)
+                .accessibilityHidden(!showsFirst)
+            second
+                .opacity(showsFirst ? 0 : 1)
+                .accessibilityHidden(showsFirst)
+        }
+        .animation(motion.change, value: showsFirst)
+    }
+}
+
 /// Where the app appears, startup and language. Also shown in the welcome window.
 struct GeneralSettings: View {
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
@@ -52,14 +82,12 @@ struct GeneralSettings: View {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Show Dock icon", isOn: dockIconBinding)
                     .disabled(!showInMenuBar)
-                Group {
-                    // Separate Text views: a ternary of literals would be a plain String and skip
-                    // localization.
-                    if showInMenuBar {
-                        Text("Without it, the Dock icon still appears while a BatteryPulse window is open.")
-                    } else {
-                        Text("BatteryPulse always shows a Dock icon when it isn't in the menu bar.")
-                    }
+                // Separate Text views: a ternary of literals would be a plain String and skip
+                // localization.
+                Crossfade(showsFirst: showInMenuBar) {
+                    Text("Without it, the Dock icon still appears while a BatteryPulse window is open.")
+                } otherwise: {
+                    Text("BatteryPulse always shows a Dock icon when it isn't in the menu bar.")
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -201,42 +229,85 @@ struct MenuBarSettings: View {
 }
 
 /// The icon styles side by side, each drawn as it looks in the menu bar.
+///
+/// The tiles are a picker, a control, so their selection is Liquid Glass: one shape behind the
+/// selected tile that flows to the next one, as the selection of a segmented control does. The
+/// tiles keep their standard fill (no glass on glass), and the accent outline still marks the
+/// choice. Under Reduce Motion the outline crossfades and the glass changes in place.
 private struct MenuBarIconStylePicker: View {
     @Binding var selection: MenuBarIconStyle
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.motion) private var motion
+    @Environment(\.accessibilityShowBorders) private var showsBorders
+    @Namespace private var glassNamespace
+
+    private static let cornerRadius: CGFloat = 8
+    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
+    private static let glassOutset: CGFloat = 4
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            ForEach(MenuBarIconStyle.allCases, id: \.self) { style in
-                let isSelected = style == selection
-                Button {
-                    selection = style
-                } label: {
-                    VStack(spacing: 8) {
-                        MenuBarIconPreview(style: style)
-                            .frame(height: 24)
-                        Text(style.title)
-                            .font(.caption)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 4)
-                    .frame(maxWidth: .infinity)
-                    .background(.fill.quaternary, in: .rect(cornerRadius: 8))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
-                    }
-                    .contentShape(.rect)
+        // One container for the one glass shape: it renders the selection and morphs it.
+        GlassEffectContainer {
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(MenuBarIconStyle.allCases, id: \.self) { style in
+                    tile(style)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(style.title))
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .opacity(isEnabled ? 1 : 0.5)
+    }
+
+    private func tile(_ style: MenuBarIconStyle) -> some View {
+        let isSelected = style == selection
+        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius)
+        return Button {
+            withAnimation(motion.change) { selection = style }
+        } label: {
+            VStack(spacing: 8) {
+                MenuBarIconPreview(style: style)
+                    .frame(height: 24)
+                Text(style.title)
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity)
+            .background(.fill.quaternary, in: shape)
+            .overlay {
+                // Show Borders: every tile gets a visible edge, not only the selected one.
+                if showsBorders {
+                    shape.strokeBorder(.separator, lineWidth: 1)
+                }
+            }
+            .overlay {
+                shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
+            }
+            .background {
+                if isSelected {
+                    selectionGlass(for: style)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(style.title))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// The glass behind the selected tile. With full motion it keeps one ID wherever it goes, so
+    /// the container morphs it from tile to tile. Under Reduce Motion each tile's glass is a shape
+    /// of its own that comes and goes in place, without materializing or moving.
+    private func selectionGlass(for style: MenuBarIconStyle) -> some View {
+        let flows = motion.level == .full
+        return Color.clear
+            .glassEffect(.regular, in: .rect(cornerRadius: Self.cornerRadius + Self.glassOutset))
+            .glassEffectID(flows ? "selection" : style.rawValue, in: glassNamespace)
+            .glassEffectTransition(flows ? .matchedGeometry : .identity)
+            .padding(-Self.glassOutset)
+            .transition(flows ? AnyTransition.opacity : .identity)
     }
 }
 
@@ -303,6 +374,7 @@ struct NotificationSettings: View {
 /// History, the Developer section and help.
 struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
+    @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
     @State private var confirmsClearing = false
 
@@ -329,6 +401,18 @@ struct AdvancedSettings: View {
 
         Section {
             Toggle("Show Developer section", isOn: $showsDeveloper)
+            // A Developer option like Raw Data and Demo Mode: only offered, and only in effect,
+            // while the Developer section is on. Turning the section off keeps the choice.
+            if showsDeveloper {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Glass Cards", isOn: $glassCards)
+                    Text(
+                        "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+            }
         } footer: {
             Text(
                 "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window."
