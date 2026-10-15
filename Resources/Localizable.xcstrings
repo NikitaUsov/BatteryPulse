@@ -152,17 +152,6 @@
         }
       }
     },
-    "A small window with just the essentials. Switch in Settings → General.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Маленькое окно только с самым важным. Переключается в разделе «Настройки» → «Основные»."
-          }
-        }
-      }
-    },
     "About %@ left": {
       "extractionState": "manual",
       "localizations": {
@@ -781,6 +770,18 @@
         }
       }
     },
+    "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse загружает новую версию, проверяет её подпись и открывается снова. Как часто проверять, выбирается в разделе «Настройки» → «Основные»."
+          }
+        }
+      }
+    },
     "BatteryPulse downloads the update, checks its signature, replaces this copy and opens again.": {
       "extractionState": "manual",
       "localizations": {
@@ -832,17 +833,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse не показан в строке меню. Включите его в разделе «Основные»."
-          }
-        }
-      }
-    },
-    "BatteryPulse looks for a new version once a day. Turn it off in Settings → General.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BatteryPulse раз в день проверяет, вышла ли новая версия. Отключить проверку можно в разделе «Настройки» → «Основные»."
           }
         }
       }
@@ -1147,17 +1137,6 @@
         }
       }
     },
-    "Charge and battery health on the desktop or in Notification Center.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд и состояние аккумулятора на рабочем столе или в Центре уведомлений."
-          }
-        }
-      }
-    },
     "Charge current the gauge is asking the charger for.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1242,17 +1221,6 @@
         }
       }
     },
-    "Charge, power and temperature over the last 24 hours or 7 days, with figures for the period.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд, мощность и температура за последние 24 часа или 7 дней с итогами за период."
-          }
-        }
-      }
-    },
     "Charge, time remaining and battery health.": {
       "extractionState": "manual",
       "localizations": {
@@ -1323,6 +1291,18 @@
         }
       }
     },
+    "Charging and the battery's power show a few seconds after you plug in, read live from the battery.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка и мощность аккумулятора видны через несколько секунд после подключения: они считываются с аккумулятора в реальном времени."
+          }
+        }
+      }
+    },
     "Charging at %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1330,6 +1310,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряжается мощностью %@"
+          }
+        }
+      }
+    },
+    "Charging at once": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка видна сразу"
           }
         }
       }
@@ -2032,17 +2024,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Готово"
-          }
-        }
-      }
-    },
-    "Double-click a row in Raw Data to read its full value, decoding and description.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Дважды нажмите строку в разделе «Исходные данные», чтобы увидеть её значение, расшифровку и описание целиком."
           }
         }
       }
@@ -3087,6 +3068,18 @@
         }
       }
     },
+    "Install updates from the app": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установка обновлений из приложения"
+          }
+        }
+      }
+    },
     "Installing…": {
       "extractionState": "manual",
       "localizations": {
@@ -3507,6 +3500,18 @@
         }
       }
     },
+    "Menu bar styles": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стили строки меню"
+          }
+        }
+      }
+    },
     "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3537,6 +3542,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ежемесячно"
+          }
+        }
+      }
+    },
+    "More explanations in Raw Data": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Больше пояснений в исходных данных"
           }
         }
       }
@@ -5058,17 +5075,6 @@
         }
       }
     },
-    "Raw Data inspector": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Инспектор исходных данных"
-          }
-        }
-      }
-    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5601,6 +5607,18 @@
         }
       }
     },
+    "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Любое сочетание значка аккумулятора, заряда, мощности и температуры и новые стили значка, нарисованные точно по уровню заряда. «Настройки» → «Строка меню»."
+          }
+        }
+      }
+    },
     "Show Developer section": {
       "extractionState": "manual",
       "localizations": {
@@ -5848,13 +5866,14 @@
         }
       }
     },
-    "Temperature and cells": {
+    "Temperature in the menu bar": {
       "extractionState": "manual",
+      "comment": "What's New: feature title",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Температура и элементы"
+            "value": "Температура в строке меню"
           }
         }
       }
@@ -5881,13 +5900,26 @@
         }
       }
     },
-    "The battery's temperature and the voltage of each cell, on the Health and Power pages.": {
+    "The battery pack, its cells and the charger entries now explain their keys.": {
       "extractionState": "manual",
+      "comment": "What's New: feature detail",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Температура аккумулятора и напряжение каждого элемента на страницах «Состояние» и «Питание»."
+            "value": "Теперь объяснены и ключи блока аккумулятора, его элементов и зарядного устройства."
+          }
+        }
+      }
+    },
+    "The battery's temperature in the menu bar and its popover.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора в строке меню и в её всплывающем окне."
           }
         }
       }
@@ -6009,6 +6041,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подпись обновления недействительна, поэтому оно не установлено."
+          }
+        }
+      }
+    },
+    "The version, links and license, from the BatteryPulse menu or the popover.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия, ссылки и лицензия — из меню BatteryPulse или всплывающего окна."
           }
         }
       }
@@ -6455,17 +6499,6 @@
         }
       }
     },
-    "Update check": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Проверка обновлений"
-          }
-        }
-      }
-    },
     "Upper per-cell voltage of the Carrier Mode charge window.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6856,17 +6889,6 @@
         }
       }
     },
-    "When the battery reaches a charge level, runs low, needs service or the Mac gets hot.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Когда аккумулятор зарядится до нужного уровня, разрядится, потребует обслуживания или Mac перегреется."
-          }
-        }
-      }
-    },
     "When the driver last finished a 'full' poll (adds cycle count, failure status, etc.).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -7030,17 +7052,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Причина, по которой контроллер зарядки аппаратно снизил ограничение входного тока (Ilim); Apple не документирует значения."
-          }
-        }
-      }
-    },
-    "Widget": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Виджет"
           }
         }
       }

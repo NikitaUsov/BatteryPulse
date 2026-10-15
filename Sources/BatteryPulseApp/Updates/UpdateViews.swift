@@ -253,7 +253,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 3, 0])
+    nonisolated static let version = AppVersion(parts: [0, 4, 0])
 
     struct Feature: Identifiable {
         let id: Int
@@ -264,26 +264,28 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "chart.xyaxis.line", title: "History",
-            detail: "Charge, power and temperature over the last 24 hours or 7 days, with figures for the period."),
+            id: 1, symbol: "menubar.rectangle", title: "Menu bar styles",
+            detail:
+                "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar."
+        ),
         Feature(
-            id: 2, symbol: "thermometer.medium", title: "Temperature and cells",
-            detail: "The battery's temperature and the voltage of each cell, on the Health and Power pages."),
+            id: 2, symbol: "arrow.down.app", title: "Install updates from the app",
+            detail:
+                "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General."
+        ),
         Feature(
-            id: 3, symbol: "bell.badge", title: "Notifications",
-            detail: "When the battery reaches a charge level, runs low, needs service or the Mac gets hot."),
+            id: 3, symbol: "bolt.fill", title: "Charging at once",
+            detail: "Charging and the battery's power show a few seconds after you plug in, read live from the battery."
+        ),
         Feature(
-            id: 4, symbol: "widget.small", title: "Widget",
-            detail: "Charge and battery health on the desktop or in Notification Center."),
+            id: 4, symbol: "thermometer.medium", title: "Temperature in the menu bar",
+            detail: "The battery's temperature in the menu bar and its popover."),
         Feature(
-            id: 5, symbol: "rectangle.compress.vertical", title: "Compact window",
-            detail: "A small window with just the essentials. Switch in Settings → General."),
+            id: 5, symbol: "info.circle", title: "About BatteryPulse",
+            detail: "The version, links and license, from the BatteryPulse menu or the popover."),
         Feature(
-            id: 6, symbol: "sidebar.trailing", title: "Raw Data inspector",
-            detail: "Double-click a row in Raw Data to read its full value, decoding and description."),
-        Feature(
-            id: 7, symbol: "arrow.down.circle", title: "Update check",
-            detail: "BatteryPulse looks for a new version once a day. Turn it off in Settings → General."),
+            id: 6, symbol: "list.bullet.rectangle", title: "More explanations in Raw Data",
+            detail: "The battery pack, its cells and the charger entries now explain their keys."),
     ]
 }
 #endif
