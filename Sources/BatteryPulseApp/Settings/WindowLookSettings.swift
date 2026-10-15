@@ -64,12 +64,13 @@ struct WindowLookPreview: View {
 
     var body: some View {
         let painter = WindowLookPainter(look: look, isDark: colorScheme == .dark)
+        let base = Self.size
         Canvas { context, size in
             // Drawn at 96 × 64 pt and scaled to the frame: four tiles take about the whole width
             // of a Settings row, so a row a few points narrower shrinks them instead of
             // overflowing.
-            context.scaleBy(x: size.width / Self.size.width, y: size.height / Self.size.height)
-            painter.paint(in: &context, size: Self.size)
+            context.scaleBy(x: size.width / base.width, y: size.height / base.height)
+            painter.paint(in: &context, size: base)
         }
         .aspectRatio(Self.size.width / Self.size.height, contentMode: .fit)
         .frame(maxWidth: Self.size.width, maxHeight: Self.size.height)

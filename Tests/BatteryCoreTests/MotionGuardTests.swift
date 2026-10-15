@@ -569,6 +569,33 @@ import Testing
         #expect(flags(source, path: Self.windowLookFile), "\(source)")
     }
 
+    /// A window style change rebuilds what `.windowLook()` wraps, which would run the appear and
+    /// disappear actions of the window's registrations (live refresh, the Dock icon policy) in an
+    /// undefined order. They sit outside it: after it in its modifier chain, never in a view it
+    /// wraps.
+    @Test func windowRegistrationsStayOutsideTheWindowLook() throws {
+        func code(_ path: String) throws -> String {
+            Self.codeOnly(try String(contentsOf: Self.sources.appendingPathComponent(path), encoding: .utf8))
+        }
+        let registration = #/\.(?:liveRefresh|trackedWindow)\s*\(/#
+        let look = #/\.windowLook\s*\(\s*\)/#
+        // The main window applies the style in MainView, above its registrations; the compact
+        // window in the scene, with its registrations after it.
+        for path in ["BatteryPulseApp/Main/MainView.swift", "BatteryPulseApp/App/BatteryPulseApp.swift"] {
+            let source = try code(path)
+            let looks = source.matches(of: look)
+            #expect(looks.count == 1, "\(path)")
+            let start = try #require(looks.first).range.upperBound
+            for match in source.matches(of: registration) {
+                #expect(match.range.lowerBound > start, "\(path)")
+            }
+        }
+        // The compact window's root view is inside the style, so it registers nothing itself.
+        let compact = try code("BatteryPulseApp/Main/CompactView.swift")
+        #expect(compact.firstMatch(of: registration) == nil)
+        #expect(compact.firstMatch(of: look) == nil)
+    }
+
     @Test func menuBarLabelNeverAnimates() {
         let path = "BatteryPulseApp/MenuBar/MenuBarLabel.swift"
         #expect(flags("withAnimation(motion.change) { on.toggle() }", path: path))
