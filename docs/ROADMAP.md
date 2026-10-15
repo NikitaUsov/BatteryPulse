@@ -164,7 +164,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   - Ad-hoc identity changes with every build, so permissions tied to it (not notifications,
     which follow the bundle ID) would be asked for again; Developer ID fixes that for good.
 - [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
-  removed them. The in-place swap above keeps the path, registers the new copy and raises
+  removed them; the gallery still offered the widget, and it worked once added again. The
+  in-place swap above keeps the path, registers the new copy and raises
   `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
   keeps them or only a stable Developer ID signature does, and until then tell the user to add
   them again
