@@ -59,6 +59,14 @@ dependencies.
 - Recorded about once a minute while BatteryPulse runs; kept on your Mac for 10 days (daily
   summaries for good).
 
+**iPhone and iPad** (Settings → General, off until you turn it on)
+- A page for each iPhone or iPad connected to the Mac: charge, maximum capacity and cycle count
+  as iOS Settings shows them, capacities in mAh, temperature, voltage, the charger and the month
+  of first use, with its history next to the Mac's on the History page.
+- Read when it's plugged in, then every 5 minutes while history is recorded and every minute
+  while its page is open; over Wi-Fi only when you click Refresh. The device must trust this
+  Mac: BatteryPulse never pairs by itself and keeps no identifier or serial number on disk.
+
 **Notifications** (Settings → Notifications, all off until you turn them on)
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
   to 10–30 %, when battery service is recommended, and when the Mac runs hot.
@@ -133,7 +141,7 @@ The device report shows Maximum capacity as iOS Settings does (checked against a
 Pro Max on iOS 27), the cycle count, the date of first use and the battery's temperature.
 `--input` renders a saved capture, of a Mac or of a device. Reading an iPhone or iPad needs the
 device to trust this Mac (unlock it and tap Trust); BatteryPulse never pairs by itself. The
-app shows devices in a later version.
+app shows them too; see [iPhone and iPad](docs/USER_GUIDE.md#iphone-and-ipad).
 
 Real output on a MacBook Air M5 (macOS 27) while charging:
 
