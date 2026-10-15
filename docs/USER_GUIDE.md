@@ -626,8 +626,8 @@ reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identi
 *group-1*, *accessory-1*, consistently, so the parts of an accessory still belong together;
 serial numbers and addresses are removed. `bpulse --input accessories.xml` shows a saved capture
 again, on any computer. When no accessory reports a battery, the list says so and `bpulse` exits
-with status 2 (`--raw` still saves the empty capture); on a macOS that doesn't report accessory
-batteries to apps it says that, also with status 2.
+with status 2; `--json` prints `[]` and `--raw` saves the empty capture, both with status 0. On a
+macOS that doesn't report accessory batteries to apps, `bpulse` says that, also with status 2.
 
 ## Reporting a problem
 
