@@ -267,6 +267,13 @@ extension IDeviceCapture {
         return capture
     }
 
+    /// This capture without serial numbers, device identifiers or the device's name
+    /// (``redactedRawCapture``, read back), for a report the user copies. The read-back can't
+    /// fail (the raw form always has its call list); if it ever did, only the calls are kept.
+    public var redacted: IDeviceCapture {
+        IDeviceCapture(rawCapture: redactedRawCapture) ?? IDeviceCapture(steps: steps)
+    }
+
     /// Whether a raw capture is an iPhone/iPad capture rather than a Mac one.
     public static func isDeviceCapture(_ raw: PropertyDictionary) -> Bool {
         raw[Key.relay] != nil || raw[Key.calls] != nil

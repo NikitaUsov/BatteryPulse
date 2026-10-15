@@ -247,11 +247,20 @@ struct BatteryGlyph: View {
 
 /// Horizontal capacity bars: remaining, full and design mAh on one scale.
 struct CapacityBars: View {
-    let snapshot: BatterySnapshot
+    let bars: [CapacityBar]
     let formatter: BatteryFormatter
 
+    init(snapshot: BatterySnapshot, formatter: BatteryFormatter) {
+        self.init(bars: CapacityBar.bars(for: snapshot), formatter: formatter)
+    }
+
+    /// Bars from any battery, such as an iPhone's.
+    init(bars: [CapacityBar], formatter: BatteryFormatter) {
+        self.bars = bars
+        self.formatter = formatter
+    }
+
     var body: some View {
-        let bars = CapacityBar.bars(for: snapshot)
         let scale = CapacityBar.scale(of: bars)
         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
             // Identified by kind, so a bar that appears or goes away is that bar, not the last

@@ -33,6 +33,16 @@ public enum SystemDevices {
         nil
         #endif
     }
+
+    /// USB arrivals and terminations of iPhones and iPads (IOKit), or `nil` where there are none
+    /// to watch (Linux, iOS).
+    public static func makeAttachEvents() -> (any IDeviceAttachEvents)? {
+        #if os(macOS)
+        USBDeviceWatcher()
+        #else
+        nil
+        #endif
+    }
 }
 
 public enum IDeviceError: Error, Sendable, Equatable, CustomStringConvertible {

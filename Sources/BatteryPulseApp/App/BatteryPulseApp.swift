@@ -29,6 +29,7 @@ struct BatteryPulseApp: App {
         self.demo = DemoController(monitor: monitor)
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
+        AppDevices.start()
         notifier = BatteryNotifier(monitor: monitor)
         notifier.start()
         widgetRefresher = WidgetRefresher(monitor: monitor)
@@ -59,6 +60,7 @@ struct BatteryPulseApp: App {
         Window("BatteryPulse", id: WindowID.main) {
             MainView(monitor: monitor)
                 .environment(demo)
+                .environment(AppDevices.monitor)
                 .motionPolicy()
         }
         .defaultSize(width: 860, height: 640)
@@ -134,6 +136,7 @@ struct BatteryPulseApp: App {
             SettingsView()
                 .environment(launchAtLogin)
                 .environment(updater)
+                .environment(AppDevices.monitor)
                 .motionPolicy()
         }
     }
@@ -182,12 +185,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// Lets an update being installed finish, and saves the day's battery summary, which is
-    /// otherwise written at most hourly, before quitting.
+    /// Lets an update being installed finish, and saves the day's battery summaries (the Mac's and
+    /// each iPhone's or iPad's), which are otherwise written at most hourly, before quitting.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await UpdateInstaller.current?.finishBeforeQuitting()
             try? await AppHistory.store.flush()
+            await AppDevices.monitor.flushHistory()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater

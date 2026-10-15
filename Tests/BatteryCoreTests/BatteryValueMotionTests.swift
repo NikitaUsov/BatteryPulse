@@ -110,4 +110,16 @@ import Testing
                 glassCardsOption: option, showsDeveloperSection: showsDeveloper,
                 reduceTransparency: reduceTransparency) == surface)
     }
+
+    @Test func barsFromValuesMatchSnapshotBars() throws {
+        let snapshot = try Fixture.m5OnBattery.snapshot()
+        #expect(
+            CapacityBar.bars(for: snapshot)
+                == CapacityBar.bars(
+                    remainingMAh: snapshot.currentCapacityMAh, fullChargeMAh: snapshot.fullChargeCapacityMAh,
+                    designMAh: snapshot.designCapacityMAh))
+        let bars = CapacityBar.bars(remainingMAh: 3151, fullChargeMAh: nil, designMAh: 5030)
+        #expect(bars.map(\.kind) == [.remaining, .design])
+        #expect(bars.map(\.capacityMAh) == [3151, 5030])
+    }
 }

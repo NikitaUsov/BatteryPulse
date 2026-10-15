@@ -103,4 +103,17 @@ public struct BatteryMotionKey: Sendable, Hashable {
         flow = Flow(batteryWatts: snapshot?.batteryPowerWatts)
         isLowPowerMode = snapshot?.isLowPowerModeEnabled == true
     }
+
+    /// The key of an iPhone's or iPad's battery: the same parts as a Mac's, without Low Power
+    /// Mode (the device doesn't report it). `nil` (no read yet) gives a key of its own.
+    public init(device battery: IDeviceBattery?) {
+        percent = battery?.chargePercent.map { Int($0.rounded(.toNearestOrEven)) }
+        tier =
+            battery.map { BatteryPresentation.levelTier(percent: $0.chargePercent, state: $0.chargeState) } ?? .normal
+        isPluggedIn = battery?.isExternalPowerConnected == true
+        chargeState = battery?.chargeState
+        symbolName = BatteryPresentation.symbolName(percent: battery?.chargePercent, state: battery?.chargeState)
+        flow = Flow(batteryWatts: battery?.batteryPowerWatts)
+        isLowPowerMode = false
+    }
 }

@@ -254,4 +254,45 @@ import Testing
         let text = try String(contentsOf: script, encoding: .utf8)
         #expect(text.contains("BUNDLE_ID=\"\(HistoryStore.appBundleIdentifier)\""))
     }
+
+    // MARK: iPhone and iPad
+
+    @Test func deviceSampleFromRealIPhone() throws {
+        let battery = try RememberedDeviceTests.realIPhone().battery
+        let sample = HistorySample(device: battery, at: start)
+        #expect(sample.time == start)
+        #expect(sample.percent == 65)
+        #expect(sample.state == .charging)
+        #expect(sample.isExternalPowerConnected == true)
+        #expect(sample.batteryWatts == 8.72)
+        #expect(sample.temperatureCelsius == 36.5)
+        #expect(sample.remainingMAh == 3151)
+        #expect(sample.fullChargeMAh == 4922)
+        #expect(sample.systemLoadWatts == nil)
+        #expect(sample.event == nil)
+    }
+
+    @Test func deviceDayUsesIOSMaximumCapacity() throws {
+        let battery = try RememberedDeviceTests.realIPhone().battery
+        let day = HistoryDay(device: battery, day: "2026-10-20")
+        #expect(day.day == "2026-10-20")
+        #expect(day.healthPercent == 95)
+        #expect(day.capacityToDesignPercent == 95.4)
+        #expect(day.cycleCount == 278)
+        #expect(day.nominalChargeCapacityMAh == 4800)
+        #expect(day.fullChargeCapacityMAh == 4922)
+    }
+
+    @Test func latestSampleTime() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = HistoryStore(directory: directory, now: { .distantFuture })
+        #expect(try await store.latestSampleTime() == nil)
+        try await store.record(sample(0, 80))
+        try await store.record(sample(2 * 24 * 60, 70))
+        try await store.record(sample(24 * 60, 75))
+        let newest = start.addingTimeInterval(2 * 24 * 60 * 60)
+        #expect(try await store.latestSampleTime() == newest)
+        #expect(try await HistoryStore(directory: directory, now: { .distantFuture }).latestSampleTime() == newest)
+    }
 }

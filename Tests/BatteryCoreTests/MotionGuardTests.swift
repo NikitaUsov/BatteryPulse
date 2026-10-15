@@ -41,7 +41,11 @@ import Testing
     static let motionPresetFiles: Set<String> = ["BatteryPulseApp/App/Motion.swift"]
 
     /// Values that change on almost every reading; animations key on `BatteryMotionKey` instead.
-    static let liveValues: Set<String> = ["snapshot", "monitor.snapshot", "monitor.reading", "reading"]
+    static let liveValues: Set<String> = [
+        "snapshot", "monitor.snapshot", "monitor.reading", "reading",
+        // An iPhone's or iPad's entry and battery change with every read.
+        "battery", "entry.battery", "entry", "monitor.entries", "devices.entries",
+    ]
 
     // MARK: Rules
 

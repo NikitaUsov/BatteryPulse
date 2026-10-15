@@ -44,10 +44,15 @@ public struct CapacityBar: Sendable, Equatable, Identifiable {
 
     /// Remaining, full-charge and design capacity, in that order, for the values `s` has.
     public static func bars(for s: BatterySnapshot) -> [CapacityBar] {
+        bars(remainingMAh: s.currentCapacityMAh, fullChargeMAh: s.fullChargeCapacityMAh, designMAh: s.designCapacityMAh)
+    }
+
+    /// The bars for capacities from any battery (a Mac's, an iPhone's), in the same order.
+    public static func bars(remainingMAh: Int?, fullChargeMAh: Int?, designMAh: Int?) -> [CapacityBar] {
         let values: [(Kind, Int?)] = [
-            (.remaining, s.currentCapacityMAh),
-            (.fullCharge, s.fullChargeCapacityMAh),
-            (.design, s.designCapacityMAh),
+            (.remaining, remainingMAh),
+            (.fullCharge, fullChargeMAh),
+            (.design, designMAh),
         ]
         return values.compactMap { kind, value in value.map { CapacityBar(kind: kind, capacityMAh: $0) } }
     }

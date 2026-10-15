@@ -41,6 +41,9 @@ enum AppSettings {
     static let alertServiceKey = "alertService"
     static let alertHeatKey = "alertHeat"
     static let alertStateKey = "alertState"
+    /// Read iPhone and iPad batteries (Settings → General). Off by default: on, the app loads
+    /// Apple's private MobileDevice framework once an iPhone or iPad is plugged in.
+    static let readDevicesKey = "readDevices"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -70,6 +73,10 @@ enum AppSettings {
 
     static var recordsHistory: Bool {
         UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
+    }
+
+    static var readsDevices: Bool {
+        UserDefaults.standard.bool(forKey: readDevicesKey)
     }
 
     /// Daily by default; Settings → General shows the choice.

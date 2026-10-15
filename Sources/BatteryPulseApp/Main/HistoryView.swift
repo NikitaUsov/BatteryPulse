@@ -1,10 +1,18 @@
 #if os(macOS)
 import BatteryCore
+import BatteryKit
 import Charts
 import SwiftUI
 
+/// Whose history the History page shows: this Mac's, or a remembered iPhone's or iPad's.
+enum HistorySource: Hashable {
+    case mac
+    case device(DeviceKey)
+}
+
 /// Battery history: charge and power over the last day or week, figures for that period, and
-/// how capacity and cycles change over months.
+/// how capacity and cycles change over months. This Mac's, or a remembered iPhone's or iPad's,
+/// picked in the toolbar.
 struct HistoryView: View {
     enum Period: String, CaseIterable, Identifiable {
         case day, week
@@ -28,13 +36,54 @@ struct HistoryView: View {
     @State private var end = Date()
     /// The Export menu's pick while its file is prepared.
     @State private var exportRequest: HistoryExportRequest?
+    /// The source picked in the toolbar; Show in History on a device page sets it too.
+    @Binding private var source: HistorySource
+    /// The source of the data on screen, like ``loadedPeriod``.
+    @State private var loadedSource: HistorySource?
+    /// The store the data on screen came from, for exporting what History shows.
+    @State private var loadedStore: HistoryStore?
+    @Environment(IDeviceMonitor.self) private var devices
+    @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
     private let formatter = BatteryFormatter.app
 
-    /// Restarts the reload loop when the period changes or the window is shown again.
+    init(source: Binding<HistorySource>) {
+        _source = source
+    }
+
+    /// Restarts the reload loop when the period or the source changes or the window is shown
+    /// again.
     private struct ReloadKey: Equatable {
         var period: Period
+        var source: HistorySource
         var isVisible: Bool
+    }
+
+    /// What the charts show at a time: switching either crossfades them.
+    private struct ShownKey: Hashable {
+        var period: Period
+        var source: HistorySource
+    }
+
+    /// Remembered iPhones and iPads, for the source picker.
+    private var rememberedDevices: [IDeviceEntry] {
+        devices.entries.filter(\.isRemembered)
+    }
+
+    /// The picked source while it can be shown: in Demo Mode, and once its device is forgotten,
+    /// this Mac.
+    private var effectiveSource: HistorySource {
+        guard !demo.isActive, case .device(let key) = source, rememberedDevices.contains(where: { $0.id == key })
+        else { return .mac }
+        return source
+    }
+
+    /// "Last seen …" under the title while the shown device isn't connected.
+    private var subtitle: Text {
+        guard case .device(let key) = shownSource, let entry = devices.entries.first(where: { $0.id == key }),
+            entry.connection == nil, let lastSeen = entry.lastSeen
+        else { return Text(verbatim: "") }
+        return Text("Last seen \(DeviceText.date(lastSeen))")
     }
 
     var body: some View {
@@ -48,7 +97,7 @@ struct HistoryView: View {
                     // Keyed on the period shown, so the first load fills the page without a fade.
                     ZStack(alignment: .top) {
                         periodContent
-                            .id(shownPeriod)
+                            .id(ShownKey(period: shownPeriod, source: shownSource))
                             .transition(motion.fadeTransition)
                     }
                     Card("Battery Health") { healthCharts }
@@ -59,6 +108,21 @@ struct HistoryView: View {
             .frame(maxWidth: .infinity)
         }
         .toolbar {
+            // Only with a device to choose; Demo Mode shows this Mac alone, so screenshots never
+            // show a real owner's device name.
+            if !rememberedDevices.isEmpty, !demo.isActive {
+                ToolbarItem(placement: .navigation) {
+                    Picker("Source", selection: $source) {
+                        Text("This Mac").tag(HistorySource.mac)
+                        ForEach(rememberedDevices) { entry in
+                            DeviceText.displayName(entry).tag(HistorySource.device(entry.id))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+            }
             // In the toolbar, like the view switches of the system's own apps, with the system's
             // glass selection. Only while History is shown.
             ToolbarItem(placement: .principal) {
@@ -77,7 +141,8 @@ struct HistoryView: View {
             }
         }
         .modifier(HistoryExporter(request: $exportRequest, target: exportTarget))
-        .task(id: ReloadKey(period: period, isVisible: motion.isVisible)) {
+        .navigationSubtitle(subtitle)
+        .task(id: ReloadKey(period: period, source: effectiveSource, isVisible: motion.isVisible)) {
             // Reload as new samples arrive, but not while the window can't be seen; it reloads
             // as soon as it can again.
             guard motion.isVisible else { return }
@@ -96,9 +161,14 @@ struct HistoryView: View {
                     Label("No History Yet", systemImage: "chart.xyaxis.line")
                 } description: {
                     if AppSettings.recordsHistory {
-                        Text(
-                            "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
-                        )
+                        if case .device = shownSource {
+                            Text(
+                                "BatteryPulse records an iPhone or iPad every 5 minutes while it's connected by cable.")
+                        } else {
+                            Text(
+                                "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
+                            )
+                        }
                     } else {
                         Text("Recording is off. Turn it on in Settings → Advanced.")
                     }
@@ -117,19 +187,47 @@ struct HistoryView: View {
 
     // MARK: - Data
 
-    /// This Mac's history. Demo Mode doesn't change it: History shows what was recorded.
+    /// The history on screen: the store and source of the last load, taken together, so a source
+    /// switched during a load never exports one device's history under another's name. Demo Mode
+    /// doesn't change it: History shows what was recorded.
     private var exportTarget: HistoryExportTarget? {
-        HistoryExportTarget(store: AppHistory.store, source: .mac(ProcessInfo.processInfo.operatingSystemVersion))
+        guard let loadedStore, let loadedSource else { return nil }
+        switch loadedSource {
+        case .mac:
+            return HistoryExportTarget(
+                store: loadedStore, source: .mac(ProcessInfo.processInfo.operatingSystemVersion))
+        case .device(let key):
+            guard let device = devices.rememberedDevice(key) else { return nil }
+            return HistoryExportTarget(
+                store: loadedStore,
+                source: .device(
+                    deviceClass: device.deviceClass, productType: device.productType,
+                    modelName: IDeviceModelName.name(productType: device.productType), osVersion: device.osVersion))
+        }
     }
 
     private func load() async {
         let period = self.period
-        let end = Date()
-        let samples = (try? await AppHistory.store.samples(from: end.addingTimeInterval(-period.length))) ?? []
+        let source = effectiveSource
+        let store: HistoryStore
+        var end = Date()
+        let samples: [HistorySample]
+        switch source {
+        case .mac:
+            store = AppHistory.store
+            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length))) ?? []
+        case .device(let key):
+            // A device is recorded only while it is connected: the axis ends at its last sample,
+            // so its last charging session shows.
+            store = await devices.historyStore(for: key)
+            end = min(end, (try? await store.latestSampleTime()) ?? end)
+            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length), to: end)) ?? []
+        }
         let points = HistoryPoint.points(from: samples, bucket: period.bucket)
         let spans = HistorySpan.spans(from: samples)
-        let statistics = samples.isEmpty ? nil : HistoryStatistics(samples: samples)
-        let days = (try? await AppHistory.store.dailySummaries()) ?? []
+        // Drain and time on battery mean nothing for a device sampled only while on a cable.
+        let statistics = samples.isEmpty || source != .mac ? nil : HistoryStatistics(samples: samples)
+        let days = (try? await store.dailySummaries()) ?? []
         // A newer period or a hidden window cancelled this load; its data is stale.
         guard !Task.isCancelled else { return }
         // The daily summaries don't depend on the period, so their charts never animate.
@@ -140,12 +238,14 @@ struct HistoryView: View {
             self.spans = spans
             self.statistics = statistics
             loadedPeriod = period
+            loadedSource = source
+            loadedStore = store
             hasLoaded = true
         }
-        // Only a period switch animates. The minute reload never does: it would redraw three
-        // charts of up to 1,440 points for nothing. `change` moves the card below to the new
-        // height; under Reduce Motion it is `nil` and only the charts fade.
-        if let loadedPeriod, loadedPeriod != period {
+        // Only a period or source switch animates. The minute reload never does: it would redraw
+        // three charts of up to 1,440 points for nothing. `change` moves the card below to the
+        // new height; under Reduce Motion it is `nil` and only the charts fade.
+        if let loadedPeriod, loadedPeriod != period || loadedSource != source {
             withAnimation(motion.change, apply)
         } else {
             apply()
@@ -155,6 +255,11 @@ struct HistoryView: View {
     /// The period of the charts on screen.
     private var shownPeriod: Period {
         loadedPeriod ?? period
+    }
+
+    /// The source of the charts on screen.
+    private var shownSource: HistorySource {
+        loadedSource ?? effectiveSource
     }
 
     private var domain: ClosedRange<Date> {
@@ -233,6 +338,8 @@ struct HistoryView: View {
                 .accessibilityHidden(true)
         }
         .chartForegroundStyleScale([String(localized: "Battery"): Color.blue, String(localized: "Mac"): Color.orange])
+        // A device has the battery's line alone: no legend naming the Mac.
+        .chartLegend(shownSource == .mac ? .automatic : .hidden)
         .chartXScale(domain: domain)
         .chartYAxis {
             AxisMarks { value in
