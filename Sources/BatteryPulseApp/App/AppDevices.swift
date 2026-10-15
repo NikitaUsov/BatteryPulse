@@ -45,14 +45,19 @@ enum IDeviceModelName {
     @MainActor static func name(productType: String?) -> String? {
         guard let productType, !productType.isEmpty else { return nil }
         if let cached = cache[productType] { return cached }
-        let name =
-            UTType(
-                tag: productType, tagClass: UTTagClass(rawValue: "com.apple.device-model-code"), conformingTo: nil
-            )?
-            .localizedDescription
-        let usable = name.flatMap { $0.isEmpty || $0 == productType ? nil : $0 }
+        let usable = lookUp(productType)
         cache[productType] = usable
         return usable
+    }
+
+    /// A model the system doesn't declare gets a dynamic type, whose description says nothing.
+    private static func lookUp(_ productType: String) -> String? {
+        // Typed as optional, so this compiles whether the initializer is failable or not.
+        let tagClass: UTTagClass? = UTTagClass(rawValue: "com.apple.device-model-code")
+        guard let tagClass, let type = UTType(tag: productType, tagClass: tagClass, conformingTo: nil),
+            !type.isDynamic, let name = type.localizedDescription, !name.isEmpty, name != productType
+        else { return nil }
+        return name
     }
 }
 

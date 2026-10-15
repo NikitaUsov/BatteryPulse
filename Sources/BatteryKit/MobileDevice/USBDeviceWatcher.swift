@@ -34,11 +34,11 @@ final class USBDeviceWatcher: IDeviceAttachEvents, @unchecked Sendable {
 
     /// A matching dictionary for Apple USB devices. Each notification needs its own: the call
     /// consumes one reference.
-    static func matching() -> CFDictionary? {
+    static func matching() -> CFMutableDictionary? {
         guard let matching = IOServiceMatching("IOUSBHostDevice") else { return nil }
-        let dictionary = matching as NSMutableDictionary
-        dictionary["idVendor"] = NSNumber(value: appleVendorID)
-        return dictionary as CFDictionary
+        // The same object, toll-free bridged: the key goes into the dictionary IOKit receives.
+        (matching as NSMutableDictionary)["idVendor"] = NSNumber(value: appleVendorID)
+        return matching
     }
 
     /// Whether the service is an iPhone or iPad, by its USB product ID.
