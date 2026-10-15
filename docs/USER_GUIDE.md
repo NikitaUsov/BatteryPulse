@@ -10,6 +10,7 @@ administrator rights.
 - [The main window](#the-main-window)
 - [Compact window](#compact-window)
 - [History](#history)
+- [iPhone and iPad](#iphone-and-ipad)
 - [Notifications](#notifications)
 - [Widget](#widget)
 - [Demo Mode](#demo-mode)
@@ -99,6 +100,7 @@ cycles, temperature, the adapter and the system load.
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
   the spread between them.
+- **Devices** — your iPhones and iPads, one page each; see [iPhone and iPad](#iphone-and-ipad).
 - **Developer** — a sidebar section, off by default (Settings → Advanced), with two pages:
   - **Raw Data** — every raw value macOS reports, in a table with a readable decoding (mAh,
     volts, watts, temperatures, times, dates, bit fields, USB Power Delivery offers and the
@@ -110,10 +112,11 @@ cycles, temperature, the adapter and the system load.
     value, decoding and description. **Copy JSON** and **Export Capture…** are in the toolbar.
   - **Demo Mode** — simulated battery states; see [Demo Mode](#demo-mode).
 
-**Copy Report** in the toolbar copies a plain-text report without serial numbers.
+**Copy Report** in the toolbar copies a plain-text report without serial numbers; on a device
+page, the report of the device's last read, without its name or identifier.
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open and can be
-seen (not on the History and Demo Mode pages, and not while the window is minimized, covered
+seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
 or on another Space), and every 10 seconds when the menu bar shows power. Otherwise BatteryPulse updates when macOS reports a
 change, plus one reading a minute for the history while recording is on (the default; turn it
 off in Settings → Advanced), so it uses almost no CPU in the background.
@@ -160,10 +163,82 @@ or at login), and right away when you plug in, unplug or the charge state change
 - **Battery Health**: capacity compared with design and the cycle count, one point per day,
   so you can watch the battery age over months.
 
+Once an iPhone or iPad has been read, a menu at the left of the toolbar switches between
+**This Mac** and each device; see [Device history](#device-history).
+
 Minute-by-minute history is kept for the last 10 or so days with records, one file per day, and
 the daily summary for good, in `~/Library/Application Support/io.github.nikitausov.BatteryPulse/History`
 on your Mac only.
 Turn recording off or clear it in Settings → Advanced. Nothing is recorded during Demo Mode.
+
+## iPhone and iPad
+
+BatteryPulse can show the battery of an iPhone or iPad connected to the Mac: the charge, maximum
+capacity and cycle count as iOS Settings shows them, the capacities in mAh, temperature, voltage,
+current and the charger, with a history next to the Mac's.
+
+### Turning it on
+
+Reading devices is off until you turn on **Read iPhone and iPad batteries** in Settings → General,
+or click **Turn On** under **Devices** in the sidebar. It uses Apple's MobileDevice framework, the
+part of macOS that Finder uses for iPhones and iPads. With the setting off, BatteryPulse doesn't
+load it and doesn't watch for devices. With it on, the framework loads only once an iPhone or
+iPad is plugged in or you open the Devices section. Turning the setting off stops all reading;
+devices read before stay in the sidebar with their last values and history.
+
+### Connecting a device
+
+1. Connect the device by cable and unlock it. If it asks *Trust This Computer?*, tap **Trust**
+   and enter the passcode; if it doesn't ask, select the device in Finder once. BatteryPulse
+   never pairs with a device by itself.
+2. Within a few seconds the device appears under **Devices** and is read. If it was locked or
+   didn't trust the Mac yet, BatteryPulse tries again after 20 seconds and after a minute;
+   **Try Again** on its page reads it at once.
+
+By cable, a device is read when it's plugged in, then every 5 minutes while battery history is
+recorded, and every minute while its page is on screen. Over Wi-Fi (turn on *Show this iPhone
+when on Wi-Fi* for the device in Finder, by cable, once), a device is never read by itself: it
+shows up as *Connected over Wi-Fi* after **Check Again** or when you open the Devices section,
+and **Refresh** reads it. It must be unlocked and on the same network as the Mac.
+
+If a device doesn't answer in time, BatteryPulse stops reading devices by itself until you click
+**Try Again**, so a device that stopped answering can't keep it busy.
+
+### The device page
+
+- The charge and what the battery is doing, the model, the iOS or iPadOS version, how the device
+  is connected and when it was read.
+- Gauges for the charge (with the mAh behind it), **maximum capacity** (the figure in iOS
+  Settings → Battery → Battery Health) and the **cycle count** against the cycles Apple rates the
+  battery for: 1,000 for iPhone 15 and later and for iPads, 500 for earlier iPhones, or the
+  battery's own rating when it reports one.
+- Capacity bars, and the details: nominal and full-charge capacity with their share of the
+  design, design capacity, temperature, voltage, current, battery power, the charger and the
+  month of first use.
+- **Refresh** in the toolbar reads the device again; **More** has **Show in History** and
+  **Forget This Device…**.
+- **Copy Report** copies the report of the device's last read since BatteryPulse started,
+  without its name or identifier.
+
+When a device is unplugged, it stays in the sidebar, dimmed, with its last values and when it
+was last seen. **Forget This Device…** removes it and its history; a device that is still
+connected comes back only after you unplug it and connect it again.
+
+### Device history
+
+While battery history is recorded (Settings → Advanced), a device on a cable is recorded every 5
+minutes, and its capacity and cycles once a day. Choose it from the menu at the left of the
+History toolbar. Its charts end at its last record, so its last charging session stays in view;
+the period figures (drain, time on battery) are shown for the Mac only. **Clear History…**
+clears the devices' history too; the devices stay.
+
+### Privacy
+
+Everything stays on your Mac, in
+`~/Library/Application Support/io.github.nikitausov.BatteryPulse/Devices`. BatteryPulse keeps
+each device's name (as its label), model, OS version, last values and history under a key made
+from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
+device data are never written. Demo Mode shows a simulated iPhone in place of your devices.
 
 ## Notifications
 
@@ -225,8 +300,9 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
 While the demo runs, a bar at the bottom of the window shows the current scene with buttons for
 the previous scene, play/pause (pause also freezes an animation), the next scene and stopping
 the demo. The menu bar shows a demo symbol next to the simulated values, and its popover shows a
-**Demo** badge with **Stop Demo**. Copy Report, Copy JSON and Export Capture are unavailable
-during the demo, so a bug report always contains real data. The demo stops when you quit or turn
+**Demo** badge with **Stop Demo**. The Devices section shows a simulated iPhone in place of
+your devices, and History shows the Mac only. Copy Report, Copy JSON and Export Capture are
+unavailable during the demo, so a bug report always contains real data. The demo stops when you quit or turn
 the Developer section off.
 
 ## Settings
@@ -235,10 +311,10 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 | Tab | What it controls |
 |-----|------------------|
-| General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language |
+| General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service and heat notifications |
-| Advanced | Recording and clearing history, the Developer section (Raw Data and Demo Mode), a link to this guide |
+| Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
 
 ### Updates
 
@@ -327,10 +403,10 @@ language. To use a different language for BatteryPulse only:
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
 
-### iPhone and iPad (preview)
+### iPhone and iPad from the command line
 
-`bpulse` can read the battery of an iPhone or iPad connected to the Mac; the app shows devices
-in a later version.
+`bpulse` reads the same devices as the app (see [iPhone and iPad](#iphone-and-ipad)), without
+the setting, and saves what a device returned for a bug report.
 
 1. Connect the device by cable and unlock it. If it asks *Trust This Computer?*, tap **Trust**
    and enter the passcode; if it doesn't ask, select the device in Finder once. BatteryPulse

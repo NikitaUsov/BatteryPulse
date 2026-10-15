@@ -343,8 +343,22 @@ stays on controls; the glass bubbles come from standard segmented controls.
     the pack's `UUID` is now redacted
   - [ ] An iPad (9th generation) capture, and the manufacture date (Settings: August 2025; the
     pack's `ManufactureDate` doesn't decode like the Mac's yet)
-  - [ ] The device in the app's UI (0.6): a Devices section with a page per device
-- [ ] Remember each device and keep its history next to the Mac's (0.6)
+  - [x] The device in the app's UI (0.6): a Devices section with a page per device. Opt-in
+    (*Read iPhone and iPad batteries*, off by default): with it off nothing loads or runs.
+    IOKit USB matching notifications (Apple vendor ID, product IDs 0x1290–0x12FF) trigger a
+    device list, so the framework stays unloaded while no iPhone or iPad is on USB. A device
+    on USB is read on attach, every 5 minutes while history is recorded and every minute while
+    its page is visible; Wi-Fi only on Refresh and Check Again. Quick retries at 20 and 60 s;
+    a time-out stalls automatic work until the user acts. The policy, roster and monitor are
+    tested on Linux with a scripted transport and a manual clock
+- [x] Remember each device and keep its history next to the Mac's (0.6): `Devices/devices.json`
+  and a `HistoryStore` per device, keyed by HMAC-SHA256 of the UDID with a per-install secret;
+  no UDID, serial or capture on disk. History has a source pop-up; Forget removes a device and
+  its history
+  - [ ] On the M5: library validation and the Local Network prompt in the packaged app, attach
+    and detach timing, the product ID range, sleep, page switching, Russian layout, the iPad
+  - [ ] Energy with an iPhone attached and all windows closed (target under 1 ms/s on
+    average) and memory after 2 hours; not measured yet
 
 ### Stage 6: Later (optional)
 
