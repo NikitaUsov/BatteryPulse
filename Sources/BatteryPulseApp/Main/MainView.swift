@@ -128,6 +128,14 @@ struct MainView: View {
         nonmutating set { storedSelection = newValue.storageKey }
     }
 
+    /// The row the sidebar highlights. A restored device page with no device listed shows the
+    /// intro (`DevicePage`), so the intro row is highlighted; the stored page stays, for a
+    /// remembered device that is still loading.
+    private var sidebarSelection: SidebarItem {
+        if case .device = selection, deviceEntries.isEmpty { return .devicesIntro }
+        return selection
+    }
+
     /// Show in History on a device page: History with that device's source.
     private func showInHistory(_ key: DeviceKey) {
         historySource = .device(key)
@@ -136,7 +144,7 @@ struct MainView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: Binding(get: { selection }, set: { selection = $0 })) {
+            List(selection: Binding(get: { sidebarSelection }, set: { selection = $0 })) {
                 ForEach(SidebarItem.pages) { item in
                     Label(item.title, systemImage: item.symbol)
                 }
@@ -204,27 +212,18 @@ struct MainView: View {
                 }
             }
         }
-        // A restored page of the Developer section shows only while the section is on.
+        // A restored page of the Developer section shows only while the section is on. A restored
+        // device page whose device isn't among the devices already listed gets the same correction
+        // as below; with none listed yet it waits for them.
         .onAppear {
             if !showsDeveloper, SidebarItem.developerPages.contains(selection) { selection = .overview }
+            if !deviceRowIDs.isEmpty { correctDeviceSelection(deviceRowIDs) }
         }
         // DemoController stops the demo itself when the section is hidden.
         .onChange(of: showsDeveloper) { _, shows in
             if !shows, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
-        // A device page whose device went (forgotten, unplugged while never remembered, the demo
-        // ended) shows the first device left, else the intro; the intro gives way to the first
-        // device that appears.
-        .onChange(of: deviceRowIDs) { _, ids in
-            switch selection {
-            case .device(let key) where !ids.contains(key):
-                selection = ids.first.map(SidebarItem.device) ?? .devicesIntro
-            case .devicesIntro:
-                if let first = ids.first { selection = .device(first) }
-            default:
-                break
-            }
-        }
+        .onChange(of: deviceRowIDs) { _, ids in correctDeviceSelection(ids) }
         // A forgotten device's history is gone: History goes back to this Mac.
         .onChange(of: rememberedIDs) { _, ids in
             if case .device(let key) = historySource, !ids.contains(key) { historySource = .mac }
@@ -243,6 +242,20 @@ struct MainView: View {
         // Polls every 2 s while the window can be seen and the page shows live values.
         .liveRefresh(monitor, every: .seconds(2), client: "main", isEnabled: selection.showsLiveValues)
         .trackedWindow(WindowID.main)
+    }
+
+    /// A device page whose device went (forgotten, unplugged while never remembered, the demo
+    /// ended) shows the first device left, else the intro; the intro gives way to the first
+    /// device that appears.
+    private func correctDeviceSelection(_ ids: [DeviceKey]) {
+        switch selection {
+        case .device(let key) where !ids.contains(key):
+            selection = ids.first.map(SidebarItem.device) ?? .devicesIntro
+        case .devicesIntro:
+            if let first = ids.first { selection = .device(first) }
+        default:
+            break
+        }
     }
 
     /// A device page is titled with the device's name, which is data, not a catalog key.
