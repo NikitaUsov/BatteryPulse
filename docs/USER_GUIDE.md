@@ -328,9 +328,10 @@ in a later version.
    charge, state, design, nominal and full-charge capacity with their share of the design,
    cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON.
    Devices are numbered by their identifier, so the numbers stay the same between runs, and
-   the report's Device line ends with the same short ID (`ID …801C`) as the list. A device that
-   doesn't answer within 10 s is listed as *Unknown device* instead of holding up the list;
-   `--device` connects only to the device you chose.
+   the report's Device line ends with the same short ID (`ID …801C`) as the list. If a device
+   doesn't answer within 10 s, the list doesn't wait for it: that device and the ones not read
+   yet (cable first) are listed as *Unknown device*. `--device` still reads any of them, since it
+   connects only to the device you chose.
 3. Over Wi-Fi: turn on *Show this iPhone when on Wi-Fi* for the device in Finder (by cable,
    once). The device must be unlocked and on the same network as the Mac.
 

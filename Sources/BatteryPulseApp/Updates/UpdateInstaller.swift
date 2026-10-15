@@ -104,6 +104,8 @@ final class UpdateInstaller {
     /// is left behind; the new version then opens next time instead of relaunching now.
     func finishBeforeQuitting() async {
         isQuitting = true
+        // Relaunching is the install's own quit: its task is done but for that call.
+        guard phase != .relaunching else { return }
         cancel()
         await work?.value
     }
@@ -258,7 +260,10 @@ final class UpdateInstaller {
             phase = .failed(.relaunchFailed)
             return
         }
-        NSApp.terminate(nil)
+        // Not right here: this runs inside the install task, on the main queue, and the quit waits
+        // for the delegate's reply in a nested run loop that can't run main-actor work queued
+        // behind this call. From the run loop, after the task has ended, it can.
+        NSApp.perform(#selector(NSApplication.terminate(_:)), with: nil, afterDelay: 0)
     }
 }
 

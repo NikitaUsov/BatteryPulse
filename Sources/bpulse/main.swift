@@ -19,7 +19,8 @@ let usage = """
                         bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
                         read-only, for finding the keys on a new Mac model
       --devices         List the iPhones and iPads connected by USB or Wi-Fi, numbered (macOS);
-                        a device that doesn't answer in time is listed as "Unknown device"
+                        devices whose names aren't read in time (10 s each, 30 s in all) are
+                        listed as "Unknown device"
       --device <n>      Battery report of device n from --devices, with the same ID (macOS); no
                         other device is contacted. The device must trust this Mac: unlock it and
                         tap Trust. With --raw: everything the device returned as an XML property
