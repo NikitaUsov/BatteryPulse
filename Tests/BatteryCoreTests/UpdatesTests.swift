@@ -159,6 +159,285 @@ import Testing
                 """)
     }
 
+    /// A line that starts with inline code isn't a fence, and a fence closes only with its own
+    /// character, at least as many times.
+    @Test func onlyAFenceStartsACodeBlock() {
+        let notes = """
+            Run
+            ```bpulse --raw``` to write a capture
+            and attach it.
+            ## Code
+            ~~~swift
+            let a = 1
+            ```
+            not the end
+            ~~~
+            After the
+            fence.
+            ````text
+            ```
+            nested
+            ````
+            Wrapped
+            again.
+            ```
+            Unclosed
+            fence
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                Run ```bpulse --raw``` to write a capture and attach it.
+                **Code**
+                ~~~swift
+                let a = 1
+                ```
+                not the end
+                ~~~
+                After the fence.
+                ````text
+                ```
+                nested
+                ````
+                Wrapped again.
+                ```
+                Unclosed
+                fence
+                """)
+    }
+
+    /// A trailing backslash is a line break like two trailing spaces; it's dropped when the next
+    /// line continues the text, and stays (as GitHub shows it) at the end of a paragraph or item.
+    @Test func aTrailingBackslashKeepsTheLineBreak() {
+        let notes = #"""
+            First line\
+            second line
+            wrapped.
+
+            One
+            two\
+            three
+
+            An escaped backslash \\
+            doesn't break the line.
+
+            - An item\
+              continued
+            - Ends an item\
+            - Next item
+
+            Ends a paragraph\
+
+            Next.
+            """#
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == #"""
+                First line
+                second line wrapped.
+
+                One two
+                three
+
+                An escaped backslash \\ doesn't break the line.
+
+                - An item
+                  continued
+                - Ends an item\
+                - Next item
+
+                Ends a paragraph\
+
+                Next.
+                """#)
+    }
+
+    /// Below text, an ordered list starts only from 1 (either `1.` or `1)`), as on GitHub; another
+    /// number starts an item only where the text's list item or quote ends.
+    @Test func aNumberStartsAnOrderedItemOnlyWhereGitHubSeesOne() {
+        let notes = """
+            Readings match what macOS has shown since
+            2020. Older Macs too. Steps:
+            1) Download.
+            2) Open.
+
+            1. Download **BatteryPulse.dmg**.
+            2. Drag **BatteryPulse** onto
+               **Applications**.
+            3. Open it, as it has worked since
+               2024. Still the third step.
+
+            - A bullet since
+            2021. A new list, as on GitHub.
+
+            > A quote since
+            2019. A list below it.
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                Readings match what macOS has shown since 2020. Older Macs too. Steps:
+                1) Download.
+                2) Open.
+
+                1. Download **BatteryPulse.dmg**.
+                2. Drag **BatteryPulse** onto **Applications**.
+                3. Open it, as it has worked since 2024. Still the third step.
+
+                - A bullet since
+                2021. A new list, as on GitHub.
+
+                > A quote since
+                2019. A list below it.
+                """)
+    }
+
+    /// A table, with or without the outer pipes, keeps its header, delimiter row and rows.
+    @Test func tablesKeepTheirRows() {
+        let notes = """
+            Keys explained in Raw Data
+            Key | Meaning
+            --- | :---
+            `B0AT` | Battery temperature
+            `SBA1` | Cell voltage
+            Wrapped text after
+            the table.
+
+            | Key | Unit |
+            |-----|------|
+            | CellVoltage | mV |
+
+            A sentence with a | pipe
+            that wraps.
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                Keys explained in Raw Data
+                Key | Meaning
+                --- | :---
+                `B0AT` | Battery temperature
+                `SBA1` | Cell voltage
+                Wrapped text after the table.
+
+                | Key | Unit |
+                |-----|------|
+                | CellVoltage | mV |
+
+                A sentence with a | pipe that wraps.
+                """)
+    }
+
+    /// Lines indented 4 columns past the text they belong to, after a blank line, are code;
+    /// an indented line right below text continues it.
+    @Test func indentedCodeKeepsItsLines() {
+        let notes = """
+            Write a capture:
+
+                bpulse --raw > capture.plist
+                bpulse --input capture.plist
+
+            Then attach
+            the file.
+
+            An indented line
+                right after text continues it.
+
+            1. Run:
+
+                   bpulse --smc
+                   bpulse --devices
+
+               Both read
+               the SMC.
+
+            - An item
+
+                still its text,
+                wrapped.
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                Write a capture:
+
+                    bpulse --raw > capture.plist
+                    bpulse --input capture.plist
+
+                Then attach the file.
+
+                An indented line right after text continues it.
+
+                1. Run:
+
+                       bpulse --smc
+                       bpulse --devices
+
+                   Both read the SMC.
+
+                - An item
+
+                    still its text, wrapped.
+                """)
+    }
+
+    /// Trimmed from `.github/release-notes.md` for 0.4.0, which renders as it did before fences,
+    /// tables, indented code and hard breaks were told apart.
+    @Test func theReleaseNotesRenderAsBefore() {
+        let notes = """
+            ## What's new in 0.4
+
+            - **Menu bar:** show any mix of the battery icon, charge, battery power and temperature. New
+              icon styles are drawn to the exact level — Modern (like macOS 27, the default), Classic,
+              Percentage Inside (like macOS 26) and Ring, or the SF Symbol as before.
+            - **Install and Relaunch:** from 0.4.0 on, updates install from inside BatteryPulse: it
+              downloads the next version, checks its signature, replaces itself and opens again, without
+              Open Anyway. Each release now also has `BatteryPulse.dmg.sig`, which you can ignore.
+            - **Update checks** daily, weekly, monthly or never (Settings → General).
+            - **Raw Data:** temperature sensors no longer show values
+              like 33.69999694824219.
+
+            Upgrading from 0.3: install this version from the DMG as before (Open Anyway once); the next
+            ones install from the app.
+
+            ### First launch
+
+            BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time you open it:
+
+            1. When macOS says it can't verify BatteryPulse, click **Done** (not *Move to Trash*).
+            2. Open **System Settings → Privacy & Security** and scroll down to **Security**.
+            3. Next to *"BatteryPulse" was blocked to protect your Mac*, click **Open Anyway** and confirm
+               with your password or Touch ID.
+
+            See the [User Guide](https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md)
+            for everything else.
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                **What's new in 0.4**
+
+                - **Menu bar:** show any mix of the battery icon, charge, battery power and temperature. \
+                New icon styles are drawn to the exact level — Modern (like macOS 27, the default), \
+                Classic, Percentage Inside (like macOS 26) and Ring, or the SF Symbol as before.
+                - **Install and Relaunch:** from 0.4.0 on, updates install from inside BatteryPulse: it \
+                downloads the next version, checks its signature, replaces itself and opens again, \
+                without Open Anyway. Each release now also has `BatteryPulse.dmg.sig`, which you can \
+                ignore.
+                - **Update checks** daily, weekly, monthly or never (Settings → General).
+                - **Raw Data:** temperature sensors no longer show values like 33.69999694824219.
+
+                Upgrading from 0.3: install this version from the DMG as before (Open Anyway once); the \
+                next ones install from the app.
+
+                **First launch**
+
+                BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time you open it:
+
+                1. When macOS says it can't verify BatteryPulse, click **Done** (not *Move to Trash*).
+                2. Open **System Settings → Privacy & Security** and scroll down to **Security**.
+                3. Next to *"BatteryPulse" was blocked to protect your Mac*, click **Open Anyway** and \
+                confirm with your password or Touch ID.
+
+                See the [User Guide](https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md) \
+                for everything else.
+                """)
+    }
+
     @Test func whatsNewOnlyAfterAnUpdate() {
         let features = AppVersion("0.3.0")!
         func shows(_ lastSeen: String?, _ current: String) -> Bool {
