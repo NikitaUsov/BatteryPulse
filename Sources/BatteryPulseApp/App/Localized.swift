@@ -157,6 +157,17 @@ enum Phrases {
     }
 }
 
+extension WindowLook {
+    var title: LocalizedStringKey {
+        switch self {
+        case .standard: "Standard"
+        case .frosted: "Frosted"
+        case .translucent: "Translucent"
+        case .clear: "Clear"
+        }
+    }
+}
+
 extension MenuBarIconStyle {
     var title: LocalizedStringKey {
         switch self {

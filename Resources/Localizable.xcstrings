@@ -1538,6 +1538,18 @@
         }
       }
     },
+    "Clear": {
+      "extractionState": "manual",
+      "comment": "Window style option, as macOS 27 Icon & widget style → Clear («Прозрачное»); agrees with «Стиль»",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прозрачный"
+          }
+        }
+      }
+    },
     "Clear History": {
       "extractionState": "manual",
       "localizations": {
@@ -2634,6 +2646,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "От полной до 2 процентов за 20 секунд, через низкий и критический уровни."
+          }
+        }
+      }
+    },
+    "Frosted": {
+      "extractionState": "manual",
+      "comment": "Window style option: frosted glass (матовое стекло) behind the window",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Матовый"
           }
         }
       }
@@ -5377,6 +5401,18 @@
         }
       }
     },
+    "Pure glass: the desktop shows through and all content turns white. The hardest to read, and uses more energy.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Clear window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чистое стекло: виден рабочий стол, а всё содержимое становится белым. Читается хуже всего, энергии расходуется больше."
+          }
+        }
+      }
+    },
     "Quit": {
       "extractionState": "manual",
       "localizations": {
@@ -6249,6 +6285,30 @@
         }
       }
     },
+    "Shows more of the desktop through BatteryPulse windows. Can be harder to read and uses more energy.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Translucent window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сквозь окна BatteryPulse рабочий стол виден лучше. Текст может читаться хуже, а энергии расходуется больше."
+          }
+        }
+      }
+    },
+    "Shows the desktop through BatteryPulse windows.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Frosted window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сквозь окна BatteryPulse виден рабочий стол."
+          }
+        }
+      }
+    },
     "Skip This Version": {
       "extractionState": "manual",
       "localizations": {
@@ -6325,6 +6385,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Разброс"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "extractionState": "manual",
+      "comment": "Window style option: an opaque window",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стандартный"
+          }
+        }
+      }
+    },
+    "Standard is used while Reduce transparency or Increase contrast is on in Accessibility settings.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer when an accessibility setting overrides the window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока в настройках универсального доступа включено «Уменьшить прозрачность» или «Увеличить контраст», используется стандартный стиль."
           }
         }
       }
@@ -6811,6 +6895,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Автопоказ"
+          }
+        }
+      }
+    },
+    "Translucent": {
+      "extractionState": "manual",
+      "comment": "Window style option: more transparency than Frosted",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полупрозрачный"
           }
         }
       }
@@ -7635,6 +7731,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Причина, по которой контроллер зарядки аппаратно снизил ограничение входного тока (Ilim); Apple не документирует значения."
+          }
+        }
+      }
+    },
+    "Window Style": {
+      "extractionState": "manual",
+      "comment": "Settings → General: the section of the window style picker (as macOS 27 Icon & widget style)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стиль окон"
           }
         }
       }

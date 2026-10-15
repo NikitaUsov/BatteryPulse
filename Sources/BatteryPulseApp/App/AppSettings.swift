@@ -35,6 +35,9 @@ enum AppSettings {
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
     static let prefersCompactWindowKey = "prefersCompactWindow"
+    /// How the main and compact windows look (Settings → General): a `WindowLook` raw value,
+    /// Standard when missing or unknown.
+    static let windowLookKey = "windowLook"
     static let alertChargeLimitKey = "alertChargeLimit"
     static let alertLowBatteryKey = "alertLowBattery"
     static let alertServiceKey = "alertService"

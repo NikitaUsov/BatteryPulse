@@ -10,7 +10,7 @@ struct SettingsView: View {
         TabView {
             Tab("General", systemImage: "gearshape") {
                 SettingsPage {
-                    GeneralSettings()
+                    GeneralSettings(includesWindowStyle: true)
                     DeviceSettings()
                 }
             }
@@ -71,8 +71,11 @@ struct Crossfade<First: View, Second: View>: View {
     }
 }
 
-/// Where the app appears, startup and language. Also shown in the welcome window.
+/// Where the app appears, startup and language. Also shown in the welcome window, without the
+/// window style.
 struct GeneralSettings: View {
+    /// Settings shows the window style after the window to open; the welcome window doesn't.
+    var includesWindowStyle = false
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     @AppStorage(AppSettings.showDockIconKey) private var showDockIcon = false
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
@@ -134,6 +137,10 @@ struct GeneralSettings: View {
         .onAppear { launchAtLogin.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             launchAtLogin.refresh()
+        }
+
+        if includesWindowStyle {
+            WindowLookSettings()
         }
 
         Section {
@@ -234,7 +241,9 @@ struct MenuBarSettings: View {
         .disabled(!showInMenuBar)
 
         Section {
-            MenuBarIconStylePicker(selection: $iconStyle)
+            PreviewTilePicker(selection: $iconStyle, values: MenuBarIconStyle.allCases, title: \.title) { style in
+                MenuBarIconPreview(style: style, magnification: PreviewTile.iconMagnification)
+            }
         } header: {
             Text("Icon Style")
         }
@@ -254,46 +263,50 @@ struct MenuBarSettings: View {
     }
 }
 
-/// The icon styles side by side, each drawn as it looks in the menu bar.
+/// Choices side by side as tiles, each a preview with its name below, like the Icon & widget
+/// style tiles of macOS: the menu bar's icon styles and the window styles. Every tile gives its
+/// preview the same frame, so the tiles match.
 ///
 /// The tiles are a picker, a control, so their selection is Liquid Glass: one shape behind the
 /// selected tile that flows to the next one, as the selection of a segmented control does. The
 /// tiles keep their standard fill (no glass on glass), and the accent outline still marks the
-/// choice. Under Reduce Motion the outline crossfades and the glass changes in place.
-private struct MenuBarIconStylePicker: View {
-    @Binding var selection: MenuBarIconStyle
+/// choice. Under Reduce Motion the outline crossfades and the glass changes in place. The choice
+/// itself is set without animation: only the tiles animate, never what the choice changes.
+struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: View where Value.RawValue == String {
+    @Binding var selection: Value
+    let values: [Value]
+    let title: (Value) -> LocalizedStringKey
+    @ViewBuilder let preview: (Value) -> Preview
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.motion) private var motion
     @Environment(\.accessibilityShowBorders) private var showsBorders
     @Namespace private var glassNamespace
 
-    private static let cornerRadius: CGFloat = 8
-    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
-    private static let glassOutset: CGFloat = 4
-
     var body: some View {
         // One container for the one glass shape: it renders the selection and morphs it.
         GlassEffectContainer {
             HStack(alignment: .top, spacing: 8) {
-                ForEach(MenuBarIconStyle.allCases, id: \.self) { style in
-                    tile(style)
+                ForEach(values, id: \.self) { value in
+                    tile(value)
                 }
             }
+            // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
+            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
+            .animation(motion.crossfade, value: selection)
         }
         .opacity(isEnabled ? 1 : 0.5)
     }
 
-    private func tile(_ style: MenuBarIconStyle) -> some View {
-        let isSelected = style == selection
-        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius)
+    private func tile(_ value: Value) -> some View {
+        let isSelected = value == selection
+        let shape = RoundedRectangle(cornerRadius: PreviewTile.cornerRadius)
         return Button {
-            // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
-            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
-            withAnimation(motion.crossfade) { selection = style }
+            selection = value
         } label: {
             VStack(spacing: 8) {
-                MenuBarIconPreview(style: style)
-                Text(style.title)
+                preview(value)
+                    .frame(height: PreviewTile.previewHeight)
+                Text(title(value))
                     .font(.caption)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -314,28 +327,40 @@ private struct MenuBarIconStylePicker: View {
             }
             .background {
                 if isSelected {
-                    selectionGlass(for: style)
+                    selectionGlass(for: value)
                 }
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(style.title))
+        .accessibilityLabel(Text(title(value)))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// The glass behind the selected tile. With full motion it keeps one ID wherever it goes, so
     /// the container morphs it from tile to tile. Under Reduce Motion each tile's glass is a shape
     /// of its own that comes and goes in place, without materializing or moving.
-    private func selectionGlass(for style: MenuBarIconStyle) -> some View {
+    private func selectionGlass(for value: Value) -> some View {
         let flows = motion.level == .full
         return Color.clear
-            .glassEffect(.regular, in: .rect(cornerRadius: Self.cornerRadius + Self.glassOutset))
-            .glassEffectID(flows ? "selection" : style.rawValue, in: glassNamespace)
+            .glassEffect(.regular, in: .rect(cornerRadius: PreviewTile.cornerRadius + PreviewTile.glassOutset))
+            .glassEffectID(flows ? "selection" : value.rawValue, in: glassNamespace)
             .glassEffectTransition(flows ? .matchedGeometry : .identity)
-            .padding(-Self.glassOutset)
+            .padding(-PreviewTile.glassOutset)
             .transition(flows ? AnyTransition.opacity : .identity)
     }
+}
+
+/// The tiles' measurements; a generic type can't store them.
+private enum PreviewTile {
+    static let cornerRadius: CGFloat = 8
+    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
+    static let glassOutset: CGFloat = 4
+    /// Every preview's height: a window style's drawing (``WindowLookPreview``).
+    static let previewHeight: CGFloat = WindowLookPreview.size.height
+    /// The menu bar icons are drawn larger in a tile this size; each still takes the same frame
+    /// (``BatteryIconLayout/previewSize``).
+    static let iconMagnification: CGFloat = 2.5
 }
 
 /// Which battery notifications to post.
