@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AccessorySources</key>
+	<array>
+		<dict>
+			<key>Current Capacity</key>
+			<integer>80</integer>
+			<key>Is Charging</key>
+			<true/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>InternalBattery-0</string>
+			<key>Power Source ID</key>
+			<integer>1</integer>
+			<key>Power Source State</key>
+			<string>AC Power</string>
+			<key>Transport Type</key>
+			<string>Internal</string>
+			<key>Type</key>
+			<string>InternalBattery</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Keyboard</string>
+			<key>Accessory Identifier</key>
+			<string>0E8C2A44-1D6B-4F0A-9B1E-6C2D3A4B5C01</string>
+			<key>Current Capacity</key>
+			<integer>76</integer>
+			<key>Hardware Serial Number</key>
+			<string>TESTSERIAL0001</string>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Desk Keyboard</string>
+			<key>Power Source ID</key>
+			<integer>101</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Product ID</key>
+			<integer>4097</integer>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+			<key>Vendor ID</key>
+			<integer>4660</integer>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Mouse</string>
+			<key>Current Capacity</key>
+			<integer>18</integer>
+			<key>Is Charging</key>
+			<false/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Travel Mouse</string>
+			<key>Power Source ID</key>
+			<integer>102</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth LE</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Trackpad</string>
+			<key>Current Capacity</key>
+			<integer>54</integer>
+			<key>Is Charging</key>
+			<integer>1</integer>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Studio Trackpad</string>
+			<key>Power Source ID</key>
+			<integer>103</integer>
+			<key>Power Source State</key>
+			<string>AC Power</string>
+			<key>Product ID</key>
+			<integer>4098</integer>
+			<key>Transport Type</key>
+			<string>USB</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+			<key>Vendor ID</key>
+			<integer>4660</integer>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Headphone</string>
+			<key>Accessory Identifier</key>
+			<string>3B9D0A11-5C2E-4F7B-A1D3-0E9F8A7B6C01</string>
+			<key>Current Capacity</key>
+			<integer>64</integer>
+			<key>Group Identifier</key>
+			<string>7A3F0C55-2B1E-4D8A-8E6F-1B2C3D4E5F10</string>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Test Buds</string>
+			<key>Part Identifier</key>
+			<string>Left</string>
+			<key>Part Name</key>
+			<string>Test Buds Left</string>
+			<key>Power Source ID</key>
+			<integer>104</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Headphone</string>
+			<key>Accessory Identifier</key>
+			<string>3B9D0A11-5C2E-4F7B-A1D3-0E9F8A7B6C02</string>
+			<key>Current Capacity</key>
+			<integer>61</integer>
+			<key>Group Identifier</key>
+			<string>7A3F0C55-2B1E-4D8A-8E6F-1B2C3D4E5F10</string>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Test Buds</string>
+			<key>Part Identifier</key>
+			<string>Right</string>
+			<key>Part Name</key>
+			<string>Test Buds Right</string>
+			<key>Power Source ID</key>
+			<integer>105</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Audio Battery Case</string>
+			<key>Accessory Identifier</key>
+			<string>3B9D0A11-5C2E-4F7B-A1D3-0E9F8A7B6C03</string>
+			<key>Current Capacity</key>
+			<integer>90</integer>
+			<key>Group Identifier</key>
+			<string>7A3F0C55-2B1E-4D8A-8E6F-1B2C3D4E5F10</string>
+			<key>Is Charging</key>
+			<true/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Test Buds</string>
+			<key>Part Name</key>
+			<string>Test Buds Case</string>
+			<key>Power Source ID</key>
+			<integer>106</integer>
+			<key>Power Source State</key>
+			<string>AC Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Headset</string>
+			<key>Accessory Identifier</key>
+			<string>5C6D7E8F-9A0B-4C1D-8E2F-3A4B5C6D7E01</string>
+			<key>Combined Parts</key>
+			<array>
+				<dict>
+					<key>Accessory Identifier</key>
+					<string>5C6D7E8F-9A0B-4C1D-8E2F-3A4B5C6D7E02</string>
+					<key>Current Capacity</key>
+					<integer>46</integer>
+					<key>Part Identifier</key>
+					<string>Left</string>
+					<key>Part Name</key>
+					<string>Test Headset Left</string>
+				</dict>
+				<dict>
+					<key>Accessory Identifier</key>
+					<string>5C6D7E8F-9A0B-4C1D-8E2F-3A4B5C6D7E03</string>
+					<key>Current Capacity</key>
+					<integer>44</integer>
+					<key>Part Identifier</key>
+					<string>Right</string>
+					<key>Part Name</key>
+					<string>Test Headset Right</string>
+				</dict>
+			</array>
+			<key>Current Capacity</key>
+			<integer>45</integer>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Test Headset</string>
+			<key>Part Identifier</key>
+			<string>Combined</string>
+			<key>Part Name</key>
+			<string>Test Headset</string>
+			<key>Power Source ID</key>
+			<integer>107</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Unknown</string>
+			<key>Accessory Identifier</key>
+			<string>c8-2a-14-0f-3e-71</string>
+			<key>Address</key>
+			<string>c8-2a-14-0f-3e-71</string>
+			<key>Current Capacity</key>
+			<integer>7</integer>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>10</integer>
+			<key>Name</key>
+			<string>Generic Mouse</string>
+			<key>Power Source ID</key>
+			<integer>108</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Product ID</key>
+			<integer>65535</integer>
+			<key>Transport Type</key>
+			<string>Bluetooth LE</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+			<key>Vendor ID</key>
+			<integer>65535</integer>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Game Controller</string>
+			<key>Accessory Identifier</key>
+			<string>9D8C7B6A-5F4E-4D3C-B2A1-0F9E8D7C6B01</string>
+			<key>Current Capacity</key>
+			<integer>30</integer>
+			<key>Is Charging</key>
+			<false/>
+			<key>Is Present</key>
+			<true/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string></string>
+			<key>Power Source ID</key>
+			<integer>109</integer>
+			<key>Power Source State</key>
+			<string>Off Line</string>
+			<key>Product ID</key>
+			<integer>4099</integer>
+			<key>Transport Type</key>
+			<string>Bluetooth LE</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+			<key>Vendor ID</key>
+			<integer>4660</integer>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Keyboard</string>
+			<key>Current Capacity</key>
+			<integer>50</integer>
+			<key>Group Identifier</key>
+			<string>E1F2A3B4-C5D6-4E7F-8091-A2B3C4D5E6F7</string>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Backup Keyboard</string>
+			<key>Power Source ID</key>
+			<integer>110</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Mouse</string>
+			<key>Accessory Identifier</key>
+			<string>6E5D4C3B-2A19-4807-B6F5-E4D3C2B1A001</string>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Silent Mouse</string>
+			<key>Power Source ID</key>
+			<integer>111</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Accessory Category</key>
+			<string>Keyboard</string>
+			<key>Accessory Identifier</key>
+			<string>1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C01</string>
+			<key>Current Capacity</key>
+			<integer>40</integer>
+			<key>Is Present</key>
+			<false/>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Absent Keyboard</string>
+			<key>Power Source ID</key>
+			<integer>112</integer>
+			<key>Power Source State</key>
+			<string>Battery Power</string>
+			<key>Transport Type</key>
+			<string>Bluetooth</string>
+			<key>Type</key>
+			<string>Accessory Source</string>
+		</dict>
+		<dict>
+			<key>Current Capacity</key>
+			<integer>100</integer>
+			<key>Max Capacity</key>
+			<integer>100</integer>
+			<key>Name</key>
+			<string>Test UPS</string>
+			<key>Power Source ID</key>
+			<integer>113</integer>
+			<key>Power Source State</key>
+			<string>AC Power</string>
+			<key>Transport Type</key>
+			<string>Serial</string>
+			<key>Type</key>
+			<string>UPS</string>
+		</dict>
+	</array>
+</dict>
+</plist>

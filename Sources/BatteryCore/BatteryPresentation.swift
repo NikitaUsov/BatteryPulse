@@ -38,7 +38,12 @@ public enum BatteryPresentation {
     }
 
     public static func levelTier(percent: Double?, state: ChargeState) -> LevelTier {
-        guard let percent, state != .charging, percent <= 20 else { return .normal }
+        levelTier(percent: percent, isCharging: state == .charging)
+    }
+
+    /// The tier for any battery that reports only whether it charges, such as an accessory's.
+    public static func levelTier(percent: Double?, isCharging: Bool) -> LevelTier {
+        guard let percent, !isCharging, percent <= 20 else { return .normal }
         return percent > 10 ? .low : .critical
     }
 
