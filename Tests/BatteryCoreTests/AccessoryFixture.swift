@@ -19,12 +19,15 @@ enum AccessoryFixture: String, CaseIterable {
         return try #require(PropertyValue.dictionary(fromAny: root))
     }
 
+    func reading() throws -> AccessoryReading {
+        try #require(AccessoryReading(rawCapture: try raw()))
+    }
+
     func sources() throws -> [PropertyDictionary] {
-        let sources = try #require(try raw()["AccessorySources"]?.arrayValue)
-        return sources.compactMap(\.dictionaryValue)
+        try reading().sources
     }
 
     func accessories() throws -> [AccessoryBattery] {
-        AccessoryParser.accessories(from: try sources())
+        try reading().accessories
     }
 }

@@ -7,6 +7,7 @@ let usage = """
            bpulse --smc
            bpulse --devices
            bpulse --device <n> [--json | --raw]
+           bpulse --accessories [--json | --raw]
            bpulse --export csv|json [--days] [--decimal-comma] [--history <folder>]
 
       (no options)      Human-readable battery report
@@ -14,8 +15,8 @@ let usage = """
       --raw             Raw IOKit dictionaries as an XML property list, serial numbers
                         redacted — attach this to bug reports; it is also the test fixture format
       --watch [sec]     Repeat every N seconds (default 2, max 86400) until interrupted
-      --input <file>    Read a capture saved with --raw (a Mac's or a device's) instead of this
-                        Mac's battery
+      --input <file>    Read a capture saved with --raw (a Mac's, a device's or the
+                        accessories') instead of this Mac's battery
       --smc             List the SMC's battery and charger keys with their types, and the raw
                         bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
                         read-only, for finding the keys on a new Mac model
@@ -27,6 +28,10 @@ let usage = """
                         tap Trust. With --raw: everything the device returned as an XML property
                         list, serial numbers, identifiers and the device's name redacted; with
                         --json: the parsed battery
+      --accessories     Batteries of the accessories connected to this Mac (Bluetooth keyboards,
+                        mice, trackpads, headphones) as macOS reports them (macOS). With --raw: the
+                        power-source dictionaries as an XML property list, identifiers and names
+                        replaced; with --json: the parsed list
       --export csv|json The battery history BatteryPulse recorded (everything it keeps), on
                         standard output. csv: the minute readings; with --days, the daily battery
                         health. json: both. CSV uses commas and decimal points; --decimal-comma
@@ -38,7 +43,8 @@ let usage = """
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found
-    (or no device, or the device couldn't be read, or there is no history folder to export).
+    (or no device, or the device couldn't be read, or no accessory reports a battery, or there is
+    no history folder to export).
     """
 
 enum OutputFormat {
@@ -57,6 +63,7 @@ struct Options {
     var exportsDays = false
     var usesDecimalComma = false
     var historyPath: String?
+    var listsAccessories = false
 
     var readsDevice: Bool { listsDevices || deviceNumber != nil }
 
@@ -98,6 +105,7 @@ func parseOptions(_ arguments: [String]) -> Options? {
             guard let path = remaining.popFirst() else { return nil }
             options.historyPath = path
         case "--devices": options.listsDevices = true
+        case "--accessories": options.listsAccessories = true
         case "--device":
             guard let next = remaining.popFirst(), let number = Int(next), number > 0 else { return nil }
             options.deviceNumber = number
@@ -106,7 +114,8 @@ func parseOptions(_ arguments: [String]) -> Options? {
     }
     if options.exportFormat != nil {
         // An export reads only the history: no other output, input or device.
-        guard options.format == .text, options.watchInterval == nil, options.inputPath == nil, !options.readsDevice
+        guard options.format == .text, options.watchInterval == nil, options.inputPath == nil, !options.readsDevice,
+            !options.listsAccessories
         else { return nil }
     }
     // --days and --decimal-comma shape a CSV export; --history names what to export.
@@ -118,6 +127,11 @@ func parseOptions(_ arguments: [String]) -> Options? {
         guard options.watchInterval == nil, options.inputPath == nil, options.format != .smc else { return nil }
         // --devices only lists.
         guard !options.listsDevices || (options.deviceNumber == nil && options.format == .text) else { return nil }
+    }
+    if options.listsAccessories {
+        // Accessories are read once, live, on their own: no --watch, --input, --smc or device.
+        guard options.watchInterval == nil, options.inputPath == nil, options.format != .smc, !options.readsDevice
+        else { return nil }
     }
     return options
 }
@@ -169,6 +183,36 @@ func renderDevice(_ capture: IDeviceCapture, as format: OutputFormat) throws -> 
         if let problem { fail("bpulse: " + problem.description, code: 2) }
         exit(0)
     }
+}
+
+/// The accessory list, the parsed list as JSON (no identifiers), or the pseudonymized capture.
+/// An empty list ends with status 2, except for a raw capture: "nothing connected" is evidence too.
+func renderAccessories(_ reading: AccessoryReading, as format: OutputFormat) throws -> Never {
+    switch format {
+    case .text, .smc:
+        print(AccessoryReport.text(for: reading.accessories))
+        exit(reading.accessories.isEmpty ? 2 : 0)
+    case .json:
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        print(String(decoding: try encoder.encode(reading.accessories), as: UTF8.self))
+        exit(0)
+    case .raw:
+        print(try xmlPropertyList(reading.redactedRawCapture), terminator: "")
+        exit(0)
+    }
+}
+
+/// `--accessories`.
+@MainActor
+func readAccessories(_ options: Options) throws -> Never {
+    guard let provider = SystemAccessories.makeProvider() else {
+        fail("bpulse: accessory batteries need macOS.", code: 2)
+    }
+    guard let reading = provider.read() else {
+        fail("bpulse: this version of macOS doesn't report accessory batteries.", code: 2)
+    }
+    try renderAccessories(reading, as: options.format)
 }
 
 /// `--devices` and `--device <n>`.
@@ -288,6 +332,9 @@ guard let options = parseOptions(arguments) else {
 if let kind = options.exportKind {
     await exportHistory(kind, options)
 }
+if options.listsAccessories {
+    try readAccessories(options)
+}
 if options.readsDevice {
     try await readDevices(options)
 }
@@ -309,9 +356,16 @@ func loadCapture(at path: String) -> PropertyDictionary {
     }
 }
 
-// A capture of an iPhone or iPad (`--device <n> --raw`) is rendered once.
-if let path = options.inputPath, let capture = IDeviceCapture(rawCapture: loadCapture(at: path)) {
-    try renderDevice(capture, as: options.format)
+// A capture of an iPhone or iPad (`--device <n> --raw`) or of accessories (`--accessories --raw`)
+// is rendered once; a Mac's is read again on each `--watch` tick below.
+if let path = options.inputPath {
+    let capture = loadCapture(at: path)
+    if let device = IDeviceCapture(rawCapture: capture) {
+        try renderDevice(device, as: options.format)
+    }
+    if let accessories = AccessoryReading(rawCapture: capture) {
+        try renderAccessories(accessories, as: options.format)
+    }
 }
 
 let provider = options.inputPath == nil ? SystemBattery.makeProvider() : nil
