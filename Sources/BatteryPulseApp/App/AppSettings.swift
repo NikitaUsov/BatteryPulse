@@ -10,8 +10,15 @@ import SwiftUI
 enum AppSettings {
     static let showInMenuBarKey = "showInMenuBar"
     static let showDockIconKey = "showDockIcon"
-    static let menuBarStyleKey = "menuBarStyle"
-    static let menuBarIconKey = "menuBarIcon"
+    static let menuBarShowsIconKey = "menuBarShowsIcon"
+    static let menuBarShowsChargeKey = "menuBarShowsCharge"
+    static let menuBarShowsPowerKey = "menuBarShowsPower"
+    static let menuBarShowsTemperatureKey = "menuBarShowsTemperature"
+    static let menuBarIconStyleKey = "menuBarIconStyle"
+    /// The menu bar's single content choice and its icon choice before 0.4; ``migrate()`` turns
+    /// them into the toggles above.
+    static let legacyMenuBarStyleKey = "menuBarStyle"
+    static let legacyMenuBarIconKey = "menuBarIcon"
     static let showDeveloperKey = "showDeveloperSection"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
@@ -76,6 +83,21 @@ enum AppSettings {
             defaults.set(updateFrequency.rawValue, forKey: updateFrequencyKey)
             defaults.removeObject(forKey: legacyCheckForUpdatesKey)
         }
+        let menuBarKeys = [
+            menuBarShowsIconKey, menuBarShowsChargeKey, menuBarShowsPowerKey, menuBarShowsTemperatureKey,
+        ]
+        if menuBarKeys.allSatisfy({ defaults.object(forKey: $0) == nil }),
+            let content = MenuBarContent.migrated(
+                legacyStyle: defaults.string(forKey: legacyMenuBarStyleKey),
+                legacyIcon: defaults.string(forKey: legacyMenuBarIconKey))
+        {
+            defaults.set(content.showsIcon, forKey: menuBarShowsIconKey)
+            defaults.set(content.showsCharge, forKey: menuBarShowsChargeKey)
+            defaults.set(content.showsPower, forKey: menuBarShowsPowerKey)
+            defaults.set(content.showsTemperature, forKey: menuBarShowsTemperatureKey)
+        }
+        defaults.removeObject(forKey: legacyMenuBarStyleKey)
+        defaults.removeObject(forKey: legacyMenuBarIconKey)
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.
@@ -116,6 +138,10 @@ enum AppLinks {
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
+    /// System Settings → Control Center, where the battery item macOS shows is turned off.
+    // swift-format-ignore: NeverForceUnwrap
+    static let controlCenterSettings = URL(
+        string: "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension")!
     /// System Settings → Notifications.
     // swift-format-ignore: NeverForceUnwrap
     static let notificationSettings = URL(

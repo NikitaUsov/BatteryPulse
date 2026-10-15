@@ -142,32 +142,101 @@ struct GeneralSettings: View {
     }
 }
 
-/// What the menu bar item shows.
+/// What the menu bar item shows and how its battery icon looks.
 struct MenuBarSettings: View {
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
-    @AppStorage(AppSettings.menuBarStyleKey) private var menuBarStyle: MenuBarStyle = .percent
-    @AppStorage(AppSettings.menuBarIconKey) private var menuBarIcon: MenuBarIconStyle = .standard
+    // The defaults of MenuBarContent: the icon and the charge.
+    @AppStorage(AppSettings.menuBarShowsIconKey) private var showsIcon = true
+    @AppStorage(AppSettings.menuBarShowsChargeKey) private var showsCharge = true
+    @AppStorage(AppSettings.menuBarShowsPowerKey) private var showsPower = false
+    @AppStorage(AppSettings.menuBarShowsTemperatureKey) private var showsTemperature = false
+    @AppStorage(AppSettings.menuBarIconStyleKey) private var iconStyle = MenuBarIconStyle.default
+
+    private var content: MenuBarContent {
+        MenuBarContent(
+            showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
+    }
 
     var body: some View {
         Section {
-            Picker("Show", selection: $menuBarStyle) {
-                ForEach(MenuBarStyle.allCases, id: \.self) { style in
-                    Text(style.title).tag(style)
-                }
-            }
-            Picker("Battery icon", selection: $menuBarIcon) {
-                ForEach(MenuBarIconStyle.allCases, id: \.self) { icon in
-                    Text(icon.title).tag(icon)
-                }
-            }
+            // The last item that is on can't be turned off: the status item would be empty.
+            Toggle("Battery icon", isOn: $showsIcon)
+                .disabled(content.isOnlyItem(.icon))
+            Toggle("Percentage", isOn: $showsCharge)
+                .disabled(content.isOnlyItem(.charge))
+            Toggle("Battery power", isOn: $showsPower)
+                .disabled(content.isOnlyItem(.power))
+            Toggle("Temperature", isOn: $showsTemperature)
+                .disabled(content.isOnlyItem(.temperature))
+        } header: {
+            Text("Show")
         } footer: {
             if showInMenuBar {
-                Text("The icon can only be hidden when the menu bar also shows text.")
+                Text("The menu bar always shows at least one item.")
             } else {
                 Text("BatteryPulse isn't in the menu bar. Turn it on in General.")
             }
         }
         .disabled(!showInMenuBar)
+
+        Section {
+            MenuBarIconStylePicker(selection: $iconStyle)
+        } header: {
+            Text("Icon Style")
+        }
+        .disabled(!showInMenuBar || !content.items.contains(.icon))
+
+        Section {
+            LabeledContent("macOS battery item") {
+                Button("Open Control Center Settings…") {
+                    NSWorkspace.shared.open(AppLinks.controlCenterSettings)
+                }
+            }
+        } footer: {
+            Text(
+                "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Show in Menu Bar for Battery in Control Center settings."
+            )
+        }
+    }
+}
+
+/// The icon styles side by side, each drawn as it looks in the menu bar.
+private struct MenuBarIconStylePicker: View {
+    @Binding var selection: MenuBarIconStyle
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            ForEach(MenuBarIconStyle.allCases, id: \.self) { style in
+                let isSelected = style == selection
+                Button {
+                    selection = style
+                } label: {
+                    VStack(spacing: 8) {
+                        MenuBarIconPreview(style: style)
+                            .frame(height: 24)
+                        Text(style.title)
+                            .font(.caption)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity)
+                    .background(.fill.quaternary, in: .rect(cornerRadius: 8))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(style.title))
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .opacity(isEnabled ? 1 : 0.5)
     }
 }
 

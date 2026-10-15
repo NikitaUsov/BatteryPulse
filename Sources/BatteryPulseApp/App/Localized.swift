@@ -97,29 +97,26 @@ enum Phrases {
         value ? String(localized: "On") : String(localized: "Off")
     }
 
+    /// What VoiceOver reads for the menu bar icon: "Battery charge: 70%, Charging".
+    static func batteryIcon(_ s: BatterySnapshot?, _ f: BatteryFormatter) -> String {
+        guard let s, let percent = s.chargePercent else { return String(localized: "Battery") }
+        return String(localized: "Battery charge: \(f.percent(percent)), \(state(s))")
+    }
+
     /// "48 of 1,000".
     static func count(_ value: Int, of total: Int) -> String {
         String(localized: "\(value.formatted()) of \(total.formatted())")
     }
 }
 
-extension MenuBarStyle {
-    var title: LocalizedStringKey {
-        switch self {
-        case .percent: "Percentage"
-        case .power: "Battery power"
-        case .percentAndPower: "Percentage and power"
-        case .iconOnly: "Icon only"
-        }
-    }
-}
-
 extension MenuBarIconStyle {
     var title: LocalizedStringKey {
         switch self {
-        case .standard: "Standard"
-        case .large: "Large"
-        case .hidden: "Hidden"
+        case .symbol: "Symbol"
+        case .modern: "Modern"
+        case .classic: "Classic"
+        case .percentageInside: "Percentage Inside"
+        case .ring: "Ring"
         }
     }
 }

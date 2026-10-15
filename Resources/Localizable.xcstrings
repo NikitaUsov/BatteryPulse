@@ -452,6 +452,17 @@
         }
       }
     },
+    "Battery charge: %@, %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд аккумулятора: %@, %@"
+          }
+        }
+      }
+    },
     "Battery Charged to %@": {
       "extractionState": "manual",
       "localizations": {
@@ -721,6 +732,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Когда BatteryPulse нет в строке меню, его значок всегда показан в Dock."
+          }
+        }
+      }
+    },
+    "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Show in Menu Bar for Battery in Control Center settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не может скрыть значок аккумулятора, который показывает macOS. Чтобы BatteryPulse заменил его, выключите «Показывать в строке меню» для аккумулятора в настройках «Пункт управления»."
           }
         }
       }
@@ -1327,6 +1349,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите BatteryPulse в разделе «Приложения» настроек «Язык и регион»."
+          }
+        }
+      }
+    },
+    "Classic": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Классический"
           }
         }
       }
@@ -2514,17 +2547,6 @@
         }
       }
     },
-    "Hidden": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скрыт"
-          }
-        }
-      }
-    },
     "High": {
       "extractionState": "manual",
       "localizations": {
@@ -2642,13 +2664,13 @@
         }
       }
     },
-    "Icon only": {
+    "Icon Style": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Только значок"
+            "value": "Стиль значка"
           }
         }
       }
@@ -2867,17 +2889,6 @@
         }
       }
     },
-    "Large": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Крупный"
-          }
-        }
-      }
-    },
     "Last checked %@": {
       "extractionState": "manual",
       "comment": "%@ is a relative date such as 'yesterday'",
@@ -3014,6 +3025,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mac"
+          }
+        }
+      }
+    },
+    "macOS battery item": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значок аккумулятора macOS"
           }
         }
       }
@@ -3177,6 +3199,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Модель микросхемы контроллера аккумулятора (например, TI bq40z651)."
+          }
+        }
+      }
+    },
+    "Modern": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Современный"
           }
         }
       }
@@ -3930,6 +3963,17 @@
         }
       }
     },
+    "Open Control Center Settings…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть настройки Пункта управления…"
+          }
+        }
+      }
+    },
     "Open Login Items…": {
       "extractionState": "manual",
       "localizations": {
@@ -4113,13 +4157,13 @@
         }
       }
     },
-    "Percentage and power": {
+    "Percentage Inside": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Процент и мощность"
+            "value": "Процент внутри"
           }
         }
       }
@@ -4805,6 +4849,17 @@
         }
       }
     },
+    "Ring": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кольцо"
+          }
+        }
+      }
+    },
     "Running sum of negative BatteryPower samples in mW; ÷ its count gives average discharge power.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5255,17 +5310,6 @@
         }
       }
     },
-    "Standard": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стандартный"
-          }
-        }
-      }
-    },
     "Start Tour": {
       "extractionState": "manual",
       "comment": "Starts the automatic Demo Mode tour",
@@ -5296,6 +5340,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Остановить демо"
+          }
+        }
+      }
+    },
+    "Symbol": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Символ"
           }
         }
       }
@@ -5388,13 +5443,13 @@
         }
       }
     },
-    "The icon can only be hidden when the menu bar also shows text.": {
+    "The menu bar always shows at least one item.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Значок можно скрыть, только если в строке меню показан текст."
+            "value": "Хотя бы один из параметров всегда остаётся включённым."
           }
         }
       }
