@@ -18,7 +18,8 @@ import Testing
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
-///   outside the tone map's bridge, where it would bypass Clear's monochrome;
+///   outside the tone map's bridge, where it would bypass Clear's monochrome, and there a colour
+///   read as a property (`tier.color`), which comes from the standard tones, not the window's;
 /// - a white tint (`.tint(.white)`): macOS draws white labels and knobs on tinted fills, so it
 ///   would leave white on white; Clear's tint is graphite;
 /// - a see-through window background or an appearance override (`containerBackground(…, for:
@@ -92,6 +93,13 @@ import Testing
         words(
             #/\.(?:green|orange|red|teal|blue|gray|yellow|mint|cyan|indigo|purple|pink|brown|accentColor)\b|\(\s*\.tint\s*[,)]/#
         )
+    }
+
+    /// A colour read as a property (`tier.color`, `levelTier(for: s).color`): a level tier's own
+    /// colour comes from the standard tones and stays green or orange in Clear. Calls such as
+    /// `tones.color(.level(tier))` or a context's `.color(ink)` shading don't count.
+    private static var standardToneColor: Regex<Substring> {
+        words(#/\.color\b(?!\s*\()/#)
     }
 
     /// APIs that make a window see-through or change its appearance; `containerBackground(…,
@@ -190,6 +198,9 @@ import Testing
         if colorsGoThroughTheToneMap(path) {
             for match in code.matches(of: systemColor) {
                 flag(match.range.lowerBound, "a system colour bypasses the tone map; ask `tones` for a role")
+            }
+            for match in code.matches(of: standardToneColor) {
+                flag(match.range.lowerBound, "a standard colour ignores the window's tones; ask `tones` for a role")
             }
         }
 
@@ -495,6 +506,9 @@ import Testing
         "RingGaugeStyle(tint: .blue)",
         "LineMark(x: x, y: y).foregroundStyle(.red.opacity(0.5))",
         "Label(\"Demo\", systemImage: \"x\").foregroundStyle(.tint, .secondary)",
+        // A tier's own colour is the standard one: green or orange in Clear too.
+        "ProgressView(value: 1).tint(tier.color)",
+        "return BatteryPresentation.levelTier(percent: p, isCharging: c).color",
     ])
     func systemColorsOnlyInTheToneMap(source: String) {
         #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
@@ -514,6 +528,9 @@ import Testing
         "// .orange in a comment",
         "let tint = tones.color(.cycles)",
         "Text(\"x\").foregroundStyle(tones.style(.accent))",
+        "ProgressView(value: 1).tint(tones.color(part.isOffline ? .text(.secondary) : .level(tier)))",
+        "context.fill(path, with: .color(ink))",
+        "let tint = tones.color (.cycles)",
     ])
     func toneMapGuardAllows(source: String) {
         #expect(!flags(source, path: "BatteryPulseApp/Main/DeviceView.swift"), "\(source)")

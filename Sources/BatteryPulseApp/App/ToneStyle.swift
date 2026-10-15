@@ -106,7 +106,8 @@ extension SystemColor {
 }
 
 extension BatteryPresentation.LevelTier {
-    /// The level's colour where no window style applies (the menu bar panel).
+    /// The level's colour where no window style applies (the menu bar panel). The windows' content
+    /// asks its `tones` instead; `MotionGuardTests` keeps this property out of it.
     var color: Color {
         ToneMap.standard.color(.level(self))
     }

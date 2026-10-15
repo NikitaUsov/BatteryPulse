@@ -79,13 +79,17 @@ private struct AccessoryCard: View {
     }
 }
 
-/// A part's label, its state, its charge and a level bar in the colours of the Mac's battery.
+/// A part's label, its state, its charge and a level bar in the colours of the Mac's battery,
+/// through the window's tones: white in Clear, where a low part's charge is in the inverted badge.
 private struct AccessoryPartRow: View {
     let part: AccessoryPart
     let hasParts: Bool
     private let formatter = BatteryFormatter.app
+    @Environment(\.tones) private var tones
 
     var body: some View {
+        let tier = BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging)
+        let percent = formatter.percent(Double(part.percent))
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: Phrases.accessoryPart(part.role, hasParts: hasParts))
@@ -94,19 +98,19 @@ private struct AccessoryPartRow: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
-                Text(verbatim: formatter.percent(Double(part.percent)))
-                    .monospacedDigit()
-                    .numericValue(Double(part.percent))
+                // Clear has no orange or red: a low part shows its charge in the badge. An
+                // offline part's last charge stays plain, as its bar stays dimmed.
+                if !part.isOffline, tones.badge(for: tier) == .inverted {
+                    InvertedBadge(text: Text(verbatim: percent).monospacedDigit())
+                } else {
+                    Text(verbatim: percent)
+                        .monospacedDigit()
+                        .numericValue(Double(part.percent))
+                }
             }
             ProgressView(value: Double(part.percent), total: 100)
-                .tint(tint)
+                .tint(tones.color(part.isOffline ? .text(.secondary) : .level(tier)))
         }
-    }
-
-    /// An offline part shows its last charge, dimmed.
-    private var tint: Color {
-        guard !part.isOffline else { return .secondary }
-        return BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging).color
     }
 }
 
