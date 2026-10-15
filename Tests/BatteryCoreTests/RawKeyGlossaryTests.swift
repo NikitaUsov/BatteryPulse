@@ -57,10 +57,31 @@ import Testing
         #expect(packData["AppleRawBatteryVoltage"] == smartBattery["AppleRawBatteryVoltage"])
         #expect(packData["AppleRawCurrentCapacity"] == topData["RemainingCapacity"])
         #expect(packData["AppleRawMaxCapacity"] == topData["FullChargeCapacity"])
+        // Not a copy: the pack's BatteryPower stays 0 while the battery's isn't.
+        #expect(packData["BatteryPower"]?.intValue == 0)
+        #expect(topData["BatteryPower"]?.intValue != 0)
         // Six ASCII digits that read backwards as YYMMDD from 1992: 33-11-11 is 2025-11-11.
         let date = try #require(packData["ManufactureDate"]?.intValue)
         let ascii = withUnsafeBytes(of: UInt64(date).bigEndian) { Array($0.drop { $0 == 0 }) }
         #expect(String(decoding: ascii.reversed(), as: UTF8.self) == "331111")
+    }
+
+    /// Every bank shows the same Ra00–Ra14: the impedance in the last bank's RaTableRaw, not its own.
+    @Test(arguments: capturesWithChildren)
+    func banksRepeatTheLastBanksImpedance(fixture: Fixture) throws {
+        let banks = RegistryChildren.entries(in: try fixture.reading().smartBattery)
+            .filter { $0.className == RegistryChildren.bankClass }
+            .compactMap { $0.properties["BatteryData"]?.dictionaryValue }
+        #expect(banks.count == 3)
+        let shown = banks.map { data in (0..<15).map { data[String(format: "Ra%02d", $0)]?.intValue } }
+        let own = banks.map { data -> [Int?] in
+            guard case .data(let block) = data["RaTableRaw"], block.count >= 30 else { return [] }
+            let bytes = Array(block)
+            return (0..<15).map { Int(bytes[2 * $0]) << 8 | Int(bytes[2 * $0 + 1]) }
+        }
+        #expect(Set(shown).count == 1)
+        #expect(shown.last == own.last)
+        #expect(Set(own).count == banks.count)
     }
 
     /// A class-specific entry explains only its own registry entry; a plain one every entry.

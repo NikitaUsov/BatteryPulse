@@ -62,9 +62,9 @@ Spotlight also brings up its window.
 ### The menu bar item
 
 Settings → Menu Bar has four switches — **Battery icon**, **Percentage**, **Battery power** and
-**Temperature** — in any combination. The menu bar shows them in that order, for example
-battery · 70 % · −7.5 W · 34 °C. One of them always stays on, so the last one can't be turned
-off. When the chosen text has nothing to show yet (no reading, or a Mac that reports no
+**Temperature** — in any combination. The menu bar shows them in that order, for example the
+battery icon followed by 70% · −7.5 W · 34 °C. One of them always stays on, so the last one
+can't be turned off. When the chosen text has nothing to show yet (no reading, or a Mac that reports no
 temperature), the icon shows instead. Battery power refreshes every few seconds while it's
 shown; the charge and temperature change when macOS reports new values.
 
@@ -77,7 +77,7 @@ shown; the charge and temperature change when macOS reports new values.
 - **Symbol** is the SF Symbol BatteryPulse used before 0.4, in five steps.
 
 The drawn styles show a bolt while charging, a plug while on power but not charging (full, on
-hold, or just plugged in), a red fill at 20 % and below on battery, and a yellow fill in Low
+hold, or just plugged in), a red fill at 20 % and below unless it's charging, and a yellow fill in Low
 Power Mode; otherwise they follow the menu bar's light or dark color.
 
 BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, click

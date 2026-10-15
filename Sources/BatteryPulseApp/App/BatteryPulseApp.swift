@@ -167,9 +167,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// Saves the day's battery summary, which is otherwise written at most hourly, before quitting.
+    /// Lets an update being installed finish, and saves the day's battery summary, which is
+    /// otherwise written at most hourly, before quitting.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
+            await UpdateInstaller.current?.finishBeforeQuitting()
             try? await AppHistory.store.flush()
             NSApp.reply(toApplicationShouldTerminate: true)
         }

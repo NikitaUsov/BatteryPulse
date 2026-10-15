@@ -1741,14 +1741,14 @@
         }
       }
     },
-    "Current in mA that tracks Amperage on every Mac sampled; negative while discharging.": {
+    "Current in mA, close to Amperage while it is steady but slow to follow a change: just after unplugging it still read the charge current.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ток в мА, который на всех проверенных Mac меняется вместе с Amperage; отрицательный при разрядке."
+            "value": "Ток в мА: при неизменном токе близок к Amperage, но за изменениями следует медленно — сразу после отключения адаптера ещё показывал ток зарядки."
           }
         }
       }
@@ -2922,6 +2922,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Поле импеданса (Ra) контроллера, равное 0 на всех проверенных Mac с чипом Apple."
+          }
+        }
+      }
+    },
+    "Impedance at depth-of-discharge grid points 0-9 (1/1024 ohm). Every bank repeats the same values, the last bank's RaTableRaw; this bank's own are in its RaTableRaw.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импеданс в узлах сетки глубины разряда 0-9 (1/1024 Ом). Все группы повторяют одни и те же значения — RaTableRaw последней группы; собственные значения этой группы — в её RaTableRaw."
+          }
+        }
+      }
+    },
+    "Impedance at depth-of-discharge grid points 10-14 (1/1024 ohm). Every bank repeats the same values, the last bank's RaTableRaw; this bank's own are in its RaTableRaw.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импеданс в узлах сетки глубины разряда 10-14 (1/1024 Ом). Все группы повторяют одни и те же значения — RaTableRaw последней группы; собственные значения этой группы — в её RaTableRaw."
           }
         }
       }
@@ -5111,6 +5135,18 @@
         }
       }
     },
+    "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery.": {
+      "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В AppleSmartBatteryPack на всех проверенных Mac равно 0; мощность аккумулятора — BatteryData.BatteryPower в AppleSmartBattery."
+          }
+        }
+      }
+    },
     "Record battery history": {
       "extractionState": "manual",
       "localizations": {
@@ -5907,7 +5943,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Теперь объяснены и ключи блока аккумулятора, его элементов и зарядного устройства."
+            "value": "Теперь объяснены и ключи блока аккумулятора, его элементов и контроллера зарядки."
           }
         }
       }
@@ -6811,14 +6847,14 @@
         }
       }
     },
-    "Weighted average of the cell's Ra impedance values, in units of 1/1024 ohm.": {
+    "Weighted average of the impedance in this bank's RaTableRaw, in units of 1/1024 ohm.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Взвешенное среднее значений импеданса Ra элемента, в единицах 1/1024 Ом."
+            "value": "Взвешенное среднее импеданса из RaTableRaw этой группы, в единицах 1/1024 Ом."
           }
         }
       }

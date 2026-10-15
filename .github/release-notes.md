@@ -17,11 +17,13 @@
 - **Raw Data** explains the keys of the battery pack, its banks and cells and the charger
   entries that macOS 27 shows below `AppleSmartBattery`; keys whose meaning isn't known still
   show no explanation rather than a guess.
-- **iPhone and iPad (preview, command line):** `bpulse --devices` and `bpulse --device 1` read
-  the battery of a device connected by cable or Wi-Fi that trusts the Mac. The app shows
-  devices in a later version.
-- **Fixes:** release notes in the update window no longer break mid-sentence, and Raw Data no
-  longer claims the charge voltage stays below `VacVoltageLimit`.
+- **iPhone and iPad (preview, command line):** from a clone of the repository,
+  `swift run bpulse --devices` and `swift run bpulse --device 1` read the battery of a device
+  connected by cable or Wi-Fi that trusts the Mac (see the README). The app shows devices in a
+  later version.
+- **Fixes:** Raw Data no longer stutters when you show the inspector or filter, release notes
+  in the update window no longer break mid-sentence, and Raw Data no longer claims the charge
+  voltage stays below `VacVoltageLimit`.
 
 Upgrading from 0.3: install this version from the DMG as before (Open Anyway once); the next
 ones install from the app. Your menu bar settings carry over and a hidden icon stays hidden;

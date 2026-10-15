@@ -169,7 +169,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   As built: Install and Relaunch downloads the DMG with URLSession into
   `~/Library/Caches/<bundle ID>/Updates` and checks GitHub's SHA-256 digest when the release has
   one and, always, an Ed25519 signature of the DMG (`BatteryPulse.dmg.sig`, made by
-  `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret,
+  `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret of
+  the `release` environment, which needs the maintainer's approval for each run,
   checked against the key in `ReleaseSigning.swift`). It mounts the DMG at a private mount
   point, copies the app into a temporary folder on the app's volume, clears quarantine, and
   checks the bundle ID, that the version is exactly the release's and newer than the running
@@ -204,7 +205,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   battery power and the battery temperature; the popover shows the temperature too
 
 - [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
-  (turned off in System Settings → Control Center → Battery; BatteryPulse can't hide it itself,
+  (turned off in System Settings → Menu Bar → Battery; BatteryPulse can't hide it itself,
   so Settings explains this and links there). Built in 0.4.0, to verify on the M5: Symbol (the
   SF Symbol, as before), Modern (like macOS 27: a capsule without an outline, the empty part
   translucent), Classic (outlined), Percentage Inside (like macOS 26) and Ring; the ring has
@@ -296,7 +297,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
   prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
   notifications), with `pmset -g accps -xml` as a fallback. Seen working for Magic Keyboard and
-  Mouse, a Logitech BLE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
+  Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
   (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
   Bluetooth permission, which ad-hoc signing loses on every update.
 - [ ] **CSV/JSON export** of history: public APIs only (`fileExporter`), about two days,
@@ -309,9 +310,9 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   allows. Below 80 %, forced discharge and the MagSafe LED need a root helper and are disputed
   on macOS 27: not now. Macs on the same firmware with macOS 15.8 have no built-in limit, so no
   charge control at all there.
-- [ ] **Homebrew.** The official homebrew/cask needs notarization and some popularity. A personal
-  tap (`brew install --cask nikitausov/tap/batterypulse`) works today, but every install and
-  upgrade still needs Open Anyway. Worth it after notarization.
+- [ ] **A package manager.** The main macOS package manager's official catalog needs
+  notarization and some popularity. A personal catalog of our own works today, but every install
+  and upgrade still needs Open Anyway. Worth it after notarization.
 
 ## Releases
 

@@ -197,6 +197,13 @@ public enum RawKeyGlossary {
             )
         ),
         (
+            "AppleSmartBatteryPack.BatteryData.BatteryPower",
+            Info(
+                .milliwatts,
+                "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery."
+            )
+        ),
+        (
             "AppleSmartBatteryPack.BatteryData.InstantAmperage",
             Info(
                 .milliamps,
@@ -310,7 +317,10 @@ public enum RawKeyGlossary {
         ),
         (
             "BatteryData.ISS",
-            Info(.milliamps, "Current in mA that tracks Amperage on every Mac sampled; negative while discharging.")
+            Info(
+                .milliamps,
+                "Current in mA, close to Amperage while it is steady but slow to follow a change: just after unplugging it still read the charge current."
+            )
         ),
         (
             "BatteryData.LifetimeData.AverageTemperature",
@@ -445,7 +455,7 @@ public enum RawKeyGlossary {
         ("BatteryData.Voltage", Info(.millivolts, "Battery pack voltage as seen by the gauge.")),
         (
             "BatteryData.WeightedRa",
-            Info(.other, "Weighted average of the cell's Ra impedance values, in units of 1/1024 ohm.")
+            Info(.other, "Weighted average of the impedance in this bank's RaTableRaw, in units of 1/1024 ohm.")
         ),
         ("BatteryInstalled", Info(.boolean, "True when a battery is present.")),
         (
@@ -1031,6 +1041,20 @@ public enum RawKeyGlossary {
     ]
 
     private static let familyTable: [(prefix: String, info: Info)] = [
+        (
+            "AppleSmartBatteryBank.BatteryData.Ra0",
+            Info(
+                .other,
+                "Impedance at depth-of-discharge grid points 0-9 (1/1024 ohm). Every bank repeats the same values, the last bank's RaTableRaw; this bank's own are in its RaTableRaw."
+            )
+        ),
+        (
+            "AppleSmartBatteryBank.BatteryData.Ra1",
+            Info(
+                .other,
+                "Impedance at depth-of-discharge grid points 10-14 (1/1024 ohm). Every bank repeats the same values, the last bank's RaTableRaw; this bank's own are in its RaTableRaw."
+            )
+        ),
         (
             "BatteryData.LifetimeData.",
             Info(

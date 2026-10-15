@@ -2,6 +2,11 @@ name: Release
 
 # Publishes BatteryPulse.dmg on the Releases page, either by pushing a tag such as v0.2.0 or
 # by running this workflow from the Actions tab with a version number.
+#
+# The job runs in the `release` environment, which holds the UPDATE_SIGNING_KEY secret. Give that
+# environment a required reviewer (Settings > Environments > release) and keep the key out of
+# the repository secrets: anyone who can push a commit and a tag could otherwise get their own
+# build signed, and the app would install it.
 on:
   push:
     tags: ["v*"]
@@ -18,6 +23,7 @@ jobs:
   release:
     name: Build and publish DMG
     runs-on: xcode-27
+    environment: release
     steps:
       - uses: actions/checkout@v5
       - name: Check the update signing key
@@ -28,7 +34,7 @@ jobs:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: |
           if [ -z "$UPDATE_SIGNING_KEY" ]; then
-            echo "::error::The UPDATE_SIGNING_KEY secret is missing or empty. Add it in Settings > Secrets and variables > Actions (see scripts/sign-update.swift)."
+            echo "::error::The UPDATE_SIGNING_KEY secret is missing or empty. Add it to the release environment in Settings > Environments (see scripts/sign-update.swift)."
             exit 1
           fi
           expected="$(sed -n 's/^ *public static let publicKey = "\([^"]*\)"$/\1/p' Sources/BatteryCore/ReleaseSigning.swift)"

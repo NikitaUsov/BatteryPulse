@@ -41,7 +41,7 @@ through the App Store. Reference hardware: MacBook Air M5.
   renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
   `--device <n> [--json | --raw]` read a connected iPhone or iPad.
 - Releases: `release.yml` signs the DMG with `scripts/sign-update.swift` and the
-  `UPDATE_SIGNING_KEY` secret (`BatteryPulse.dmg.sig`); the app's `Updates/UpdateInstaller`
+  `UPDATE_SIGNING_KEY` secret of the `release` environment (`BatteryPulse.dmg.sig`); the app's `Updates/UpdateInstaller`
   refuses an update without a valid signature. Never ask for or handle the private key.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.

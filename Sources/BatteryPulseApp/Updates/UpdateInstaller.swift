@@ -34,15 +34,20 @@ final class UpdateInstaller {
 
     private(set) var phase: Phase = .idle
 
+    /// The app's installer, so quitting can wait for an install in progress.
+    private(set) static weak var current: UpdateInstaller?
+
     let currentVersion: AppVersion
     private let bundleURL: URL
     private let bundleIdentifier: String
     @ObservationIgnored private var work: Task<Void, Never>?
+    @ObservationIgnored private var isQuitting = false
 
     init(currentVersion: AppVersion, bundle: Bundle = .main) {
         self.currentVersion = currentVersion
         bundleURL = bundle.bundleURL.resolvingSymlinksInPath()
         bundleIdentifier = bundle.bundleIdentifier ?? ""
+        Self.current = self
     }
 
     var isBusy: Bool {
@@ -94,6 +99,15 @@ final class UpdateInstaller {
         work?.cancel()
     }
 
+    /// Called when the app quits. A download stops and a checked update isn't installed, but an
+    /// install already under way finishes, so no disk image stays mounted and no half-copied app
+    /// is left behind; the new version then opens next time instead of relaunching now.
+    func finishBeforeQuitting() async {
+        isQuitting = true
+        cancel()
+        await work?.value
+    }
+
     /// Back to the start after a failure, or when the update is dismissed.
     func reset() {
         guard !isBusy else { return }
@@ -134,6 +148,7 @@ final class UpdateInstaller {
                 try UpdateInstallSteps.verify(image: image, signature: signature, digest: digest)
             }.value
             try Task.checkCancellation()
+            if isQuitting { throw CancellationError() }
 
             phase = .installing
             let target = bundleURL
@@ -145,7 +160,7 @@ final class UpdateInstaller {
             }.value
             // The running process still uses the previous version's files; it goes at the next launch.
             UserDefaults.standard.set(previous.path, forKey: AppSettings.updateLeftoverKey)
-            relaunch()
+            if !isQuitting { relaunch() }
         } catch {
             UpdateInstallSteps.removeDownloads(bundleIdentifier: identifier)
             if error is CancellationError {

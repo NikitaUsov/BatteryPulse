@@ -7,8 +7,9 @@
 //   UPDATE_SIGNING_KEY=<private key> swift scripts/sign-update.swift --public-key
 //       Prints the public key of the private key.
 //   swift scripts/sign-update.swift --generate-key
-//       Prints a new private key. Keep it secret: it becomes the UPDATE_SIGNING_KEY secret, and
-//       its public key goes into Sources/BatteryCore/ReleaseSigning.swift.
+//       Prints a new private key. Keep it secret: it becomes the UPDATE_SIGNING_KEY secret of the
+//       `release` environment (not a repository secret; see release.yml), and its public key goes
+//       into Sources/BatteryCore/ReleaseSigning.swift.
 //
 // Keys are raw 32-byte Curve25519 signing keys in base64, as CryptoKit's `rawRepresentation`.
 // The app installs an update itself only if the public key built into it verifies the
