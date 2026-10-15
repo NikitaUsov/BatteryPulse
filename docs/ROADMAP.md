@@ -130,17 +130,20 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [ ] Verify on the M5: the widget after an update, and a capture at the macOS Charge Limit stop
   point
+- [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
+  silicon Macs (M1–M4) as test fixtures
+- [ ] Profile in Instruments against the resource targets
+- [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
+  first launch needs no Open Anyway
+
+### Stage 1.2: Updates (0.4)
+
 - [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
 - [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
   relaunch, instead of sending the user to the browser. A download made by the app itself may
   skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
   permission for an ad-hoc signed app
-- [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
-  silicon Macs (M1–M4) as test fixtures
-- [ ] Profile in Instruments against the resource targets
-- [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
-  first launch needs no Open Anyway
 
 ### Stage 2: iOS MVP
 
@@ -177,7 +180,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] Notifications (macOS): charge threshold reached, low battery, overheating, "Service
   Recommended"
 
-### Stage 5: iPhone and iPad battery health on the Mac
+### Stage 5: iPhone and iPad battery health on the Mac (0.4)
 
 - [ ] Read the battery of an iPhone or iPad connected by USB or Wi-Fi, like coconutBattery:
   charge, maximum capacity, cycles, design and full-charge capacity, temperature. Researched:
@@ -234,6 +237,10 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.2.0   | 2026-10-14 | Main window (Overview, Power, Health), optional menu bar and Dock presence, Developer section with decoded and explained Raw Data and Demo Mode, English and Russian |
 | 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
+
+Next: **0.4.0** brings the battery of a connected iPhone or iPad (Stage 5), a choice of how
+often to check for updates, and installing updates from the app (Stage 1.2). Everything else
+waits for later versions.
 
 ## Development environment
 
