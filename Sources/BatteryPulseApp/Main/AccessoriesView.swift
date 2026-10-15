@@ -115,16 +115,16 @@ struct AccessorySymbol: View {
     let name: String
 
     var body: some View {
-        Image(systemName: AccessorySymbolCache.available(name) ? name : AccessoryKind.fallbackSymbolName)
+        Image(systemName: AccessorySymbols.isAvailable(name) ? name : AccessoryKind.fallbackSymbolName)
     }
 }
 
 /// Which symbol names this macOS has, each checked once.
 @MainActor
-private enum AccessorySymbolCache {
+enum AccessorySymbols {
     private static var known: [String: Bool] = [:]
 
-    static func available(_ name: String) -> Bool {
+    static func isAvailable(_ name: String) -> Bool {
         if let available = known[name] { return available }
         let available = NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil
         known[name] = available

@@ -82,6 +82,18 @@
         }
       }
     },
+    "%@, charging": {
+      "extractionState": "manual",
+      "comment": "VoiceOver value of an accessory part in the menu bar panel: its charge, then that it charges",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, заряжается"
+          }
+        }
+      }
+    },
     "1 when the Mac lets the battery charge from the adapter; 0 on battery or while charging is paused.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",

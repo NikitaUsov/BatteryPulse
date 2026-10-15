@@ -33,7 +33,7 @@ struct BatteryPulseApp: App {
         let accessories = AccessoryMonitor(provider: SystemAccessories.makeProvider())
         accessories.start()
         self.accessories = accessories
-        self.demo = DemoController(monitor: monitor)
+        self.demo = DemoController(monitor: monitor, accessories: accessories)
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
         AppDevices.start()
@@ -93,7 +93,7 @@ struct BatteryPulseApp: App {
         .defaultLaunchBehavior(showsMainWindow && AppSettings.prefersCompactWindow ? .presented : .suppressed)
 
         MenuBarExtra(isInserted: $showInMenuBar) {
-            PopoverView(monitor: monitor)
+            PopoverView(monitor: monitor, accessories: accessories)
                 .environment(demo)
                 .environment(updater)
                 .motionPolicy()

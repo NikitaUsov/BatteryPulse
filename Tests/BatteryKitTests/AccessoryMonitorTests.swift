@@ -169,6 +169,14 @@ private func reading(_ percents: [Int]) -> AccessoryReading {
         #expect(device.readCount == 2)
     }
 
+    @Test func demoProviderShowsTheDemoAccessories() {
+        let monitor = AccessoryMonitor(provider: FakeAccessoryProvider(next: reading([76])))
+        monitor.start()
+        monitor.setOverride(DemoAccessoryProvider())
+        #expect(monitor.accessories.map(\.name) == ["Magic Keyboard", "Magic Mouse", "AirPods Pro"])
+        #expect(monitor.isAvailable == true)
+    }
+
     @Test func overrideBeforeStartWaitsForStart() {
         let device = FakeAccessoryProvider(next: reading([76]))
         let demo = FakeAccessoryProvider(next: reading([10, 20]))
