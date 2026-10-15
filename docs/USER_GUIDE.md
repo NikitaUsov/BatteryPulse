@@ -362,9 +362,9 @@ Each notification comes once and only again after the battery has clearly moved 
 below the charge limit, or unplugged; 5 points above the low-battery level, or plugged in; for an
 accessory, 5 points above or charging). A low-battery notification disappears from Notification
 Center when you plug in (an accessory's when it charges), and a charge-level one when you unplug.
-An accessory that disconnects and comes back at the same level doesn't notify again. macOS asks for permission the first time you turn one on;
-**Send Test Notification** shows what they look like. BatteryPulse has to be running to notify
-you.
+An accessory that disconnects and comes back at the same level doesn't notify again. macOS asks
+for permission the first time you turn one on; **Send Test Notification** shows what they look
+like. BatteryPulse has to be running to notify you.
 
 ## Widget
 
@@ -410,9 +410,8 @@ the demo. The menu bar shows a demo symbol next to the simulated values, and its
 **Demo** badge with **Stop Demo**. The Devices section shows a simulated iPhone in place of
 your devices, the Accessories page and the popover show a simulated keyboard, mouse and AirPods
 in place of yours (so screenshots never show your accessories' names), and History shows the Mac
-only. Copy Report, Copy JSON and Export Capture are
-unavailable during the demo, so a bug report always contains real data. The demo stops when you quit or turn
-the Developer section off.
+only. Copy Report, Copy JSON and Export Capture are unavailable during the demo, so a bug report
+always contains real data. The demo stops when you quit or turn the Developer section off.
 
 ## Settings
 
@@ -422,7 +421,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 |-----|------------------|
 | General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
-| Notifications | Charge limit, low battery, battery service and heat notifications |
+| Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
 | Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
 
 ### Updates
@@ -585,3 +584,6 @@ batteries to apps it says that, also with status 2.
 Open an [issue](https://github.com/NikitaUsov/BatteryPulse/issues/new/choose) and attach a
 capture: turn on the Developer section, then **Raw Data → Export Capture…** (or run
 `swift run bpulse --raw > capture.xml`). Serial numbers are removed from captures and reports.
+For a problem with accessories, attach `swift run bpulse --accessories --raw > accessories.xml`
+instead: their names and identifiers are replaced (see
+[Accessories from the command line](#accessories-from-the-command-line)).
