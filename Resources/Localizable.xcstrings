@@ -737,13 +737,13 @@
         }
       }
     },
-    "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Show in Menu Bar for Battery in Control Center settings.": {
+    "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Battery in System Settings → Menu Bar.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "BatteryPulse не может скрыть значок аккумулятора, который показывает macOS. Чтобы BatteryPulse заменил его, выключите «Показывать в строке меню» для аккумулятора в настройках «Пункт управления»."
+            "value": "BatteryPulse не может скрыть значок аккумулятора, который показывает macOS. Чтобы BatteryPulse заменил его, выключите «Аккумулятор» в Системных настройках → «Строка меню»."
           }
         }
       }
@@ -4344,17 +4344,6 @@
         }
       }
     },
-    "Open Control Center Settings…": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Открыть настройки Пункта управления…"
-          }
-        }
-      }
-    },
     "Open Login Items…": {
       "extractionState": "manual",
       "localizations": {
@@ -4362,6 +4351,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть «Объекты входа»…"
+          }
+        }
+      }
+    },
+    "Open Menu Bar Settings…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть настройки строки меню…"
           }
         }
       }

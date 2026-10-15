@@ -68,8 +68,12 @@ dependencies.
   battery will be full or empty, maximum capacity, cycles and temperature.
 
 **Menu bar**
-- Percentage, power, both or just the icon, with a standard, large or hidden battery icon.
-- A popover with charge, state, time, maximum capacity, cycles, adapter and system load.
+- Any mix of the battery icon, charge, battery power and temperature.
+- Icon styles drawn to the exact level — Modern (like macOS 27), Classic, Percentage Inside
+  (like macOS 26), Ring, or the SF Symbol — with charging, plugged-in, low and Low Power Mode
+  states, so it can take the place of the system battery item.
+- A popover with charge, state, time, maximum capacity, cycles, temperature, adapter and
+  system load.
 - Optional: without it BatteryPulse lives in the Dock. Dock icon on demand, a Dock menu, and
   opening at login.
 
@@ -89,10 +93,14 @@ dependencies.
 - A welcome window with the starting settings on first launch.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only network request is an optional update check against GitHub
-  releases, which sends nothing about your Mac.
+  history while recording is on, so it uses almost no CPU in the background. The only network requests are an optional
+  update check against GitHub releases, which sends nothing about your Mac, and the download
+  of an update you chose to install.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
-  (Settings → General), and a What's New window after updates that add features.
+  (Settings → General), and a What's New window after updates that add features. From 0.4.0,
+  *Install and Relaunch* installs the next version from inside the app; each release is
+  signed, and the app checks the signature before replacing itself.
+- An About window with the version, links and the license.
 
 Build it from source:
 
@@ -114,7 +122,13 @@ swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
 swift run bpulse --smc        # the SMC's battery and charger keys; values of the battery ones
+swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi (preview)
+swift run bpulse --device 1   # battery of device 1; add --json, or --raw for a redacted capture
 ```
+
+`--input` renders a saved capture, of a Mac or of a device. Reading an iPhone or iPad needs the
+device to trust this Mac (unlock it and tap Trust); BatteryPulse never pairs by itself. The
+app shows devices in a later version.
 
 Real output on a MacBook Air M5 (macOS 27) while charging:
 

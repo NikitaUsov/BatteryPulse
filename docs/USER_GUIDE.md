@@ -59,6 +59,33 @@ If the menu bar item disappears because macOS hid it, allow BatteryPulse again i
 Settings → Menu Bar. While BatteryPulse is running, opening it again from Applications or
 Spotlight also brings up its window.
 
+### The menu bar item
+
+Settings → Menu Bar has four switches — **Battery icon**, **Percentage**, **Battery power** and
+**Temperature** — in any combination. The menu bar shows them in that order, for example
+battery · 70 % · −7.5 W · 34 °C. One of them always stays on, so the last one can't be turned
+off. When the chosen text has nothing to show yet (no reading, or a Mac that reports no
+temperature), the icon shows instead. Battery power refreshes every few seconds while it's
+shown; the charge and temperature change when macOS reports new values.
+
+**Icon Style** draws the battery to the exact level:
+
+- **Modern** (the default) looks like the battery item of macOS 27: a capsule without an
+  outline whose empty part is translucent.
+- **Classic** has an outline, **Percentage Inside** puts the charge inside the battery as
+  macOS 26 did, and **Ring** is a small round gauge.
+- **Symbol** is the SF Symbol BatteryPulse used before 0.4, in five steps.
+
+The drawn styles show a bolt while charging, a plug while on power but not charging (full, on
+hold, or just plugged in), a red fill at 20 % and below on battery, and a yellow fill in Low
+Power Mode; otherwise they follow the menu bar's light or dark color.
+
+BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, click
+**Open Menu Bar Settings…** in Settings → Menu Bar and turn off **Battery** there.
+
+The popover that opens from the item shows charge, state, time remaining, maximum capacity,
+cycles, temperature, the adapter and the system load.
+
 ## The main window
 
 - **Overview** — charge with a battery drawn to the exact level, what the battery is doing
@@ -161,6 +188,9 @@ The widget reads the battery itself, so it keeps working while BatteryPulse isn'
 macOS limits how often widgets refresh, so it may lag a few minutes behind; while BatteryPulse
 runs, it refreshes the widget right away when you plug in or unplug.
 
+Replacing BatteryPulse with a new version from the DMG removes the widgets you placed; add them
+again from the gallery as above.
+
 The widget is new and depends on how macOS treats apps that aren't notarized yet. If it doesn't
 appear in the widget gallery, please [report it](#reporting-a-problem); the main window, the
 compact window and the menu bar work either way.
@@ -195,7 +225,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 | Tab | What it controls |
 |-----|------------------|
 | General | Menu bar item, Dock icon, open at login, the welcome window, update checks, language |
-| Menu Bar | Show percentage, battery power, both, or just the icon; icon size (standard, large, hidden) |
+| Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service and heat notifications |
 | Advanced | Recording and clearing history, the Developer section (Raw Data and Demo Mode), a link to this guide |
 
@@ -207,12 +237,31 @@ away with any choice. When a new version is out, the first
 check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
 Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
 available** in the menu bar popover instead, which opens the same window.
-Download opens the DMG in your browser: open it, drag BatteryPulse onto Applications to replace
-the old copy, and approve the new version once in Privacy & Security (see
-[First launch](#first-launch)). It's the only network request BatteryPulse makes: GitHub sees
-your IP address, the app's version and your language, as with any web request, and nothing else
-about your Mac is sent. If GitHub limits requests from your network, the check waits and tries
-again later.
+
+**Install and Relaunch** (from 0.4.0) downloads the update, checks that it is signed by
+BatteryPulse and is the version on offer, replaces the copy in your Applications folder and
+opens the new version, without Open Anyway. Install and Relaunch isn't offered, and Download is,
+when:
+
+- BatteryPulse runs from where it was downloaded instead of from Applications (move it there
+  first);
+- your account can't change the folder BatteryPulse is in;
+- the release has no signature.
+
+If anything goes wrong, nothing is replaced and the window offers Download instead. Permissions
+you gave BatteryPulse in Privacy & Security may be asked for again after an update, and widgets
+may need adding again (see [Widget](#widget)).
+
+**Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
+replace the old copy, and approve the new version once in Privacy & Security (see
+[First launch](#first-launch)). Updating from 0.3 works this way once; from 0.4.0 on, Install
+and Relaunch takes over.
+
+The check and the download of an update you chose to install are the only network requests
+BatteryPulse makes: GitHub sees your IP address, the app's version and your language, as with
+any web request, and nothing else about your Mac is sent. If GitHub limits requests from your
+network, the check waits and tries again later. Each release also lists
+`BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
@@ -266,6 +315,27 @@ language. To use a different language for BatteryPulse only:
 
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
+
+### iPhone and iPad (preview)
+
+`bpulse` can read the battery of an iPhone or iPad connected to the Mac; the app shows devices
+in a later version.
+
+1. Connect the device by cable and unlock it. If it asks *Trust This Computer?*, tap **Trust**
+   and enter the passcode; if it doesn't ask, select the device in Finder once. BatteryPulse
+   never pairs with a device by itself.
+2. Run `bpulse --devices` to list the devices, then `bpulse --device 1` for the first one:
+   charge, state, design, nominal and full-charge capacity with their share of the design,
+   cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON.
+3. Over Wi-Fi: turn on *Show this iPhone when on Wi-Fi* for the device in Finder (by cable,
+   once). The device must be unlocked and on the same network as the Mac.
+
+Maximum capacity is shown only if the device reports it; otherwise both capacities are shown
+as a share of the design, and iOS Settings → Battery → Battery Health may differ from both.
+`bpulse --device 1 --raw > device.xml` saves everything the device returned for a bug report,
+with serial numbers, identifiers and the device's name removed (`--devices` itself shows the
+name). When no device is found or it can't be read, `bpulse` says why (not trusted, locked, no
+answer) and exits with status 2.
 
 ## Reporting a problem
 

@@ -130,6 +130,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
 - [ ] Verify on the M5: a capture at the macOS Charge Limit stop point
+- [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
+  macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
@@ -138,13 +140,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1.2: Updates and About (0.4)
 
-- [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
+- [x] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
-- [ ] Release notes in the Software Update window: join the lines of a wrapped paragraph or
+- [x] Release notes in the Software Update window: join the lines of a wrapped paragraph or
   list item, which now break mid-sentence (seen with 0.3.1's notes)
 - [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
-  relaunch, instead of sending the user to the browser. Researched (October 2026, with an
-  adversarial check):
+  relaunch, instead of sending the user to the browser. Built in 0.4.0; the first real test is
+  0.4.0 → 0.4.1 on the M5. Researched (October 2026, with an adversarial check):
   - A file a non-sandboxed app downloads with URLSession isn't quarantined (no
     `LSFileQuarantineEnabled` in our Info.plist), and neither is what it copies out of that
     DMG. Gatekeeper only asks for Open Anyway on quarantined apps: an unquarantined ad-hoc app
@@ -163,13 +165,29 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
     writable folder.
   - Ad-hoc identity changes with every build, so permissions tied to it (not notifications,
     which follow the bundle ID) would be asked for again; Developer ID fixes that for good.
+
+  As built: Install and Relaunch downloads the DMG with URLSession into
+  `~/Library/Caches/<bundle ID>/Updates` and checks GitHub's SHA-256 digest when the release has
+  one and, always, an Ed25519 signature of the DMG (`BatteryPulse.dmg.sig`, made by
+  `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret,
+  checked against the key in `ReleaseSigning.swift`). It mounts the DMG at a private mount
+  point, copies the app into a temporary folder on the app's volume, clears quarantine, and
+  checks the bundle ID, that the version is exactly the release's and newer than the running
+  one (so a signed old build can't be installed over a newer one), and a strict code-signature
+  validation. Then it swaps the bundles with `renamex_np(RENAME_SWAP)`, registers the new one
+  with `LSRegisterURL` and relaunches through `/bin/sh`, which waits for the old process to end
+  and runs `open -n`; the old copy is deleted at the next launch. Translocated copies, folders
+  the user can't write, development builds, releases without a signature and any error fall
+  back to Download in the browser. There is one built-in key and no rotation yet: a lost key
+  means one manual DMG install with the new key's build. Follow-ups: re-register the login item
+  and reload the widget timelines on the first launch after an update.
 - [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
   removed them; the gallery still offered the widget, and it worked once added again. The
   in-place swap above keeps the path, registers the new copy and raises
   `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
   keeps them or only a stable Developer ID signature does, and until then tell the user to add
   them again
-- [ ] An About BatteryPulse window: version and build, license, links to the project, the User
+- [x] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
 - [x] The first half minute after plugging in. A timeline from the M5 Air (`pmset` and
@@ -182,18 +200,19 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 ### Stage 1.3: Menu bar icon styles (0.4)
 
-- [ ] Choose what the menu bar shows, in any combination: the battery icon, the charge, the
+- [x] Choose what the menu bar shows, in any combination: the battery icon, the charge, the
   battery power and the battery temperature; the popover shows the temperature too
 
 - [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
   (turned off in System Settings → Control Center → Battery; BatteryPulse can't hide it itself,
-  so Settings explains this and links there):
-  - like the battery item of macOS 27, matched against screenshots from the M5;
-  - like macOS 26, with the percentage inside the battery;
-  - a few of BatteryPulse's own, such as a ring or numbers only, in color or monochrome.
+  so Settings explains this and links there). Built in 0.4.0, to verify on the M5: Symbol (the
+  SF Symbol, as before), Modern (like macOS 27: a capsule without an outline, the empty part
+  translucent), Classic (outlined), Percentage Inside (like macOS 26) and Ring; the ring has
+  only the state colors, no color or monochrome choice. Sizes are in `BatteryIconLayout`
 - [ ] Draw the battery to the exact level with SwiftUI shapes, not the five steps of the SF
-  Symbols, with every state the system shows: charging, plugged in but not charging, charge on
-  hold, low (red), Low Power Mode (yellow)
+  Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
+  charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
+  to verify on the M5
 - [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
   bar's height on displays with a notch
 
@@ -238,12 +257,25 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   cycles, design and full-charge capacity, temperature. Researched: load Apple's private
   MobileDevice framework with `dlopen` (no entitlements; the app isn't sandboxed), list devices
   with `AMDeviceNotificationSubscribe`, and ask the `com.apple.mobile.diagnostics_relay` service
-  for the device's `AppleSmartBattery` registry entry, the same data the Mac has. This is known
-  to work on iOS 17 to iPadOS 27. Rely on the trust the user already gave in Finder; no pairing
+  for the device's `AppleSmartBattery` registry entry, the same data the Mac has. Public
+  captures cover iPhones on iOS 26.6 and iPads on iPadOS 17.7 and 27.0.1; iPhones on iOS 27
+  still need checking. Rely on the trust the user already gave in Finder; no pairing
   of our own in the first version, and no promise that health matches iOS Settings until checked
   on a real iPhone. Keep the transport behind a protocol so the usbmuxd/lockdown protocol can
   replace the framework if Apple breaks it. Start with half a day on the Mac to confirm the
   calls and the iOS 27 keys.
+  - [x] Spike in `bpulse` (0.4.0, preview): `--devices` and `--device <n> [--json | --raw]`.
+    MobileDevice is loaded with `dlopen` from `/Library/Apple` first, then `/System`, and
+    nothing is linked. Devices come from the notifications plus `AMDCreateDeviceList`; every
+    call runs on one serial queue while subscribed. No pairing calls. The relay is asked for
+    `AppleSmartBattery` (`IOPMPowerSource` as a fallback), then `AppleSmartBatteryPack`,
+    `AppleSmartBatteryBank` and `AppleChargerData`, then Goodbye, with 5 s socket timeouts
+    and 30/60 s deadlines. The transport sits behind `IDeviceTransport`/`IDeviceLink`. The
+    parser is tested with synthetic data until real captures exist
+  - [ ] Captures from an iPhone 17 Pro Max and an iPad (9th generation) on 27.0.1 as fixtures;
+    choose the health formula (nominal or full-charge ÷ design) against Settings → Battery →
+    Battery Health
+  - [ ] The device in the app's UI
 - [ ] Remember each device and keep its history next to the Mac's
 
 ### Stage 6: Later (optional)
@@ -289,11 +321,11 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 
-Next: **0.4.0** brings the battery of a connected iPhone or iPad (Stage 5), a choice of how
-often to check for updates, installing updates from the app, an About window and fixes from
-the 0.3.1 update (Stage 1.2), and menu bar icon styles that can stand in for the system battery
-item (Stage 1.3). Everything else waits for
-later versions.
+Next: **0.4.0** brings a choice of how often to check for updates, installing updates from
+the app, an About window and fixes from the 0.3.1 update (Stage 1.2), menu bar content and
+icon styles that can stand in for the system battery item (Stage 1.3), and a first
+command-line preview of a connected iPhone or iPad's battery (Stage 5). Everything else waits
+for later versions.
 
 ## Development environment
 

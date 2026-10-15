@@ -140,9 +140,10 @@ enum AppLinks {
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!
-    /// System Settings → Control Center, where the battery item macOS shows is turned off.
+    /// System Settings → Menu Bar, where the battery item macOS shows is turned off. Since macOS 26
+    /// this pane replaces Control Center but keeps its identifier.
     // swift-format-ignore: NeverForceUnwrap
-    static let controlCenterSettings = URL(
+    static let menuBarSettings = URL(
         string: "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension")!
     /// System Settings → Notifications.
     // swift-format-ignore: NeverForceUnwrap

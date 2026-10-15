@@ -188,13 +188,13 @@ struct MenuBarSettings: View {
 
         Section {
             LabeledContent("macOS battery item") {
-                Button("Open Control Center Settings…") {
-                    NSWorkspace.shared.open(AppLinks.controlCenterSettings)
+                Button("Open Menu Bar Settings…") {
+                    NSWorkspace.shared.open(AppLinks.menuBarSettings)
                 }
             }
         } footer: {
             Text(
-                "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Show in Menu Bar for Battery in Control Center settings."
+                "BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, turn off Battery in System Settings → Menu Bar."
             )
         }
     }

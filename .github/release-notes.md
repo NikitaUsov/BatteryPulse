@@ -1,3 +1,33 @@
+## What's new in 0.4
+
+- **Menu bar:** show any mix of the battery icon, charge, battery power and temperature. New
+  icon styles are drawn to the exact level — Modern (like macOS 27, the default), Classic,
+  Percentage Inside (like macOS 26) and Ring, or the SF Symbol as before — with charging,
+  plugged-in, low and Low Power Mode states, so BatteryPulse can stand in for the system
+  battery item (Settings → Menu Bar explains how to turn that one off). The popover shows the
+  temperature too.
+- **Install and Relaunch:** from 0.4.0 on, updates install from inside BatteryPulse: it
+  downloads the next version, checks its signature, replaces itself and opens again, without
+  Open Anyway. Each release now also has `BatteryPulse.dmg.sig`, which you can ignore.
+- **Update checks** daily, weekly, monthly or never (Settings → General).
+- **Charging at once:** charging, battery power, voltage and current are read live from the
+  battery, so BatteryPulse shows *Charging* a few seconds after you plug in instead of *Not
+  charging* for half a minute, and the right direction right after you unplug.
+- **About BatteryPulse** in the BatteryPulse menu, the popover and Settings → Advanced.
+- **Raw Data** explains the keys of the battery pack, its banks and cells and the charger
+  entries that macOS 27 shows below `AppleSmartBattery`; keys whose meaning isn't known still
+  show no explanation rather than a guess.
+- **iPhone and iPad (preview, command line):** `bpulse --devices` and `bpulse --device 1` read
+  the battery of a device connected by cable or Wi-Fi that trusts the Mac. The app shows
+  devices in a later version.
+- **Fixes:** release notes in the update window no longer break mid-sentence, and Raw Data no
+  longer claims the charge voltage stays below `VacVoltageLimit`.
+
+Upgrading from 0.3: install this version from the DMG as before (Open Anyway once); the next
+ones install from the app. Your menu bar settings carry over and a hidden icon stays hidden;
+the icon style becomes Modern (choose Symbol for the old look), and the large icon size is
+gone. Placed widgets may need adding again after replacing the app from the DMG.
+
 ## What's new in 0.3.1
 
 Fixes from the first run on a MacBook Air M5:
