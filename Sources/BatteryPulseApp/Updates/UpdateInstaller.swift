@@ -263,7 +263,7 @@ final class UpdateInstaller {
         // Not right here: this runs inside the install task, on the main queue, and the quit waits
         // for the delegate's reply in a nested run loop that can't run main-actor work queued
         // behind this call. From the run loop, after the task has ended, it can.
-        NSApp.perform(#selector(NSApplication.terminate(_:)), with: nil, afterDelay: 0)
+        NSApp.perform(#selector(NSApplication.terminate(_:)), with: nil, afterDelay: 0, inModes: [.common])
     }
 }
 
