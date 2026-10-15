@@ -48,10 +48,13 @@ struct BatteryPulseApp: App {
         updater.startAutomaticChecks()
     }
 
+    // Every window and the menu bar panel get `.motionPolicy()` here, outside their root view, so
+    // the root view's own `@Environment(\.motion)` sees the window's policy too.
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
             MainView(monitor: monitor)
                 .environment(demo)
+                .motionPolicy()
         }
         .defaultSize(width: 860, height: 640)
         .defaultLaunchBehavior(showsMainWindow && !AppSettings.prefersCompactWindow ? .presented : .suppressed)
@@ -69,6 +72,7 @@ struct BatteryPulseApp: App {
         Window("Compact Window", id: WindowID.compact) {
             CompactView(monitor: monitor)
                 .environment(demo)
+                .motionPolicy()
         }
         // Fixed size: the window fits its content.
         .windowResizability(.contentSize)
@@ -78,6 +82,7 @@ struct BatteryPulseApp: App {
             PopoverView(monitor: monitor)
                 .environment(demo)
                 .environment(updater)
+                .motionPolicy()
         } label: {
             MenuBarLabel(monitor: monitor)
                 .environment(demo)
@@ -88,6 +93,7 @@ struct BatteryPulseApp: App {
             WelcomeView()
                 .environment(launchAtLogin)
                 .environment(updater)
+                .motionPolicy()
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(showsWelcome ? .presented : .suppressed)
@@ -96,6 +102,7 @@ struct BatteryPulseApp: App {
         Window("Software Update", id: WindowID.update) {
             UpdateView()
                 .environment(updater)
+                .motionPolicy()
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(.suppressed)
@@ -104,6 +111,7 @@ struct BatteryPulseApp: App {
         Window("About BatteryPulse", id: WindowID.about) {
             AboutView()
                 .environment(updater)
+                .motionPolicy()
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(.suppressed)
@@ -111,6 +119,7 @@ struct BatteryPulseApp: App {
 
         Window("What's New", id: WindowID.whatsNew) {
             WhatsNewView()
+                .motionPolicy()
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(showsWhatsNew ? .presented : .suppressed)
@@ -120,6 +129,7 @@ struct BatteryPulseApp: App {
             SettingsView()
                 .environment(launchAtLogin)
                 .environment(updater)
+                .motionPolicy()
         }
     }
 }

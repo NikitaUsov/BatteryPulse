@@ -19,14 +19,16 @@ through the App Store. Reference hardware: MacBook Air M5.
   `ReleaseSigning` (the Ed25519 public key), `MenuBarContent`/`BatteryIcon` (menu bar items and
   icon geometry), `IDevice*` (iPhone/iPad: device list, diagnostics relay capture, battery
   parser, report), `DemoBattery` (Demo Mode scenes that expand into M5-style raw
-  dictionaries). Must stay free of Apple-only frameworks.
+  dictionaries), `BatteryMotion` (`MotionPolicy` and `BatteryMotionKey`, the discrete parts of a
+  snapshot that animations key on). Must stay free of Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
   children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
   `BatteryMonitor` (@Observable, event-driven + optional polling; `setOverride` swaps in the
   demo), `UpdateSignatureVerifier` (CryptoKit), `IDeviceTransport` and `MobileDevice/` (the
   private MobileDevice framework through `dlopen`, never linked; no pairing calls).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
-  keys, Dock icon policy, localized phrases, `DemoController`), `Main/` (sidebar window:
+  keys, Dock icon policy, localized phrases, `DemoController`, `Motion` with the `\.motion`
+  environment value and its presets), `Main/` (sidebar window:
   Overview, Power, History, Health, and the Developer section with Raw Data and Demo Mode; the
   compact window), `Updates/` (update check, Software Update and What's New windows),
   `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
@@ -80,7 +82,15 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   translation to `Resources/Localizable.xcstrings`; `LocalizationCatalogTests` fails on missing
   or unused keys. Use Apple's Russian terminology (the words macOS uses in System Settings →
   Battery); existing catalog entries show the conventions.
-- Liquid Glass: rely on standard components; don't put `glassEffect` on content cards.
+- Liquid Glass: the control layer only — standard components, plus custom controls that float
+  over content, each cluster inside one `GlassEffectContainer`, `.regular` variant. Never
+  `glassEffect` on content (cards, tiles, charts, tables, readouts), never glass on glass. It
+  appears only in `Main/DemoView.swift` (the floating demo bar), `Settings/SettingsView.swift`
+  (the selection of the icon-style picker) and `Main/Components.swift` (the Developer option
+  "Glass Cards", off by default); `MotionGuardTests` enforces the list.
+- Motion: through `\.motion` (`App/Motion.swift`), keyed on `BatteryMotionKey` or UI state, never
+  on `snapshot`/`reading`. No repeating or per-frame animation; nothing animates in the menu bar
+  label or in a hidden window. `MotionGuardTests` enforces this.
 - Never name third-party apps, their projects or makers anywhere: code, comments, tests, docs,
   commit messages, PRs, issues, release notes. Describe the technique or the evidence instead
   ("a public capture from an M4 Max"). Apple's own apps and frameworks are fine.

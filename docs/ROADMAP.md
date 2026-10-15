@@ -15,8 +15,12 @@ charging state.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
   optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
-  never hidden from both. Liquid Glass comes from standard components only (sidebar, toolbar,
-  controls); content uses standard fills, per Apple's HIG.
+  never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
+  system's sidebar, toolbar and controls, plus custom glass only on controls that float over
+  content (the Demo Mode bar, the selection of the menu bar icon style picker). Content uses
+  standard fills; glass cards are a Developer option, off by default. Motion is short, plays
+  once on a battery event or a user action, turns into fades under Reduce Motion, and stops in
+  windows that can't be seen and in the menu bar label.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -216,6 +220,55 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   to verify on the M5
 - [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
   bar's height on displays with a notch
+
+### Stage 1.4: Liquid Glass and motion (0.5)
+
+Every animation is triggered by an event, plays once and lasts 0.15–0.35 s; it is keyed on the
+discrete parts of a reading, never on the 2 s values, and goes through one policy. Liquid Glass
+stays on controls; the glass bubbles come from standard segmented controls.
+
+- [x] Foundation: `MotionPolicy` and `BatteryMotionKey` in BatteryCore (percent, tier, plugged
+  in, charge state, symbol, power flow with the label's 0.05 W dead band, Low Power Mode), tested
+  on Linux against the M5 captures
+- [x] `\.motion` on every window and the menu bar panel: fades under Reduce Motion and Prefer
+  Cross-Fade Transitions, no one-off extras under Low Power Mode or when macOS asks apps to save
+  resources, and no animation at all while the window is covered, minimized, on another Space
+  or the display sleeps (per-window occlusion; the menu bar item keeps the app itself visible).
+  The presets, plus `numericValue` (numbers that roll) and `liveRefresh` (polling that stops in
+  hidden windows) for the views to adopt
+- [x] `MotionGuardTests`: no repeating or per-frame animation, no animation keyed on the whole
+  snapshot, none in the menu bar label, and `glassEffect` only in the three files allowed
+- [ ] Overview: the percent rolls in the direction of change; the battery glyph's fill, colour
+  and bolt animate; rings and tile values; the power flow's adapter slides in and out, its arrow
+  follows the flow without flickering, symbols swap, one bounce on reaching full; the time line
+  fades
+- [ ] Power and Health: rows that come with plugging in or charging; the active USB PD profile;
+  Low Power Mode and thermal state; rings (optionally filling once per launch)
+- [ ] Developer option "Glass Cards" (Settings → Advanced, with the Developer section): the cards
+  in Liquid Glass, one `GlassEffectContainer` per page, plain when off or under Reduce
+  Transparency; off by default
+- [ ] Main window: polling only while visible and on pages with live values, a short page fade,
+  toolbar grouping, feedback and a VoiceOver announcement for Copy Report, the tour's page switch
+  in one transaction
+- [ ] History: the period switch moves into the toolbar as a segmented control with the
+  system's sliding glass selection; the charts crossfade on a period switch without morphing the
+  lines; the minute reload pauses in a hidden window
+- [ ] Raw Data: a section switch in the toolbar (Battery, Pack, Banks, Charger, IOPS, Adapter,
+  SMC) with the same glass selection, scrolling to the section (or filtering to it); rows never
+  animate
+- [ ] Demo Mode: one transaction per change; the demo bar materializes and morphs in interactive
+  glass; Play and Pause as one button; the demo clock sleeps while paused and ticks once a
+  second on scenes
+- [ ] Compact window and menu bar panel: rolling percent, polling through `liveRefresh`, the Demo
+  badge in the toolbar, no animated window resizing; the menu bar label stays unanimated
+- [ ] Settings: the menu bar icon style picker gets a flowing glass selection; borders with Show
+  Borders; the Glass Cards toggle
+- [ ] Software Update, What's New and Welcome: status and phase crossfades, one staggered entrance,
+  the pulse line drawing in once; widget number and symbol transitions and rendering modes
+- [ ] Check on the M5: frame rate (Instruments), energy with the window visible, covered,
+  minimized, on another Space and with the display asleep (Activity Monitor and Power
+  Profiler), legibility with the Liquid Glass slider at both ends, and Reduce Motion, Prefer
+  Cross-Fade Transitions, Reduce Transparency, Increase Contrast and Show Borders
 
 ### Stage 2: iOS MVP
 

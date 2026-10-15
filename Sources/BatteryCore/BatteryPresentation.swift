@@ -16,6 +16,10 @@ public enum BatteryPresentation {
         }
     }
 
+    /// Battery power below this, in either direction, is noise: the power-flow view hides its
+    /// value and ``BatteryMotionKey/flow`` reads idle.
+    public static let powerFlowDeadBandWatts = 0.05
+
     /// Level colors used by the app: green above 20 % or while charging, then orange, then red.
     public enum LevelTier: Sendable, Equatable {
         case normal, low, critical
