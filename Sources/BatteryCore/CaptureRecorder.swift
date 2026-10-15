@@ -247,7 +247,8 @@ public struct CaptureRecorder: Sendable {
                 }
                 due.append((.change, current))
             } else {
-                isDeferred = true
+                // Past the capture limit nothing follows, so nothing is deferred either.
+                isDeferred = capturesWritten < maxCaptures
             }
         } else {
             due.append((.start, current))

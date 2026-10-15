@@ -214,6 +214,13 @@ import Testing
         #expect(step.captures.map(\.number) == [3])
         #expect(step.captures.first?.reading == charging)
         #expect(step.notices == ["Reached 3 captures; only the timeline is written from now on."])
+
+        // A change right after the last capture isn't announced as deferred: none will follow.
+        let afterLimit = lastSlot.record(held, at: at(130))
+        #expect(afterLimit.captures.isEmpty)
+        #expect(afterLimit.changes.map(\.path).contains("AppleSmartBattery.IsCharging"))
+        #expect(!afterLimit.timelineRow.contains("deferred"))
+        #expect(afterLimit.summary?.contains("deferred") == false)
     }
 
     @Test func flappingKeyIsDemoted() throws {
