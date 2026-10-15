@@ -70,6 +70,7 @@ enum SidebarItem: Hashable, Identifiable {
         case .developer: "developer"
         case .demo: "demo"
         case .devicesIntro: "devices"
+        case .accessories: "accessories"
         case .device(let key): Self.devicePrefix + key.rawValue
         }
     }
@@ -82,7 +83,7 @@ enum SidebarItem: Hashable, Identifiable {
             self = .device(key)
             return
         }
-        let named: [SidebarItem] = Self.pages + Self.developerPages + [.devicesIntro]
+        let named: [SidebarItem] = Self.pages + Self.developerPages + [.devicesIntro, .accessories]
         guard let item = named.first(where: { $0.storageKey == storageKey }) else { return nil }
         self = item
     }
