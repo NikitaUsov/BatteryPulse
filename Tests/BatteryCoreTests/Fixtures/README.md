@@ -14,4 +14,7 @@ Raw captures in the `bpulse --raw` format (serial numbers redacted).
 | `synthetic-accessories.plist` | Hand-written accessory capture (`bpulse --accessories --raw` format, `AccessoryFixture.swift`): the power source keys macOS publishes for accessories, made-up names and identifiers; covers grouping, parts, kinds and the sources that are dropped |
 
 To add a capture: `swift run bpulse --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-<state>.plist`,
-then add a case to `Fixture.swift`.
+then add a case to `Fixture.swift`. For accessories:
+`swift run bpulse --accessories --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-accessories-<setup>.plist`
+(names and identifiers are already pseudonyms; check that no real name is left), then add a case
+to `AccessoryFixture.swift`, not to `Fixture`, whose cases are Mac captures.
