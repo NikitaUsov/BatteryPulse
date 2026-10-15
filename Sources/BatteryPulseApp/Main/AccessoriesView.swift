@@ -79,10 +79,11 @@ private struct AccessoryCard: View {
     }
 }
 
-/// A part's label, its state, its charge and a level bar in the colours of the Mac's battery.
+/// A part's label, its state, its charge and a level bar in the tones of the Mac's battery.
 private struct AccessoryPartRow: View {
     let part: AccessoryPart
     let hasParts: Bool
+    @Environment(\.tones) private var tones
     private let formatter = BatteryFormatter.app
 
     var body: some View {
@@ -92,6 +93,10 @@ private struct AccessoryPartRow: View {
                 if let status = Phrases.accessoryStatus(part) {
                     Text(verbatim: status)
                         .foregroundStyle(.secondary)
+                }
+                // Clear has no orange or red: a low level says so in its badge.
+                if !part.isOffline, tones.badge(for: tier) == .inverted {
+                    InvertedBadge(text: Text("Low battery"))
                 }
                 Spacer(minLength: 8)
                 Text(verbatim: formatter.percent(Double(part.percent)))
@@ -103,10 +108,13 @@ private struct AccessoryPartRow: View {
         }
     }
 
+    private var tier: BatteryPresentation.LevelTier {
+        BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging)
+    }
+
     /// An offline part shows its last charge, dimmed.
     private var tint: Color {
-        guard !part.isOffline else { return .secondary }
-        return BatteryPresentation.levelTier(percent: Double(part.percent), isCharging: part.isCharging).color
+        tones.color(part.isOffline ? .text(.secondary) : .level(tier))
     }
 }
 
