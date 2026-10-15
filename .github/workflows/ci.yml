@@ -56,6 +56,13 @@ jobs:
           .build/release/bpulse --devices
           status=$?
           echo "bpulse --devices exited with $status"
+          # --record takes no output format: usage error.
+          .build/release/bpulse --record "$RUNNER_TEMP/rec" --json; [ $? -eq 1 ] || exit 1
+          # Without a battery it ends with 2 and creates nothing. (With one it would record until
+          # interrupted, so it only runs on a battery-less runner.)
+          if [ -z "$(ioreg -r -c AppleSmartBattery)" ]; then
+            .build/release/bpulse --record "$RUNNER_TEMP/rec"; [ $? -eq 2 ] && [ ! -e "$RUNNER_TEMP/rec" ] || exit 1
+          fi
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet

@@ -476,6 +476,28 @@ language. To use a different language for BatteryPulse only:
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
 
+### Recording charging changes
+
+`bpulse --record <folder>` watches the battery until you press Control-C and keeps the moments
+a charging problem is about. It saves a capture (the `--raw` format, serial numbers removed) at
+the start, just before and just after every change of the charging state (plugging in or
+unplugging, charging starting or stopping, the charge held at a limit), and one every 15
+minutes. `timeline.tsv` in the same folder gets a line for every reading, every 5 s: the
+charge, the state, the capacity in mAh, current, voltage, the current the charger asks for, the
+power from the adapter, the temperature, when the battery last updated its readings, and what
+changed. A detail that keeps flipping on its own stops causing captures after three, but the
+timeline still lists it.
+
+```sh
+caffeinate -i swift run bpulse --record ~/bp-capture
+```
+
+`caffeinate -i` keeps the Mac awake while it records. The folder is created if needed and must
+not hold an earlier recording. A recording keeps at most 100 captures (about 4.5 MB) and stops
+by itself after 50,000 readings (about 69 hours). `bpulse --input <capture>` shows the report of
+any capture in the folder; attach the ones around the moment in question, with `timeline.tsv`,
+to the bug report.
+
 ### History export
 
 `bpulse --export csv` prints the minute readings BatteryPulse recorded on this Mac, everything

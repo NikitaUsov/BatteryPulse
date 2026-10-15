@@ -133,7 +133,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
-- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point
+- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
+  (0.6.0) keeps captures just before and after every charging change, with a timeline
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -302,6 +303,7 @@ stays on controls; the glass bubbles come from standard segmented controls.
   samples on state changes, shading from raw samples, hover readout as an overlay, temperature
 - [ ] Accessibility chart descriptors (hourly or daily summaries for VoiceOver)
 - [ ] Measure App Nap's effect on the minute timer, and how often the mAh values change
+  (`bpulse --record`'s `timeline.tsv` lists the mAh value and the gauge's update time every 5 s)
 - [ ] Apps using the most energy (optional): which apps drain the battery most and at what
   average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
   Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in

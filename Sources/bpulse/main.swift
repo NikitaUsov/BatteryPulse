@@ -5,6 +5,7 @@ import Foundation
 let usage = """
     Usage: bpulse [--json | --raw] [--watch [seconds]] [--input capture.plist]
            bpulse --smc
+           bpulse --record <folder>
            bpulse --devices
            bpulse --device <n> [--json | --raw]
            bpulse --export csv|json [--days] [--decimal-comma] [--history <folder>]
@@ -19,6 +20,11 @@ let usage = """
       --smc             List the SMC's battery and charger keys with their types, and the raw
                         bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
                         read-only, for finding the keys on a new Mac model
+      --record <folder> Keep raw captures for later study (macOS): one at the start, one just before
+                        and one after every change of the charging state, and one every 15 minutes,
+                        serial numbers redacted, plus a line per reading (every 5 s) in timeline.tsv.
+                        At most 100 captures; stop with Control-C. The folder is created if needed
+                        and must not hold an earlier recording
       --devices         List the iPhones and iPads connected by USB or Wi-Fi, numbered (macOS);
                         devices whose names aren't read in time (10 s each, 30 s in all) are
                         listed as "Unknown device"
@@ -49,6 +55,7 @@ struct Options {
     var format = OutputFormat.text
     var watchInterval: Double?
     var inputPath: String?
+    var recordFolder: String?
     var listsDevices = false
     /// 1-based, as `--devices` numbers them.
     var deviceNumber: Int?
@@ -89,6 +96,9 @@ func parseOptions(_ arguments: [String]) -> Options? {
         case "--input":
             guard let path = remaining.popFirst() else { return nil }
             options.inputPath = path
+        case "--record":
+            guard let path = remaining.popFirst() else { return nil }
+            options.recordFolder = path
         case "--export":
             guard let format = remaining.popFirst(), format == "csv" || format == "json" else { return nil }
             options.exportFormat = format
@@ -103,6 +113,13 @@ func parseOptions(_ arguments: [String]) -> Options? {
             options.deviceNumber = number
         default: return nil
         }
+    }
+    if options.recordFolder != nil {
+        // A recording reads this Mac's battery every 5 s and writes files: no output format,
+        // --watch, input, device or export.
+        guard options.format == .text, options.watchInterval == nil, options.inputPath == nil, !options.readsDevice,
+            options.exportFormat == nil
+        else { return nil }
     }
     if options.exportFormat != nil {
         // An export reads only the history: no other output, input or device.
@@ -295,6 +312,9 @@ if options.format == .smc {
     guard options.inputPath == nil, options.watchInterval == nil else { fail(usage, code: 1) }
     print(smcKeyList())
     exit(0)
+}
+if let folder = options.recordFolder {
+    try await record(into: folder)
 }
 func loadCapture(at path: String) -> PropertyDictionary {
     do {

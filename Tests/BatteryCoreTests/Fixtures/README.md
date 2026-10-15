@@ -14,3 +14,4 @@ Raw captures in the `bpulse --raw` format (serial numbers redacted).
 
 To add a capture: `swift run bpulse --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-<state>.plist`,
 then add a case to `Fixture.swift`.
+To catch a transition (plugging in, the Charge Limit stop), use `bpulse --record <folder>` and pick the capture.

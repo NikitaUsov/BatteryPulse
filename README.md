@@ -134,6 +134,7 @@ swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
+swift run bpulse --record ~/bp-capture   # captures at every charging change, for bug reports
 swift run bpulse --smc        # the SMC's battery and charger keys; values of the battery ones
 swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi (preview)
 swift run bpulse --device 1   # battery of device 1; add --json, or --raw for a redacted capture
