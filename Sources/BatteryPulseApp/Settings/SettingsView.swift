@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import BatteryCore
+import BatteryKit
 import SwiftUI
 
 /// The Settings window (⌘,).
@@ -8,7 +9,10 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             Tab("General", systemImage: "gearshape") {
-                SettingsPage { GeneralSettings() }
+                SettingsPage {
+                    GeneralSettings()
+                    DeviceSettings()
+                }
             }
             Tab("Menu Bar", systemImage: "menubar.rectangle") {
                 SettingsPage { MenuBarSettings() }
@@ -168,6 +172,27 @@ struct GeneralSettings: View {
     /// Hiding both the menu bar item and the Dock icon would leave no way into the app.
     private var dockIconBinding: Binding<Bool> {
         Binding(get: { showDockIcon || !showInMenuBar }, set: { showDockIcon = $0 })
+    }
+}
+
+/// iPhones and iPads: the opt-in, last in Settings → General. Not in the welcome window: the
+/// setting loads a private framework, so it waits until the user looks for it.
+struct DeviceSettings: View {
+    @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
+
+    var body: some View {
+        Section {
+            // A plain Binding: `setReading` is the only way the setting changes.
+            Toggle(
+                "Read iPhone and iPad batteries",
+                isOn: Binding(get: { readsDevices }, set: { AppDevices.setReading($0) }))
+        } header: {
+            Text("iPhone and iPad")
+        } footer: {
+            Text(
+                "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh. BatteryPulse never pairs with a device, and nothing leaves this Mac."
+            )
+        }
     }
 }
 
@@ -379,24 +404,37 @@ struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
+    @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
+    @Environment(IDeviceMonitor.self) private var devices
     @State private var confirmsClearing = false
 
     var body: some View {
         Section {
             Toggle("Record battery history", isOn: $recordsHistory)
+                // The 5-minute reads of iPhones and iPads start or stop with it.
+                .onChange(of: recordsHistory) { devices.historySettingChanged() }
             LabeledContent("Recorded history") {
                 Button("Clear History…", role: .destructive) { confirmsClearing = true }
             }
         } header: {
             Text("History")
         } footer: {
-            Text(
-                "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac."
-            )
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac."
+                )
+                if readsDevices {
+                    Text("iPhones and iPads connected by cable are recorded too, every 5 minutes.")
+                }
+            }
         }
         .confirmationDialog("Clear the battery history?", isPresented: $confirmsClearing) {
             Button("Clear History", role: .destructive) {
-                Task { try? await AppHistory.store.clear() }
+                // Every device's history too; the remembered devices stay.
+                Task {
+                    try? await AppHistory.store.clear()
+                    await devices.clearHistory()
+                }
             }
         } message: {
             Text("The charts start over. This can't be undone.")

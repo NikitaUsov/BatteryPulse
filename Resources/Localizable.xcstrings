@@ -783,6 +783,28 @@
         }
       }
     },
+    "BatteryPulse couldn't look for devices. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось выполнить поиск устройств. Повторите попытку чуть позже."
+          }
+        }
+      }
+    },
+    "BatteryPulse couldn't read “%@”. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось считать данные «%@». Повторите попытку чуть позже."
+          }
+        }
+      }
+    },
     "BatteryPulse couldn't replace the installed copy.": {
       "extractionState": "manual",
       "localizations": {
@@ -3187,6 +3209,28 @@
         }
       }
     },
+    "iPhone and iPad": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone и iPad"
+          }
+        }
+      }
+    },
+    "iPhones and iPads connected by cable are recorded too, every 5 minutes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone и iPad, подключённые кабелем, тоже записываются — каждые 5 минут."
+          }
+        }
+      }
+    },
     "Just plugged in": {
       "extractionState": "manual",
       "comment": "Demo scene: the adapter was just connected",
@@ -5195,6 +5239,17 @@
         }
       }
     },
+    "Read iPhone and iPad batteries": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывать аккумуляторы iPhone и iPad"
+          }
+        }
+      }
+    },
     "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5203,6 +5258,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "В AppleSmartBatteryPack на всех проверенных Mac равно 0; мощность аккумулятора — BatteryData.BatteryPower в AppleSmartBattery."
+          }
+        }
+      }
+    },
+    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
           }
         }
       }
@@ -6163,6 +6229,17 @@
         }
       }
     },
+    "This Mac can't read iPhones and iPads: Apple's device support isn't available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac не может считывать данные iPhone и iPad: компонент Apple для работы с устройствами недоступен."
+          }
+        }
+      }
+    },
     "This Mac has no internal battery.": {
       "extractionState": "manual",
       "localizations": {
@@ -6557,6 +6634,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Неизвестно"
+          }
+        }
+      }
+    },
+    "Unknown Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Неизвестное устройство"
+          }
+        }
+      }
+    },
+    "Unlock “%@” to read its battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разблокируйте «%@», чтобы считать данные аккумулятора."
           }
         }
       }
@@ -7272,6 +7371,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Номер этого профиля USB-PD в списке предложений адаптера, начиная с 0."
+          }
+        }
+      }
+    },
+    "“%@” didn't answer. Check the cable and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не отвечает. Проверьте кабель и повторите попытку."
+          }
+        }
+      }
+    },
+    "“%@” didn't answer. Keep it unlocked and on the same Wi-Fi network as this Mac, or connect it by cable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не отвечает. Держите устройство разблокированным и в той же сети Wi-Fi, что и этот Mac, или подключите его кабелем."
+          }
+        }
+      }
+    },
+    "“%@” didn't report a battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не сообщает данные аккумулятора."
+          }
+        }
+      }
+    },
+    "“%@” doesn't trust this Mac. Unlock it and tap Trust; if no prompt appears, select it in Finder once.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не доверяет этому Mac. Разблокируйте устройство и коснитесь «Доверять»; если запрос не появляется, один раз выберите устройство в Finder."
           }
         }
       }
