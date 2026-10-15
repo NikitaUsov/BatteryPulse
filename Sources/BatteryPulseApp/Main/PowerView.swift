@@ -6,8 +6,11 @@ import SwiftUI
 struct PowerView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
+    @Environment(\.motion) private var motion
 
     var body: some View {
+        let key = BatteryMotionKey(snapshot)
+        let hasAdapter = snapshot.adapter != nil
         Form {
             batterySection
             if let adapter = snapshot.adapter {
@@ -19,6 +22,12 @@ struct PowerView: View {
             systemSection
         }
         .formStyle(.grouped)
+        // The rows and sections that come with plugging in or a new charge state (the adapter and
+        // USB PD sections, the requested charge, power from the adapter, adapter loss) appear and
+        // go once per event. Battery power, voltage, current and temperature change instantly.
+        .animation(motion.change, value: key.isPluggedIn)
+        .animation(motion.change, value: key.chargeState)
+        .animation(motion.change, value: hasAdapter)
     }
 
     private var batterySection: some View {
@@ -92,11 +101,14 @@ struct PowerView: View {
                             .foregroundStyle(.tertiary)
                         Text(formatter.watts(profile.maxWatts, fractionDigits: 0))
                             .monospacedDigit()
+                        let isActive = profile.index == adapter.activeProfileIndex
                         Image(systemName: "checkmark")
                             .foregroundStyle(.tint)
-                            .opacity(profile.index == adapter.activeProfileIndex ? 1 : 0)
+                            .opacity(isActive ? 1 : 0)
+                            // Crossfades to the profile the adapter switched to.
+                            .animation(motion.change, value: isActive)
                             .accessibilityLabel("In use")
-                            .accessibilityHidden(profile.index != adapter.activeProfileIndex)
+                            .accessibilityHidden(!isActive)
                     }
                 } label: {
                     Text(formatter.volts(millivolts: profile.voltageMV, fractionDigits: 0))
@@ -121,11 +133,16 @@ struct PowerView: View {
             if snapshot.isExternalPowerConnected == true, let loss = snapshot.adapterEfficiencyLossWatts, loss > 0 {
                 ValueRow("Adapter loss", formatter.watts(loss))
             }
+            // Both change rarely; the new value crossfades in.
             if let lowPower = snapshot.isLowPowerModeEnabled {
                 ValueRow("Low Power Mode", Phrases.onOff(lowPower))
+                    .contentTransition(.opacity)
+                    .animation(motion.change, value: lowPower)
             }
             if let thermal = snapshot.thermalState {
                 ValueRow("Thermal state", Phrases.thermal(thermal))
+                    .contentTransition(.opacity)
+                    .animation(motion.change, value: thermal)
             }
         }
     }
