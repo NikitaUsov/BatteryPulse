@@ -41,6 +41,10 @@ enum AppSettings {
     static let alertServiceKey = "alertService"
     static let alertHeatKey = "alertHeat"
     static let alertStateKey = "alertState"
+    /// The accessory low-battery threshold in percent; 0 is off.
+    static let alertAccessoryLowKey = "alertAccessoryLow"
+    /// ``AccessoryAlertState`` as JSON, stored only while that alert is on and has fired.
+    static let accessoryAlertStateKey = "accessoryAlertState"
     /// Read iPhone and iPad batteries (Settings → General). Off by default: on, the app loads
     /// Apple's private MobileDevice framework once an iPhone or iPad is plugged in.
     static let readDevicesKey = "readDevices"
@@ -58,11 +62,13 @@ enum AppSettings {
         let defaults = UserDefaults.standard
         let chargeLimit = defaults.integer(forKey: alertChargeLimitKey)
         let lowBattery = defaults.integer(forKey: alertLowBatteryKey)
+        let accessoryLow = defaults.integer(forKey: alertAccessoryLowKey)
         return AlertSettings(
             chargeLimit: chargeLimit > 0 ? chargeLimit : nil,
             lowBattery: lowBattery > 0 ? lowBattery : nil,
             serviceRecommended: defaults.bool(forKey: alertServiceKey),
-            highTemperature: defaults.bool(forKey: alertHeatKey)
+            highTemperature: defaults.bool(forKey: alertHeatKey),
+            accessoryLowBattery: accessoryLow > 0 ? accessoryLow : nil
         )
     }
 

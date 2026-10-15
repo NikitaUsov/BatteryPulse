@@ -18,18 +18,24 @@ public struct AlertSettings: Sendable, Equatable {
     public var lowBattery: Int?
     public var serviceRecommended: Bool
     public var highTemperature: Bool
+    /// An accessory's threshold (``AccessoryAlerts``); ``BatteryAlerts/evaluate(_:settings:state:)``
+    /// ignores it.
+    public var accessoryLowBattery: Int?
 
     public init(
-        chargeLimit: Int? = nil, lowBattery: Int? = nil, serviceRecommended: Bool = false, highTemperature: Bool = false
+        chargeLimit: Int? = nil, lowBattery: Int? = nil, serviceRecommended: Bool = false,
+        highTemperature: Bool = false,
+        accessoryLowBattery: Int? = nil
     ) {
         self.chargeLimit = chargeLimit
         self.lowBattery = lowBattery
         self.serviceRecommended = serviceRecommended
         self.highTemperature = highTemperature
+        self.accessoryLowBattery = accessoryLowBattery
     }
 
     public var isAnyEnabled: Bool {
-        chargeLimit != nil || lowBattery != nil || serviceRecommended || highTemperature
+        chargeLimit != nil || lowBattery != nil || serviceRecommended || highTemperature || accessoryLowBattery != nil
     }
 }
 

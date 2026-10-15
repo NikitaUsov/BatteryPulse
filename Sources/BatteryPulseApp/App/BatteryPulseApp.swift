@@ -37,7 +37,7 @@ struct BatteryPulseApp: App {
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
         AppDevices.start()
-        notifier = BatteryNotifier(monitor: monitor)
+        notifier = BatteryNotifier(monitor: monitor, accessories: accessories)
         notifier.start()
         widgetRefresher = WidgetRefresher(monitor: monitor)
         widgetRefresher.start()

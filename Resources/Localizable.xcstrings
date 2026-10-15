@@ -70,6 +70,18 @@
         }
       }
     },
+    "%@ remaining. Charge it soon.": {
+      "extractionState": "manual",
+      "comment": "Notification body for an accessory's low battery: its charge, e.g. 15%",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Осталось %@. Скоро потребуется зарядка."
+          }
+        }
+      }
+    },
     "%@ Wh": {
       "extractionState": "manual",
       "comment": "Energy in watt-hours",
@@ -7706,6 +7718,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Что нового в BatteryPulse"
+          }
+        }
+      }
+    },
+    "When an accessory falls to": {
+      "extractionState": "manual",
+      "comment": "Settings → Notifications: notify when a Bluetooth accessory's battery falls to a percentage",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При разрядке аксессуара до"
           }
         }
       }
