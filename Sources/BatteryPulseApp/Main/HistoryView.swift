@@ -317,22 +317,15 @@ struct HistoryView: View {
         }
     }
 
+    @ViewBuilder
     private var powerChart: some View {
-        Chart {
+        let chart = Chart {
             ForEach(points) { point in
                 if let watts = point.batteryWatts {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Watts", watts),
-                        series: .value(ChartKey.series, "battery-\(point.segment)")
-                    )
-                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Battery")))
+                    powerLine(point, watts: watts, series: "battery", name: String(localized: "Battery"))
                 }
                 if let load = point.systemLoadWatts {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Watts", load),
-                        series: .value(ChartKey.series, "load-\(point.segment)")
-                    )
-                    .foregroundStyle(by: .value(ChartKey.line, String(localized: "Mac")))
+                    powerLine(point, watts: load, series: "load", name: String(localized: "Mac"))
                 }
             }
             RuleMark(y: .value(ChartKey.zero, 0))
@@ -363,6 +356,34 @@ struct HistoryView: View {
             }
         }
         .frame(height: 180)
+        if tones.isMonochrome {
+            // Clear: every line is white, so the Mac's is dashed and fainter, in the legend too.
+            chart.chartLineStyleScale([
+                String(localized: "Battery"): lineStyle(.batteryPower),
+                String(localized: "Mac"): lineStyle(.systemLoad),
+            ])
+        } else {
+            chart
+        }
+    }
+
+    /// One point of a power line. In Clear the line's dash encodes its series as well as its tone.
+    @ChartContentBuilder
+    private func powerLine(_ point: HistoryPoint, watts: Double, series: String, name: String) -> some ChartContent {
+        let mark = LineMark(
+            x: .value("Time", point.time), y: .value("Watts", watts),
+            series: .value(ChartKey.series, "\(series)-\(point.segment)")
+        )
+        .foregroundStyle(by: .value(ChartKey.line, name))
+        if tones.isMonochrome {
+            mark.lineStyle(by: .value(ChartKey.line, name))
+        } else {
+            mark
+        }
+    }
+
+    private func lineStyle(_ line: ChartLine) -> StrokeStyle {
+        StrokeStyle(lineWidth: 2, lineCap: .round, dash: tones.dash(for: line).map { CGFloat($0) })
     }
 
     private var temperatureChart: some View {

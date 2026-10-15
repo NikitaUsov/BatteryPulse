@@ -17,6 +17,9 @@ extension EnvironmentValues {
     /// What this window draws. `.windowLook()` sets it on the main and compact windows; every
     /// other window stays Standard.
     @Entry var windowLook = WindowLookPolicy.standard
+    /// Clear's shadow and halo under each group of white content; `nil` in the other styles, and
+    /// inside a group that already has it.
+    @Entry var contentTreatment: ContentTreatment? = nil
 }
 
 extension View {
@@ -36,13 +39,21 @@ private struct WindowLookModifier: ViewModifier {
     func body(content: Content) -> some View {
         let policy = WindowLookPolicy(
             setting: stored, reduceTransparency: reduceTransparency, increaseContrast: contrast == .increased)
-        // Only the glass sheet's tint depends on the system appearance; the other styles never
-        // start observing it.
+        // Only the glass sheet's tint and Clear's treatment depend on the system appearance; the
+        // other styles never start observing it.
         let systemDark = policy.usesGlassSheet && SystemAppearance.shared.isDark
         content
             .environment(\.windowLook, policy)
             .environment(\.tones, policy.tones)
+            .environment(\.contentTreatment, policy.contentTreatment(systemDark: systemDark))
+            // Clear: system controls that take a tint (the selected segment, a prominent button,
+            // the sidebar's selection if it reaches it) turn a neutral graphite, never white:
+            // macOS draws white labels on tinted fills. `nil` keeps the accent colour.
+            .tint(policy.tones.controlTintColor)
             .modifier(WindowBackground(policy: policy, systemDark: systemDark))
+            // Outside the background's branches, so it keeps its identity and gives the window
+            // back the system appearance when Clear is turned off.
+            .background { WindowAppearanceSetter(dark: policy.forcesDarkAppearance) }
     }
 }
 
@@ -87,6 +98,49 @@ private struct GlassSheet: View {
             .fill(.clear)
             .glassEffect(Glass.clear.tint(tint), in: .rect)
             .ignoresSafeArea()
+    }
+}
+
+/// Puts its window in the dark appearance while `dark` is true (Clear: content is white in Light
+/// and Dark, so the system's text, symbols and controls must be too) and gives it back the
+/// system appearance when it turns false, while the view is still in the window. Only this
+/// window: Settings and the menu bar panel keep the system appearance.
+private struct WindowAppearanceSetter: NSViewRepresentable {
+    let dark: Bool
+
+    func makeNSView(context: Context) -> AppearanceView {
+        let view = AppearanceView()
+        view.isDark = dark
+        return view
+    }
+
+    func updateNSView(_ view: AppearanceView, context: Context) {
+        view.isDark = dark
+    }
+
+    final class AppearanceView: NSView {
+        var isDark = false {
+            didSet {
+                if isDark != oldValue { apply() }
+            }
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            apply()
+        }
+
+        private func apply() {
+            guard let window else { return }
+            if isDark {
+                if window.appearance?.name != .darkAqua { window.appearance = NSAppearance(named: .darkAqua) }
+            } else if window.appearance != nil {
+                window.appearance = nil
+            }
+        }
+
+        /// Never takes a click from the content above it.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }
 

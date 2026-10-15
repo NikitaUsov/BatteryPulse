@@ -15,6 +15,7 @@ struct DemoView: View {
                     "Demo Mode fills BatteryPulse with simulated data, so you can see every state — charging, low battery, a worn battery and more — without touching the charger. The menu bar shows it too. Nothing on your Mac changes, and real readings come back when you stop."
                 )
                 .foregroundStyle(.secondary)
+                .contentTreatment()
                 HStack {
                     if demo.isPlaying {
                         Button("Pause Tour", systemImage: "pause.fill") { demo.togglePlayback() }
@@ -95,6 +96,7 @@ private struct DemoStepRow: View {
                 }
             }
             .contentShape(.rect)
+            .contentTreatment()
         }
         .buttonStyle(.plain)
     }

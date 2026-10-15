@@ -76,6 +76,13 @@ struct HealthView: View {
             // extras they were full from the start and nothing changes.
             ringsFilled = true
         }
+        .contentTreatment()
+        // Clear has no orange or red: a worn battery says so in its badge, under the rings.
+        let tier = BatteryPresentation.healthTier(for: snapshot)
+        if tones.badge(for: tier) == .inverted {
+            InvertedBadge(text: Text(Phrases.healthWarning(tier, condition: snapshot.healthCondition)))
+                .frame(maxWidth: .infinity)
+        }
     }
 
     @ViewBuilder

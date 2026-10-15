@@ -123,6 +123,13 @@ struct DeviceView: View {
                         .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
                     Text(verbatim: subtitle)
                         .foregroundStyle(.secondary)
+                    // Clear has no orange or red: a low level says so in its badge.
+                    if tones.badge(
+                        for: BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState))
+                        == .inverted
+                    {
+                        InvertedBadge(text: Text("Low battery"))
+                    }
                     HStack(spacing: 6) {
                         timeLine
                             .foregroundStyle(.secondary)
@@ -199,7 +206,8 @@ struct DeviceView: View {
                     value: formatter.percent(health),
                     number: health,
                     caption: condition(tier),
-                    tint: tones.color(.level(tier))
+                    tint: tones.color(.level(tier)),
+                    badge: tones.badge(for: tier) == .inverted ? condition(tier) : nil
                 )
             }
             if let cycles = battery.cycleCount {

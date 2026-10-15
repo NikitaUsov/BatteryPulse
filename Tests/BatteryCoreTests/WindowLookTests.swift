@@ -135,6 +135,21 @@ import Testing
         }
     }
 
+    @Test func onlyClearTreatsItsContent() throws {
+        for look in [WindowLook.standard, .frosted, .translucent] {
+            #expect(policy(look).contentTreatment(systemDark: false) == nil)
+            #expect(policy(look).contentTreatment(systemDark: true) == nil)
+        }
+        #expect(policy(.clear, increaseContrast: true).contentTreatment(systemDark: true) == nil)
+        let light = try #require(policy(.clear).contentTreatment(systemDark: false))
+        let dark = try #require(policy(.clear).contentTreatment(systemDark: true))
+        #expect(light.haloOpacity == 0.55)
+        #expect(dark.haloOpacity == 0.44)
+        // A tight shadow under a soft halo, the same in both appearances.
+        #expect(light.shadowRadius < light.haloRadius)
+        #expect(light.shadowOpacity == dark.shadowOpacity)
+    }
+
     /// Standard under an accessibility setting is the full colour window, with nothing of Clear.
     @Test func accessibilityOverrideDropsClearsExtras() {
         let policy = policy(.clear, reduceTransparency: true)

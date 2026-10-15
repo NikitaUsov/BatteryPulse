@@ -41,8 +41,59 @@ struct Card<Content: View>: View {
         case .frostLayer:
             stack.background { FrostLayer(cornerRadius: 16) }
         case .none:
-            stack.modifier(GroupRule())
+            stack
+                .modifier(GroupRule())
+                .contentTreatment()
         }
+    }
+}
+
+extension View {
+    /// Clear's treatment under a group of white content (a card, a Form row): one composited
+    /// group with a tight shadow and a soft halo, so the white reads over a bright desktop.
+    /// Nothing in the other styles, and nothing again inside a group that has it.
+    func contentTreatment() -> some View {
+        modifier(ContentTreatmentModifier())
+    }
+}
+
+private struct ContentTreatmentModifier: ViewModifier {
+    @Environment(\.contentTreatment) private var treatment
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let treatment {
+            content
+                .environment(\.contentTreatment, nil)
+                .compositingGroup()
+                .shadow(
+                    color: .black.opacity(treatment.shadowOpacity), radius: treatment.shadowRadius,
+                    y: treatment.shadowOffsetY
+                )
+                .shadow(color: .black.opacity(treatment.haloOpacity), radius: treatment.haloRadius)
+        } else {
+            content
+        }
+    }
+}
+
+/// Clear's warning: a solid white capsule with dark text and a symbol, as the clear Home Screen
+/// turns red badges white. The most legible mark on the glass, so it needs no colour; VoiceOver
+/// reads its text.
+struct InvertedBadge: View {
+    let text: Text
+
+    var body: some View {
+        Label {
+            text
+        } icon: {
+            Image(systemName: ToneBadge.symbolName)
+        }
+        .font(.callout.weight(.semibold))
+        .foregroundStyle(Color(white: ToneMap.ink))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(.white.opacity(0.95), in: .capsule)
     }
 }
 
@@ -100,7 +151,7 @@ struct FrostLayer: View {
         let isDark = colorScheme == .dark
         shape
             .fill(.white.opacity(isDark ? 0.06 : 0.30))
-            .overlay(shape.strokeBorder(.white.opacity(isDark ? 0.18 : 0.59), lineWidth: 0.5))
+            .overlay { shape.strokeBorder(.white.opacity(isDark ? 0.18 : 0.59), lineWidth: 0.5) }
     }
 }
 
@@ -177,9 +228,9 @@ struct RingGaugeStyle: GaugeStyle {
 }
 
 /// The value and the title inside a ring; bold and medium on the glass sheet.
-private struct RingLabels<Value: View, Label: View>: View {
+private struct RingLabels<Value: View, Title: View>: View {
     let value: Value
-    let label: Label
+    let label: Title
     @Environment(\.windowLook) private var look
 
     var body: some View {
@@ -255,6 +306,8 @@ struct GaugeTile: View {
     let caption: String?
     var captionHelp: String?
     let tint: Color
+    /// Clear's warning badge, shown in place of the caption: the words of a low or critical tier.
+    var badge: String?
 
     var body: some View {
         Card {
@@ -266,7 +319,9 @@ struct GaugeTile: View {
                         .numericValue(number)
                 }
                 .gaugeStyle(RingGaugeStyle(tint: tint))
-                if let caption {
+                if let badge {
+                    InvertedBadge(text: Text(badge))
+                } else if let caption {
                     Text(caption)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -520,6 +575,7 @@ struct ValueRow: View {
                 .textSelection(.enabled)
         }
         .fontWeight(look.boldNumerals ? .medium : nil)
+        .contentTreatment()
     }
 }
 #endif

@@ -115,6 +115,7 @@ struct PowerView: View {
                     Text(formatter.volts(millivolts: profile.voltageMV, fractionDigits: 0))
                         .monospacedDigit()
                 }
+                .contentTreatment()
             }
         } header: {
             Text("USB Power Delivery")

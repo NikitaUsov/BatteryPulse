@@ -78,9 +78,16 @@ struct CompactView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                // Clear has no orange or red: a low level says so in its badge.
+                if tones.badge(for: BatteryPresentation.levelTier(for: s)) == .inverted {
+                    InvertedBadge(text: Text("Low battery"))
+                        .padding(.top, 4)
+                }
             }
             Spacer(minLength: 0)
         }
+        // Not in a card: the readout is a group of its own.
+        .contentTreatment()
         .accessibilityElement(children: .combine)
         // The "Demo" badge sits in the toolbar, away from the numbers; VoiceOver still hears
         // with the readout that it is simulated. Two Text values, not a ternary of literals, so

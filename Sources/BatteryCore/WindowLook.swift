@@ -179,4 +179,34 @@ public struct WindowLookPolicy: Equatable, Sendable {
         case .clear: systemDark ? Tint(white: 0.03, opacity: 0.22) : Tint(white: 1, opacity: 0.06)
         }
     }
+
+    /// Clear's treatment under each group of white content, for the system appearance: a tight
+    /// shadow and a soft halo, a little lighter in Dark, where the glass is smokier. `nil` in
+    /// the other styles.
+    public func contentTreatment(systemDark: Bool) -> ContentTreatment? {
+        guard shadowsContent else { return nil }
+        return ContentTreatment(haloOpacity: systemDark ? 0.44 : 0.55)
+    }
+}
+
+/// Clear's legibility aid: with no dimming layer, each group of white content (a card, a Form
+/// row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
+/// composited pair per group, never per text, and never on the sidebar or the toolbar.
+public struct ContentTreatment: Equatable, Sendable {
+    public let shadowOpacity: Double
+    public let shadowRadius: Double
+    public let shadowOffsetY: Double
+    public let haloOpacity: Double
+    public let haloRadius: Double
+
+    public init(
+        shadowOpacity: Double = 0.6, shadowRadius: Double = 1, shadowOffsetY: Double = 0.5, haloOpacity: Double,
+        haloRadius: Double = 6
+    ) {
+        self.shadowOpacity = shadowOpacity
+        self.shadowRadius = shadowRadius
+        self.shadowOffsetY = shadowOffsetY
+        self.haloOpacity = haloOpacity
+        self.haloRadius = haloRadius
+    }
 }

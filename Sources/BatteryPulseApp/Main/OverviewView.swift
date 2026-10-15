@@ -62,6 +62,10 @@ struct OverviewView: View {
                             .foregroundStyle(.secondary)
                             .transition(motion.fadeTransition)
                     }
+                    // Clear has no orange or red: a low level says so in its badge.
+                    if tones.badge(for: BatteryPresentation.levelTier(for: snapshot)) == .inverted {
+                        InvertedBadge(text: Text("Low battery"))
+                    }
                 }
                 Spacer(minLength: 0)
             }
@@ -88,13 +92,16 @@ struct OverviewView: View {
                 )
             }
             if let health = snapshot.healthPercent {
+                let tier = BatteryPresentation.healthTier(for: snapshot)
                 GaugeTile(
                     title: "Maximum capacity",
                     fraction: health / 100,
                     value: formatter.percent(health),
                     number: health,
                     caption: Phrases.condition(snapshot.healthCondition),
-                    tint: tones.color(.level(BatteryPresentation.healthTier(for: snapshot)))
+                    tint: tones.color(.level(tier)),
+                    badge: tones.badge(for: tier) == .inverted
+                        ? Phrases.healthWarning(tier, condition: snapshot.healthCondition) : nil
                 )
             }
             if let cycles = snapshot.cycleCount {

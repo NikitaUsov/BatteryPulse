@@ -19,6 +19,8 @@ import Testing
 /// - `glassEffect(` outside the few files that float controls over content;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
 ///   outside the tone map's bridge, where it would bypass Clear's monochrome;
+/// - a white tint (`.tint(.white)`): macOS draws white labels and knobs on tinted fills, so it
+///   would leave white on white; Clear's tint is graphite;
 /// - a see-through window background or an appearance override (`containerBackground(…, for:
 ///   .window)`, visual effect and glass effect views, `materialActiveAppearance`,
 ///   `preferredColorScheme`, assigning `.appearance`) outside `App/WindowLook.swift`, and any
@@ -181,6 +183,9 @@ import Testing
             where call.arguments.contains(words(#/\bfor\s*:\s*\.window\b/#)) {
                 flag(call.start, "a window background outside App/WindowLook.swift")
             }
+        }
+        for match in code.matches(of: words(#/\.tint\s*\(\s*(?:Color\s*)?\.white\b/#)) {
+            flag(match.range.lowerBound, "a white tint hides white labels on tinted controls")
         }
         if colorsGoThroughTheToneMap(path) {
             for match in code.matches(of: systemColor) {
@@ -528,6 +533,16 @@ import Testing
         #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
         #expect(flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
         #expect(!flags(source, path: Self.windowLookFile), "\(source)")
+    }
+
+    @Test func whiteIsNeverATint() {
+        for path in ["BatteryPulseApp/App/WindowLook.swift", "BatteryPulseApp/Settings/SettingsView.swift"] {
+            #expect(flags("content.tint(.white)", path: path))
+            #expect(flags("content.tint(Color.white)", path: path))
+            #expect(flags("content.tint( .white.opacity(0.9))", path: path))
+        }
+        #expect(!flags("content.tint(policy.tones.controlTintColor)", path: "BatteryPulseApp/App/WindowLook.swift"))
+        #expect(!flags("bolt.foregroundStyle(.white)", path: "BatteryPulseApp/Main/Components.swift"))
     }
 
     @Test func windowLookGuardAllows() {
