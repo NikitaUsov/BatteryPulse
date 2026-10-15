@@ -544,6 +544,7 @@
     },
     "Battery Kiosk Mode dictionary, empty: this battery reports no Kiosk Mode state or counters.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1136,6 +1137,7 @@
     },
     "Charge accumulator in mAh; reads 0 on every Apple silicon Mac sampled.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1264,6 +1266,7 @@
     },
     "Charger power from the same telemetry as ChargerVBUS and ChargerIBUS; reads 0 on battery.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1275,6 +1278,7 @@
     },
     "Charger type ID: 12 on M1 Pro, 13 on M2 Pro/Max, 14 on the M4 and M5 Macs sampled.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1609,6 +1613,7 @@
     },
     "Copy of Amperage in AppleSmartBatteryPack (macOS 27): average current, negative while discharging.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1632,6 +1637,7 @@
     },
     "Copy of InstantAmperage in AppleSmartBatteryPack (macOS 27): instant current, negative while discharging.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1745,6 +1751,7 @@
     },
     "Current in mA that tracks Amperage on every Mac sampled; negative while discharging.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -1756,6 +1763,7 @@
     },
     "Current into the charger's input (IBUS), from its power telemetry; reads 0 on battery.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2087,6 +2095,7 @@
     },
     "Effective total system load sample that AccumSystemEffectiveTotalLoad sums; Macs leave it at 0.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2098,6 +2107,7 @@
     },
     "Efficiency of the Mac's built-in charger, from the charger's power telemetry; reads 0 on battery.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2284,6 +2294,7 @@
     },
     "Filtered-current field that reads 0 on every Apple silicon Mac sampled, even under load.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2435,6 +2446,7 @@
     },
     "Full charge capacity in mAh in AppleSmartBatteryPack (macOS 27); equals FullChargeCapacity (no reserve).": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2620,6 +2632,7 @@
     },
     "Gauge resistance field in milliohms; reads 0 on every Apple silicon Mac sampled.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2655,6 +2668,7 @@
     },
     "Gauge status bits as in SBS BatteryStatus: 0x80 initialized, 0x40 discharging or idle, 0x20 fully charged.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2897,6 +2911,7 @@
     },
     "ID of the pack this bank or cell belongs to; matches the AppleSmartBatteryPack entry's ID.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2908,6 +2923,7 @@
     },
     "ID of this battery pack or charger entry; 0 on MacBooks.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -2919,6 +2935,7 @@
     },
     "Impedance (Ra) field of the gauge that reads 0 on every Apple silicon Mac sampled.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -3025,6 +3042,7 @@
     },
     "Input power distribution ratio; reads 100 on every Mac sampled that reports it, charging or not.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -3386,6 +3404,7 @@
     },
     "Manufacture date: on TI bq gauges, six ASCII digits that read backwards as YYMMDD, years from 1992.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -3863,6 +3882,7 @@
     },
     "Number of cell banks wired in series in the pack; each has its own AppleSmartBatteryBank entry.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -3969,6 +3989,7 @@
     },
     "Number of power-telemetry errors; 0 on every MacBook sampled, 84 on a Mac Studio.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -3992,6 +4013,7 @@
     },
     "Number of roughly once-a-second samples added to PackCurrentAccumulator.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4027,6 +4049,7 @@
     },
     "Number of samples added to ChargerAccumulatedEfficiency.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4372,6 +4395,7 @@
     },
     "Override value for IPDRatio; 255 (0xFF) on every macOS 27 Mac sampled.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4394,6 +4418,7 @@
     },
     "Pack voltage in AppleSmartBatteryPack (macOS 27); equals Voltage and AppleRawBatteryVoltage.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4439,6 +4464,7 @@
     },
     "Per-cell charge voltage limit; before macOS 27 this key was in ChargerData.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4697,6 +4723,7 @@
     },
     "Position of this bank (cell group) in the series string of the pack.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4708,6 +4735,7 @@
     },
     "Position of this cell among the parallel cells of its bank, counted from 0.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -5055,6 +5083,7 @@
     },
     "Raw manufacturer data block read from the battery gauge.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -5167,6 +5196,7 @@
     },
     "Remaining charge in mAh in AppleSmartBatteryPack (macOS 27); equals RemainingCapacity (no reserve).": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -5268,6 +5298,7 @@
     },
     "Running sum of battery current samples in mA; ÷ PackCurrentAccumulatorCount gives the average current.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -5279,6 +5310,7 @@
     },
     "Running sum of ChargerEfficiency samples; ÷ ChargerAccumEfficiencyCount gives the average.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -6621,6 +6653,7 @@
     },
     "Voltage at the charger's input (VBUS), from its power telemetry; reads 0 on battery.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -6713,6 +6746,7 @@
     },
     "Wattage override for input power distribution; 30000 on every Mac sampled, whatever the adapter.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -6746,6 +6780,7 @@
     },
     "Weighted average of the cell's Ra impedance values, in units of 1/1024 ohm.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -6977,6 +7012,7 @@
     },
     "Which dead-battery boot records are present: bit 0 GeneralPayload, bit 1 SMCBootManagementPayload.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -6988,6 +7024,7 @@
     },
     "Why the charger hardware lowered its input current limit (Ilim); Apple does not document the values.": {
       "extractionState": "manual",
+      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
