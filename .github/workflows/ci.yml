@@ -50,6 +50,12 @@ jobs:
           status=$?
           head -20 smc.txt
           echo "bpulse --smc exited with $status ($(wc -l < smc.txt) lines)"
+          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          # Loading MobileDevice and watching for devices must not crash or hang; the VM has no
+          # iPhone, so 2 ("no device") is expected.
+          .build/release/bpulse --devices
+          status=$?
+          echo "bpulse --devices exited with $status"
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet

@@ -65,21 +65,29 @@ extension BatteryReading {
     /// Opaque gauge blobs that can embed manufacturing identifiers.
     static let redactedKeys: Set<String> = ["ManufacturerData", "MfgData"]
 
-    static func redactingSerialNumbers(in dictionary: PropertyDictionary) -> PropertyDictionary {
+    /// - Parameter extraKeys: further keys to replace at any depth, such as device identifiers.
+    static func redactingSerialNumbers(
+        in dictionary: PropertyDictionary, alsoRedacting extraKeys: Set<String> = []
+    ) -> PropertyDictionary {
         var result: PropertyDictionary = [:]
         for (key, value) in dictionary {
             // Serials appear as strings, integers (`FirmwareSerialNumber`, adapter `SerialNumber`)
             // or data, so match on the key, not the value type.
-            let isSensitive = key.lowercased().contains("serial") || redactedKeys.contains(key)
-            result[key] = isSensitive ? .string(redactedPlaceholder) : redactingSerialNumbers(in: value)
+            let isSensitive =
+                key.lowercased().contains("serial") || redactedKeys.contains(key) || extraKeys.contains(key)
+            result[key] =
+                isSensitive
+                ? .string(redactedPlaceholder) : redactingSerialNumbers(in: value, alsoRedacting: extraKeys)
         }
         return result
     }
 
-    static func redactingSerialNumbers(in value: PropertyValue) -> PropertyValue {
+    static func redactingSerialNumbers(in value: PropertyValue, alsoRedacting extraKeys: Set<String> = [])
+        -> PropertyValue
+    {
         switch value {
-        case .dictionary(let nested): .dictionary(redactingSerialNumbers(in: nested))
-        case .array(let items): .array(items.map(redactingSerialNumbers(in:)))
+        case .dictionary(let nested): .dictionary(redactingSerialNumbers(in: nested, alsoRedacting: extraKeys))
+        case .array(let items): .array(items.map { redactingSerialNumbers(in: $0, alsoRedacting: extraKeys) })
         default: value
         }
     }
