@@ -9,6 +9,7 @@ struct CompactView: View {
     @Environment(DemoController.self) private var demo
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     private let formatter = BatteryFormatter.app
 
     var body: some View {
@@ -67,11 +68,11 @@ struct CompactView: View {
             .frame(width: 84)
             VStack(alignment: .leading, spacing: 2) {
                 Text(s.chargePercent.map { formatter.percent($0) } ?? "—")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .font(.system(size: 34, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                     .monospacedDigit()
                     .numericValue(s.chargePercent)
                 Text(Phrases.stateWithPower(s, formatter))
-                    .font(.callout)
+                    .font(look.boldNumerals ? .callout.weight(.medium) : .callout)
                 if let time = Phrases.timeRemaining(s, formatter) {
                     Text(time)
                         .font(.callout)

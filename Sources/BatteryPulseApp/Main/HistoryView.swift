@@ -46,6 +46,7 @@ struct HistoryView: View {
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
     @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     private let formatter = BatteryFormatter.app
 
     init(source: Binding<HistorySource>) {
@@ -440,7 +441,7 @@ struct HistoryView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text(value)
-                    .font(.title3.weight(.semibold))
+                    .font(.title3.weight(look.boldNumerals ? .bold : .semibold))
                     .monospacedDigit()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

@@ -8,6 +8,7 @@ struct OverviewView: View {
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
     @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
 
     var body: some View {
         ScrollView {
@@ -50,12 +51,12 @@ struct OverviewView: View {
                 .frame(width: 132)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(snapshot.chargePercent.map { formatter.percent($0) } ?? "—")
-                        .font(.system(size: 46, weight: .semibold, design: .rounded))
+                        .font(.system(size: 46, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(snapshot.chargePercent)
                     // No animation of its own: the watts in it change with every reading.
                     Text(Phrases.stateWithPower(snapshot, formatter))
-                        .font(.title3)
+                        .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .foregroundStyle(.secondary)

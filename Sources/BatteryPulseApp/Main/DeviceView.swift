@@ -16,6 +16,7 @@ struct DeviceView: View {
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.motion) private var motion
     @Environment(\.tones) private var tones
+    @Environment(\.windowLook) private var look
     @State private var confirmsForgetting = false
     private let formatter = BatteryFormatter.app
 
@@ -115,11 +116,11 @@ struct DeviceView: View {
                 .frame(width: 132)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(battery.chargePercent.map { formatter.percent($0) } ?? "—")
-                        .font(.system(size: 46, weight: .semibold, design: .rounded))
+                        .font(.system(size: 46, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(battery.chargePercent)
                     Text(statePhrase(battery))
-                        .font(.title3)
+                        .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
                     Text(verbatim: subtitle)
                         .foregroundStyle(.secondary)
                     HStack(spacing: 6) {

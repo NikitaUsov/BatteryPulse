@@ -32,8 +32,10 @@ import Testing
     static let glassAllowList: Set<String> = [
         // The floating Demo Mode bar.
         "BatteryPulseApp/Main/DemoView.swift",
-        // The glass selection of the menu bar icon style picker.
+        // The glass selection of the preview tile pickers (icon style, window style).
         "BatteryPulseApp/Settings/SettingsView.swift",
+        // The glass sheet of Translucent and Clear: one behind the whole window.
+        "BatteryPulseApp/App/WindowLook.swift",
     ]
 
     static let menuBarLabelFiles: Set<String> = [
@@ -471,6 +473,10 @@ import Testing
         // Content is never glass: the cards' "Glass Cards" option is gone.
         #expect(flags(glass, path: "BatteryPulseApp/Main/Components.swift"))
         #expect(!flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
+        // The window's glass sheet: allowed, but never interactive (`windowBackgroundNeverAnimates`).
+        let sheet = "Rectangle().fill(.clear).glassEffect(Glass.clear.tint(tint), in: .rect)"
+        #expect(!flags(sheet, path: "BatteryPulseApp/App/WindowLook.swift"))
+        #expect(flags(sheet, path: "BatteryPulseApp/Main/OverviewView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
     }
