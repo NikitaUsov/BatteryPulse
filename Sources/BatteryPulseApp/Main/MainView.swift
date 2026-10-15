@@ -1,4 +1,5 @@
 #if os(macOS)
+import Accessibility
 import AppKit
 import BatteryCore
 import BatteryKit
@@ -13,6 +14,15 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     static let pages: [SidebarItem] = [.overview, .power, .health, .history]
     static let developerPages: [SidebarItem] = [.developer, .demo]
+
+    /// Whether the page shows the live reading. History comes from disk and Demo Mode from the
+    /// demo, so the main window doesn't poll the battery while they are shown.
+    var showsLiveValues: Bool {
+        switch self {
+        case .overview, .power, .health, .developer: true
+        case .history, .demo: false
+        }
+    }
 
     var title: LocalizedStringKey {
         switch self {
@@ -42,6 +52,7 @@ struct MainView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.motion) private var motion
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
 
@@ -59,43 +70,56 @@ struct MainView: View {
                     }
                 }
             }
+            // The Developer section slides in and out when it is turned on or off in Settings.
+            .animation(motion.change, value: showsDeveloper)
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
-            MainDetail(monitor: monitor, selection: selection)
-                .navigationTitle(selection.title)
-                // Floats over every page while Demo Mode is on; content scrolls under it with the
-                // system's scroll edge effect.
-                .safeAreaBar(edge: .bottom) {
-                    DemoControlBar()
+            // Switching pages is the most frequent action here, so it gets the least motion: a
+            // 0.15 s fade, no slide. The ZStack keeps the old and the new page on top of each
+            // other while they fade.
+            ZStack {
+                MainDetail(monitor: monitor, selection: selection)
+                    .id(selection)
+                    .transition(.opacity)
+            }
+            .animation(motion.quickFade, value: selection)
+            .navigationTitle(selection.title)
+            // Floats over every page while Demo Mode is on; content scrolls under it with the
+            // system's scroll edge effect.
+            .safeAreaBar(edge: .bottom) {
+                DemoControlBar()
+            }
+            // The minimum size belongs on the column: a minimum on the whole split view makes
+            // the sidebar's show/hide animation stutter.
+            .frame(minWidth: 520, minHeight: 540)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    CopyReportButton(monitor: monitor)
                 }
-                // The minimum size belongs on the column: a minimum on the whole split view makes
-                // the sidebar's show/hide animation stutter.
-                .frame(minWidth: 520, minHeight: 540)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        CopyReportButton(monitor: monitor)
+                // Unrelated actions: each gets its own glass capsule.
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Compact Window", systemImage: "arrow.down.right.and.arrow.up.left") {
+                        WindowOpener.switchWindowStyle(compact: true)
+                        dismissWindow(id: WindowID.main)
                     }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Compact Window", systemImage: "arrow.down.right.and.arrow.up.left") {
-                            WindowOpener.switchWindowStyle(compact: true)
-                            dismissWindow(id: WindowID.main)
-                        }
-                        .help("Show the essentials in a small window")
-                    }
+                    .help("Show the essentials in a small window")
                 }
+            }
         }
         // DemoController stops the demo itself when the section is hidden.
         .onChange(of: showsDeveloper) { _, shows in
             if !shows, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
-        // The demo tour switches pages by itself, but never to a hidden one.
+        // The demo tour switches pages by itself, but never to a hidden one. The page changes in
+        // one transaction with the demo's data.
         .onChange(of: demo.pageRequest) { _, request in
             guard let request else { return }
             let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
-            selection = isHidden ? .overview : request.page
+            withAnimation(motion.change) { selection = isHidden ? .overview : request.page }
         }
-        .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "main") }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "main") }
+        // Polls every 2 s while the window can be seen and the page shows live values.
+        .liveRefresh(monitor, every: .seconds(2), client: "main", isEnabled: selection.showsLiveValues)
         .trackedWindow(WindowID.main)
     }
 
@@ -135,14 +159,31 @@ private struct MainDetail: View {
 
 private struct CopyReportButton: View {
     let monitor: BatteryMonitor
+    @Environment(\.motion) private var motion
+    /// The icon shows a checkmark for a moment after copying.
+    @State private var copied = false
 
     var body: some View {
         // A report of simulated data would mislead a bug report.
-        Button("Copy Report", systemImage: "doc.on.doc", action: copyReport)
-            .disabled(monitor.snapshot == nil || monitor.isOverridden)
-            .help(
-                monitor.isOverridden
-                    ? Text("Not available in Demo Mode") : Text("Copy a plain-text report without serial numbers"))
+        Button(action: copyReport) {
+            Label {
+                Text("Copy Report")
+            } icon: {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                    .contentTransition(motion.symbolSwap)
+            }
+        }
+        .disabled(monitor.snapshot == nil || monitor.isOverridden)
+        .help(
+            monitor.isOverridden
+                ? Text("Not available in Demo Mode") : Text("Copy a plain-text report without serial numbers")
+        )
+        .task(id: copied) {
+            guard copied else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation(motion.change) { copied = false }
+        }
     }
 
     private func copyReport() {
@@ -150,6 +191,8 @@ private struct CopyReportButton: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(BatteryReport.text(for: snapshot), forType: .string)
+        withAnimation(motion.change) { copied = true }
+        AccessibilityNotification.Announcement(String(localized: "Report copied")).post()
     }
 }
 #endif

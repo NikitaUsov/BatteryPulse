@@ -14,7 +14,11 @@ struct HistoryView: View {
         var bucket: TimeInterval? { self == .day ? nil : 10 * 60 }
     }
 
+    /// The period picked in the toolbar.
     @State private var period: Period = .day
+    /// The period of the data on screen. It follows ``period`` once that period's samples are
+    /// loaded, so the charts never draw the old data on the new period's axis.
+    @State private var loadedPeriod: Period?
     @State private var points: [HistoryPoint] = []
     @State private var spans: [HistorySpan] = []
     @State private var statistics: HistoryStatistics?
@@ -22,39 +26,25 @@ struct HistoryView: View {
     @State private var hasLoaded = false
     @State private var selectedTime: Date?
     @State private var end = Date()
+    @Environment(\.motion) private var motion
     private let formatter = BatteryFormatter.app
+
+    /// Restarts the reload loop when the period changes or the window is shown again.
+    private struct ReloadKey: Equatable {
+        var period: Period
+        var isVisible: Bool
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Picker("Period", selection: $period) {
-                    Text("24 Hours").tag(Period.day)
-                    Text("7 Days").tag(Period.week)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 280)
-
-                if hasLoaded, points.isEmpty {
-                    ContentUnavailableView {
-                        Label("No History Yet", systemImage: "chart.xyaxis.line")
-                    } description: {
-                        if AppSettings.recordsHistory {
-                            Text(
-                                "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
-                            )
-                        } else {
-                            Text("Recording is off. Turn it on in Settings → Advanced.")
-                        }
-                    }
-                    .frame(minHeight: 260)
-                } else {
-                    Card("Charge") { chargeChart }
-                    Card("Power") { powerChart }
-                    if points.contains(where: { $0.temperatureCelsius != nil }) {
-                        Card("Temperature") { temperatureChart }
-                    }
-                    if let statistics { statisticsRow(statistics) }
+                // Switching the period crossfades the charts rather than morphing the lines: a day
+                // and a week have different points on different time axes. The ZStack keeps both
+                // periods on top of each other while they fade.
+                ZStack(alignment: .top) {
+                    periodContent
+                        .id(loadedPeriod)
+                        .transition(.opacity)
                 }
                 Card("Battery Health") { healthCharts }
             }
@@ -62,8 +52,22 @@ struct HistoryView: View {
             .frame(maxWidth: 820)
             .frame(maxWidth: .infinity)
         }
-        .task(id: period) {
-            // Reload as new samples arrive.
+        .toolbar {
+            // In the toolbar, like the view switches of the system's own apps, with the system's
+            // glass selection. Only while History is shown.
+            ToolbarItem(placement: .principal) {
+                Picker("Period", selection: $period) {
+                    Text("24 Hours").tag(Period.day)
+                    Text("7 Days").tag(Period.week)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+        }
+        .task(id: ReloadKey(period: period, isVisible: motion.isVisible)) {
+            // Reload as new samples arrive, but not while the window can't be seen; it reloads
+            // as soon as it can again.
+            guard motion.isVisible else { return }
             while !Task.isCancelled {
                 await load()
                 try? await Task.sleep(for: .seconds(60))
@@ -71,21 +75,71 @@ struct HistoryView: View {
         }
     }
 
+    /// The charts and figures for the loaded period, or why there are none.
+    private var periodContent: some View {
+        VStack(spacing: 16) {
+            if hasLoaded, points.isEmpty {
+                ContentUnavailableView {
+                    Label("No History Yet", systemImage: "chart.xyaxis.line")
+                } description: {
+                    if AppSettings.recordsHistory {
+                        Text(
+                            "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes."
+                        )
+                    } else {
+                        Text("Recording is off. Turn it on in Settings → Advanced.")
+                    }
+                }
+                .frame(minHeight: 260)
+            } else {
+                Card("Charge") { chargeChart }
+                Card("Power") { powerChart }
+                if points.contains(where: { $0.temperatureCelsius != nil }) {
+                    Card("Temperature") { temperatureChart }
+                }
+                if let statistics { statisticsRow(statistics) }
+            }
+        }
+    }
+
     // MARK: - Data
 
     private func load() async {
-        end = Date()
-        let start = end.addingTimeInterval(-period.length)
-        let samples = (try? await AppHistory.store.samples(from: start)) ?? []
-        points = HistoryPoint.points(from: samples, bucket: period.bucket)
-        spans = HistorySpan.spans(from: samples)
-        statistics = samples.isEmpty ? nil : HistoryStatistics(samples: samples)
-        days = (try? await AppHistory.store.dailySummaries()) ?? []
-        hasLoaded = true
+        let period = self.period
+        let end = Date()
+        let samples = (try? await AppHistory.store.samples(from: end.addingTimeInterval(-period.length))) ?? []
+        let points = HistoryPoint.points(from: samples, bucket: period.bucket)
+        let spans = HistorySpan.spans(from: samples)
+        let statistics = samples.isEmpty ? nil : HistoryStatistics(samples: samples)
+        let days = (try? await AppHistory.store.dailySummaries()) ?? []
+        // A newer period or a hidden window cancelled this load; its data is stale.
+        guard !Task.isCancelled else { return }
+        // The daily summaries don't depend on the period, so their charts never animate.
+        self.days = days
+        let apply = {
+            self.end = end
+            self.points = points
+            self.spans = spans
+            self.statistics = statistics
+            loadedPeriod = period
+            hasLoaded = true
+        }
+        // Only a period switch animates. The minute reload never does: it would redraw three
+        // charts of up to 1,440 points for nothing.
+        if let loadedPeriod, loadedPeriod != period {
+            withAnimation(motion.change, apply)
+        } else {
+            apply()
+        }
+    }
+
+    /// The period of the charts on screen.
+    private var shownPeriod: Period {
+        loadedPeriod ?? period
     }
 
     private var domain: ClosedRange<Date> {
-        end.addingTimeInterval(-period.length)...end
+        end.addingTimeInterval(-shownPeriod.length)...end
     }
 
     // MARK: - Charts
@@ -214,7 +268,8 @@ struct HistoryView: View {
     /// Few ticks on whole hours or days: tick generation is expensive, and labels on odd times
     /// read badly.
     private var timeAxis: some AxisContent {
-        AxisMarks(values: period == .day ? .stride(by: .hour, count: 6) : .stride(by: .day)) { _ in
+        let period = shownPeriod
+        return AxisMarks(values: period == .day ? .stride(by: .hour, count: 6) : .stride(by: .day)) { _ in
             AxisGridLine()
             AxisValueLabel(
                 format: period == .day ? .dateTime.hour() : .dateTime.weekday(.abbreviated), centered: period == .week)
@@ -227,7 +282,7 @@ struct HistoryView: View {
         _ proxy: ChartProxy, _ value: @escaping (HistoryPoint) -> String?
     ) -> some View {
         SelectionOverlay(
-            proxy: proxy, points: points, selection: $selectedTime, showsDate: period == .week, value: value)
+            proxy: proxy, points: points, selection: $selectedTime, showsDate: shownPeriod == .week, value: value)
     }
 
     // MARK: - Figures
@@ -343,6 +398,8 @@ private struct SelectionOverlay: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+        // Follows the pointer exactly; a period crossfade must not drag the rule along.
+        .transaction { $0.animation = nil }
     }
 
     private func readout(_ value: String, _ time: Date) -> some View {

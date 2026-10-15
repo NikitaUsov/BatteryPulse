@@ -10,15 +10,21 @@ import UniformTypeIdentifiers
 struct DeveloperView: View {
     let monitor: BatteryMonitor
     @State private var filter = ""
+    /// The source picked in the toolbar; `nil` shows every section.
+    @State private var source: RawSectionGroup?
     @State private var selection: Set<RawRow.ID> = []
     @State private var showsInspector = false
     /// The table for the current reading. Built off the main actor when the reading changes, not
     /// on every body evaluation: showing the inspector or typing in the filter re-evaluates the
     /// body, and the main window reads the battery every 2 s.
     @State private var allSections: [RawSection] = []
+    @Environment(\.motion) private var motion
 
     var body: some View {
-        let sections = filteredSections
+        let groups = RawSectionGroup.groups(in: allSections)
+        // A source that this reading lacks (the adapter's details after unplugging) shows all.
+        let shownGroup = source.flatMap { groups.contains($0) ? $0 : nil }
+        let sections = filteredSections(in: shownGroup)
         // The Liquid Glass sidebar floats over the detail column, and a scroll view whose edge
         // touches it is stretched underneath. A Table wider than it shows then starts at the
         // window edge with its Key column behind the sidebar. A point of padding keeps it clear of
@@ -26,9 +32,14 @@ struct DeveloperView: View {
         rawTable(sections)
             .padding(.leading, 1)
             .overlay {
-                if sections.isEmpty, !filter.isEmpty {
-                    ContentUnavailableView.search(text: filter)
+                // Only the empty state fades; the table's rows never animate.
+                ZStack {
+                    if sections.isEmpty, !filter.isEmpty {
+                        ContentUnavailableView.search(text: filter)
+                            .transition(.opacity)
+                    }
                 }
+                .animation(motion.change, value: sections.isEmpty)
             }
             .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
             // The table cuts long values and descriptions off; the inspector shows the selected
@@ -38,10 +49,28 @@ struct DeveloperView: View {
                     .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
             }
             .toolbar {
+                // A switch between the dictionaries, like the view switches of the system's own
+                // apps. It filters the table to one source rather than scrolling to it: a
+                // Table has no documented way to scroll to a section.
+                if groups.count > 1 {
+                    ToolbarItem(placement: .principal) {
+                        Picker("Source", selection: $source) {
+                            Text("All").tag(RawSectionGroup?.none)
+                            ForEach(groups, id: \.self) { group in
+                                Self.title(of: group).tag(RawSectionGroup?.some(group))
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .help("Show only the values from one source")
+                    }
+                }
                 ToolbarItem {
                     Button("Inspector", systemImage: "sidebar.trailing") { showsInspector.toggle() }
                         .help("Show or hide the selected row in full")
                 }
+                // Showing the inspector and exporting are unrelated: separate glass capsules.
+                ToolbarSpacer(.fixed)
                 ToolbarItemGroup {
                     // Exports are for bug reports, so they are off while the data is simulated.
                     Button("Copy JSON", systemImage: "curlybraces", action: copyJSON)
@@ -58,8 +87,25 @@ struct DeveloperView: View {
                                 : Text("Save the raw data for a bug report. Serial numbers are redacted."))
                 }
             }
+            .onChange(of: groups) { _, groups in
+                // The switch then shows All selected, as the table does.
+                if let source, !groups.contains(source) { self.source = nil }
+            }
             .disabled(monitor.reading == nil)
             .task(id: monitor.reading) { await rebuild() }
+    }
+
+    /// The segment title of a source: short, and the API's own name where it has no other.
+    private static func title(of group: RawSectionGroup) -> Text {
+        switch group {
+        case .battery: Text("Battery")
+        case .pack: Text("Pack")
+        case .banks: Text("Banks")
+        case .charger: Text("Charger")
+        case .powerSources: Text(verbatim: "IOPS")
+        case .adapter: Text("Adapter")
+        case .smc: Text(verbatim: "SMC")
+        }
     }
 
     private func rebuild() async {
@@ -70,7 +116,9 @@ struct DeveloperView: View {
         let sections = await Task.detached(priority: .userInitiated) {
             RawSection.sections(for: reading.redactedRawCapture)
         }.value
-        // Identical readings leave the table alone.
+        // Identical readings leave the table alone. Assigned after an `await`, so outside any
+        // animation, Demo Mode's included: hundreds of rows change with every reading and must
+        // never animate.
         guard !Task.isCancelled, sections != allSections else { return }
         allSections = sections
     }
@@ -137,6 +185,8 @@ struct DeveloperView: View {
             showsInspector = true
         }
         .onCopyCommand { providers(for: selection) }
+        // Rows and cells never animate, whatever transaction reaches the table.
+        .transaction { $0.animation = nil }
     }
 
     /// The selected rows with the title of the dictionary each comes from.
@@ -146,10 +196,12 @@ struct DeveloperView: View {
         }
     }
 
-    private var filteredSections: [RawSection] {
+    /// The sections of `group` (all for `nil`) with the rows that match the filter.
+    private func filteredSections(in group: RawSectionGroup?) -> [RawSection] {
+        let sections = RawSectionGroup.sections(allSections, in: group)
         let query = filter.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return allSections }
-        return allSections.compactMap { section in
+        guard !query.isEmpty else { return sections }
+        return sections.compactMap { section in
             var section = section
             section.rows = section.rows.filter { matches($0, query) }
             return section.rows.isEmpty ? nil : section
