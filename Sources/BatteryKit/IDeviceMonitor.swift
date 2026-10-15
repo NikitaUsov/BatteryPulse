@@ -221,7 +221,8 @@ public final class IDeviceMonitor {
         if isVisible {
             visiblePage = id
             // Back from tapping Trust in Finder, say: read now unless a read just succeeded.
-            if isEnabled, !isStalled, let session = sessions[id], udids[id] != nil, !hidden.contains(id),
+            if isEnabled, !isStalled, unavailable == nil, let session = sessions[id], udids[id] != nil,
+                !hidden.contains(id),
                 IDeviceRoster.connection(of: session, now: clock.now()) == .usb, !session.isReading
             {
                 let isRecent = session.lastAttempt.map {
@@ -497,7 +498,14 @@ public final class IDeviceMonitor {
                 sessions[key] = session
                 stall()
             case .frameworkUnavailable?, .subscriptionFailed?:
+                // Shown on every page; nothing automatic runs until the user acts. The attempt
+                // still counts, or the device would be due again at once and the read would
+                // repeat back to back.
                 unavailable = error as? IDeviceError
+                session.lastAttempt = now
+                session.problem = .transportFailed(.missingResult)
+                session.consecutiveFailures += 1
+                sessions[key] = session
             case nil:
                 session.lastAttempt = now
                 session.problem = .transportFailed(.missingResult)
@@ -506,6 +514,7 @@ public final class IDeviceMonitor {
             }
         case .success(let capture):
             isStalled = false
+            if case .subscriptionFailed? = unavailable { unavailable = nil }
             session.lastAttempt = now
             let identity = IDeviceIdentity(capture: capture)
             session.identity = identity
@@ -656,10 +665,12 @@ public final class IDeviceMonitor {
     }
 
     /// One task sleeps until the next due read or Wi-Fi expiry; recreated after every change.
+    /// Nothing is scheduled while stalled or while devices can't be listed or read: only the
+    /// user's Check Again, Refresh or Try Again starts work then.
     private func reschedule() {
         scheduleTask?.cancel()
         scheduleTask = nil
-        guard isEnabled, !isStalled else { return }
+        guard isEnabled, !isStalled, unavailable == nil else { return }
         let now = clock.now()
         // Only devices that can be read: hidden ones and ones without a UDID never come due.
         let candidates = sessions.filter { udids[$0.key] != nil && !hidden.contains($0.key) }
@@ -675,7 +686,7 @@ public final class IDeviceMonitor {
 
     private func scheduleFired() {
         scheduleTask = nil
-        guard isEnabled, !isStalled else { return }
+        guard isEnabled, !isStalled, unavailable == nil else { return }
         let now = clock.now()
         for (key, session) in sessions
         where !session.connections.isEmpty && IDeviceRoster.connection(of: session, now: now) == nil {

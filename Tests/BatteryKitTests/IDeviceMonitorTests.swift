@@ -824,6 +824,28 @@ struct MonitorHarness {
         #expect(await h.transport.calls == ["list", "list", "capture 801C"])
     }
 
+    /// A read can fail to subscribe at once; the device mustn't come due again right away, or
+    /// the reads would repeat back to back.
+    @Test func subscriptionFailureOnReadIsNotRepeated() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await h.transport.script(Self.phone, [.failure(.subscriptionFailed(.noResources))])
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        #expect(h.monitor.unavailable == .subscriptionFailed(.noResources))
+        #expect(h.clock.nextWake == nil)
+        h.monitor.setPageVisible(Self.phoneKey, true)
+        await h.advance(by: 3600)
+        #expect(await h.transport.calls == ["list", "capture 801C"])
+        // Try Again lists, which clears the problem, and reads.
+        h.monitor.read(Self.phoneKey)
+        await h.settle()
+        #expect(h.monitor.unavailable == nil)
+        #expect(h.monitor.entries.first?.problem == nil)
+        #expect(await h.transport.calls == ["list", "capture 801C", "list", "capture 801C"])
+        #expect(h.clock.nextWake != nil)
+    }
+
     @Test func secretErrorShowsButRemembersNothing() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }
