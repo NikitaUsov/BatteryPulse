@@ -65,8 +65,8 @@ extension MotionPolicy {
         }
     }
 
-    /// The charging bolt appearing and disappearing.
-    var boltTransition: AnyTransition {
+    /// The charging bolt appearing and disappearing. Main actor, like the symbol effect it builds.
+    @MainActor var boltTransition: AnyTransition {
         // If Draw On turns out not to suit `bolt.fill`, `.symbolEffect(.appear)` is the fallback.
         level == .full ? AnyTransition(.symbolEffect(.drawOn)) : .opacity
     }
