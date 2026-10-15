@@ -401,7 +401,6 @@ struct NotificationSettings: View {
 /// History, the Developer section and help.
 struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
-    @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
     @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
     @Environment(IDeviceMonitor.self) private var devices
@@ -441,18 +440,6 @@ struct AdvancedSettings: View {
 
         Section {
             Toggle("Show Developer section", isOn: $showsDeveloper)
-            // A Developer option like Raw Data and Demo Mode: only offered, and only in effect,
-            // while the Developer section is on. Turning the section off keeps the choice.
-            if showsDeveloper {
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Glass Cards", isOn: $glassCards)
-                    Text(
-                        "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read."
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                }
-            }
         } footer: {
             Text(
                 "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window."

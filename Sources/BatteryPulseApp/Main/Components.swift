@@ -4,34 +4,16 @@ import SwiftUI
 
 // Content-layer building blocks. Per Apple's Liquid Glass guidance, glass belongs to the
 // navigation and control layer (sidebar, toolbar, controls), which SwiftUI provides; content
-// uses standard fills. The one exception is the Developer option "Glass Cards" (off by default),
-// which draws `Card` itself in Liquid Glass; nothing inside a card ever gets glass.
+// uses standard fills, and nothing inside a card ever gets glass.
 //
 // Motion: values that change with the 2 s readings (watts, mA, mV, °C, mAh) change instantly.
 // Only discrete events animate, through `\.motion`: the whole percent, the level tier, plugging in
 // or out, the charge state, the battery symbol and the direction of the power flow.
 
-/// Whether the content cards are drawn in Liquid Glass right now: the Developer option "Glass
-/// Cards" (Settings → Advanced), which counts only while the Developer section is on and never
-/// under Reduce Transparency (see ``CardSurface``).
-struct CardSurfaceSetting: DynamicProperty {
-    @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
-    @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    var surface: CardSurface {
-        CardSurface(
-            glassCardsOption: glassCards, showsDeveloperSection: showsDeveloper,
-            reduceTransparency: reduceTransparency)
-    }
-}
-
-/// A rounded section of a page (Overview, History, the compact window): a standard fill, or
-/// Liquid Glass with the Developer option "Glass Cards".
+/// A rounded section of a page (Overview, History, the compact window) on a standard fill.
 struct Card<Content: View>: View {
     private let title: LocalizedStringKey?
     private let content: Content
-    private var surfaceSetting = CardSurfaceSetting()
 
     init(_ title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -39,7 +21,7 @@ struct Card<Content: View>: View {
     }
 
     var body: some View {
-        let stack = VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             if let title {
                 Text(title)
                     .font(.headline)
@@ -48,39 +30,20 @@ struct Card<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        // Two branches rather than `.identity` glass over the fill: the default stays exactly the
-        // view it was before the option existed, and switching the option rebuilds the cards once.
-        switch surfaceSetting.surface {
-        case .standard:
-            stack.background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
-        case .glass:
-            stack.glassEffect(.regular, in: .rect(cornerRadius: 16, style: .continuous))
-        }
+        .background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
     }
 }
 
-/// A page's stack of cards. With "Glass Cards" on, the cards' glass shares one
-/// `GlassEffectContainer`, which renders them in one pass (Apple: too many glass effects outside
-/// a container degrade performance). With the option off, the content is returned as it is,
-/// without a container.
+/// A page's stack of cards.
 struct CardGroup<Content: View>: View {
     private let content: Content
-    private var surfaceSetting = CardSurfaceSetting()
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
     var body: some View {
-        switch surfaceSetting.surface {
-        case .standard:
-            content
-        case .glass:
-            // Below the 16 pt gap between cards, so neighbouring cards don't merge at rest.
-            GlassEffectContainer(spacing: 8) {
-                content
-            }
-        }
+        content
     }
 }
 

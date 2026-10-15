@@ -26,8 +26,6 @@ import Testing
     static let glassAllowList: Set<String> = [
         // The floating Demo Mode bar.
         "BatteryPulseApp/Main/DemoView.swift",
-        // The Developer option "Glass Cards" (off by default).
-        "BatteryPulseApp/Main/Components.swift",
         // The glass selection of the menu bar icon style picker.
         "BatteryPulseApp/Settings/SettingsView.swift",
     ]
@@ -412,7 +410,8 @@ import Testing
     @Test func glassIsAllowedOnlyInTheListedFiles() {
         let glass = "bar.glassEffect(.regular.interactive(), in: .capsule)"
         #expect(!flags(glass, path: "BatteryPulseApp/Main/DemoView.swift"))
-        #expect(!flags(glass, path: "BatteryPulseApp/Main/Components.swift"))
+        // Content is never glass: the cards' "Glass Cards" option is gone.
+        #expect(flags(glass, path: "BatteryPulseApp/Main/Components.swift"))
         #expect(!flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))

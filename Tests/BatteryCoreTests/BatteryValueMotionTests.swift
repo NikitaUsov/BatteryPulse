@@ -91,26 +91,6 @@ import Testing
         #expect(CapacityBar.scale(of: [CapacityBar(kind: .remaining, capacityMAh: 0)]) == 1)
     }
 
-    // MARK: Glass Cards
-
-    @Test(arguments: [
-        // option, Developer section, Reduce Transparency → surface
-        (false, false, false, CardSurface.standard),
-        (true, false, false, .standard),
-        (false, true, false, .standard),
-        (true, true, false, .glass),
-        (true, true, true, .standard),
-        (false, true, true, .standard),
-    ])
-    func glassCardsApplyOnlyWithTheDeveloperSection(
-        option: Bool, showsDeveloper: Bool, reduceTransparency: Bool, surface: CardSurface
-    ) {
-        #expect(
-            CardSurface(
-                glassCardsOption: option, showsDeveloperSection: showsDeveloper,
-                reduceTransparency: reduceTransparency) == surface)
-    }
-
     @Test func barsFromValuesMatchSnapshotBars() throws {
         let snapshot = try Fixture.m5OnBattery.snapshot()
         #expect(

@@ -55,6 +55,35 @@ enum SidebarItem: Hashable, Identifiable {
         case .device: "iphone"
         }
     }
+
+    /// The page as scene storage keeps it: a name, or `device:` and the device's key.
+    var storageKey: String {
+        switch self {
+        case .overview: "overview"
+        case .power: "power"
+        case .health: "health"
+        case .history: "history"
+        case .developer: "developer"
+        case .demo: "demo"
+        case .devicesIntro: "devices"
+        case .device(let key): Self.devicePrefix + key.rawValue
+        }
+    }
+
+    init?(storageKey: String) {
+        if storageKey.hasPrefix(Self.devicePrefix) {
+            guard let key = DeviceKey(rawValue: String(storageKey.dropFirst(Self.devicePrefix.count))) else {
+                return nil
+            }
+            self = .device(key)
+            return
+        }
+        let named: [SidebarItem] = Self.pages + Self.developerPages + [.devicesIntro]
+        guard let item = named.first(where: { $0.storageKey == storageKey }) else { return nil }
+        self = item
+    }
+
+    private static let devicePrefix = "device:"
 }
 
 /// The main window: a sidebar of sections and their content.
@@ -65,7 +94,9 @@ struct MainView: View {
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.motion) private var motion
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
-    @State private var selection: SidebarItem = .overview
+    /// The page shown, kept per window: a window style change rebuilds the window's content, and
+    /// the page stays.
+    @SceneStorage("mainSelection") private var storedSelection = SidebarItem.overview.storageKey
     /// Whose history the History page shows; kept while switching pages.
     @State private var historySource: HistorySource = .mac
     private let formatter = BatteryFormatter.app
@@ -86,6 +117,11 @@ struct MainView: View {
         devices.remembered.map(\.id)
     }
 
+    private var selection: SidebarItem {
+        get { SidebarItem(storageKey: storedSelection) ?? .overview }
+        nonmutating set { storedSelection = newValue.storageKey }
+    }
+
     /// Show in History on a device page: History with that device's source.
     private func showInHistory(_ key: DeviceKey) {
         historySource = .device(key)
@@ -94,7 +130,7 @@ struct MainView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selection) {
+            List(selection: Binding(get: { selection }, set: { selection = $0 })) {
                 ForEach(SidebarItem.pages) { item in
                     Label(item.title, systemImage: item.symbol)
                 }
@@ -159,6 +195,10 @@ struct MainView: View {
                     .help("Show the essentials in a small window")
                 }
             }
+        }
+        // A restored page of the Developer section shows only while the section is on.
+        .onAppear {
+            if !showsDeveloper, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
         // DemoController stops the demo itself when the section is hidden.
         .onChange(of: showsDeveloper) { _, shows in

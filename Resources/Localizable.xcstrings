@@ -2406,18 +2406,6 @@
         }
       }
     },
-    "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read.": {
-      "extractionState": "manual",
-      "comment": "Settings → Advanced: note under the Glass Cards toggle",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Экспериментальная функция: карточки отображаются в стиле Liquid Glass. Расходует больше энергии, текст может читаться хуже."
-          }
-        }
-      }
-    },
     "Export": {
       "extractionState": "manual",
       "comment": "History toolbar: the menu that saves the recorded history as a file",
@@ -2970,18 +2958,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "GitHub ограничивает запросы из вашей сети. Повторите попытку позже."
-          }
-        }
-      }
-    },
-    "Glass Cards": {
-      "extractionState": "manual",
-      "comment": "Settings → Advanced, Developer option (shown only with the Developer section): draws the content cards in Liquid Glass",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стеклянные карточки"
           }
         }
       }

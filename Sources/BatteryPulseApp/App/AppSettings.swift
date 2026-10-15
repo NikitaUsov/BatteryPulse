@@ -20,10 +20,9 @@ enum AppSettings {
     static let legacyMenuBarStyleKey = "menuBarStyle"
     static let legacyMenuBarIconKey = "menuBarIcon"
     static let showDeveloperKey = "showDeveloperSection"
-    /// Developer option "Glass Cards" (Settings → Advanced, shown with the Developer section):
-    /// draws the content cards in Liquid Glass. Off by default, and ignored while the Developer
-    /// section is off; Apple keeps glass out of the content layer, so it stays an experiment.
-    static let glassCardsKey = "glassCards"
+    /// The Developer option that drew the cards in Liquid Glass in 0.5; the window style replaced
+    /// it in 0.6, and ``migrate()`` deletes it.
+    static let legacyGlassCardsKey = "glassCards"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
     /// The on/off switch for update checks before 0.4; ``updateFrequencyKey`` replaced it.
@@ -87,7 +86,7 @@ enum AppSettings {
             legacyEnabled: defaults.object(forKey: legacyCheckForUpdatesKey) as? Bool)
     }
 
-    /// Settings renamed since an earlier version keep the user's choice.
+    /// Settings renamed since an earlier version keep the user's choice; retired ones are deleted.
     static func migrate() {
         let defaults = UserDefaults.standard
         if defaults.string(forKey: updateFrequencyKey) == nil,
@@ -111,6 +110,9 @@ enum AppSettings {
         }
         defaults.removeObject(forKey: legacyMenuBarStyleKey)
         defaults.removeObject(forKey: legacyMenuBarIconKey)
+        // Not mapped to a window style: it was an experiment with opaque windows, and turning it
+        // into a see-through window would choose for the user.
+        defaults.removeObject(forKey: legacyGlassCardsKey)
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.
