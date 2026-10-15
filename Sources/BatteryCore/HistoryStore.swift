@@ -99,6 +99,13 @@ public actor HistoryStore {
             .sorted()
     }
 
+    /// The time of the newest sample, ignoring days after tomorrow; `nil` without samples. The
+    /// History page ends a device's time axis there.
+    public func latestSampleTime() throws -> Date? {
+        try migrateLegacySamples()
+        return try latestSample()?.time
+    }
+
     /// The newest sample, ignoring days after tomorrow: those come from a clock that was set ahead.
     private func latestSample() throws -> HistorySample? {
         let latestPlausibleDay = Self.fileDay(for: now().addingTimeInterval(24 * 60 * 60))

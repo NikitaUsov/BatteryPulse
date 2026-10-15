@@ -56,6 +56,22 @@ public struct HistorySample: Sendable, Equatable, Codable {
         )
     }
 
+    /// A sample of an iPhone or iPad. Devices report no system load and no launch or wake events;
+    /// the gaps between connections need no marker, because ``HistoryPolicy/maximumGap`` already
+    /// breaks the line.
+    public init(device battery: IDeviceBattery, at time: Date) {
+        self.init(
+            time: time,
+            percent: battery.chargePercent,
+            state: battery.chargeState,
+            isExternalPowerConnected: battery.isExternalPowerConnected,
+            batteryWatts: battery.batteryPowerWatts.map { ($0 * 100).rounded() / 100 },
+            temperatureCelsius: battery.temperatureCelsius.map { ($0 * 10).rounded() / 10 },
+            remainingMAh: battery.currentCapacityMAh,
+            fullChargeMAh: battery.fullChargeCapacityMAh
+        )
+    }
+
     /// On battery: by the external-power flag, or by the charge state when that is missing.
     public var isOnBattery: Bool {
         isExternalPowerConnected.map { !$0 } ?? (state == .discharging)
@@ -128,6 +144,19 @@ public struct HistoryDay: Sendable, Equatable, Codable {
             nominalChargeCapacityMAh: snapshot.nominalChargeCapacityMAh,
             fullChargeCapacityMAh: snapshot.fullChargeCapacityMAh,
             cycleCount: snapshot.cycleCount
+        )
+    }
+
+    /// The day of an iPhone or iPad: its health is the figure iOS Settings shows (maximum
+    /// capacity), and its ratio to design is nominal ÷ design capacity.
+    public init(device battery: IDeviceBattery, day: String) {
+        self.init(
+            day: day,
+            healthPercent: battery.maximumCapacityPercent.map { ($0 * 10).rounded() / 10 },
+            capacityToDesignPercent: battery.nominalToDesignPercent.map { ($0 * 10).rounded() / 10 },
+            nominalChargeCapacityMAh: battery.nominalChargeCapacityMAh,
+            fullChargeCapacityMAh: battery.fullChargeCapacityMAh,
+            cycleCount: battery.cycleCount
         )
     }
 

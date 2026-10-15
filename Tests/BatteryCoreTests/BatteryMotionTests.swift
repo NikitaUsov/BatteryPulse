@@ -215,4 +215,38 @@ import Testing
         #expect(key.flow == .idle)
         #expect(key.symbolName == BatteryPresentation.symbolName(for: nil))
     }
+
+    // MARK: iPhone and iPad
+
+    @Test func deviceKeyIgnoresSmallChanges() throws {
+        let battery = try RememberedDeviceTests.realIPhone().battery
+        var next = battery
+        next.amperageMA = 2087
+        next.temperatureCelsius = 36.6
+        next.currentCapacityMAh = 3160
+        #expect(BatteryMotionKey(device: battery) == BatteryMotionKey(device: next))
+        let key = BatteryMotionKey(device: battery)
+        #expect(key.percent == 65)
+        #expect(key.isPluggedIn)
+        #expect(key.chargeState == .charging)
+        #expect(key.symbolName == "battery.100percent.bolt")
+        #expect(key.flow == .intoBattery)
+        #expect(!key.isLowPowerMode)
+    }
+
+    @Test func deviceKeyFollowsState() throws {
+        let battery = try RememberedDeviceTests.realIPhone().battery
+        var unplugged = battery
+        unplugged.chargeState = .discharging
+        unplugged.isExternalPowerConnected = false
+        unplugged.amperageMA = -400
+        let key = BatteryMotionKey(device: unplugged)
+        #expect(key != BatteryMotionKey(device: battery))
+        #expect(key.flow == .outOfBattery)
+        #expect(key.symbolName == "battery.75percent")
+        var low = unplugged
+        low.chargePercent = 9
+        #expect(BatteryMotionKey(device: low).tier == .critical)
+        #expect(BatteryMotionKey(device: nil) == BatteryMotionKey(nil))
+    }
 }

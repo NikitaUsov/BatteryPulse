@@ -5,8 +5,13 @@ import Foundation
 public enum BatteryPresentation {
     /// SF Symbol for the current level; the bolt variant while charging.
     public static func symbolName(for s: BatterySnapshot?) -> String {
-        guard let s, let percent = s.chargePercent else { return "battery.0percent" }
-        if s.chargeState == .charging { return "battery.100percent.bolt" }
+        symbolName(percent: s?.chargePercent, state: s?.chargeState)
+    }
+
+    /// The symbol for a charge and state from any battery (a Mac's, an iPhone's).
+    public static func symbolName(percent: Double?, state: ChargeState?) -> String {
+        guard let percent else { return "battery.0percent" }
+        if state == .charging { return "battery.100percent.bolt" }
         switch percent {
         case 88...: return "battery.100percent"
         case 63..<88: return "battery.75percent"
@@ -29,7 +34,11 @@ public enum BatteryPresentation {
     }
 
     public static func levelTier(for s: BatterySnapshot) -> LevelTier {
-        guard let percent = s.chargePercent, s.chargeState != .charging, percent <= 20 else { return .normal }
+        levelTier(percent: s.chargePercent, state: s.chargeState)
+    }
+
+    public static func levelTier(percent: Double?, state: ChargeState) -> LevelTier {
+        guard let percent, state != .charging, percent <= 20 else { return .normal }
         return percent > 10 ? .low : .critical
     }
 
@@ -42,6 +51,14 @@ public enum BatteryPresentation {
         default: break
         }
         guard let health = s.healthPercent else { return .normal }
+        return health < 80 ? .low : .normal
+    }
+
+    /// Colour tier for an iPhone's or iPad's maximum capacity: a gauge error or a latched
+    /// permanent failure, then the capacity (iOS recommends service below 80 %).
+    public static func healthTier(device battery: IDeviceBattery) -> LevelTier {
+        if battery.errorCondition != nil || (battery.permanentFailureStatus ?? 0) != 0 { return .critical }
+        guard let health = battery.maximumCapacityPercent else { return .normal }
         return health < 80 ? .low : .normal
     }
 }
