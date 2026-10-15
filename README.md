@@ -58,6 +58,8 @@ dependencies.
   sessions; capacity and cycle count day by day.
 - Recorded about once a minute while BatteryPulse runs; kept on your Mac for 10 days (daily
   summaries for good).
+- Export to CSV (minute readings or daily health, in your region's spreadsheet format) or
+  JSON (both), with units in the column names.
 
 **Notifications** (Settings → Notifications, all off until you turn them on)
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
@@ -127,6 +129,8 @@ swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacte
 swift run bpulse --smc        # the SMC's battery and charger keys; values of the battery ones
 swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi (preview)
 swift run bpulse --device 1   # battery of device 1; add --json, or --raw for a redacted capture
+swift run bpulse --export csv > samples.csv   # recorded history; --days for daily health
+swift run bpulse --export json > history.json # all recorded history as JSON
 ```
 
 The device report shows Maximum capacity as iOS Settings does (checked against an iPhone 17

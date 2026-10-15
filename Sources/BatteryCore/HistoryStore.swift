@@ -31,6 +31,9 @@ public actor HistoryStore {
         self.now = now
     }
 
+    /// BatteryPulse's bundle identifier, for tools that read its history (`bpulse --export`).
+    public static let appBundleIdentifier = "io.github.nikitausov.BatteryPulse"
+
     /// `~/Library/Application Support/<bundle identifier>/History`.
     public static func defaultDirectory(bundleIdentifier: String?) -> URL {
         let base =

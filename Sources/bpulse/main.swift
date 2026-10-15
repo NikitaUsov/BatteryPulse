@@ -7,6 +7,7 @@ let usage = """
            bpulse --smc
            bpulse --devices
            bpulse --device <n> [--json | --raw]
+           bpulse --export csv|json [--days] [--decimal-comma] [--history <folder>]
 
       (no options)      Human-readable battery report
       --json            Parsed snapshot as JSON (one compact object per line with --watch)
@@ -26,10 +27,18 @@ let usage = """
                         tap Trust. With --raw: everything the device returned as an XML property
                         list, serial numbers, identifiers and the device's name redacted; with
                         --json: the parsed battery
+      --export csv|json The battery history BatteryPulse recorded (everything it keeps), on
+                        standard output. csv: the minute readings; with --days, the daily battery
+                        health. json: both. CSV uses commas and decimal points; --decimal-comma
+                        uses semicolons and decimal commas, as spreadsheets expect where decimals
+                        are written with a comma. Times are in the current time zone (TZ)
+      --history <folder>
+                        Export this history folder instead of BatteryPulse's own
+                        (~/Library/Application Support/io.github.nikitausov.BatteryPulse/History)
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found
-    (or no device, or the device couldn't be read).
+    (or no device, or the device couldn't be read, or there is no history folder to export).
     """
 
 enum OutputFormat {
@@ -43,8 +52,21 @@ struct Options {
     var listsDevices = false
     /// 1-based, as `--devices` numbers them.
     var deviceNumber: Int?
+    /// "csv" or "json".
+    var exportFormat: String?
+    var exportsDays = false
+    var usesDecimalComma = false
+    var historyPath: String?
 
     var readsDevice: Bool { listsDevices || deviceNumber != nil }
+
+    var exportKind: HistoryExportKind? {
+        switch exportFormat {
+        case "csv": exportsDays ? .daysCSV : .samplesCSV
+        case "json": .json
+        default: nil
+        }
+    }
 }
 
 func parseOptions(_ arguments: [String]) -> Options? {
@@ -67,6 +89,14 @@ func parseOptions(_ arguments: [String]) -> Options? {
         case "--input":
             guard let path = remaining.popFirst() else { return nil }
             options.inputPath = path
+        case "--export":
+            guard let format = remaining.popFirst(), format == "csv" || format == "json" else { return nil }
+            options.exportFormat = format
+        case "--days": options.exportsDays = true
+        case "--decimal-comma": options.usesDecimalComma = true
+        case "--history":
+            guard let path = remaining.popFirst() else { return nil }
+            options.historyPath = path
         case "--devices": options.listsDevices = true
         case "--device":
             guard let next = remaining.popFirst(), let number = Int(next), number > 0 else { return nil }
@@ -74,6 +104,15 @@ func parseOptions(_ arguments: [String]) -> Options? {
         default: return nil
         }
     }
+    if options.exportFormat != nil {
+        // An export reads only the history: no other output, input or device.
+        guard options.format == .text, options.watchInterval == nil, options.inputPath == nil, !options.readsDevice
+        else { return nil }
+    }
+    // --days and --decimal-comma shape a CSV export; --history names what to export.
+    guard options.exportFormat == "csv" || !(options.exportsDays || options.usesDecimalComma),
+        options.exportFormat != nil || options.historyPath == nil
+    else { return nil }
     if options.readsDevice {
         // A device is read once, live: no --watch, --input or --smc.
         guard options.watchInterval == nil, options.inputPath == nil, options.format != .smc else { return nil }
@@ -169,6 +208,36 @@ func readDevices(_ options: Options) async throws -> Never {
     try renderDevice(capture, as: options.format)
 }
 
+/// Writes the recorded history to standard output.
+func exportHistory(_ kind: HistoryExportKind, _ options: Options) async -> Never {
+    let directory =
+        options.historyPath.map { URL(fileURLWithPath: $0) }
+        ?? HistoryStore.defaultDirectory(bundleIdentifier: HistoryStore.appBundleIdentifier)
+    // A file in its place has nothing to export either.
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue
+    else {
+        fail(
+            "bpulse: no history at \(directory.path). BatteryPulse records it while it runs (Settings → Advanced → History).",
+            code: 2)
+    }
+    // Only BatteryPulse's own folder is known to be this Mac's.
+    var source: HistoryExportSource?
+    #if os(macOS)
+    if options.historyPath == nil { source = .mac(ProcessInfo.processInfo.operatingSystemVersion) }
+    #endif
+    let info = HistoryExportInfo(exportedAt: Date(), generator: "bpulse", source: source)
+    do {
+        let data = try await HistoryExport.data(
+            kind, from: HistoryStore(directory: directory),
+            dialect: options.usesDecimalComma ? .decimalComma : .standard, info: info, timeZone: .current)
+        try FileHandle.standardOutput.write(contentsOf: data)
+    } catch {
+        fail("bpulse: cannot export the history: \(error.localizedDescription)", code: 1)
+    }
+    exit(0)
+}
+
 /// Lists the SMC keys that look battery-related. Every listed key's type is read; values only for
 /// the battery prefixes, because a few SMC keys change state when read.
 @MainActor
@@ -215,6 +284,9 @@ if arguments.contains("-h") || arguments.contains("--help") {
 }
 guard let options = parseOptions(arguments) else {
     fail(usage, code: 1)
+}
+if let kind = options.exportKind {
+    await exportHistory(kind, options)
 }
 if options.readsDevice {
     try await readDevices(options)

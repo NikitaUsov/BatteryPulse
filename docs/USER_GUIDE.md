@@ -165,6 +165,78 @@ the daily summary for good, in `~/Library/Application Support/io.github.nikitaus
 on your Mac only.
 Turn recording off or clear it in Settings → Advanced. Nothing is recorded during Demo Mode.
 
+### Exporting history
+
+**Export** in History's toolbar (the square with an arrow) saves the history as a file:
+
+- **Readings by Minute…**: the minute readings as CSV, one row per reading.
+- **Battery Health by Day…**: the daily battery health as CSV, one row per day.
+- **All History…**: both in one JSON file, for scripts.
+
+A file holds everything BatteryPulse keeps (about the last 10 days of readings and every day's
+health), whatever period the charts show. Export works on what was already recorded when
+recording is off, and in Demo Mode too, since History keeps showing the recorded data. The
+file name tells what's in it and the day of the export, such as
+`BatteryPulse-Mac-samples-2026-10-15.csv`; no file or file name contains your Mac's name or
+serial number.
+
+**CSV for spreadsheets.** The file follows your region's number format (System Settings →
+General → Language & Region) at the moment of export, so spreadsheet apps such as Numbers
+open it correctly with a double-click. Where decimals are written with a comma, fields are
+separated by semicolons (`83,5;charging`); elsewhere by commas, with a decimal point
+(`83.5,charging`). If a spreadsheet app still puts everything into one column, import the file
+with its text import and choose the separator. Column names are in English in every language,
+an empty field means the value wasn't available, and `1` and `0` stand for yes and no.
+[`bpulse --export`](#history-export) writes either form on request.
+
+Readings by Minute:
+
+| Column | Meaning |
+|---|---|
+| `time` | The moment of the reading, ISO 8601 with its offset from UTC: `2026-10-14T13:25:00+03:00` |
+| `localTime` | The same moment as a local date and time that spreadsheets read as a date: `2026-10-14 13:25:00` |
+| `event` | `launch` on the first reading after BatteryPulse started, `wake` on the first after the Mac woke; empty otherwise |
+| `chargePercent` | Charge, % |
+| `chargeState` | `charging`, `discharging`, `charged` (full on the adapter), `notCharging` (held below full on the adapter) or `unknown` |
+| `isExternalPowerConnected` | `1` on the power adapter, `0` on battery |
+| `batteryWatts` | Power into the battery, W; negative while the battery discharges |
+| `systemLoadWatts` | What the whole Mac uses, W |
+| `temperatureCelsius` | Battery temperature, °C |
+| `remainingMAh` | Remaining capacity, mAh |
+| `fullChargeMAh` | Full-charge capacity, mAh |
+
+Battery Health by Day:
+
+| Column | Meaning |
+|---|---|
+| `day` | The day, `2026-10-14`, in the time zone the Mac had when it was recorded |
+| `healthPercent` | Maximum capacity, %, capped at 100 like System Settings |
+| `capacityToDesignPercent` | Capacity compared with design, %, not capped: a new battery can hold more than its design |
+| `nominalChargeCapacityMAh` | Nominal charge capacity, mAh |
+| `fullChargeCapacityMAh` | Full-charge capacity, mAh |
+| `cycleCount` | Charge cycles |
+
+**Gaps.** Readings more than 10 minutes apart belong to different stretches: the Mac slept,
+BatteryPulse wasn't running, or recording was paused (turned off, or during Demo Mode). After
+sleep or a launch, the first reading names the reason in `event`. History's charts break the
+line at the same places.
+
+**Times** are written in the Mac's time zone at the moment of export, each with its own offset
+from UTC, so `time` is exact across daylight-saving changes. BatteryPulse doesn't remember
+where a reading was taken: after a trip, the readings appear in the current time zone. When
+the clocks go back, `localTime` repeats an hour, and `time` tells those readings apart.
+
+**JSON.** All History writes one object with `format` (`"BatteryPulse history"`),
+`formatVersion` (1), `exportedAt`, `generator` (BatteryPulse and its version), `source` (what
+the history belongs to: `kind` `"mac"` and the macOS version as `osVersion`), `units` (the unit
+of every key that has one), then `samples` and `days`. Their keys are the CSV columns, without
+`localTime`. Every key is always present: a missing value is `null`, yes and no are `true` and
+`false`, and numbers always use a decimal point.
+
+**Compatibility.** Columns and keys are only ever added at the end. If a column is renamed or
+removed, or its meaning changes, `formatVersion` goes up and the release notes say so. Scripts
+should find columns by name and ignore the ones they don't know.
+
 ## Notifications
 
 In Settings → Notifications, BatteryPulse can tell you:
@@ -326,6 +398,28 @@ language. To use a different language for BatteryPulse only:
 
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
+
+### History export
+
+`bpulse --export csv` prints the minute readings BatteryPulse recorded on this Mac, everything
+it keeps (about the last 10 days); `--export csv --days` prints the daily battery health, and
+`--export json` both, in the formats [Exporting history](#exporting-history) describes.
+`bpulse` always writes CSV with commas and decimal points, the same in every region;
+`--decimal-comma` switches to semicolons and decimal commas, which spreadsheets expect where
+decimals are written with a comma. Times are in the current time zone (set `TZ` to change it).
+
+```sh
+swift run bpulse --export csv > samples.csv
+swift run bpulse --export csv --days --decimal-comma > days.csv
+swift run bpulse --export json > history.json
+```
+
+`--history <folder>` exports another history folder, such as one copied from another Mac; the
+JSON's `source` is then `null`, since `bpulse` can't tell whose history it is. `bpulse` reads
+the files the app writes, so it works while the app runs. The app saves a day's summary at most
+once an hour, so the latest daily row can be up to an hour behind; minute readings are saved
+right away. When there is no history folder (BatteryPulse hasn't recorded on this Mac, or the
+folder given doesn't exist), `bpulse` says so and exits with status 2.
 
 ### iPhone and iPad (preview)
 

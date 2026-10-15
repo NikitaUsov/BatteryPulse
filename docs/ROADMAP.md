@@ -372,8 +372,12 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
   (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
   Bluetooth permission, which ad-hoc signing loses on every update.
-- [ ] **CSV/JSON export** of history (0.6): public APIs only (`fileExporter`), about two days,
-  formatting tested on Linux; CSV dialect follows the locale's decimal separator.
+- [x] **CSV/JSON export** of history (0.6): an Export menu in History's toolbar (minute readings
+  or daily health as CSV, both as JSON, everything the store keeps) and `bpulse --export`.
+  Public APIs only (`fileExporter` with a `Transferable` file); the formatting is
+  locale-independent and tested on Linux; the CSV dialect follows the region's decimal
+  separator. Still to check on the M5: the files in spreadsheet apps in a Russian and an English
+  region, and the Save panel.
 - [ ] **Charge limiting.** The old SMC route is closed: on macOS 27 firmware the charge-inhibit
   keys that charge limiters used are gone or behind an Apple-private entitlement, even for root
   and even with a paid account. macOS 26.4+ has its own Charge Limit (80–100 %); a third-party
