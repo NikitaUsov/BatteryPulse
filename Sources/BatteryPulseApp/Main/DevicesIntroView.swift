@@ -11,6 +11,7 @@ struct DevicesIntroView: View {
 
     var body: some View {
         content
+            .sheetContent()
             // Listing is how a device on Wi-Fi shows up; only in a window that can be seen.
             .task(id: motion.isVisible) {
                 if motion.isVisible { devices.listIfStale() }

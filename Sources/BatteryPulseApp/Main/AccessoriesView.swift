@@ -23,6 +23,7 @@ struct AccessoriesView: View {
                 systemImage: AccessoryKind.fallbackSymbolName,
                 description: Text("This version of macOS doesn't report accessory batteries to apps.")
             )
+            .sheetContent()
         } else if monitor.isAvailable == nil {
             ProgressView()
         } else if monitor.accessories.isEmpty {
@@ -32,6 +33,7 @@ struct AccessoriesView: View {
                 description: Text(
                     "Connect a Bluetooth keyboard, mouse, trackpad or headphones to see its battery here.")
             )
+            .sheetContent()
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -45,6 +47,7 @@ struct AccessoriesView: View {
                     Text("Accessories show here while they're connected to this Mac.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .sheetContent()
                 }
                 .padding(20)
                 .frame(maxWidth: 820)
