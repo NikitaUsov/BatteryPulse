@@ -91,6 +91,9 @@ dependencies.
 - *Copy Report*: a plain-text report without serial numbers.
 - English and Russian, chosen like any Mac app in System Settings → Language & Region.
 - A welcome window with the starting settings on first launch.
+- Motion that follows the battery: the charge rolls, gauges fill and the bolt draws in when
+  charging starts, with fades under Reduce Motion and nothing animating in windows you can't
+  see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar), plain cards.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
   history while recording is on, so it uses almost no CPU in the background. The only network requests are an optional
@@ -126,6 +129,8 @@ swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi (pre
 swift run bpulse --device 1   # battery of device 1; add --json, or --raw for a redacted capture
 ```
 
+The device report shows Maximum capacity as iOS Settings does (checked against an iPhone 17
+Pro Max on iOS 27), the cycle count, the date of first use and the battery's temperature.
 `--input` renders a saved capture, of a Mac or of a device. Reading an iPhone or iPad needs the
 device to trust this Mac (unlock it and tap Trust); BatteryPulse never pairs by itself. The
 app shows devices in a later version.

@@ -11,23 +11,38 @@ struct CompactView: View {
     private let formatter = BatteryFormatter.app
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let snapshot = monitor.snapshot {
-                content(snapshot)
-            } else if monitor.hasBattery == false {
-                ContentUnavailableView(
-                    "No Battery",
-                    systemImage: "battery.0percent",
-                    description: Text("This Mac has no internal battery.")
-                )
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: 200)
+        CardGroup {
+            VStack(alignment: .leading, spacing: 14) {
+                if let snapshot = monitor.snapshot {
+                    content(snapshot)
+                } else if monitor.hasBattery == false {
+                    ContentUnavailableView(
+                        "No Battery",
+                        systemImage: "battery.0percent",
+                        description: Text("This Mac has no internal battery.")
+                    )
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                }
             }
         }
         .padding(18)
         .frame(width: 380)
+        // The window sizes to its content, so Demo Mode's animated changes stop here: rows that
+        // come and go, and with them the window's height, change at once. The percent and the
+        // battery glyph still animate through their own animations, keyed on whole values.
+        .transaction { $0.animation = nil }
         .toolbar {
+            if demo.isActive {
+                // A status readout, not a control, so it stays off the toolbar's glass.
+                ToolbarItem(placement: .status) {
+                    Text("Demo")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(.orange)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
             ToolbarItem {
                 Button("Full Window", systemImage: "arrow.up.left.and.arrow.down.right") {
                     WindowOpener.switchWindowStyle(compact: false)
@@ -36,8 +51,7 @@ struct CompactView: View {
                 .help("Show every detail in the full window")
             }
         }
-        .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "compact") }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "compact") }
+        .liveRefresh(monitor, every: .seconds(2), client: "compact")
         .trackedWindow(WindowID.compact)
     }
 
@@ -54,7 +68,7 @@ struct CompactView: View {
                 Text(s.chargePercent.map { formatter.percent($0) } ?? "—")
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .monospacedDigit()
-                    .contentTransition(.numericText())
+                    .numericValue(s.chargePercent)
                 Text(Phrases.stateWithPower(s, formatter))
                     .font(.callout)
                 if let time = Phrases.timeRemaining(s, formatter) {
@@ -64,13 +78,12 @@ struct CompactView: View {
                 }
             }
             Spacer(minLength: 0)
-            if demo.isActive {
-                Text("Demo")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
-            }
         }
         .accessibilityElement(children: .combine)
+        // The "Demo" badge sits in the toolbar, away from the numbers; VoiceOver still hears
+        // with the readout that it is simulated. Two Text values, not a ternary of literals, so
+        // the word is localized.
+        .accessibilityValue(demo.isActive ? Text("Demo") : Text(verbatim: ""))
 
         if s.currentCapacityMAh != nil || s.designCapacityMAh != nil {
             Card {

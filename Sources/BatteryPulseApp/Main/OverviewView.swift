@@ -6,21 +6,28 @@ import SwiftUI
 struct OverviewView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
+    @Environment(\.motion) private var motion
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                hero
-                gauges
-                if snapshot.currentCapacityMAh != nil || snapshot.designCapacityMAh != nil {
-                    Card("Capacity") {
-                        CapacityBars(snapshot: snapshot, formatter: formatter)
+            CardGroup {
+                VStack(spacing: 16) {
+                    hero
+                    gauges
+                    if snapshot.currentCapacityMAh != nil || snapshot.designCapacityMAh != nil {
+                        Card("Capacity") {
+                            CapacityBars(snapshot: snapshot, formatter: formatter)
+                        }
+                    }
+                    Card("Power Flow") {
+                        PowerFlowView(snapshot: snapshot, formatter: formatter)
                     }
                 }
-                Card("Power Flow") {
-                    PowerFlowView(snapshot: snapshot, formatter: formatter)
-                }
             }
+            // A new charge state brings or removes the hero's time line, which changes the height
+            // of the cards above the rest: the whole page moves as one, once per event. Under
+            // Reduce Motion the cards snap into place and only the time line fades.
+            .animation(motion.change, value: BatteryMotionKey(snapshot).chargeState)
             .padding(20)
             .frame(maxWidth: 820)
             .frame(maxWidth: .infinity)
@@ -44,12 +51,14 @@ struct OverviewView: View {
                     Text(snapshot.chargePercent.map { formatter.percent($0) } ?? "—")
                         .font(.system(size: 46, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                        .contentTransition(.numericText())
+                        .numericValue(snapshot.chargePercent)
+                    // No animation of its own: the watts in it change with every reading.
                     Text(Phrases.stateWithPower(snapshot, formatter))
                         .font(.title3)
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .foregroundStyle(.secondary)
+                            .transition(motion.fadeTransition)
                     }
                 }
                 Spacer(minLength: 0)
@@ -65,6 +74,7 @@ struct OverviewView: View {
                     title: "Charge",
                     fraction: percent / 100,
                     value: formatter.percent(percent),
+                    number: percent,
                     caption: snapshot.hardwareChargePercent.map {
                         String(localized: "Gauge: \(formatter.percent($0, fractionDigits: 1))")
                     },
@@ -80,6 +90,7 @@ struct OverviewView: View {
                     title: "Maximum capacity",
                     fraction: health / 100,
                     value: formatter.percent(health),
+                    number: health,
                     caption: Phrases.condition(snapshot.healthCondition),
                     tint: BatteryPresentation.healthTier(for: snapshot).color
                 )
@@ -90,6 +101,7 @@ struct OverviewView: View {
                     title: "Cycle count",
                     fraction: Double(cycles) / Double(rated),
                     value: cycles.formatted(),
+                    number: Double(cycles),
                     caption: String(localized: "of \(rated.formatted()) rated"),
                     tint: .blue
                 )

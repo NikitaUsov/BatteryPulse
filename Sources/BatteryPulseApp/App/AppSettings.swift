@@ -20,6 +20,10 @@ enum AppSettings {
     static let legacyMenuBarStyleKey = "menuBarStyle"
     static let legacyMenuBarIconKey = "menuBarIcon"
     static let showDeveloperKey = "showDeveloperSection"
+    /// Developer option "Glass Cards" (Settings → Advanced, shown with the Developer section):
+    /// draws the content cards in Liquid Glass. Off by default, and ignored while the Developer
+    /// section is off; Apple keeps glass out of the content layer, so it stays an experiment.
+    static let glassCardsKey = "glassCards"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
     /// The on/off switch for update checks before 0.4; ``updateFrequencyKey`` replaced it.
@@ -212,6 +216,10 @@ enum WindowOpener {
 }
 
 /// Registers a window for the Dock icon policy and brings the app forward when it opens.
+///
+/// `.motionPolicy()` is not applied here but around each root view in `BatteryPulseApp`: root
+/// views apply this modifier inside their own body, where it would hide `\.motion` from the root
+/// view's own `@Environment`.
 struct TrackedWindow: ViewModifier {
     let id: String
     @Environment(\.openWindow) private var openWindow

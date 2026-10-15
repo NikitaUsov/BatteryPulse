@@ -11,6 +11,7 @@ struct PopoverView: View {
     @Environment(UpdateChecker.self) private var updater
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.motion) private var motion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -28,12 +29,7 @@ struct PopoverView: View {
             }
 
             if let release = updater.pendingRelease {
-                Button {
-                    WindowOpener.show(WindowID.update)
-                } label: {
-                    Label("Update available: \(release.version.description)", systemImage: "arrow.down.circle.fill")
-                }
-                .buttonStyle(.borderless)
+                UpdateAvailableRow(release: release)
             }
 
             if demo.isActive {
@@ -46,6 +42,11 @@ struct PopoverView: View {
                     Button("Stop Demo") { demo.stop() }
                         .controlSize(.small)
                 }
+                // Fades in when Demo Mode starts while the panel is open, and goes at once when
+                // it stops, so it never fades out over the buttons that move up into its place.
+                .transition(
+                    AnyTransition.asymmetric(
+                        insertion: AnyTransition.opacity.animation(motion.quickFade), removal: .identity))
             }
 
             Divider()
@@ -85,8 +86,38 @@ struct PopoverView: View {
         }
         .padding(16)
         .frame(width: 300)
-        .onAppear { monitor.setLiveRefreshInterval(.seconds(2), for: "popover") }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "popover") }
+        // The panel sizes to its content, so Demo Mode's animated changes stop here: rows that
+        // come and go, and with them the panel's height, change at once. The percent and the
+        // battery glyph still animate through their own animations, keyed on whole values.
+        .transaction { $0.animation = nil }
+        // Polls while the panel is open and on screen.
+        .liveRefresh(monitor, every: .seconds(2), client: "popover")
+    }
+}
+
+/// Opens the Software Update window. Its symbol bounces once when a version first shows up here,
+/// so a new update is noticed; reopening the panel doesn't repeat it.
+private struct UpdateAvailableRow: View {
+    let release: ReleaseInfo
+    @Environment(\.motion) private var motion
+    @State private var bounces = 0
+    /// The version whose arrival has been marked, for the life of the app.
+    @MainActor private static var markedVersion: AppVersion?
+
+    var body: some View {
+        Button {
+            WindowOpener.show(WindowID.update)
+        } label: {
+            Label("Update available: \(release.version.description)", systemImage: "arrow.down.circle.fill")
+                .symbolEffect(.bounce, options: .nonRepeating, value: bounces)
+        }
+        .buttonStyle(.borderless)
+        .task(id: release.version) {
+            // A one-off extra: none under Reduce Motion or Low Power Mode, or while hidden.
+            guard Self.markedVersion != release.version, motion.allowsFlourish else { return }
+            Self.markedVersion = release.version
+            bounces += 1
+        }
     }
 }
 
@@ -108,6 +139,7 @@ private struct PopoverSummary: View {
                     Text(snapshot.chargePercent.map { formatter.percent($0) } ?? "—")
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .monospacedDigit()
+                        .numericValue(snapshot.chargePercent)
                     Text(Phrases.stateWithPower(snapshot, formatter))
                         .font(.subheadline)
                     if let time = Phrases.timeRemaining(snapshot, formatter) {

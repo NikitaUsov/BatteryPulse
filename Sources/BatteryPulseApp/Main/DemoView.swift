@@ -5,6 +5,7 @@ import SwiftUI
 /// The Demo Mode page: start the tour or pick a scene or animation by hand.
 struct DemoView: View {
     @Environment(DemoController.self) private var demo
+    @Environment(\.motion) private var motion
 
     var body: some View {
         @Bindable var demo = demo
@@ -27,6 +28,10 @@ struct DemoView: View {
                         Button("Stop Demo", systemImage: "stop.fill") { demo.stop() }
                     }
                 }
+                // The buttons swap when the demo starts, pauses, resumes or stops; the row's
+                // layout changes, so under Reduce Motion they swap at once.
+                .animation(motion.change, value: demo.isActive)
+                .animation(motion.change, value: demo.isPlaying)
             }
 
             Section {
@@ -62,6 +67,7 @@ struct DemoView: View {
 private struct DemoStepRow: View {
     let step: DemoController.Step
     @Environment(DemoController.self) private var demo
+    @Environment(\.motion) private var motion
 
     var body: some View {
         Button {
@@ -83,6 +89,9 @@ private struct DemoStepRow: View {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
                         .accessibilityLabel("Showing")
+                        // Its own fade: the row's layout doesn't change, and under Reduce Motion
+                        // the demo's step change carries no animation.
+                        .transition(motion.fadeTransition)
                 }
             }
             .contentShape(.rect)
@@ -93,44 +102,83 @@ private struct DemoStepRow: View {
 
 /// Floating controls at the bottom of the main window while Demo Mode is on, so it's always
 /// clear the numbers are simulated and the demo can be stepped through or stopped from any page.
+///
+/// The only custom Liquid Glass in the app: a control that floats over content. It materializes
+/// when the demo starts and dissolves when it stops (DemoController changes the step inside an
+/// animation), and the capsule follows the width of each scene's title. Under Reduce Motion
+/// DemoController's changes carry no animation: the bar only fades in and out, with a fade of
+/// its own, and the capsule takes each new title's width at once.
 struct DemoControlBar: View {
     @Environment(DemoController.self) private var demo
+    @Environment(\.motion) private var motion
+    @Namespace private var glass
 
     var body: some View {
-        if let step = demo.step {
-            HStack(spacing: 12) {
-                Label("Demo", systemImage: "play.rectangle.on.rectangle")
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(.orange)
-                Text(step.title)
-                    .font(.callout)
-                    .lineLimit(1)
-                Divider()
-                    .frame(height: 16)
-                Group {
-                    Button("Previous Scene", systemImage: "backward.fill") { demo.previous() }
-                        .help("Previous Scene")
-                    if demo.isPlaying {
-                        Button("Pause", systemImage: "pause.fill") { demo.togglePlayback() }
-                            .help("Pause")
-                    } else {
-                        Button("Play", systemImage: "play.fill") { demo.togglePlayback() }
-                            .help("Play")
-                    }
-                    Button("Next Scene", systemImage: "forward.fill") { demo.next() }
-                        .help("Next Scene")
-                    Button("Stop Demo", systemImage: "xmark") { demo.stop() }
-                        .help("Stop Demo")
+        GlassEffectContainer {
+            ZStack {
+                if let step = demo.step {
+                    bar(step)
+                        // A floating control, so it belongs to the Liquid Glass layer. Interactive:
+                        // the capsule responds to clicks on its buttons (macOS 27).
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .glassEffectID("demoBar", in: glass)
+                        // Under Reduce Motion the bar only fades: no materializing into or out of
+                        // a blur.
+                        .glassEffectTransition(motion.level == .full ? .materialize : .identity)
+                        .padding(.bottom, 14)
+                        .transition(motion.fadeTransition)
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            // A floating control, so it belongs to the Liquid Glass layer.
-            .glassEffect(in: .capsule)
-            .padding(.bottom, 14)
         }
+    }
+
+    private func bar(_ step: DemoController.Step) -> some View {
+        HStack(spacing: 12) {
+            Label("Demo", systemImage: "play.rectangle.on.rectangle")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.orange)
+            // Crossfades in place to the next scene's title; an `.id` with a transition would put
+            // both titles side by side in the HStack while they fade.
+            Text(step.title)
+                .font(.callout)
+                .lineLimit(1)
+                .contentTransition(.opacity)
+            Divider()
+                .frame(height: 16)
+            Group {
+                Button("Previous Scene", systemImage: "backward.fill") { demo.previous() }
+                    .help("Previous Scene")
+                playPauseButton
+                Button("Next Scene", systemImage: "forward.fill") { demo.next() }
+                    .help("Next Scene")
+                Button("Stop Demo", systemImage: "xmark") { demo.stop() }
+                    .help("Stop Demo")
+            }
+            .labelStyle(.iconOnly)
+            // Controls on glass stay borderless: no glass on glass.
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    /// One button whose symbol swaps between Play and Pause, in place, also under Reduce Motion.
+    private var playPauseButton: some View {
+        Button {
+            demo.togglePlayback()
+        } label: {
+            Label {
+                if demo.isPlaying { Text("Pause") } else { Text("Play") }
+            } icon: {
+                Image(systemName: demo.isPlaying ? "pause.fill" : "play.fill")
+                    .contentTransition(motion.symbolSwap)
+                    .animation(motion.crossfade, value: demo.isPlaying)
+                    // Where the button sits follows the bar: when a new title changes the bar's
+                    // width in the same update, the symbol doesn't slide with its own animation.
+                    .geometryGroup()
+            }
+        }
+        .help(demo.isPlaying ? Text("Pause") : Text("Play"))
     }
 }
 #endif

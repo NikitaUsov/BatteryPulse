@@ -16,7 +16,8 @@ import Testing
         #expect(b.fullChargeCapacityMAh == 2633, "AppleRawMaxCapacity before iOS 27")
         #expect(b.nominalChargeCapacityMAh == 2564)
         #expect(b.designCapacityMAh == 3092)
-        #expect(b.maximumCapacityPercent == nil, "no key publishes it; never calculated")
+        // No key publishes it here, so nominal ÷ design, which iOS Settings shows.
+        #expect(abs(try #require(b.maximumCapacityPercent) - 82.924) < 0.001)
         #expect(b.cycleCount == 768)
         #expect(b.designCycleCount == nil)
         #expect(b.temperatureCelsius == 35.5)
@@ -55,7 +56,7 @@ import Testing
         let b = try #require(IDeviceBatteryParser.battery(entry: SyntheticIDevice.agedIPadEntry))
         #expect(abs(try #require(b.nominalToDesignPercent) - 90.719) < 0.001)
         #expect(abs(try #require(b.fullChargeToDesignPercent) - 88.204) < 0.001)
-        #expect(b.maximumCapacityPercent == nil)
+        #expect(b.maximumCapacityPercent == b.nominalToDesignPercent)
     }
 
     @Test func missingKeysStayNil() throws {
@@ -151,14 +152,27 @@ import Testing
         #expect(try #require(IDeviceBatteryParser.battery(entry: entry)).chargeState == .charged)
     }
 
-    /// `MaximumCapacityPercent` has not been seen in an iOS registry; if a device publishes it,
-    /// it is shown as is, and only when it is a plausible percentage.
-    @Test func maximumCapacityOnlyFromItsKey() throws {
+    /// The device's own figure wins (`MaximumCapacityPercent`, or iOS 27's
+    /// `LifetimeData.NccpFiltered`); otherwise nominal ÷ design, capped at 100 % like iOS Settings.
+    @Test func maximumCapacityAsIOSShowsIt() throws {
         var entry = SyntheticIDevice.agedIPadEntry
+        let computed = try #require(IDeviceBatteryParser.battery(entry: entry))
+        #expect(computed.maximumCapacityPercent == computed.nominalToDesignPercent.map { min($0, 100) })
         entry["MaximumCapacityPercent"] = .int(91)
         #expect(try #require(IDeviceBatteryParser.battery(entry: entry)).maximumCapacityPercent == 91)
         entry["MaximumCapacityPercent"] = .int(0)
-        #expect(try #require(IDeviceBatteryParser.battery(entry: entry)).maximumCapacityPercent == nil)
+        let pack: PropertyDictionary = [
+            "BatteryData": .dictionary(["LifetimeData": .dictionary(["NccpFiltered": .int(88)])])
+        ]
+        #expect(try #require(IDeviceBatteryParser.battery(entry: entry, pack: pack)).maximumCapacityPercent == 88)
+    }
+
+    @Test func newBatteryIsCappedAt100() throws {
+        var entry = SyntheticIDevice.agedIPadEntry
+        entry["NominalChargeCapacity"] = .int(9_000)
+        entry["BatteryData"] = nil
+        entry["DesignCapacity"] = .int(8_000)
+        #expect(try #require(IDeviceBatteryParser.battery(entry: entry)).maximumCapacityPercent == 100)
     }
 
     /// `ErrorCondition` and `PermanentFailureStatus` are what Apple's AppleSmartBattery driver

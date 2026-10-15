@@ -10,20 +10,19 @@ struct WelcomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .center, spacing: 24) {
-                AppIconView()
+                // The pulse line draws in once, the first time the window appears after launch.
+                AppIconView(drawsIn: true)
                     .frame(width: 128, height: 128)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Welcome to BatteryPulse")
                         .font(.title2.weight(.semibold))
-                    Group {
-                        if showInMenuBar {
-                            Text(
-                                "BatteryPulse is running in your menu bar. Click its icon for a quick look, or open the main window for every detail."
-                            )
-                        } else {
-                            Text(
-                                "BatteryPulse runs as a regular app. Open it from the Dock or the Applications folder.")
-                        }
+                    // Changes with "Show in menu bar" below.
+                    Crossfade(showsFirst: showInMenuBar) {
+                        Text(
+                            "BatteryPulse is running in your menu bar. Click its icon for a quick look, or open the main window for every detail."
+                        )
+                    } otherwise: {
+                        Text("BatteryPulse runs as a regular app. Open it from the Dock or the Applications folder.")
                     }
                     .foregroundStyle(.secondary)
                 }

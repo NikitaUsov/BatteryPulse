@@ -39,7 +39,9 @@ enum Phrases {
 
     /// "Charging at 31.3 W" / "Discharging at 7.5 W", or just the state.
     static func stateWithPower(_ s: BatterySnapshot, _ f: BatteryFormatter) -> String {
-        guard let watts = s.batteryPowerWatts, abs(watts) >= 0.05 else { return state(s) }
+        guard let watts = s.batteryPowerWatts, abs(watts) >= BatteryPresentation.powerFlowDeadBandWatts else {
+            return state(s)
+        }
         let power = f.watts(abs(watts))
         switch s.chargeState {
         case .charging: return String(localized: "Charging at \(power)")

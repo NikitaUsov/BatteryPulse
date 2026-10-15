@@ -7,18 +7,65 @@ import SwiftUI
 struct UpdateView: View {
     @Environment(UpdateChecker.self) private var updater
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.motion) private var motion
+    /// Counts failed installs while the window is open; the warning symbol bounces on each.
+    @State private var failures = 0
+
+    /// The kinds of status, without their values: a new kind crossfades the window's content.
+    private enum StatusKind: Equatable {
+        case idle, checking, upToDate, failed, available
+    }
+
+    /// The installer's phases, without the download fraction that changes five times a second.
+    private enum PhaseKind: Equatable {
+        case idle, downloading, verifying, installing, relaunching, failed
+    }
+
+    private var statusKind: StatusKind {
+        switch updater.status {
+        case .idle: .idle
+        case .checking: .checking
+        case .upToDate: .upToDate
+        case .failed, .rateLimited: .failed
+        case .available: .available
+        }
+    }
+
+    private var phaseKind: PhaseKind {
+        switch updater.installer.phase {
+        case .idle: .idle
+        case .downloading: .downloading
+        case .verifying: .verifying
+        case .installing: .installing
+        case .relaunching: .relaunching
+        case .failed: .failed
+        }
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
             AppIconView()
                 .frame(width: 64, height: 64)
-            VStack(alignment: .leading, spacing: 12) {
-                content
+            // A new status fades in. The window sizes to its content, so the old status goes at
+            // once and is never laid out beside or above the new one: the window resizes once,
+            // to the new content, and nothing else is animated. The ZStack keeps the new status
+            // in the old one's place while it is swapped.
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 12) {
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(statusKind)
+                .transition(motion.replacement)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(24)
         .frame(width: 540)
+        .onChange(of: phaseKind) { _, phase in
+            // One bounce of the warning symbol per failure; a one-off extra.
+            if phase == .failed, motion.allowsFlourish { failures += 1 }
+        }
         .trackedWindow(WindowID.update)
     }
 
@@ -83,7 +130,15 @@ struct UpdateView: View {
             }
             .frame(height: 220)
             .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
-            installStatus(release)
+            // A new phase fades in where the old one was, which goes at once: the window resizes
+            // once per phase and the buttons below move at most once, with it. The download bar
+            // inside a phase is never animated, because its fraction changes five times a second.
+            ZStack(alignment: .topLeading) {
+                installStatus(release)
+                    .id(phaseKind)
+                    .transition(motion.replacement)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             installActions(release)
         }
     }
@@ -119,6 +174,7 @@ struct UpdateView: View {
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.yellow)
+                        .symbolEffect(.bounce, options: .nonRepeating, value: failures)
                 }
                 if error.fallsBackToDownload {
                     Text("You can download the update and install it from the DMG instead.")
@@ -213,15 +269,20 @@ struct UpdateView: View {
 /// Shown once after an update: what this version adds.
 struct WhatsNewView: View {
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.motion) private var motion
+    /// Set when the window appears: the rows enter, one after another, once.
+    @State private var hasEntered = false
 
     var body: some View {
+        // Only with one-off extras allowed; otherwise the rows are simply there.
+        let entrance = StaggeredEntrance(motion)
         VStack(spacing: 22) {
             AppIconView()
                 .frame(width: 88, height: 88)
             Text("What's New in BatteryPulse")
                 .font(.title.weight(.semibold))
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(WhatsNew.features) { feature in
+                ForEach(Array(WhatsNew.features.enumerated()), id: \.element.id) { index, feature in
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: feature.symbol)
                             .font(.title2)
@@ -236,6 +297,12 @@ struct WhatsNewView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    // Fades in and rises a few points, a moment after the row above; the layout
+                    // never changes, so the window keeps its size.
+                    .opacity(hasEntered ? 1 : entrance.opacityBeforeEntering)
+                    .offset(y: hasEntered ? 0 : entrance.offsetBeforeEntering)
+                    .animation(
+                        entrance.plays ? motion.change?.delay(entrance.delay(forRow: index)) : nil, value: hasEntered)
                 }
             }
             Button("Continue") { dismissWindow(id: WindowID.whatsNew) }
@@ -244,6 +311,7 @@ struct WhatsNewView: View {
         }
         .padding(32)
         .frame(width: 520)
+        .onAppear { hasEntered = true }
         .trackedWindow(WindowID.whatsNew)
     }
 }
@@ -253,7 +321,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 4, 0])
+    nonisolated static let version = AppVersion(parts: [0, 5, 0])
 
     struct Feature: Identifiable {
         let id: Int
@@ -264,28 +332,21 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "menubar.rectangle", title: "Menu bar styles",
+            id: 1, symbol: "wand.and.sparkles", title: "Motion that follows the battery",
             detail:
-                "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar."
+                "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place."
         ),
         Feature(
-            id: 2, symbol: "arrow.down.app", title: "Install updates from the app",
+            id: 2, symbol: "capsule.on.rectangle", title: "Liquid Glass controls",
             detail:
-                "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General."
+                "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass."
         ),
         Feature(
-            id: 3, symbol: "bolt.fill", title: "Charging at once",
-            detail: "Charging and the battery's power show a few seconds after you plug in, read live from the battery."
-        ),
+            id: 3, symbol: "leaf", title: "Easy on the battery",
+            detail: "Windows you can't see stop reading the battery and stop animating."),
         Feature(
-            id: 4, symbol: "thermometer.medium", title: "Temperature in the menu bar",
-            detail: "The battery's temperature in the menu bar and its popover."),
-        Feature(
-            id: 5, symbol: "info.circle", title: "About BatteryPulse",
-            detail: "The version, links and license, from the BatteryPulse menu or the popover."),
-        Feature(
-            id: 6, symbol: "list.bullet.rectangle", title: "More explanations in Raw Data",
-            detail: "The battery pack, its cells and the charger entries now explain their keys."),
+            id: 4, symbol: "line.3.horizontal.decrease.circle", title: "Raw Data by source",
+            detail: "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar."),
     ]
 }
 #endif

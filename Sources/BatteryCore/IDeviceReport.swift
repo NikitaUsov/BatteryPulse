@@ -2,8 +2,8 @@ import Foundation
 
 /// Plain-text report of an iPhone or iPad battery read (`bpulse --device <n>`).
 ///
-/// Locale-independent like ``BatteryReport``. Both capacity ratios are printed, because which of
-/// them iOS Settings calls "Maximum Capacity" is still to be checked on a real device.
+/// Locale-independent like ``BatteryReport``. "Maximum capacity" is the figure iOS Settings shows;
+/// both capacity ratios follow it for reference.
 public enum IDeviceReport {
     public static func lines(for capture: IDeviceCapture) -> [BatteryReport.Line] {
         var lines: [BatteryReport.Line] = []
@@ -33,13 +33,14 @@ public enum IDeviceReport {
             add("Charge", value)
         }
         add("State", stateDescription(b.chargeState))
-        add("Maximum capacity", b.maximumCapacityPercent.map { "\(fixed($0, 0)) %  (reported by the device)" })
+        add("Maximum capacity", b.maximumCapacityPercent.map { "\(fixed($0, 0)) %  (as in iOS Settings)" })
         add("Design capacity", b.designCapacityMAh.map { "\($0) mAh" })
         add("Nominal capacity", capacity(b.nominalChargeCapacityMAh, ratio: b.nominalToDesignPercent))
         add("Full charge capacity", capacity(b.fullChargeCapacityMAh, ratio: b.fullChargeToDesignPercent))
         if let cycles = b.cycleCount {
             add("Cycles", b.designCycleCount.map { "\(cycles) of \($0)" } ?? String(cycles))
         }
+        add("First use", b.firstUseDate.map(day))
         add("Condition", b.errorCondition)
         if let failure = b.permanentFailureStatus, failure != 0 {
             add("Permanent failure", String(format: "0x%X", failure))
@@ -69,6 +70,11 @@ public enum IDeviceReport {
         }
         add("Source", b.source.map { "\($0) entry, diagnostics relay" })
         return lines
+    }
+
+    /// `2025-10-02`, in UTC like the value the device stores.
+    static func day(_ date: Date) -> String {
+        date.formatted(Date.ISO8601FormatStyle(timeZone: .gmt).year().month().day())
     }
 
     public static func text(for capture: IDeviceCapture) -> String {

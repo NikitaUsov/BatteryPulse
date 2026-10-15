@@ -301,6 +301,18 @@
         }
       }
     },
+    "All": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: show every source",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все"
+          }
+        }
+      }
+    },
     "Allow BatteryPulse in Login Items to finish.": {
       "extractionState": "manual",
       "localizations": {
@@ -391,6 +403,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Средний расход"
+          }
+        }
+      }
+    },
+    "Banks": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the cell bank entries (AppleSmartBatteryBank) and their cells",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группы"
           }
         }
       }
@@ -766,18 +790,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse не удалось заменить установленную копию."
-          }
-        }
-      }
-    },
-    "BatteryPulse downloads the next version, checks its signature and opens again. Choose how often to check in Settings → General.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BatteryPulse загружает новую версию, проверяет её подпись и открывается снова. Как часто проверять, выбирается в разделе «Настройки» → «Основные»."
           }
         }
       }
@@ -1232,6 +1244,18 @@
         }
       }
     },
+    "Charger": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the charger controller entry (AppleChargerData). Short for the segmented control; the glossary's longer term is «контроллер зарядки»",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка"
+          }
+        }
+      }
+    },
     "Charger power from the same telemetry as ChargerVBUS and ChargerIBUS; reads 0 on battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1291,18 +1315,6 @@
         }
       }
     },
-    "Charging and the battery's power show a few seconds after you plug in, read live from the battery.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зарядка и мощность аккумулятора видны через несколько секунд после подключения: они считываются с аккумулятора в реальном времени."
-          }
-        }
-      }
-    },
     "Charging at %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1310,18 +1322,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряжается мощностью %@"
-          }
-        }
-      }
-    },
-    "Charging at once": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зарядка видна сразу"
           }
         }
       }
@@ -2074,6 +2074,18 @@
         }
       }
     },
+    "Easy on the battery": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бережнее к аккумулятору"
+          }
+        }
+      }
+    },
     "Effective total system load sample that AccumSystemEffectiveTotalLoad sums; Macs leave it at 0.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2200,6 +2212,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Обычная работа без адаптера."
+          }
+        }
+      }
+    },
+    "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read.": {
+      "extractionState": "manual",
+      "comment": "Settings → Advanced: note under the Glass Cards toggle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспериментальная функция: карточки отображаются в стиле Liquid Glass. Расходует больше энергии, текст может читаться хуже."
           }
         }
       }
@@ -2704,6 +2728,18 @@
         }
       }
     },
+    "Glass Cards": {
+      "extractionState": "manual",
+      "comment": "Settings → Advanced, Developer option (shown only with the Developer section): draws the content cards in Liquid Glass",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стеклянные карточки"
+          }
+        }
+      }
+    },
     "Hardware revision string reported by the adapter.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3092,18 +3128,6 @@
         }
       }
     },
-    "Install updates from the app": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Установка обновлений из приложения"
-          }
-        }
-      }
-    },
     "Installing…": {
       "extractionState": "manual",
       "localizations": {
@@ -3253,6 +3277,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экстремумы и счётчики за срок службы, которые хранит контроллер (температуры, токи, напряжения, Qmax, FCC)."
+          }
+        }
+      }
+    },
+    "Liquid Glass controls": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Элементы управления в стиле Liquid Glass"
           }
         }
       }
@@ -3524,18 +3560,6 @@
         }
       }
     },
-    "Menu bar styles": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стили строки меню"
-          }
-        }
-      }
-    },
     "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3570,14 +3594,14 @@
         }
       }
     },
-    "More explanations in Raw Data": {
+    "Motion that follows the battery": {
       "extractionState": "manual",
       "comment": "What's New: feature title",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Больше пояснений в исходных данных"
+            "value": "Движение вслед за аккумулятором"
           }
         }
       }
@@ -4457,6 +4481,18 @@
         }
       }
     },
+    "Pack": {
+      "extractionState": "manual",
+      "comment": "Raw Data toolbar switch: the battery pack entry (AppleSmartBatteryPack)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Блок"
+          }
+        }
+      }
+    },
     "Pack voltage in AppleSmartBatteryPack (macOS 27); equals Voltage and AppleRawBatteryVoltage.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4604,6 +4640,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Период"
+          }
+        }
+      }
+    },
+    "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите аккумулятор, его блок, контроллер зарядки, адаптер или SMC в панели инструментов."
           }
         }
       }
@@ -5099,6 +5147,18 @@
         }
       }
     },
+    "Raw Data by source": {
+      "extractionState": "manual",
+      "comment": "What's New: feature title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исходные данные по источникам"
+          }
+        }
+      }
+    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5279,6 +5339,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Рендеринг или игры: большое потребление и повышенное тепловое состояние."
+          }
+        }
+      }
+    },
+    "Report copied": {
+      "extractionState": "manual",
+      "comment": "VoiceOver announcement after Copy Report",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отчёт скопирован"
           }
         }
       }
@@ -5643,18 +5715,6 @@
         }
       }
     },
-    "Show any mix of the battery icon, charge, power and temperature, with new icon styles drawn to the exact level. Settings → Menu Bar.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Любое сочетание значка аккумулятора, заряда, мощности и температуры и новые стили значка, нарисованные точно по уровню заряда. «Настройки» → «Строка меню»."
-          }
-        }
-      }
-    },
     "Show Developer section": {
       "extractionState": "manual",
       "localizations": {
@@ -5706,6 +5766,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывать в строке меню"
+          }
+        }
+      }
+    },
+    "Show only the values from one source": {
+      "extractionState": "manual",
+      "comment": "Help for the Raw Data toolbar switch",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать только значения из одного источника"
           }
         }
       }
@@ -5902,18 +5974,6 @@
         }
       }
     },
-    "Temperature in the menu bar": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Температура в строке меню"
-          }
-        }
-      }
-    },
     "The battery controller's own reading: remaining ÷ full-charge capacity. macOS keeps a small reserve, so the two differ slightly.": {
       "extractionState": "manual",
       "localizations": {
@@ -5936,26 +5996,14 @@
         }
       }
     },
-    "The battery pack, its cells and the charger entries now explain their keys.": {
+    "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place.": {
       "extractionState": "manual",
       "comment": "What's New: feature detail",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Теперь объяснены и ключи блока аккумулятора, его элементов и контроллера зарядки."
-          }
-        }
-      }
-    },
-    "The battery's temperature in the menu bar and its popover.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Температура аккумулятора в строке меню и в её всплывающем окне."
+            "value": "Заряд плавно перекатывается к новому значению, шкалы заполняются, а молния прорисовывается, когда начинается зарядка. С параметром «Уменьшение движения» всё остаётся на месте."
           }
         }
       }
@@ -6000,6 +6048,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загруженный файл повреждён."
+          }
+        }
+      }
+    },
+    "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переключатель периода в Истории переехал в панель инструментов со скользящим стеклянным выделением, а панель Демо-режима парит в стекле."
           }
         }
       }
@@ -6077,18 +6137,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подпись обновления недействительна, поэтому оно не установлено."
-          }
-        }
-      }
-    },
-    "The version, links and license, from the BatteryPulse menu or the popover.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Версия, ссылки и лицензия — из меню BatteryPulse или всплывающего окна."
           }
         }
       }
@@ -7099,6 +7147,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открывать"
+          }
+        }
+      }
+    },
+    "Windows you can't see stop reading the battery and stop animating.": {
+      "extractionState": "manual",
+      "comment": "What's New: feature detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Окна, которых не видно, перестают опрашивать аккумулятор и не анимируются."
           }
         }
       }

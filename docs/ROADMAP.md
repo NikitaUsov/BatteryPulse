@@ -15,8 +15,12 @@ charging state.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
   optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
-  never hidden from both. Liquid Glass comes from standard components only (sidebar, toolbar,
-  controls); content uses standard fills, per Apple's HIG.
+  never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
+  system's sidebar, toolbar and controls, plus custom glass only on controls that float over
+  content (the Demo Mode bar, the selection of the menu bar icon style picker). Content uses
+  standard fills; glass cards are a Developer option, off by default. Motion is short, plays
+  once on a battery event or a user action, turns into fades under Reduce Motion, and stops in
+  windows that can't be seen and in the menu bar label.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -182,7 +186,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   back to Download in the browser. There is one built-in key and no rotation yet: a lost key
   means one manual DMG install with the new key's build. Follow-ups: re-register the login item
   and reload the widget timelines on the first launch after an update.
-- [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
+- [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
+  kept them on the M5; an in-app update is still to be checked.) Replacing 0.3.0 with 0.3.1 from the DMG
   removed them; the gallery still offered the widget, and it worked once added again. The
   in-place swap above keeps the path, registers the new copy and raises
   `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
@@ -216,6 +221,64 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   to verify on the M5
 - [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
   bar's height on displays with a notch
+- [ ] 0.6.1: rework the drawn styles. On the M5 (0.4.0) they look off next to the system item:
+  Modern is thicker and larger than the macOS 27 battery, Percentage Inside's digits are taller
+  than the body and change colour at the fill edge, the previews in Settings differ in size, and
+  the ring is thin. Render `BatteryIconLayout` on Linux and match it to screenshots of the
+  system item before changing the app
+
+### Stage 1.4: Liquid Glass and motion (0.5)
+
+Every animation is triggered by an event, plays once and lasts 0.15–0.35 s; it is keyed on the
+discrete parts of a reading, never on the 2 s values, and goes through one policy. Liquid Glass
+stays on controls; the glass bubbles come from standard segmented controls.
+
+- [x] Foundation: `MotionPolicy` and `BatteryMotionKey` in BatteryCore (percent, tier, plugged
+  in, charge state, symbol, power flow with a 0.15 W dead band, just above the current's noise, Low Power Mode), tested
+  on Linux against the M5 captures
+- [x] `\.motion` on every window and the menu bar panel: fades under Reduce Motion and Prefer
+  Cross-Fade Transitions, no one-off extras under Low Power Mode or when macOS asks apps to save
+  resources, and no animation at all while the window is covered, minimized, on another Space
+  or the display sleeps (per-window occlusion; the menu bar item keeps the app itself visible).
+  The presets, plus `numericValue` (numbers that roll) and `liveRefresh` (polling that stops in
+  hidden windows) for the views to adopt
+- [x] `MotionGuardTests`: no repeating or per-frame animation, no animation keyed on the whole
+  snapshot, none in the menu bar label, and `glassEffect` only in the three files allowed
+- [x] Overview: the percent rolls in the direction of change; the battery glyph's fill, colour
+  and bolt animate; rings and tile values; the power flow's adapter slides in and out, its arrow
+  follows the flow without flickering, symbols swap, one bounce on reaching full; the time line
+  fades
+- [x] Power and Health: rows that come with plugging in or charging; the active USB PD profile;
+  Low Power Mode and thermal state; rings (optionally filling once per launch)
+- [x] Developer option "Glass Cards" (Settings → Advanced, with the Developer section): the cards
+  in Liquid Glass, one `GlassEffectContainer` per page, plain when off or under Reduce
+  Transparency; off by default
+- [x] Main window: polling only while visible and on pages with live values, a short page fade,
+  toolbar grouping, feedback and a VoiceOver announcement for Copy Report, the tour's page switch
+  in one transaction
+- [x] History: the period switch moves into the toolbar as a segmented control with the
+  system's sliding glass selection; the charts crossfade on a period switch without morphing the
+  lines; the minute reload pauses in a hidden window
+- [x] Raw Data: a source menu in the toolbar (All, Battery, Pack, Banks, Charger, IOPS,
+  Adapter, SMC — only those present) that filters the table, since a SwiftUI Table can't be
+  scrolled to a section; a pop-up rather than segments, because seven or eight segments don't
+  fit the default window (in Russian even five don't); rows never animate
+- [x] Review fixes: under Reduce Motion layout snaps and only opacity and colour fade (also in
+  Demo Mode); scene variations don't animate the 2 s values; the update window swaps status and
+  install phases in place; Copy Report takes a fresh reading on pages that don't poll
+- [x] Demo Mode: one transaction per change; the demo bar materializes and morphs in interactive
+  glass; Play and Pause as one button; the demo clock sleeps while paused and ticks once a
+  second on scenes
+- [x] Compact window and menu bar panel: rolling percent, polling through `liveRefresh`, the Demo
+  badge in the toolbar, no animated window resizing; the menu bar label stays unanimated
+- [x] Settings: the menu bar icon style picker gets a flowing glass selection; borders with Show
+  Borders; the Glass Cards toggle
+- [x] Software Update, What's New and Welcome: status and phase crossfades, one staggered entrance,
+  the pulse line drawing in once; widget number and symbol transitions and rendering modes
+- [ ] Check on the M5: frame rate (Instruments), energy with the window visible, covered,
+  minimized, on another Space and with the display asleep (Activity Monitor and Power
+  Profiler), legibility with the Liquid Glass slider at both ends, and Reduce Motion, Prefer
+  Cross-Fade Transitions, Reduce Transparency, Increase Contrast and Show Borders
 
 ### Stage 2: iOS MVP
 
@@ -273,11 +336,15 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
     `AppleSmartBatteryBank` and `AppleChargerData`, then Goodbye, with 5 s socket timeouts
     and 30/60 s deadlines. The transport sits behind `IDeviceTransport`/`IDeviceLink`. The
     parser is tested with synthetic data until real captures exist
-  - [ ] Captures from an iPhone 17 Pro Max and an iPad (9th generation) on 27.0.1 as fixtures;
-    choose the health formula (nominal or full-charge ÷ design) against Settings → Battery →
-    Battery Health
-  - [ ] The device in the app's UI
-- [ ] Remember each device and keep its history next to the Mac's
+  - [x] iPhone 17 Pro Max on iOS 27.0.1 as a fixture: the bpulse spike worked on the first try
+    over USB. Health is nominal ÷ design (Settings: 95 %; the pack's `LifetimeData.NccpFiltered`
+    is the same 95; full charge ÷ design would be 97.9 %); the temperature is the pack's
+    `Temperature` sensor, not `VirtualTemperature`; `DateOfFirstUse` matches Settings' First Use;
+    the pack's `UUID` is now redacted
+  - [ ] An iPad (9th generation) capture, and the manufacture date (Settings: August 2025; the
+    pack's `ManufactureDate` doesn't decode like the Mac's yet)
+  - [ ] The device in the app's UI (0.6): a Devices section with a page per device
+- [ ] Remember each device and keep its history next to the Mac's (0.6)
 
 ### Stage 6: Later (optional)
 
@@ -292,7 +359,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   read record fields, so the alerting fields can't also be encrypted). Without it, only the local
   network or Bluetooth LE, which iOS won't relaunch for after a force-quit. Blocked on Stage 2
   (iOS app) anyway.
-- [ ] **Bluetooth device batteries on macOS** (keyboard, mouse, trackpad, headphones): feasible
+- [ ] **Bluetooth device batteries on macOS** (0.6) (keyboard, mouse, trackpad, headphones): feasible
   without the paid account. powerd publishes accessory batteries through the private
   `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
   prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
@@ -300,7 +367,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
   (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
   Bluetooth permission, which ad-hoc signing loses on every update.
-- [ ] **CSV/JSON export** of history: public APIs only (`fileExporter`), about two days,
+- [ ] **CSV/JSON export** of history (0.6): public APIs only (`fileExporter`), about two days,
   formatting tested on Linux; CSV dialect follows the locale's decimal separator.
 - [ ] **Charge limiting.** The old SMC route is closed: on macOS 27 firmware the charge-inhibit
   keys that charge limiters used are gone or behind an Apple-private entitlement, even for root
@@ -321,12 +388,16 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.2.0   | 2026-10-14 | Main window (Overview, Power, Health), optional menu bar and Dock presence, Developer section with decoded and explained Raw Data and Demo Mode, English and Russian |
 | 0.3.0   | 2026-10-14 | Battery temperature and cell voltages, History with charts and statistics, notifications, a widget, the compact window, the Raw Data inspector, update check and What's New |
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
+| 0.4.0   | 2026-10-15 | Update check frequency, Install and Relaunch with signed releases, the About window, menu bar content and drawn icon styles, charging shown within seconds from the SMC, Raw Data explanations for the pack, banks, cells and charger, and an iPhone/iPad command-line preview |
+| 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
 
-Next: **0.4.0** brings a choice of how often to check for updates, installing updates from
-the app, an About window and fixes from the 0.3.1 update (Stage 1.2), menu bar content and
-icon styles that can stand in for the system battery item (Stage 1.3), and a first
-command-line preview of a connected iPhone or iPad's battery (Stage 5). Everything else waits
-for later versions.
+Next: **0.6.0** is about the other devices: iPhone and iPad in the app, remembered with their
+history (Stage 5), the batteries of Bluetooth accessories (Stage 6), and CSV/JSON export of the
+history; plus the open checks on the M5 (a capture at the Charge Limit stop point, a profile in
+Instruments, menu bar icons on light and dark menu bars, widgets across an in-app update).
+**0.6.1** reworks the drawn menu bar icon styles (Stage 1.3). Optional, if a one-day spike on
+the M5 works: the apps using the most energy. Not planned: an iOS app, charge limiting, and
+Developer ID signing until there is a paid developer account.
 
 ## Development environment
 

@@ -3,8 +3,8 @@ import Foundation
 /// The battery of an iPhone or iPad, read from its `AppleSmartBattery` registry entry over the
 /// diagnostics relay. Units are in the property names, as in ``BatterySnapshot``.
 ///
-/// Every field is optional: no real iOS 27 iPhone capture has been checked yet, and a value the
-/// device doesn't publish stays `nil` rather than being guessed.
+/// Every field is optional: a value the device doesn't publish stays `nil` rather than being
+/// guessed. Checked against an iPhone 17 Pro Max on iOS 27.0.1 and its Settings → Battery.
 public struct IDeviceBattery: Sendable, Equatable, Codable {
     /// The registry class that answered (`AppleSmartBattery`, else `IOPMPowerSource`).
     public var source: String?
@@ -23,10 +23,13 @@ public struct IDeviceBattery: Sendable, Equatable, Codable {
     public var fullChargeCapacityMAh: Int?
     public var nominalChargeCapacityMAh: Int?
     public var designCapacityMAh: Int?
-    /// "Maximum Capacity" exactly as iOS Settings shows it, only when the device publishes it
-    /// under `MaximumCapacityPercent`. Never calculated: iOS has no documented formula, and
-    /// ``nominalToDesignPercent`` and ``fullChargeToDesignPercent`` can both differ from it.
+    /// "Maximum Capacity" as iOS Settings shows it: the device's own figure (`MaximumCapacityPercent`,
+    /// or iOS 27's `LifetimeData.NccpFiltered`), else nominal ÷ design capacity, capped at 100 %.
+    /// On an iPhone 17 Pro Max with iOS 27.0.1, Settings showed 95 %, `NccpFiltered` was 95 and
+    /// 4800 ÷ 5030 mAh is 95.4 %; full charge ÷ design (97.9 %) is not what iOS shows.
     public var maximumCapacityPercent: Double?
+    /// When the battery was first used (`DateOfFirstUse`), which iOS Settings shows as the month.
+    public var firstUseDate: Date?
 
     public var cycleCount: Int?
     /// Cycles the battery is rated for, when the gauge publishes it (`DesignCycleCount9C`).
@@ -58,6 +61,7 @@ public struct IDeviceBattery: Sendable, Equatable, Codable {
         nominalChargeCapacityMAh: Int? = nil,
         designCapacityMAh: Int? = nil,
         maximumCapacityPercent: Double? = nil,
+        firstUseDate: Date? = nil,
         cycleCount: Int? = nil,
         designCycleCount: Int? = nil,
         temperatureCelsius: Double? = nil,
@@ -78,6 +82,7 @@ public struct IDeviceBattery: Sendable, Equatable, Codable {
         self.nominalChargeCapacityMAh = nominalChargeCapacityMAh
         self.designCapacityMAh = designCapacityMAh
         self.maximumCapacityPercent = maximumCapacityPercent
+        self.firstUseDate = firstUseDate
         self.cycleCount = cycleCount
         self.designCycleCount = designCycleCount
         self.temperatureCelsius = temperatureCelsius
@@ -170,8 +175,14 @@ public enum IDeviceBatteryParser {
         guard b.designCapacityMAh != nil || b.nominalChargeCapacityMAh != nil || b.fullChargeCapacityMAh != nil
         else { return nil }
         b.currentCapacityMAh = capacity("RemainingCapacity", "AppleRawCurrentCapacity")
-        b.maximumCapacityPercent = [entry, data].lazy.compactMap { $0["MaximumCapacityPercent"]?.doubleValue }
-            .first { (1...100).contains($0) }
+        let lifetime = [data, packData].compactMap { $0["LifetimeData"]?.dictionaryValue }
+        b.maximumCapacityPercent =
+            ([entry["MaximumCapacityPercent"], data["MaximumCapacityPercent"]] + lifetime.map { $0["NccpFiltered"] })
+            .lazy.compactMap { $0?.doubleValue }.first { (1...100).contains($0) }
+            ?? b.nominalToDesignPercent.map { min($0, 100) }
+        b.firstUseDate =
+            [data["DateOfFirstUse"], packData["DateOfFirstUse"], entry["DateOfFirstUse"]].lazy
+            .compactMap { $0?.intValue }.compactMap(firstUseDate(sinceReferenceDate:)).first
 
         b.cycleCount = (entry["CycleCount"] ?? data["CycleCount"])?.intValue.flatMap { $0 >= 0 ? $0 : nil }
         b.designCycleCount = entry["DesignCycleCount9C"]?.intValue.flatMap { $0 > 0 ? $0 : nil }
@@ -202,10 +213,12 @@ public enum IDeviceBatteryParser {
         let cells = data["CellVoltage"]
         b.cellVoltagesMV = (cells?.arrayValue ?? cells.map { [$0] } ?? []).compactMap(\.intValue)
             .filter { SMCBattery.plausibleCellVoltage.contains($0) }
+        // The gauge's sensor first; `VirtualTemperature` is an estimate (on an iPhone 17 Pro Max it
+        // read 35.1 °C against the sensor's 36.5 °C) and only fills in when no sensor reads.
         b.temperatureCelsius =
             [
-                entry["Temperature"], entry["VirtualTemperature"], packData["VirtualTemperature"],
-                packData["Temperature"], pack["VirtualTemperature"], pack["Temperature"],
+                entry["Temperature"], packData["Temperature"], pack["Temperature"],
+                entry["VirtualTemperature"], packData["VirtualTemperature"], pack["VirtualTemperature"],
             ]
             .lazy.compactMap { $0?.intValue }.compactMap(celsius(fromCentidegrees:)).first
 
@@ -216,6 +229,14 @@ public enum IDeviceBatteryParser {
         b.errorCondition = entry["ErrorCondition"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
         b.permanentFailureStatus = entry["PermanentFailureStatus"]?.intValue
         return b
+    }
+
+    /// `DateOfFirstUse` counts seconds since 2001-01-01, like `Date(timeIntervalSinceReferenceDate:)`;
+    /// 0 means "not set". Only dates from the first iPhone on are a reading.
+    static func firstUseDate(sinceReferenceDate seconds: Int) -> Date? {
+        guard seconds > 0 else { return nil }
+        let date = Date(timeIntervalSinceReferenceDate: TimeInterval(seconds))
+        return date >= Date(timeIntervalSinceReferenceDate: 189_000_000) ? date : nil  // 2007
     }
 
     /// One cell, or a few in series; anything else is not a reading.

@@ -38,6 +38,12 @@ struct MenuBarLabel: View {
                 Text(title)
             }
         }
+        // Never animated: every state change swaps at once, Demo Mode's animated changes included.
+        // See `icon(for:)` for why.
+        .transaction { transaction in
+            transaction.animation = nil
+            transaction.disablesAnimations = true
+        }
         .onAppear { WindowOpener.openWindow = openWindow }
         .onChange(of: content.liveRefreshInterval, initial: true) { _, interval in
             // Power changes without OS notifications, so poll gently while it is shown.
@@ -48,6 +54,11 @@ struct MenuBarLabel: View {
 
     /// A drawn battery rendered to an image, since the status item doesn't reliably draw shapes;
     /// the SF Symbol for that style, or if rendering fails.
+    ///
+    /// No animation, by design: every frame of one would be another `ImageRenderer` pass (two
+    /// while the icon is tinted red or yellow), the one-entry cache in `MenuBarIconRenderer` would
+    /// miss on every frame, and the status item is always on screen, so it would cost energy all
+    /// day. `MotionGuardTests` keeps this file free of animations.
     @ViewBuilder
     private func icon(for snapshot: BatterySnapshot?) -> some View {
         let state = BatteryIconState(snapshot: snapshot)
