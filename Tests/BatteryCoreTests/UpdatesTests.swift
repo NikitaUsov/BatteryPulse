@@ -104,7 +104,59 @@ import Testing
     }
 
     @Test func notesWithWindowsLineEndingsKeepTheirLines() {
-        #expect(ReleaseNotes.inlineMarkdown("## Install\r\n\r\nOne\rTwo") == "**Install**\n\nOne\nTwo")
+        #expect(ReleaseNotes.inlineMarkdown("## Install\r\n\r\n- One\r- Two") == "**Install**\n\n- One\n- Two")
+    }
+
+    /// 0.3.1's notes, wrapped at 96 columns, showed line breaks mid-sentence in 0.3.0.
+    @Test func wrappedLinesOfAParagraphOrListItemAreJoined() {
+        let notes = """
+            ## What's new in 0.3.1
+
+            Fixes from the first run on a MacBook Air M5:
+
+            - **Power page:** while charging, the requested charge voltage is labeled as per cell (a
+              MacBook Air M5 asks for 4.47 V per cell).
+            - **Compact window:** long labels are no longer cut off.
+
+            1. Download **BatteryPulse.dmg** below and open it.
+            2. Drag **BatteryPulse** onto
+               **Applications**.
+
+            Line one with a break  
+            line two
+            > A quote
+            > continued
+            ```
+            code
+              stays
+            ```
+            ## What's Changed
+            * BatteryPulse 0.3.1 by @NikitaUsov in https://github.com/NikitaUsov/BatteryPulse/pull/6
+            """
+        #expect(
+            ReleaseNotes.inlineMarkdown(notes) == """
+                **What's new in 0.3.1**
+
+                Fixes from the first run on a MacBook Air M5:
+
+                - **Power page:** while charging, the requested charge voltage is labeled as per cell (a \
+                MacBook Air M5 asks for 4.47 V per cell).
+                - **Compact window:** long labels are no longer cut off.
+
+                1. Download **BatteryPulse.dmg** below and open it.
+                2. Drag **BatteryPulse** onto **Applications**.
+
+                Line one with a break  
+                line two
+                > A quote
+                > continued
+                ```
+                code
+                  stays
+                ```
+                **What's Changed**
+                * BatteryPulse 0.3.1 by @NikitaUsov in https://github.com/NikitaUsov/BatteryPulse/pull/6
+                """)
     }
 
     @Test func whatsNewOnlyAfterAnUpdate() {

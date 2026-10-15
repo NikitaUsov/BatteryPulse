@@ -170,15 +170,47 @@ public enum UpdatePolicy {
 /// Release notes prepared for `AttributedString(markdown:)` with inline-only syntax, which keeps
 /// line breaks but shows headings literally: headings become bold lines.
 public enum ReleaseNotes {
+    /// Headings become bold lines, and the lines of a paragraph or list item wrapped in the
+    /// source are joined, since inline-only Markdown would keep every line break.
     public static func inlineMarkdown(_ notes: String) -> String {
         // Notes edited on github.com can use CRLF, which `split(separator: "\n")` would miss: in
         // Swift "\r\n" is a single Character.
         let normalized = notes.replacing("\r\n", with: "\n").replacing("\r", with: "\n")
-        return normalized.split(separator: "\n", omittingEmptySubsequences: false).map { line in
-            let heading = line.drop { $0 == "#" }
-            guard heading.count < line.count, heading.first == " " else { return String(line) }
-            return "**" + heading.trimmingCharacters(in: .whitespaces) + "**"
+        var lines: [String] = []
+        var joinsNext = false
+        var inCodeBlock = false
+        for line in normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") { inCodeBlock.toggle() }
+            if inCodeBlock || trimmed.hasPrefix("```") {
+                lines.append(line)
+                joinsNext = false
+            } else if let heading = heading(trimmed) {
+                lines.append("**" + heading + "**")
+                joinsNext = false
+            } else if joinsNext, !trimmed.isEmpty, !startsBlock(trimmed), let last = lines.popLast() {
+                lines.append(last + " " + trimmed)
+                joinsNext = !line.hasSuffix("  ")
+            } else {
+                lines.append(line)
+                // Two trailing spaces are Markdown's explicit line break.
+                joinsNext = !trimmed.isEmpty && !line.hasSuffix("  ")
+            }
         }
-        .joined(separator: "\n")
+        return lines.joined(separator: "\n")
+    }
+
+    /// The text of an ATX heading such as `## Install`; `#hashtag` is not one.
+    static func heading(_ line: String) -> String? {
+        let text = line.drop { $0 == "#" }
+        guard text.count < line.count, text.first == " " else { return nil }
+        return text.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// A line that starts its own block: a list item, quote or table row.
+    static func startsBlock(_ line: String) -> Bool {
+        if ["- ", "* ", "+ ", ">", "|"].contains(where: line.hasPrefix) { return true }
+        let digits = line.prefix { $0.isNumber }
+        return !digits.isEmpty && line.dropFirst(digits.count).hasPrefix(". ")
     }
 }
