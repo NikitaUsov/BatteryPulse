@@ -18,11 +18,13 @@ let usage = """
       --smc             List the SMC's battery and charger keys with their types, and the raw
                         bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
                         read-only, for finding the keys on a new Mac model
-      --devices         List the iPhones and iPads connected by USB or Wi-Fi, numbered (macOS)
-      --device <n>      Battery report of device n from --devices (macOS). The device must trust
-                        this Mac: unlock it and tap Trust. With --raw: everything the device
-                        returned as an XML property list, serial numbers, identifiers and the
-                        device's name redacted; with --json: the parsed battery
+      --devices         List the iPhones and iPads connected by USB or Wi-Fi, numbered (macOS);
+                        a device that doesn't answer in time is listed as "Unknown device"
+      --device <n>      Battery report of device n from --devices, with the same ID (macOS); no
+                        other device is contacted. The device must trust this Mac: unlock it and
+                        tap Trust. With --raw: everything the device returned as an XML property
+                        list, serial numbers, identifiers and the device's name redacted; with
+                        --json: the parsed battery
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found
@@ -136,7 +138,10 @@ func readDevices(_ options: Options) async throws -> Never {
     }
     let devices: [IDeviceInfo]
     do {
-        devices = try await transport.devices()
+        // The list is ordered by identifier, which needs no connection: `--device <n>` finds
+        // device n without connecting to the others, so a device that doesn't answer can't delay
+        // it or change the numbering.
+        devices = try await transport.devices(readingIdentity: options.deviceNumber == nil)
     } catch {
         fail("bpulse: \(error)", code: 2)
     }

@@ -8,7 +8,8 @@ import Foundation
 /// Each operation runs start to finish on one serial queue, shared by every instance: subscribe to device notifications,
 /// wait briefly for the attached devices (already-attached ones are announced right after
 /// subscribing), read, unsubscribe. The relay's socket gets send and receive timeouts, and the
-/// caller stops waiting after ``listTimeout`` / ``captureTimeout`` whatever the framework does.
+/// caller stops waiting after ``listTimeout`` / ``captureTimeout`` whatever the framework does;
+/// in the list, after ``identityTimeout`` for one device's identity (``IDeviceListBuilder``).
 ///
 /// Trust comes from Finder: this transport never pairs. A device that doesn't trust this Mac is
 /// reported (``IDeviceProblem/notTrusted(_:)``) so the person can tap Trust on it.
@@ -20,6 +21,9 @@ public final class MobileDeviceTransport: IDeviceTransport {
     /// Send and receive timeout on the relay's socket, in seconds.
     static let socketTimeoutSeconds = 5
     public static let listTimeout: TimeInterval = 30
+    /// The longest wait for one device's identity in the list; a connect and a few lockdown
+    /// values take well under a second by cable.
+    public static let identityTimeout: TimeInterval = 10
     public static let captureTimeout: TimeInterval = 60
 
     /// One queue for the whole process: the framework's thread safety is undocumented, and the
@@ -28,16 +32,24 @@ public final class MobileDeviceTransport: IDeviceTransport {
 
     public init() {}
 
-    public func devices() async throws -> [IDeviceInfo] {
-        try await BlockingWork.run(on: Self.queue, timeout: Self.listTimeout) { () throws -> [IDeviceInfo] in
+    public func devices(readingIdentity: Bool) async throws -> [IDeviceInfo] {
+        guard readingIdentity else {
+            // Identifiers and interfaces come with the attach notifications: nothing connects.
+            return try await BlockingWork.run(on: Self.queue, timeout: Self.listTimeout) { () throws -> [IDeviceInfo] in
+                let library = try MobileDeviceLibrary.shared.get()
+                return try MobileDeviceDiscovery.withAttachedDevices(library: library, waitingFor: nil) { groups in
+                    IDeviceList.sorted(groups.map { IDeviceAttachment.info(for: $0) })
+                }
+            }
+        }
+        return try await IDeviceListBuilder.run(
+            on: Self.queue, timeout: Self.listTimeout, identityTimeout: Self.identityTimeout
+        ) { builder in
             let library = try MobileDeviceLibrary.shared.get()
-            return try MobileDeviceDiscovery.withAttachedDevices(library: library, waitingFor: nil) { groups in
-                IDeviceList.sorted(
-                    groups.map { group in
-                        IDeviceReader.info(
-                            id: group.first?.id ?? "",
-                            links: group.map { MobileDeviceLink(library: library, attachment: $0) })
-                    })
+            try MobileDeviceDiscovery.withAttachedDevices(library: library, waitingFor: nil) { groups in
+                IDeviceReader.readIdentities(of: groups, into: builder) {
+                    MobileDeviceLink(library: library, attachment: $0)
+                }
             }
         }
     }
