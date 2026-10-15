@@ -246,6 +246,9 @@ language. To use a different language for BatteryPulse only:
   BatteryPulse estimates it from capacity and current and says *about*.
 - **Power flow**: on the adapter, power goes from the adapter into the Mac, and what the Mac
   doesn't use charges the battery. On battery, the battery powers the Mac.
+- **Battery power, voltage and current** are read live from the SMC. That's why BatteryPulse
+  shows *Charging* a few seconds after you plug in, while macOS still says *Not charging* for
+  about half a minute; the time to full appears once macOS has estimated it.
 - **Temperature** is the battery pack's own sensor, and **cell voltages** come from each cell
   of the pack. macOS 27 keeps both on registry entries below the battery rather than on the
   battery itself; when a Mac doesn't have them, BatteryPulse reads them from the SMC instead

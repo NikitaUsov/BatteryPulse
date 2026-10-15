@@ -163,21 +163,22 @@ enum MacPowerParser {
         )
         s.isOptimizedChargingEngaged = ps["Optimized Battery Charging Engaged"]?.boolValue
         s.isLowPowerModeEnabled = ps["LPM Active"]?.boolValue
-
-        switch s.chargeState {
-        case .discharging:
-            (s.timeToEmptyMinutes, s.isTimeRemainingCalculating) = timeRemaining(
-                powerSource: ps["Time to Empty"], gauge: sb["AvgTimeToEmpty"])
-        case .charging:
-            (s.timeToFullMinutes, s.isTimeRemainingCalculating) = timeRemaining(
-                powerSource: ps["Time to Full Charge"], gauge: sb["AvgTimeToFull"])
-        case .charged, .notCharging, .unknown:
-            break
+        let live = SMCBattery.liveElectrical(in: smc)
+        // macOS says "not charging" for about half a minute after the adapter is plugged in,
+        // while the SMC already measures the charge current; follow the battery.
+        if s.chargeState == .notCharging, isFullyCharged != true, s.isOptimizedChargingEngaged != true,
+            let current = live?.currentMA, current >= chargingCurrentThresholdMA
+        {
+            s.chargeState = .charging
+            // macOS has no estimate yet.
+            s.isTimeRemainingCalculating = true
+        } else {
+            setTimeRemaining(&s, powerSource: ps, smartBattery: sb)
         }
 
-        // Electrical
-        s.voltageMV = sb["Voltage"]?.intValue ?? sb["AppleRawBatteryVoltage"]?.intValue
-        s.amperageMA = sb["Amperage"]?.intValue
+        // Electrical: the SMC's live readings, else the gauge's last update in the registry.
+        s.voltageMV = live?.voltageMV ?? sb["Voltage"]?.intValue ?? sb["AppleRawBatteryVoltage"]?.intValue
+        s.amperageMA = live?.currentMA ?? sb["Amperage"]?.intValue
         s.instantAmperageMA = sb["InstantAmperage"]?.intValue
         s.cellVoltagesMV =
             (batteryData["CellVoltage"] ?? sb["CellVoltage"])?
@@ -232,6 +233,25 @@ enum MacPowerParser {
         case true?: return isFullyCharged == true ? .charged : .notCharging
         case false?: return .discharging
         case nil: return isCharging == false ? .discharging : .unknown
+        }
+    }
+
+    /// A battery current at least this large while macOS still says "not charging" means
+    /// charging has started.
+    static let chargingCurrentThresholdMA = 100
+
+    static func setTimeRemaining(
+        _ s: inout BatterySnapshot, powerSource ps: PropertyDictionary, smartBattery sb: PropertyDictionary
+    ) {
+        switch s.chargeState {
+        case .discharging:
+            (s.timeToEmptyMinutes, s.isTimeRemainingCalculating) = timeRemaining(
+                powerSource: ps["Time to Empty"], gauge: sb["AvgTimeToEmpty"])
+        case .charging:
+            (s.timeToFullMinutes, s.isTimeRemainingCalculating) = timeRemaining(
+                powerSource: ps["Time to Full Charge"], gauge: sb["AvgTimeToFull"])
+        case .charged, .notCharging, .unknown:
+            break
         }
     }
 

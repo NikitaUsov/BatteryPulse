@@ -178,6 +178,35 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         monitor.stop()
     }
 
+    @Test func pluggingInIsFollowedByExtraReads() async throws {
+        func reading(connected: Bool) -> BatteryReading {
+            BatteryReading(
+                snapshot: BatterySnapshot(
+                    timestamp: Date(timeIntervalSince1970: 1), chargePercent: 50,
+                    chargeState: connected ? .notCharging : .discharging, isExternalPowerConnected: connected))
+        }
+        let provider = MockBatteryProvider(next: reading(connected: false))
+        let monitor = BatteryMonitor(provider: provider)
+        monitor.powerChangeFollowUps = [.milliseconds(10), .milliseconds(20)]
+        monitor.start()
+        provider.simulateSystemChange()
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(provider.readCount == 2, "no change of power source, no extra reads")
+
+        provider.next = reading(connected: true)
+        provider.simulateSystemChange()
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(provider.readCount == 5)
+
+        // Stopping cancels pending follow-ups.
+        provider.next = reading(connected: false)
+        monitor.powerChangeFollowUps = [.milliseconds(40)]
+        provider.simulateSystemChange()
+        monitor.stop()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(provider.readCount == 6)
+    }
+
     @Test func liveRefreshStopsWithMonitor() async throws {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let monitor = BatteryMonitor(provider: provider)

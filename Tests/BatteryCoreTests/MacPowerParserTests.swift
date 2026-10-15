@@ -58,8 +58,10 @@ import Testing
         #expect(s.fullChargeCapacityMAh == 5863)
         #expect(s.nominalChargeCapacityMAh == 6007)
         #expect(s.cycleCount == 49)
-        #expect(s.voltageMV == 11511)
-        #expect(s.amperageMA == -713)
+        // The SMC's live readings; the registry's last gauge update agrees within a few units.
+        #expect(s.voltageMV == 11501)
+        #expect(s.amperageMA == -720)
+        #expect(s.instantAmperageMA == -713)
         // From AppleSmartBatteryPack and the three AppleSmartBatteryBank entries; they add up to
         // the pack voltage.
         #expect(s.temperatureCelsius == 33.69)
@@ -80,6 +82,61 @@ import Testing
         let fallback = BatteryReading(smartBattery: withoutRegistry, smc: smc, timestamp: Fixture.timestamp).snapshot
         #expect(fallback.cellVoltagesMV == [3836, 3836, 3833])
         #expect(fallback.temperatureCelsius == 33.75)
+    }
+
+    /// Ten seconds after plugging in, macOS still reports "not charging" with the discharge
+    /// current, but the SMC already measures the charge current.
+    @Test func m5JustPluggedInChargesAtOnce() throws {
+        let reading = try Fixture.m5PluggedIn10s.reading()
+        #expect(reading.powerSource["Is Charging"] == .bool(false))
+        #expect(reading.smartBattery["Amperage"] == .int(-679))
+        let s = reading.snapshot
+        #expect(s.isExternalPowerConnected == true)
+        #expect(s.chargeState == .charging)
+        #expect(s.isTimeRemainingCalculating)
+        #expect(s.timeToFullMinutes == nil)
+        #expect(s.amperageMA == 1898)
+        #expect(s.voltageMV == 11860)
+        #expect(try abs(#require(s.batteryPowerWatts) - 22.51) < 0.01)
+        #expect(s.adapter?.watts == 35)
+        // Without the SMC (the widget) the registry's state stands.
+        let registryOnly = BatteryReading(
+            smartBattery: reading.smartBattery, powerSource: reading.powerSource,
+            adapterDetails: reading.adapterDetails, timestamp: Fixture.timestamp
+        ).snapshot
+        #expect(registryOnly.chargeState == .notCharging)
+        #expect(registryOnly.amperageMA == -679)
+    }
+
+    /// Just after unplugging, the registry still shows a charge current.
+    @Test func m5JustUnpluggedDischarges() throws {
+        let s = try Fixture.m5Unplugged.snapshot()
+        #expect(s.chargeState == .discharging)
+        #expect(s.isTimeRemainingCalculating)
+        #expect(s.amperageMA == -562)
+        #expect(s.voltageMV == 11702)
+        #expect(try #require(s.batteryPowerWatts) < 0)
+    }
+
+    @Test func liveChargeCurrentNeedsAnAdapterAndNoHold() throws {
+        let charging = SMCBattery.capture([
+            SMCRawValue(key: "B0AV", info: SMCTests.ui16, payload: [0x54, 0x2E]),
+            SMCRawValue(
+                key: "B0AC", info: SMCKeyInfo(size: 2, type: "si16", attributes: 0x84), payload: [0x6A, 0x07]),
+        ])
+        func state(_ ps: PropertyDictionary, _ sb: PropertyDictionary = ["ExternalConnected": .bool(true)])
+            -> ChargeState
+        {
+            BatteryReading(smartBattery: sb, powerSource: ps, smc: charging, timestamp: Fixture.timestamp)
+                .snapshot.chargeState
+        }
+        #expect(state(["Is Charging": .bool(false)]) == .charging)
+        #expect(
+            state(["Is Charging": .bool(false), "Optimized Battery Charging Engaged": .bool(true)]) == .notCharging)
+        #expect(
+            state(["Is Charging": .bool(false)], ["ExternalConnected": .bool(true), "FullyCharged": .bool(true)])
+                == .charged)
+        #expect(state(["Is Charging": .bool(false)], ["ExternalConnected": .bool(false)]) == .discharging)
     }
 
     @Test func m5Charging() throws {

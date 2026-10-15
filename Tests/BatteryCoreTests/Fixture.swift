@@ -11,6 +11,12 @@ enum Fixture: String, CaseIterable {
     /// Real: the same Mac, captured by BatteryPulse 0.3 with the registry children below
     /// AppleSmartBattery and the SMC's battery keys, on battery at 47 %.
     case m5OnBatterySMC = "m5-macos27-on-battery-smc"
+    /// Real: the same Mac 10 s after a 35 W adapter was plugged in. macOS and the registry still
+    /// say "not charging" with the discharge current; the SMC already reads the charge current.
+    case m5PluggedIn10s = "m5-macos27-plugged-in-10s"
+    /// Real: the same Mac just after unplugging. The registry still shows a charge current; the
+    /// SMC reads the discharge current.
+    case m5Unplugged = "m5-macos27-unplugged"
     /// Synthetic pre-macOS 27 layout, for fallback keys.
     case legacyDischarging = "synthetic-legacy-discharging"
     case legacyCharging = "synthetic-legacy-charging"

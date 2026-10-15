@@ -22,8 +22,9 @@ import BatteryCore
 /// shows live current/power values.
 @MainActor
 public final class MacBatteryProvider: BatteryProvider {
-    /// The SMC values change slowly and the gauge itself updates about once a minute.
-    public static let smcInterval: TimeInterval = 10
+    /// The SMC's current and voltage are live (the registry's copy can lag a minute), so they
+    /// are read again for any refresh more than this far apart.
+    public static let smcInterval: TimeInterval = 2
 
     private let smc: SMCClient?
     private var smcCache: (date: Date, values: PropertyDictionary)?

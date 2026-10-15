@@ -172,12 +172,13 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
-- [ ] The first half minute after plugging in. A timeline from the M5 Air (`pmset` and
-  `ioreg` every 2 s): macOS itself reports "AC attached; not charging" for 29 s, and the gauge
-  keeps the last discharge current (−661 mA) until charging starts (+1947 mA). BatteryPulse
-  shows the same, which looks like a bug: say that charging is starting while no
-  not-charging reason applies (check `NotChargingReason` in a capture from that window), and
-  don't show a discharge power the gauge measured before the adapter was connected
+- [x] The first half minute after plugging in. A timeline from the M5 Air (`pmset` and
+  `ioreg` every 2 s): macOS itself reports "AC attached; not charging" for 29 s, and the
+  registry keeps the last discharge current (−661 mA) until then. Captures taken 10–40 s after
+  plugging in show the SMC's `B0AC` already at +1.9 A, and just after unplugging the registry
+  still reads +250 mA while `B0AC` reads −562 mA. So current and voltage now come live from the
+  SMC, "not charging" becomes "charging" as soon as it measures a charge current, and the
+  monitor reads again 3–60 s after the adapter is plugged in or out
 
 ### Stage 1.3: Menu bar icon styles (0.4)
 
