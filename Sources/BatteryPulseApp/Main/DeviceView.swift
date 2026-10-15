@@ -316,8 +316,13 @@ struct DeviceView: View {
             return ShownProblem(
                 text: Phrases.deviceProblem(problem, name: name, connection: entry.connection), canRetry: true)
         }
-        // A call timed out: automatic reads wait for Try Again.
-        if devices.isStalled, entry.connection != nil {
+        // A call timed out: automatic work, USB events included, waits for Try Again, which
+        // lists first. Shown on every page, connected or not: a device whose list timed out
+        // looks unplugged, and this is the only way back for it.
+        if devices.isStalled {
+            guard entry.connection != nil else {
+                return ShownProblem(text: Phrases.deviceUnavailable(.timedOut(seconds: 0)), canRetry: true)
+            }
             return ShownProblem(
                 text: Phrases.deviceProblem(.transportFailed(.timedOut), name: name, connection: entry.connection),
                 canRetry: true)
