@@ -143,13 +143,31 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] Release notes in the Software Update window: join the lines of a wrapped paragraph or
   list item, which now break mid-sentence (seen with 0.3.1's notes)
 - [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
-  relaunch, instead of sending the user to the browser. A download made by the app itself may
-  skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
-  permission for an ad-hoc signed app
+  relaunch, instead of sending the user to the browser. Researched (October 2026, with an
+  adversarial check):
+  - A file a non-sandboxed app downloads with URLSession isn't quarantined (no
+    `LSFileQuarantineEnabled` in our Info.plist), and neither is what it copies out of that
+    DMG. Gatekeeper only asks for Open Anyway on quarantined apps: an unquarantined ad-hoc app
+    opened without a prompt in tests on macOS 15 and 26. macOS 27 is untested; check on the M5
+    and run `xattr -l` on the download.
+  - App Management: an app without a Team ID replacing its own bundle by rename didn't prompt
+    on macOS 26.2 in a public probe; undocumented, so on any error fall back to the browser.
+  - Integrity: GitHub computes a SHA-256 `digest` for every release asset (0.3.1's matches the
+    DMG); it catches a broken download but not a swapped one. An Ed25519 signature from CryptoKit,
+    made in CI with a secret key and checked against a public key built into the app, proves the
+    update is ours. Also check the bundle ID, the version and `codesign --verify --strict`.
+  - Mechanics: mount with `hdiutil attach -nobrowse -readonly`, copy next to the app on the same
+    volume, then a small detached step waits for the app to quit, swaps the two bundles
+    atomically (`renamex_np` with `RENAME_SWAP`), deletes the old copy, registers the new one
+    with Launch Services and relaunches it. Skip when the app runs translocated or outside a
+    writable folder.
+  - Ad-hoc identity changes with every build, so permissions tied to it (not notifications,
+    which follow the bundle ID) would be asked for again; Developer ID fixes that for good.
 - [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
-  removed them (the gallery still offers the widget); find out whether an in-place swap keeps
-  them or only a stable Developer ID signature does, and until then tell the user to add them
-  again
+  removed them. The in-place swap above keeps the path, registers the new copy and raises
+  `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
+  keeps them or only a stable Developer ID signature does, and until then tell the user to add
+  them again
 - [ ] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
@@ -192,8 +210,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
   Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in
   nanojoules without root on macOS 26, through private but exported calls that shipping
-  software already uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers only the user's own
-  processes and only the CPU. Nobody has shown the coalition calls working without root on
+  software already uses; per-process `proc_pid_rusage(RUSAGE_INFO_V6)` is public but covers
+  only the user's own processes and only the CPU. Nobody has shown the coalition calls working without root on
   macOS 27 yet, so a one-day spike on the M5 comes first. Show watts and Wh with an
   "unattributed" remainder (display, memory, radios, idle); history only from when
   BatteryPulse runs
