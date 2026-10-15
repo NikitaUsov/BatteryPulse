@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import BatteryCore
+import CoreText
 import SwiftUI
 
 /// Paints a drawn battery icon (every style but the SF Symbol) from ``BatteryIconLayout``. The
@@ -59,34 +60,80 @@ struct BatteryIconPainter: Sendable {
         if let nub = layout.nub {
             var nubContext = context
             nubContext.opacity = layout.nubOpacity
-            nubContext.fill(rounded(nub, layout.nubCornerRadius), with: .color(label))
+            nubContext.clip(to: Path(cgRect(nub)))
+            // The right half of an ellipse twice the terminal's width: flat against the battery.
+            nubContext.fill(
+                Path(ellipseIn: CGRect(x: nub.x - nub.width, y: nub.y, width: nub.width * 2, height: nub.height)),
+                with: .color(label))
         }
-        if let fontSize = layout.digitsFontSize, let percent = state.percent {
-            paintDigits(percent, fontSize: fontSize, fillEnd: fillEnd, in: &context)
+        if let digits = layout.digits, let percent = state.percent {
+            paintDigits(digits, percent: percent, in: &context)
         }
     }
 
-    /// The charge number: knocked out of the fill, solid over the empty part.
-    private func paintDigits(_ percent: Int, fontSize: Double, fillEnd: Double, in context: inout GraphicsContext) {
-        let text = Text(verbatim: String(percent))
-            .font(.system(size: CGFloat(fontSize), weight: .bold, design: .rounded))
-            .monospacedDigit()
-        var resolved = context.resolve(text)
-        resolved.shading = .color(label)
-        let proposal = CGSize(width: 200, height: 200)
-        let size = resolved.measure(in: proposal)
-        let baseline = resolved.firstBaseline(in: proposal)
-        // Centre the digits themselves (about 0.7 em above the baseline), not the line box.
-        let origin = CGPoint(
-            x: CGFloat(layout.body.midX) - size.width / 2,
-            y: CGFloat(layout.body.midY + fontSize * 0.35) - baseline)
+    /// The number and the glyph after it, knocked out of the battery (fill and track alike) so they
+    /// keep one colour. Built from the font's outlines: exact cap height and baseline, and nothing
+    /// can leave the box the layout gives it.
+    private func paintDigits(_ digits: BatteryIconLayout.Digits, percent: Int, in context: inout GraphicsContext) {
+        guard let number = DigitOutlines(String(percent), capHeight: digits.capHeight) else { return }
+        let placement = digits.placement(textWidth: number.width, digitCount: number.count)
+        var path = number.path(in: placement.text, scale: placement.scale, tracking: placement.tracking)
+        if let box = placement.glyph {
+            path.addPath(glyphPath(in: box))
+        }
         var knockOut = context
-        knockOut.clip(to: Path(leading(to: fillEnd)))
         knockOut.blendMode = .destinationOut
-        knockOut.draw(resolved, at: origin, anchor: .topLeading)
-        var solid = context
-        solid.clip(to: Path(trailing(from: fillEnd)))
-        solid.draw(resolved, at: origin, anchor: .topLeading)
+        // The system leaves a tenth of the battery under the number.
+        knockOut.opacity = digits.knockOut
+        knockOut.fill(path, with: .color(.black))
+    }
+
+    /// The bold system font's digits (SF Pro Bold, default proportional figures) as Core Text
+    /// outlines, at the size whose cap height is `capHeight`. Made for each render, which happens
+    /// once per state change.
+    private struct DigitOutlines {
+        let font: CTFont
+        let glyphs: [CGGlyph]
+        let advances: [CGSize]
+        /// The number's advance, in points.
+        let width: Double
+        var count: Int { glyphs.count }
+
+        /// `nil` when Core Text has no system font or no glyph for a character; the number is then
+        /// not drawn.
+        init?(_ string: String, capHeight: Double) {
+            guard let reference = CTFontCreateUIFontForLanguage(.emphasizedSystem, 100, nil) else { return nil }
+            let referenceCapHeight = CTFontGetCapHeight(reference)
+            guard referenceCapHeight > 0,
+                let font = CTFontCreateUIFontForLanguage(
+                    .emphasizedSystem, CGFloat(capHeight) * 100 / referenceCapHeight, nil)
+            else { return nil }
+            let characters = Array(string.utf16)
+            var glyphs = [CGGlyph](repeating: 0, count: characters.count)
+            guard CTFontGetGlyphsForCharacters(font, characters, &glyphs, characters.count) else { return nil }
+            var advances = [CGSize](repeating: .zero, count: glyphs.count)
+            width = CTFontGetAdvancesForGlyphs(font, .horizontal, glyphs, &advances, glyphs.count)
+            self.font = font
+            self.glyphs = glyphs
+            self.advances = advances
+        }
+
+        /// The baseline on `rect.maxY` and the first digit's origin at `rect.x`, scaled by `scale`,
+        /// with `tracking` (points as drawn) after every digit.
+        func path(in rect: IconRect, scale: Double, tracking: Double) -> Path {
+            let outline = CGMutablePath()
+            var x = rect.x
+            for (glyph, advance) in zip(glyphs, advances) {
+                if let glyphOutline = CTFontCreatePathForGlyph(font, glyph, nil) {
+                    // Core Text is y up: flip it and put the baseline on rect.maxY.
+                    let transform = CGAffineTransform(
+                        a: CGFloat(scale), b: 0, c: 0, d: CGFloat(-scale), tx: CGFloat(x), ty: CGFloat(rect.maxY))
+                    outline.addPath(glyphOutline, transform: transform)
+                }
+                x += Double(advance.width) * scale + tracking
+            }
+            return Path(outline)
+        }
     }
 
     private func paintRing(in context: inout GraphicsContext) {
@@ -145,12 +192,12 @@ struct BatteryIconPainter: Sendable {
         CGRect(x: rect.x, y: rect.y, width: rect.width, height: rect.height)
     }
 
-    /// Fully rounded ends are exact half circles; smaller corners are continuous, like Apple's.
+    /// Circular corners, the shape measured on the system's battery (exact half circles when the
+    /// radius reaches half the side).
     private func rounded(_ rect: IconRect, _ radius: Double) -> Path {
-        let limit = min(rect.width, rect.height) / 2
-        return Path(
-            roundedRect: cgRect(rect), cornerRadius: CGFloat(min(radius, limit)),
-            style: radius >= limit - 0.001 ? .circular : .continuous)
+        Path(
+            roundedRect: cgRect(rect), cornerRadius: CGFloat(min(radius, min(rect.width, rect.height) / 2)),
+            style: .circular)
     }
 
     /// Everything left of `x`, with room to spare around the icon.

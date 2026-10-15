@@ -186,6 +186,7 @@ import Testing
     private let plain = BatteryIconState(level: 0.5, percent: 50)
     private let charging = BatteryIconState(level: 0.5, percent: 50, glyph: .bolt)
     private let pluggedIn = BatteryIconState(level: 0.5, percent: 50, glyph: .plug)
+    private let barStyles: [MenuBarIconStyle] = [.modern, .classic, .percentageInside]
 
     @Test func symbolIsNotDrawn() {
         #expect(BatteryIconLayout(style: .symbol, state: plain) == nil)
@@ -193,21 +194,24 @@ import Testing
 
     @Test func modernMatchesTheSystemItem() throws {
         let layout = try #require(BatteryIconLayout(style: .modern, state: plain))
-        // A 22 × 11 pt capsule with fully rounded ends and no outline.
-        #expect(layout.body == IconRect(x: 0, y: 0, width: 22, height: 11))
-        #expect(layout.cornerRadius == layout.body.height / 2)
+        // Measured on the M5 (macOS 27, 2x): a 23 × 12 pt body with 4 pt corners, no outline.
+        #expect(layout.body == IconRect(x: 0, y: 1, width: 23, height: 12))
+        #expect(layout.cornerRadius == layout.body.height / 3)
         #expect(layout.outlineWidth == 0)
         #expect(layout.fillArea == layout.body)
-        #expect(layout.trackOpacity == 0.35)
-        // A translucent terminal 1 pt to the right, centred vertically.
+        #expect(layout.trackOpacity == 0.48)
+        // A 1.375 × 4 pt terminal 1 pt to the right, centred.
         let nub = try #require(layout.nub)
         #expect(nub.x - layout.body.maxX == 1)
+        #expect(nub.width == 1.375 && nub.height == 4)
         #expect(nub.midY == layout.body.midY)
-        #expect(layout.nubOpacity == layout.trackOpacity)
-        #expect(layout.width == nub.maxX)
-        #expect(layout.height == 11)
+        #expect(layout.nubOpacity == 0.58)
+        // The terminal's end rounded up to whole points, so the image has whole pixels.
+        #expect(layout.width == nub.maxX.rounded(.up))
+        // Room for the bolt's overshoot above and below.
+        #expect(layout.height == layout.body.height + 2)
         #expect(layout.glyph == nil)
-        #expect(layout.digitsFontSize == nil)
+        #expect(layout.digits == nil)
         #expect(!layout.isRing)
     }
 
@@ -216,61 +220,113 @@ import Testing
         #expect(layout.outlineWidth == 1)
         #expect(layout.trackOpacity == 0)
         #expect(layout.nubOpacity == 1)
-        #expect(layout.fillArea.x > layout.outlineWidth)
-        #expect(layout.fillArea.maxX < layout.body.maxX - layout.outlineWidth)
-        #expect(layout.fillArea.midY == layout.body.midY)
+        #expect(layout.fillArea == layout.body.insetBy(2))
+        #expect(layout.fillCornerRadius == layout.cornerRadius - 2)
     }
 
-    @Test(arguments: [MenuBarIconStyle.modern, .classic, .ring])
-    func glyphsSitCentredOnTheBattery(style: MenuBarIconStyle) throws {
-        for state in [charging, pluggedIn] {
-            let layout = try #require(BatteryIconLayout(style: style, state: state))
-            let glyph = try #require(layout.glyph)
-            #expect(abs(glyph.midX - layout.body.midX) < 1e-9)
-            #expect(abs(glyph.midY - layout.body.midY) < 1e-9)
-            #expect(glyph.x >= layout.body.x && glyph.maxX <= layout.body.maxX)
-            #expect(glyph.y >= layout.body.y && glyph.maxY <= layout.body.maxY)
-            let aspect = BatteryIconGlyphs.aspectRatio(state.glyph)
-            #expect(abs(glyph.width / glyph.height - aspect) < 1e-9)
-            // The gap only matters where the glyph crosses the fill.
-            #expect((layout.glyphGap > 0) == !layout.isRing)
-            // The icon keeps its size when the glyph appears.
-            #expect(layout.width == BatteryIconLayout(style: style, state: plain)?.width)
+    @Test func barStylesShareOneCanvas() throws {
+        let modern = try #require(BatteryIconLayout(style: .modern, state: plain))
+        for style in barStyles {
+            for state in [plain, charging, pluggedIn, BatteryIconState(level: 0)] {
+                let layout = try #require(BatteryIconLayout(style: style, state: state))
+                #expect(layout.width == modern.width && layout.height == modern.height)
+                #expect(layout.body == modern.body && layout.nub == modern.nub)
+            }
         }
+        let ring = try #require(BatteryIconLayout(style: .ring, state: plain))
+        #expect(ring.height == modern.height)
+        #expect(BatteryIconLayout.previewSize == IconSize(width: modern.width, height: modern.height))
+    }
+
+    @Test(arguments: [MenuBarIconStyle.modern, .classic])
+    func boltOvershootsTheBodyLikeTheSystem(style: MenuBarIconStyle) throws {
+        let layout = try #require(BatteryIconLayout(style: style, state: charging))
+        let bolt = try #require(layout.glyph)
+        #expect(bolt.height == 14 && bolt.y == 0 && bolt.maxY == layout.height)
+        #expect(abs(bolt.width / bolt.height - 0.7) < 1e-9)
+        #expect(abs(bolt.midX - layout.body.midX) < 1e-9)
+        #expect(layout.glyphGap == 1.2)
+        // The plug stays inside the battery.
+        let plug = try #require(BatteryIconLayout(style: style, state: pluggedIn)?.glyph)
+        #expect(plug.y > layout.body.y && plug.maxY < layout.body.maxY)
+        #expect(abs(plug.midX - layout.body.midX) < 1e-9 && abs(plug.midY - layout.body.midY) < 1e-9)
     }
 
     @Test func ringGlyphsStayInsideTheStroke() throws {
         for state in [charging, pluggedIn] {
             let layout = try #require(BatteryIconLayout(style: .ring, state: state))
             let glyph = try #require(layout.glyph)
+            #expect(abs(glyph.midX - layout.body.midX) < 1e-9 && abs(glyph.midY - layout.body.midY) < 1e-9)
             let inner = layout.body.width / 2 - layout.ringLineWidth
             let halfDiagonal = (glyph.width * glyph.width + glyph.height * glyph.height).squareRoot() / 2
             #expect(halfDiagonal + layout.glyphGap < inner)
+            #expect(layout.ringLineWidth == 3)
         }
     }
 
-    @Test func percentageInsideFitsThreeDigitsAndPutsTheGlyphAfterTheTerminal() throws {
+    @Test func percentageInsideKnocksTheNumberOutOfTheBattery() throws {
         let layout = try #require(BatteryIconLayout(style: .percentageInside, state: plain))
-        let fontSize = try #require(layout.digitsFontSize)
-        // Bold rounded digits are about 0.6 em wide; "100" must fit between the rounded ends.
-        #expect(fontSize * 0.62 * 3 < layout.body.width - layout.cornerRadius)
-        #expect(fontSize < layout.body.height)
+        let digits = try #require(layout.digits)
+        // 7.4 pt digits, 2.3 pt clear of the body's top and bottom, centred; a tenth of the
+        // battery stays under them, as the system draws it.
+        #expect(digits.capHeight == 7.4)
+        #expect(digits.box.height == digits.capHeight)
+        #expect(abs(digits.box.y - layout.body.y - 2.3) < 1e-9)
+        #expect(abs(layout.body.maxY - digits.box.maxY - 2.3) < 1e-9)
+        #expect(digits.box.midX == layout.body.midX)
+        #expect(digits.knockOut == 0.9)
+        #expect(digits.glyphSize == nil)
         #expect(layout.glyph == nil)
-
-        let noReading = try #require(BatteryIconLayout(style: .percentageInside, state: BatteryIconState(level: 0)))
-        #expect(noReading.digitsFontSize == nil)
 
         for state in [charging, pluggedIn] {
             let withGlyph = try #require(BatteryIconLayout(style: .percentageInside, state: state))
-            let glyph = try #require(withGlyph.glyph)
-            let nub = try #require(withGlyph.nub)
-            #expect(glyph.x > nub.maxX)
-            #expect(withGlyph.width == glyph.maxX)
-            #expect(abs(glyph.midY - withGlyph.body.midY) < 1e-9)
-            #expect(glyph.maxY <= withGlyph.height)
-            // Outside the battery, nothing to knock out.
-            #expect(withGlyph.glyphGap == 0)
+            let inline = try #require(withGlyph.digits?.glyphSize)
+            #expect(inline.height <= digits.capHeight)
+            // Inside the battery, knocked out with the number: nothing drawn over it.
+            #expect(withGlyph.glyph == nil)
         }
+
+        // Without a reading it is drawn like Modern.
+        let noReading = try #require(
+            BatteryIconLayout(style: .percentageInside, state: BatteryIconState(level: 0, glyph: .bolt)))
+        #expect(noReading.digits == nil)
+        #expect(noReading.glyph == BatteryIconLayout(style: .modern, state: charging)?.glyph)
+    }
+
+    @Test func digitsFitTheirBoxAndStayCentred() throws {
+        let digits = try #require(BatteryIconLayout(style: .percentageInside, state: charging)?.digits)
+        let box = digits.box
+        let bolt = try #require(digits.glyphSize)
+        // "99" + bolt at the system's pitch fits as it is: full size, no tracking, centred
+        // together, the bolt 1 pt after the number, both centred vertically.
+        let two = digits.placement(textWidth: 12.4, digitCount: 2)
+        #expect(two.scale == 1 && two.tracking == 0)
+        #expect(two.text.height == digits.capHeight && abs(two.text.width - 12.4) < 1e-9)
+        let glyph = try #require(two.glyph)
+        #expect(glyph.width == bolt.width && glyph.height == bolt.height)
+        #expect(abs((two.text.x + glyph.maxX) / 2 - box.midX) < 1e-9)
+        #expect(abs(glyph.x - two.text.maxX - digits.spacing) < 1e-9)
+        #expect(abs(glyph.midY - box.midY) < 1e-9 && abs(two.text.midY - box.midY) < 1e-9)
+        // A wider face is set closer, not narrowed: 6.5 pt digits get -0.3 pt between them.
+        let wide = digits.placement(textWidth: 13, digitCount: 2)
+        #expect(abs(wide.tracking + 0.3) < 1e-9 && abs(wide.text.width - 12.7) < 1e-9)
+        #expect(wide.scale == 1 && wide.text.height == digits.capHeight)
+        // "100" + bolt doesn't fit: everything scales down by the same factor (height included,
+        // as the system does) and fills the box exactly.
+        let three = digits.placement(textWidth: 17, digitCount: 3)
+        let scale = box.width / (17 + digits.spacing + bolt.width)
+        #expect(three.tracking == 0 && abs(three.scale - scale) < 1e-9)
+        #expect(abs(three.text.height - digits.capHeight * scale) < 1e-9)
+        #expect(abs(three.text.width - 17 * scale) < 1e-9)
+        #expect(abs(three.text.x - box.x) < 1e-9 && abs((three.glyph?.maxX ?? 0) - box.maxX) < 1e-9)
+        #expect(abs((three.glyph?.height ?? 0) - bolt.height * scale) < 1e-9)
+        #expect(three.text.y >= box.y && three.text.maxY <= box.maxY)
+        // No glyph: the number alone is centred; odd input doesn't break the layout.
+        let plain = try #require(BatteryIconLayout(style: .percentageInside, state: plain)?.digits)
+        let alone = plain.placement(textWidth: 12.4, digitCount: 2)
+        #expect(alone.glyph == nil && abs(alone.text.midX - box.midX) < 1e-9 && alone.scale == 1)
+        #expect(plain.placement(textWidth: 0, digitCount: 0).scale == 1)
+        #expect(plain.placement(textWidth: -1, digitCount: 1).text.width == 0)
     }
 
     @Test(arguments: [MenuBarIconStyle.modern, .classic, .percentageInside, .ring])
@@ -278,10 +334,14 @@ import Testing
         for state in [plain, charging, pluggedIn] {
             let layout = try #require(BatteryIconLayout(style: style, state: state))
             var rects = [layout.body, layout.fillArea]
-            rects += [layout.nub, layout.glyph].compactMap { $0 }
+            rects += [layout.nub, layout.glyph, layout.digits?.box].compactMap { $0 }
             for rect in rects {
                 #expect(rect.x >= 0 && rect.y >= 0)
                 #expect(rect.maxX <= layout.width && rect.maxY <= layout.height)
+            }
+            if let box = layout.digits?.box {
+                #expect(box.x >= layout.body.x && box.maxX <= layout.body.maxX)
+                #expect(box.y >= layout.body.y && box.maxY <= layout.body.maxY)
             }
             // Menu bar icons stay well under the bar's height.
             #expect(layout.height <= 16)
@@ -291,14 +351,14 @@ import Testing
     @Test func fillGrowsInWholePixels() throws {
         let layout = try #require(BatteryIconLayout(style: .modern, state: plain))
         #expect(layout.fillWidth(level: 0, pixelScale: 2) == 0)
-        #expect(layout.fillWidth(level: 1, pixelScale: 2) == 22)
-        #expect(layout.fillWidth(level: 0.5, pixelScale: 2) == 11)
-        // 70 % of 22 pt is 15.4 pt: 30.8 px rounds to 31 px.
-        #expect(layout.fillWidth(level: 0.7, pixelScale: 2) == 15.5)
-        #expect(layout.fillWidth(level: 0.7, pixelScale: 1) == 15)
+        #expect(layout.fillWidth(level: 1, pixelScale: 2) == 23)
+        #expect(layout.fillWidth(level: 0.5, pixelScale: 2) == 11.5)
+        // 70 % of 23 pt is 16.1 pt: 32.2 px rounds to 32 px.
+        #expect(layout.fillWidth(level: 0.7, pixelScale: 2) == 16)
+        #expect(layout.fillWidth(level: 0.7, pixelScale: 1) == 16)
         // A sliver stays visible at 1 %.
         #expect(layout.fillWidth(level: 0.01, pixelScale: 2) == 0.5)
-        #expect(layout.fillWidth(level: 1.5, pixelScale: 2) == 22)
+        #expect(layout.fillWidth(level: 1.5, pixelScale: 2) == 23)
         #expect(layout.fillWidth(level: 0.5, pixelScale: 0) == 0)
 
         let classic = try #require(BatteryIconLayout(style: .classic, state: plain))
