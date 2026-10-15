@@ -174,6 +174,17 @@
         }
       }
     },
+    "About BatteryPulse": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О программе BatteryPulse"
+          }
+        }
+      }
+    },
     "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac.": {
       "extractionState": "manual",
       "localizations": {
@@ -414,6 +425,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Батарейный %@, %@"
+          }
+        }
+      }
+    },
+    "Battery and charging details for your Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробно об аккумуляторе и зарядке вашего Mac."
           }
         }
       }
@@ -1797,6 +1819,17 @@
         }
       }
     },
+    "Development build": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сборка для разработки"
+          }
+        }
+      }
+    },
     "Discharging at %@": {
       "extractionState": "manual",
       "localizations": {
@@ -2096,6 +2129,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Фиксированное напряжение этого профиля USB-PD, предлагаемого адаптером."
+          }
+        }
+      }
+    },
+    "Free software under the GNU General Public License, version 3.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Свободная программа под лицензией GNU General Public License версии 3."
           }
         }
       }
@@ -4478,6 +4522,17 @@
         }
       }
     },
+    "Project Page": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Страница проекта"
+          }
+        }
+      }
+    },
     "Quit": {
       "extractionState": "manual",
       "localizations": {
@@ -4634,6 +4689,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сниженная производительность, чтобы аккумулятор работал дольше."
+          }
+        }
+      }
+    },
+    "Release Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Примечания к выпуску"
           }
         }
       }
@@ -5858,6 +5924,17 @@
         }
       }
     },
+    "User Guide": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Руководство пользователя"
+          }
+        }
+      }
+    },
     "V": {
       "extractionState": "manual",
       "comment": "Unit symbol: volts",
@@ -5890,6 +5967,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Переменный %@ × %@"
+          }
+        }
+      }
+    },
+    "Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия"
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия %@"
           }
         }
       }

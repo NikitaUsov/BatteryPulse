@@ -217,6 +217,10 @@ again later.
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
 
+**BatteryPulse → About BatteryPulse**, the ⓘ button in the menu bar popover and the Version row
+in Settings → Advanced open the About window: the version and build, links to the project, this
+guide and the release notes, Check for Updates and the license.
+
 ## Language
 
 BatteryPulse is available in English and Russian. Like other Mac apps, it follows your system

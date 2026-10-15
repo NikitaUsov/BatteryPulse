@@ -54,7 +54,8 @@ struct BatteryPulseApp: App {
         .defaultSize(width: 860, height: 640)
         .defaultLaunchBehavior(showsMainWindow && !AppSettings.prefersCompactWindow ? .presented : .suppressed)
         .commands {
-            CommandGroup(after: .appInfo) {
+            CommandGroup(replacing: .appInfo) {
+                Button("About BatteryPulse") { WindowOpener.show(WindowID.about) }
                 Button("Check for Updates…") { updater.checkNow() }
             }
             CommandGroup(replacing: .help) {
@@ -98,6 +99,14 @@ struct BatteryPulseApp: App {
         .defaultLaunchBehavior(.suppressed)
         .restorationBehavior(.disabled)
 
+        Window("About BatteryPulse", id: WindowID.about) {
+            AboutView()
+                .environment(updater)
+        }
+        .windowResizability(.contentSize)
+        .defaultLaunchBehavior(.suppressed)
+        .restorationBehavior(.disabled)
+
         Window("What's New", id: WindowID.whatsNew) {
             WhatsNewView()
         }
@@ -120,6 +129,7 @@ enum WindowID {
     static let settings = "settings"
     static let update = "update"
     static let whatsNew = "whatsNew"
+    static let about = "about"
 }
 
 @MainActor

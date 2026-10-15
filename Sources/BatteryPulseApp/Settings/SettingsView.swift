@@ -272,6 +272,15 @@ struct AdvancedSettings: View {
                     NSWorkspace.shared.open(AppLinks.help)
                 }
             }
+            LabeledContent("Version") {
+                HStack {
+                    if let version = AppInfo.version {
+                        Text(verbatim: version)
+                            .textSelection(.enabled)
+                    }
+                    Button("About BatteryPulse") { WindowOpener.show(WindowID.about) }
+                }
+            }
         }
     }
 }

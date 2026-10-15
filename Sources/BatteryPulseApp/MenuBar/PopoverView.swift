@@ -57,6 +57,14 @@ struct PopoverView: View {
                 }
                 Spacer()
                 Button {
+                    WindowOpener.openWindow = openWindow
+                    WindowOpener.show(WindowID.about)
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .help("About BatteryPulse")
+                .accessibilityLabel("About BatteryPulse")
+                Button {
                     DockIconPolicy.prepareToShowWindow()
                     openSettings()
                     NSApp.activate()

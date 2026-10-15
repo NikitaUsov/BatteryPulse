@@ -106,6 +106,12 @@ enum WhatsNewPolicy {
 
 enum AppLinks {
     // swift-format-ignore: NeverForceUnwrap
+    static let project = URL(string: "https://github.com/NikitaUsov/BatteryPulse")!
+    // swift-format-ignore: NeverForceUnwrap
+    static let releases = URL(string: "https://github.com/NikitaUsov/BatteryPulse/releases")!
+    // swift-format-ignore: NeverForceUnwrap
+    static let license = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/LICENSE")!
+    // swift-format-ignore: NeverForceUnwrap
     static let help = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")!
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
