@@ -5,25 +5,31 @@ import BatteryCore
 import BatteryKit
 import SwiftUI
 
-enum SidebarItem: String, CaseIterable, Identifiable {
+enum SidebarItem: Hashable, Identifiable {
     case overview, power, health, history
     /// Developer section: raw data and Demo Mode.
     case developer, demo
+    /// Devices section: an iPhone's or iPad's page, or the intro row when there is none.
+    case device(DeviceKey)
+    case devicesIntro
 
     var id: Self { self }
 
     static let pages: [SidebarItem] = [.overview, .power, .health, .history]
     static let developerPages: [SidebarItem] = [.developer, .demo]
 
-    /// Whether the page shows the live reading. History comes from disk and Demo Mode from the
-    /// demo, so the main window doesn't poll the battery while they are shown.
+    /// Whether the page shows the live reading. History comes from disk, Demo Mode from the demo
+    /// and the Devices section from other devices, so the main window doesn't poll the battery
+    /// while they are shown.
     var showsLiveValues: Bool {
         switch self {
         case .overview, .power, .health, .developer: true
-        case .history, .demo: false
+        case .history, .demo, .device, .devicesIntro: false
         }
     }
 
+    /// A `var` with literal cases: the catalog test finds the keys here. A device page shows the
+    /// device's name instead (`MainView.navigationTitle`).
     var title: LocalizedStringKey {
         switch self {
         case .overview: "Overview"
@@ -32,6 +38,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .history: "History"
         case .developer: "Raw Data"
         case .demo: "Demo Mode"
+        case .devicesIntro: "iPhone and iPad"
+        case .device: "iPhone and iPad"
         }
     }
 
@@ -43,6 +51,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .history: "chart.xyaxis.line"
         case .developer: "tablecells"
         case .demo: "play.rectangle.on.rectangle"
+        case .devicesIntro: "ipad.and.iphone"
+        case .device: "iphone"
         }
     }
 }
@@ -51,16 +61,42 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 struct MainView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
+    @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.motion) private var motion
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
     @State private var selection: SidebarItem = .overview
+    private let formatter = BatteryFormatter.app
+
+    /// The Devices section's iPhones and iPads: in Demo Mode only the simulated one, so
+    /// screenshots never show a real owner's device name.
+    private var deviceEntries: [IDeviceEntry] {
+        AppDevices.shownEntries(devices, demo: demo)
+    }
+
+    /// The rows slide in and out when a device attaches or is forgotten; keyed on the IDs, never
+    /// on the batteries.
+    private var deviceRowIDs: [DeviceKey] {
+        deviceEntries.map(\.id)
+    }
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
                 ForEach(SidebarItem.pages) { item in
                     Label(item.title, systemImage: item.symbol)
+                }
+                Section("Devices") {
+                    if deviceEntries.isEmpty {
+                        Label(SidebarItem.devicesIntro.title, systemImage: SidebarItem.devicesIntro.symbol)
+                            .tag(SidebarItem.devicesIntro)
+                    } else {
+                        ForEach(deviceEntries) { entry in
+                            DeviceRow(entry: entry, formatter: formatter)
+                                .tag(SidebarItem.device(entry.id))
+                        }
+                    }
+                    // Other kinds of devices follow the iPhones and iPads, one row each.
                 }
                 if showsDeveloper {
                     Section("Developer") {
@@ -73,6 +109,7 @@ struct MainView: View {
             // The Developer section slides in and out when it is turned on or off in Settings; under
             // Reduce Motion it appears and goes at once.
             .animation(motion.change, value: showsDeveloper)
+            .animation(motion.change, value: deviceRowIDs)
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             // Switching pages is the most frequent action here, so it gets the least motion: a
@@ -84,7 +121,7 @@ struct MainView: View {
                     .transition(.opacity)
             }
             .animation(motion.quickFade, value: selection)
-            .navigationTitle(selection.title)
+            .navigationTitle(navigationTitle)
             // Floats over every page while Demo Mode is on; content scrolls under it with the
             // system's scroll edge effect.
             .safeAreaBar(edge: .bottom) {
@@ -95,7 +132,7 @@ struct MainView: View {
             .frame(minWidth: 520, minHeight: 540)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    CopyReportButton(monitor: monitor)
+                    CopyReportButton(monitor: monitor, selection: selection)
                 }
                 // Unrelated actions: each gets its own glass capsule.
                 ToolbarSpacer(.fixed, placement: .primaryAction)
@@ -112,6 +149,19 @@ struct MainView: View {
         .onChange(of: showsDeveloper) { _, shows in
             if !shows, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
+        // A device page whose device went (forgotten, unplugged while never remembered, the demo
+        // ended) shows the first device left, else the intro; the intro gives way to the first
+        // device that appears.
+        .onChange(of: deviceRowIDs) { _, ids in
+            switch selection {
+            case .device(let key) where !ids.contains(key):
+                selection = ids.first.map(SidebarItem.device) ?? .devicesIntro
+            case .devicesIntro:
+                if let first = ids.first { selection = .device(first) }
+            default:
+                break
+            }
+        }
         // The demo tour switches pages by itself, but never to a hidden one. The page changes in
         // one transaction with the demo's data; the detail still fades through `quickFade` when
         // `change` is off (Reduce Motion), and the sidebar selection then moves at once.
@@ -125,6 +175,40 @@ struct MainView: View {
         .trackedWindow(WindowID.main)
     }
 
+    /// A device page is titled with the device's name, which is data, not a catalog key.
+    private var navigationTitle: Text {
+        if case .device(let key) = selection, let entry = deviceEntries.first(where: { $0.id == key }) {
+            return DeviceText.displayName(entry)
+        }
+        return Text(selection.title)
+    }
+}
+
+/// An iPhone or iPad in the sidebar: its name and, while connected, its charge.
+private struct DeviceRow: View {
+    let entry: IDeviceEntry
+    let formatter: BatteryFormatter
+
+    var body: some View {
+        let isConnected = entry.connection != nil
+        let charge: Text? =
+            isConnected ? entry.battery?.chargePercent.map { Text(verbatim: formatter.percent($0)) } : nil
+        Label {
+            DeviceText.displayName(entry)
+        } icon: {
+            Image(systemName: IDeviceModel.symbolName(deviceClass: entry.deviceClass))
+        }
+        .badge(charge)
+        // Dimmed while not connected: the values are the last ones read.
+        .foregroundStyle(isConnected ? HierarchicalShapeStyle.primary : .secondary)
+        .help(lastSeen)
+    }
+
+    /// "Last seen 14:32" for a device that isn't connected.
+    private var lastSeen: Text {
+        guard entry.connection == nil, let date = entry.lastSeen else { return Text(verbatim: "") }
+        return Text("Last seen \(DeviceText.date(date))")
+    }
 }
 
 /// The selected page. A separate view, so live updates re-render only the detail column and not
@@ -134,17 +218,30 @@ private struct MainDetail: View {
     let selection: SidebarItem
 
     var body: some View {
-        if selection == .demo {
+        // History and the Devices section come from disk and other devices, so they show even
+        // when this Mac has no battery or no reading yet.
+        switch selection {
+        case .demo:
             DemoView()
-        } else if selection == .history {
-            // History is on disk, so it shows even when there is no live reading.
+        case .history:
             HistoryView()
-        } else if let snapshot = monitor.snapshot {
+        case .devicesIntro:
+            DevicesIntroView()
+        case .device(let key):
+            DevicePage(key: key)
+        case .overview, .power, .health, .developer:
+            snapshotPage
+        }
+    }
+
+    @ViewBuilder
+    private var snapshotPage: some View {
+        if let snapshot = monitor.snapshot {
             switch selection {
             case .overview: OverviewView(snapshot: snapshot)
             case .power: PowerView(snapshot: snapshot)
             case .health: HealthView(snapshot: snapshot)
-            case .developer, .demo, .history: DeveloperView(monitor: monitor)
+            default: DeveloperView(monitor: monitor)
             }
         } else if monitor.hasBattery == false {
             ContentUnavailableView(
@@ -156,17 +253,33 @@ private struct MainDetail: View {
             ProgressView()
         }
     }
+}
 
+/// A device's page, from the entry the Devices section shows for its key.
+private struct DevicePage: View {
+    let key: DeviceKey
+    @Environment(IDeviceMonitor.self) private var devices
+    @Environment(DemoController.self) private var demo
+
+    var body: some View {
+        if let entry = AppDevices.shownEntries(devices, demo: demo).first(where: { $0.id == key }) {
+            DeviceView(entry: entry)
+        } else {
+            DevicesIntroView()
+        }
+    }
 }
 
 private struct CopyReportButton: View {
     let monitor: BatteryMonitor
+    let selection: SidebarItem
+    @Environment(IDeviceMonitor.self) private var devices
+    @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
     /// The icon shows a checkmark for a moment after copying.
     @State private var copied = false
 
     var body: some View {
-        // A report of simulated data would mislead a bug report.
         Button(action: copyReport) {
             Label {
                 Text("Copy Report")
@@ -175,11 +288,8 @@ private struct CopyReportButton: View {
                     .contentTransition(motion.symbolSwap)
             }
         }
-        .disabled(monitor.snapshot == nil || monitor.isOverridden)
-        .help(
-            monitor.isOverridden
-                ? Text("Not available in Demo Mode") : Text("Copy a plain-text report without serial numbers")
-        )
+        .disabled(!canCopy)
+        .help(help)
         .task(id: copied) {
             guard copied else { return }
             try? await Task.sleep(for: .seconds(1.5))
@@ -188,16 +298,49 @@ private struct CopyReportButton: View {
         }
     }
 
+    /// A report of simulated data would mislead a bug report. A device's report is of this
+    /// session's last read, so it needs one.
+    private var canCopy: Bool {
+        switch selection {
+        case .device(let key):
+            !demo.isActive && devices.entries.contains { $0.id == key && $0.hasCapture }
+        case .devicesIntro:
+            false
+        default:
+            monitor.snapshot != nil && !monitor.isOverridden
+        }
+    }
+
+    private var help: Text {
+        switch selection {
+        case .device:
+            if demo.isActive { return Text("Not available in Demo Mode") }
+            if !canCopy { return Text("Connect the device to copy a report") }
+            return Text("Copy a plain-text report without serial numbers")
+        default:
+            if monitor.isOverridden { return Text("Not available in Demo Mode") }
+            return Text("Copy a plain-text report without serial numbers")
+        }
+    }
+
     private func copyReport() {
-        // Simulated data would mislead a bug report, and Demo Mode never triggers a read.
-        guard !monitor.isOverridden else { return }
-        // History and Demo Mode don't poll the battery, so the last reading can be minutes old:
-        // take a fresh one for the report.
-        monitor.refresh()
-        guard let snapshot = monitor.snapshot else { return }
+        let text: String
+        if case .device(let key) = selection {
+            // No identifier and no owner name: the capture is redacted first.
+            guard !demo.isActive, let capture = devices.capture(for: key) else { return }
+            text = IDeviceReport.text(for: capture.redacted)
+        } else {
+            // Simulated data would mislead a bug report, and Demo Mode never triggers a read.
+            guard !monitor.isOverridden else { return }
+            // History and Demo Mode don't poll the battery, so the last reading can be minutes old:
+            // take a fresh one for the report.
+            monitor.refresh()
+            guard let snapshot = monitor.snapshot else { return }
+            text = BatteryReport.text(for: snapshot)
+        }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(BatteryReport.text(for: snapshot), forType: .string)
+        pasteboard.setString(text, forType: .string)
         withAnimation(motion.crossfade) { copied = true }
         AccessibilityNotification.Announcement(String(localized: "Report copied")).post()
     }

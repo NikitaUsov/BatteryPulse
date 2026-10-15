@@ -47,6 +47,17 @@
         }
       }
     },
+    "%@ of design": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ от расчётной"
+          }
+        }
+      }
+    },
     "%@ per hour": {
       "extractionState": "manual",
       "comment": "Average drain, e.g. 8.5% per hour",
@@ -882,6 +893,17 @@
         }
       }
     },
+    "BatteryPulse removes the device and its battery history from this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse удалит устройство и историю его аккумулятора с этого Mac."
+          }
+        }
+      }
+    },
     "BatteryPulse runs as a regular app. Open it from the Dock or the Applications folder.": {
       "extractionState": "manual",
       "localizations": {
@@ -1370,6 +1392,17 @@
         }
       }
     },
+    "Check Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить снова"
+          }
+        }
+      }
+    },
     "Check Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -1559,6 +1592,39 @@
         }
       }
     },
+    "Connect an iPhone or iPad with a cable and unlock it. If it asks Trust This Computer?, tap Trust.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите iPhone или iPad кабелем и разблокируйте его. Если появится запрос «Доверять этому компьютеру?», коснитесь «Доверять»."
+          }
+        }
+      }
+    },
+    "Connect the device by cable to read it": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите устройство кабелем, чтобы считать данные"
+          }
+        }
+      }
+    },
+    "Connect the device to copy a report": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите устройство, чтобы скопировать отчёт"
+          }
+        }
+      }
+    },
     "Connect the power adapter soon.": {
       "extractionState": "manual",
       "localizations": {
@@ -1566,6 +1632,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скоро подключите адаптер питания."
+          }
+        }
+      }
+    },
+    "Connected by cable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено кабелем"
+          }
+        }
+      }
+    },
+    "Connected over Wi-Fi": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено по Wi-Fi"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключение"
           }
         }
       }
@@ -1983,6 +2082,17 @@
         }
       }
     },
+    "Details": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности"
+          }
+        }
+      }
+    },
     "Details of the connected power adapter; empty when the Mac runs on battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2024,6 +2134,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сборки для разработки не могут устанавливать обновления."
+          }
+        }
+      }
+    },
+    "Devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройства"
           }
         }
       }
@@ -2367,6 +2488,17 @@
         }
       }
     },
+    "First use": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Первое использование"
+          }
+        }
+      }
+    },
     "Fixed %@ × %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery fixed-voltage offer: voltage × current",
@@ -2387,6 +2519,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Фиксированное напряжение этого профиля USB-PD, предлагаемого адаптером."
+          }
+        }
+      }
+    },
+    "Forget Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть устройство"
+          }
+        }
+      }
+    },
+    "Forget This Device…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть это устройство…"
+          }
+        }
+      }
+    },
+    "Forget “%@”?": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть «%@»?"
           }
         }
       }
@@ -3290,6 +3455,17 @@
         }
       }
     },
+    "Last seen %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последнее подключение: %@"
+          }
+        }
+      }
+    },
     "Lasts until about %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3333,6 +3509,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Элементы управления в стиле Liquid Glass"
+          }
+        }
+      }
+    },
+    "Looking for devices…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поиск устройств…"
           }
         }
       }
@@ -3604,6 +3791,17 @@
         }
       }
     },
+    "Model": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        }
+      }
+    },
     "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3634,6 +3832,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ежемесячно"
+          }
+        }
+      }
+    },
+    "More": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ещё"
           }
         }
       }
@@ -3785,6 +3994,17 @@
         }
       }
     },
+    "No Devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет устройств"
+          }
+        }
+      }
+    },
     "No History Yet": {
       "extractionState": "manual",
       "localizations": {
@@ -3906,6 +4126,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ещё не проверялось"
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не подключено"
           }
         }
       }
@@ -5250,6 +5481,39 @@
         }
       }
     },
+    "Read the battery again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считать данные аккумулятора ещё раз"
+          }
+        }
+      }
+    },
+    "Reading iPhone and iPad batteries is off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывание аккумуляторов iPhone и iPad выключено."
+          }
+        }
+      }
+    },
+    "Reading…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывание…"
+          }
+        }
+      }
+    },
     "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5314,6 +5578,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сниженная производительность, чтобы аккумулятор работал дольше."
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновить"
           }
         }
       }
@@ -5703,6 +5978,17 @@
         }
       }
     },
+    "See the battery of an iPhone or iPad connected to this Mac: maximum capacity, cycle count and charge, with their history.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Просматривайте состояние аккумулятора iPhone или iPad, подключённого к этому Mac: максимальную ёмкость, циклы перезарядки и заряд — вместе с историей."
+          }
+        }
+      }
+    },
     "Select a row to see its full value, decoding and description.": {
       "extractionState": "manual",
       "localizations": {
@@ -5935,6 +6221,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Обновление ПО"
+          }
+        }
+      }
+    },
+    "Software Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия ПО"
           }
         }
       }
@@ -6592,6 +6889,17 @@
         }
       }
     },
+    "Turn On": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включить"
+          }
+        }
+      }
+    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -6678,6 +6986,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Доступно обновление: %@"
+          }
+        }
+      }
+    },
+    "Updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновлено: %@"
           }
         }
       }
@@ -7269,6 +7588,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Беспроводной"
+          }
+        }
+      }
+    },
+    "Wireless charger": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Беспроводное зарядное устройство"
           }
         }
       }

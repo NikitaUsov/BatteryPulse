@@ -23,6 +23,12 @@ enum AppDevices {
         monitor.setEnabled(on)
     }
 
+    /// The iPhones and iPads the Devices section shows: in Demo Mode only the simulated one, so
+    /// screenshots never show a real owner's device name. Real reads go on in the background.
+    @MainActor static func shownEntries(_ devices: IDeviceMonitor, demo: DemoController) -> [IDeviceEntry] {
+        demo.isActive ? [DemoDevice.entry] : devices.entries
+    }
+
     /// Loads the remembered devices and, with the setting on, starts watching USB. With the
     /// setting off nothing else runs: no USB watch, no framework, no file.
     @MainActor static func start() {
