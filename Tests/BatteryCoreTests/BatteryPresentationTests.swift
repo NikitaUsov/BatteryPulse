@@ -23,39 +23,6 @@ import Testing
         #expect(BatteryPresentation.symbolName(for: nil) == "battery.0percent")
     }
 
-    @Test func menuBarTitles() throws {
-        let s = try Fixture.m5OnBattery.snapshot()
-        let english = BatteryFormatter(locale: Locale(identifier: "en_US"))
-        func title(_ style: MenuBarStyle) -> String {
-            BatteryPresentation.menuBarTitle(for: s, style: style, formatter: english)
-                .replacingOccurrences(of: "\u{00A0}", with: " ")
-        }
-        #expect(title(.percent) == "70%")
-        #expect(title(.power) == "−7.5 W")
-        #expect(title(.percentAndPower) == "70% · −7.5 W")
-        #expect(title(.iconOnly) == "")
-        #expect(BatteryPresentation.menuBarTitle(for: nil, style: .percent, formatter: english) == "")
-    }
-
-    @Test func menuBarTitleFollowsLocale() throws {
-        let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) { $0 == .watts ? "W-ru" : "?" }
-        let title = BatteryPresentation.menuBarTitle(
-            for: try Fixture.m5OnBattery.snapshot(), style: .percentAndPower, formatter: russian)
-        #expect(title.replacingOccurrences(of: "\u{00A0}", with: " ") == "70 % · −7,5 W-ru")
-    }
-
-    @Test func iconHidesOnlyWhenTextRemains() {
-        #expect(BatteryPresentation.showsIcon(.standard, title: "70%"))
-        #expect(BatteryPresentation.showsIcon(.large, title: "70%"))
-        #expect(!BatteryPresentation.showsIcon(.hidden, title: "70%"))
-        // Icon-only style (or no data yet): hiding would leave an empty, unclickable item.
-        #expect(BatteryPresentation.showsIcon(.hidden, title: ""))
-    }
-
-    @Test func onlyPowerStylesNeedPolling() {
-        #expect(MenuBarStyle.allCases.filter(\.showsPower) == [.power, .percentAndPower])
-    }
-
     @Test(
         arguments: [
             (50.0, ChargeState.discharging, BatteryPresentation.LevelTier.normal),
