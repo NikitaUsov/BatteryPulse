@@ -160,8 +160,9 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
     /// about 40–70 reloads a day.
     public static let refreshInterval: TimeInterval = 30 * 60
     /// The earliest next reload, so an estimate that keeps running out near full charge doesn't
-    /// spend the budget.
-    public static let minimumReloadInterval: TimeInterval = 5 * 60
+    /// spend the budget: through the taper the time to full can stay at a few minutes for most of
+    /// an hour, and a budget spent there delays the app's own reload when the Mac is unplugged.
+    public static let minimumReloadInterval: TimeInterval = 15 * 60
 
     public struct Entry: Sendable, Equatable {
         public var date: Date
