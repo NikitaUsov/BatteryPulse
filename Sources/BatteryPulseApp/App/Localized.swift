@@ -155,6 +155,53 @@ enum Phrases {
     static func count(_ value: Int, of total: Int) -> String {
         String(localized: "\(value.formatted()) of \(total.formatted())")
     }
+
+    // MARK: Accessories
+
+    /// What kind of accessory; also its name when it reports none.
+    static func accessoryKind(_ kind: AccessoryKind) -> String {
+        switch kind {
+        case .keyboard: String(localized: "Keyboard")
+        case .mouse: String(localized: "Mouse")
+        case .trackpad: String(localized: "Trackpad")
+        case .headphones: String(localized: "Headphones")
+        case .speaker: String(localized: "Speaker")
+        case .gameController: String(localized: "Game Controller")
+        case .hearingAid: String(localized: "Hearing Aid")
+        case .other: String(localized: "Accessory")
+        }
+    }
+
+    /// The accessory's name, or its kind when it reports none.
+    static func accessoryName(_ accessory: AccessoryBattery) -> String {
+        accessory.name.isEmpty ? accessoryKind(accessory.kind) : accessory.name
+    }
+
+    /// "Keyboard · Bluetooth": the kind and the connection, which reads the same in every language.
+    static func accessoryDetails(_ accessory: AccessoryBattery) -> String {
+        [accessoryKind(accessory.kind), accessory.transport.displayName].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// A part's label. A combined part next to a case is both earbuds; alone it is the battery.
+    static func accessoryPart(_ role: AccessoryPartRole, hasParts: Bool) -> String {
+        switch role {
+        case .left: return String(localized: "Left")
+        case .right: return String(localized: "Right")
+        case .case: return String(localized: "Case")
+        case .combined:
+            if hasParts { return String(localized: "Earbuds") }
+            return String(localized: "Battery")
+        case .single, .other: return String(localized: "Battery")
+        }
+    }
+
+    /// The state worth naming next to a part's charge, or `nil` while it simply drains.
+    static func accessoryStatus(_ part: AccessoryPart) -> String? {
+        if part.isCharging { return String(localized: "Charging") }
+        if part.isOffline { return String(localized: "Last known charge") }
+        if part.isOnExternalPower { return String(localized: "Connected to power") }
+        return nil
+    }
 }
 
 extension MenuBarIconStyle {

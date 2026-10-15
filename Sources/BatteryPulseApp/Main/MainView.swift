@@ -12,6 +12,8 @@ enum SidebarItem: Hashable, Identifiable {
     /// Devices section: an iPhone's or iPad's page, or the intro row when there is none.
     case device(DeviceKey)
     case devicesIntro
+    /// The batteries of connected accessories: the Devices section's last row, on every Mac.
+    case accessories
 
     var id: Self { self }
 
@@ -19,12 +21,12 @@ enum SidebarItem: Hashable, Identifiable {
     static let developerPages: [SidebarItem] = [.developer, .demo]
 
     /// Whether the page shows the live reading. History comes from disk, Demo Mode from the demo
-    /// and the Devices section from other devices, so the main window doesn't poll the battery
-    /// while they are shown.
+    /// and the Devices section from other devices and accessories, so the main window doesn't poll
+    /// the battery while they are shown.
     var showsLiveValues: Bool {
         switch self {
         case .overview, .power, .health, .developer: true
-        case .history, .demo, .device, .devicesIntro: false
+        case .history, .demo, .device, .devicesIntro, .accessories: false
         }
     }
 
@@ -40,6 +42,7 @@ enum SidebarItem: Hashable, Identifiable {
         case .demo: "Demo Mode"
         case .devicesIntro: "iPhone and iPad"
         case .device: "iPhone and iPad"
+        case .accessories: "Accessories"
         }
     }
 
@@ -53,6 +56,7 @@ enum SidebarItem: Hashable, Identifiable {
         case .demo: "play.rectangle.on.rectangle"
         case .devicesIntro: "ipad.and.iphone"
         case .device: "iphone"
+        case .accessories: AccessoryKind.fallbackSymbolName
         }
     }
 }
@@ -60,6 +64,7 @@ enum SidebarItem: Hashable, Identifiable {
 /// The main window: a sidebar of sections and their content.
 struct MainView: View {
     let monitor: BatteryMonitor
+    let accessories: AccessoryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.dismissWindow) private var dismissWindow
@@ -109,6 +114,8 @@ struct MainView: View {
                         }
                     }
                     // Other kinds of devices follow the iPhones and iPads, one row each.
+                    Label(SidebarItem.accessories.title, systemImage: SidebarItem.accessories.symbol)
+                        .tag(SidebarItem.accessories)
                 }
                 if showsDeveloper {
                     Section("Developer") {
@@ -129,8 +136,8 @@ struct MainView: View {
             // other while they fade.
             ZStack {
                 MainDetail(
-                    monitor: monitor, selection: selection, historySource: $historySource,
-                    showInHistory: showInHistory
+                    monitor: monitor, accessories: accessories, selection: selection,
+                    historySource: $historySource, showInHistory: showInHistory
                 )
                 .id(selection)
                 .transition(.opacity)
@@ -234,13 +241,14 @@ private struct DeviceRow: View {
 /// the split view, sidebar and toolbar.
 private struct MainDetail: View {
     let monitor: BatteryMonitor
+    let accessories: AccessoryMonitor
     let selection: SidebarItem
     @Binding var historySource: HistorySource
     let showInHistory: @MainActor (DeviceKey) -> Void
 
     var body: some View {
-        // History and the Devices section come from disk and other devices, so they show even
-        // when this Mac has no battery or no reading yet.
+        // History and the Devices section come from disk, other devices and accessories, so they
+        // show even when this Mac has no battery or no reading yet.
         switch selection {
         case .demo:
             DemoView()
@@ -250,6 +258,8 @@ private struct MainDetail: View {
             DevicesIntroView()
         case .device(let key):
             DevicePage(key: key, showInHistory: showInHistory)
+        case .accessories:
+            AccessoriesView(monitor: accessories)
         case .overview, .power, .health, .developer:
             snapshotPage
         }
@@ -321,12 +331,13 @@ private struct CopyReportButton: View {
     }
 
     /// A report of simulated data would mislead a bug report. A device's report is of this
-    /// session's last read, so it needs one.
+    /// session's last read, so it needs one. Accessories have none: `bpulse --accessories --raw`
+    /// is their diagnostic, with names and identifiers replaced.
     private var canCopy: Bool {
         switch selection {
         case .device(let key):
             !demo.isActive && devices.entries.contains { $0.id == key && $0.hasCapture }
-        case .devicesIntro:
+        case .devicesIntro, .accessories:
             false
         default:
             monitor.snapshot != nil && !monitor.isOverridden

@@ -8,6 +8,9 @@ import SwiftUI
 struct BatteryPulseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var monitor: BatteryMonitor
+    /// Passed to the views that use it rather than put in the environment: a view missing it is
+    /// then a compile error, not a crash at run time.
+    @State private var accessories: AccessoryMonitor
     @State private var demo: DemoController
     @State private var updater: UpdateChecker
     private let historyRecorder: HistoryRecorder
@@ -26,6 +29,10 @@ struct BatteryPulseApp: App {
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
         self.monitor = monitor
+        // Always running: idle, it holds three notification registrations and no timer.
+        let accessories = AccessoryMonitor(provider: SystemAccessories.makeProvider())
+        accessories.start()
+        self.accessories = accessories
         self.demo = DemoController(monitor: monitor)
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
@@ -58,7 +65,7 @@ struct BatteryPulseApp: App {
     // the root view's own `@Environment(\.motion)` sees the window's policy too.
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
-            MainView(monitor: monitor)
+            MainView(monitor: monitor, accessories: accessories)
                 .environment(demo)
                 .environment(AppDevices.monitor)
                 .motionPolicy()
