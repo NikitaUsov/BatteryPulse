@@ -250,6 +250,28 @@ import Testing
         #expect(recorder.record(charging, at: at(400)).captures.map(\.reason) == [.before, .change])
     }
 
+    @Test func plugCyclesDoNotDemoteReasons() throws {
+        let path = "AppleSmartBattery.ChargerData.NotChargingReason"
+        let onBattery = try Fixture.m5OnBatterySMC.reading()
+        let charging = try Fixture.m5Charging.reading()
+        var recorder = makeRecorder(flapLimit: 3)
+        _ = recorder.record(onBattery, at: t0)
+        var notices: [String] = []
+        for turn in 1...8 {
+            let step = recorder.record(turn.isMultiple(of: 2) ? onBattery : charging, at: at(Double(turn) * 40))
+            #expect(step.changes.contains { $0.path == path })
+            #expect(step.captures.map(\.reason) == [.change])
+            notices += step.notices
+        }
+        #expect(notices.isEmpty)
+
+        // Only the reason changes now, as at a Charge Limit hold: still a capture.
+        let held = onBattery.editing(["AppleSmartBattery", "ChargerData", "NotChargingReason"], to: .int(4))
+        let step = recorder.record(held, at: at(400))
+        #expect(step.captures.map(\.reason) == [.change])
+        #expect(step.changes == [change(path, "128", "4")])
+    }
+
     @Test func missingReadingWritesARow() throws {
         var recorder = makeRecorder()
         let reading = try Fixture.m5OnBattery.reading()
