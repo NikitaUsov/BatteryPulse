@@ -7,6 +7,7 @@ struct PowerView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         let key = BatteryMotionKey(snapshot)
@@ -104,7 +105,7 @@ struct PowerView: View {
                             .monospacedDigit()
                         let isActive = profile.index == adapter.activeProfileIndex
                         Image(systemName: "checkmark")
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(tones.style(.accent))
                             .opacity(isActive ? 1 : 0)
                             // Crossfades to the profile the adapter switched to.
                             .animation(motion.crossfade, value: isActive)

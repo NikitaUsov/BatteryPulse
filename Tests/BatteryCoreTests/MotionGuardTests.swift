@@ -16,7 +16,9 @@ import Testing
 ///   windows. Only `App/Motion.swift`, where the presets are built, is exempt;
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
-/// - `glassEffect(` outside the few files that float controls over content.
+/// - `glassEffect(` outside the few files that float controls over content;
+/// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
+///   outside the tone map's bridge, where it would bypass Clear's monochrome.
 @Suite struct MotionGuardTests {
     private static let sources = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -38,6 +40,17 @@ import Testing
     /// Where the `\.motion` presets are built from concrete animations.
     static let motionPresetFiles: Set<String> = ["BatteryPulseApp/App/Motion.swift"]
 
+    /// The one file in the app's content that maps tone roles to system colours.
+    static let toneMapBridge = "BatteryPulseApp/App/ToneStyle.swift"
+
+    /// Files whose colours must go through the tone map: the main and compact windows' content,
+    /// the level tints and Demo Mode's step tints. Settings, the menu bar and the widget keep the
+    /// system's colours in every window style.
+    static func colorsGoThroughTheToneMap(_ path: String) -> Bool {
+        path.hasPrefix("BatteryPulseApp/Main/") || path == "BatteryPulseApp/App/Localized.swift"
+            || path == "BatteryPulseApp/App/DemoController.swift"
+    }
+
     /// Values that change on almost every reading; animations key on `BatteryMotionKey` instead.
     static let liveValues: Set<String> = [
         "snapshot", "monitor.snapshot", "monitor.reading", "reading",
@@ -58,6 +71,15 @@ import Testing
     private static var indefiniteRepeat: Regex<Substring> {
         words(
             #/\.repeat\s*\(\s*(?:\.continuous\b|\.periodic\s*(?:\)|\(\s*(?:\)|delay\s*:|nil\b))|nil\s*\))|\.repeating\b/#
+        )
+    }
+
+    /// A system colour by name (`.orange`, `Color.green`, `.accentColor`), or the tint as a style
+    /// (`.foregroundStyle(.tint)`, which is Clear's graphite, not white). Whole words only, so
+    /// `capture.redacted` and `.grayscale(1)` don't count.
+    private static var systemColor: Regex<Substring> {
+        words(
+            #/\.(?:green|orange|red|teal|blue|gray|yellow|mint|cyan|indigo|purple|pink|brown|accentColor)\b|\(\s*\.tint\s*[,)]/#
         )
     }
 
@@ -126,6 +148,11 @@ import Testing
         if !glassAllowList.contains(path) {
             for match in code.matches(of: words(#/\bglassEffect\s*\(/#)) {
                 flag(match.range.lowerBound, "glassEffect outside the floating controls (see CLAUDE.md)")
+            }
+        }
+        if colorsGoThroughTheToneMap(path) {
+            for match in code.matches(of: systemColor) {
+                flag(match.range.lowerBound, "a system colour bypasses the tone map; ask `tones` for a role")
             }
         }
 
@@ -328,7 +355,8 @@ import Testing
     }
 
     @Test func allowListedFilesExist() {
-        for path in Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles) {
+        let lists = Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles)
+        for path in lists.union([Self.toneMapBridge]) {
             #expect(FileManager.default.fileExists(atPath: Self.sources.appendingPathComponent(path).path), "\(path)")
         }
     }
@@ -415,6 +443,39 @@ import Testing
         #expect(!flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
+    }
+
+    @Test(arguments: [
+        "Text(\"x\").foregroundStyle(.orange)",
+        "ProgressView(value: 1).tint(Color.green)",
+        "case .normal: .green",
+        "Image(systemName: \"checkmark\").foregroundStyle(.tint)",
+        "Image(systemName: \"x\").foregroundStyle(.accentColor)",
+        "RingGaugeStyle(tint: .blue)",
+        "LineMark(x: x, y: y).foregroundStyle(.red.opacity(0.5))",
+        "Label(\"Demo\", systemImage: \"x\").foregroundStyle(.tint, .secondary)",
+    ])
+    func systemColorsOnlyInTheToneMap(source: String) {
+        #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/App/DemoController.swift"), "\(source)")
+        #expect(!flags(source, path: Self.toneMapBridge), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/MenuBar/PopoverView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
+    }
+
+    @Test(arguments: [
+        "text = IDeviceReport.text(for: capture.redacted)",
+        "Image(systemName: \"x\").grayscale(1)",
+        "@Environment(\\.redactionReasons) private var reasons",
+        "bolt.foregroundStyle(.white)",
+        "ProgressView(value: 1).tint(tones.color(.capacity(bar.kind)))",
+        "Text(\"green, .orange and .tint in a string\")",
+        "// .orange in a comment",
+        "let tint = tones.color(.cycles)",
+        "Text(\"x\").foregroundStyle(tones.style(.accent))",
+    ])
+    func toneMapGuardAllows(source: String) {
+        #expect(!flags(source, path: "BatteryPulseApp/Main/DeviceView.swift"), "\(source)")
     }
 
     @Test func menuBarLabelNeverAnimates() {

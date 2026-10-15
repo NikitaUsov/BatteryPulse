@@ -264,12 +264,13 @@ extension DemoController.Step {
         }
     }
 
-    var tint: Color {
+    /// What the step's symbol is tinted for; the tone map picks the colour.
+    var toneKind: DemoStepKind {
         switch self {
-        case .scene(.charging), .scene(.fullyCharged), .scene(.justPluggedIn), .animation(.chargeFromEmpty): .green
-        case .scene(.lowBattery), .scene(.wornBattery), .scene(.slowCharger), .scene(.lowPowerMode): .orange
-        case .scene(.criticalBattery), .scene(.heavyLoad), .animation(.drainToEmpty): .red
-        case .scene(.onBattery), .scene(.optimizedHold), .scene(.noBattery): .accentColor
+        case .scene(.charging), .scene(.fullyCharged), .scene(.justPluggedIn), .animation(.chargeFromEmpty): .charging
+        case .scene(.lowBattery), .scene(.wornBattery), .scene(.slowCharger), .scene(.lowPowerMode): .warning
+        case .scene(.criticalBattery), .scene(.heavyLoad), .animation(.drainToEmpty): .critical
+        case .scene(.onBattery), .scene(.optimizedHold), .scene(.noBattery): .neutral
         }
     }
 }

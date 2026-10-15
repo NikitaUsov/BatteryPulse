@@ -7,6 +7,7 @@ struct OverviewView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         ScrollView {
@@ -35,7 +36,7 @@ struct OverviewView: View {
     }
 
     private var tint: Color {
-        BatteryPresentation.levelTier(for: snapshot).color
+        tones.color(.level(BatteryPresentation.levelTier(for: snapshot)))
     }
 
     private var hero: some View {
@@ -92,7 +93,7 @@ struct OverviewView: View {
                     value: formatter.percent(health),
                     number: health,
                     caption: Phrases.condition(snapshot.healthCondition),
-                    tint: BatteryPresentation.healthTier(for: snapshot).color
+                    tint: tones.color(.level(BatteryPresentation.healthTier(for: snapshot)))
                 )
             }
             if let cycles = snapshot.cycleCount {
@@ -103,7 +104,7 @@ struct OverviewView: View {
                     value: cycles.formatted(),
                     number: Double(cycles),
                     caption: String(localized: "of \(rated.formatted()) rated"),
-                    tint: .blue
+                    tint: tones.color(.cycles)
                 )
             }
         }

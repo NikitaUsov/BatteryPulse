@@ -45,6 +45,7 @@ struct HistoryView: View {
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
     private let formatter = BatteryFormatter.app
 
     init(source: Binding<HistorySource>) {
@@ -278,7 +279,7 @@ struct HistoryView: View {
                         yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
                     )
                     // Charging a little stronger than holding the charge.
-                    .foregroundStyle(.green.opacity(span.kind == .charging ? 0.16 : 0.08))
+                    .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
                     .accessibilityHidden(true)
                 }
                 ForEach(points) { point in
@@ -287,7 +288,7 @@ struct HistoryView: View {
                             x: .value("Time", point.time), y: .value("Charge", percent),
                             series: .value(ChartKey.segment, point.segment)
                         )
-                        .foregroundStyle(.green)
+                        .foregroundStyle(tones.style(.chart(.charge)))
                         .interpolationMethod(.monotone)
                     }
                 }
@@ -310,7 +311,7 @@ struct HistoryView: View {
             .frame(height: 200)
             Label("On power adapter", systemImage: "square.fill")
                 .font(.caption)
-                .foregroundStyle(.green.opacity(0.6))
+                .foregroundStyle(tones.style(.spanLegend))
                 .labelStyle(.titleAndIcon)
         }
     }
@@ -337,7 +338,10 @@ struct HistoryView: View {
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
         }
-        .chartForegroundStyleScale([String(localized: "Battery"): Color.blue, String(localized: "Mac"): Color.orange])
+        .chartForegroundStyleScale([
+            String(localized: "Battery"): tones.color(.chart(.batteryPower)),
+            String(localized: "Mac"): tones.color(.chart(.systemLoad)),
+        ])
         // A device has the battery's line alone: no legend naming the Mac.
         .chartLegend(shownSource == .mac ? .automatic : .hidden)
         .chartXScale(domain: domain)
@@ -368,7 +372,7 @@ struct HistoryView: View {
                         x: .value("Time", point.time), y: .value("Temperature", celsius),
                         series: .value(ChartKey.segment, point.segment)
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(tones.style(.chart(.temperature)))
                     .interpolationMethod(.monotone)
                 }
             }
@@ -457,9 +461,9 @@ struct HistoryView: View {
                 Chart(dated) { entry in
                     if let capacity = entry.day.capacityToDesignPercent {
                         LineMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(tones.style(.chart(.capacity)))
                         PointMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(tones.style(.chart(.capacity)))
                             .symbolSize(16)
                     }
                 }
@@ -472,7 +476,7 @@ struct HistoryView: View {
                     if let cycles = entry.day.cycleCount {
                         LineMark(x: .value("Day", entry.date), y: .value("Cycles", cycles))
                             .interpolationMethod(.stepEnd)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(tones.style(.chart(.cycles)))
                     }
                 }
                 .chartYScale(domain: .automatic(includesZero: false))

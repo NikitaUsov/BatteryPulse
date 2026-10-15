@@ -8,6 +8,7 @@ struct CompactView: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.tones) private var tones
     private let formatter = BatteryFormatter.app
 
     var body: some View {
@@ -39,7 +40,7 @@ struct CompactView: View {
                 ToolbarItem(placement: .status) {
                     Text("Demo")
                         .font(.callout.weight(.semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(tones.style(.warning))
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
@@ -61,7 +62,7 @@ struct CompactView: View {
             BatteryGlyph(
                 level: (s.chargePercent ?? 0) / 100,
                 isCharging: s.chargeState == .charging,
-                tint: BatteryPresentation.levelTier(for: s).color
+                tint: tones.color(.level(BatteryPresentation.levelTier(for: s)))
             )
             .frame(width: 84)
             VStack(alignment: .leading, spacing: 2) {

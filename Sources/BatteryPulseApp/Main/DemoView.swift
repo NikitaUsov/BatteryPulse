@@ -68,6 +68,7 @@ private struct DemoStepRow: View {
     let step: DemoController.Step
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         Button {
@@ -76,7 +77,7 @@ private struct DemoStepRow: View {
             HStack(spacing: 12) {
                 Image(systemName: step.symbol)
                     .font(.title3)
-                    .foregroundStyle(step.tint)
+                    .foregroundStyle(tones.color(.demoStep(step.toneKind)))
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(step.title)
@@ -87,7 +88,7 @@ private struct DemoStepRow: View {
                 Spacer(minLength: 8)
                 if demo.step == step {
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(tones.style(.accent))
                         .accessibilityLabel("Showing")
                         // Its own fade: the row's layout doesn't change, and under Reduce Motion
                         // the demo's step change carries no animation.
@@ -111,6 +112,7 @@ private struct DemoStepRow: View {
 struct DemoControlBar: View {
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
     @Namespace private var glass
 
     var body: some View {
@@ -136,7 +138,7 @@ struct DemoControlBar: View {
         HStack(spacing: 12) {
             Label("Demo", systemImage: "play.rectangle.on.rectangle")
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(tones.style(.warning))
             // Crossfades in place to the next scene's title; an `.id` with a transition would put
             // both titles side by side in the HStack while they fade.
             Text(step.title)

@@ -168,14 +168,4 @@ extension MenuBarIconStyle {
         }
     }
 }
-
-extension BatteryPresentation.LevelTier {
-    var color: Color {
-        switch self {
-        case .normal: .green
-        case .low: .orange
-        case .critical: .red
-        }
-    }
-}
 #endif

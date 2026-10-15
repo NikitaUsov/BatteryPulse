@@ -55,8 +55,7 @@ struct RingGaugeStyle: GaugeStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         ZStack {
-            Circle()
-                .stroke(.quaternary, lineWidth: lineWidth)
+            RingTrack(lineWidth: lineWidth)
             RingArc(value: configuration.value, tint: tint, lineWidth: lineWidth)
             VStack(spacing: 2) {
                 configuration.currentValueLabel
@@ -79,28 +78,48 @@ struct RingGaugeStyle: GaugeStyle {
     }
 }
 
-/// The ring's coloured arc, a view of its own so it can read `\.motion`.
+/// The channel under the ring's arc.
+private struct RingTrack: View {
+    let lineWidth: CGFloat
+    @Environment(\.tones) private var tones
+
+    var body: some View {
+        Circle()
+            .stroke(tones.style(.track), lineWidth: lineWidth)
+    }
+}
+
+/// The ring's coloured arc, a view of its own so it can read `\.motion`. In Clear it is a white
+/// glass piece, whatever the tint.
 private struct RingArc: View {
     let value: Double
     let tint: Color
     let lineWidth: CGFloat
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         let fraction = max(0.001, min(1, value))
-        Circle()
-            .trim(from: 0, to: fraction)
-            .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-            .rotationEffect(.degrees(-90))
-            // The arc grows or shrinks to a new value (a whole percent, a cycle, maximum capacity)
-            // and crossfades to a new tier colour. A built-in animatable shape: no body per frame.
-            // Under Reduce Motion the arc snaps and only the colour fades; the inner modifier
-            // wins when both change at once, so the arc never sweeps then.
-            .animation(motion.change, value: fraction)
-            .animation(motion.crossfade, value: tint)
-            // Where the ring sits is the page's business: when the page's layout changes in the
-            // same update, the arc moves with the track, not with its own animation.
-            .geometryGroup()
+        let arc = Circle().trim(from: 0, to: fraction)
+        let stroke = StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+        Group {
+            // The colour styles keep the tint itself, so a new tier still crossfades.
+            if let piece = tones.levelPieceStyle {
+                arc.stroke(piece, style: stroke)
+            } else {
+                arc.stroke(tint, style: stroke)
+            }
+        }
+        .rotationEffect(.degrees(-90))
+        // The arc grows or shrinks to a new value (a whole percent, a cycle, maximum capacity)
+        // and crossfades to a new tier colour. A built-in animatable shape: no body per frame.
+        // Under Reduce Motion the arc snaps and only the colour fades; the inner modifier
+        // wins when both change at once, so the arc never sweeps then.
+        .animation(motion.change, value: fraction)
+        .animation(motion.crossfade, value: tint)
+        // Where the ring sits is the page's business: when the page's layout changes in the
+        // same update, the arc moves with the track, not with its own animation.
+        .geometryGroup()
     }
 }
 
@@ -144,12 +163,14 @@ struct GaugeTile: View {
 /// compact window and the menu bar panel.
 ///
 /// The fill follows a new whole percent and crossfades to a new tier colour; the bolt draws in
-/// when charging starts and goes when it stops.
+/// when charging starts and goes when it stops. In Clear the fill is a white glass piece and the
+/// bolt over it dark.
 struct BatteryGlyph: View {
     let level: Double
     let isCharging: Bool
     let tint: Color
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         // The fill animates per whole percent, the step the app shows.
@@ -164,17 +185,24 @@ struct BatteryGlyph: View {
                 RoundedRectangle(cornerRadius: height * 0.24, style: .continuous)
                     .strokeBorder(.secondary, lineWidth: max(2, height * 0.06))
                     .frame(width: bodyWidth)
-                RoundedRectangle(cornerRadius: height * 0.15, style: .continuous)
-                    .fill(tint.gradient)
-                    .frame(width: fillWidth, height: height - inset * 2)
-                    .padding(.leading, inset)
+                let fill = RoundedRectangle(cornerRadius: height * 0.15, style: .continuous)
+                Group {
+                    if let piece = tones.levelPieceStyle {
+                        fill.fill(piece)
+                    } else {
+                        fill.fill(tint.gradient)
+                    }
+                }
+                .frame(width: fillWidth, height: height - inset * 2)
+                .padding(.leading, inset)
                 RoundedRectangle(cornerRadius: terminalWidth / 2, style: .continuous)
                     .fill(.secondary)
                     .frame(width: terminalWidth, height: height * 0.36)
                     .offset(x: bodyWidth + height * 0.04)
                 if isCharging {
-                    // Primary over the empty part of the battery, white over the fill, so the
-                    // bolt stays visible at any level in Light and Dark Mode.
+                    // Primary over the empty part of the battery, white over the fill (dark over
+                    // Clear's white fill), so the bolt stays visible at any level in Light and
+                    // Dark Mode.
                     let bolt = Image(systemName: "bolt.fill")
                         .font(.system(size: height * 0.5, weight: .bold))
                         .frame(width: bodyWidth)
@@ -183,7 +211,7 @@ struct BatteryGlyph: View {
                         bolt
                             .foregroundStyle(.primary)
                         bolt
-                            .foregroundStyle(.white)
+                            .foregroundStyle(tones.style(.onLevelFill))
                             .mask(alignment: .leading) {
                                 Rectangle()
                                     .frame(width: inset + fillWidth)
@@ -212,6 +240,7 @@ struct BatteryGlyph: View {
 struct CapacityBars: View {
     let bars: [CapacityBar]
     let formatter: BatteryFormatter
+    @Environment(\.tones) private var tones
 
     init(snapshot: BatterySnapshot, formatter: BatteryFormatter) {
         self.init(bars: CapacityBar.bars(for: snapshot), formatter: formatter)
@@ -233,7 +262,7 @@ struct CapacityBars: View {
                     Text(bar.kind.title)
                         .foregroundStyle(.secondary)
                     ProgressView(value: Double(bar.capacityMAh), total: scale)
-                        .tint(bar.kind.color)
+                        .tint(tones.color(.capacity(bar.kind)))
                         .gridColumnAlignment(.leading)
                     Text(formatter.milliampHours(bar.capacityMAh))
                         .monospacedDigit()
@@ -250,14 +279,6 @@ extension CapacityBar.Kind {
         case .remaining: "Remaining"
         case .fullCharge: "Full charge"
         case .design: "Design"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .remaining: .green
-        case .fullCharge: .teal
-        case .design: .gray
         }
     }
 }

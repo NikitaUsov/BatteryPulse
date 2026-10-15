@@ -15,6 +15,7 @@ struct DeviceView: View {
     let showInHistory: @MainActor (DeviceKey) -> Void
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
     @State private var confirmsForgetting = false
     private let formatter = BatteryFormatter.app
 
@@ -102,7 +103,8 @@ struct DeviceView: View {
     // MARK: - Hero
 
     private func hero(_ battery: IDeviceBattery) -> some View {
-        let tint = BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState).color
+        let tint = tones.color(
+            .level(BatteryPresentation.levelTier(percent: battery.chargePercent, state: battery.chargeState)))
         return Card {
             HStack(spacing: 24) {
                 BatteryGlyph(
@@ -184,7 +186,8 @@ struct DeviceView: View {
                     value: formatter.percent(percent),
                     number: percent,
                     caption: chargeCaption(battery),
-                    tint: BatteryPresentation.levelTier(percent: percent, state: battery.chargeState).color
+                    tint: tones.color(
+                        .level(BatteryPresentation.levelTier(percent: percent, state: battery.chargeState)))
                 )
             }
             if let health = battery.maximumCapacityPercent {
@@ -195,7 +198,7 @@ struct DeviceView: View {
                     value: formatter.percent(health),
                     number: health,
                     caption: condition(tier),
-                    tint: tier.color
+                    tint: tones.color(.level(tier))
                 )
             }
             if let cycles = battery.cycleCount {
@@ -209,7 +212,7 @@ struct DeviceView: View {
                     value: cycles.formatted(),
                     number: Double(cycles),
                     caption: String(localized: "of \(rated.formatted()) rated"),
-                    tint: .blue
+                    tint: tones.color(.cycles)
                 )
             }
         }
@@ -334,7 +337,7 @@ struct DeviceView: View {
         Card {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(tones.style(.warning))
                     .accessibilityHidden(true)
                 Text(problem.text)
                     .fixedSize(horizontal: false, vertical: true)

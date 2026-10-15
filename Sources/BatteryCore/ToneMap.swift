@@ -192,6 +192,12 @@ public struct ToneMap: Sendable, Equatable {
         return (min(1, opacity + 0.02), max(0, opacity - 0.15))
     }
 
+    /// The glass piece of a level fill or a ring arc. Every level, and the cycle count, is the
+    /// same white in monochrome, so one piece serves them all.
+    public var levelPiece: (top: Double, bottom: Double)? {
+        pieceGradient(tone(.level(.normal)))
+    }
+
     // MARK: Colour
 
     private func colorTone(_ role: ToneRole) -> Tone {
