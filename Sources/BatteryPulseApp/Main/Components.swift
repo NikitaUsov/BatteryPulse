@@ -4,16 +4,19 @@ import SwiftUI
 
 // Content-layer building blocks. Per Apple's Liquid Glass guidance, glass belongs to the
 // navigation and control layer (sidebar, toolbar, controls), which SwiftUI provides; content
-// uses standard fills, and nothing inside a card ever gets glass.
+// uses standard fills, and nothing inside a card ever gets glass. How a group is drawn follows
+// the window style (`\.windowLook`): a card in Standard, a faint frost layer in Frosted.
 //
 // Motion: values that change with the 2 s readings (watts, mA, mV, °C, mAh) change instantly.
 // Only discrete events animate, through `\.motion`: the whole percent, the level tier, plugging in
 // or out, the charge state, the battery symbol and the direction of the power flow.
 
-/// A rounded section of a page (Overview, History, the compact window) on a standard fill.
+/// A rounded section of a page (Overview, History, a device, the compact window): a standard
+/// fill in Standard, one faint lighter layer on Frosted's frost.
 struct Card<Content: View>: View {
     private let title: LocalizedStringKey?
     private let content: Content
+    @Environment(\.windowLook) private var look
 
     init(_ title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -21,7 +24,7 @@ struct Card<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let stack = VStack(alignment: .leading, spacing: 12) {
             if let title {
                 Text(title)
                     .font(.headline)
@@ -30,7 +33,30 @@ struct Card<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
+        switch look.groupSurface {
+        case .card:
+            stack.background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
+        case .frostLayer:
+            stack.background { FrostLayer(cornerRadius: 16) }
+        case .none:
+            stack
+        }
+    }
+}
+
+/// Frosted's group surface: one faint, lighter layer with a hairline rim on the frosted window,
+/// like the banner of the macOS widget gallery. A plain fill, not a second material: the frost
+/// behind it is already blurred, and a material on a material only adds a blur pass.
+struct FrostLayer: View {
+    let cornerRadius: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let isDark = colorScheme == .dark
+        shape
+            .fill(.white.opacity(isDark ? 0.06 : 0.30))
+            .overlay(shape.strokeBorder(.white.opacity(isDark ? 0.18 : 0.59), lineWidth: 0.5))
     }
 }
 
@@ -44,6 +70,26 @@ struct CardGroup<Content: View>: View {
 
     var body: some View {
         content
+    }
+}
+
+/// A page's grouped Form (Power, Health, Demo Mode, the Raw Data inspector). In the see-through
+/// styles it hides its own background, so the window's shows; the sections keep the system's
+/// fill on Frosted, where they read as lighter layers.
+struct LookForm<Content: View>: View {
+    private let content: Content
+    @Environment(\.windowLook) private var look
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        Form {
+            content
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(look.hidesFormBackground ? .hidden : .automatic)
     }
 }
 

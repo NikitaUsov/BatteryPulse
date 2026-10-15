@@ -15,7 +15,7 @@ struct HealthView: View {
     @MainActor private static var ringsHaveFilledThisLaunch = false
 
     var body: some View {
-        Form {
+        LookForm {
             if snapshot.healthPercent != nil || snapshot.cycleCount != nil {
                 Section {
                     gauges
@@ -37,7 +37,6 @@ struct HealthView: View {
                 }
             }
         }
-        .formStyle(.grouped)
     }
 
     /// The rings animate to a new value through `RingGaugeStyle` (rarely: maximum capacity and

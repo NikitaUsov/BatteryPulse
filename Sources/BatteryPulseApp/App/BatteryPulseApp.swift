@@ -55,12 +55,15 @@ struct BatteryPulseApp: App {
     }
 
     // Every window and the menu bar panel get `.motionPolicy()` here, outside their root view, so
-    // the root view's own `@Environment(\.motion)` sees the window's policy too.
+    // the root view's own `@Environment(\.motion)` sees the window's policy too. The main and
+    // compact windows also get `.windowLook()`, the window style; inside the motion policy, so a
+    // style change that rebuilds the window's content keeps the window's visibility state.
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
             MainView(monitor: monitor)
                 .environment(demo)
                 .environment(AppDevices.monitor)
+                .windowLook()
                 .motionPolicy()
         }
         .defaultSize(width: 860, height: 640)
@@ -79,6 +82,7 @@ struct BatteryPulseApp: App {
         Window("Compact Window", id: WindowID.compact) {
             CompactView(monitor: monitor)
                 .environment(demo)
+                .windowLook()
                 .motionPolicy()
         }
         // Fixed size: the window fits its content.

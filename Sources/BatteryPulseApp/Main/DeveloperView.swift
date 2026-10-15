@@ -279,7 +279,7 @@ private struct RawRowInspector: View {
 
     var body: some View {
         if selection.count == 1, let row = selection.first?.row, let source = selection.first?.source {
-            Form {
+            LookForm {
                 Section("Key") {
                     Text(verbatim: row.path)
                         .font(.body.monospaced())
@@ -309,7 +309,6 @@ private struct RawRowInspector: View {
                     }
                 }
             }
-            .formStyle(.grouped)
         } else if selection.isEmpty {
             ContentUnavailableView(
                 "No Row Selected",

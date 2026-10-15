@@ -18,7 +18,11 @@ import Testing
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
-///   outside the tone map's bridge, where it would bypass Clear's monochrome.
+///   outside the tone map's bridge, where it would bypass Clear's monochrome;
+/// - a see-through window background or an appearance override (`containerBackground(…, for:
+///   .window)`, visual effect and glass effect views, `materialActiveAppearance`,
+///   `preferredColorScheme`, assigning `.appearance`) outside `App/WindowLook.swift`, and any
+///   animation in that file: the window style's background never animates.
 @Suite struct MotionGuardTests {
     private static let sources = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -39,6 +43,9 @@ import Testing
 
     /// Where the `\.motion` presets are built from concrete animations.
     static let motionPresetFiles: Set<String> = ["BatteryPulseApp/App/Motion.swift"]
+
+    /// The one file that changes a window's background or appearance: the window style.
+    static let windowLookFile = "BatteryPulseApp/App/WindowLook.swift"
 
     /// The one file in the app's content that maps tone roles to system colours.
     static let toneMapBridge = "BatteryPulseApp/App/ToneStyle.swift"
@@ -80,6 +87,14 @@ import Testing
     private static var systemColor: Regex<Substring> {
         words(
             #/\.(?:green|orange|red|teal|blue|gray|yellow|mint|cyan|indigo|purple|pink|brown|accentColor)\b|\(\s*\.tint\s*[,)]/#
+        )
+    }
+
+    /// APIs that make a window see-through or change its appearance; `containerBackground(…,
+    /// for: .window)` is checked by its arguments, so the widget's own background stays allowed.
+    private static var windowBackgroundAPI: Regex<Substring> {
+        words(
+            #/\bNSVisualEffectView\b|\bNSGlassEffectView\b|\bmaterialActiveAppearance\s*\(|\bpreferredColorScheme\s*\(|\.appearance\s*=(?!=)/#
         )
     }
 
@@ -148,6 +163,21 @@ import Testing
         if !glassAllowList.contains(path) {
             for match in code.matches(of: words(#/\bglassEffect\s*\(/#)) {
                 flag(match.range.lowerBound, "glassEffect outside the floating controls (see CLAUDE.md)")
+            }
+        }
+        if path == windowLookFile {
+            for match in code.matches(
+                of: words(#/\bglassEffectID\b|\bglassEffectTransition\b|\.interactive\s*\(|\bwithAnimation\b/#))
+            {
+                flag(match.range.lowerBound, "the window background never animates or reacts")
+            }
+        } else {
+            for match in code.matches(of: windowBackgroundAPI) {
+                flag(match.range.lowerBound, "a window background or appearance outside App/WindowLook.swift")
+            }
+            for call in calls(named: words(#/\bcontainerBackground/#), in: code)
+            where call.arguments.contains(words(#/\bfor\s*:\s*\.window\b/#)) {
+                flag(call.start, "a window background outside App/WindowLook.swift")
             }
         }
         if colorsGoThroughTheToneMap(path) {
@@ -356,7 +386,7 @@ import Testing
 
     @Test func allowListedFilesExist() {
         let lists = Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles)
-        for path in lists.union([Self.toneMapBridge]) {
+        for path in lists.union([Self.toneMapBridge, Self.windowLookFile]) {
             #expect(FileManager.default.fileExists(atPath: Self.sources.appendingPathComponent(path).path), "\(path)")
         }
     }
@@ -476,6 +506,46 @@ import Testing
     ])
     func toneMapGuardAllows(source: String) {
         #expect(!flags(source, path: "BatteryPulseApp/Main/DeviceView.swift"), "\(source)")
+    }
+
+    @Test(arguments: [
+        "content.containerBackground(.regularMaterial, for: .window)",
+        "content.containerBackground(for: .window) { GlassSheet(tint: nil) }",
+        "let view = NSVisualEffectView()",
+        "let glass = NSGlassEffectView()",
+        "content.containerBackground(Material.regular.materialActiveAppearance(.active), for: .widget)",
+        "Text(\"x\").preferredColorScheme(.dark)",
+        "window.appearance = NSAppearance(named: .darkAqua)",
+        "window?.appearance = nil",
+    ])
+    func windowLookAPIsOnlyInWindowLook(source: String) {
+        #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
+        #expect(!flags(source, path: Self.windowLookFile), "\(source)")
+    }
+
+    @Test func windowLookGuardAllows() {
+        // The widget's own container background, and reading an appearance.
+        #expect(
+            !flags(
+                "view.containerBackground(.fill.tertiary, for: .widget)",
+                path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
+        #expect(
+            !flags(
+                "let isDark = NSAppearance.currentDrawing().bestMatch(from: [.aqua, .darkAqua]) == .darkAqua",
+                path: "BatteryPulseApp/MenuBar/BatteryIconView.swift"))
+        #expect(!flags("if window.appearance == nil { return }"))
+        #expect(!flags("Text(\"preferredColorScheme(.dark) in a string\")"))
+    }
+
+    @Test(arguments: [
+        "withAnimation(motion.change) { look = next }",
+        "sheet.glassEffectID(\"sheet\", in: namespace)",
+        "sheet.glassEffectTransition(.materialize)",
+        "sheet.glassEffect(Glass.clear.interactive(), in: .rect)",
+    ])
+    func windowBackgroundNeverAnimates(source: String) {
+        #expect(flags(source, path: Self.windowLookFile), "\(source)")
     }
 
     @Test func menuBarLabelNeverAnimates() {
