@@ -14,7 +14,7 @@ charging state.
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
-  optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
+  Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
   system's sidebar, toolbar and controls, plus custom glass only on controls that float over
   content (the Demo Mode bar, the selection of the tile pickers in Settings). Content uses
