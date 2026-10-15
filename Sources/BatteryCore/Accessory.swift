@@ -123,7 +123,10 @@ public struct AccessoryBattery: Sendable, Hashable, Identifiable, Encodable {
     /// (for a source known only by its per-boot number, of what it says about itself; see
     /// ``AccessoryParser/identifiers(for:source:)``), stable across launches. A local key for view identity, alert state and notification
     /// identifiers only. It is not anonymous: a Bluetooth address behind it can be recovered by
-    /// brute force, so it is never encoded, printed or put in a capture.
+    /// brute force, so it stays on this Mac: `Encodable` leaves it out, and it is never printed or
+    /// put in a capture. Its only copies outside memory are the keys of the saved
+    /// ``AccessoryAlertState`` (in the app's preferences, only while the low-battery alert is on)
+    /// and the identifiers of the notifications that alert delivers.
     public var id: String
     /// As the accessory reports it; may be empty (the UI then shows the kind's name).
     public var name: String
