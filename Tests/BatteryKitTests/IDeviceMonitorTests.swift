@@ -889,8 +889,10 @@ struct MonitorHarness {
         await h.send(.terminated)
         await h.monitor.flushHistory()
         let enumerator = try #require(FileManager.default.enumerator(at: h.directory, includingPropertiesForKeys: nil))
+        // `allObjects`: iterating an enumerator with for-in is unavailable in async code on macOS.
+        let urls = enumerator.allObjects.compactMap { $0 as? URL }
         var scanned = 0
-        for case let url as URL in enumerator where !url.hasDirectoryPath {
+        for url in urls where !url.hasDirectoryPath {
             let data = try Data(contentsOf: url)
             let text = String(decoding: data, as: UTF8.self).lowercased()
             #expect(!text.contains(Self.phone.lowercased()), "\(url.lastPathComponent)")
