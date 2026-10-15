@@ -247,4 +247,11 @@ import Testing
         #expect(
             FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples/2027-01-16.jsonl").path))
     }
+
+    @Test func appBundleIdentifierMatchesBuildScript() throws {
+        let script = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("scripts/build-app.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+        #expect(text.contains("BUNDLE_ID=\"\(HistoryStore.appBundleIdentifier)\""))
+    }
 }

@@ -327,6 +327,27 @@ language. To use a different language for BatteryPulse only:
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
 
+### History export
+
+`bpulse --export csv` prints the minute readings BatteryPulse recorded on this Mac, everything
+it keeps (about the last 10 days); `--export csv --days` prints the daily battery health, and
+`--export json` both. `bpulse` always writes CSV with commas and decimal points, the same in
+every region; `--decimal-comma` switches to semicolons and decimal commas, which spreadsheets
+expect where decimals are written with a comma. Times are in the current time zone (set `TZ` to
+change it).
+
+```sh
+swift run bpulse --export csv > samples.csv
+swift run bpulse --export csv --days --decimal-comma > days.csv
+swift run bpulse --export json > history.json
+```
+
+`--history <folder>` exports another history folder, such as one copied from another Mac; the
+JSON's `source` is then `null`, since `bpulse` can't tell whose history it is. `bpulse` reads
+the files the app writes, so it works while the app runs. The app saves a day's summary at most
+once an hour, so the latest daily row can be up to an hour behind; minute readings are saved
+right away. When there is no history yet, `bpulse` says so and exits with status 2.
+
 ### iPhone and iPad (preview)
 
 `bpulse` can read the battery of an iPhone or iPad connected to the Mac; the app shows devices
