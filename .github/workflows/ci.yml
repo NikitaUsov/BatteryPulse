@@ -64,6 +64,9 @@ jobs:
             .build/release/bpulse --record "$RUNNER_TEMP/rec"; [ $? -eq 2 ] && [ ! -e "$RUNNER_TEMP/rec" ] || exit 1
           fi
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+      - name: Check the verification scripts
+        # Neither script is built or run anywhere else; they need a Mac with a display.
+        run: bash -n scripts/menu-bar-shots.sh && swiftc -typecheck scripts/display-metrics.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
