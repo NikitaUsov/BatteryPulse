@@ -20,10 +20,9 @@ enum AppSettings {
     static let legacyMenuBarStyleKey = "menuBarStyle"
     static let legacyMenuBarIconKey = "menuBarIcon"
     static let showDeveloperKey = "showDeveloperSection"
-    /// Developer option "Glass Cards" (Settings → Advanced, shown with the Developer section):
-    /// draws the content cards in Liquid Glass. Off by default, and ignored while the Developer
-    /// section is off; Apple keeps glass out of the content layer, so it stays an experiment.
-    static let glassCardsKey = "glassCards"
+    /// The Developer option that drew the cards in Liquid Glass in 0.5; the window style replaced
+    /// it in 0.6, and ``migrate()`` deletes it.
+    static let legacyGlassCardsKey = "glassCards"
     static let showWelcomeAtLaunchKey = "showWelcomeAtLaunch"
     static let hasSeenWelcomeKey = "hasSeenWelcome"
     /// The on/off switch for update checks before 0.4; ``updateFrequencyKey`` replaced it.
@@ -36,11 +35,21 @@ enum AppSettings {
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
     static let prefersCompactWindowKey = "prefersCompactWindow"
+    /// How the main and compact windows look (Settings → General): a `WindowLook` raw value,
+    /// Standard when missing or unknown.
+    static let windowLookKey = "windowLook"
     static let alertChargeLimitKey = "alertChargeLimit"
     static let alertLowBatteryKey = "alertLowBattery"
     static let alertServiceKey = "alertService"
     static let alertHeatKey = "alertHeat"
     static let alertStateKey = "alertState"
+    /// The accessory low-battery threshold in percent; 0 is off.
+    static let alertAccessoryLowKey = "alertAccessoryLow"
+    /// ``AccessoryAlertState`` as JSON, stored only while that alert is on and has fired.
+    static let accessoryAlertStateKey = "accessoryAlertState"
+    /// Read iPhone and iPad batteries (Settings → General). Off by default: on, the app loads
+    /// Apple's private MobileDevice framework once an iPhone or iPad is plugged in.
+    static let readDevicesKey = "readDevices"
 
     static var showInMenuBar: Bool {
         UserDefaults.standard.object(forKey: showInMenuBarKey) as? Bool ?? true
@@ -55,11 +64,13 @@ enum AppSettings {
         let defaults = UserDefaults.standard
         let chargeLimit = defaults.integer(forKey: alertChargeLimitKey)
         let lowBattery = defaults.integer(forKey: alertLowBatteryKey)
+        let accessoryLow = defaults.integer(forKey: alertAccessoryLowKey)
         return AlertSettings(
             chargeLimit: chargeLimit > 0 ? chargeLimit : nil,
             lowBattery: lowBattery > 0 ? lowBattery : nil,
             serviceRecommended: defaults.bool(forKey: alertServiceKey),
-            highTemperature: defaults.bool(forKey: alertHeatKey)
+            highTemperature: defaults.bool(forKey: alertHeatKey),
+            accessoryLowBattery: accessoryLow > 0 ? accessoryLow : nil
         )
     }
 
@@ -72,6 +83,10 @@ enum AppSettings {
         UserDefaults.standard.object(forKey: recordHistoryKey) as? Bool ?? true
     }
 
+    static var readsDevices: Bool {
+        UserDefaults.standard.bool(forKey: readDevicesKey)
+    }
+
     /// Daily by default; Settings → General shows the choice.
     static var updateFrequency: UpdateFrequency {
         let defaults = UserDefaults.standard
@@ -80,7 +95,7 @@ enum AppSettings {
             legacyEnabled: defaults.object(forKey: legacyCheckForUpdatesKey) as? Bool)
     }
 
-    /// Settings renamed since an earlier version keep the user's choice.
+    /// Settings renamed since an earlier version keep the user's choice; retired ones are deleted.
     static func migrate() {
         let defaults = UserDefaults.standard
         if defaults.string(forKey: updateFrequencyKey) == nil,
@@ -104,6 +119,9 @@ enum AppSettings {
         }
         defaults.removeObject(forKey: legacyMenuBarStyleKey)
         defaults.removeObject(forKey: legacyMenuBarIconKey)
+        // Not mapped to a window style: it was an experiment with opaque windows, and turning it
+        // into a see-through window would choose for the user.
+        defaults.removeObject(forKey: legacyGlassCardsKey)
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.
@@ -122,6 +140,11 @@ enum WhatsNewPolicy {
             defaults.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
             ?? (defaults.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
         return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current, features: WhatsNew.version)
+    }
+
+    /// The version that ran last, before this launch records itself; `nil` on a fresh install.
+    static var lastLaunched: AppVersion? {
+        UserDefaults.standard.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
     }
 
     /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real

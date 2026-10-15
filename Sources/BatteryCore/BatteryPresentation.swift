@@ -5,8 +5,13 @@ import Foundation
 public enum BatteryPresentation {
     /// SF Symbol for the current level; the bolt variant while charging.
     public static func symbolName(for s: BatterySnapshot?) -> String {
-        guard let s, let percent = s.chargePercent else { return "battery.0percent" }
-        if s.chargeState == .charging { return "battery.100percent.bolt" }
+        symbolName(percent: s?.chargePercent, state: s?.chargeState)
+    }
+
+    /// The symbol for a charge and state from any battery (a Mac's, an iPhone's).
+    public static func symbolName(percent: Double?, state: ChargeState?) -> String {
+        guard let percent else { return "battery.0percent" }
+        if state == .charging { return "battery.100percent.bolt" }
         switch percent {
         case 88...: return "battery.100percent"
         case 63..<88: return "battery.75percent"
@@ -29,7 +34,16 @@ public enum BatteryPresentation {
     }
 
     public static func levelTier(for s: BatterySnapshot) -> LevelTier {
-        guard let percent = s.chargePercent, s.chargeState != .charging, percent <= 20 else { return .normal }
+        levelTier(percent: s.chargePercent, state: s.chargeState)
+    }
+
+    public static func levelTier(percent: Double?, state: ChargeState) -> LevelTier {
+        levelTier(percent: percent, isCharging: state == .charging)
+    }
+
+    /// The tier for any battery that reports only whether it charges, such as an accessory's.
+    public static func levelTier(percent: Double?, isCharging: Bool) -> LevelTier {
+        guard let percent, !isCharging, percent <= 20 else { return .normal }
         return percent > 10 ? .low : .critical
     }
 
@@ -42,6 +56,14 @@ public enum BatteryPresentation {
         default: break
         }
         guard let health = s.healthPercent else { return .normal }
+        return health < 80 ? .low : .normal
+    }
+
+    /// Colour tier for an iPhone's or iPad's maximum capacity: a gauge error or a latched
+    /// permanent failure, then the capacity (iOS recommends service below 80 %).
+    public static func healthTier(device battery: IDeviceBattery) -> LevelTier {
+        if battery.errorCondition != nil || (battery.permanentFailureStatus ?? 0) != 0 { return .critical }
+        guard let health = battery.maximumCapacityPercent else { return .normal }
         return health < 80 ? .low : .normal
     }
 }
@@ -126,5 +148,59 @@ public struct WidgetReloadPolicy: Sendable {
     private mutating func record(_ next: Shown, at date: Date) {
         shown = next
         lastReload = date
+    }
+}
+
+/// The widget's timeline for one reading. The widget shows its estimate as a clock time ("Full
+/// at 17:39") so that it stays right between reloads; when that time comes before the next reload,
+/// a second entry at that moment drops it, so a time that has passed never stays on screen, and
+/// the next reload comes soon after.
+public struct WidgetTimelinePlan: Sendable, Equatable {
+    /// How often the widget asks for a new reading when the app doesn't ask first; WidgetKit allows
+    /// about 40–70 reloads a day.
+    public static let refreshInterval: TimeInterval = 30 * 60
+    /// The earliest next reload, so an estimate that keeps running out near full charge doesn't
+    /// spend the budget: through the taper the time to full can stay at a few minutes for most of
+    /// an hour, and a budget spent there delays the app's own reload when the Mac is unplugged.
+    public static let minimumReloadInterval: TimeInterval = 15 * 60
+
+    public struct Entry: Sendable, Equatable {
+        public var date: Date
+        public var showsEstimate: Bool
+
+        public init(date: Date, showsEstimate: Bool) {
+            self.date = date
+            self.showsEstimate = showsEstimate
+        }
+    }
+
+    public var entries: [Entry]
+    public var nextReload: Date
+
+    public init(snapshot: BatterySnapshot?, at date: Date) {
+        let regular = date.addingTimeInterval(Self.refreshInterval)
+        let soonest = date.addingTimeInterval(Self.minimumReloadInterval)
+        let minutes: Int? =
+            switch snapshot?.chargeState {
+            case .charging: snapshot?.estimatedTimeToFullMinutes
+            case .discharging: snapshot?.estimatedTimeToEmptyMinutes
+            default: nil
+            }
+        guard let minutes else {
+            entries = [Entry(date: date, showsEstimate: true)]
+            nextReload = regular
+            return
+        }
+        let end = date.addingTimeInterval(Double(minutes) * 60)
+        if end >= regular {
+            entries = [Entry(date: date, showsEstimate: true)]
+            nextReload = regular
+        } else if end <= date {
+            entries = [Entry(date: date, showsEstimate: false)]
+            nextReload = soonest
+        } else {
+            entries = [Entry(date: date, showsEstimate: true), Entry(date: end, showsEstimate: false)]
+            nextReload = max(end, soonest)
+        }
     }
 }

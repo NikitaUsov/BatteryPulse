@@ -19,6 +19,7 @@ struct DeveloperView: View {
     /// body, and the main window reads the battery every 2 s.
     @State private var allSections: [RawSection] = []
     @Environment(\.motion) private var motion
+    @Environment(\.windowLook) private var look
 
     var body: some View {
         let groups = RawSectionGroup.groups(in: allSections)
@@ -30,6 +31,10 @@ struct DeveloperView: View {
         // window edge with its Key column behind the sidebar. A point of padding keeps it clear of
         // that edge, so it is laid out beside the sidebar like the Form pages.
         rawTable(sections)
+            // On the glass sheet the rows sit on the sheet, without stripes; Frosted keeps the
+            // table's opaque surface, which long keys and hex values need.
+            .scrollContentBackground(look.usesGlassSheet ? .hidden : .automatic)
+            .alternatingRowBackgrounds(look.usesGlassSheet ? .disabled : .automatic)
             .padding(.leading, 1)
             .overlay {
                 // Only the empty state fades; the table's rows never animate.
@@ -41,6 +46,8 @@ struct DeveloperView: View {
                 }
                 .animation(motion.crossfade, value: sections.isEmpty)
             }
+            // Clear's treatment goes on the table as one group, with the sheet's text levels.
+            .sheetContent()
             .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
             // The table cuts long values and descriptions off; the inspector shows the selected
             // row in full.
@@ -151,6 +158,7 @@ struct DeveloperView: View {
                     Text(RawValueText.string(for: decoded))
                         .monospacedDigit()
                         .lineLimit(1)
+                        .fontWeight(look.boldNumerals ? .medium : nil)
                 }
             }
             .width(min: 70, ideal: 130)
@@ -160,6 +168,7 @@ struct DeveloperView: View {
                     Text(text)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .fontWeight(look.boldNumerals ? .medium : nil)
                         .help(text)
                 }
             }
@@ -279,7 +288,7 @@ private struct RawRowInspector: View {
 
     var body: some View {
         if selection.count == 1, let row = selection.first?.row, let source = selection.first?.source {
-            Form {
+            LookForm {
                 Section("Key") {
                     Text(verbatim: row.path)
                         .font(.body.monospaced())
@@ -309,7 +318,6 @@ private struct RawRowInspector: View {
                     }
                 }
             }
-            .formStyle(.grouped)
         } else if selection.isEmpty {
             ContentUnavailableView(
                 "No Row Selected",

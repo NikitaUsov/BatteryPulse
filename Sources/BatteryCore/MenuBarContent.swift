@@ -118,11 +118,11 @@ public struct MenuBarContent: Sendable, Equatable, Hashable {
 public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
     /// The SF Symbol in five steps, BatteryPulse's icon before 0.4.
     case symbol
-    /// Like the battery item of macOS 27: a capsule without an outline, the empty part translucent.
+    /// Like the battery item of macOS 27: a rounded battery without an outline, the empty part translucent.
     case modern
     /// The outlined battery macOS showed for years.
     case classic
-    /// The modern capsule with the charge number inside.
+    /// The modern battery with the charge number knocked out of it, like macOS 27 with the percentage on.
     case percentageInside
     /// A small circular gauge.
     case ring

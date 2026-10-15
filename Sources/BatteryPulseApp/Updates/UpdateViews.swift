@@ -321,7 +321,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 5, 0])
+    nonisolated static let version = AppVersion(parts: [0, 6, 0])
 
     struct Feature: Identifiable {
         let id: Int
@@ -332,21 +332,29 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "wand.and.sparkles", title: "Motion that follows the battery",
+            id: 1, symbol: "ipad.and.iphone", title: "iPhone and iPad",
             detail:
-                "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place."
+                "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's."
         ),
         Feature(
-            id: 2, symbol: "capsule.on.rectangle", title: "Liquid Glass controls",
+            id: 2, symbol: "headphones", title: "Accessory batteries",
             detail:
-                "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass."
+                "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification."
         ),
         Feature(
-            id: 3, symbol: "leaf", title: "Easy on the battery",
-            detail: "Windows you can't see stop reading the battery and stop animating."),
+            id: 3, symbol: "macwindow", title: "Window styles",
+            detail:
+                "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through."
+        ),
         Feature(
-            id: 4, symbol: "line.3.horizontal.decrease.circle", title: "Raw Data by source",
-            detail: "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar."),
+            id: 4, symbol: "menubar.rectangle", title: "Menu bar icons like macOS 27",
+            detail:
+                "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does."
+        ),
+        Feature(
+            id: 5, symbol: "square.and.arrow.up", title: "Export history",
+            detail:
+                "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON."),
     ]
 }
 #endif

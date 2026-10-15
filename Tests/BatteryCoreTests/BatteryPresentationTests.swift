@@ -37,6 +37,20 @@ import Testing
 
     @Test(
         arguments: [
+            (21.0 as Double?, false, BatteryPresentation.LevelTier.normal),
+            (20, false, .low),
+            (11, false, .low),
+            (10, false, .critical),
+            (0, false, .critical),
+            (5, true, .normal),
+            (nil, false, .normal),
+        ])
+    func levelTierForPercent(percent: Double?, isCharging: Bool, expected: BatteryPresentation.LevelTier) {
+        #expect(BatteryPresentation.levelTier(percent: percent, isCharging: isCharging) == expected)
+    }
+
+    @Test(
+        arguments: [
             (nil as String?, 5760, BatteryPresentation.LevelTier.normal),
             ("Normal", 4600, .low),
             ("Fair", 5760, .low),
@@ -74,5 +88,51 @@ import Testing
         #expect(Set(entries.map(\.path)).count == entries.count)
         #expect(entries.contains(RawEntry(path: "AppleSmartBattery.BatteryData.DesignCapacity", property: .int(5760))))
         #expect(!entries.contains { $0.path.hasSuffix("SerialString") && $0.value != "REDACTED" })
+    }
+
+    // MARK: iPhone and iPad
+
+    @Test(
+        arguments: [
+            (50.0 as Double?, ChargeState.discharging, BatteryPresentation.LevelTier.normal),
+            (20, .discharging, .low),
+            (10, .notCharging, .critical),
+            (5, .charging, .normal),
+            (nil, .discharging, .normal),
+        ])
+    func deviceLevelTier(percent: Double?, state: ChargeState, expected: BatteryPresentation.LevelTier) {
+        #expect(BatteryPresentation.levelTier(percent: percent, state: state) == expected)
+    }
+
+    @Test func deviceHealthTier() {
+        func tier(_ percent: Double?, error: String? = nil, failure: Int? = nil) -> BatteryPresentation.LevelTier {
+            BatteryPresentation.healthTier(
+                device: IDeviceBattery(
+                    maximumCapacityPercent: percent, errorCondition: error, permanentFailureStatus: failure))
+        }
+        #expect(tier(95, error: "Cell Check Fault") == .critical)
+        #expect(tier(95, failure: 0x10) == .critical)
+        #expect(tier(95, failure: 0) == .normal)
+        #expect(tier(79) == .low)
+        #expect(tier(80) == .normal)
+        #expect(tier(95) == .normal)
+        #expect(tier(nil) == .normal)
+    }
+
+    @Test func snapshotTiersAndSymbolsUnchanged() {
+        for percent in stride(from: 0.0, through: 100, by: 1) {
+            for state in ChargeState.allCases {
+                let s = BatterySnapshot(timestamp: .now, chargePercent: percent, chargeState: state)
+                #expect(
+                    BatteryPresentation.symbolName(for: s)
+                        == BatteryPresentation.symbolName(percent: percent, state: state))
+                #expect(
+                    BatteryPresentation.levelTier(for: s)
+                        == BatteryPresentation.levelTier(percent: percent, state: state))
+            }
+        }
+        #expect(BatteryPresentation.symbolName(for: BatterySnapshot(timestamp: .now)) == "battery.0percent")
+        #expect(BatteryPresentation.symbolName(percent: nil, state: .charging) == "battery.0percent")
+        #expect(BatteryPresentation.symbolName(percent: 50, state: nil) == "battery.50percent")
     }
 }

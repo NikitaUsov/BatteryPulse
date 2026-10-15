@@ -43,6 +43,7 @@ jobs:
           set +e
           .build/release/bpulse
           status=$?
+          battery_status=$status
           echo "bpulse exited with $status"
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
           # The SMC listing must not crash, with or without an SMC in the VM.
@@ -56,7 +57,18 @@ jobs:
           .build/release/bpulse --devices
           status=$?
           echo "bpulse --devices exited with $status"
+          # --record takes no output format: usage error.
+          .build/release/bpulse --record "$RUNNER_TEMP/rec" --json; [ $? -eq 1 ] || exit 1
+          # Without a battery it ends with 2 and creates nothing. (With one it would record until
+          # interrupted, so it only runs where plain bpulse found no battery: AppleSmartBattery
+          # and IOPS both count.)
+          if [ "$battery_status" -eq 2 ]; then
+            .build/release/bpulse --record "$RUNNER_TEMP/rec"; [ $? -eq 2 ] && [ ! -e "$RUNNER_TEMP/rec" ] || exit 1
+          fi
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+      - name: Check the verification scripts
+        # Neither script is built or run anywhere else; they need a Mac with a display.
+        run: bash -n scripts/menu-bar-shots.sh && swiftc -typecheck scripts/display-metrics.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)

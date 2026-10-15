@@ -20,17 +20,25 @@ through the App Store. Reference hardware: MacBook Air M5.
   icon geometry), `IDevice*` (iPhone/iPad: device list, diagnostics relay capture, battery
   parser, report), `DemoBattery` (Demo Mode scenes that expand into M5-style raw
   dictionaries), `BatteryMotion` (`MotionPolicy` and `BatteryMotionKey`, the discrete parts of a
-  snapshot that animations key on). Must stay free of Apple-only frameworks.
+  snapshot that animations key on), `DeviceKey`/`RememberedDevice`/`DeviceStore`/`IDeviceSchedule`
+  /`IDeviceModel`/`DemoDevice` (remembered iPhones and iPads, their history and read schedule),
+  `Accessory*`/`DemoAccessories` (Bluetooth accessory batteries: model, parser, pseudonymized
+  capture, alerts, report), `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`),
+  `WindowLook` (`WindowLookPolicy`) and `ToneMap` (window styles). Must stay free of Apple-only
+  frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
   children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
   `BatteryMonitor` (@Observable, event-driven + optional polling; `setOverride` swaps in the
   demo), `UpdateSignatureVerifier` (CryptoKit), `IDeviceTransport` and `MobileDevice/` (the
-  private MobileDevice framework through `dlopen`, never linked; no pairing calls).
+  private MobileDevice framework through `dlopen`, never linked; no pairing calls),
+  `IDeviceMonitor` (opt-in, USB-triggered device reads; `USBDeviceWatcher`, `DeviceKeys` HMAC),
+  `AccessoryMonitor` and `MacAccessoryProvider` (the private `IOPSCopyPowerSourcesByType(4)`
+  through `dlsym`, refreshed on the `com.apple.system.accpowersources.*` notifications).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings
   keys, Dock icon policy, localized phrases, `DemoController`, `Motion` with the `\.motion`
   environment value and its presets), `Main/` (sidebar window:
-  Overview, Power, History, Health, and the Developer section with Raw Data and Demo Mode; the
-  compact window), `Updates/` (update check, Software Update and What's New windows),
+  Overview, Power, History, Health, the Devices section with a page per iPhone/iPad and
+  Accessories, and the Developer section with Raw Data and Demo Mode; the compact window), `Updates/` (update check, Software Update and What's New windows),
   `MenuBar/`, `Settings/`, `Welcome/`. Everything is inside `#if os(macOS)`; a stub
   `main` keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
   (numbers/units per locale) live in BatteryCore so they are tested on Linux. `scripts/build-app.sh` packages `.app` + `.dmg`;
@@ -41,7 +49,9 @@ through the App Store. Reference hardware: MacBook Air M5.
   with only the app-sandbox entitlement by `scripts/build-app.sh`.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
-  `--device <n> [--json | --raw]` read a connected iPhone or iPad.
+  `--device <n> [--json | --raw]` read a connected iPhone or iPad; `--accessories [--json |
+  --raw]` lists accessory batteries; `--export csv|json` prints the recorded history; `--record
+  <folder>` keeps captures around every charging change.
 - Releases: `release.yml` signs the DMG with `scripts/sign-update.swift` and the
   `UPDATE_SIGNING_KEY` secret of the `release` environment (`BatteryPulse.dmg.sig`); the app's `Updates/UpdateInstaller`
   refuses an update without a valid signature. Never ask for or handle the private key.
@@ -82,12 +92,23 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   translation to `Resources/Localizable.xcstrings`; `LocalizationCatalogTests` fails on missing
   or unused keys. Use Apple's Russian terminology (the words macOS uses in System Settings →
   Battery); existing catalog entries show the conventions.
-- Liquid Glass: the control layer only — standard components, plus custom controls that float
-  over content, each cluster inside one `GlassEffectContainer`, `.regular` variant. Never
-  `glassEffect` on content (cards, tiles, charts, tables, readouts), never glass on glass. It
-  appears only in `Main/DemoView.swift` (the floating demo bar), `Settings/SettingsView.swift`
-  (the selection of the icon-style picker) and `Main/Components.swift` (the Developer option
-  "Glass Cards", off by default); `MotionGuardTests` enforces the list.
+- Liquid Glass and window styles: glass is the control layer: standard components, plus custom
+  controls that float over content, each cluster inside one `GlassEffectContainer`, `.regular`
+  variant. Never `glassEffect` on content (cards, tiles, charts, tables, readouts), never glass on
+  glass. Custom glass appears only in `Main/DemoView.swift` (the floating demo bar),
+  `Settings/SettingsView.swift` (the tile pickers' selection) and `App/WindowLook.swift`. The one
+  exception is the window style setting (Settings → General: Standard / Frosted / Translucent /
+  Clear; code name `WindowLook`, never `WindowStyle`, which is SwiftUI's), decided by
+  `WindowLookPolicy` in BatteryCore: Frosted is a standard material behind the window
+  (`containerBackground(_:for: .window)`); Translucent and Clear are one `.clear` glass sheet
+  behind the whole window, Translucent with a dimming tint, Clear with only a faint tone, the
+  window in the dark appearance, a graphite control tint (never white) and every colour through
+  the tone map (`\.tones`, `App/ToneStyle.swift`; no system colour names in `Main/`,
+  `App/Localized.swift` or `App/DemoController.swift`). The sheet is the only glass under other
+  glass. Only the main and compact windows; Reduce Transparency or Increase Contrast gives
+  Standard. Content stays free of glass and materials; groups use `Card`/`CardGroup`/`LookForm`.
+  Only the window background may depend on the style's structure; everything else takes the style
+  as a value. `MotionGuardTests` enforces the lists.
 - Motion: through `\.motion` (`App/Motion.swift`), keyed on `BatteryMotionKey` or UI state, never
   on `snapshot`/`reading`. `change` moves things and is `nil` under Reduce Motion; `crossfade` is
   for opacity and colour only. No repeating or per-frame animation, no hard-coded animation

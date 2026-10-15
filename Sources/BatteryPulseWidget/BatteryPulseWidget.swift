@@ -29,13 +29,11 @@ struct BatteryWidget: Widget {
 struct BatteryEntry: TimelineEntry {
     let date: Date
     let snapshot: BatterySnapshot?
+    /// Off once the estimate's time has passed (``WidgetTimelinePlan``).
+    var showsEstimate = true
 }
 
 struct BatteryTimelineProvider: TimelineProvider {
-    /// The app reloads the widget when the battery changes while it runs; this keeps it roughly
-    /// current when it doesn't, within WidgetKit's budget of 40–70 reloads a day.
-    static let refreshInterval: TimeInterval = 30 * 60
-
     func placeholder(in context: Context) -> BatteryEntry {
         BatteryEntry(date: .now, snapshot: nil)
     }
@@ -44,10 +42,16 @@ struct BatteryTimelineProvider: TimelineProvider {
         Task { @MainActor in completion(Self.read()) }
     }
 
+    /// The app reloads the widget when the battery changes while it runs; the timeline's own
+    /// reload keeps it roughly current when it doesn't (``WidgetTimelinePlan``).
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<BatteryEntry>) -> Void) {
         Task { @MainActor in
-            let entry = Self.read()
-            completion(Timeline(entries: [entry], policy: .after(entry.date.addingTimeInterval(Self.refreshInterval))))
+            let reading = Self.read()
+            let plan = WidgetTimelinePlan(snapshot: reading.snapshot, at: reading.date)
+            let entries = plan.entries.map {
+                BatteryEntry(date: $0.date, snapshot: reading.snapshot, showsEstimate: $0.showsEstimate)
+            }
+            completion(Timeline(entries: entries, policy: .after(plan.nextReload)))
         }
     }
 
@@ -171,8 +175,9 @@ struct BatteryWidgetView: View {
         }
     }
 
-    /// An absolute time, so the text stays right between reloads.
+    /// An absolute time, so the text stays right between reloads; gone once it has passed.
     private func time(_ s: BatterySnapshot) -> String? {
+        guard entry.showsEstimate else { return nil }
         switch s.chargeState {
         case .charging:
             guard let minutes = s.estimatedTimeToFullMinutes else { return nil }

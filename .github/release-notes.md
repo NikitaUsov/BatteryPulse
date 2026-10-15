@@ -1,3 +1,36 @@
+## What's new in 0.6
+
+- **iPhone and iPad:** turn on *Read iPhone and iPad batteries* in Settings → General and a
+  connected iPhone or iPad gets its own page in the new Devices section: charge, maximum
+  capacity and cycle count as iOS Settings shows them, the capacities in mAh, temperature and
+  the date of first use. BatteryPulse remembers each device and keeps its history, which History
+  shows next to the Mac's. It reads a device when it's plugged in, then every 5 minutes while
+  battery history is recorded and every minute while its page is open, and only while the setting
+  is on.
+- **Accessory batteries:** Bluetooth keyboards, mice, trackpads and headphones show their charge
+  in the menu bar panel and on the Accessories page, with an optional notification when one runs
+  low (Settings → Notifications). No Bluetooth permission is needed.
+- **Window styles:** Settings → General → Window Style lets the desktop show through the main
+  and compact windows: Frosted like the widget gallery, Translucent as one sheet of glass, or
+  Clear, colourless glass like the Clear icons on iPhone. Standard stays the default, and Reduce
+  Transparency or Increase Contrast always give Standard.
+- **Menu bar icons like macOS 27:** every drawn icon style now has the size, corners and bolt of
+  the system's battery icon, and Percentage Inside keeps the digits in one colour inside the
+  battery, the way macOS draws it.
+- **Export history:** History's new Export menu saves the minute readings or the daily battery
+  health as CSV, in your region's spreadsheet format, or all of it as JSON. The files hold
+  everything BatteryPulse keeps, with units in the column names; `bpulse --export` writes the
+  same from the command line.
+- **Fixes:** after an update the widget no longer stays frozen on the old version's last reading,
+  its "Full at" or "Lasts until" time disappears once it has passed, and Check Now asks GitHub
+  afresh instead of trusting an answer cached a minute earlier.
+- **Command line:** `bpulse --accessories` lists accessory batteries, and `bpulse --record` keeps
+  a capture around every charging change, for bug reports.
+
+Updating from 0.5.0: **Install and Relaunch** in the update window installs 0.6 from inside the
+app. If a widget on the desktop looked frozen after the update to 0.5.0, 0.6 brings it back by
+itself at its first launch.
+
 ## What's new in 0.5
 
 - **Motion that means something:** the charge rolls to its new value, the battery and the rings

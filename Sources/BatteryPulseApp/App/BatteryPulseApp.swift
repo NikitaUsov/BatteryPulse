@@ -8,6 +8,9 @@ import SwiftUI
 struct BatteryPulseApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var monitor: BatteryMonitor
+    /// Passed to the views that use it rather than put in the environment: a view missing it is
+    /// then a compile error, not a crash at run time.
+    @State private var accessories: AccessoryMonitor
     @State private var demo: DemoController
     @State private var updater: UpdateChecker
     private let historyRecorder: HistoryRecorder
@@ -26,10 +29,15 @@ struct BatteryPulseApp: App {
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
         self.monitor = monitor
-        self.demo = DemoController(monitor: monitor)
+        // Always running: idle, it holds three notification registrations and no timer.
+        let accessories = AccessoryMonitor(provider: SystemAccessories.makeProvider())
+        accessories.start()
+        self.accessories = accessories
+        self.demo = DemoController(monitor: monitor, accessories: accessories)
         historyRecorder = HistoryRecorder(monitor: monitor)
         historyRecorder.start()
-        notifier = BatteryNotifier(monitor: monitor)
+        AppDevices.start()
+        notifier = BatteryNotifier(monitor: monitor, accessories: accessories)
         notifier.start()
         widgetRefresher = WidgetRefresher(monitor: monitor)
         widgetRefresher.start()
@@ -43,17 +51,27 @@ struct BatteryPulseApp: App {
         // A fresh install has no last-seen version, so What's New only follows a real update, even
         // when the welcome window opens at every launch by choice.
         showsWhatsNew = WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
+        // The first launch of another version: the previous version's widget extension may still
+        // be running, and WidgetKit refuses its timelines.
+        if WhatsNewPolicy.lastLaunched != updater.currentVersion {
+            WidgetRefresher.endPreviousExtension()
+        }
         WhatsNewPolicy.markSeen(updater.currentVersion)
         updater.showWindow = { WindowOpener.show(WindowID.update) }
         updater.startAutomaticChecks()
     }
 
     // Every window and the menu bar panel get `.motionPolicy()` here, outside their root view, so
-    // the root view's own `@Environment(\.motion)` sees the window's policy too.
+    // the root view's own `@Environment(\.motion)` sees the window's policy too. The main and
+    // compact windows also follow the window style (`.windowLook()`), inside the motion policy and
+    // inside the window's registrations (live refresh, the Dock icon policy): a style change
+    // rebuilds the content below it, and a rebuilt registration could end up dropped or bring the
+    // app forward. The main window applies it in `MainView`, whose page decides its refresh.
     var body: some Scene {
         Window("BatteryPulse", id: WindowID.main) {
-            MainView(monitor: monitor)
+            MainView(monitor: monitor, accessories: accessories)
                 .environment(demo)
+                .environment(AppDevices.monitor)
                 .motionPolicy()
         }
         .defaultSize(width: 860, height: 640)
@@ -72,6 +90,9 @@ struct BatteryPulseApp: App {
         Window("Compact Window", id: WindowID.compact) {
             CompactView(monitor: monitor)
                 .environment(demo)
+                .windowLook()
+                .liveRefresh(monitor, every: .seconds(2), client: "compact")
+                .trackedWindow(WindowID.compact)
                 .motionPolicy()
         }
         // Fixed size: the window fits its content.
@@ -79,7 +100,7 @@ struct BatteryPulseApp: App {
         .defaultLaunchBehavior(showsMainWindow && AppSettings.prefersCompactWindow ? .presented : .suppressed)
 
         MenuBarExtra(isInserted: $showInMenuBar) {
-            PopoverView(monitor: monitor)
+            PopoverView(monitor: monitor, accessories: accessories)
                 .environment(demo)
                 .environment(updater)
                 .motionPolicy()
@@ -129,6 +150,7 @@ struct BatteryPulseApp: App {
             SettingsView()
                 .environment(launchAtLogin)
                 .environment(updater)
+                .environment(AppDevices.monitor)
                 .motionPolicy()
         }
     }
@@ -177,12 +199,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// Lets an update being installed finish, and saves the day's battery summary, which is
-    /// otherwise written at most hourly, before quitting.
+    /// Lets an update being installed finish, and saves the day's battery summaries (the Mac's and
+    /// each iPhone's or iPad's), which are otherwise written at most hourly, before quitting.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await UpdateInstaller.current?.finishBeforeQuitting()
             try? await AppHistory.store.flush()
+            await AppDevices.monitor.flushHistory()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater

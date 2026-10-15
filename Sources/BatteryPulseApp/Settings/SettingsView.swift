@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import BatteryCore
+import BatteryKit
 import SwiftUI
 
 /// The Settings window (⌘,).
@@ -8,7 +9,10 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             Tab("General", systemImage: "gearshape") {
-                SettingsPage { GeneralSettings() }
+                SettingsPage {
+                    GeneralSettings(includesWindowStyle: true)
+                    DeviceSettings()
+                }
             }
             Tab("Menu Bar", systemImage: "menubar.rectangle") {
                 SettingsPage { MenuBarSettings() }
@@ -67,8 +71,11 @@ struct Crossfade<First: View, Second: View>: View {
     }
 }
 
-/// Where the app appears, startup and language. Also shown in the welcome window.
+/// Where the app appears, startup and language. Also shown in the welcome window, without the
+/// window style.
 struct GeneralSettings: View {
+    /// Settings shows the window style after the window to open; the welcome window doesn't.
+    var includesWindowStyle = false
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
     @AppStorage(AppSettings.showDockIconKey) private var showDockIcon = false
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
@@ -132,6 +139,10 @@ struct GeneralSettings: View {
             launchAtLogin.refresh()
         }
 
+        if includesWindowStyle {
+            WindowLookSettings()
+        }
+
         Section {
             Picker("Check for updates", selection: $updateFrequency) {
                 Text("Daily").tag(UpdateFrequency.daily)
@@ -168,6 +179,27 @@ struct GeneralSettings: View {
     /// Hiding both the menu bar item and the Dock icon would leave no way into the app.
     private var dockIconBinding: Binding<Bool> {
         Binding(get: { showDockIcon || !showInMenuBar }, set: { showDockIcon = $0 })
+    }
+}
+
+/// iPhones and iPads: the opt-in, last in Settings → General. Not in the welcome window: the
+/// setting loads a private framework, so it waits until the user looks for it.
+struct DeviceSettings: View {
+    @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
+
+    var body: some View {
+        Section {
+            // A plain Binding: `setReading` is the only way the setting changes.
+            Toggle(
+                "Read iPhone and iPad batteries",
+                isOn: Binding(get: { readsDevices }, set: { AppDevices.setReading($0) }))
+        } header: {
+            Text("iPhone and iPad")
+        } footer: {
+            Text(
+                "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh or Check Again. BatteryPulse never pairs with a device, and nothing leaves this Mac."
+            )
+        }
     }
 }
 
@@ -209,7 +241,9 @@ struct MenuBarSettings: View {
         .disabled(!showInMenuBar)
 
         Section {
-            MenuBarIconStylePicker(selection: $iconStyle)
+            PreviewTilePicker(selection: $iconStyle, values: MenuBarIconStyle.allCases, title: \.title) { style in
+                MenuBarIconPreview(style: style, magnification: PreviewTile.iconMagnification)
+            }
         } header: {
             Text("Icon Style")
         }
@@ -229,47 +263,50 @@ struct MenuBarSettings: View {
     }
 }
 
-/// The icon styles side by side, each drawn as it looks in the menu bar.
+/// Choices side by side as tiles, each a preview with its name below, like the Icon & widget
+/// style tiles of macOS: the menu bar's icon styles and the window styles. Every tile gives its
+/// preview the same frame, so the tiles match.
 ///
 /// The tiles are a picker, a control, so their selection is Liquid Glass: one shape behind the
 /// selected tile that flows to the next one, as the selection of a segmented control does. The
 /// tiles keep their standard fill (no glass on glass), and the accent outline still marks the
-/// choice. Under Reduce Motion the outline crossfades and the glass changes in place.
-private struct MenuBarIconStylePicker: View {
-    @Binding var selection: MenuBarIconStyle
+/// choice. Under Reduce Motion the outline crossfades and the glass changes in place. The choice
+/// itself is set without animation: only the tiles animate, never what the choice changes.
+struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: View where Value.RawValue == String {
+    @Binding var selection: Value
+    let values: [Value]
+    let title: (Value) -> LocalizedStringKey
+    @ViewBuilder let preview: (Value) -> Preview
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.motion) private var motion
     @Environment(\.accessibilityShowBorders) private var showsBorders
     @Namespace private var glassNamespace
 
-    private static let cornerRadius: CGFloat = 8
-    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
-    private static let glassOutset: CGFloat = 4
-
     var body: some View {
         // One container for the one glass shape: it renders the selection and morphs it.
         GlassEffectContainer {
             HStack(alignment: .top, spacing: 8) {
-                ForEach(MenuBarIconStyle.allCases, id: \.self) { style in
-                    tile(style)
+                ForEach(values, id: \.self) { value in
+                    tile(value)
                 }
             }
+            // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
+            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
+            .animation(motion.crossfade, value: selection)
         }
         .opacity(isEnabled ? 1 : 0.5)
     }
 
-    private func tile(_ style: MenuBarIconStyle) -> some View {
-        let isSelected = style == selection
-        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius)
+    private func tile(_ value: Value) -> some View {
+        let isSelected = value == selection
+        let shape = RoundedRectangle(cornerRadius: PreviewTile.cornerRadius)
         return Button {
-            // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
-            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
-            withAnimation(motion.crossfade) { selection = style }
+            selection = value
         } label: {
             VStack(spacing: 8) {
-                MenuBarIconPreview(style: style)
-                    .frame(height: 24)
-                Text(style.title)
+                preview(value)
+                    .frame(height: PreviewTile.previewHeight)
+                Text(title(value))
                     .font(.caption)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
@@ -290,34 +327,47 @@ private struct MenuBarIconStylePicker: View {
             }
             .background {
                 if isSelected {
-                    selectionGlass(for: style)
+                    selectionGlass(for: value)
                 }
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(style.title))
+        .accessibilityLabel(Text(title(value)))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// The glass behind the selected tile. With full motion it keeps one ID wherever it goes, so
     /// the container morphs it from tile to tile. Under Reduce Motion each tile's glass is a shape
     /// of its own that comes and goes in place, without materializing or moving.
-    private func selectionGlass(for style: MenuBarIconStyle) -> some View {
+    private func selectionGlass(for value: Value) -> some View {
         let flows = motion.level == .full
         return Color.clear
-            .glassEffect(.regular, in: .rect(cornerRadius: Self.cornerRadius + Self.glassOutset))
-            .glassEffectID(flows ? "selection" : style.rawValue, in: glassNamespace)
+            .glassEffect(.regular, in: .rect(cornerRadius: PreviewTile.cornerRadius + PreviewTile.glassOutset))
+            .glassEffectID(flows ? "selection" : value.rawValue, in: glassNamespace)
             .glassEffectTransition(flows ? .matchedGeometry : .identity)
-            .padding(-Self.glassOutset)
+            .padding(-PreviewTile.glassOutset)
             .transition(flows ? AnyTransition.opacity : .identity)
     }
+}
+
+/// The tiles' measurements; a generic type can't store them.
+private enum PreviewTile {
+    static let cornerRadius: CGFloat = 8
+    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
+    static let glassOutset: CGFloat = 4
+    /// Every preview's height: a window style's drawing (``WindowLookPreview``).
+    static let previewHeight: CGFloat = WindowLookPreview.size.height
+    /// The menu bar icons are drawn larger in a tile this size; each still takes the same frame
+    /// (``BatteryIconLayout/previewSize``).
+    static let iconMagnification: CGFloat = 2.5
 }
 
 /// Which battery notifications to post.
 struct NotificationSettings: View {
     @AppStorage(AppSettings.alertChargeLimitKey) private var chargeLimit = 0
     @AppStorage(AppSettings.alertLowBatteryKey) private var lowBattery = 0
+    @AppStorage(AppSettings.alertAccessoryLowKey) private var accessoryLow = 0
     @AppStorage(AppSettings.alertServiceKey) private var service = false
     @AppStorage(AppSettings.alertHeatKey) private var heat = false
     @State private var isDenied = false
@@ -330,6 +380,11 @@ struct NotificationSettings: View {
                 ForEach([80, 85, 90, 95, 100], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
             }
             Picker("When the battery falls to", selection: $lowBattery) {
+                Text("Off").tag(0)
+                ForEach([10, 20, 30], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
+            }
+            // Bluetooth keyboards, mice, trackpads and headphones; once per discharge each.
+            Picker("When an accessory falls to", selection: $accessoryLow) {
                 Text("Off").tag(0)
                 ForEach([10, 20, 30], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
             }
@@ -363,7 +418,7 @@ struct NotificationSettings: View {
             }
         }
         .task { isDenied = await BatteryNotifier.isDenied() }
-        .onChange(of: [chargeLimit, lowBattery, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
+        .onChange(of: [chargeLimit, lowBattery, accessoryLow, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
             // Ask for permission the first time something is turned on.
             guard AppSettings.alerts.isAnyEnabled else { return }
             Task {
@@ -377,26 +432,38 @@ struct NotificationSettings: View {
 /// History, the Developer section and help.
 struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
-    @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
+    @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
+    @Environment(IDeviceMonitor.self) private var devices
     @State private var confirmsClearing = false
 
     var body: some View {
         Section {
             Toggle("Record battery history", isOn: $recordsHistory)
+                // The 5-minute reads of iPhones and iPads start or stop with it.
+                .onChange(of: recordsHistory) { devices.historySettingChanged() }
             LabeledContent("Recorded history") {
                 Button("Clear History…", role: .destructive) { confirmsClearing = true }
             }
         } header: {
             Text("History")
         } footer: {
-            Text(
-                "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac."
-            )
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    "About once a minute while BatteryPulse runs, for the last 10 days, plus the battery's capacity and cycles once a day. It stays on this Mac."
+                )
+                if readsDevices {
+                    Text("iPhones and iPads connected by cable are recorded too, every 5 minutes.")
+                }
+            }
         }
         .confirmationDialog("Clear the battery history?", isPresented: $confirmsClearing) {
             Button("Clear History", role: .destructive) {
-                Task { try? await AppHistory.store.clear() }
+                // Every device's history too; the remembered devices stay.
+                Task {
+                    try? await AppHistory.store.clear()
+                    await devices.clearHistory()
+                }
             }
         } message: {
             Text("The charts start over. This can't be undone.")
@@ -404,18 +471,6 @@ struct AdvancedSettings: View {
 
         Section {
             Toggle("Show Developer section", isOn: $showsDeveloper)
-            // A Developer option like Raw Data and Demo Mode: only offered, and only in effect,
-            // while the Developer section is on. Turning the section off keeps the choice.
-            if showsDeveloper {
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Glass Cards", isOn: $glassCards)
-                    Text(
-                        "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read."
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                }
-            }
         } footer: {
             Text(
                 "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window."

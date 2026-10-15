@@ -14,13 +14,23 @@ charging state.
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
-  optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
+  Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
   system's sidebar, toolbar and controls, plus custom glass only on controls that float over
-  content (the Demo Mode bar, the selection of the menu bar icon style picker). Content uses
-  standard fills; glass cards are a Developer option, off by default. Motion is short, plays
-  once on a battery event or a user action, turns into fades under Reduce Motion, and stops in
-  windows that can't be seen and in the menu bar label.
+  content (the Demo Mode bar, the selection of the tile pickers in Settings). Content uses
+  standard fills and is never glass. Motion is short, plays once on a battery event or a user
+  action, turns into fades under Reduce Motion, and stops in windows that can't be seen and in
+  the menu bar label.
+- **Window styles (0.6):** the main and compact windows offer Standard (default), Frosted,
+  Translucent and Clear (Settings → General). Standard and Frosted follow the HIG: Frosted is a
+  standard material as the app background. Translucent and Clear knowingly go against it (Liquid
+  Glass in the content layer, a window-sized sheet, glass under the system's glass, and for
+  Clear contrast below the HIG minimum over parts of a bright wallpaper and a dark appearance
+  chosen by the style), because they were asked for; they are opt-in, never the default, say
+  what they cost in Settings, apply only to the main and compact windows and give way to
+  Standard under Reduce Transparency or Increase Contrast. The sidebar stays the system's in
+  every style; Frosted stays frosted in inactive windows; no Low Power Mode fallback until the
+  energy is measured.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -133,7 +143,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
-- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point
+- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
+  (0.6.0) keeps captures just before and after every charging change, with a timeline
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -212,20 +223,27 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
   (turned off in System Settings → Menu Bar → Battery; BatteryPulse can't hide it itself,
   so Settings explains this and links there). Built in 0.4.0, to verify on the M5: Symbol (the
-  SF Symbol, as before), Modern (like macOS 27: a capsule without an outline, the empty part
-  translucent), Classic (outlined), Percentage Inside (like macOS 26) and Ring; the ring has
-  only the state colors, no color or monochrome choice. Sizes are in `BatteryIconLayout`
+  SF Symbol, as before), Modern (like macOS 27: a rounded battery without an outline, the empty
+  part translucent), Classic (outlined), Percentage Inside (like macOS 27 with the percentage on)
+  and Ring; the ring has only the state colors, no color or monochrome choice. Sizes are in
+  `BatteryIconLayout`
 - [ ] Draw the battery to the exact level with SwiftUI shapes, not the five steps of the SF
   Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
   charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
   to verify on the M5
 - [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
-  bar's height on displays with a notch
-- [ ] 0.6.1: rework the drawn styles. On the M5 (0.4.0) they look off next to the system item:
-  Modern is thicker and larger than the macOS 27 battery, Percentage Inside's digits are taller
-  than the body and change colour at the fill edge, the previews in Settings differ in size, and
-  the ring is thin. Render `BatteryIconLayout` on Linux and match it to screenshots of the
-  system item before changing the app
+  bar's height on displays with a notch. `scripts/menu-bar-shots.sh` shoots every style next to
+  the system item on light and dark wallpapers with both appearances, and records each display's
+  menu bar height, scale and notch (`scripts/display-metrics.swift`)
+- [ ] 0.6.0: rework the drawn styles. On the M5 (0.4.0) they looked off next to the system item:
+  Modern read heavier (a full capsule, a darker track, a small thin bolt) although it was
+  smaller, Percentage Inside's digits changed colour at the fill edge, the previews in Settings
+  differed in size, and the ring was thin. Matched to 2x screenshots of the system item,
+  measured on the M5: a 23 × 12 pt body, 4 pt corners, a 1.375 × 4 pt terminal, a 14 pt bolt,
+  and 7.4 pt digits knocked out of the battery, scaled down uniformly for "100"; every bar style
+  shares one 26 × 14 pt canvas, the ring has a 3 pt stroke, and the Settings previews share one
+  size. Built in 0.6.0; to tick after the checks on the M5 next to the system item (light and
+  dark bars, the plug, 100 % on power, Percentage Inside with 1–3 digits)
 
 ### Stage 1.4: Liquid Glass and motion (0.5)
 
@@ -252,7 +270,7 @@ stays on controls; the glass bubbles come from standard segmented controls.
   Low Power Mode and thermal state; rings (optionally filling once per launch)
 - [x] Developer option "Glass Cards" (Settings → Advanced, with the Developer section): the cards
   in Liquid Glass, one `GlassEffectContainer` per page, plain when off or under Reduce
-  Transparency; off by default
+  Transparency; off by default (replaced by window styles in 0.6, Stage 1.5)
 - [x] Main window: polling only while visible and on pages with live values, a short page fade,
   toolbar grouping, feedback and a VoiceOver announcement for Copy Report, the tour's page switch
   in one transaction
@@ -280,6 +298,45 @@ stays on controls; the glass bubbles come from standard segmented controls.
   Profiler), legibility with the Liquid Glass slider at both ends, and Reduce Motion, Prefer
   Cross-Fade Transitions, Reduce Transparency, Increase Contrast and Show Borders
 
+### Stage 1.5: Window styles (0.6)
+
+Standard, Frosted, Translucent and Clear for the main and compact windows. Built without the
+planned spike on the M5 (the maintainer checks after release); the open points are in the check
+below.
+
+- [x] `WindowLook` and `WindowLookPolicy` in BatteryCore (the code avoids SwiftUI's
+  `WindowStyle`): the background, group surface and sheet rules per style, Reduce Transparency
+  and Increase Contrast giving Standard, the glass sheet's tint per system appearance, Clear's
+  content treatment; tested on Linux
+- [x] `ToneMap`: every colour the windows draw is a role (level, cycles, capacity bars, chart
+  lines, spans, track, hairline, accent, warning, Demo Mode steps, text); today's colours in
+  colour, white at fixed steps and an inverted badge in Clear. `MotionGuardTests` keeps system
+  colour names out of `Main/`, the level and Demo Mode tints
+- [x] The Developer option Glass Cards removed (its stored value deleted, not mapped); the main
+  window's page kept in scene storage, so a style change that rebuilds the window keeps it
+- [x] Settings → General: Window Style, four static preview tiles in the generalised tile
+  picker (the icon styles use it too, drawn at 2.5×), footers for each style and for the
+  accessibility override
+- [x] Frosted: a standard material behind the window, active also in inactive windows; frost
+  layers for the cards; Forms without their background; the Raw Data table opaque
+- [x] Translucent: one clear glass sheet with a 45 % dimming tint; no card surfaces, hairlines
+  between groups, bold numbers and medium text, no tertiary text, defined ring channels, Form rows
+  and Raw Data rows on the sheet
+- [x] Clear: the window in the dark appearance (that window only), graphite control tint, the
+  monochrome tone map, a shadow and halo under each group, the inverted badge for a low level or
+  a worn battery, a dashed second line in the power chart
+- [x] `MotionGuardTests`: window backgrounds and appearance overrides only in
+  `App/WindowLook.swift`, nothing animated there, never a white tint
+- [ ] Check on the M5: whether the glass sheet samples the desktop and how the system sidebar,
+  toolbar, inspector and Demo Mode bar look on it (fallback for Translucent: a thin
+  behind-window material with the dimming layer); the material against the widget gallery; the
+  graphite tint on the sidebar selection; that the dark appearance stays in its window; Form
+  section fills and table stripes; the scroll edge under the title; full screen; contrast with
+  Accessibility Inspector; energy of each style in Instruments (and whether Clear's shadows show
+  up there); screenshots for the user guide
+- [ ] Not done yet: thicker chart lines and wider area fills on the sheet (the charts keep their
+  default line width), and the content treatment on the Raw Data table (an AppKit-backed table)
+
 ### Stage 2: iOS MVP
 
 - [ ] iOS target sharing SwiftUI components with macOS
@@ -297,6 +354,7 @@ stays on controls; the glass bubbles come from standard segmented controls.
   samples on state changes, shading from raw samples, hover readout as an overlay, temperature
 - [ ] Accessibility chart descriptors (hourly or daily summaries for VoiceOver)
 - [ ] Measure App Nap's effect on the minute timer, and how often the mAh values change
+  (`bpulse --record`'s `timeline.tsv` lists the mAh value and the gauge's update time every 5 s)
 - [ ] Apps using the most energy (optional): which apps drain the battery most and at what
   average power over the last hour or day, like Activity Monitor's Energy tab but in watts.
   Researched: per-app ("coalition") energy counters give CPU, GPU and Neural Engine energy in
@@ -343,8 +401,22 @@ stays on controls; the glass bubbles come from standard segmented controls.
     the pack's `UUID` is now redacted
   - [ ] An iPad (9th generation) capture, and the manufacture date (Settings: August 2025; the
     pack's `ManufactureDate` doesn't decode like the Mac's yet)
-  - [ ] The device in the app's UI (0.6): a Devices section with a page per device
-- [ ] Remember each device and keep its history next to the Mac's (0.6)
+  - [x] The device in the app's UI (0.6): a Devices section with a page per device. Opt-in
+    (*Read iPhone and iPad batteries*, off by default): with it off nothing loads or runs.
+    IOKit USB matching notifications (Apple vendor ID, product IDs 0x1290–0x12FF) trigger a
+    device list, so the framework stays unloaded while no iPhone or iPad is on USB. A device
+    on USB is read on attach, every 5 minutes while history is recorded and every minute while
+    its page is visible; Wi-Fi only on Refresh and Check Again. Quick retries at 20 and 60 s;
+    a time-out stalls automatic work until the user acts. The policy, roster and monitor are
+    tested on Linux with a scripted transport and a manual clock
+- [x] Remember each device and keep its history next to the Mac's (0.6): `Devices/devices.json`
+  and a `HistoryStore` per device, keyed by HMAC-SHA256 of the UDID with a per-install secret;
+  no UDID, serial or capture on disk. History has a source pop-up; Forget removes a device and
+  its history
+  - [ ] On the M5: library validation and the Local Network prompt in the packaged app, attach
+    and detach timing, the product ID range, sleep, page switching, Russian layout, the iPad
+  - [ ] Energy with an iPhone attached and all windows closed (target under 1 ms/s on
+    average) and memory after 2 hours; not measured yet
 
 ### Stage 6: Later (optional)
 
@@ -359,16 +431,31 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   read record fields, so the alerting fields can't also be encrypted). Without it, only the local
   network or Bluetooth LE, which iOS won't relaunch for after a force-quit. Blocked on Stage 2
   (iOS app) anyway.
-- [ ] **Bluetooth device batteries on macOS** (0.6) (keyboard, mouse, trackpad, headphones): feasible
+- [x] **Bluetooth device batteries on macOS** (0.6) (keyboard, mouse, trackpad, headphones): feasible
   without the paid account. powerd publishes accessory batteries through the private
   `IOPSCopyPowerSourcesByType(4)` (reached with `dlsym` in IOKit, no entitlement, no Bluetooth
   prompt; read with the public IOPS calls, refreshed on the `com.apple.system.accpowersources.*`
-  notifications), with `pmset -g accps -xml` as a fallback. Seen working for Magic Keyboard and
-  Mouse, a third-party Bluetooth LE mouse and a classic Bluetooth headset on macOS 15; AirPods per part
-  (left, right, case) and macOS 27 still need checking on the M5. Anything beyond IOPS needs
-  Bluetooth permission, which ad-hoc signing loses on every update.
-- [ ] **CSV/JSON export** of history (0.6): public APIs only (`fileExporter`), about two days,
-  formatting tested on Linux; CSV dialect follows the locale's decimal separator.
+  notifications, a burst coalesced into one read, plus one read whenever the page or the panel
+  becomes visible; no polling). Shipped: the Accessories row in the sidebar's Devices section, a
+  block in the menu bar panel, an optional low-battery notification (once per discharge, on the
+  lowest part that drains), fixed demo accessories in Demo Mode, and `bpulse --accessories`
+  (`--raw` pseudonymizes names and identifiers). No history and no export rows: accessories
+  report only their charge. Seen working for Magic Keyboard and Mouse, a third-party Bluetooth LE
+  mouse and a classic Bluetooth headset on macOS 15. Earbuds ship as IOPS reports them: per part
+  (left, right, case) when published, a combined part otherwise; whether macOS publishes them at
+  all is still to check on the M5. `pmset -g accps -xml` is not a fallback (it calls the same
+  function); it is the contingency only if macOS 27 turns out to hide the list from apps, which
+  the M5 captures (`bpulse --accessories --raw` next to `pmset -g accps -xml`) decide. Still to
+  check on the M5: those captures (keyboard on Bluetooth and on its cable, earbuds in and out of
+  the case), the symbols, the Russian panel with three parts, and the energy profile with
+  accessories connected. Anything beyond IOPS needs Bluetooth permission, which ad-hoc signing
+  loses on every update.
+- [x] **CSV/JSON export** of history (0.6): an Export menu in History's toolbar (minute readings
+  or daily health as CSV, both as JSON, everything the store keeps) and `bpulse --export`.
+  Public APIs only (`fileExporter` with a `Transferable` file); the formatting is
+  locale-independent and tested on Linux; the CSV dialect follows the region's decimal
+  separator. Still to check on the M5: the files in spreadsheet apps in a Russian and an English
+  region, and the Save panel.
 - [ ] **Charge limiting.** The old SMC route is closed: on macOS 27 firmware the charge-inhibit
   keys that charge limiters used are gone or behind an Apple-private entitlement, even for root
   and even with a paid account. macOS 26.4+ has its own Charge Limit (80–100 %); a third-party
@@ -390,14 +477,17 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 | 0.4.0   | 2026-10-15 | Update check frequency, Install and Relaunch with signed releases, the About window, menu bar content and drawn icon styles, charging shown within seconds from the SMC, Raw Data explanations for the pack, banks, cells and charger, and an iPhone/iPad command-line preview |
 | 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
+| 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
 
-Next: **0.6.0** is about the other devices: iPhone and iPad in the app, remembered with their
-history (Stage 5), the batteries of Bluetooth accessories (Stage 6), and CSV/JSON export of the
-history; plus the open checks on the M5 (a capture at the Charge Limit stop point, a profile in
-Instruments, menu bar icons on light and dark menu bars, widgets across an in-app update).
-**0.6.1** reworks the drawn menu bar icon styles (Stage 1.3). Optional, if a one-day spike on
-the M5 works: the apps using the most energy. Not planned: an iOS app, charge limiting, and
-Developer ID signing until there is a paid developer account.
+Next: **0.6.1** is an optimization and foundation release with no new features: readability,
+speed, energy, security and size, measured before and after (a signpost baseline and an
+Instruments profile on the M5, a size report in CI), following Apple's current guidance for
+SwiftUI, Swift 6.4 concurrency, energy, platform security and build settings. Its first inputs
+are the checks on the M5 that 0.6.0 leaves open: devices and accessories on real hardware, the
+window styles' look and energy, the menu bar icons next to the system item, a capture at the
+Charge Limit stop point (`bpulse --record`), and the widget across the in-app update. Not
+planned: an iOS app, charge limiting, and Developer ID signing until there is a paid developer
+account.
 
 ## Development environment
 

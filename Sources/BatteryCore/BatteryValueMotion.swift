@@ -1,9 +1,9 @@
 import Foundation
 
 // Decisions behind the battery value views (Overview, Power and Health) that don't depend on
-// SwiftUI: which way the power-flow arrow points, when the battery counts as newly full, the
-// capacity bars and when the Developer option "Glass Cards" applies. They live here so they are
-// tested on Linux; the views only map them to animations and drawing.
+// SwiftUI: which way the power-flow arrow points, when the battery counts as newly full and the
+// capacity bars. They live here so they are tested on Linux; the views only map them to
+// animations and drawing.
 
 extension BatteryMotionKey {
     /// Which way the Overview's battery arrow points: into the battery while it takes power, out
@@ -44,10 +44,15 @@ public struct CapacityBar: Sendable, Equatable, Identifiable {
 
     /// Remaining, full-charge and design capacity, in that order, for the values `s` has.
     public static func bars(for s: BatterySnapshot) -> [CapacityBar] {
+        bars(remainingMAh: s.currentCapacityMAh, fullChargeMAh: s.fullChargeCapacityMAh, designMAh: s.designCapacityMAh)
+    }
+
+    /// The bars for capacities from any battery (a Mac's, an iPhone's), in the same order.
+    public static func bars(remainingMAh: Int?, fullChargeMAh: Int?, designMAh: Int?) -> [CapacityBar] {
         let values: [(Kind, Int?)] = [
-            (.remaining, s.currentCapacityMAh),
-            (.fullCharge, s.fullChargeCapacityMAh),
-            (.design, s.designCapacityMAh),
+            (.remaining, remainingMAh),
+            (.fullCharge, fullChargeMAh),
+            (.design, designMAh),
         ]
         return values.compactMap { kind, value in value.map { CapacityBar(kind: kind, capacityMAh: $0) } }
     }
@@ -55,21 +60,5 @@ public struct CapacityBar: Sendable, Equatable, Identifiable {
     /// The bars' common scale: the largest value, and never below 1 mAh.
     public static func scale(of bars: [CapacityBar]) -> Double {
         Double(max(1, bars.map(\.capacityMAh).max() ?? 1))
-    }
-}
-
-/// How a content card is drawn.
-public enum CardSurface: Sendable, Equatable {
-    /// The standard fill. Apple keeps Liquid Glass out of the content layer, so this is the
-    /// default.
-    case standard
-    /// Liquid Glass: the Developer option "Glass Cards", an experiment.
-    case glass
-
-    /// The stored option counts only while the Developer section is on (turning the section off
-    /// keeps the value but ignores it), and never under Reduce Transparency, where the cards keep
-    /// their opaque standard fill.
-    public init(glassCardsOption: Bool, showsDeveloperSection: Bool, reduceTransparency: Bool) {
-        self = glassCardsOption && showsDeveloperSection && !reduceTransparency ? .glass : .standard
     }
 }

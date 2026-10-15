@@ -31,6 +31,9 @@ public actor HistoryStore {
         self.now = now
     }
 
+    /// BatteryPulse's bundle identifier, for tools that read its history (`bpulse --export`).
+    public static let appBundleIdentifier = "io.github.nikitausov.BatteryPulse"
+
     /// `~/Library/Application Support/<bundle identifier>/History`.
     public static func defaultDirectory(bundleIdentifier: String?) -> URL {
         let base =
@@ -97,6 +100,13 @@ public actor HistoryStore {
             .map { String($0.dropLast(".jsonl".count)) }
             .filter { $0.count == 10 }
             .sorted()
+    }
+
+    /// The time of the newest sample, ignoring days after tomorrow; `nil` without samples. The
+    /// History page ends a device's time axis there.
+    public func latestSampleTime() throws -> Date? {
+        try migrateLegacySamples()
+        return try latestSample()?.time
     }
 
     /// The newest sample, ignoring days after tomorrow: those come from a clock that was set ahead.

@@ -7,6 +7,7 @@ import SwiftUI
 /// The window that opens from the menu bar item: a compact summary and ways into the app.
 struct PopoverView: View {
     let monitor: BatteryMonitor
+    let accessories: AccessoryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(UpdateChecker.self) private var updater
     @Environment(\.openWindow) private var openWindow
@@ -26,6 +27,12 @@ struct PopoverView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
+            }
+
+            // Connected accessories, also on a Mac without a battery; nothing while there are none.
+            if accessories.isAvailable == true, !accessories.accessories.isEmpty {
+                Divider()
+                PopoverAccessories(accessories: accessories.accessories)
             }
 
             if let release = updater.pendingRelease {
@@ -92,6 +99,8 @@ struct PopoverView: View {
         .transaction { $0.animation = nil }
         // Polls while the panel is open and on screen.
         .liveRefresh(monitor, every: .seconds(2), client: "popover")
+        // Accessories don't poll: one read each time the panel opens.
+        .refreshesWhenShown(accessories)
     }
 }
 

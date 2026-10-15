@@ -91,23 +91,15 @@ import Testing
         #expect(CapacityBar.scale(of: [CapacityBar(kind: .remaining, capacityMAh: 0)]) == 1)
     }
 
-    // MARK: Glass Cards
-
-    @Test(arguments: [
-        // option, Developer section, Reduce Transparency → surface
-        (false, false, false, CardSurface.standard),
-        (true, false, false, .standard),
-        (false, true, false, .standard),
-        (true, true, false, .glass),
-        (true, true, true, .standard),
-        (false, true, true, .standard),
-    ])
-    func glassCardsApplyOnlyWithTheDeveloperSection(
-        option: Bool, showsDeveloper: Bool, reduceTransparency: Bool, surface: CardSurface
-    ) {
+    @Test func barsFromValuesMatchSnapshotBars() throws {
+        let snapshot = try Fixture.m5OnBattery.snapshot()
         #expect(
-            CardSurface(
-                glassCardsOption: option, showsDeveloperSection: showsDeveloper,
-                reduceTransparency: reduceTransparency) == surface)
+            CapacityBar.bars(for: snapshot)
+                == CapacityBar.bars(
+                    remainingMAh: snapshot.currentCapacityMAh, fullChargeMAh: snapshot.fullChargeCapacityMAh,
+                    designMAh: snapshot.designCapacityMAh))
+        let bars = CapacityBar.bars(remainingMAh: 3151, fullChargeMAh: nil, designMAh: 5030)
+        #expect(bars.map(\.kind) == [.remaining, .design])
+        #expect(bars.map(\.capacityMAh) == [3151, 5030])
     }
 }

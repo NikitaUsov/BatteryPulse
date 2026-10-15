@@ -1,5 +1,6 @@
 #if os(macOS)
 import BatteryCore
+import BatteryKit
 import Foundation
 import SwiftUI
 
@@ -26,14 +27,59 @@ extension BatteryFormatter {
 /// Localized phrases built from battery state.
 enum Phrases {
     static func state(_ s: BatterySnapshot) -> String {
-        switch s.chargeState {
+        if s.chargeState == .notCharging, s.isOptimizedChargingEngaged == true {
+            return String(localized: "Charging on hold")
+        }
+        return state(s.chargeState)
+    }
+
+    /// The charge state of any battery. iPhones and iPads report no optimized hold, so "Charging
+    /// on hold" stays the Mac's.
+    static func state(_ state: ChargeState) -> String {
+        switch state {
         case .charging: String(localized: "Charging")
         case .discharging: String(localized: "On battery")
         case .charged: String(localized: "Fully charged")
-        case .notCharging:
-            s.isOptimizedChargingEngaged == true
-                ? String(localized: "Charging on hold") : String(localized: "Not charging")
+        case .notCharging: String(localized: "Not charging")
         case .unknown: String(localized: "Unknown")
+        }
+    }
+
+    /// Why an iPhone or iPad couldn't be read, worded for the person holding it. `name` is the
+    /// device's name as the page shows it. The English `IDeviceProblem.description` stays for
+    /// `bpulse`.
+    static func deviceProblem(_ problem: IDeviceProblem, name: String, connection: IDeviceConnection?) -> String {
+        switch problem {
+        case .notTrusted:
+            String(
+                localized:
+                    "“\(name)” doesn't trust this Mac. Unlock it and tap Trust; if no prompt appears, select it in Finder once."
+            )
+        case .locked:
+            String(localized: "Unlock “\(name)” to read its battery.")
+        case .unreachable, .transportFailed:
+            if connection == .wifi {
+                String(
+                    localized:
+                        "“\(name)” didn't answer. Keep it unlocked and on the same Wi-Fi network as this Mac, or connect it by cable."
+                )
+            } else {
+                String(localized: "“\(name)” didn't answer. Check the cable and try again.")
+            }
+        case .sessionFailed, .relayUnavailable:
+            String(localized: "BatteryPulse couldn't read “\(name)”. Try again in a moment.")
+        case .noBattery:
+            String(localized: "“\(name)” didn't report a battery.")
+        }
+    }
+
+    /// Why no device can be listed: the framework is missing for good, or listing failed.
+    static func deviceUnavailable(_ error: IDeviceError) -> String {
+        switch error {
+        case .frameworkUnavailable:
+            String(localized: "This Mac can't read iPhones and iPads: Apple's device support isn't available.")
+        case .subscriptionFailed, .deviceNotFound, .timedOut:
+            String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
         }
     }
 
@@ -86,6 +132,15 @@ enum Phrases {
         }
     }
 
+    /// The words on Clear's warning badge for a health tier: the condition macOS reports, or what
+    /// the tier means when only the capacity (below 80 %) warns.
+    static func healthWarning(_ tier: BatteryPresentation.LevelTier, condition raw: String?) -> String {
+        if let raw, raw != "Normal", raw != "Good", let text = condition(raw) { return text }
+        return tier == .critical
+            ? String(localized: "Check Battery", comment: "Battery condition")
+            : String(localized: "Service Recommended", comment: "Battery condition")
+    }
+
     static func thermal(_ state: ThermalState) -> String {
         switch state {
         case .nominal: String(localized: "Normal", comment: "Thermal state")
@@ -109,6 +164,64 @@ enum Phrases {
     static func count(_ value: Int, of total: Int) -> String {
         String(localized: "\(value.formatted()) of \(total.formatted())")
     }
+
+    // MARK: Accessories
+
+    /// What kind of accessory; also its name when it reports none.
+    static func accessoryKind(_ kind: AccessoryKind) -> String {
+        switch kind {
+        case .keyboard: String(localized: "Keyboard")
+        case .mouse: String(localized: "Mouse")
+        case .trackpad: String(localized: "Trackpad")
+        case .headphones: String(localized: "Headphones")
+        case .speaker: String(localized: "Speaker")
+        case .gameController: String(localized: "Game Controller")
+        case .hearingAid: String(localized: "Hearing Aid")
+        case .other: String(localized: "Accessory")
+        }
+    }
+
+    /// The accessory's name, or its kind when it reports none.
+    static func accessoryName(_ accessory: AccessoryBattery) -> String {
+        accessory.name.isEmpty ? accessoryKind(accessory.kind) : accessory.name
+    }
+
+    /// "Keyboard · Bluetooth": the kind and the connection, which reads the same in every language.
+    static func accessoryDetails(_ accessory: AccessoryBattery) -> String {
+        [accessoryKind(accessory.kind), accessory.transport.displayName].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// A part's label. A combined part next to a case is both earbuds; alone it is the battery.
+    static func accessoryPart(_ role: AccessoryPartRole, hasParts: Bool) -> String {
+        switch role {
+        case .left: return String(localized: "Left")
+        case .right: return String(localized: "Right")
+        case .case: return String(localized: "Case")
+        case .combined:
+            if hasParts { return String(localized: "Earbuds") }
+            return String(localized: "Battery")
+        case .single, .other: return String(localized: "Battery")
+        }
+    }
+
+    /// The state worth naming next to a part's charge, or `nil` while it simply drains.
+    static func accessoryStatus(_ part: AccessoryPart) -> String? {
+        if part.isCharging { return String(localized: "Charging") }
+        if part.isOffline { return String(localized: "Last known charge") }
+        if part.isOnExternalPower { return String(localized: "Connected to power") }
+        return nil
+    }
+}
+
+extension WindowLook {
+    var title: LocalizedStringKey {
+        switch self {
+        case .standard: "Standard"
+        case .frosted: "Frosted"
+        case .translucent: "Translucent"
+        case .clear: "Clear"
+        }
+    }
 }
 
 extension MenuBarIconStyle {
@@ -119,16 +232,6 @@ extension MenuBarIconStyle {
         case .classic: "Classic"
         case .percentageInside: "Percentage Inside"
         case .ring: "Ring"
-        }
-    }
-}
-
-extension BatteryPresentation.LevelTier {
-    var color: Color {
-        switch self {
-        case .normal: .green
-        case .low: .orange
-        case .critical: .red
         }
     }
 }

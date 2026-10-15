@@ -47,6 +47,17 @@
         }
       }
     },
+    "%@ of design": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ от расчётной"
+          }
+        }
+      }
+    },
     "%@ per hour": {
       "extractionState": "manual",
       "comment": "Average drain, e.g. 8.5% per hour",
@@ -59,6 +70,18 @@
         }
       }
     },
+    "%@ remaining. Charge it soon.": {
+      "extractionState": "manual",
+      "comment": "Notification body for an accessory's low battery: its charge, e.g. 15%",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Осталось %@. Скоро потребуется зарядка."
+          }
+        }
+      }
+    },
     "%@ Wh": {
       "extractionState": "manual",
       "comment": "Energy in watt-hours",
@@ -67,6 +90,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ Вт·ч"
+          }
+        }
+      }
+    },
+    "%@, charging": {
+      "extractionState": "manual",
+      "comment": "VoiceOver value of an accessory part in the menu bar panel: its charge, then that it charges",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, заряжается"
           }
         }
       }
@@ -181,6 +216,63 @@
           "stringUnit": {
             "state": "translated",
             "value": "Примерно раз в минуту, пока работает BatteryPulse, за последние 10 дней, а также ёмкость и циклы аккумулятора раз в день. Данные остаются на этом Mac."
+          }
+        }
+      }
+    },
+    "Accessories": {
+      "extractionState": "manual",
+      "comment": "Sidebar row, page title and menu bar panel caption: batteries of Bluetooth keyboards, mice, headphones",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары"
+          }
+        }
+      }
+    },
+    "Accessories show here while they're connected to this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары показаны здесь, пока они подключены к этому Mac."
+          }
+        }
+      }
+    },
+    "Accessories Unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуары недоступны"
+          }
+        }
+      }
+    },
+    "Accessory": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory that macOS doesn't name",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аксессуар"
+          }
+        }
+      }
+    },
+    "Accessory batteries": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумуляторы аксессуаров"
           }
         }
       }
@@ -309,6 +401,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Все"
+          }
+        }
+      }
+    },
+    "All History…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the minute readings and the daily health as JSON",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вся история…"
           }
         }
       }
@@ -540,6 +644,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Состояние аккумулятора"
+          }
+        }
+      }
+    },
+    "Battery Health by Day…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the daily battery health as CSV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Состояние аккумулятора по дням…"
           }
         }
       }
@@ -783,6 +899,28 @@
         }
       }
     },
+    "BatteryPulse couldn't look for devices. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось выполнить поиск устройств. Повторите попытку чуть позже."
+          }
+        }
+      }
+    },
+    "BatteryPulse couldn't read “%@”. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось считать данные с устройства «%@». Повторите попытку чуть позже."
+          }
+        }
+      }
+    },
     "BatteryPulse couldn't replace the installed copy.": {
       "extractionState": "manual",
       "localizations": {
@@ -849,6 +987,17 @@
         }
       }
     },
+    "BatteryPulse records an iPhone or iPad every 5 minutes while it's connected by cable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse записывает данные iPhone или iPad каждые 5 минут, пока устройство подключено кабелем."
+          }
+        }
+      }
+    },
     "BatteryPulse records the battery about once a minute while it runs. Check back in a few minutes.": {
       "extractionState": "manual",
       "localizations": {
@@ -856,6 +1005,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse записывает состояние аккумулятора примерно раз в минуту, пока работает. Загляните сюда через несколько минут."
+          }
+        }
+      }
+    },
+    "BatteryPulse removes the device and its battery history from this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse удалит устройство и историю его аккумулятора с этого Mac."
           }
         }
       }
@@ -939,6 +1099,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Битовое поле причин, по которым заблокирован сам контроллер зарядки."
+          }
+        }
+      }
+    },
+    "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд клавиатур, мышей, трекпадов и наушников Bluetooth в панели строки меню и на странице «Аксессуары», а также уведомление о низком заряде по желанию."
           }
         }
       }
@@ -1065,6 +1236,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ёмкость, на которую рассчитан новый аккумулятор."
+          }
+        }
+      }
+    },
+    "Case": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the charging case",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футляр"
           }
         }
       }
@@ -1348,6 +1531,17 @@
         }
       }
     },
+    "Check Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить снова"
+          }
+        }
+      }
+    },
     "Check Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -1437,6 +1631,17 @@
         }
       }
     },
+    "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите стиль «Стандартный», «Матовый», «Полупрозрачный» или «Прозрачный» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол."
+          }
+        }
+      }
+    },
     "Classic": {
       "extractionState": "manual",
       "localizations": {
@@ -1444,6 +1649,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Классический"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "extractionState": "manual",
+      "comment": "Window style option, as macOS 27 Icon & widget style → Clear («Прозрачное»); agrees with «Стиль»",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прозрачный"
           }
         }
       }
@@ -1537,6 +1754,50 @@
         }
       }
     },
+    "Connect a Bluetooth keyboard, mouse, trackpad or headphones to see its battery here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите клавиатуру, мышь, трекпад или наушники Bluetooth, и здесь появится уровень их заряда."
+          }
+        }
+      }
+    },
+    "Connect an iPhone or iPad with a cable and unlock it. If it asks Trust This Computer?, tap Trust.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите iPhone или iPad кабелем и разблокируйте его. Если появится запрос «Доверять этому компьютеру?», коснитесь «Доверять»."
+          }
+        }
+      }
+    },
+    "Connect the device by cable to read it": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите устройство кабелем, чтобы считать данные"
+          }
+        }
+      }
+    },
+    "Connect the device to copy a report": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите устройство, чтобы скопировать отчёт"
+          }
+        }
+      }
+    },
     "Connect the power adapter soon.": {
       "extractionState": "manual",
       "localizations": {
@@ -1544,6 +1805,51 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скоро подключите адаптер питания."
+          }
+        }
+      }
+    },
+    "Connected by cable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено кабелем"
+          }
+        }
+      }
+    },
+    "Connected over Wi-Fi": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено по Wi-Fi"
+          }
+        }
+      }
+    },
+    "Connected to power": {
+      "extractionState": "manual",
+      "comment": "State of an accessory's battery: on its cable or in its case, not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключено к питанию"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключение"
           }
         }
       }
@@ -1679,6 +1985,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не удалось проверить обновления"
+          }
+        }
+      }
+    },
+    "Couldn't Export History": {
+      "extractionState": "manual",
+      "comment": "Alert title when the history file can't be read or saved",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось экспортировать историю"
           }
         }
       }
@@ -1961,6 +2279,17 @@
         }
       }
     },
+    "Details": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности"
+          }
+        }
+      }
+    },
     "Details of the connected power adapter; empty when the Mac runs on battery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2002,6 +2331,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сборки для разработки не могут устанавливать обновления."
+          }
+        }
+      }
+    },
+    "Devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройства"
           }
         }
       }
@@ -2074,14 +2414,14 @@
         }
       }
     },
-    "Easy on the battery": {
+    "Earbuds": {
       "extractionState": "manual",
-      "comment": "What's New: feature title",
+      "comment": "Part of earbuds: both earbuds reported together, next to the case",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Бережнее к аккумулятору"
+            "value": "Наушники"
           }
         }
       }
@@ -2204,6 +2544,17 @@
         }
       }
     },
+    "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все стили значка теперь повторяют размер и молнию системного значка аккумулятора, а «Процент внутри» показывает заряд так же, как macOS."
+          }
+        }
+      }
+    },
     "Everyday work, unplugged.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -2216,14 +2567,14 @@
         }
       }
     },
-    "Experimental: draws the cards in Liquid Glass. Uses more energy and can be harder to read.": {
+    "Export": {
       "extractionState": "manual",
-      "comment": "Settings → Advanced: note under the Glass Cards toggle",
+      "comment": "History toolbar: the menu that saves the recorded history as a file",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Экспериментальная функция: карточки отображаются в стиле Liquid Glass. Расходует больше энергии, текст может читаться хуже."
+            "value": "Экспортировать"
           }
         }
       }
@@ -2235,6 +2586,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспортировать снимок…"
+          }
+        }
+      }
+    },
+    "Export history": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспорт истории"
           }
         }
       }
@@ -2345,6 +2707,17 @@
         }
       }
     },
+    "First use": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Первое использование"
+          }
+        }
+      }
+    },
     "Fixed %@ × %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery fixed-voltage offer: voltage × current",
@@ -2365,6 +2738,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Фиксированное напряжение этого профиля USB-PD, предлагаемого адаптером."
+          }
+        }
+      }
+    },
+    "Forget Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть устройство"
+          }
+        }
+      }
+    },
+    "Forget This Device…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть это устройство…"
+          }
+        }
+      }
+    },
+    "Forget “%@”?": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Забыть «%@»?"
           }
         }
       }
@@ -2400,6 +2806,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "От полной до 2 процентов за 20 секунд, через низкий и критический уровни."
+          }
+        }
+      }
+    },
+    "Frosted": {
+      "extractionState": "manual",
+      "comment": "Window style option: frosted glass (матовое стекло) behind the window",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Матовый"
           }
         }
       }
@@ -2560,6 +2978,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Полностью заряжен"
+          }
+        }
+      }
+    },
+    "Game Controller": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Игровой контроллер"
           }
         }
       }
@@ -2728,18 +3158,6 @@
         }
       }
     },
-    "Glass Cards": {
-      "extractionState": "manual",
-      "comment": "Settings → Advanced, Developer option (shown only with the Developer section): draws the content cards in Liquid Glass",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стеклянные карточки"
-          }
-        }
-      }
-    },
     "Hardware revision string reported by the adapter.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2748,6 +3166,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Строка версии оборудования, которую сообщает адаптер."
+          }
+        }
+      }
+    },
+    "Headphones": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наушники"
           }
         }
       }
@@ -2771,6 +3201,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Предупреждение о состоянии, например «Check Battery»; отсутствует или пусто, если аккумулятор в норме."
+          }
+        }
+      }
+    },
+    "Hearing Aid": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слуховой аппарат"
           }
         }
       }
@@ -3187,6 +3629,28 @@
         }
       }
     },
+    "iPhone and iPad": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone и iPad"
+          }
+        }
+      }
+    },
+    "iPhones and iPads connected by cable are recorded too, every 5 minutes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone и iPad, подключённые кабелем, тоже записываются — каждые 5 минут."
+          }
+        }
+      }
+    },
     "Just plugged in": {
       "extractionState": "manual",
       "comment": "Demo scene: the adapter was just connected",
@@ -3207,6 +3671,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ключ"
+          }
+        }
+      }
+    },
+    "Keyboard": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Клавиатура"
           }
         }
       }
@@ -3246,6 +3722,29 @@
         }
       }
     },
+    "Last known charge": {
+      "extractionState": "manual",
+      "comment": "State of an accessory's battery that is out of reach: the charge shown is the last one reported",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последний известный заряд"
+          }
+        }
+      }
+    },
+    "Last seen %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последнее подключение: %@"
+          }
+        }
+      }
+    },
     "Lasts until about %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3253,6 +3752,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
+    "Left": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the left earbud",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Левый"
           }
         }
       }
@@ -3281,14 +3792,13 @@
         }
       }
     },
-    "Liquid Glass controls": {
+    "Looking for devices…": {
       "extractionState": "manual",
-      "comment": "What's New: feature title",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Элементы управления в стиле Liquid Glass"
+            "value": "Поиск устройств…"
           }
         }
       }
@@ -3560,6 +4070,28 @@
         }
       }
     },
+    "Menu bar icons like macOS 27": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значки в строке меню как в macOS 27"
+          }
+        }
+      }
+    },
+    "Model": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        }
+      }
+    },
     "Model of the battery fuel-gauge chip (e.g. TI bq40z651).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3594,14 +4126,25 @@
         }
       }
     },
-    "Motion that follows the battery": {
+    "More": {
       "extractionState": "manual",
-      "comment": "What's New: feature title",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Движение вслед за аккумулятором"
+            "value": "Ещё"
+          }
+        }
+      }
+    },
+    "Mouse": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мышь"
           }
         }
       }
@@ -3696,6 +4239,17 @@
         }
       }
     },
+    "No Accessories": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет аксессуаров"
+          }
+        }
+      }
+    },
     "No Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -3737,6 +4291,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Для этого ключа пока нет описания."
+          }
+        }
+      }
+    },
+    "No Devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет устройств"
           }
         }
       }
@@ -3862,6 +4427,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ещё не проверялось"
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не подключено"
           }
         }
       }
@@ -4644,18 +5220,6 @@
         }
       }
     },
-    "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выберите аккумулятор, его блок, контроллер зарядки, адаптер или SMC в панели инструментов."
-          }
-        }
-      }
-    },
     "Play": {
       "extractionState": "manual",
       "localizations": {
@@ -5067,6 +5631,18 @@
         }
       }
     },
+    "Pure glass: the desktop shows through and all content turns white. The hardest to read, and uses more energy.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Clear window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чистое стекло: виден рабочий стол, а всё содержимое становится белым. Читается хуже всего, энергии расходуется больше."
+          }
+        }
+      }
+    },
     "Quit": {
       "extractionState": "manual",
       "localizations": {
@@ -5147,18 +5723,6 @@
         }
       }
     },
-    "Raw Data by source": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Исходные данные по источникам"
-          }
-        }
-      }
-    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5195,6 +5759,62 @@
         }
       }
     },
+    "Read iPhone and iPad batteries": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывать данные аккумуляторов iPhone и iPad"
+          }
+        }
+      }
+    },
+    "Read the battery again": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считать данные аккумулятора ещё раз"
+          }
+        }
+      }
+    },
+    "Reading iPhone and iPad batteries is off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывание данных аккумуляторов iPhone и iPad выключено."
+          }
+        }
+      }
+    },
+    "Readings by Minute…": {
+      "extractionState": "manual",
+      "comment": "History → Export menu: the minute readings as CSV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поминутные показания…"
+          }
+        }
+      }
+    },
+    "Reading…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считывание…"
+          }
+        }
+      }
+    },
     "Reads 0 in AppleSmartBatteryPack on every Mac sampled; the battery's power is BatteryData.BatteryPower of AppleSmartBattery.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5203,6 +5823,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "В AppleSmartBatteryPack на всех проверенных Mac равно 0; мощность аккумулятора — BatteryData.BatteryPower в AppleSmartBattery."
+          }
+        }
+      }
+    },
+    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh or Check Again. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить» или «Проверить снова». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
           }
         }
       }
@@ -5248,6 +5879,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сниженная производительность, чтобы аккумулятор работал дольше."
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновить"
           }
         }
       }
@@ -5399,6 +6041,18 @@
         }
       }
     },
+    "Right": {
+      "extractionState": "manual",
+      "comment": "Part of earbuds: the right earbud",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правый"
+          }
+        }
+      }
+    },
     "Ring": {
       "extractionState": "manual",
       "localizations": {
@@ -5542,6 +6196,17 @@
         }
       }
     },
+    "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохраняйте поминутные показания или ежедневное состояние аккумулятора в CSV для таблиц или всё сразу в JSON."
+          }
+        }
+      }
+    },
     "Save the raw data for a bug report. Serial numbers are redacted.": {
       "extractionState": "manual",
       "localizations": {
@@ -5549,6 +6214,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранить необработанные данные для отчёта об ошибке. Серийные номера скрыты."
+          }
+        }
+      }
+    },
+    "Save the recorded history as a CSV or JSON file": {
+      "extractionState": "manual",
+      "comment": "Tooltip of History's Export menu",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранить записанную историю в файл CSV или JSON"
           }
         }
       }
@@ -5633,6 +6310,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сколько секунд после выхода из сна оценка оставшегося времени ненадёжна."
+          }
+        }
+      }
+    },
+    "See the battery of an iPhone or iPad connected to this Mac: maximum capacity, cycle count and charge, with their history.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Просматривайте состояние аккумулятора iPhone или iPad, подключённого к этому Mac: максимальную ёмкость, циклы перезарядки и заряд — вместе с историей."
           }
         }
       }
@@ -5748,6 +6436,17 @@
         }
       }
     },
+    "Show in History": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в истории"
+          }
+        }
+      }
+    },
     "Show in Inspector": {
       "extractionState": "manual",
       "localizations": {
@@ -5827,6 +6526,30 @@
         }
       }
     },
+    "Shows more of the desktop through BatteryPulse windows. Can be harder to read and uses more energy.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Translucent window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сквозь окна BatteryPulse рабочий стол виден лучше. Текст может читаться хуже, а энергии расходуется больше."
+          }
+        }
+      }
+    },
+    "Shows the desktop through BatteryPulse windows.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer for the Frosted window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сквозь окна BatteryPulse виден рабочий стол."
+          }
+        }
+      }
+    },
     "Skip This Version": {
       "extractionState": "manual",
       "localizations": {
@@ -5873,6 +6596,17 @@
         }
       }
     },
+    "Software Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Версия ПО"
+          }
+        }
+      }
+    },
     "Source": {
       "extractionState": "manual",
       "comment": "Which system dictionary a raw value comes from",
@@ -5885,6 +6619,18 @@
         }
       }
     },
+    "Speaker": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Динамик"
+          }
+        }
+      }
+    },
     "Spread": {
       "extractionState": "manual",
       "localizations": {
@@ -5892,6 +6638,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Разброс"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "extractionState": "manual",
+      "comment": "Window style option: an opaque window",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стандартный"
+          }
+        }
+      }
+    },
+    "Standard is used while Reduce transparency or Increase contrast is on in Accessibility settings.": {
+      "extractionState": "manual",
+      "comment": "Settings → General: footer when an accessibility setting overrides the window style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока в настройках универсального доступа включено «Уменьшить прозрачность» или «Увеличить контраст», используется стандартный стиль."
           }
         }
       }
@@ -5996,18 +6766,6 @@
         }
       }
     },
-    "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд плавно перекатывается к новому значению, шкалы заполняются, а молния прорисовывается, когда начинается зарядка. С параметром «Уменьшение движения» всё остаётся на месте."
-          }
-        }
-      }
-    },
     "The charts start over. This can't be undone.": {
       "extractionState": "manual",
       "localizations": {
@@ -6048,18 +6806,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загруженный файл повреждён."
-          }
-        }
-      }
-    },
-    "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Переключатель периода в Истории переехал в панель инструментов со скользящим стеклянным выделением, а панель Демо-режима парит в стекле."
           }
         }
       }
@@ -6163,6 +6909,28 @@
         }
       }
     },
+    "This Mac": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac"
+          }
+        }
+      }
+    },
+    "This Mac can't read iPhones and iPads: Apple's device support isn't available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac не может считывать данные iPhone и iPad: компонент Apple для работы с устройствами недоступен."
+          }
+        }
+      }
+    },
     "This Mac has no internal battery.": {
       "extractionState": "manual",
       "localizations": {
@@ -6192,6 +6960,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Эта версия не новее установленной."
+          }
+        }
+      }
+    },
+    "This version of macOS doesn't report accessory batteries to apps.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта версия macOS не сообщает приложениям уровень заряда аксессуаров."
           }
         }
       }
@@ -6360,6 +7139,30 @@
         }
       }
     },
+    "Trackpad": {
+      "extractionState": "manual",
+      "comment": "Kind of accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Трекпад"
+          }
+        }
+      }
+    },
+    "Translucent": {
+      "extractionState": "manual",
+      "comment": "Window style option: more transparency than Frosted",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полупрозрачный"
+          }
+        }
+      }
+    },
     "True when a battery is present.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6515,6 +7318,28 @@
         }
       }
     },
+    "Turn On": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включить"
+          }
+        }
+      }
+    },
+    "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
+          }
+        }
+      }
+    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -6561,6 +7386,28 @@
         }
       }
     },
+    "Unknown Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Неизвестное устройство"
+          }
+        }
+      }
+    },
+    "Unlock “%@” to read its battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разблокируйте «%@», чтобы считать данные аккумулятора."
+          }
+        }
+      }
+    },
     "Unplugging at around 80 percent most of the time slows battery aging. BatteryPulse must be running to notify you.": {
       "extractionState": "manual",
       "localizations": {
@@ -6579,6 +7426,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Доступно обновление: %@"
+          }
+        }
+      }
+    },
+    "Updated %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновлено: %@"
           }
         }
       }
@@ -6940,6 +7798,18 @@
         }
       }
     },
+    "When an accessory falls to": {
+      "extractionState": "manual",
+      "comment": "Settings → Notifications: notify when a Bluetooth accessory's battery falls to a percentage",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При разрядке аксессуара до"
+          }
+        }
+      }
+    },
     "When battery service is recommended": {
       "extractionState": "manual",
       "localizations": {
@@ -7140,6 +8010,29 @@
         }
       }
     },
+    "Window Style": {
+      "extractionState": "manual",
+      "comment": "Settings → General: the section of the window style picker (as macOS 27 Icon & widget style)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стиль окон"
+          }
+        }
+      }
+    },
+    "Window styles": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стили окон"
+          }
+        }
+      }
+    },
     "Window to open": {
       "extractionState": "manual",
       "localizations": {
@@ -7151,18 +8044,6 @@
         }
       }
     },
-    "Windows you can't see stop reading the battery and stop animating.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Окна, которых не видно, перестают опрашивать аккумулятор и не анимируются."
-          }
-        }
-      }
-    },
     "Wireless": {
       "extractionState": "manual",
       "localizations": {
@@ -7170,6 +8051,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Беспроводной"
+          }
+        }
+      }
+    },
+    "Wireless charger": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Беспроводное зарядное устройство"
           }
         }
       }
@@ -7272,6 +8164,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Номер этого профиля USB-PD в списке предложений адаптера, начиная с 0."
+          }
+        }
+      }
+    },
+    "“%@” didn't answer. Check the cable and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не отвечает. Проверьте кабель и повторите попытку."
+          }
+        }
+      }
+    },
+    "“%@” didn't answer. Keep it unlocked and on the same Wi-Fi network as this Mac, or connect it by cable.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не отвечает. Держите устройство разблокированным и в той же сети Wi-Fi, что и этот Mac, или подключите его кабелем."
+          }
+        }
+      }
+    },
+    "“%@” didn't report a battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не сообщает данные аккумулятора."
+          }
+        }
+      }
+    },
+    "“%@” doesn't trust this Mac. Unlock it and tap Trust; if no prompt appears, select it in Finder once.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«%@» не доверяет этому Mac. Разблокируйте устройство и коснитесь «Доверять»; если запрос не появляется, один раз выберите устройство в Finder."
           }
         }
       }

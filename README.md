@@ -58,10 +58,28 @@ dependencies.
   sessions; capacity and cycle count day by day.
 - Recorded about once a minute while BatteryPulse runs; kept on your Mac for 10 days (daily
   summaries for good).
+- Export to CSV (minute readings or daily health, in your region's spreadsheet format) or
+  JSON (both), with units in the column names.
+
+**iPhone and iPad** (Settings → General, off until you turn it on)
+- A page for each iPhone or iPad connected to the Mac: charge, maximum capacity and cycle count
+  as iOS Settings shows them, capacities in mAh, temperature, voltage, the charger and the month
+  of first use, with its history next to the Mac's on the History page.
+- Read when it's plugged in, then every 5 minutes while history is recorded and every minute
+  while its page is open; over Wi-Fi only when you click Refresh or Check Again. The device
+  must trust this Mac: BatteryPulse never pairs by itself and keeps no identifier or serial
+  number on disk.
+
+**Accessories**
+- The batteries of Bluetooth keyboards, mice, trackpads, headphones and game controllers
+  connected to this Mac, as macOS reports them: an Accessories page in the Devices section and
+  rows in the menu bar popover, with each part's charge, such as each AirPods bud and the case.
+- No Bluetooth permission and no polling; an optional notification when one runs low.
 
 **Notifications** (Settings → Notifications, all off until you turn them on)
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
-  to 10–30 %, when battery service is recommended, and when the Mac runs hot.
+  to 10–30 %, when battery service is recommended, when the Mac runs hot, and when an
+  accessory falls to 10–30 %.
 
 **Widget** (new in 0.3)
 - Small and medium widgets for the desktop and Notification Center: charge, state, when the
@@ -70,10 +88,10 @@ dependencies.
 **Menu bar**
 - Any mix of the battery icon, charge, battery power and temperature.
 - Icon styles drawn to the exact level — Modern (like macOS 27), Classic, Percentage Inside
-  (like macOS 26), Ring, or the SF Symbol — with charging, plugged-in, low and Low Power Mode
-  states, so it can take the place of the system battery item.
-- A popover with charge, state, time, maximum capacity, cycles, temperature, adapter and
-  system load.
+  (like macOS 27 with the percentage on), Ring, or the SF Symbol — with charging, plugged-in,
+  low and Low Power Mode states, so it can take the place of the system battery item.
+- A popover with charge, state, time, maximum capacity, cycles, temperature, adapter, system
+  load and accessory batteries.
 - Optional: without it BatteryPulse lives in the Dock. Dock icon on demand, a Dock menu, and
   opening at login.
 
@@ -93,12 +111,18 @@ dependencies.
 - A welcome window with the starting settings on first launch.
 - Motion that follows the battery: the charge rolls, gauges fill and the bolt draws in when
   charging starts, with fades under Reduce Motion and nothing animating in windows you can't
-  see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar), plain cards.
+  see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar),
+  never on the content.
+- *Window Style* (Settings → General) for the main and compact windows: Standard, Frosted (the
+  desktop blurred behind the window), Translucent (one sheet of Liquid Glass with a dimming
+  layer) or Clear (pure glass, white content). Reduce Transparency or Increase Contrast gives
+  Standard.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only network requests are an optional
-  update check against GitHub releases, which sends nothing about your Mac, and the download
-  of an update you chose to install.
+  history while recording is on, so it uses almost no CPU in the background. The only requests to the internet are an
+  optional update check against GitHub releases, which sends nothing about your Mac, and the
+  download of an update you chose to install. Reading an iPhone or iPad over Wi-Fi (opt-in)
+  stays on your local network.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
   (Settings → General), and a What's New window after updates that add features. From 0.4.0,
   *Install and Relaunch* installs the next version from inside the app; each release is
@@ -124,16 +148,20 @@ swift run bpulse              # battery report
 swift run bpulse --watch 2    # live view, refreshed every 2 s
 swift run bpulse --json       # machine-readable snapshot
 swift run bpulse --raw > battery.xml    # raw IOKit data, serial numbers redacted
+swift run bpulse --record ~/bp-capture   # captures at every charging change, for bug reports
 swift run bpulse --smc        # the SMC's battery and charger keys; values of the battery ones
-swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi (preview)
+swift run bpulse --devices    # iPhones and iPads connected by USB or Wi-Fi
 swift run bpulse --device 1   # battery of device 1; add --json, or --raw for a redacted capture
+swift run bpulse --accessories   # Bluetooth accessories' batteries; --json, or --raw (pseudonymized)
+swift run bpulse --export csv > samples.csv   # recorded history; --days for daily health
+swift run bpulse --export json > history.json # all recorded history as JSON
 ```
 
 The device report shows Maximum capacity as iOS Settings does (checked against an iPhone 17
 Pro Max on iOS 27), the cycle count, the date of first use and the battery's temperature.
 `--input` renders a saved capture, of a Mac or of a device. Reading an iPhone or iPad needs the
 device to trust this Mac (unlock it and tap Trust); BatteryPulse never pairs by itself. The
-app shows devices in a later version.
+app shows them too; see [iPhone and iPad](docs/USER_GUIDE.md#iphone-and-ipad).
 
 Real output on a MacBook Air M5 (macOS 27) while charging:
 

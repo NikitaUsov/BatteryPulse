@@ -150,4 +150,18 @@ import Testing
         #expect(IDeviceStatus.passwordProtected.description == "0xE800001A kAMDPasswordProtectedError")
         #expect(IDeviceStatus(rawValue: 0xE800_00FF).description == "0xE80000FF")
     }
+
+    /// Copy Report on a device page: no identifier and no owner name.
+    @Test func redactedCaptureReportHasNoIdentifierOrName() {
+        let capture = SyntheticIDevice.iPhoneCapture
+        #expect(IDeviceReport.text(for: capture).contains("ID …801C"))
+        let text = IDeviceReport.text(for: capture.redacted)
+        #expect(!text.contains("ID "))
+        #expect(!text.contains("801C"))
+        #expect(!text.contains("Owner"))
+        #expect(!text.contains("REDACTED"))
+        #expect(text.contains("iPhone12,1 · iOS 26.6 · USB"))
+        #expect(capture.redacted.device["UniqueDeviceID"]?.stringValue == "REDACTED")
+        #expect(IDeviceBatteryParser.battery(in: capture.redacted)?.cycleCount == 768)
+    }
 }

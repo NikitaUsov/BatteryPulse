@@ -7,11 +7,12 @@ struct PowerView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
     @Environment(\.motion) private var motion
+    @Environment(\.tones) private var tones
 
     var body: some View {
         let key = BatteryMotionKey(snapshot)
         let hasAdapter = snapshot.adapter != nil
-        Form {
+        LookForm {
             batterySection
             if let adapter = snapshot.adapter {
                 adapterSection(adapter)
@@ -21,7 +22,6 @@ struct PowerView: View {
             }
             systemSection
         }
-        .formStyle(.grouped)
         // The rows and sections that come with plugging in or a new charge state (the adapter and
         // USB PD sections, the requested charge, power from the adapter, adapter loss) appear and
         // go once per event; the rows below them move, so under Reduce Motion it all changes at
@@ -104,7 +104,7 @@ struct PowerView: View {
                             .monospacedDigit()
                         let isActive = profile.index == adapter.activeProfileIndex
                         Image(systemName: "checkmark")
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(tones.style(.accent))
                             .opacity(isActive ? 1 : 0)
                             // Crossfades to the profile the adapter switched to.
                             .animation(motion.crossfade, value: isActive)
@@ -115,6 +115,7 @@ struct PowerView: View {
                     Text(formatter.volts(millivolts: profile.voltageMV, fractionDigits: 0))
                         .monospacedDigit()
                 }
+                .contentTreatment()
             }
         } header: {
             Text("USB Power Delivery")
