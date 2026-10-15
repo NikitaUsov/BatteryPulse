@@ -242,7 +242,7 @@ public struct SMCRawValue: Sendable, Equatable {
 
     public init?(key: String, captureValue: PropertyValue) {
         guard let code = SMCFourCC(validating: key), let d = captureValue.dictionaryValue,
-            let type = d[CaptureField.type]?.stringValue.flatMap { SMCFourCC(validating: $0) },
+            let type = d[CaptureField.type]?.stringValue.flatMap({ SMCFourCC(validating: $0) }),
             let size = d[CaptureField.size]?.intValue, (1...SMCParamBlock.payloadCapacity).contains(size),
             case .data(let bytes)? = d[CaptureField.bytes], bytes.count >= size
         else { return nil }
