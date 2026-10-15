@@ -41,11 +41,13 @@ struct HistoryView: View {
                 VStack(spacing: 16) {
                     // Switching the period crossfades the charts rather than morphing the lines: a day
                     // and a week have different points on different time axes. The ZStack keeps both
-                    // periods on top of each other while they fade.
+                    // periods on top of each other while they fade. The fade is the transition's own,
+                    // so under Reduce Motion it stays while the card below snaps to the new height.
+                    // Keyed on the period shown, so the first load fills the page without a fade.
                     ZStack(alignment: .top) {
                         periodContent
-                            .id(loadedPeriod)
-                            .transition(.opacity)
+                            .id(shownPeriod)
+                            .transition(motion.fadeTransition)
                     }
                     Card("Battery Health") { healthCharts }
                 }
@@ -127,7 +129,8 @@ struct HistoryView: View {
             hasLoaded = true
         }
         // Only a period switch animates. The minute reload never does: it would redraw three
-        // charts of up to 1,440 points for nothing.
+        // charts of up to 1,440 points for nothing. `change` moves the card below to the new
+        // height; under Reduce Motion it is `nil` and only the charts fade.
         if let loadedPeriod, loadedPeriod != period {
             withAnimation(motion.change, apply)
         } else {

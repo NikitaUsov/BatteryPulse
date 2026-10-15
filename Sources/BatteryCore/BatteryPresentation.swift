@@ -17,8 +17,11 @@ public enum BatteryPresentation {
     }
 
     /// Battery power below this, in either direction, is noise: the power-flow view hides its
-    /// value and ``BatteryMotionKey/flow`` reads idle.
-    public static let powerFlowDeadBandWatts = 0.05
+    /// value, its arrow rests (``BatteryMotionKey/flow`` reads idle) and the state reads without
+    /// watts. About 12 mA at a MacBook pack's 12–13 V, just above the 10 mA below which the app
+    /// treats a current as noise: a full or held battery reads a few mA either way, and a band
+    /// narrower than that noise would turn the arrow back and forth every few readings.
+    public static let powerFlowDeadBandWatts = 0.15
 
     /// Level colors used by the app: green above 20 % or while charging, then orange, then red.
     public enum LevelTier: Sendable, Equatable {

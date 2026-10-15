@@ -11,6 +11,9 @@ import Testing
 ///   `symbolEffect` modifier (`isActive:`, or no `value:`);
 /// - an `.animation` modifier keyed on the whole snapshot or reading, which changes with every
 ///   2 s reading;
+/// - an animation that doesn't go through `\.motion`: `withAnimation` or `.animation(…)` with an
+///   animation of its own (or the default one), which would ignore Reduce Motion and hidden
+///   windows. Only `App/Motion.swift`, where the presets are built, is exempt;
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content.
@@ -34,6 +37,9 @@ import Testing
         "BatteryPulseApp/MenuBar/BatteryIconView.swift",
     ]
 
+    /// Where the `\.motion` presets are built from concrete animations.
+    static let motionPresetFiles: Set<String> = ["BatteryPulseApp/App/Motion.swift"]
+
     /// Values that change on almost every reading; animations key on `BatteryMotionKey` instead.
     static let liveValues: Set<String> = ["snapshot", "monitor.snapshot", "monitor.reading", "reading"]
 
@@ -56,6 +62,12 @@ import Testing
     /// Phase and keyframe animators, as views or modifiers; without `trigger:` they loop.
     private static var animator: Regex<Substring> {
         words(#/\b(?:PhaseAnimator|phaseAnimator|KeyframeAnimator|keyframeAnimator)/#)
+    }
+
+    /// Whether an animation argument goes through `\.motion`: a preset (`motion.change`, maybe
+    /// delayed or picked by a condition) or no animation at all.
+    static func goesThroughMotion(_ argument: String) -> Bool {
+        argument == "nil" || argument.contains(words(#/\bmotion\s*\./#))
     }
 
     /// Every rule broken in `source`, as "path:line: message".
@@ -83,7 +95,20 @@ import Testing
                 flag(call.start, "symbolEffect without value: runs indefinitely; use symbolEffect(_:value:)")
             }
         }
+        let buildsPresets = motionPresetFiles.contains(path)
+        if !buildsPresets {
+            for call in calls(named: words(#/\bwithAnimation/#), in: code)
+            where !goesThroughMotion(call.firstArgument) {
+                flag(call.start, "withAnimation with an animation of its own; use a \\.motion preset")
+            }
+            for match in code.matches(of: words(#/\bwithAnimation\s*\{/#)) {
+                flag(match.range.lowerBound, "withAnimation with the default animation; use a \\.motion preset")
+            }
+        }
         for call in calls(named: #/\.animation/#, in: code) where call.isModifier {
+            if !buildsPresets, !goesThroughMotion(call.firstArgument) {
+                flag(call.start, ".animation with an animation of its own; use a \\.motion preset")
+            }
             guard let value = call.argument(labeled: "value") else { continue }
             let normalized = value.replacing(#/\s+/#, with: "").replacing(#/^self\./#, with: "")
                 .replacing(#/[?!]+$/#, with: "")
@@ -119,8 +144,8 @@ import Testing
         /// `.contentTransition(.symbolEffect(.replace))` or `case .animation(let a):`.
         var isModifier: Bool
 
-        /// The expression of a top-level argument with this label.
-        func argument(labeled label: String) -> String? {
+        /// The top-level arguments, trimmed.
+        var topLevelArguments: [String] {
             var depth = 0
             var piece = ""
             var pieces: [String] = []
@@ -137,10 +162,19 @@ import Testing
                 piece.append(character)
             }
             pieces.append(piece)
-            for piece in pieces {
-                let trimmed = piece.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard trimmed.hasPrefix(label) else { continue }
-                let rest = trimmed.dropFirst(label.count).drop { $0 == " " }
+            return pieces.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        }
+
+        /// The first argument's expression, whatever its label.
+        var firstArgument: String {
+            topLevelArguments.first ?? ""
+        }
+
+        /// The expression of a top-level argument with this label.
+        func argument(labeled label: String) -> String? {
+            for piece in topLevelArguments {
+                guard piece.hasPrefix(label) else { continue }
+                let rest = piece.dropFirst(label.count).drop { $0 == " " }
                 if rest.first == ":" { return rest.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines) }
             }
             return nil
@@ -292,7 +326,7 @@ import Testing
     }
 
     @Test func allowListedFilesExist() {
-        for path in Self.glassAllowList.union(Self.menuBarLabelFiles) {
+        for path in Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles) {
             #expect(FileManager.default.fileExists(atPath: Self.sources.appendingPathComponent(path).path), "\(path)")
         }
     }
@@ -322,6 +356,15 @@ import Testing
         "Text(\"x\").animation(motion.change, value: self.monitor.reading)",
         "Text(\"x\").animation(motion.change, value: reading)",
         "Card { }.glassEffect(.regular, in: .capsule)",
+        // Animations that bypass `\.motion`, and so Reduce Motion.
+        "withAnimation(.smooth) { on.toggle() }",
+        "withAnimation(.linear(duration: 0.2)) { provider.battery = next }",
+        "withAnimation { on.toggle() }",
+        "withAnimation(Self.change) { step = next }",
+        "Text(\"x\").animation(.smooth(duration: 0.35), value: key.isPluggedIn)",
+        "Text(\"x\").animation(.smooth) { $0.opacity(on ? 1 : 0) }",
+        "Text(\"x\").transition(.opacity.animation(.easeInOut))",
+        "HStack { }\n    .animation(.default, value: showsAdapter)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -330,10 +373,14 @@ import Testing
     @Test(arguments: [
         "Text(\"x\").animation(motion.change, value: key.isPluggedIn)",
         "Text(\"x\").animation(motion.numbers, value: snapshot.chargePercent)",
-        "Text(\"x\").animation(.smooth) { $0.opacity(on ? 1 : 0) }",
-        "Text(\"x\").animation(.smooth, body: { $0 })",
+        "Text(\"x\").animation(motion.crossfade) { $0.opacity(on ? 1 : 0) }",
+        "Text(\"x\").animation(motion.change, body: { $0 })",
+        "Text(\"x\").animation(nil, value: key.isPluggedIn)",
+        "Text(\"x\").animation(entrance.plays ? motion.change?.delay(0.04) : nil, value: hasEntered)",
         "Text(\"x\").transition(.opacity.animation(motion.quickFade))",
-        "withAnimation(.linear(duration: 0.2)) { provider.battery = next }",
+        "withAnimation(motion.linear(0.2)) { provider.battery = next }",
+        "withAnimation(motion.change, apply)",
+        "withAnimation(motion.crossfade) { copied = true }",
         "DemoStepRow(step: .animation(animation))",
         "case .animation(let animation): animation.title",
         "(.animation(.chargeFromEmpty), .overview)",
@@ -369,16 +416,28 @@ import Testing
 
     @Test func menuBarLabelNeverAnimates() {
         let path = "BatteryPulseApp/MenuBar/MenuBarLabel.swift"
-        #expect(flags("withAnimation(.smooth) { on.toggle() }", path: path))
-        #expect(flags("Text(\"x\").animation(.smooth, value: key)", path: path))
-        #expect(!flags("withAnimation(.smooth) { on.toggle() }", path: "BatteryPulseApp/Main/DemoView.swift"))
+        #expect(flags("withAnimation(motion.change) { on.toggle() }", path: path))
+        #expect(flags("Text(\"x\").animation(motion.change, value: key)", path: path))
+        #expect(!flags("withAnimation(motion.change) { on.toggle() }", path: "BatteryPulseApp/Main/DemoView.swift"))
         // Explaining the rule in a comment is fine.
         #expect(!flags("// No withAnimation here: every frame renders an image.", path: path))
     }
 
+    /// The presets themselves are built from concrete animations, in one file only.
+    @Test func onlyThePresetsBuildAnimations() {
+        let preset = "var fadeTransition: AnyTransition { AnyTransition.opacity.animation(crossfade) }"
+        #expect(!flags(preset, path: "BatteryPulseApp/App/Motion.swift"))
+        #expect(flags(preset, path: "BatteryPulseApp/Main/DemoView.swift"))
+        let modifier = "content.animation(.smooth(duration: 0.25), value: rounded)"
+        #expect(!flags(modifier, path: "BatteryPulseApp/App/Motion.swift"))
+        #expect(flags(modifier, path: "BatteryPulseApp/App/DemoController.swift"))
+        // The presets file still follows the other rules.
+        #expect(flags("content.animation(motion.change, value: snapshot)", path: "BatteryPulseApp/App/Motion.swift"))
+    }
+
     @Test func reportsLineNumbers() {
         let source =
-            "let a = 1\n// .animation(.smooth, value: snapshot)\nText(\"x\")\n    .animation(.smooth, value: snapshot)\n"
+            "let a = 1\n// .animation(.smooth, value: snapshot)\nText(\"x\")\n    .animation(motion.change, value: snapshot)\n"
         let violations = Self.violations(in: source, path: "X.swift")
         #expect(violations.count == 1)
         #expect(violations.first?.hasPrefix("X.swift:4: ") == true)

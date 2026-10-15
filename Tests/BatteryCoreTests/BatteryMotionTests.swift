@@ -7,30 +7,52 @@ import Testing
 
     @Test(
         arguments: [
-            // reduceMotion, prefersCrossFade, isVisible, reducesResources → level, allowsFlourish
-            (false, false, true, false, MotionPolicy.Level.full, true),
-            (false, false, true, true, .full, false),
-            (true, false, true, false, .fade, false),
-            (false, true, true, false, .fade, false),
-            (true, true, true, true, .fade, false),
-            (false, false, false, false, .none, false),
-            (true, false, false, false, .none, false),
-            (false, false, false, true, .none, false),
+            // reduceMotion, prefersCrossFade, isVisible, reducesResources
+            //     → level, allowsMovement, allowsFlourish
+            (false, false, true, false, MotionPolicy.Level.full, true, true),
+            (false, false, true, true, .full, true, false),
+            (true, false, true, false, .fade, false, false),
+            (false, true, true, false, .fade, false, false),
+            (true, true, true, true, .fade, false, false),
+            (false, false, false, false, .none, false, false),
+            (true, false, false, false, .none, false, false),
+            (false, false, false, true, .none, false, false),
         ])
     func policyTable(
         reduceMotion: Bool, prefersCrossFade: Bool, isVisible: Bool, reducesResources: Bool,
-        level: MotionPolicy.Level, allowsFlourish: Bool
+        level: MotionPolicy.Level, allowsMovement: Bool, allowsFlourish: Bool
     ) {
         let policy = MotionPolicy(
             reduceMotion: reduceMotion, prefersCrossFade: prefersCrossFade, isVisible: isVisible,
             reducesResources: reducesResources)
         #expect(policy.level == level)
+        #expect(policy.allowsMovement == allowsMovement)
         #expect(policy.allowsFlourish == allowsFlourish)
     }
 
     @Test func defaultPolicyAnimatesFully() {
         #expect(MotionPolicy().level == .full)
+        #expect(MotionPolicy().allowsMovement)
         #expect(MotionPolicy().allowsFlourish)
+    }
+
+    /// Low Power Mode keeps functional movement (a row sliding in with its event) and drops only
+    /// the extras; Reduce Motion drops all movement, so layout changes snap and only fades stay.
+    @Test func movementFollowsReduceMotionNotLowPowerMode() {
+        #expect(MotionPolicy(reducesResources: true).allowsMovement)
+        #expect(!MotionPolicy(reduceMotion: true).allowsMovement)
+        #expect(!MotionPolicy(prefersCrossFade: true).allowsMovement)
+        #expect(!MotionPolicy(isVisible: false).allowsMovement)
+    }
+
+    /// Every extra moves something, so none plays where movement isn't allowed.
+    @Test(arguments: [false, true], [false, true])
+    func flourishImpliesMovement(reduceMotion: Bool, reducesResources: Bool) {
+        for isVisible in [false, true] {
+            let policy = MotionPolicy(
+                reduceMotion: reduceMotion, isVisible: isVisible, reducesResources: reducesResources)
+            #expect(!policy.allowsFlourish || policy.allowsMovement)
+        }
     }
 
     // MARK: BatteryMotionKey
@@ -98,17 +120,31 @@ import Testing
         #expect(!BatteryMotionKey(try Fixture.m5Unplugged.snapshot()).isPluggedIn)
     }
 
-    @Test(arguments: [0.0, 0.01, -0.01, 0.049, -0.049])
+    @Test(arguments: [0.0, 0.01, -0.01, 0.049, -0.049, 0.06, -0.06, 0.1, -0.1, 0.149, -0.149])
     func flowIsIdleInTheDeadBand(watts: Double) {
         #expect(BatteryMotionKey.Flow(batteryWatts: watts) == .idle)
     }
 
     @Test func flowDirection() {
+        let band = BatteryPresentation.powerFlowDeadBandWatts
         #expect(BatteryMotionKey.Flow(batteryWatts: nil) == .idle)
-        #expect(BatteryMotionKey.Flow(batteryWatts: BatteryPresentation.powerFlowDeadBandWatts) == .intoBattery)
+        #expect(BatteryMotionKey.Flow(batteryWatts: band) == .intoBattery)
+        #expect(BatteryMotionKey.Flow(batteryWatts: -band) == .outOfBattery)
         #expect(BatteryMotionKey.Flow(batteryWatts: 4.7) == .intoBattery)
-        #expect(BatteryMotionKey.Flow(batteryWatts: -0.05) == .outOfBattery)
         #expect(BatteryMotionKey.Flow(batteryWatts: -7.5) == .outOfBattery)
+    }
+
+    /// The dead band covers the currents the app already treats as noise (below 10 mA) at the
+    /// pack voltages of a MacBook, so they never turn the arrow.
+    @Test(arguments: [11_000, 12_900, 13_200])
+    func deadBandCoversCurrentNoise(voltageMV: Int) {
+        for amperageMA in [-10, -9, -5, -3, 3, 5, 9, 10] {
+            let s = BatterySnapshot(
+                timestamp: .now, chargePercent: 80, chargeState: .notCharging, isExternalPowerConnected: true,
+                voltageMV: voltageMV, amperageMA: amperageMA)
+            #expect(BatteryMotionKey(s).flow == .idle, "\(amperageMA) mA at \(voltageMV) mV")
+            #expect(BatteryMotionKey(s).batteryArrowPointsIntoBattery, "\(amperageMA) mA at \(voltageMV) mV")
+        }
     }
 
     @Test func noiseAroundZeroKeepsTheKey() throws {
@@ -118,10 +154,27 @@ import Testing
         full.chargePercent = 100
         full.voltageMV = 12_900
         full.amperageMA = 3
-        var next = full
-        next.amperageMA = -2
         #expect(BatteryMotionKey(full).flow == .idle)
-        #expect(BatteryMotionKey(next) == BatteryMotionKey(full))
+        // Readings around -4 mA straddled the earlier 0.05 W band at this voltage and turned
+        // the arrow on every other reading.
+        for amperageMA in [-2, -5, -3, -4, 0, 1, -1, 9, -9] {
+            var next = full
+            next.amperageMA = amperageMA
+            #expect(BatteryMotionKey(next) == BatteryMotionKey(full), "\(amperageMA) mA")
+        }
+    }
+
+    /// Past the noise the arrow and its value follow the battery again: a trickle charge near
+    /// full, or the battery helping the adapter.
+    @Test func smallRealFlowsLeaveTheDeadBand() throws {
+        var s = try Fixture.m5Charging.snapshot()
+        s.voltageMV = 12_900
+        s.amperageMA = 15
+        #expect(BatteryMotionKey(s).flow == .intoBattery)
+        #expect(BatteryMotionKey(s).batteryArrowPointsIntoBattery)
+        s.amperageMA = -15
+        #expect(BatteryMotionKey(s).flow == .outOfBattery)
+        #expect(!BatteryMotionKey(s).batteryArrowPointsIntoBattery)
     }
 
     @Test func keyChangesOnBatteryEvents() throws {

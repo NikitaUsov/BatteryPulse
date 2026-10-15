@@ -25,7 +25,8 @@ struct OverviewView: View {
                 }
             }
             // A new charge state brings or removes the hero's time line, which changes the height
-            // of the cards above the rest: the whole page moves as one, once per event.
+            // of the cards above the rest: the whole page moves as one, once per event. Under
+            // Reduce Motion the cards snap into place and only the time line fades.
             .animation(motion.change, value: BatteryMotionKey(snapshot).chargeState)
             .padding(20)
             .frame(maxWidth: 820)
@@ -57,7 +58,7 @@ struct OverviewView: View {
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .foregroundStyle(.secondary)
-                            .transition(.opacity)
+                            .transition(motion.fadeTransition)
                     }
                 }
                 Spacer(minLength: 0)

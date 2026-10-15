@@ -62,7 +62,8 @@ struct Crossfade<First: View, Second: View>: View {
                 .opacity(showsFirst ? 0 : 1)
                 .accessibilityHidden(showsFirst)
         }
-        .animation(motion.change, value: showsFirst)
+        // Only opacity changes, so it fades under Reduce Motion too.
+        .animation(motion.crossfade, value: showsFirst)
     }
 }
 
@@ -261,7 +262,9 @@ private struct MenuBarIconStylePicker: View {
         let isSelected = style == selection
         let shape = RoundedRectangle(cornerRadius: Self.cornerRadius)
         return Button {
-            withAnimation(motion.change) { selection = style }
+            // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
+            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
+            withAnimation(motion.crossfade) { selection = style }
         } label: {
             VStack(spacing: 8) {
                 MenuBarIconPreview(style: style)

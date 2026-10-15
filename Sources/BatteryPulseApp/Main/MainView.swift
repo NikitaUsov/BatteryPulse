@@ -70,7 +70,8 @@ struct MainView: View {
                     }
                 }
             }
-            // The Developer section slides in and out when it is turned on or off in Settings.
+            // The Developer section slides in and out when it is turned on or off in Settings; under
+            // Reduce Motion it appears and goes at once.
             .animation(motion.change, value: showsDeveloper)
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
@@ -112,7 +113,8 @@ struct MainView: View {
             if !shows, SidebarItem.developerPages.contains(selection) { selection = .overview }
         }
         // The demo tour switches pages by itself, but never to a hidden one. The page changes in
-        // one transaction with the demo's data.
+        // one transaction with the demo's data; the detail still fades through `quickFade` when
+        // `change` is off (Reduce Motion), and the sidebar selection then moves at once.
         .onChange(of: demo.pageRequest) { _, request in
             guard let request else { return }
             let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
@@ -182,16 +184,21 @@ private struct CopyReportButton: View {
             guard copied else { return }
             try? await Task.sleep(for: .seconds(1.5))
             guard !Task.isCancelled else { return }
-            withAnimation(motion.change) { copied = false }
+            withAnimation(motion.crossfade) { copied = false }
         }
     }
 
     private func copyReport() {
-        guard let snapshot = monitor.snapshot, !monitor.isOverridden else { return }
+        // Simulated data would mislead a bug report, and Demo Mode never triggers a read.
+        guard !monitor.isOverridden else { return }
+        // History and Demo Mode don't poll the battery, so the last reading can be minutes old:
+        // take a fresh one for the report.
+        monitor.refresh()
+        guard let snapshot = monitor.snapshot else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(BatteryReport.text(for: snapshot), forType: .string)
-        withAnimation(motion.change) { copied = true }
+        withAnimation(motion.crossfade) { copied = true }
         AccessibilityNotification.Announcement(String(localized: "Report copied")).post()
     }
 }

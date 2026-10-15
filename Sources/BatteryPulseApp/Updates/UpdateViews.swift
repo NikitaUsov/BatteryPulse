@@ -46,14 +46,19 @@ struct UpdateView: View {
         HStack(alignment: .top, spacing: 20) {
             AppIconView()
                 .frame(width: 64, height: 64)
-            VStack(alignment: .leading, spacing: 12) {
-                content
+            // A new status fades in. The window sizes to its content, so the old status goes at
+            // once and is never laid out beside or above the new one: the window resizes once,
+            // to the new content, and nothing else is animated. The ZStack keeps the new status
+            // in the old one's place while it is swapped.
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 12) {
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(statusKind)
+                .transition(motion.replacement)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            // A new status crossfades. The window sizes to its content, so its height changes at
-            // once: the fade is attached to the transition, and nothing else is animated.
-            .id(statusKind)
-            .transition(AnyTransition.opacity.animation(motion.change))
         }
         .padding(24)
         .frame(width: 540)
@@ -125,11 +130,15 @@ struct UpdateView: View {
             }
             .frame(height: 220)
             .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
-            // A new phase crossfades its label; the download bar inside a phase is never animated,
-            // because its fraction changes five times a second.
-            installStatus(release)
-                .id(phaseKind)
-                .transition(AnyTransition.opacity.animation(motion.change))
+            // A new phase fades in where the old one was, which goes at once: the window resizes
+            // once per phase and the buttons below move at most once, with it. The download bar
+            // inside a phase is never animated, because its fraction changes five times a second.
+            ZStack(alignment: .topLeading) {
+                installStatus(release)
+                    .id(phaseKind)
+                    .transition(motion.replacement)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             installActions(release)
         }
     }

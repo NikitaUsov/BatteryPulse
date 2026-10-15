@@ -41,10 +41,17 @@ public struct MotionPolicy: Sendable, Equatable {
         return reduceMotion || prefersCrossFade ? .fade : .full
     }
 
+    /// Whether anything may move: slide, grow, shrink or morph, including the layout around a
+    /// view that appears or goes. Only with full motion. Under Reduce Motion the layout snaps into
+    /// place and only opacity and colour fade; a window that can't be seen animates nothing.
+    public var allowsMovement: Bool {
+        level == .full
+    }
+
     /// One-off extras that only decorate (a bounce, a staggered entrance, a line drawing in).
     /// Functional transitions stay under Low Power Mode; these go.
     public var allowsFlourish: Bool {
-        level == .full && !reducesResources
+        allowsMovement && !reducesResources
     }
 }
 

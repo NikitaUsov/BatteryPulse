@@ -39,7 +39,7 @@ struct DeveloperView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(motion.change, value: sections.isEmpty)
+                .animation(motion.crossfade, value: sections.isEmpty)
             }
             .searchable(text: $filter, placement: .toolbar, prompt: "Filter keys, values and descriptions")
             // The table cuts long values and descriptions off; the inspector shows the selected
@@ -49,9 +49,13 @@ struct DeveloperView: View {
                     .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
             }
             .toolbar {
-                // A switch between the dictionaries, like the view switches of the system's own
-                // apps. It filters the table to one source rather than scrolling to it: a
-                // Table has no documented way to scroll to a section.
+                // A switch between the dictionaries. It filters the table to one source rather
+                // than scrolling to it: a Table has no documented way to scroll to a section.
+                // A pop-up menu, not a segmented control: a MacBook reading has six or seven
+                // sources, and eight segments ("All" included) don't fit beside the title, the
+                // search field and the page's buttons at the main window's default width, least
+                // of all in Russian. A menu keeps every action in the toolbar visible, at any
+                // number of sources and in either language.
                 if groups.count > 1 {
                     ToolbarItem(placement: .principal) {
                         Picker("Source", selection: $source) {
@@ -60,8 +64,9 @@ struct DeveloperView: View {
                                 Self.title(of: group).tag(RawSectionGroup?.some(group))
                             }
                         }
-                        .pickerStyle(.segmented)
+                        .pickerStyle(.menu)
                         .labelsHidden()
+                        .fixedSize()
                         .help("Show only the values from one source")
                     }
                 }
@@ -95,7 +100,7 @@ struct DeveloperView: View {
             .task(id: monitor.reading) { await rebuild() }
     }
 
-    /// The segment title of a source: short, and the API's own name where it has no other.
+    /// The title of a source in the switch: short, and the API's own name where it has no other.
     private static func title(of group: RawSectionGroup) -> Text {
         switch group {
         case .battery: Text("Battery")
