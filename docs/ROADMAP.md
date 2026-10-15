@@ -145,6 +145,20 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
   permission for an ad-hoc signed app
 
+### Stage 1.3: Menu bar icon styles (0.4)
+
+- [ ] A choice of menu bar icon styles, so BatteryPulse can replace the system battery item
+  (turned off in System Settings → Control Center → Battery; BatteryPulse can't hide it itself,
+  so Settings explains this and links there):
+  - like the battery item of macOS 27, matched against screenshots from the M5;
+  - like macOS 26, with the percentage inside the battery;
+  - a few of BatteryPulse's own, such as a ring or numbers only, in color or monochrome.
+- [ ] Draw the battery to the exact level with SwiftUI shapes, not the five steps of the SF
+  Symbols, with every state the system shows: charging, plugged in but not charging, charge on
+  hold, low (red), Low Power Mode (yellow)
+- [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
+  bar's height on displays with a notch
+
 ### Stage 2: iOS MVP
 
 - [ ] iOS target sharing SwiftUI components with macOS
@@ -238,8 +252,9 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 
 Next: **0.4.0** brings the battery of a connected iPhone or iPad (Stage 5), a choice of how
-often to check for updates, and installing updates from the app (Stage 1.2). Everything else
-waits for later versions.
+often to check for updates, installing updates from the app (Stage 1.2), and menu bar icon
+styles that can stand in for the system battery item (Stage 1.3). Everything else waits for
+later versions.
 
 ## Development environment
 
