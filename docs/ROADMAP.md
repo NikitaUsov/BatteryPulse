@@ -130,6 +130,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [ ] Verify on the M5: the widget after an update, and a capture at the macOS Charge Limit stop
   point
+- [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
+  the on/off switch (off becomes never; a manual Check for Updates still works with never)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
