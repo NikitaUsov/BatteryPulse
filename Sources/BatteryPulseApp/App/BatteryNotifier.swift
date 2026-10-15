@@ -19,7 +19,7 @@ final class BatteryNotifier: NSObject {
     private var state: AlertState
     private var wasPluggedIn: Bool?
     private var accessoryState: AccessoryAlertState
-    /// The accessory threshold of the last evaluation, so only a change of it re-evaluates.
+    /// The accessory threshold last seen, so only a change of it re-evaluates.
     private var lastAccessoryThreshold: Int?
     private var defaultsObserver: NSObjectProtocol?
 
@@ -43,15 +43,34 @@ final class BatteryNotifier: NSObject {
         // An accessory can stay at the same level for an hour: one that is already low at launch
         // alerts now, not at its next change.
         evaluateAccessories()
-        // Turning the alert on with a mouse already below the threshold alerts at once. The
-        // notifier's own writes post this notification too and end at the threshold check.
+        // Turning the alert on with a mouse already below the threshold alerts at once. Any
+        // object, as in DemoController: the check is one comparison, and the notifier's own
+        // writes, which post this notification too, end there.
         defaultsObserver = NotificationCenter.default.addObserver(
-            forName: UserDefaults.didChangeNotification, object: UserDefaults.standard, queue: .main
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, AppSettings.alerts.accessoryLowBattery != self.lastAccessoryThreshold else { return }
-                self.evaluateAccessories()
+                guard let self else { return }
+                let threshold = AppSettings.alerts.accessoryLowBattery
+                guard threshold != self.lastAccessoryThreshold else { return }
+                self.accessoryThresholdChanged(to: threshold)
             }
+        }
+    }
+
+    /// Off clears the state at once. On, the evaluation waits for the answer to the permission
+    /// prompt Settings shows the first time an alert is turned on: a notification posted before
+    /// it is allowed is dropped, and the accessory would then stay quiet until it charges.
+    private func accessoryThresholdChanged(to threshold: Int?) {
+        lastAccessoryThreshold = threshold
+        guard threshold != nil else {
+            evaluateAccessories()
+            return
+        }
+        Task { [weak self] in
+            // Returns at once, without a prompt, once the user has answered.
+            _ = await BatteryNotifier.requestAuthorization()
+            self?.evaluateAccessories()
         }
     }
 
