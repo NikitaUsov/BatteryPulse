@@ -4,12 +4,34 @@ import SwiftUI
 
 // Content-layer building blocks. Per Apple's Liquid Glass guidance, glass belongs to the
 // navigation and control layer (sidebar, toolbar, controls), which SwiftUI provides; content
-// uses standard fills.
+// uses standard fills. The one exception is the Developer option "Glass Cards" (off by default),
+// which draws `Card` itself in Liquid Glass; nothing inside a card ever gets glass.
+//
+// Motion: values that change with the 2 s readings (watts, mA, mV, °C, mAh) change instantly.
+// Only discrete events animate, through `\.motion`: the whole percent, the level tier, plugging in
+// or out, the charge state, the battery symbol and the direction of the power flow.
 
-/// A rounded section of the Overview page.
+/// Whether the content cards are drawn in Liquid Glass right now: the Developer option "Glass
+/// Cards" (Settings → Advanced), which counts only while the Developer section is on and never
+/// under Reduce Transparency (see ``CardSurface``).
+struct CardSurfaceSetting: DynamicProperty {
+    @AppStorage(AppSettings.glassCardsKey) private var glassCards = false
+    @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var surface: CardSurface {
+        CardSurface(
+            glassCardsOption: glassCards, showsDeveloperSection: showsDeveloper,
+            reduceTransparency: reduceTransparency)
+    }
+}
+
+/// A rounded section of a page (Overview, History, the compact window): a standard fill, or
+/// Liquid Glass with the Developer option "Glass Cards".
 struct Card<Content: View>: View {
     private let title: LocalizedStringKey?
     private let content: Content
+    private var surfaceSetting = CardSurfaceSetting()
 
     init(_ title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -17,7 +39,7 @@ struct Card<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let stack = VStack(alignment: .leading, spacing: 12) {
             if let title {
                 Text(title)
                     .font(.headline)
@@ -26,7 +48,39 @@ struct Card<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
+        // Two branches rather than `.identity` glass over the fill: the default stays exactly the
+        // view it was before the option existed, and switching the option rebuilds the cards once.
+        switch surfaceSetting.surface {
+        case .standard:
+            stack.background(.background.secondary, in: .rect(cornerRadius: 16, style: .continuous))
+        case .glass:
+            stack.glassEffect(.regular, in: .rect(cornerRadius: 16, style: .continuous))
+        }
+    }
+}
+
+/// A page's stack of cards. With "Glass Cards" on, the cards' glass shares one
+/// `GlassEffectContainer`, which renders them in one pass (Apple: too many glass effects outside
+/// a container degrade performance). With the option off, the content is returned as it is,
+/// without a container.
+struct CardGroup<Content: View>: View {
+    private let content: Content
+    private var surfaceSetting = CardSurfaceSetting()
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        switch surfaceSetting.surface {
+        case .standard:
+            content
+        case .glass:
+            // Below the 16 pt gap between cards, so neighbouring cards don't merge at rest.
+            GlassEffectContainer(spacing: 8) {
+                content
+            }
+        }
     }
 }
 
@@ -40,10 +94,7 @@ struct RingGaugeStyle: GaugeStyle {
         ZStack {
             Circle()
                 .stroke(.quaternary, lineWidth: lineWidth)
-            Circle()
-                .trim(from: 0, to: max(0.001, min(1, configuration.value)))
-                .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
+            RingArc(value: configuration.value, tint: tint, lineWidth: lineWidth)
             VStack(spacing: 2) {
                 configuration.currentValueLabel
                     .font(.title2.weight(.semibold))
@@ -65,11 +116,34 @@ struct RingGaugeStyle: GaugeStyle {
     }
 }
 
+/// The ring's coloured arc, a view of its own so it can read `\.motion`.
+private struct RingArc: View {
+    let value: Double
+    let tint: Color
+    let lineWidth: CGFloat
+    @Environment(\.motion) private var motion
+
+    var body: some View {
+        let fraction = max(0.001, min(1, value))
+        Circle()
+            .trim(from: 0, to: fraction)
+            .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+            // The arc grows or shrinks to a new value (a whole percent, a cycle, maximum capacity)
+            // and crossfades to a new tier colour. A built-in animatable shape: no body per frame.
+            .animation(motion.change, value: fraction)
+            .animation(motion.change, value: tint)
+    }
+}
+
 /// Gauge tile used on the Overview: a ring with a caption underneath.
 struct GaugeTile: View {
     let title: LocalizedStringKey
     let fraction: Double
     let value: String
+    /// The number `value` shows (a percentage, a cycle count), so it rolls in the direction of a
+    /// change.
+    var number: Double?
     let caption: String?
     var captionHelp: String?
     let tint: Color
@@ -81,6 +155,7 @@ struct GaugeTile: View {
                     Text(title)
                 } currentValueLabel: {
                     Text(value)
+                        .numericValue(number)
                 }
                 .gaugeStyle(RingGaugeStyle(tint: tint))
                 if let caption {
@@ -97,13 +172,20 @@ struct GaugeTile: View {
     }
 }
 
-/// A battery drawn to the exact level, with a bolt while charging.
+/// A battery drawn to the exact level, with a bolt while charging. Used by the Overview, the
+/// compact window and the menu bar panel.
+///
+/// The fill follows a new whole percent and crossfades to a new tier colour; the bolt draws in
+/// when charging starts and goes when it stops.
 struct BatteryGlyph: View {
     let level: Double
     let isCharging: Bool
     let tint: Color
+    @Environment(\.motion) private var motion
 
     var body: some View {
+        // The fill animates per whole percent, the step the app shows.
+        let wholePercent = (level * 100).rounded()
         GeometryReader { geometry in
             let height = geometry.size.height
             let terminalWidth = height * 0.12
@@ -128,16 +210,25 @@ struct BatteryGlyph: View {
                     let bolt = Image(systemName: "bolt.fill")
                         .font(.system(size: height * 0.5, weight: .bold))
                         .frame(width: bodyWidth)
-                    bolt
-                        .foregroundStyle(.primary)
-                    bolt
-                        .foregroundStyle(.white)
-                        .mask(alignment: .leading) {
-                            Rectangle()
-                                .frame(width: inset + fillWidth)
-                        }
+                    // One view, so both copies draw in and out together.
+                    ZStack {
+                        bolt
+                            .foregroundStyle(.primary)
+                        bolt
+                            .foregroundStyle(.white)
+                            .mask(alignment: .leading) {
+                                Rectangle()
+                                    .frame(width: inset + fillWidth)
+                            }
+                    }
+                    .transition(motion.boltTransition)
                 }
             }
+            // Scoped to the glyph, which shows nothing that changes with the live readings. The
+            // white bolt's mask moves with the fill.
+            .animation(motion.change, value: wholePercent)
+            .animation(motion.change, value: tint)
+            .animation(motion.change, value: isCharging)
         }
         .aspectRatio(2.2, contentMode: .fit)
         .accessibilityHidden(true)
@@ -149,26 +240,20 @@ struct CapacityBars: View {
     let snapshot: BatterySnapshot
     let formatter: BatteryFormatter
 
-    private var rows: [(LocalizedStringKey, Int, Color)] {
-        var rows: [(LocalizedStringKey, Int, Color)] = []
-        if let value = snapshot.currentCapacityMAh { rows.append(("Remaining", value, .green)) }
-        if let value = snapshot.fullChargeCapacityMAh { rows.append(("Full charge", value, .teal)) }
-        if let value = snapshot.designCapacityMAh { rows.append(("Design", value, .gray)) }
-        return rows
-    }
-
     var body: some View {
-        let scale = Double(rows.map(\.1).max() ?? 1)
+        let bars = CapacityBar.bars(for: snapshot)
+        let scale = CapacityBar.scale(of: bars)
         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                let (label, value, color) = row
+            // Identified by kind, so a bar that appears or goes away is that bar, not the last
+            // row. The mAh values change every few readings and are not animated.
+            ForEach(bars) { bar in
                 GridRow {
-                    Text(label)
+                    Text(bar.kind.title)
                         .foregroundStyle(.secondary)
-                    ProgressView(value: Double(value), total: scale)
-                        .tint(color)
+                    ProgressView(value: Double(bar.capacityMAh), total: scale)
+                        .tint(bar.kind.color)
                         .gridColumnAlignment(.leading)
-                    Text(formatter.milliampHours(value))
+                    Text(formatter.milliampHours(bar.capacityMAh))
                         .monospacedDigit()
                         .gridColumnAlignment(.trailing)
                 }
@@ -177,36 +262,84 @@ struct CapacityBars: View {
     }
 }
 
+extension CapacityBar.Kind {
+    var title: LocalizedStringKey {
+        switch self {
+        case .remaining: "Remaining"
+        case .fullCharge: "Full charge"
+        case .design: "Design"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .remaining: .green
+        case .fullCharge: .teal
+        case .design: .gray
+        }
+    }
+}
+
 /// Where the power goes: adapter → Mac → battery (or battery → Mac on battery power).
+///
+/// Events animate, the watts don't: the adapter slides in and out when plugging in or out, the
+/// battery arrow turns when the power flow changes direction, the battery symbol swaps at a new
+/// level or charge state and bounces once on reaching full.
 struct PowerFlowView: View {
     let snapshot: BatterySnapshot
     let formatter: BatteryFormatter
+    @Environment(\.motion) private var motion
+    /// Counts the times the battery reached full while this view was shown; each change plays one
+    /// bounce of the battery symbol.
+    @State private var fullCount = 0
 
     var body: some View {
-        let batteryWatts = snapshot.batteryPowerWatts ?? 0
+        let key = BatteryMotionKey(snapshot)
+        let showsAdapter = snapshot.isExternalPowerConnected == true && snapshot.adapter != nil
         HStack(alignment: .center, spacing: 0) {
-            if snapshot.isExternalPowerConnected == true, let adapter = snapshot.adapter {
-                node(
-                    symbol: "powerplug.portrait.fill", title: "Adapter",
-                    value: adapter.watts.map { formatter.watts(Double($0), fractionDigits: 0) })
+            if showsAdapter, let adapter = snapshot.adapter {
+                node(title: "Adapter", value: adapter.watts.map { formatter.watts(Double($0), fractionDigits: 0) }) {
+                    Image(systemName: "powerplug.portrait.fill")
+                }
+                .transition(motion.insertion(edge: .leading))
                 arrow(
                     value: snapshot.systemPowerInWatts.flatMap { $0 > 0 ? formatter.watts($0) : nil },
-                    pointsRight: true)
+                    pointsRight: true
+                )
+                .transition(motion.insertion(edge: .leading))
             }
-            node(symbol: "laptopcomputer", title: "Mac", value: snapshot.systemLoadWatts.map { formatter.watts($0) })
+            node(title: "Mac", value: snapshot.systemLoadWatts.map { formatter.watts($0) }) {
+                Image(systemName: "laptopcomputer")
+            }
+            // The direction and the hidden value share `BatteryMotionKey.flow` and its dead band,
+            // so noise around 0 W neither turns the arrow nor shows a value.
             arrow(
-                value: abs(batteryWatts) >= 0.05 ? formatter.watts(abs(batteryWatts)) : nil,
-                pointsRight: batteryWatts >= 0)
-            node(
-                symbol: BatteryPresentation.symbolName(for: snapshot), title: "Battery",
-                value: snapshot.chargePercent.map { formatter.percent($0) })
+                value: key.flow == .idle ? nil : snapshot.batteryPowerWatts.map { formatter.watts(abs($0)) },
+                pointsRight: key.batteryArrowPointsIntoBattery)
+            node(title: "Battery", value: snapshot.chargePercent.map { formatter.percent($0) }) {
+                Image(systemName: key.symbolName)
+                    .contentTransition(motion.symbolSwap)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: fullCount)
+                    .animation(motion.change, value: key.symbolName)
+            }
         }
         .frame(maxWidth: .infinity)
+        // The adapter slides in from the card's edge, not from beyond it.
+        .clipped()
+        .animation(motion.change, value: showsAdapter)
+        .onChange(of: key.chargeState) { old, new in
+            // A one-off extra: not under Reduce Motion or Low Power Mode, nor in a hidden window.
+            if BatteryMotionKey.reachedFull(from: old, to: new), motion.allowsFlourish {
+                fullCount += 1
+            }
+        }
     }
 
-    private func node(symbol: String, title: LocalizedStringKey, value: String?) -> some View {
+    private func node<Symbol: View>(
+        title: LocalizedStringKey, value: String?, @ViewBuilder symbol: () -> Symbol
+    ) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: symbol)
+            symbol()
                 .font(.title2)
                 .frame(width: 52, height: 52)
                 .background(.fill.tertiary, in: .circle)
@@ -228,6 +361,8 @@ struct PowerFlowView: View {
             Image(systemName: pointsRight ? "arrow.right" : "arrow.left")
                 .font(.title3)
                 .foregroundStyle(value == nil ? .tertiary : .secondary)
+                .contentTransition(motion.symbolSwap)
+                .animation(motion.change, value: pointsRight)
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 28)

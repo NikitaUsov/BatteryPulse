@@ -6,6 +6,12 @@ import SwiftUI
 struct HealthView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
+    @Environment(\.motion) private var motion
+    /// Set once this view has let its rings fill; see ``ringsHaveFilledThisLaunch``.
+    @State private var ringsFilled = false
+    /// The rings fill from zero once per launch, on the first visit to this page. Pages switch
+    /// often, so not on every visit; and only where one-off extras are allowed.
+    @MainActor private static var ringsHaveFilledThisLaunch = false
 
     var body: some View {
         Form {
@@ -33,27 +39,41 @@ struct HealthView: View {
         .formStyle(.grouped)
     }
 
+    /// The rings animate to a new value through `RingGaugeStyle` (rarely: maximum capacity and
+    /// cycles change about once a day).
+    @ViewBuilder
     private var gauges: some View {
+        // Empty only on the first visit, until `onAppear` starts the fill.
+        let filled: Double = ringsFilled || Self.ringsHaveFilledThisLaunch || !motion.allowsFlourish ? 1 : 0
         HStack(spacing: 40) {
             if let health = snapshot.healthPercent {
-                Gauge(value: health / 100) {
+                Gauge(value: health / 100 * filled) {
                     Text("Maximum capacity")
                 } currentValueLabel: {
                     Text(formatter.percent(health))
+                        .numericValue(health)
                 }
                 .gaugeStyle(RingGaugeStyle(tint: BatteryPresentation.healthTier(for: snapshot).color, diameter: 128))
             }
             if let cycles = snapshot.cycleCount {
-                Gauge(value: Double(cycles) / Double(snapshot.designCycleCount ?? 1000)) {
+                Gauge(value: Double(cycles) / Double(snapshot.designCycleCount ?? 1000) * filled) {
                     Text("Cycle count")
                 } currentValueLabel: {
                     Text(cycles.formatted())
+                        .numericValue(Double(cycles))
                 }
                 .gaugeStyle(RingGaugeStyle(tint: .blue, diameter: 128))
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
+        .onAppear {
+            guard !Self.ringsHaveFilledThisLaunch else { return }
+            Self.ringsHaveFilledThisLaunch = true
+            // The arcs animate from zero to their values (`RingGaugeStyle`); without one-off
+            // extras they were full from the start and nothing changes.
+            ringsFilled = true
+        }
     }
 
     @ViewBuilder
