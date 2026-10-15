@@ -326,9 +326,13 @@ stays on controls; the glass bubbles come from standard segmented controls.
     `AppleSmartBatteryBank` and `AppleChargerData`, then Goodbye, with 5 s socket timeouts
     and 30/60 s deadlines. The transport sits behind `IDeviceTransport`/`IDeviceLink`. The
     parser is tested with synthetic data until real captures exist
-  - [ ] Captures from an iPhone 17 Pro Max and an iPad (9th generation) on 27.0.1 as fixtures;
-    choose the health formula (nominal or full-charge ÷ design) against Settings → Battery →
-    Battery Health
+  - [x] iPhone 17 Pro Max on iOS 27.0.1 as a fixture: the bpulse spike worked on the first try
+    over USB. Health is nominal ÷ design (Settings: 95 %; the pack's `LifetimeData.NccpFiltered`
+    is the same 95; full charge ÷ design would be 97.9 %); the temperature is the pack's
+    `Temperature` sensor, not `VirtualTemperature`; `DateOfFirstUse` matches Settings' First Use;
+    the pack's `UUID` is now redacted
+  - [ ] An iPad (9th generation) capture, and the manufacture date (Settings: August 2025; the
+    pack's `ManufactureDate` doesn't decode like the Mac's yet)
   - [ ] The device in the app's UI
 - [ ] Remember each device and keep its history next to the Mac's
 

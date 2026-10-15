@@ -233,6 +233,8 @@ extension IDeviceCapture {
     static let identifyingKeys: Set<String> = [
         "UniqueDeviceID", "UniqueChipID", "UDID", "ECID", "WiFiAddress", "BluetoothAddress",
         "EthernetAddress", "IMEI", "MEID", "ICCID", "PhoneNumber",
+        // A number that identifies the battery pack (iOS 27, AppleSmartBatteryPack).
+        "UUID",
     ]
 
     public var rawCapture: PropertyDictionary {

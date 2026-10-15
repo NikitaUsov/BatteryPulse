@@ -335,8 +335,10 @@ in a later version.
 3. Over Wi-Fi: turn on *Show this iPhone when on Wi-Fi* for the device in Finder (by cable,
    once). The device must be unlocked and on the same network as the Mac.
 
-Maximum capacity is shown only if the device reports it; otherwise both capacities are shown
-as a share of the design, and iOS Settings → Battery → Battery Health may differ from both.
+Maximum capacity is the figure iOS Settings → Battery → Battery Health shows (nominal capacity
+÷ design capacity, which the device also reports itself); both capacities follow as a share of
+the design. On an iPhone 17 Pro Max with iOS 27 the report matched Settings: 95 %, 278 cycles,
+first used October 2025.
 `bpulse --device 1 --raw > device.xml` saves everything the device returned for a bug report,
 with serial numbers, identifiers and the device's name removed (`--devices` itself shows the
 name). When no device is found or it can't be read, `bpulse` says why (not trusted, locked, no

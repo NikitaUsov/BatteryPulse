@@ -15,7 +15,7 @@ import Testing
         #expect(v["Device"] == "iPhone12,1 · iOS 26.6 · USB · ID …801C", "the owner's device name stays out")
         #expect(v["Charge"] == "9 %  (219 of 2633 mAh)")
         #expect(v["State"] == "Charging")
-        #expect(v["Maximum capacity"] == nil)
+        #expect(v["Maximum capacity"] == "83 %  (as in iOS Settings)")
         #expect(v["Design capacity"] == "3092 mAh")
         #expect(v["Nominal capacity"] == "2564 mAh  (82.9 % of design)")
         #expect(v["Full charge capacity"] == "2633 mAh  (85.2 % of design)")
