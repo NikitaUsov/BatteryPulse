@@ -140,6 +140,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
 - [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
+- [ ] Release notes in the Software Update window: join the lines of a wrapped paragraph or
+  list item, which now break mid-sentence (seen with 0.3.1's notes)
 - [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
   relaunch, instead of sending the user to the browser. A download made by the app itself may
   skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
