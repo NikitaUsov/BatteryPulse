@@ -50,17 +50,28 @@ public struct ReleaseInfo: Sendable, Equatable {
     public var pageURL: URL
     /// The DMG attached to the release, if any.
     public var downloadURL: URL?
+    /// GitHub's digest of the DMG, such as `sha256:59ff…`; assets uploaded before June 2025 have
+    /// none. See ``UpdateIntegrity/check(sha256Hex:against:)``.
+    public var downloadDigest: String?
+    /// The DMG's size in bytes, for the download's progress.
+    public var downloadSize: Int64?
+    /// The DMG's Ed25519 signature (`BatteryPulse.dmg.sig`), attached since 0.4.0. Without it the
+    /// app doesn't install the update itself.
+    public var signatureURL: URL?
     public var publishedAt: Date?
 
     public init(
         version: AppVersion, title: String, notes: String, pageURL: URL, downloadURL: URL? = nil,
-        publishedAt: Date? = nil
+        downloadDigest: String? = nil, downloadSize: Int64? = nil, signatureURL: URL? = nil, publishedAt: Date? = nil
     ) {
         self.version = version
         self.title = title
         self.notes = notes
         self.pageURL = pageURL
         self.downloadURL = downloadURL
+        self.downloadDigest = downloadDigest
+        self.downloadSize = downloadSize
+        self.signatureURL = signatureURL
         self.publishedAt = publishedAt
     }
 
@@ -74,9 +85,12 @@ public struct ReleaseInfo: Sendable, Equatable {
         struct Asset: Decodable {
             var name: String
             var browserDownloadURL: URL
+            var size: Int64?
+            /// "sha256:<hex>", or null for assets uploaded before GitHub computed digests.
+            var digest: String?
 
             enum CodingKeys: String, CodingKey {
-                case name
+                case name, size, digest
                 case browserDownloadURL = "browser_download_url"
             }
         }
@@ -97,7 +111,8 @@ public struct ReleaseInfo: Sendable, Equatable {
         }
     }
 
-    /// Parses the GitHub API response; `assetName` picks the download.
+    /// Parses the GitHub API response; `assetName` picks the download, and the asset of that name
+    /// plus `.sig` its signature.
     public static func parse(gitHubJSON data: Data, assetName: String = "BatteryPulse.dmg") throws -> ReleaseInfo {
         let release: GitHubRelease
         do {
@@ -107,12 +122,17 @@ public struct ReleaseInfo: Sendable, Equatable {
         }
         guard release.draft != true, release.prerelease != true else { throw ParseError.draftOrPrerelease }
         guard let version = AppVersion(release.tagName) else { throw ParseError.badVersion(release.tagName) }
+        let image = release.assets?.first { $0.name == assetName }
+        let signatureName = UpdateInstallPolicy.signatureAssetName(for: assetName)
         return ReleaseInfo(
             version: version,
             title: release.name?.isEmpty == false ? release.name ?? "" : "BatteryPulse \(version)",
             notes: release.body ?? "",
             pageURL: release.htmlURL,
-            downloadURL: release.assets?.first { $0.name == assetName }?.browserDownloadURL,
+            downloadURL: image?.browserDownloadURL,
+            downloadDigest: image?.digest,
+            downloadSize: image?.size,
+            signatureURL: release.assets?.first { $0.name == signatureName }?.browserDownloadURL,
             publishedAt: release.publishedAt.flatMap { try? Date($0, strategy: .iso8601) }
         )
     }

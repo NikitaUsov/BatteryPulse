@@ -20,6 +20,8 @@ enum AppSettings {
     static let updateFrequencyKey = "updateFrequency"
     static let lastUpdateCheckKey = "lastUpdateCheck"
     static let skippedVersionKey = "skippedVersion"
+    /// Where an in-app update put the previous version, to delete at the next launch.
+    static let updateLeftoverKey = "updateLeftover"
     static let lastSeenVersionKey = "lastSeenVersion"
     static let recordHistoryKey = "recordHistory"
     static let prefersCompactWindowKey = "prefersCompactWindow"

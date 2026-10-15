@@ -725,6 +725,39 @@
         }
       }
     },
+    "BatteryPulse can't replace itself in its folder, so install the update from the DMG.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не может заменить себя в своей папке, поэтому установите обновление из DMG."
+          }
+        }
+      }
+    },
+    "BatteryPulse couldn't replace the installed copy.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось заменить установленную копию."
+          }
+        }
+      }
+    },
+    "BatteryPulse downloads the update, checks its signature, replaces this copy and opens again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse загрузит обновление, проверит его подпись, заменит эту копию и откроется снова."
+          }
+        }
+      }
+    },
     "BatteryPulse Help": {
       "extractionState": "manual",
       "localizations": {
@@ -916,6 +949,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Вычисляется…"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить"
           }
         }
       }
@@ -1830,6 +1874,17 @@
         }
       }
     },
+    "Development builds can't install updates.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сборки для разработки не могут устанавливать обновления."
+          }
+        }
+      }
+    },
     "Discharging at %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1870,6 +1925,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загрузить"
+          }
+        }
+      }
+    },
+    "Downloading…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка…"
           }
         }
       }
@@ -2768,6 +2834,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Инспектор"
+          }
+        }
+      }
+    },
+    "Install and Relaunch": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установить и перезапустить"
+          }
+        }
+      }
+    },
+    "Installing…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установка…"
           }
         }
       }
@@ -4693,6 +4781,17 @@
         }
       }
     },
+    "Relaunching…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перезапуск…"
+          }
+        }
+      }
+    },
     "Release Notes": {
       "extractionState": "manual",
       "localizations": {
@@ -5388,6 +5487,39 @@
         }
       }
     },
+    "The disk image doesn't contain the expected version of BatteryPulse.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В образе диска нет ожидаемой версии BatteryPulse."
+          }
+        }
+      }
+    },
+    "The downloaded disk image couldn't be opened.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось открыть загруженный образ диска."
+          }
+        }
+      }
+    },
+    "The downloaded file is damaged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загруженный файл повреждён."
+          }
+        }
+      }
+    },
     "The icon can only be hidden when the menu bar also shows text.": {
       "extractionState": "manual",
       "localizations": {
@@ -5395,6 +5527,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Значок можно скрыть, только если в строке меню показан текст."
+          }
+        }
+      }
+    },
+    "The new version's code signature isn't valid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подпись кода новой версии недействительна."
           }
         }
       }
@@ -5417,6 +5560,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показ сам переключает страницы и начинается заново после последней сцены."
+          }
+        }
+      }
+    },
+    "The update couldn't be downloaded. Check your internet connection.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось загрузить обновление. Проверьте подключение к интернету."
+          }
+        }
+      }
+    },
+    "The update is installed, but BatteryPulse couldn't relaunch. Quit BatteryPulse and open it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновление установлено, но перезапустить BatteryPulse не удалось. Завершите BatteryPulse и откройте его снова."
+          }
+        }
+      }
+    },
+    "The update's signature isn't valid, so it wasn't installed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подпись обновления недействительна, поэтому оно не установлено."
           }
         }
       }
@@ -5450,6 +5626,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "У этого Mac нет встроенного аккумулятора."
+          }
+        }
+      }
+    },
+    "This release can only be installed from the DMG.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот выпуск можно установить только из DMG."
+          }
+        }
+      }
+    },
+    "This version isn't newer than the one you have.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта версия не новее установленной."
           }
         }
       }
@@ -5579,6 +5777,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Для проверки BatteryPulse спрашивает у GitHub, вышла ли новая версия. GitHub видит ваш IP-адрес, версию приложения и язык, как при любом запросе в интернете. «Проверить сейчас» работает при любом выборе."
+          }
+        }
+      }
+    },
+    "To install updates from BatteryPulse itself, move it to the Applications folder and open it from there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы устанавливать обновления из самого BatteryPulse, переместите его в папку «Программы» и откройте оттуда."
           }
         }
       }
@@ -5967,6 +6176,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Переменный %@ × %@"
+          }
+        }
+      }
+    },
+    "Verifying the update…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка обновления…"
           }
         }
       }
@@ -6401,6 +6621,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Да"
+          }
+        }
+      }
+    },
+    "You can download the update and install it from the DMG instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вместо этого можно загрузить обновление и установить его из DMG."
           }
         }
       }

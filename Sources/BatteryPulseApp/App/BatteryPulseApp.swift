@@ -36,6 +36,8 @@ struct BatteryPulseApp: App {
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar
+        // The version an in-app update replaced, and its download.
+        UpdateInstaller.cleanUpAfterUpdate()
         let updater = UpdateChecker()
         self.updater = updater
         // A fresh install has no last-seen version, so What's New only follows a real update, even

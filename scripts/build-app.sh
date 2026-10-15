@@ -54,6 +54,8 @@ fi
 # LSUIElement: launch without a Dock icon, so the default menu-bar mode (and Open at login)
 # never flashes one. DockIconPolicy promotes the app to a regular one at run time when the menu
 # bar item is off, the Dock icon is on, or a window is open.
+# Never add LSFileQuarantineEnabled: the in-app updater relies on the DMG it downloads not being
+# quarantined, so the new version opens without Open Anyway.
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
