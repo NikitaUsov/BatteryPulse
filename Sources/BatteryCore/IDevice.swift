@@ -80,13 +80,11 @@ public struct IDeviceInfo: Sendable, Equatable, Codable, Identifiable {
 /// The device list printed by `bpulse --devices` and used by `--device <n>`.
 public enum IDeviceList {
     /// A stable order, so `--device <n>` in a later run means the device `--devices` printed as
-    /// n: by name, then model, then identifier. Arrival order changes from run to run.
+    /// n: by identifier alone. The identifier is known without connecting to a device, so the
+    /// order holds when a device's name can't be read, and `--device <n>` finds its device
+    /// without connecting to the others. Arrival order changes from run to run.
     public static func sorted(_ devices: [IDeviceInfo]) -> [IDeviceInfo] {
-        devices.sorted { lhs, rhs in
-            let left = (lhs.name ?? "", lhs.productType ?? "", lhs.id)
-            let right = (rhs.name ?? "", rhs.productType ?? "", rhs.id)
-            return left < right
-        }
+        devices.sorted { $0.id < $1.id }
     }
 
     /// One numbered line per device, numbered from 1.
@@ -105,10 +103,15 @@ public enum IDeviceList {
         if !device.connections.isEmpty {
             parts.append(device.connections.map(\.rawValue).joined(separator: " + "))
         }
-        parts.append("ID " + device.redactedIdentifier)
+        parts.append(identifierLabel(device.id))
         var line = parts.joined(separator: " · ")
         if device.isPaired == false { line += "\n   Not trusted: " + IDeviceProblem.trustAdvice }
         return line
+    }
+
+    /// "ID …801C": the identifier as the list and the device report show it.
+    static func identifierLabel(_ identifier: String) -> String {
+        "ID " + IDeviceInfo.redactedIdentifier(identifier)
     }
 
     static func nonEmpty(_ value: String?) -> String? {

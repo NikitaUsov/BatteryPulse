@@ -12,7 +12,7 @@ import Testing
 
     @Test func iPhoneReport() {
         let v = values(SyntheticIDevice.iPhoneCapture)
-        #expect(v["Device"] == "iPhone12,1 · iOS 26.6 · USB", "the owner's device name stays out")
+        #expect(v["Device"] == "iPhone12,1 · iOS 26.6 · USB · ID …801C", "the owner's device name stays out")
         #expect(v["Charge"] == "9 %  (219 of 2633 mAh)")
         #expect(v["State"] == "Charging")
         #expect(v["Maximum capacity"] == nil)
@@ -59,6 +59,21 @@ import Testing
         #expect(v["Charge"] == nil)
     }
 
+    @Test func deviceLineShowsTheListedIdentifier() throws {
+        let capture = SyntheticIDevice.iPhoneCapture
+        let identifier = try #require(capture.device["UniqueDeviceID"]?.stringValue)
+        let listed = IDeviceList.line(for: IDeviceInfo(id: identifier, connections: [.usb]))
+        let device = try #require(values(capture)["Device"])
+        #expect(listed.hasSuffix(" · ID …801C"))
+        #expect(device.hasSuffix(" · ID …801C"), "the same ID as `bpulse --devices` prints")
+        #expect(!device.contains(identifier))
+
+        // A redacted capture (`--raw`, read back with `--input`) has no identifier to show.
+        let redacted = try #require(IDeviceCapture(rawCapture: capture.redactedRawCapture))
+        #expect(redacted.device["UniqueDeviceID"] == .string("REDACTED"))
+        #expect(values(redacted)["Device"] == "iPhone12,1 · iOS 26.6 · USB")
+    }
+
     @Test func entryWithoutCapacity() {
         var capture = SyntheticIDevice.iPhoneCapture
         capture.exchanges[0].reply = SyntheticIDevice.reply(["CurrentCapacity": .int(50)])
@@ -89,12 +104,22 @@ import Testing
         id: "00008030-000A11B22C33D4E5", name: "iPad", productType: "iPad12,1", productVersion: "27.0.1",
         deviceClass: "iPad", connections: [.usb], isPaired: false)
 
-    @Test func stableOrder() {
-        #expect(IDeviceList.sorted([phone, pad]).map(\.name) == ["Owner's iPhone", "iPad"])
+    @Test func stableOrderByIdentifierAlone() {
+        #expect(IDeviceList.sorted([phone, pad]).map(\.name) == ["iPad", "Owner's iPhone"])
         #expect(IDeviceList.sorted([pad, phone]) == IDeviceList.sorted([phone, pad]))
         let unnamed = IDeviceInfo(id: "B")
         let other = IDeviceInfo(id: "A")
         #expect(IDeviceList.sorted([unnamed, other]).map(\.id) == ["A", "B"])
+    }
+
+    @Test func orderDoesNotDependOnNames() {
+        // The iPad's identity couldn't be read in this run: it must keep its number.
+        let unreadPad = IDeviceInfo(id: pad.id, connections: pad.connections)
+        let renamedPhone = IDeviceInfo(id: phone.id, name: "A phone", productType: "iPhone99,9")
+        let order = IDeviceList.sorted([phone, pad]).map(\.id)
+        #expect(IDeviceList.sorted([phone, unreadPad]).map(\.id) == order)
+        #expect(IDeviceList.sorted([unreadPad, renamedPhone]).map(\.id) == order)
+        #expect(IDeviceList.sorted([IDeviceInfo(id: phone.id), IDeviceInfo(id: pad.id)]).map(\.id) == order)
     }
 
     @Test func text() {

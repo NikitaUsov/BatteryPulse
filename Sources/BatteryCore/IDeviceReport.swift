@@ -80,7 +80,9 @@ public enum IDeviceReport {
             .joined(separator: "\n")
     }
 
-    /// "iPhone18,2 · iOS 27.0.1 (24A350) · USB"; the owner's device name is left out.
+    /// "iPhone18,2 · iOS 27.0.1 (24A350) · USB · ID …801C"; the owner's device name is left out.
+    /// The identifier is shortened as `bpulse --devices` prints it, so the report shows which
+    /// listed device was read; a redacted capture (`--raw`) has none to show.
     static func deviceDescription(_ capture: IDeviceCapture) -> String? {
         let device = capture.device
         var parts: [String] = []
@@ -91,6 +93,11 @@ public enum IDeviceReport {
             parts.append(value)
         }
         if let connection = capture.connection { parts.append(connection.rawValue) }
+        if let identifier = IDeviceList.nonEmpty(device[IDeviceCapture.Key.identifier]?.stringValue),
+            identifier != BatteryReading.redactedPlaceholder
+        {
+            parts.append(IDeviceList.identifierLabel(identifier))
+        }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

@@ -9,8 +9,14 @@ import Foundation
 /// reports only see ``IDeviceInfo`` and ``IDeviceCapture``.
 public protocol IDeviceTransport: Sendable {
     /// The attached devices, one entry per device even when it is attached by USB and Wi-Fi, in
-    /// ``IDeviceList/sorted(_:)`` order. Throws ``IDeviceError``.
-    func devices() async throws -> [IDeviceInfo]
+    /// ``IDeviceList/sorted(_:)`` order (by identifier, so the same order either way). Throws
+    /// ``IDeviceError``.
+    ///
+    /// - Parameter readingIdentity: connect to each device for its name, model and OS version
+    ///   (`bpulse --devices`); a device whose identity isn't read in time is listed by identifier
+    ///   alone (see ``IDeviceListBuilder``). Without it no device is connected to and the entries
+    ///   carry only the identifier and interfaces (`bpulse --device <n>`).
+    func devices(readingIdentity: Bool) async throws -> [IDeviceInfo]
 
     /// Reads the battery of the device with this ``IDeviceInfo/id``. Problems on the device
     /// (not trusted, locked, no answer) are recorded in the capture (``IDeviceCapture/problem``);
@@ -107,6 +113,29 @@ public enum IDeviceReader {
             break
         }
         return info
+    }
+
+    /// The identities for the device list, one device at a time, recorded in `builder` until it
+    /// stops waiting. Devices attached by USB are read first: a device that stops answering is
+    /// most likely on Wi-Fi, and the reads queued behind a stuck one never happen.
+    ///
+    /// - Parameter link: the link for one attachment; made only when its device is read.
+    public static func readIdentities<Item>(
+        of groups: [[IDeviceAttachment<Item>]], into builder: IDeviceListBuilder,
+        link: (IDeviceAttachment<Item>) -> any IDeviceLink
+    ) {
+        guard builder.begin(groups.map { IDeviceAttachment.info(for: $0) }) else { return }
+        // The index breaks ties: devices on the same interface keep their arrival order.
+        let order = groups.indices.sorted { lhs, rhs in
+            let left = (groups[lhs].first?.connection.sortOrder ?? 0, lhs)
+            let right = (groups[rhs].first?.connection.sortOrder ?? 0, rhs)
+            return left < right
+        }
+        for index in order {
+            let group = groups[index]
+            let entry = info(id: group.first?.id ?? "", links: group.map(link))
+            guard builder.record(entry, at: index) else { return }
+        }
     }
 
     /// Reads the battery over each link in turn (USB first) until one returns the battery
@@ -216,6 +245,12 @@ public struct IDeviceAttachment<Item> {
         self.item = item
     }
 
+    /// The list entry for one group from ``grouped(_:)``, made without connecting: identifier
+    /// and interfaces only, so it is listed as an unknown device.
+    public static func info(for group: [Self]) -> IDeviceInfo {
+        IDeviceInfo(id: group.first?.id ?? "", connections: group.map(\.connection))
+    }
+
     /// One group per device in first-seen order, USB first within a group. A device attached by
     /// USB and Wi-Fi is listed twice with the same identifier; a repeated identifier and
     /// connection is dropped. An empty identifier proves nothing, so it gets a group of its own.
@@ -291,5 +326,129 @@ public enum BlockingWork {
             lock.unlock()
             pending?.resume(with: result)
         }
+    }
+}
+
+/// The device list of `devices(readingIdentity: true)` while the transport builds it, and the
+/// caller's wait for it.
+///
+/// The transport discovers the devices, then connects to one device at a time for its identity
+/// (``IDeviceReader/readIdentities(of:into:link:)``), all on its one serial queue. Lockdown calls
+/// have no timeout of their own and can't be interrupted: a device that stopped answering blocks
+/// the queue, and every read behind it waits. So the caller waits for discovery up to the
+/// overall deadline, then at most `identityTimeout` for each identity. When a read overruns, or
+/// the overall deadline passes, the caller gets the list as it stands: the device being read and
+/// those not read yet are listed by identifier alone ("Unknown device"), and the transport skips
+/// the remaining reads once its queue frees up. The trade-off: a stuck device costs the devices
+/// read after it their names, never the list itself.
+public final class IDeviceListBuilder: @unchecked Sendable {
+    // `@unchecked`: every stored `var` is guarded by `lock`.
+    private let lock = NSLock()
+    private let identityTimeout: TimeInterval
+    /// `nil` until discovery ends.
+    private var entries: [IDeviceInfo]?
+    /// Counts discovery and each identity read; a deadline that finds it unchanged ends the wait.
+    private var step = 0
+    /// `nil` once the caller has its answer.
+    private var continuation: CheckedContinuation<[IDeviceInfo], any Error>?
+
+    private init(identityTimeout: TimeInterval) {
+        self.identityTimeout = identityTimeout
+    }
+
+    /// Runs `work` on `queue` and returns the list it builds with ``begin(_:)`` and
+    /// ``record(_:at:)``, sorted (``IDeviceList/sorted(_:)``). Throws what `work` throws, or
+    /// ``IDeviceError/timedOut(seconds:)`` when discovery hasn't ended within `timeout`.
+    public static func run(
+        on queue: DispatchQueue, timeout: TimeInterval, identityTimeout: TimeInterval,
+        _ work: @escaping @Sendable (IDeviceListBuilder) throws -> Void
+    ) async throws -> [IDeviceInfo] {
+        let builder = IDeviceListBuilder(identityTimeout: identityTimeout)
+        return try await withCheckedThrowingContinuation { continuation in
+            builder.wait(with: continuation)
+            queue.async {
+                do {
+                    try work(builder)
+                    builder.workEnded(throwing: nil)
+                } catch {
+                    builder.workEnded(throwing: error)
+                }
+            }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                builder.deadlinePassed(timeout: timeout)
+            }
+        }
+    }
+
+    /// Discovery ended with these devices, unnamed. Returns whether to read their identities:
+    /// `false` once the caller has stopped waiting.
+    public func begin(_ devices: [IDeviceInfo]) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard continuation != nil else { return false }
+        entries = devices
+        advance()
+        return true
+    }
+
+    /// The identity read for the device at `index` in ``begin(_:)``'s list. Returns whether to
+    /// read the next one: `false` once the caller has stopped waiting.
+    public func record(_ info: IDeviceInfo, at index: Int) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard continuation != nil, entries?.indices.contains(index) == true else { return false }
+        entries?[index] = info
+        advance()
+        return true
+    }
+
+    private func wait(with continuation: CheckedContinuation<[IDeviceInfo], any Error>) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.continuation = continuation
+    }
+
+    /// Starts the next read's deadline. Called with `lock` held.
+    private func advance() {
+        step += 1
+        let current = step
+        DispatchQueue.global().asyncAfter(deadline: .now() + identityTimeout) {
+            self.identityOverran(step: current)
+        }
+    }
+
+    private func workEnded(throwing error: (any Error)?) {
+        guard let taken = take() else { return }
+        if let error {
+            taken.continuation.resume(throwing: error)
+        } else {
+            taken.continuation.resume(returning: IDeviceList.sorted(taken.entries ?? []))
+        }
+    }
+
+    private func deadlinePassed(timeout: TimeInterval) {
+        guard let taken = take() else { return }
+        if let entries = taken.entries {
+            taken.continuation.resume(returning: IDeviceList.sorted(entries))
+        } else {
+            taken.continuation.resume(throwing: IDeviceError.timedOut(seconds: Int(timeout.rounded(.up))))
+        }
+    }
+
+    private func identityOverran(step: Int) {
+        guard let taken = take(ifStillAt: step) else { return }
+        taken.continuation.resume(returning: IDeviceList.sorted(taken.entries ?? []))
+    }
+
+    /// Takes the caller's continuation, so it is resumed once; with `step`, only while no read
+    /// has ended since that step.
+    private func take(ifStillAt step: Int? = nil) -> (
+        continuation: CheckedContinuation<[IDeviceInfo], any Error>, entries: [IDeviceInfo]?
+    )? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let pending = continuation, step == nil || step == self.step else { return nil }
+        continuation = nil
+        return (pending, entries)
     }
 }
