@@ -7,5 +7,5 @@
 public enum ReleaseSigning {
     /// A raw 32-byte Curve25519 (Ed25519) signing public key, in base64. The release workflow
     /// reads this line to check that its secret belongs to it, so keep it on one line.
-    public static let publicKey = "QbxzS5y6fUj0ATQD3LpfeX0KRY00D+/P19wnktSMp0s="
+    public static let publicKey = "R3LDmkmupenX1gnEnR7n+gEllH8oIDbWODJoGJ/m+dg="
 }
