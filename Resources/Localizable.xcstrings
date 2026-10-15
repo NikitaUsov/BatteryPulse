@@ -266,6 +266,17 @@
         }
       }
     },
+    "Accessory batteries": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумуляторы аксессуаров"
+          }
+        }
+      }
+    },
     "Adapter": {
       "extractionState": "manual",
       "localizations": {
@@ -1092,6 +1103,17 @@
         }
       }
     },
+    "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд клавиатур, мышей, трекпадов и наушников Bluetooth в панели строки меню и на странице «Аксессуары», а также уведомление о низком заряде по желанию."
+          }
+        }
+      }
+    },
     "Boot status flags reported by the USB-C port controller firmware.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1605,6 +1627,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите BatteryPulse в разделе «Приложения» настроек «Язык и регион»."
+          }
+        }
+      }
+    },
+    "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите стиль «Стандартный», «Матовый», «Полупрозрачный» или «Прозрачный» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол."
           }
         }
       }
@@ -2393,18 +2426,6 @@
         }
       }
     },
-    "Easy on the battery": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Бережнее к аккумулятору"
-          }
-        }
-      }
-    },
     "Effective total system load sample that AccumSystemEffectiveTotalLoad sums; Macs leave it at 0.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2523,6 +2544,17 @@
         }
       }
     },
+    "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все стили значка теперь повторяют размер и молнию системного значка аккумулятора, а «Процент внутри» показывает заряд так же, как macOS."
+          }
+        }
+      }
+    },
     "Everyday work, unplugged.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -2554,6 +2586,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспортировать снимок…"
+          }
+        }
+      }
+    },
+    "Export history": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспорт истории"
           }
         }
       }
@@ -3749,18 +3792,6 @@
         }
       }
     },
-    "Liquid Glass controls": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Элементы управления в стиле Liquid Glass"
-          }
-        }
-      }
-    },
     "Looking for devices…": {
       "extractionState": "manual",
       "localizations": {
@@ -4039,6 +4070,17 @@
         }
       }
     },
+    "Menu bar icons like macOS 27": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значки в строке меню как в macOS 27"
+          }
+        }
+      }
+    },
     "Model": {
       "extractionState": "manual",
       "localizations": {
@@ -4091,18 +4133,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ещё"
-          }
-        }
-      }
-    },
-    "Motion that follows the battery": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Движение вслед за аккумулятором"
           }
         }
       }
@@ -5190,18 +5220,6 @@
         }
       }
     },
-    "Pick the battery, its pack, the charger, the adapter or the SMC from the toolbar.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выберите аккумулятор, его блок, контроллер зарядки, адаптер или SMC в панели инструментов."
-          }
-        }
-      }
-    },
     "Play": {
       "extractionState": "manual",
       "localizations": {
@@ -5705,18 +5723,6 @@
         }
       }
     },
-    "Raw Data by source": {
-      "extractionState": "manual",
-      "comment": "What's New: feature title",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Исходные данные по источникам"
-          }
-        }
-      }
-    },
     "Raw log of recent port-controller events, ordered oldest to newest.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6186,6 +6192,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Накопленная сумма WallEnergyEstimate: оценка мкВт·ч, полученных из розетки."
+          }
+        }
+      }
+    },
+    "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохраняйте поминутные показания или ежедневное состояние аккумулятора в CSV для таблиц или всё сразу в JSON."
           }
         }
       }
@@ -6749,18 +6766,6 @@
         }
       }
     },
-    "The charge rolls to its new value, gauges fill and the bolt draws in when charging starts. Reduce Motion keeps everything in place.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд плавно перекатывается к новому значению, шкалы заполняются, а молния прорисовывается, когда начинается зарядка. С параметром «Уменьшение движения» всё остаётся на месте."
-          }
-        }
-      }
-    },
     "The charts start over. This can't be undone.": {
       "extractionState": "manual",
       "localizations": {
@@ -6801,18 +6806,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загруженный файл повреждён."
-          }
-        }
-      }
-    },
-    "The History period switch sits in the toolbar with a sliding glass selection, and the Demo Mode bar floats in glass.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Переключатель периода в Истории переехал в панель инструментов со скользящим стеклянным выделением, а панель Демо-режима парит в стекле."
           }
         }
       }
@@ -7332,6 +7325,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Включить"
+          }
+        }
+      }
+    },
+    "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите «Считывать аккумуляторы iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
           }
         }
       }
@@ -8018,6 +8022,17 @@
         }
       }
     },
+    "Window styles": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стили окон"
+          }
+        }
+      }
+    },
     "Window to open": {
       "extractionState": "manual",
       "localizations": {
@@ -8025,18 +8040,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открывать"
-          }
-        }
-      }
-    },
-    "Windows you can't see stop reading the battery and stop animating.": {
-      "extractionState": "manual",
-      "comment": "What's New: feature detail",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Окна, которых не видно, перестают опрашивать аккумулятор и не анимируются."
           }
         }
       }

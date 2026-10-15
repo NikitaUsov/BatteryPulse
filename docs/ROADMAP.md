@@ -477,15 +477,17 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 | 0.4.0   | 2026-10-15 | Update check frequency, Install and Relaunch with signed releases, the About window, menu bar content and drawn icon styles, charging shown within seconds from the SMC, Raw Data explanations for the pack, banks, cells and charger, and an iPhone/iPad command-line preview |
 | 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
+| 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
 
-Next: **0.6.0** is about the other devices: iPhone and iPad in the app, remembered with their
-history (Stage 5), the batteries of Bluetooth accessories (Stage 6), and CSV/JSON export of the
-history; plus window styles (Standard, Frosted, Translucent, Clear; Stage 1.5) and the open
-checks on the M5 (a capture at the Charge Limit stop point, a profile in
-Instruments, menu bar icons on light and dark menu bars, widgets across an in-app update).
-**0.6.1** reworks the drawn menu bar icon styles (Stage 1.3). Optional, if a one-day spike on
-the M5 works: the apps using the most energy. Not planned: an iOS app, charge limiting, and
-Developer ID signing until there is a paid developer account.
+Next: **0.6.1** is an optimization and foundation release with no new features: readability,
+speed, energy, security and size, measured before and after (a signpost baseline and an
+Instruments profile on the M5, a size report in CI), following Apple's current guidance for
+SwiftUI, Swift 6.4 concurrency, energy, platform security and build settings. Its first inputs
+are the checks on the M5 that 0.6.0 leaves open: devices and accessories on real hardware, the
+window styles' look and energy, the menu bar icons next to the system item, a capture at the
+Charge Limit stop point (`bpulse --record`), and the widget across the in-app update. Not
+planned: an iOS app, charge limiting, and Developer ID signing until there is a paid developer
+account.
 
 ## Development environment
 
