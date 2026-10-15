@@ -250,8 +250,9 @@ language. To use a different language for BatteryPulse only:
 - **Spread** is the difference between the highest and lowest cell voltage. A few millivolts is
   normal; a spread that keeps growing over months hints at an ageing or unbalanced battery.
 - **Requested charge current and voltage** are what the battery asks the charger for, shown
-  while charging. The current drops as the battery fills up. Macs with Apple silicon ask for the
-  voltage of one cell (4.47 V on a MacBook Air M5), so the label says "per cell".
+  while charging. The current drops as the battery fills up. Some Macs, such as a MacBook Air M5
+  on macOS 27, ask for the voltage of one cell (4.47 V), and the label then says "per cell"; a
+  higher value is for the whole battery.
 
 ## Command-line report
 

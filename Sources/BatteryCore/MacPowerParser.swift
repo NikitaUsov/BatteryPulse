@@ -102,7 +102,7 @@ extension BatteryReading {
 /// sub-dictionary (`RemainingCapacity`, `FullChargeCapacity`, `NominalChargeCapacity`,
 /// `DesignCapacity`); top-level `CurrentCapacity`/`MaxCapacity` are percentages. The temperature,
 /// cell voltages and charger targets moved to child entries (``RegistryChildren``), with the SMC
-/// (``SMCBattery``) as a second source for the cells. Earlier Apple silicon releases exposed
+/// (``SMCBattery``) as a second source for the cells and the temperature (`B0AT`). Earlier Apple silicon releases exposed
 /// `AppleRawCurrentCapacity`/`AppleRawMaxCapacity`, `Temperature` and `CellVoltage` at the top
 /// level; those remain as fallbacks.
 enum MacPowerParser {

@@ -128,6 +128,10 @@ import Testing
         #expect(value("Charger request", in: m5) == nil, "not charging")
         m5.chargingCurrentMA = 2990
         #expect(value("Charger request", in: m5) == "2990 mA at 4.47 V per cell")
+        // No voltage yet: neither "per cell" nor a request line.
+        m5.chargingVoltageMV = 0
+        #expect(!m5.isChargingVoltagePerCell)
+        #expect(value("Charger request", in: m5) == nil)
     }
 
     @Test func derivedTimeIsMarked() {

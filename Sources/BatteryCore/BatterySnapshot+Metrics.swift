@@ -59,7 +59,7 @@ extension BatterySnapshot {
     /// macOS 27 requests it per cell (4470 mV on a MacBook Air M5); a value above any cell's
     /// voltage is for the pack.
     public var isChargingVoltagePerCell: Bool {
-        chargingVoltageMV.map { $0 <= Self.maximumCellChargeVoltageMV } ?? false
+        chargingVoltageMV.map { (1...Self.maximumCellChargeVoltageMV).contains($0) } ?? false
     }
 
     static let maximumCellChargeVoltageMV = 5_000

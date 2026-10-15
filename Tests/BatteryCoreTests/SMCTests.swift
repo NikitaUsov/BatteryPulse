@@ -159,6 +159,16 @@ struct SMCTests {
         #expect(row?.decoded == .celsius(31))
     }
 
+    @Test func sentinelFloatsNeverBecomeZeroDegrees() {
+        // 100.0, NaN and infinity fail every byte order; reversed they are subnormal, not 0 °C.
+        let float = SMCKeyInfo(size: 4, type: "flt ", attributes: 0x85)
+        for value in [Float(100), .nan, .infinity, -127] {
+            let sensor = SMCRawValue(
+                key: "TB0T", info: float, payload: withUnsafeBytes(of: value.bitPattern.littleEndian, Array.init))
+            #expect(SMCBattery.displayNumber(sensor) == nil, "\(value)")
+        }
+    }
+
     @Test func floatsFollowTheAttributeByteOrderToo() {
         let bytes = withUnsafeBytes(of: Float(25.5).bitPattern.bigEndian, Array.init)
         #expect(SMCValueDecoder.number(bytes, info: SMCKeyInfo(size: 4, type: "flt ", attributes: 0x80)) == 25.5)

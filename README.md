@@ -63,7 +63,7 @@ dependencies.
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
   to 10–30 %, when battery service is recommended, and when the Mac runs hot.
 
-**Widget** (new in 0.3, experimental until BatteryPulse is notarized)
+**Widget** (new in 0.3)
 - Small and medium widgets for the desktop and Notification Center: charge, state, when the
   battery will be full or empty, maximum capacity, cycles and temperature.
 

@@ -57,8 +57,8 @@ and `AppleChargerData` (the charge current target and a per-cell charge voltage,
 Confirmed by a capture from the M5 Air (`m5-macos27-on-battery-smc` fixture). The SMC
 (read-only) is the second source: `BC1V`… or `SBA1`… (floats in volts) for the cells, checked
 against the pack voltage, and `B0AT` for the temperature, in 0.1 K (3069 = 33.75 °C with the
-pack at 33.69 °C). Its battery-area sensors `TB*T` matched the pack on the M5 Air but not on
-other Macs, so they stay in Raw Data.
+pack at 33.69 °C). Its battery-area sensors `TB*T` stay in Raw Data: on the M5 Air `TB0T` and
+`TB1T` read like the pack and `TB2T` 1.1 °C lower, and on other Macs they were further off.
 
 \* Read from IOPS `Optimized Battery Charging Engaged`, which macOS only publishes while the
 charge is on hold; not yet seen in a macOS 27 capture.

@@ -174,8 +174,11 @@ public enum SMCValueDecoder {
         case "flt ":
             guard count == 4 else { return nil }
             let value = Float(bitPattern: UInt32(truncatingIfNeeded: unsigned(bytes, order)))
-            // Through the float's shortest decimal form: 3.836 rather than 3.8359999656677246.
-            return value.isFinite ? Double(value.description) ?? Double(value) : nil
+            // A subnormal value is never a real reading: it is what a sentinel such as NaN or
+            // 100.0 becomes in the wrong byte order. Through the float's shortest decimal form:
+            // 3.836 rather than 3.8359999656677246.
+            guard value.isFinite, !value.isSubnormal else { return nil }
+            return Double(value.description) ?? Double(value)
         case "ioft":
             guard count == 8 else { return nil }
             return Double(Int64(bitPattern: unsigned(bytes, order))) / 65_536
@@ -269,7 +272,8 @@ public enum SMCBattery {
     public static let floatCellVoltageKeys: [SMCFourCC] = ["SBA1", "SBA2", "SBA3", "SBA4"]
     /// Battery-area temperature sensors (`flt `, °C). Not the battery's temperature: Linux labels
     /// `TB0T` "Battery Hotspot", they read up to 3 °C off the gauge on an M4 Max, and were reported
-    /// clearly wrong on a MacBook Neo under macOS 27 (on a MacBook Air M5 they matched).
+    /// clearly wrong on a MacBook Neo under macOS 27 (on a MacBook Air M5 `TB0T` and `TB1T` matched
+    /// the pack and `TB2T` read 1.1 °C low).
     /// Shown in Raw Data only.
     public static let temperatureKeys: [SMCFourCC] = ["TB0T", "TB1T", "TB2T", "TB3T"]
     /// The gauge's own temperature, in tenths of a kelvin like the Smart Battery `Temperature()`
