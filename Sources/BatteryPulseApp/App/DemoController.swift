@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import BatteryCore
 import BatteryKit
 import Foundation
@@ -66,9 +67,17 @@ final class DemoController {
     private static let frame: Duration = .milliseconds(200)
     /// The clock on a scene, which only varies its live values once a second.
     private static let sceneTick: Duration = .seconds(1)
-    /// Every change of step, playback or page: the app's 0.35 s state change. A window that
-    /// can't be seen drops it, and views keyed on their own state replace it with their preset.
-    private static let change: Animation = .smooth(duration: 0.35)
+
+    /// The motion of the demo's own transactions, which wrap every change of step, playback or
+    /// page in `change` and each animation frame in `linear(_:)`. A controller can't read
+    /// `\.motion`, so it asks the system for Reduce Motion each time; under it both are `nil`, so
+    /// the demo bar, the page and its layout change at once, and only what fades on its own
+    /// (the bar appearing, symbols, numbers) fades. A window that can't be seen still drops
+    /// every animation at its root (`motionPolicy()`), and views keyed on their own state replace
+    /// these with their own presets.
+    private var motion: MotionPolicy {
+        MotionPolicy(reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
+    }
 
     init(monitor: BatteryMonitor) {
         self.monitor = monitor
@@ -104,9 +113,9 @@ final class DemoController {
     func togglePlayback() {
         if isPlaying {
             stopClock()
-            withAnimation(Self.change) { isPlaying = false }
+            withAnimation(motion.change) { isPlaying = false }
         } else if let step {
-            withAnimation(Self.change) { isPlaying = true }
+            withAnimation(motion.change) { isPlaying = true }
             switch step {
             case .scene:
                 // Give the current scene a full turn before moving on.
@@ -133,7 +142,7 @@ final class DemoController {
         stopClock()
         tourIndex = 0
         // One transaction: the bar dissolves while the real readings come back.
-        withAnimation(Self.change) {
+        withAnimation(motion.change) {
             step = nil
             isPlaying = false
             monitor.setOverride(nil)
@@ -160,7 +169,7 @@ final class DemoController {
         provider.gaugeUpdatedAt = Date()
         // One transaction for the step, the page and the data, so the bar, its title, the
         // checkmark and the page land together with the numbers.
-        withAnimation(Self.change) {
+        withAnimation(motion.change) {
             if let isPlaying { self.isPlaying = isPlaying }
             self.step = step
             pageRequest = PageRequest(page: page, serial: (pageRequest?.serial ?? 0) + 1)
@@ -210,7 +219,8 @@ final class DemoController {
         switch step {
         case .animation(let animation):
             let progress = elapsed / animation.duration
-            withAnimation(.linear(duration: 0.2)) {
+            // Linear up to the next frame, so the charge moves steadily.
+            withAnimation(motion.linear(Self.frame / .seconds(1))) {
                 provider.battery = animation.battery(progress: progress)
             }
             if progress >= 1 {
@@ -219,9 +229,11 @@ final class DemoController {
                 if isPlaying { next() } else { stopClock() }
             }
         case .scene(let scenario):
-            // Keep live values moving, the way real power readings do.
+            // Keep live values moving, the way real power readings do. Like real readings they
+            // change instantly: the variation touches only the watts, which never animate, and
+            // views keyed on their own state still animate a discrete change.
             variation += 1
-            withAnimation(Self.change) { provider.battery = scenario.battery?.varied(variation) }
+            provider.battery = scenario.battery?.varied(variation)
             if isPlaying, elapsed >= sceneLength { next() }
         }
     }

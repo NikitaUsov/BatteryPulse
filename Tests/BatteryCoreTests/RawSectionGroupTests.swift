@@ -8,7 +8,7 @@ import Testing
     }
 
     /// Plugged in, a real capture has every kind of dictionary; on battery the adapter's is empty,
-    /// so its segment goes.
+    /// so its choice goes.
     @Test func realCapturesOfferTheirGroupsInTableOrder() throws {
         #expect(RawSectionGroup.groups(in: try sections(.m5PluggedIn10s)) == RawSectionGroup.allCases)
         #expect(

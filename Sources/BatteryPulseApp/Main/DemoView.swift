@@ -28,7 +28,8 @@ struct DemoView: View {
                         Button("Stop Demo", systemImage: "stop.fill") { demo.stop() }
                     }
                 }
-                // The buttons swap when the demo starts, pauses, resumes or stops.
+                // The buttons swap when the demo starts, pauses, resumes or stops; the row's
+                // layout changes, so under Reduce Motion they swap at once.
                 .animation(motion.change, value: demo.isActive)
                 .animation(motion.change, value: demo.isPlaying)
             }
@@ -66,6 +67,7 @@ struct DemoView: View {
 private struct DemoStepRow: View {
     let step: DemoController.Step
     @Environment(DemoController.self) private var demo
+    @Environment(\.motion) private var motion
 
     var body: some View {
         Button {
@@ -87,7 +89,9 @@ private struct DemoStepRow: View {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
                         .accessibilityLabel("Showing")
-                        .transition(.opacity)
+                        // Its own fade: the row's layout doesn't change, and under Reduce Motion
+                        // the demo's step change carries no animation.
+                        .transition(motion.fadeTransition)
                 }
             }
             .contentShape(.rect)
@@ -101,7 +105,9 @@ private struct DemoStepRow: View {
 ///
 /// The only custom Liquid Glass in the app: a control that floats over content. It materializes
 /// when the demo starts and dissolves when it stops (DemoController changes the step inside an
-/// animation), and the capsule follows the width of each scene's title.
+/// animation), and the capsule follows the width of each scene's title. Under Reduce Motion
+/// DemoController's changes carry no animation: the bar only fades in and out, with a fade of
+/// its own, and the capsule takes each new title's width at once.
 struct DemoControlBar: View {
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
@@ -120,7 +126,7 @@ struct DemoControlBar: View {
                         // a blur.
                         .glassEffectTransition(motion.level == .full ? .materialize : .identity)
                         .padding(.bottom, 14)
-                        .transition(.opacity)
+                        .transition(motion.fadeTransition)
                 }
             }
         }
@@ -156,8 +162,7 @@ struct DemoControlBar: View {
         .padding(.vertical, 10)
     }
 
-    /// One button whose symbol swaps between Play and Pause (DemoController changes it inside an
-    /// animation).
+    /// One button whose symbol swaps between Play and Pause, in place, also under Reduce Motion.
     private var playPauseButton: some View {
         Button {
             demo.togglePlayback()
@@ -167,6 +172,10 @@ struct DemoControlBar: View {
             } icon: {
                 Image(systemName: demo.isPlaying ? "pause.fill" : "play.fill")
                     .contentTransition(motion.symbolSwap)
+                    .animation(motion.crossfade, value: demo.isPlaying)
+                    // Where the button sits follows the bar: when a new title changes the bar's
+                    // width in the same update, the symbol doesn't slide with its own animation.
+                    .geometryGroup()
             }
         }
         .help(demo.isPlaying ? Text("Pause") : Text("Play"))

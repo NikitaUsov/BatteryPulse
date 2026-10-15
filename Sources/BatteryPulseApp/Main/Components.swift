@@ -131,8 +131,13 @@ private struct RingArc: View {
             .rotationEffect(.degrees(-90))
             // The arc grows or shrinks to a new value (a whole percent, a cycle, maximum capacity)
             // and crossfades to a new tier colour. A built-in animatable shape: no body per frame.
+            // Under Reduce Motion the arc snaps and only the colour fades; the inner modifier
+            // wins when both change at once, so the arc never sweeps then.
             .animation(motion.change, value: fraction)
-            .animation(motion.change, value: tint)
+            .animation(motion.crossfade, value: tint)
+            // Where the ring sits is the page's business: when the page's layout changes in the
+            // same update, the arc moves with the track, not with its own animation.
+            .geometryGroup()
     }
 }
 
@@ -225,12 +230,17 @@ struct BatteryGlyph: View {
                 }
             }
             // Scoped to the glyph, which shows nothing that changes with the live readings. The
-            // white bolt's mask moves with the fill.
+            // white bolt's mask moves with the fill. The fill moves, so under Reduce Motion it
+            // snaps (the innermost modifier wins when several values change at once); the tint
+            // and the bolt only fade.
             .animation(motion.change, value: wholePercent)
-            .animation(motion.change, value: tint)
-            .animation(motion.change, value: isCharging)
+            .animation(motion.crossfade, value: tint)
+            .animation(motion.crossfade, value: isCharging)
         }
         .aspectRatio(2.2, contentMode: .fit)
+        // The glyph's place on the page follows the page's animation, not the ones above: a new
+        // tint in the same update as a layout change doesn't slide the glyph.
+        .geometryGroup()
         .accessibilityHidden(true)
     }
 }
@@ -284,7 +294,8 @@ extension CapacityBar.Kind {
 ///
 /// Events animate, the watts don't: the adapter slides in and out when plugging in or out, the
 /// battery arrow turns when the power flow changes direction, the battery symbol swaps at a new
-/// level or charge state and bounces once on reaching full.
+/// level or charge state and bounces once on reaching full. Under Reduce Motion the adapter
+/// fades while the other nodes snap to their new places, and the symbols crossfade.
 struct PowerFlowView: View {
     let snapshot: BatterySnapshot
     let formatter: BatteryFormatter
@@ -320,12 +331,14 @@ struct PowerFlowView: View {
                 Image(systemName: key.symbolName)
                     .contentTransition(motion.symbolSwap)
                     .symbolEffect(.bounce, options: .nonRepeating, value: fullCount)
-                    .animation(motion.change, value: key.symbolName)
+                    .animation(motion.crossfade, value: key.symbolName)
+                    .geometryGroup()
             }
         }
         .frame(maxWidth: .infinity)
         // The adapter slides in from the card's edge, not from beyond it.
         .clipped()
+        // The nodes move to make room for the adapter: no animation under Reduce Motion.
         .animation(motion.change, value: showsAdapter)
         .onChange(of: key.chargeState) { old, new in
             // A one-off extra: not under Reduce Motion or Low Power Mode, nor in a hidden window.
@@ -362,7 +375,11 @@ struct PowerFlowView: View {
                 .font(.title3)
                 .foregroundStyle(value == nil ? .tertiary : .secondary)
                 .contentTransition(motion.symbolSwap)
-                .animation(motion.change, value: pointsRight)
+                .animation(motion.crossfade, value: pointsRight)
+                // The symbol crossfades in place; where the arrow sits follows the row's own
+                // animation, so it doesn't slide under Reduce Motion when the adapter comes and
+                // the direction turns in the same update.
+                .geometryGroup()
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 28)

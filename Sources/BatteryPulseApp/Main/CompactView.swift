@@ -80,6 +80,10 @@ struct CompactView: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
+        // The "Demo" badge sits in the toolbar, away from the numbers; VoiceOver still hears
+        // with the readout that it is simulated. Two Text values, not a ternary of literals, so
+        // the word is localized.
+        .accessibilityValue(demo.isActive ? Text("Demo") : Text(verbatim: ""))
 
         if s.currentCapacityMAh != nil || s.designCapacityMAh != nil {
             Card {

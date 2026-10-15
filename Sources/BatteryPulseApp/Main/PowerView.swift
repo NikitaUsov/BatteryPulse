@@ -24,7 +24,8 @@ struct PowerView: View {
         .formStyle(.grouped)
         // The rows and sections that come with plugging in or a new charge state (the adapter and
         // USB PD sections, the requested charge, power from the adapter, adapter loss) appear and
-        // go once per event. Battery power, voltage, current and temperature change instantly.
+        // go once per event; the rows below them move, so under Reduce Motion it all changes at
+        // once. Battery power, voltage, current and temperature change instantly.
         .animation(motion.change, value: key.isPluggedIn)
         .animation(motion.change, value: key.chargeState)
         .animation(motion.change, value: hasAdapter)
@@ -106,7 +107,7 @@ struct PowerView: View {
                             .foregroundStyle(.tint)
                             .opacity(isActive ? 1 : 0)
                             // Crossfades to the profile the adapter switched to.
-                            .animation(motion.change, value: isActive)
+                            .animation(motion.crossfade, value: isActive)
                             .accessibilityLabel("In use")
                             .accessibilityHidden(!isActive)
                     }
@@ -137,12 +138,12 @@ struct PowerView: View {
             if let lowPower = snapshot.isLowPowerModeEnabled {
                 ValueRow("Low Power Mode", Phrases.onOff(lowPower))
                     .contentTransition(.opacity)
-                    .animation(motion.change, value: lowPower)
+                    .animation(motion.crossfade, value: lowPower)
             }
             if let thermal = snapshot.thermalState {
                 ValueRow("Thermal state", Phrases.thermal(thermal))
                     .contentTransition(.opacity)
-                    .animation(motion.change, value: thermal)
+                    .animation(motion.crossfade, value: thermal)
             }
         }
     }

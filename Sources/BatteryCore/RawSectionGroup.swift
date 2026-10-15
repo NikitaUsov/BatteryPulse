@@ -1,7 +1,7 @@
 /// The kinds of dictionary in the Developer table, for the section switch in its toolbar.
 ///
-/// One segment per kind, in table order, so the bank and cell entries (two to three banks, each
-/// with its cells) share a segment instead of taking one each. The app names the segments; the
+/// One choice per kind, in table order, so the bank and cell entries (two to three banks, each
+/// with its cells) share a choice instead of taking one each. The app names the choices; the
 /// grouping lives here so it is tested against real captures.
 public enum RawSectionGroup: String, Sendable, Hashable, CaseIterable {
     /// `AppleSmartBattery` itself, and any entry below it that is none of the ones below.

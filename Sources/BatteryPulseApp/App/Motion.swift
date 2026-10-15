@@ -9,7 +9,15 @@ import SwiftUI
 // 0.15–0.35 s. It is keyed on `BatteryMotionKey` or on UI state, never on the snapshot (which
 // changes with every 2 s reading), and it goes through `\.motion`, so Reduce Motion turns it into
 // a fade and a hidden window animates nothing. `MotionGuardTests` checks the sources for the
-// rest: no repeating or per-frame animation, nothing in the menu bar label.
+// rest: no repeating or per-frame animation, no animation that bypasses `\.motion`, nothing in
+// the menu bar label.
+//
+// Under Reduce Motion nothing moves. SwiftUI doesn't drop explicit animations for it, and an
+// animation on a container animates every frame in it, so the presets split by what they may
+// animate: `change` moves things and is `nil` under Reduce Motion (the layout snaps into place),
+// `crossfade` only fades and stays. A view that appears or goes while the layout around it
+// changes carries its own fade (`insertion(edge:)`, `fadeTransition`), so it still fades while
+// its neighbours snap.
 
 extension EnvironmentValues {
     /// How much this window animates. `.motionPolicy()` sets it at the root of every window and
@@ -24,15 +32,29 @@ extension EnvironmentValues {
 ///
 /// | Preset | `.full` | `.fade` (Reduce Motion) | `.none` (hidden window) |
 /// |---|---|---|---|
-/// | ``change`` | smooth, 0.35 s | ease in-out, 0.2 s | `nil` |
-/// | ``numbers`` | smooth, 0.25 s | as ``change`` | `nil` |
+/// | ``change`` | smooth, 0.35 s | `nil`: the layout snaps | `nil` |
+/// | ``crossfade`` | smooth, 0.35 s | ease in-out, 0.2 s | `nil` |
+/// | ``numbers`` | smooth, 0.25 s | as ``crossfade`` | `nil` |
 /// | ``quickFade`` | ease in-out, 0.15 s | the same | `nil` |
-/// | ``insertion(edge:)`` | move from `edge` + opacity | opacity | opacity |
+/// | ``linear(_:)`` | linear | `nil` | `nil` |
+/// | ``insertion(edge:)`` | move from `edge` + opacity | opacity with ``crossfade`` | opacity |
+/// | ``fadeTransition`` | opacity with ``crossfade`` | the same | opacity |
+/// | ``replacement`` | fades in, goes at once | the same | at once |
 /// | ``symbolSwap`` | symbol Replace | opacity | identity |
 /// | ``boltTransition`` | symbol Draw On | opacity | opacity |
 extension MotionPolicy {
-    /// State changes: plugging in, a new charge state, a row or section appearing.
+    /// State changes that move or resize something: plugging in, a new charge state, a row or
+    /// section appearing, a ring or a bar growing, a container whose layout changes. `nil` under
+    /// Reduce Motion, so the layout snaps into place; give the view that appears or goes its own
+    /// fade (``insertion(edge:)``, ``fadeTransition``).
     var change: Animation? {
+        allowsMovement ? .smooth(duration: 0.35) : nil
+    }
+
+    /// Changes of opacity or colour only: a tint, a symbol or a label swapping in place, content
+    /// fading in a frame that keeps its size. Under Reduce Motion a 0.2 s fade. Never on a view
+    /// whose size or position changes in the same update; that takes ``change``.
+    var crossfade: Animation? {
         switch level {
         case .full: .smooth(duration: 0.35)
         case .fade: .easeInOut(duration: 0.2)
@@ -42,7 +64,7 @@ extension MotionPolicy {
 
     /// Numbers rolling to their new value; see `numericValue(_:)`.
     var numbers: Animation? {
-        level == .full ? .smooth(duration: 0.25) : change
+        level == .full ? .smooth(duration: 0.25) : crossfade
     }
 
     /// Frequent switches, such as the main window's pages: a short fade, never movement.
@@ -50,10 +72,33 @@ extension MotionPolicy {
         level == .none ? nil : .easeInOut(duration: 0.15)
     }
 
-    /// A view that comes with an event (the adapter when plugging in) slides in from `edge`;
-    /// under Reduce Motion it only fades.
-    func insertion(edge: Edge) -> AnyTransition {
-        level == .full ? .move(edge: edge).combined(with: .opacity) : .opacity
+    /// One step of a value that changes continuously, such as a frame of Demo Mode's charge and
+    /// drain animations: linear over `duration` seconds, up to the next step. Under Reduce
+    /// Motion each step lands at once.
+    func linear(_ duration: Double) -> Animation? {
+        allowsMovement ? .linear(duration: duration) : nil
+    }
+
+    /// A view that comes with an event (the adapter when plugging in) slides in from `edge`.
+    /// Under Reduce Motion it fades with an animation of its own while the views around it snap
+    /// into place. Main actor, like the views that use it.
+    @MainActor func insertion(edge: Edge) -> AnyTransition {
+        allowsMovement ? .move(edge: edge).combined(with: .opacity) : AnyTransition.opacity.animation(crossfade)
+    }
+
+    /// A view that appears or goes with an event while the layout around it changes, such as the
+    /// hero's time line: it fades with an animation of its own, so it still fades under Reduce
+    /// Motion, where the change around it is not animated.
+    @MainActor var fadeTransition: AnyTransition {
+        AnyTransition.opacity.animation(crossfade)
+    }
+
+    /// Content that replaces other content in a window that sizes to its content (Software
+    /// Update): the old content goes at once and the new one fades in where it lands. Nothing is
+    /// laid out twice, so the window resizes once and the buttons below don't move back and
+    /// forth.
+    @MainActor var replacement: AnyTransition {
+        .asymmetric(insertion: AnyTransition.opacity.animation(crossfade), removal: .identity)
     }
 
     /// One SF Symbol replacing another (`contentTransition`).
