@@ -59,7 +59,8 @@ struct WindowLookPreview: View {
     let look: WindowLook
     @Environment(\.colorScheme) private var colorScheme
 
-    static let size = CGSize(width: 96, height: 64)
+    /// Nonisolated: the tile picker sizes every preview from it.
+    nonisolated static let size = CGSize(width: 96, height: 64)
 
     var body: some View {
         let painter = WindowLookPainter(look: look, isDark: colorScheme == .dark)
