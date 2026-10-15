@@ -58,6 +58,8 @@ dependencies.
   sessions; capacity and cycle count day by day.
 - Recorded about once a minute while BatteryPulse runs; kept on your Mac for 10 days (daily
   summaries for good).
+- Export to CSV (minute readings or daily health, in your region's spreadsheet format) or
+  JSON (both), with units in the column names.
 
 **Notifications** (Settings → Notifications, all off until you turn them on)
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls

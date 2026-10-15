@@ -1,3 +1,10 @@
+## What's new in 0.6
+
+- **Export history:** History's new Export menu saves the minute readings or the daily battery
+  health as CSV, in your region's spreadsheet format, or all of it as JSON. The files hold
+  everything BatteryPulse keeps, with units in the column names; `bpulse --export` writes the
+  same from the command line.
+
 ## What's new in 0.5
 
 - **Motion that means something:** the charge rolls to its new value, the battery and the rings
