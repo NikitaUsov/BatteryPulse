@@ -542,6 +542,17 @@
         }
       }
     },
+    "Battery Kiosk Mode dictionary, empty: this battery reports no Kiosk Mode state or counters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Словарь режима Kiosk Mode пуст: аккумулятор не сообщает ни состояния Kiosk Mode, ни его счётчиков."
+          }
+        }
+      }
+    },
     "Battery Kiosk Mode state and its counters of time spent at high charge.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1123,6 +1134,17 @@
         }
       }
     },
+    "Charge accumulator in mAh; reads 0 on every Apple silicon Mac sampled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Счётчик накопленного заряда в мА·ч; на всех проверенных Mac с чипом Apple равен 0."
+          }
+        }
+      }
+    },
     "Charge and battery health on the desktop or in Notification Center.": {
       "extractionState": "manual",
       "localizations": {
@@ -1236,6 +1258,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд, оставшееся время и состояние аккумулятора."
+          }
+        }
+      }
+    },
+    "Charger power from the same telemetry as ChargerVBUS and ChargerIBUS; reads 0 on battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность контроллера зарядки из той же телеметрии, что ChargerVBUS и ChargerIBUS; при работе от аккумулятора равна 0."
+          }
+        }
+      }
+    },
+    "Charger type ID: 12 on M1 Pro, 13 on M2 Pro/Max, 14 on the M4 and M5 Macs sampled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идентификатор типа контроллера зарядки: 12 на M1 Pro, 13 на M2 Pro/Max, 14 на проверенных Mac с M4 и M5."
           }
         }
       }
@@ -1563,6 +1607,17 @@
         }
       }
     },
+    "Copy of Amperage in AppleSmartBatteryPack (macOS 27): average current, negative while discharging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Копия Amperage в AppleSmartBatteryPack (macOS 27): средний ток, при разрядке отрицательный."
+          }
+        }
+      }
+    },
     "Copy of AvgTimeToEmpty inside the macOS 27 BatteryData dictionary.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1571,6 +1626,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Копия AvgTimeToEmpty внутри словаря BatteryData в macOS 27."
+          }
+        }
+      }
+    },
+    "Copy of InstantAmperage in AppleSmartBatteryPack (macOS 27): instant current, negative while discharging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Копия InstantAmperage в AppleSmartBatteryPack (macOS 27): мгновенный ток, при разрядке отрицательный."
           }
         }
       }
@@ -1673,6 +1739,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ток, поступающий в Mac от внешнего адаптера питания."
+          }
+        }
+      }
+    },
+    "Current in mA that tracks Amperage on every Mac sampled; negative while discharging.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток в мА, который на всех проверенных Mac меняется вместе с Amperage; отрицательный при разрядке."
+          }
+        }
+      }
+    },
+    "Current into the charger's input (IBUS), from its power telemetry; reads 0 on battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ток на входе контроллера зарядки (IBUS) по данным его телеметрии питания; при работе от аккумулятора равен 0."
           }
         }
       }
@@ -1997,6 +2085,28 @@
         }
       }
     },
+    "Effective total system load sample that AccumSystemEffectiveTotalLoad sums; Macs leave it at 0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эффективная общая нагрузка системы — замер, из которого складывается AccumSystemEffectiveTotalLoad; на Mac всегда 0."
+          }
+        }
+      }
+    },
+    "Efficiency of the Mac's built-in charger, from the charger's power telemetry; reads 0 on battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "КПД встроенного контроллера зарядки Mac по данным его телеметрии питания; при работе от аккумулятора равен 0."
+          }
+        }
+      }
+    },
     "Elevated": {
       "extractionState": "manual",
       "localizations": {
@@ -2172,6 +2282,17 @@
         }
       }
     },
+    "Filtered-current field that reads 0 on every Apple silicon Mac sampled, even under load.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поле отфильтрованного тока; на всех проверенных Mac с чипом Apple равно 0, даже под нагрузкой."
+          }
+        }
+      }
+    },
     "Firmware version of the battery gauge.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2308,6 +2429,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ёмкость полного заряда в мА·ч (до macOS 27), без учёта резерва."
+          }
+        }
+      }
+    },
+    "Full charge capacity in mAh in AppleSmartBatteryPack (macOS 27); equals FullChargeCapacity (no reserve).": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость полного заряда в мА·ч в AppleSmartBatteryPack (macOS 27); равна FullChargeCapacity (без резерва)."
           }
         }
       }
@@ -2486,6 +2618,17 @@
         }
       }
     },
+    "Gauge resistance field in milliohms; reads 0 on every Apple silicon Mac sampled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поле сопротивления контроллера в мОм; на всех проверенных Mac с чипом Apple равно 0."
+          }
+        }
+      }
+    },
     "Gauge snapshot saved at the last battery-related shutdown (voltage, capacities, temperature).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2506,6 +2649,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Уровень заряда по данным контроллера: доля RemainingCapacity от FullChargeCapacity."
+          }
+        }
+      }
+    },
+    "Gauge status bits as in SBS BatteryStatus: 0x80 initialized, 0x40 discharging or idle, 0x20 fully charged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Биты состояния контроллера, как в SBS BatteryStatus: 0x80 — инициализирован, 0x40 — разрядка или покой, 0x20 — полностью заряжен."
           }
         }
       }
@@ -2741,6 +2895,39 @@
         }
       }
     },
+    "ID of the pack this bank or cell belongs to; matches the AppleSmartBatteryPack entry's ID.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ID аккумулятора, к которому относится эта группа или элемент; совпадает с ID записи AppleSmartBatteryPack."
+          }
+        }
+      }
+    },
+    "ID of this battery pack or charger entry; 0 on MacBooks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ID этой записи аккумулятора или контроллера зарядки; на MacBook — 0."
+          }
+        }
+      }
+    },
+    "Impedance (Ra) field of the gauge that reads 0 on every Apple silicon Mac sampled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поле импеданса (Ra) контроллера, равное 0 на всех проверенных Mac с чипом Apple."
+          }
+        }
+      }
+    },
     "In use": {
       "extractionState": "manual",
       "localizations": {
@@ -2832,6 +3019,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ограничение входного тока, заданное контроллеру зарядки Mac для этого адаптера."
+          }
+        }
+      }
+    },
+    "Input power distribution ratio; reads 100 on every Mac sampled that reports it, charging or not.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коэффициент распределения входной мощности; на всех проверенных Mac, где он есть, равен 100 — и при зарядке, и без неё."
           }
         }
       }
@@ -3182,6 +3380,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "мА·ч"
+          }
+        }
+      }
+    },
+    "Manufacture date: on TI bq gauges, six ASCII digits that read backwards as YYMMDD, years from 1992.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дата производства: у контроллеров TI bq — шесть цифр ASCII, которые в обратном порядке дают ГГММДД; годы отсчитываются от 1992."
           }
         }
       }
@@ -3652,6 +3861,17 @@
         }
       }
     },
+    "Number of cell banks wired in series in the pack; each has its own AppleSmartBatteryBank entry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число последовательно соединённых групп элементов в аккумуляторе; у каждой своя запись AppleSmartBatteryBank."
+          }
+        }
+      }
+    },
     "Number of cells in series, read from the SMC.": {
       "extractionState": "manual",
       "localizations": {
@@ -3747,6 +3967,17 @@
         }
       }
     },
+    "Number of power-telemetry errors; 0 on every MacBook sampled, 84 on a Mac Studio.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число ошибок телеметрии питания; на всех проверенных MacBook — 0, на одном Mac Studio — 84."
+          }
+        }
+      }
+    },
     "Number of roughly once-a-second samples added to AccumulatedSystemLoad.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3755,6 +3986,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Число замеров (примерно раз в секунду), добавленных в AccumulatedSystemLoad."
+          }
+        }
+      }
+    },
+    "Number of roughly once-a-second samples added to PackCurrentAccumulator.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров (примерно раз в секунду), добавленных в PackCurrentAccumulator."
           }
         }
       }
@@ -3779,6 +4021,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Число замеров, добавленных в AccumulatedAdapterEfficiencyLoss и в сумму энергии из розетки."
+          }
+        }
+      }
+    },
+    "Number of samples added to ChargerAccumulatedEfficiency.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число замеров, добавленных в ChargerAccumulatedEfficiency."
           }
         }
       }
@@ -4117,6 +4370,17 @@
         }
       }
     },
+    "Override value for IPDRatio; 255 (0xFF) on every macOS 27 Mac sampled.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Значение, переопределяющее IPDRatio; на всех проверенных Mac с macOS 27 равно 255 (0xFF)."
+          }
+        }
+      }
+    },
     "Overview": {
       "extractionState": "manual",
       "localizations": {
@@ -4124,6 +4388,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Обзор"
+          }
+        }
+      }
+    },
+    "Pack voltage in AppleSmartBatteryPack (macOS 27); equals Voltage and AppleRawBatteryVoltage.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение аккумулятора в AppleSmartBatteryPack (macOS 27); совпадает с Voltage и AppleRawBatteryVoltage."
           }
         }
       }
@@ -4162,14 +4437,13 @@
         }
       }
     },
-    "Per-cell charge voltage limit; ChargingVoltage stays at or below it.": {
+    "Per-cell charge voltage limit; before macOS 27 this key was in ChargerData.": {
       "extractionState": "manual",
-      "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Предел напряжения зарядки на элемент; ChargingVoltage не превышает его."
+            "value": "Предел напряжения зарядки на элемент; до macOS 27 этот ключ находился в ChargerData."
           }
         }
       }
@@ -4421,13 +4695,24 @@
         }
       }
     },
-    "Position of this cell in the series string of the pack.": {
+    "Position of this bank (cell group) in the series string of the pack.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Номер этого элемента в последовательной цепочке аккумулятора."
+            "value": "Номер этой группы элементов в последовательной цепочке аккумулятора."
+          }
+        }
+      }
+    },
+    "Position of this cell among the parallel cells of its bank, counted from 0.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Номер этого элемента среди параллельно соединённых элементов его группы, начиная с 0."
           }
         }
       }
@@ -4768,6 +5053,17 @@
         }
       }
     },
+    "Raw manufacturer data block read from the battery gauge.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Необработанный блок данных производителя, считанный из контроллера аккумулятора."
+          }
+        }
+      }
+    },
     "Raw per-cell impedance tables from the gauge, one 32-byte block per cell.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4869,6 +5165,17 @@
         }
       }
     },
+    "Remaining charge in mAh in AppleSmartBatteryPack (macOS 27); equals RemainingCapacity (no reserve).": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшийся заряд в мА·ч в AppleSmartBatteryPack (macOS 27); равен RemainingCapacity (без резерва)."
+          }
+        }
+      }
+    },
     "Remaining charge in mAh, as reported by the gauge (pre-macOS 27).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4955,6 +5262,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Кольцо"
+          }
+        }
+      }
+    },
+    "Running sum of battery current samples in mA; ÷ PackCurrentAccumulatorCount gives the average current.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма замеров тока аккумулятора в мА; ÷ PackCurrentAccumulatorCount даёт средний ток."
+          }
+        }
+      }
+    },
+    "Running sum of ChargerEfficiency samples; ÷ ChargerAccumEfficiencyCount gives the average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Накопленная сумма замеров ChargerEfficiency; ÷ ChargerAccumEfficiencyCount даёт среднее значение."
           }
         }
       }
@@ -6290,6 +6619,17 @@
         }
       }
     },
+    "Voltage at the charger's input (VBUS), from its power telemetry; reads 0 on battery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напряжение на входе контроллера зарядки (VBUS) по данным его телеметрии питания; при работе от аккумулятора равно 0."
+          }
+        }
+      }
+    },
     "Voltage at the Mac's power input from the adapter.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6371,6 +6711,17 @@
         }
       }
     },
+    "Wattage override for input power distribution; 30000 on every Mac sampled, whatever the adapter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переопределение мощности для распределения входного питания; на всех проверенных Mac — 30000 при любом адаптере."
+          }
+        }
+      }
+    },
     "Watts": {
       "extractionState": "manual",
       "localizations": {
@@ -6389,6 +6740,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Еженедельно"
+          }
+        }
+      }
+    },
+    "Weighted average of the cell's Ra impedance values, in units of 1/1024 ohm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Взвешенное среднее значений импеданса Ra элемента, в единицах 1/1024 Ом."
           }
         }
       }
@@ -6609,6 +6971,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Разрешён ли этому контроллеру порта переход в режим сна с низким энергопотреблением."
+          }
+        }
+      }
+    },
+    "Which dead-battery boot records are present: bit 0 GeneralPayload, bit 1 SMCBootManagementPayload.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Какие записи о загрузке с разряженным аккумулятором присутствуют: бит 0 — GeneralPayload, бит 1 — SMCBootManagementPayload."
+          }
+        }
+      }
+    },
+    "Why the charger hardware lowered its input current limit (Ilim); Apple does not document the values.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Причина, по которой контроллер зарядки аппаратно снизил ограничение входного тока (Ilim); Apple не документирует значения."
           }
         }
       }

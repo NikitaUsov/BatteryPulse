@@ -78,7 +78,7 @@ import Testing
     }
 
     /// Every glossary entry with a display kind must decode the real M5 values it describes.
-    @Test(arguments: [Fixture.m5OnBattery, .m5Charging, .m5OnBatterySMC])
+    @Test(arguments: [Fixture.m5OnBattery, .m5Charging, .m5OnBatterySMC, .m5PluggedIn10s, .m5Unplugged])
     func glossaryKindsDecodeRealValues(fixture: Fixture) throws {
         for row in RawSection.sections(for: try fixture.reading().rawCapture).flatMap(\.rows) {
             guard let info = row.info else { continue }

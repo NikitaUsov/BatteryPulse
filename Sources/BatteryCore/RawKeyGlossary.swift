@@ -3,8 +3,14 @@ import Foundation
 /// What the raw keys in the Developer section mean and how to show their values.
 ///
 /// These keys are undocumented Apple internals. Entries are limited to meanings backed by Apple's
-/// open-source headers, the USB Power Delivery specification, the gauge's technical reference, or
-/// consistency checks against real captures; unknown keys get no explanation rather than a guess.
+/// open-source code and headers, the battery driver's own symbol names, the USB Power Delivery
+/// specification, the gauge's and charger's technical references, or consistency checks against
+/// real captures; unknown keys get no explanation rather than a guess.
+///
+/// Keys of the registry entries below `AppleSmartBattery` are looked up with their class first
+/// (`AppleSmartBatteryPack.BatteryData.Amperage`), then as the plain path (`BatteryData.Qmax`);
+/// only entries whose text is specific to one class carry the prefix.
+///
 /// Summaries are English. The app localizes them through `Resources/Localizable.xcstrings`, which
 /// `LocalizationCatalogTests` keeps in sync.
 public enum RawKeyGlossary {
@@ -143,6 +149,39 @@ public enum RawKeyGlossary {
             Info(.milliampHours, "Full charge capacity in mAh (pre-macOS 27); excludes the reserve.")
         ),
         (
+            "AppleSmartBatteryPack.BatteryData.Amperage",
+            Info(
+                .milliamps,
+                "Copy of Amperage in AppleSmartBatteryPack (macOS 27): average current, negative while discharging.")
+        ),
+        (
+            "AppleSmartBatteryPack.BatteryData.AppleRawBatteryVoltage",
+            Info(
+                .millivolts,
+                "Pack voltage in AppleSmartBatteryPack (macOS 27); equals Voltage and AppleRawBatteryVoltage."
+            )
+        ),
+        (
+            "AppleSmartBatteryPack.BatteryData.AppleRawCurrentCapacity",
+            Info(
+                .milliampHours,
+                "Remaining charge in mAh in AppleSmartBatteryPack (macOS 27); equals RemainingCapacity (no reserve).")
+        ),
+        (
+            "AppleSmartBatteryPack.BatteryData.AppleRawMaxCapacity",
+            Info(
+                .milliampHours,
+                "Full charge capacity in mAh in AppleSmartBatteryPack (macOS 27); equals FullChargeCapacity (no reserve)."
+            )
+        ),
+        (
+            "AppleSmartBatteryPack.BatteryData.InstantAmperage",
+            Info(
+                .milliamps,
+                "Copy of InstantAmperage in AppleSmartBatteryPack (macOS 27): instant current, negative while discharging."
+            )
+        ),
+        (
             "AtCriticalLevel",
             Info(.boolean, "True when the battery is critically low and macOS forces sleep or shutdown.")
         ),
@@ -158,7 +197,13 @@ public enum RawKeyGlossary {
                 .minutes, "Gauge estimate of minutes until full at the average charge current.",
                 sentinels: [65535: .notAvailable])
         ),
-        ("BankID", Info(.identifier, "Position of this cell in the series string of the pack.")),
+        (
+            "BankCount",
+            Info(
+                .count,
+                "Number of cell banks wired in series in the pack; each has its own AppleSmartBatteryBank entry.")
+        ),
+        ("BankID", Info(.identifier, "Position of this bank (cell group) in the series string of the pack.")),
         (
             "BatteryCellDisconnectCount",
             Info(.count, "Number of battery cell disconnect events the gauge has recorded.")
@@ -179,6 +224,10 @@ public enum RawKeyGlossary {
                 sentinels: [65535: .notAvailable])
         ),
         (
+            "BatteryData.BatteryCellDisconnectCount",
+            Info(.count, "Number of battery cell disconnect events the gauge has recorded.")
+        ),
+        (
             "BatteryData.BatteryPower",
             Info(.milliwatts, "Power flowing into (+) or out of (-) the battery, voltage times current.")
         ),
@@ -187,8 +236,16 @@ public enum RawKeyGlossary {
             Info(.millivolts, "Voltage of each series cell; together they add up to the pack voltage.")
         ),
         (
+            "BatteryData.ChargeAccum",
+            Info(.milliampHours, "Charge accumulator in mAh; reads 0 on every Apple silicon Mac sampled.")
+        ),
+        (
             "BatteryData.ChemID",
             Info(.identifier, "Gauge chemistry ID: selects the cell voltage/impedance model used for gauging.")
+        ),
+        (
+            "BatteryData.ChemicalWeightedRa",
+            Info(.other, "Impedance (Ra) field of the gauge that reads 0 on every Apple silicon Mac sampled.")
         ),
         (
             "BatteryData.CurrentCapacity",
@@ -210,12 +267,28 @@ public enum RawKeyGlossary {
         ("BatteryData.FccComp1", Info(.milliampHours, "Full charge capacity without powerd's VAC-T mitigation.")),
         ("BatteryData.FccComp2", Info(.milliampHours, "Full charge capacity with powerd's VAC-T mitigation applied.")),
         (
+            "BatteryData.FilteredCurrent",
+            Info(.other, "Filtered-current field that reads 0 on every Apple silicon Mac sampled, even under load.")
+        ),
+        (
             "BatteryData.FullChargeCapacity",
             Info(.milliampHours, "Gauge-predicted capacity when full, excluding the reserve (PackReserve).")
         ),
         (
             "BatteryData.FullyCharged",
             Info(.boolean, "Numeric copy of FullyCharged: 1 when the gauge reports a full charge.")
+        ),
+        ("BatteryData.GasGaugeFirmwareVersion", Info(.identifier, "Firmware version of the battery gauge.")),
+        (
+            "BatteryData.GaugeFlagRaw",
+            Info(
+                .flags,
+                "Gauge status bits as in SBS BatteryStatus: 0x80 initialized, 0x40 discharging or idle, 0x20 fully charged."
+            )
+        ),
+        (
+            "BatteryData.ISS",
+            Info(.milliamps, "Current in mA that tracks Amperage on every Mac sampled; negative while discharging.")
         ),
         (
             "BatteryData.LifetimeData.AverageTemperature",
@@ -266,7 +339,14 @@ public enum RawKeyGlossary {
             Info(.other, "Total hours the battery gauge has been running since manufacture.")
         ),
         ("BatteryData.LifetimeData.UpdateTime", Info(.unixTime, "When the lifetime data was last refreshed.")),
+        (
+            "BatteryData.ManufactureDate",
+            Info(
+                .other,
+                "Manufacture date: on TI bq gauges, six ASCII digits that read backwards as YYMMDD, years from 1992.")
+        ),
         ("BatteryData.MaxCapacity", Info(.percent, "Scale for CurrentCapacity on Apple silicon; always 100.")),
+        ("BatteryData.MfgData", Info(.hex, "Raw manufacturer data block read from the battery gauge.")),
         (
             "BatteryData.NominalChargeCapacity",
             Info(.milliampHours, "Full charge capacity including the reserve: FullChargeCapacity plus PackReserve.")
@@ -276,8 +356,27 @@ public enum RawKeyGlossary {
             Info(.milliamps, "Input current limit last applied by the PMU (pre-macOS 27 location).")
         ),
         (
+            "BatteryData.PackCurrentAccumulator",
+            Info(
+                .other,
+                "Running sum of battery current samples in mA; ÷ PackCurrentAccumulatorCount gives the average current."
+            )
+        ),
+        (
+            "BatteryData.PackCurrentAccumulatorCount",
+            Info(.count, "Number of roughly once-a-second samples added to PackCurrentAccumulator.")
+        ),
+        (
+            "BatteryData.PackReserve",
+            Info(.milliampHours, "Capacity held back below 0 % that is not counted in FullChargeCapacity.")
+        ),
+        (
             "BatteryData.PassedCharge",
             Info(.milliampHours, "Charge moved since the last DOD0 reading; positive = discharged, negative = charged.")
+        ),
+        (
+            "BatteryData.PermanentFailureStatus",
+            Info(.flags, "Gauge permanent-failure bitfield; any nonzero bit means the battery needs service.")
         ),
         (
             "BatteryData.PresentDOD",
@@ -288,6 +387,10 @@ public enum RawKeyGlossary {
             Info(.milliampHours, "Per-cell maximum chemical capacity learned by the gauge (no-load, full to empty).")
         ),
         (
+            "BatteryData.RSS",
+            Info(.other, "Gauge resistance field in milliohms; reads 0 on every Apple silicon Mac sampled.")
+        ),
+        (
             "BatteryData.RaTableRaw",
             Info(.hex, "Raw per-cell impedance tables from the gauge, one 32-byte block per cell.")
         ),
@@ -295,6 +398,7 @@ public enum RawKeyGlossary {
             "BatteryData.RemainingCapacity",
             Info(.milliampHours, "Charge left in the battery as predicted by the gauge, excluding the reserve.")
         ),
+        ("BatteryData.Serial", Info(.identifier, "Serial number of the battery pack.")),
         (
             "BatteryData.StateOfCharge",
             Info(.percent, "Gauge state of charge: RemainingCapacity as a share of FullChargeCapacity.")
@@ -309,10 +413,18 @@ public enum RawKeyGlossary {
             Info(.other, "Gauge capacity field that reads 0 on every Apple silicon Mac sampled.")
         ),
         (
+            "BatteryData.VacVoltageLimit",
+            Info(.millivolts, "Per-cell charge voltage limit; before macOS 27 this key was in ChargerData.")
+        ),
+        (
             "BatteryData.VirtualTemperature",
             Info(.centidegreesCelsius, "Battery temperature estimate in hundredths of a degree Celsius.")
         ),
         ("BatteryData.Voltage", Info(.millivolts, "Battery pack voltage as seen by the gauge.")),
+        (
+            "BatteryData.WeightedRa",
+            Info(.other, "Weighted average of the cell's Ra impedance values, in units of 1/1024 ohm.")
+        ),
         ("BatteryInstalled", Info(.boolean, "True when a battery is present.")),
         (
             "BatteryInvalidWakeSeconds",
@@ -349,11 +461,51 @@ public enum RawKeyGlossary {
             "CarrierMode.CarrierModeStatus",
             Info(.boolean, "Whether Carrier Mode (a charge hold between two cell voltages) is active.")
         ),
+        (
+            "CellID",
+            Info(.identifier, "Position of this cell among the parallel cells of its bank, counted from 0.")
+        ),
         ("ChargerConfiguration", Info(.milliamps, "Input current limit currently programmed into the charger.")),
         ("ChargerCount", Info(.count, "Number of charger units the battery driver manages; 1 on MacBooks.")),
+        (
+            "ChargerData.ChargerAccumEfficiencyCount",
+            Info(.count, "Number of samples added to ChargerAccumulatedEfficiency.")
+        ),
+        (
+            "ChargerData.ChargerAccumulatedEfficiency",
+            Info(.other, "Running sum of ChargerEfficiency samples; ÷ ChargerAccumEfficiencyCount gives the average.")
+        ),
+        (
+            "ChargerData.ChargerEfficiency",
+            Info(
+                .other,
+                "Efficiency of the Mac's built-in charger, from the charger's power telemetry; reads 0 on battery.")
+        ),
+        (
+            "ChargerData.ChargerHwIlimBackoffReason",
+            Info(
+                .hex,
+                "Why the charger hardware lowered its input current limit (Ilim); Apple does not document the values.")
+        ),
+        (
+            "ChargerData.ChargerIBUS",
+            Info(.other, "Current into the charger's input (IBUS), from its power telemetry; reads 0 on battery.")
+        ),
+        (
+            "ChargerData.ChargerID",
+            Info(.identifier, "Charger type ID: 12 on M1 Pro, 13 on M2 Pro/Max, 14 on the M4 and M5 Macs sampled.")
+        ),
         ("ChargerData.ChargerInhibitReason", Info(.flags, "Bitfield of reasons the charger itself is inhibited.")),
+        (
+            "ChargerData.ChargerPower",
+            Info(.other, "Charger power from the same telemetry as ChargerVBUS and ChargerIBUS; reads 0 on battery.")
+        ),
         ("ChargerData.ChargerResetCounter", Info(.count, "Number of times the charger has been reset.")),
         ("ChargerData.ChargerStatus", Info(.hex, "Raw 64-byte charger status block.")),
+        (
+            "ChargerData.ChargerVBUS",
+            Info(.other, "Voltage at the charger's input (VBUS), from its power telemetry; reads 0 on battery.")
+        ),
         ("ChargerData.ChargingCurrent", Info(.milliamps, "Charge current the gauge is asking the charger for.")),
         ("ChargerData.ChargingVoltage", Info(.millivolts, "Per-cell charge voltage target the gauge requests.")),
         ("ChargerData.IsCharging", Info(.boolean, "Charger-side charging flag; mirrors top-level IsCharging.")),
@@ -376,13 +528,19 @@ public enum RawKeyGlossary {
         ),
         (
             "ChargerData.VacVoltageLimit",
-            Info(.millivolts, "Per-cell charge voltage limit; ChargingVoltage stays at or below it.")
+            Info(.millivolts, "Per-cell charge voltage limit; before macOS 27 this key was in ChargerData.")
         ),
         (
             "CurrentCapacity",
             Info(.percent, "Charge level as a percentage on Apple silicon (the IOKit header still says mAh).")
         ),
         ("CycleCount", Info(.count, "Number of full charge-discharge cycles the battery has gone through.")),
+        (
+            "DeadBatteryBootData.ActivePayloads",
+            Info(
+                .flags,
+                "Which dead-battery boot records are present: bit 0 GeneralPayload, bit 1 SMCBootManagementPayload.")
+        ),
         (
             "DesignCapacity",
             Info(.milliampHours, "Capacity the battery was designed to hold when new (pre-macOS 27 top level).")
@@ -437,6 +595,7 @@ public enum RawKeyGlossary {
         ),
         ("FullyCharged", Info(.boolean, "True when the gauge reports the battery fully charged.")),
         ("GasGaugeFirmwareVersion", Info(.identifier, "Firmware version of the battery gauge.")),
+        ("ID", Info(.identifier, "ID of this battery pack or charger entry; 0 on MacBooks.")),
         (
             "IOGeneralInterest",
             Info(.other, "IOKit's list of clients registered for notifications from this service; not battery data.")
@@ -508,12 +667,22 @@ public enum RawKeyGlossary {
         ),
         ("InstantAmperage", Info(.milliamps, "Instantaneous battery current; negative while discharging.")),
         ("IsCharging", Info(.boolean, "True when the battery is actually being charged right now.")),
+        (
+            "KioskMode",
+            Info(.other, "Battery Kiosk Mode dictionary, empty: this battery reports no Kiosk Mode state or counters.")
+        ),
         ("Location", Info(.identifier, "Battery position for multi-battery machines; 0 on single-battery Macs.")),
         ("ManufacturerData", Info(.hex, "Opaque manufacturer data block read from the battery gauge at boot.")),
         ("MaxCapacity", Info(.percent, "Scale for CurrentCapacity on Apple silicon; always 100.")),
         (
             "NominalChargeCapacity",
             Info(.milliampHours, "Full charge capacity including the reserve: AppleRawMaxCapacity plus PackReserve.")
+        ),
+        (
+            "PackID",
+            Info(
+                .identifier,
+                "ID of the pack this bank or cell belongs to; matches the AppleSmartBatteryPack entry's ID.")
         ),
         (
             "PackReserve",
@@ -688,6 +857,22 @@ public enum RawKeyGlossary {
             Info(.millivolts, "Negotiated adapter voltage that the power-distribution logic budgets with.")
         ),
         (
+            "PowerDistribution.IPDRatio",
+            Info(
+                .other,
+                "Input power distribution ratio; reads 100 on every Mac sampled that reports it, charging or not.")
+        ),
+        (
+            "PowerDistribution.IPDRatioOverride",
+            Info(.other, "Override value for IPDRatio; 255 (0xFF) on every macOS 27 Mac sampled.")
+        ),
+        (
+            "PowerDistribution.IPDWattageOverride",
+            Info(
+                .other,
+                "Wattage override for input power distribution; 30000 on every Mac sampled, whatever the adapter.")
+        ),
+        (
             "PowerTelemetryData.AccumSystemEffectiveTotalLoad",
             Info(.other, "Running sum of SystemEffectiveTotalLoad samples; Macs leave it at 0.")
         ),
@@ -749,8 +934,18 @@ public enum RawKeyGlossary {
             Info(.count, "Number of charging samples added to AccumulatedBatteryPower.")
         ),
         (
+            "PowerTelemetryData.PowerTelemetryErrorCount",
+            Info(.count, "Number of power-telemetry errors; 0 on every MacBook sampled, 84 on a Mac Studio.")
+        ),
+        (
             "PowerTelemetryData.SystemCurrentIn",
             Info(.milliamps, "Current flowing into the Mac from the external power adapter.")
+        ),
+        (
+            "PowerTelemetryData.SystemEffectiveTotalLoad",
+            Info(
+                .other,
+                "Effective total system load sample that AccumSystemEffectiveTotalLoad sums; Macs leave it at 0.")
         ),
         (
             "PowerTelemetryData.SystemEnergyConsumed",
@@ -928,7 +1123,8 @@ public struct RawSection: Sendable, Identifiable, Equatable {
     }
 
     /// `glossaryPrefix` is the class of a child entry: its keys are looked up as
-    /// `AppleSmartBatteryBank.BankID` first and then as the same path on `AppleSmartBattery`.
+    /// `AppleSmartBatteryPack.BatteryData.Amperage` first and then as the same path on
+    /// `AppleSmartBattery`.
     private static func section(
         _ dictionary: PropertyDictionary, id: String, title: String, glossaryPrefix: String? = nil
     ) -> [RawSection] {
