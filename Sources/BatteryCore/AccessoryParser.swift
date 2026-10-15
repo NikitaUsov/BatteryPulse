@@ -48,8 +48,9 @@ public enum AccessoryParser {
             if groups[key] == nil { keys.append(key) }
             groups[key, default: []].append((source, part))
         }
+        let ids = identifiers(for: keys) { groups[$0]?.first?.source ?? [:] }
         let accessories = keys.compactMap { key -> AccessoryBattery? in
-            guard let members = groups[key], let first = members.first else { return nil }
+            guard let members = groups[key], let first = members.first, let id = ids[key] else { return nil }
             var parts: [AccessoryPart] = []
             for part in members.map(\.part) where !parts.contains(where: { $0.role == part.role }) {
                 parts.append(part)
@@ -59,7 +60,7 @@ public enum AccessoryParser {
                 categories.first { $0 != audioCaseCategory }.map(AccessoryKind.init(category:))
                 ?? (categories.isEmpty ? .other : .headphones)
             return AccessoryBattery(
-                id: stableID(for: key),
+                id: id,
                 name: members.lazy.compactMap { string($0.source[Key.name]) }.first ?? "",
                 kind: kind,
                 transport: AccessoryTransport(string(first.source[Key.transport])),
@@ -117,6 +118,34 @@ public enum AccessoryParser {
             isCharging: source[Key.isCharging]?.boolValue ?? false,
             isOnExternalPower: state == externalPowerState,
             isOffline: state == offlineState)
+    }
+
+    /// Each grouping key's ``AccessoryBattery/id``: the ``stableID(for:)`` of the key, except for
+    /// a source tied only by its `Power Source ID`. That number is per boot, and powerd gives a
+    /// source a new one when its publisher creates it again (a reconnect), so the id comes from
+    /// what the source says about itself (name, category, part, transport) and its rank among
+    /// such sources that say the same, in `Power Source ID` order. Alert state keyed on the id
+    /// then survives a reboot or a reconnect.
+    static func identifiers(for keys: [String], source: (String) -> PropertyDictionary) -> [String: String] {
+        var ids: [String: String] = [:]
+        var bySelf: [(key: String, number: Int, description: String)] = []
+        for key in keys {
+            let values = source(key)
+            guard key.hasPrefix("s:"), let number = values[Key.powerSourceID]?.intValue else {
+                ids[key] = stableID(for: key)
+                continue
+            }
+            let description = [Key.name, Key.category, Key.partIdentifier, Key.transport]
+                .map { string(values[$0]) ?? "" }.joined(separator: "|")
+            bySelf.append((key, number, description))
+        }
+        var ranks: [String: Int] = [:]
+        for entry in bySelf.sorted(by: { $0.number < $1.number }) {
+            let rank = ranks[entry.description, default: 0]
+            ranks[entry.description] = rank + 1
+            ids[entry.key] = stableID(for: "d:\(entry.description)#\(rank)")
+        }
+        return ids
     }
 
     /// FNV-1a 64 over the key's UTF-8 bytes, as "acc-" and 16 hex digits. (`Hasher` is seeded
