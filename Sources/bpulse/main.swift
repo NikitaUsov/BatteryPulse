@@ -49,8 +49,8 @@ let usage = """
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found
-    (or no device, or the device couldn't be read, or no accessory reports a battery, or there is
-    no history folder to export).
+    (or no device, or the device couldn't be read, or no accessory reports a battery in the text
+    list, or there is no history folder to export).
     """
 
 enum OutputFormat {
@@ -203,7 +203,8 @@ func renderDevice(_ capture: IDeviceCapture, as format: OutputFormat) throws -> 
 }
 
 /// The accessory list, the parsed list as JSON (no identifiers), or the pseudonymized capture.
-/// An empty list ends with status 2, except for a raw capture: "nothing connected" is evidence too.
+/// An empty list ends with status 2 in the text form only: JSON prints `[]`, a complete answer, and
+/// a raw capture is printed with status 0 too, since "nothing connected" is evidence as well.
 func renderAccessories(_ reading: AccessoryReading, as format: OutputFormat) throws -> Never {
     switch format {
     case .text, .smc:

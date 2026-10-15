@@ -916,7 +916,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "BatteryPulse не удалось считать данные «%@». Повторите попытку чуть позже."
+            "value": "BatteryPulse не удалось считать данные с устройства «%@». Повторите попытку чуть позже."
           }
         }
       }
@@ -5765,7 +5765,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Считывать аккумуляторы iPhone и iPad"
+            "value": "Считывать данные аккумуляторов iPhone и iPad"
           }
         }
       }
@@ -5787,7 +5787,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Считывание аккумуляторов iPhone и iPad выключено."
+            "value": "Считывание данных аккумуляторов iPhone и iPad выключено."
           }
         }
       }
@@ -5827,13 +5827,13 @@
         }
       }
     },
-    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
+    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh or Check Again. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
+            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить» или «Проверить снова». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
           }
         }
       }
@@ -7335,7 +7335,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Включите «Считывать аккумуляторы iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
+            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
           }
         }
       }

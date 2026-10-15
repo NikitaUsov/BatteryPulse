@@ -4,8 +4,9 @@
   connected iPhone or iPad gets its own page in the new Devices section: charge, maximum
   capacity and cycle count as iOS Settings shows them, the capacities in mAh, temperature and
   the date of first use. BatteryPulse remembers each device and keeps its history, which History
-  shows next to the Mac's. It reads a device when it's plugged in and every few minutes while it
-  stays connected, and only while the setting is on.
+  shows next to the Mac's. It reads a device when it's plugged in, then every 5 minutes while
+  battery history is recorded and every minute while its page is open, and only while the setting
+  is on.
 - **Accessory batteries:** Bluetooth keyboards, mice, trackpads and headphones show their charge
   in the menu bar panel and on the Accessories page, with an optional notification when one runs
   low (Settings → Notifications). No Bluetooth permission is needed.

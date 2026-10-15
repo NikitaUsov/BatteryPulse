@@ -214,8 +214,9 @@ menu, and everything BatteryPulse keeps of it (about the last 10 days of reading
 day's health), whatever period the charts show. Export works on what was already recorded when
 recording is off, and in Demo Mode too, since History keeps showing the recorded data. The
 file name tells what's in it and the day of the export, such as
-`BatteryPulse-Mac-samples-2026-10-15.csv`; no file or file name contains your Mac's name or
-serial number.
+`BatteryPulse-Mac-samples-2026-10-15.csv`; a device's file names its model, such as
+`BatteryPulse-iPhone-17-Pro-Max-samples-2026-10-15.csv` (or just `iPhone` or `iPad`). No file or
+file name contains your Mac's or device's name or serial number.
 
 **CSV for spreadsheets.** The file follows your region's number format (System Settings →
 General → Language & Region) at the moment of export, so spreadsheet apps such as Numbers
@@ -264,11 +265,14 @@ where a reading was taken: after a trip, the readings appear in the current time
 the clocks go back, `localTime` repeats an hour, and `time` tells those readings apart.
 
 **JSON.** All History writes one object with `format` (`"BatteryPulse history"`),
-`formatVersion` (1), `exportedAt`, `generator` (BatteryPulse and its version), `source` (what
-the history belongs to: `kind` `"mac"` and the macOS version as `osVersion`), `units` (the unit
-of every key that has one), then `samples` and `days`. Their keys are the CSV columns, without
-`localTime`. Every key is always present: a missing value is `null`, yes and no are `true` and
-`false`, and numbers always use a decimal point.
+`formatVersion` (1), `exportedAt`, `generator` (BatteryPulse and its version; `"bpulse"` from
+[`bpulse --export`](#history-export)), `source` (what the history belongs to: `kind` `"mac"`,
+`"iPhone"` or `"iPad"`; for a device `productType` such as `"iPhone18,2"` and `modelName` such
+as `"iPhone 17 Pro Max"`, both `null` for the Mac; and the system version as `osVersion`, for a
+device the one it had when last seen), `units` (the unit of every key that has one), then
+`samples` and `days`. Their keys are the CSV columns, without `localTime`. Every key is always
+present: a missing value is `null`, yes and no are `true` and `false`, and numbers always use a
+decimal point.
 
 **Compatibility.** Columns and keys are only ever added at the end. If a column is renamed or
 removed, or its meaning changes, `formatVersion` goes up and the release notes say so. Scripts
@@ -300,9 +304,10 @@ devices read before stay in the sidebar with their last values and history.
 
 By cable, a device is read when it's plugged in, then every 5 minutes while battery history is
 recorded, and every minute while its page is on screen. Over Wi-Fi (turn on *Show this iPhone
-when on Wi-Fi* for the device in Finder, by cable, once), a device is never read by itself: it
-shows up as *Connected over Wi-Fi* after **Check Again** or when you open the Devices section,
-and **Refresh** reads it. It must be unlocked and on the same network as the Mac.
+when on Wi-Fi* for the device in Finder, by cable, once), a device is never read by itself:
+**Check Again** on the Devices page reads every device it finds, Wi-Fi included, and **Refresh**
+on a device's page reads that device. A device read before shows up as *Connected over Wi-Fi*
+when you open the Devices section. It must be unlocked and on the same network as the Mac.
 
 If a device doesn't answer in time, BatteryPulse stops reading devices by itself until you click
 **Try Again**, so a device that stopped answering can't keep it busy.
@@ -476,10 +481,13 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 [First launch](#first-launch)). Updating from 0.3 works this way once; from 0.4.0 on, Install
 and Relaunch takes over.
 
-The check and the download of an update you chose to install are the only network requests
-BatteryPulse makes: GitHub sees your IP address, the app's version and your language, as with
-any web request, and nothing else about your Mac is sent. If GitHub limits requests from your
-network, the check waits and tries again later. Each release also lists
+The check and the download of an update you chose to install are the only requests
+BatteryPulse sends to the internet: GitHub sees your IP address, the app's version and your
+language, as with any web request, and nothing else about your Mac is sent. The only other
+connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
+the local network for one connected over Wi-Fi (see
+[Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
+limits requests from your network, the check waits and tries again later. Each release also lists
 `BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
@@ -622,8 +630,8 @@ reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identi
 *group-1*, *accessory-1*, consistently, so the parts of an accessory still belong together;
 serial numbers and addresses are removed. `bpulse --input accessories.xml` shows a saved capture
 again, on any computer. When no accessory reports a battery, the list says so and `bpulse` exits
-with status 2 (`--raw` still saves the empty capture); on a macOS that doesn't report accessory
-batteries to apps it says that, also with status 2.
+with status 2; `--json` prints `[]` and `--raw` saves the empty capture, both with status 0. On a
+macOS that doesn't report accessory batteries to apps, `bpulse` says that, also with status 2.
 
 ## Reporting a problem
 

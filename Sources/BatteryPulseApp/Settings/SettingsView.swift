@@ -197,7 +197,7 @@ struct DeviceSettings: View {
             Text("iPhone and iPad")
         } footer: {
             Text(
-                "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh. BatteryPulse never pairs with a device, and nothing leaves this Mac."
+                "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh or Check Again. BatteryPulse never pairs with a device, and nothing leaves this Mac."
             )
         }
     }
