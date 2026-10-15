@@ -216,9 +216,10 @@ Battery Health by Day:
 | `fullChargeCapacityMAh` | Full-charge capacity, mAh |
 | `cycleCount` | Charge cycles |
 
-**Gaps.** Readings more than 10 minutes apart belong to different stretches: the Mac slept or
-BatteryPulse wasn't running, and the first reading after such a gap names the reason in
-`event`. History's charts break the line at the same places.
+**Gaps.** Readings more than 10 minutes apart belong to different stretches: the Mac slept,
+BatteryPulse wasn't running, or recording was paused (turned off, or during Demo Mode). After
+sleep or a launch, the first reading names the reason in `event`. History's charts break the
+line at the same places.
 
 **Times** are written in the Mac's time zone at the moment of export, each with its own offset
 from UTC, so `time` is exact across daylight-saving changes. BatteryPulse doesn't remember
@@ -417,7 +418,8 @@ swift run bpulse --export json > history.json
 JSON's `source` is then `null`, since `bpulse` can't tell whose history it is. `bpulse` reads
 the files the app writes, so it works while the app runs. The app saves a day's summary at most
 once an hour, so the latest daily row can be up to an hour behind; minute readings are saved
-right away. When there is no history yet, `bpulse` says so and exits with status 2.
+right away. When there is no history folder (BatteryPulse hasn't recorded on this Mac, or the
+folder given doesn't exist), `bpulse` says so and exits with status 2.
 
 ### iPhone and iPad (preview)
 
