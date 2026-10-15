@@ -38,7 +38,7 @@ let usage = """
       -h, --help        Show this help
 
     Exit status: 0 on success, 1 on bad usage or unreadable input, 2 if no battery was found
-    (or no device, or the device couldn't be read, or there is no history to export).
+    (or no device, or the device couldn't be read, or there is no history folder to export).
     """
 
 enum OutputFormat {
@@ -213,7 +213,10 @@ func exportHistory(_ kind: HistoryExportKind, _ options: Options) async -> Never
     let directory =
         options.historyPath.map { URL(fileURLWithPath: $0) }
         ?? HistoryStore.defaultDirectory(bundleIdentifier: HistoryStore.appBundleIdentifier)
-    guard FileManager.default.fileExists(atPath: directory.path) else {
+    // A file in its place has nothing to export either.
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue
+    else {
         fail(
             "bpulse: no history at \(directory.path). BatteryPulse records it while it runs (Settings → Advanced → History).",
             code: 2)
