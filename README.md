@@ -66,8 +66,9 @@ dependencies.
   as iOS Settings shows them, capacities in mAh, temperature, voltage, the charger and the month
   of first use, with its history next to the Mac's on the History page.
 - Read when it's plugged in, then every 5 minutes while history is recorded and every minute
-  while its page is open; over Wi-Fi only when you click Refresh. The device must trust this
-  Mac: BatteryPulse never pairs by itself and keeps no identifier or serial number on disk.
+  while its page is open; over Wi-Fi only when you click Refresh or Check Again. The device
+  must trust this Mac: BatteryPulse never pairs by itself and keeps no identifier or serial
+  number on disk.
 
 **Notifications** (Settings → Notifications, all off until you turn them on)
 - When the charge reaches 80–100 % (unplugging around 80 % slows battery aging), when it falls
@@ -106,9 +107,10 @@ dependencies.
   see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar), plain cards.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only network requests are an optional
-  update check against GitHub releases, which sends nothing about your Mac, and the download
-  of an update you chose to install.
+  history while recording is on, so it uses almost no CPU in the background. The only requests to the internet are an
+  optional update check against GitHub releases, which sends nothing about your Mac, and the
+  download of an update you chose to install. Reading an iPhone or iPad over Wi-Fi (opt-in)
+  stays on your local network.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
   (Settings → General), and a What's New window after updates that add features. From 0.4.0,
   *Install and Relaunch* installs the next version from inside the app; each release is

@@ -5827,13 +5827,13 @@
         }
       }
     },
-    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
+    "Reads a device that trusts this Mac when it's connected by cable, then every 5 minutes while battery history is recorded. Over Wi-Fi, only when you click Refresh or Check Again. BatteryPulse never pairs with a device, and nothing leaves this Mac.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
+            "value": "Устройство, которое доверяет этому Mac, считывается при подключении кабелем, а затем каждые 5 минут, пока записывается история аккумулятора. По Wi-Fi — только по нажатию «Обновить» или «Проверить снова». BatteryPulse никогда не создаёт пару с устройством, и данные не покидают этот Mac."
           }
         }
       }

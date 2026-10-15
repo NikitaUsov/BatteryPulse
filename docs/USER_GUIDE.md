@@ -300,9 +300,10 @@ devices read before stay in the sidebar with their last values and history.
 
 By cable, a device is read when it's plugged in, then every 5 minutes while battery history is
 recorded, and every minute while its page is on screen. Over Wi-Fi (turn on *Show this iPhone
-when on Wi-Fi* for the device in Finder, by cable, once), a device is never read by itself: it
-shows up as *Connected over Wi-Fi* after **Check Again** or when you open the Devices section,
-and **Refresh** reads it. It must be unlocked and on the same network as the Mac.
+when on Wi-Fi* for the device in Finder, by cable, once), a device is never read by itself:
+**Check Again** on the Devices page reads every device it finds, Wi-Fi included, and **Refresh**
+on a device's page reads that device. A device read before shows up as *Connected over Wi-Fi*
+when you open the Devices section. It must be unlocked and on the same network as the Mac.
 
 If a device doesn't answer in time, BatteryPulse stops reading devices by itself until you click
 **Try Again**, so a device that stopped answering can't keep it busy.
@@ -476,10 +477,13 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 [First launch](#first-launch)). Updating from 0.3 works this way once; from 0.4.0 on, Install
 and Relaunch takes over.
 
-The check and the download of an update you chose to install are the only network requests
-BatteryPulse makes: GitHub sees your IP address, the app's version and your language, as with
-any web request, and nothing else about your Mac is sent. If GitHub limits requests from your
-network, the check waits and tries again later. Each release also lists
+The check and the download of an update you chose to install are the only requests
+BatteryPulse sends to the internet: GitHub sees your IP address, the app's version and your
+language, as with any web request, and nothing else about your Mac is sent. The only other
+connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
+the local network for one connected over Wi-Fi (see
+[Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
+limits requests from your network, the check waits and tries again later. Each release also lists
 `BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
