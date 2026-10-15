@@ -132,6 +132,10 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   point
 - [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
+- [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
+  relaunch, instead of sending the user to the browser. A download made by the app itself may
+  skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
+  permission for an ad-hoc signed app
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
