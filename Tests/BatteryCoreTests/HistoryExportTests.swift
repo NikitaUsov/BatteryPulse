@@ -84,6 +84,12 @@ import Testing
                 }
             }
         }
+        // A damaged record with a time far beyond any calendar leaves the field empty instead of
+        // crashing the export.
+        var buffer = ExportBuffer()
+        buffer.appendTime(Date(timeIntervalSince1970: 1e300), offset: 0, iso: true)
+        buffer.appendTime(Date(timeIntervalSince1970: -1e300), offset: 3600, iso: false)
+        #expect(buffer.bytes.isEmpty)
     }
 
     @Test func dialectFollowsTheDecimalSeparator() {

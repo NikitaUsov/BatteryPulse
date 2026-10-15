@@ -402,9 +402,12 @@ struct ExportBuffer {
     }
 
     /// ISO 8601 with the offset ("2026-10-14T13:25:00+03:00", "Z" at UTC), or the local time
-    /// spreadsheets read as a date ("2026-10-14 13:25:00"). Whole seconds, Gregorian.
+    /// spreadsheets read as a date ("2026-10-14 13:25:00"). Whole seconds, Gregorian. Nothing for
+    /// a time no calendar can hold (a damaged record), which `Int` would trap on.
     mutating func appendTime(_ date: Date, offset: Int, iso: Bool) {
-        let local = Int(date.timeIntervalSince1970.rounded()) + offset
+        let interval = date.timeIntervalSince1970.rounded()
+        guard abs(interval) < 1e15 else { return }
+        let local = Int(interval) + offset
         let days = local >= 0 ? local / 86_400 : (local - 86_399) / 86_400
         let seconds = local - days * 86_400
         let (year, month, day) = Self.civil(fromDays: days)
