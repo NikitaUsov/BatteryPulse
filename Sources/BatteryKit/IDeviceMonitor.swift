@@ -412,7 +412,10 @@ public final class IDeviceMonitor {
         if generation == self.generation, case .success(let infos) = result, !infos.isEmpty { await prepareKeys() }
         operation = nil
         isListing = false
-        guard generation == self.generation else { return pump() }
+        guard generation == self.generation else {
+            if Self.timedOut(result) { stall() }
+            return pump()
+        }
         switch result {
         case .failure(let error):
             switch error as? IDeviceError {
@@ -484,6 +487,7 @@ public final class IDeviceMonitor {
         sessions[key]?.isReading = false
         // Turned off or forgotten meanwhile: the result is dropped.
         guard generation == self.generation, !hidden.contains(key), var session = sessions[key] else {
+            if Self.timedOut(result) { stall() }
             recomputeEntries()
             return pump()
         }
@@ -595,6 +599,13 @@ public final class IDeviceMonitor {
         } else {
             sessions[key] = nil
         }
+    }
+
+    /// A call that timed out still holds the transport's queue, even when its result is dropped
+    /// because reading was turned off or the device forgotten meanwhile.
+    private static func timedOut<Success>(_ result: Result<Success, any Error>) -> Bool {
+        if case .failure(let error) = result, case .timedOut? = error as? IDeviceError { return true }
+        return false
     }
 
     private func stall() {

@@ -819,6 +819,27 @@ struct MonitorHarness {
         #expect(h.clock.nextWake != nil)
     }
 
+    @Test func timeOutAfterToggleStillStalls() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await h.startWithInitialScan()
+        await h.transport.script(Self.phone, [.failure(.timedOut(seconds: 60))])
+        await h.transport.hold()
+        h.monitor.read(Self.phoneKey)
+        await h.transport.waitForCalls(4)
+        // Turned off and on while the read is stuck; the initial USB scan wants a list.
+        h.monitor.setEnabled(false)
+        h.monitor.setEnabled(true)
+        let debounceEnd = h.clock.now.addingTimeInterval(IDeviceReadPolicy.attachDebounce)
+        await h.clock.waitForSleeper(until: debounceEnd)
+        h.clock.advance(to: debounceEnd)
+        await h.transport.release()
+        await h.settle()
+        #expect(h.monitor.isStalled, "the stuck call still holds the transport")
+        #expect(await h.transport.calls == ["list", "capture 801C", "list", "capture 801C"])
+    }
+
     @Test func deviceNotFoundMeansDetached() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }
