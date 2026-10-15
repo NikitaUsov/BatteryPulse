@@ -171,9 +171,12 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
-- [ ] Right after the adapter is plugged in, the state reads "Not charging" with the old
-  discharge power for up to a minute, until the gauge's next update. Compare with what macOS
-  reports at the same moment (a timeline from the M5), then show the change at once
+- [ ] The first half minute after plugging in. A timeline from the M5 Air (`pmset` and
+  `ioreg` every 2 s): macOS itself reports "AC attached; not charging" for 29 s, and the gauge
+  keeps the last discharge current (−661 mA) until charging starts (+1947 mA). BatteryPulse
+  shows the same, which looks like a bug: say that charging is starting while no
+  not-charging reason applies (check `NotChargingReason` in a capture from that window), and
+  don't show a discharge power the gauge measured before the adapter was connected
 
 ### Stage 1.3: Menu bar icon styles (0.4)
 
