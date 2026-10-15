@@ -17,7 +17,7 @@ import SwiftUI
 extension EnvironmentValues {
     /// What this window draws. `.windowLook()` sets it on the main and compact windows; every
     /// other window stays Standard.
-    @Entry var windowLook = WindowLookPolicy.standard
+    @Entry var windowLook: WindowLookPolicy = .standard
     /// Clear's shadow and halo under each group of white content; `nil` in the other styles, and
     /// inside a group that already has it.
     @Entry var contentTreatment: ContentTreatment? = nil

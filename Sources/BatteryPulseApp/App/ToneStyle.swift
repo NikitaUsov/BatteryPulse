@@ -12,7 +12,7 @@ import SwiftUI
 extension EnvironmentValues {
     /// The tones of this window's content. `.windowLook()` sets it on the main and compact
     /// windows; every other window (Settings, the menu bar panel) keeps ``ToneMap/standard``.
-    @Entry var tones = ToneMap.standard
+    @Entry var tones: ToneMap = .standard
 }
 
 extension ToneMap {

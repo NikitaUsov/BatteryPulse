@@ -65,9 +65,14 @@ struct WindowLookPreview: View {
     var body: some View {
         let painter = WindowLookPainter(look: look, isDark: colorScheme == .dark)
         Canvas { context, size in
-            painter.paint(in: &context, size: size)
+            // Drawn at 96 × 64 pt and scaled to the frame: four tiles take about the whole width
+            // of a Settings row, so a row a few points narrower shrinks them instead of
+            // overflowing.
+            context.scaleBy(x: size.width / Self.size.width, y: size.height / Self.size.height)
+            painter.paint(in: &context, size: Self.size)
         }
-        .frame(width: Self.size.width, height: Self.size.height)
+        .aspectRatio(Self.size.width / Self.size.height, contentMode: .fit)
+        .frame(maxWidth: Self.size.width, maxHeight: Self.size.height)
         .clipShape(.rect(cornerRadius: 6, style: .continuous))
         .accessibilityHidden(true)
     }
