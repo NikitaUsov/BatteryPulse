@@ -128,15 +128,15 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   readable without privileges, the widget, notification permission for the ad-hoc app
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
-- [ ] Verify on the M5: the widget after an update, and a capture at the macOS Charge Limit stop
-  point
+- [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
+- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
 - [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
   first launch needs no Open Anyway
 
-### Stage 1.2: Updates (0.4)
+### Stage 1.2: Updates and About (0.4)
 
 - [ ] Update check frequency in Settings → General: daily, weekly, monthly or never, in place of
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
@@ -146,6 +146,16 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   relaunch, instead of sending the user to the browser. A download made by the app itself may
   skip the Open Anyway step; to be confirmed on macOS 27, along with the App Management
   permission for an ad-hoc signed app
+- [ ] Keep the widgets on the desktop across an update. Replacing 0.3.0 with 0.3.1 from the DMG
+  removed them (the gallery still offers the widget); find out whether an in-place swap keeps
+  them or only a stable Developer ID signature does, and until then tell the user to add them
+  again
+- [ ] An About BatteryPulse window: version and build, license, links to the project, the User
+  Guide and the release notes, and Check for Updates; from the app menu, the menu bar
+  popover and Settings
+- [ ] Right after the adapter is plugged in, the state reads "Not charging" with the old
+  discharge power for up to a minute, until the gauge's next update. Compare with what macOS
+  reports at the same moment (a timeline from the M5), then show the change at once
 
 ### Stage 1.3: Menu bar icon styles (0.4)
 
@@ -254,8 +264,9 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.3.1   | 2026-10-15 | Fixes from the first run on the M5 Air: per-cell charge voltage, SMC values in Raw Data, compact window labels; the SMC temperature as a fallback |
 
 Next: **0.4.0** brings the battery of a connected iPhone or iPad (Stage 5), a choice of how
-often to check for updates, installing updates from the app (Stage 1.2), and menu bar icon
-styles that can stand in for the system battery item (Stage 1.3). Everything else waits for
+often to check for updates, installing updates from the app, an About window and fixes from
+the 0.3.1 update (Stage 1.2), and menu bar icon styles that can stand in for the system battery
+item (Stage 1.3). Everything else waits for
 later versions.
 
 ## Development environment
