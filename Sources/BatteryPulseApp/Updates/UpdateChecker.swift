@@ -152,7 +152,9 @@ final class UpdateChecker {
     }
 
     private static func fetchLatest(currentVersion: AppVersion) async throws -> ReleaseInfo {
-        var request = URLRequest(url: endpoint, timeoutInterval: 20)
+        // GitHub lets caches keep this answer for a minute; Check Now right after a release would
+        // otherwise still hear about the previous one. Checks are at most daily, so nothing is lost.
+        var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         request.setValue("BatteryPulse/\(currentVersion)", forHTTPHeaderField: "User-Agent")

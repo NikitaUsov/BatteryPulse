@@ -124,6 +124,11 @@ enum WhatsNewPolicy {
         return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current, features: WhatsNew.version)
     }
 
+    /// The version that ran last, before this launch records itself; `nil` on a fresh install.
+    static var lastLaunched: AppVersion? {
+        UserDefaults.standard.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
+    }
+
     /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
     /// release would show What's New twice.
     static func markSeen(_ version: AppVersion) {
