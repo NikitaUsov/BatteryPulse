@@ -26,7 +26,7 @@ Grep confirms all of this. What changed after verification:
 | ID | Verdict | Change |
 |---|---|---|
 | SUI-01 | Corrected | `import os` can't go into `BatteryMonitor.swift` (compiled on Linux); subsystem must be the bundle ID; add the "menu bar only" idle scenario |
-| SUI-02 | Corrected | proposed `.diacriticInsensitive` folding changes search results (Russian й/и, ё/е); keep `localizedCaseInsensitiveContains` on one joined string |
+| SUI-02 | Corrected | proposed `.diacriticInsensitive` folding changes search results (Russian U+0439/U+0438, U+0451/U+0435); keep `localizedCaseInsensitiveContains` on one joined string |
 | SUI-03 | Verified | P1 kept; added the Audio Graphs check for changed series values |
 | SUI-04 | Corrected | the main-actor work is the smaller part; folded in the health-chart dates; `Task.detached`/`@concurrent` cross-reference |
 | SUI-05 | Rejected as written, replaced | recording is on by default and writes a sample about every 60 s, so "reload on new sample" saves no reloads; the real cost is re-decoding JSON (measured ~85–90 ms for 10,080 lines on the Linux VM); merged into energy E13, raised to P1 |
@@ -177,7 +177,7 @@ risk · effort · priority.
   2. Cells show the stored strings. `RawValueText` stays the single producer of those strings.
   3. **Correction:** don't fold with `.diacriticInsensitive`, as research.md proposed. Today's
      `localizedCaseInsensitiveContains` is case-insensitive only. Diacritic folding would make
-     "и" match "й" and "е" match "ё" in Russian, which changes results. Instead build
+     "U+0438" match "U+0439" and "U+0435" match "U+0451" in Russian, which changes results. Instead build
      `searchText = [path, value, decoded ?? "", summary ?? "", englishSummary ?? ""].joined(separator: "\n")`
      and filter with **one** `searchText.localizedCaseInsensitiveContains(query)` per row.
   4. That gives the same results as today's five-way OR, because a search field can't enter

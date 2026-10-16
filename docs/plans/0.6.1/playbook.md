@@ -108,7 +108,7 @@ anything here.
 | UI-7 | In lists and lazy stacks: one subview per `ForEach` element, filtering in the data (never `if` inside a row), setup in `init` (not `onAppear`), stable IDs, no `AnyView`, no absolute offsets. Applies to Devices, Accessories and the popover lists. | Review checklist; SwiftUI instrument while scrolling a long Demo Mode list | SUI-15; W26-321, W23-10160 |
 | UI-8 | Every long-lived `.task` and `Task` has a name. | grep `.task(id:` / `Task {` without `name:` in the app and BatteryKit | SUI-10, SW-08; D-TASK |
 | UI-9 | `@State` is initialized at its declaration or in `init`, never both. | Xcode 27 build has no diagnostics | SUI-09; W26-269 |
-| UI-10 | Raw Data search stays case-insensitive and diacritic-sensitive: one `localizedCaseInsensitiveContains` over the joined row text. Never `.diacriticInsensitive` (it would make Russian и/й and е/ё match). | Unit test with и/й and е/ё | SUI-02 |
+| UI-10 | Raw Data search stays case-insensitive and diacritic-sensitive: one `localizedCaseInsensitiveContains` over the joined row text. Never `.diacriticInsensitive` (it would make Russian U+0438/U+0439 and U+0435/U+0451 match). | Unit test with U+0438/U+0439 and U+0435/U+0451 | SUI-02 |
 | UI-11 | Previews compile only under `#if DEBUG` and never change the release binary. | SZ-04 size row unchanged | SUI-17 |
 | UI-12 | No lifecycle logic on `appearsActive`. Keep the `didBecomeActive` `onReceive`. | Review | SUI-20 (rejected) |
 | UI-13 | *(existing)* Glass only on the control layer, never on content and never glass on glass. Motion only through `\.motion`. Nothing animates in the menu bar label or in a hidden window. Colours in `Main/` go through the tone map. | `MotionGuardTests` | CLAUDE.md |
