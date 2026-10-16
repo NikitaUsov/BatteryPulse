@@ -267,11 +267,12 @@ struct MenuBarSettings: View {
 /// style tiles of macOS: the menu bar's icon styles and the window styles. Every tile gives its
 /// preview the same frame, so the tiles match.
 ///
-/// The tiles are a picker, a control, so their selection is Liquid Glass: one shape behind the
-/// selected tile that flows to the next one, as the selection of a segmented control does. The
-/// tiles keep their standard fill (no glass on glass), and the accent outline still marks the
-/// choice. Under Reduce Motion the outline crossfades and the glass changes in place. The choice
-/// itself is set without animation: only the tiles animate, never what the choice changes.
+/// The tiles are a picker, a control, so their selection is Liquid Glass: the selected tile is a
+/// glass shape with its preview and name on top, and the shape flows to the next tile, as the
+/// selection of a segmented control does. The other tiles keep their standard fill, and the accent
+/// outline still marks the choice. Under Reduce Motion the outline crossfades and the glass
+/// changes in place. The choice itself is set without animation: only the tiles animate, never
+/// what the choice changes.
 struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: View where Value.RawValue == String {
     @Binding var selection: Value
     let values: [Value]
@@ -291,14 +292,18 @@ struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: Vie
                 }
             }
             // With full motion the glass flows to the new tile. Under Reduce Motion nothing moves
-            // (the glass changes in place, see `selectionGlass`), so the outline crossfades.
+            // (the glass changes in place, see `tile(_:)`), so the outline crossfades.
             .animation(motion.crossfade, value: selection)
         }
         .opacity(isEnabled ? 1 : 0.5)
     }
 
+    /// With full motion the selected tile's glass keeps one ID wherever it goes, so the container
+    /// morphs it from tile to tile. Under Reduce Motion each tile's glass is a shape of its own that
+    /// comes and goes in place, without materializing or moving.
     private func tile(_ value: Value) -> some View {
         let isSelected = value == selection
+        let flows = motion.level == .full
         let shape = RoundedRectangle(cornerRadius: PreviewTile.cornerRadius)
         return Button {
             selection = value
@@ -315,7 +320,12 @@ struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: Vie
             .padding(.vertical, 10)
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity)
-            .background(.fill.quaternary, in: shape)
+            // The glass is behind the tile's preview and name, never over them; the selected tile
+            // has no fill of its own, so the glass is its surface.
+            .background(isSelected ? AnyShapeStyle(Color.clear) : AnyShapeStyle(.fill.quaternary), in: shape)
+            .glassEffect(isSelected ? .regular : .identity, in: shape)
+            .glassEffectID(flows && isSelected ? "selection" : value.rawValue, in: glassNamespace)
+            .glassEffectTransition(flows ? .matchedGeometry : .identity)
             .overlay {
                 // Show Borders: every tile gets a visible edge, not only the selected one.
                 if showsBorders {
@@ -325,37 +335,17 @@ struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: Vie
             .overlay {
                 shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
             }
-            .background {
-                if isSelected {
-                    selectionGlass(for: value)
-                }
-            }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(title(value)))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
-
-    /// The glass behind the selected tile. With full motion it keeps one ID wherever it goes, so
-    /// the container morphs it from tile to tile. Under Reduce Motion each tile's glass is a shape
-    /// of its own that comes and goes in place, without materializing or moving.
-    private func selectionGlass(for value: Value) -> some View {
-        let flows = motion.level == .full
-        return Color.clear
-            .glassEffect(.regular, in: .rect(cornerRadius: PreviewTile.cornerRadius + PreviewTile.glassOutset))
-            .glassEffectID(flows ? "selection" : value.rawValue, in: glassNamespace)
-            .glassEffectTransition(flows ? .matchedGeometry : .identity)
-            .padding(-PreviewTile.glassOutset)
-            .transition(flows ? AnyTransition.opacity : .identity)
-    }
 }
 
 /// The tiles' measurements; a generic type can't store them.
 private enum PreviewTile {
     static let cornerRadius: CGFloat = 8
-    /// How far the glass reaches past the selected tile, so it shows around the tile's fill.
-    static let glassOutset: CGFloat = 4
     /// Every preview's height: a window style's drawing (``WindowLookPreview``).
     static let previewHeight: CGFloat = WindowLookPreview.size.height
     /// The menu bar icons are drawn larger in a tile this size; each still takes the same frame
