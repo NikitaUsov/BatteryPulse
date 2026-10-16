@@ -1,4 +1,4 @@
-# Audit "app-chrome": MenuBar, Settings, Welcome and the widget (base 6133b4f)
+# Audit "app-chrome": MenuBar, Settings, Welcome and the widget (base 6133b4f; checked at 7bb2ac7)
 
 Read-only audit. I read all 9 files in the area in full (1,847 lines):
 - `Sources/BatteryPulseApp/MenuBar/`: `MenuBarLabel` (76), `BatteryIconView` (343), `PopoverView` (197),
@@ -41,21 +41,265 @@ work package whose files the change touches (§3.2). All paths below are relativ
 - **AC-03 (app-core):** `LaunchAtLoginModel.refresh()` reads `SMAppService.status` twice. CH-02 below
   is about how many times the Settings views *call* `refresh()`, which multiplies that.
 
-Verdict in one line: the area is small and careful. The menu bar icon is rendered once per state
-change, and `level` only changes on whole percents because `Current Capacity` / `Max Capacity` is in
-percent. Its one energy-relevant defect is the opposite of waste: the menu bar's power poll can
-switch itself off while power is still shown (CH-08). The findings are:
-- a lifecycle bug in the menu bar label, by Apple's documented `Group` semantics (CH-08);
+Verdict in one line: the area is small and careful, except for the two problems the maintainer
+reported for 0.6.1, which both surface here. The menu bar icon is rendered once per state change,
+and `level` only changes on whole percents because `Current Capacity` / `Max Capacity` is in
+percent. The findings are:
+- **P1, user-reported:**
+  - the tile picker's glass selection floods the selected tile (CH-12). The in-progress fix moves
+    the glass under the preview, where its foreground effects still alter the picture;
+  - Clear's dimming leaves white text at 1.0:1 (Light, `7bb2ac7`) to 2.4:1 (the in-progress values)
+    over a bright window. 65 % passes WCAG AA, with a Linux contrast test (CH-13, cross-area);
+  - the window-style tiles copy the policy's tints by hand (CH-14; the in-progress edit already
+    fixes it);
+- a lifecycle bug in the menu bar label, by Apple's documented `Group` semantics (CH-08). It is the
+  area's one energy-relevant defect, and it is the opposite of waste: the menu bar's power poll can
+  switch itself off while power is still shown;
 - one CLAUDE.md rule violation that the guard test misses (CH-01);
 - a likely SwiftUI misuse that multiplies side effects in Settings (CH-02);
 - a stale permission message (CH-03);
 - small, exact cleanups (CH-04 to CH-07, CH-09 to CH-11).
 
-This revision re-checked every line reference of the first pass against `6133b4f` (all hold) and
-added CH-08 to CH-11.
+`Sources/` is identical at `6133b4f` and `7bb2ac7`: `git diff --stat` between them lists only
+`docs/` files. So every line reference in CH-01 to CH-11 holds at both, and those findings are
+unchanged from the earlier pass. This revision adds CH-12 to CH-14, for the maintainer's report and
+for the uncommitted working-tree edits seen while it ran.
 
 ---
 
+## P1: the two problems the maintainer reported for 0.6.1
+
+The 0.6.1 request names two visible problems: "the style picker floods the style itself" and "the
+all-glass style has severe readability problems". Both sit in or next to this area:
+- the tile picker is `PreviewTilePicker` (`Settings/SettingsView.swift`);
+- the window-style tiles are `Settings/WindowLookSettings.swift`;
+- the Clear style is drawn by `App/WindowLook.swift` with the values of
+  `Sources/BatteryCore/WindowLook.swift`.
+
+**Line numbers are at the committed `7bb2ac7`.** While this audit ran, the working tree gained
+uncommitted edits to exactly these files: `SettingsView.swift`, `WindowLookSettings.swift`, both
+`WindowLook.swift`, `WindowLookTests.swift`, CLAUDE.md and the user guide. They are the
+maintainer's in-progress fix. Each finding below says what that edit does and whether it is
+enough.
+
+### CH-12 [bug] The tile picker's glass selection floods the selected tile; drop the glass, keep the outline
+- **Where** (`Settings/SettingsView.swift` at `7bb2ac7`):
+  - `:268-273`: the doc comment ("their selection is Liquid Glass: one shape behind the selected
+    tile … The tiles keep their standard fill (no glass on glass)").
+  - `:283` `@Namespace private var glassNamespace`; `:285-297` the `GlassEffectContainer` around the
+    `HStack`, with `.animation(motion.crossfade, value: selection)` (`:295`) and
+    `.opacity(isEnabled ? 1 : 0.5)` (`:297`).
+  - `:318` the tile's fill is `.fill.quaternary`; `:326` the accent outline of the selected tile;
+    `:328-332` `.background { if isSelected { selectionGlass(for: value) } }`.
+  - `:340-351` `selectionGlass(for:)`: `Color.clear.glassEffect(.regular, in: .rect(cornerRadius: 12))`,
+    `glassEffectID`, the `.matchedGeometry` transition and `.padding(-4)`. `:357-358` `PreviewTile.glassOutset`.
+  - Two pickers use it: Window Style (`WindowLookSettings.swift:19`) and Icon Style
+    (`SettingsView.swift:245`).
+- **Why it floods (at `7bb2ac7`):**
+  - `.fill.quaternary` is the faintest standard fill and mostly transparent. The `.regular` glass
+    behind it shows through the whole tile and a 4 pt rim around it.
+  - So the selected tile becomes a slab of glass, under the preview and its title, with its adaptive
+    tint, highlights and refraction of the Form row. It fills the tile instead of marking it.
+  - In the Window Style picker, a glass slab around "Standard" reads as one more window style.
+- **The in-progress edit isn't enough** (working tree, `SettingsView.swift:325-327`):
+  - It replaces the background glass with `.glassEffect(isSelected ? .regular : .identity, in: shape)`
+    on the tile itself, and the selected tile loses its fill.
+  - Apple documents `glassEffect(_:in:)` as doing two things: it "renders a shape anchored behind
+    a view with the Liquid Glass material" **and** "applies the foreground effects of Liquid Glass
+    over a view". The view here is the preview and its name.
+  - So the miniature of a window style is drawn with glass foreground effects (vibrancy) on a glass
+    surface. That alters the very picture the tile exists to show, which is "floods the style
+    itself" in a new form.
+  - **[unverified on macOS 27]** how strongly the foreground effects change a `Canvas` drawing. The
+    pixel test below decides it.
+  - Both versions also break two CLAUDE.md rules:
+    - Motion: the glass *moves* from tile to tile under `motion.crossfade` (`:295`), but CLAUDE.md
+      says "`crossfade` is for opacity and colour only"; `change` moves things.
+    - Glass: the working tree's version puts content (the preview) on glass, and "never
+      `glassEffect` on content".
+- **Change:** no glass in the picker. The accent outline (`:326`) already marks the choice, and
+  System Settings → Appearance marks its tiles the same way: an outline, no glass. **[check on the
+  M5]** Compare against a screenshot of System Settings → Appearance. Starting from `7bb2ac7`, or by
+  reverting the in-progress hunk:
+  1. `body` becomes the `HStack` alone:
+     ```swift
+     HStack(alignment: .top, spacing: 8) {
+         ForEach(values, id: \.self) { value in
+             tile(value)
+         }
+     }
+     // Only the outline changes, so it crossfades, under Reduce Motion too.
+     .animation(motion.crossfade, value: selection)
+     .opacity(isEnabled ? 1 : 0.5)
+     ```
+  2. Delete the following. Every tile keeps `.fill.quaternary`.
+     - `:328-332`, the `.background { … selectionGlass … }`;
+     - `:339-351`, `selectionGlass` and its doc comment;
+     - `:283`, the `@Namespace`;
+     - `:357-358`, `glassOutset` and its comment.
+  3. Replace the doc comment's second paragraph (`:270-273`) with:
+     `/// The selected tile has an accent outline, as in System Settings → Appearance. No glass: the tiles are content in a form row, and glass behind or under a preview changes the picture it shows. The outline crossfades; the choice itself is set without animation.`
+  4. Glass leaves `SettingsView.swift`, so the guards and docs follow:
+     - `Tests/BatteryCoreTests/MotionGuardTests.swift:38-39`: remove the `SettingsView.swift` entry and
+       its comment from `glassAllowList`.
+     - `:491`: change it to `#expect(flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))`.
+     - CLAUDE.md's Liquid Glass paragraph: drop "`Settings/SettingsView.swift` (the tile pickers'
+       selection)" from the custom-glass list.
+     - `docs/ROADMAP.md:20`: drop "the selection of the tile pickers in Settings".
+  - About 25 lines fewer and no new string.
+  - WP-9's SUI-13 split no longer has to carry an allow-list entry to a new shared-components file.
+- **Measure:**
+  - Linux: `swift test --filter MotionGuardTests` (the flipped `:491` and `allowListedFilesExist`
+    pass) and `swift format lint --strict`.
+  - **Pixel test on the M5** (the acceptance criterion for "doesn't flood the style"). In Settings →
+    General, Light and Dark, read one point of the Clear tile's sky with Digital Color Meter twice:
+    once with Clear unselected and once selected. The values must be identical.
+    - Before (`7bb2ac7`, and the working tree's version) they differ, or the tile visibly changes.
+    - After, they match.
+    - Repeat on one Icon Style tile (Settings → Menu Bar).
+  - Click through all four styles with full motion and with Reduce Motion: the outline crossfades,
+    nothing moves, and the main window changes at once.
+  - With "Battery icon" off, the Icon Style tiles are dimmed.
+  - VoiceOver still reads "selected" on the chosen tile.
+  - Show Borders draws every tile's edge.
+- **Risk:** low. The change is visible: the glass selection from 0.5 goes. That is what the
+  maintainer asked for, and it leaves custom glass only where CLAUDE.md can defend it: the floating
+  Demo Mode bar and the window sheet.
+  - If the maintainer still wants glass here, the pixel test above is the gate the design has to
+    pass.
+- **Owner:** WP-9 (it owns `SettingsView.swift`, the `MotionGuardTests` lists and CLAUDE.md's glass
+  list). Do it before the SUI-13 split. **Rule:** "real bugs" (user-reported); CLAUDE.md Liquid
+  Glass and Motion; native (the System Settings pattern).
+
+### CH-13 [bug] Clear's dimming leaves white text unreadable over a bright window; the in-progress 0.40 / 0.32 still gives 2.4:1 / 2.0:1
+- **Where** (outside this area's files; no work package owns them, see "Owner"):
+  - `Sources/BatteryCore/WindowLook.swift:175-181` (`7bb2ac7`), `sheetTint(systemDark:)` for Clear:
+    `systemDark ? Tint(white: 0.03, opacity: 0.22) : Tint(white: 1, opacity: 0.06)`. That is
+    near-black 22 % in Dark and a *white* wash of 6 % in Light.
+  - `Tests/BatteryCoreTests/WindowLookTests.swift:129-130` pin those values.
+  - `:186-189` `contentTreatment`: halo 0.55 / 0.44 at radius 6; shadow 0.6 at radius 1.
+  - `Sources/BatteryPulseApp/App/WindowLook.swift:95-103` `GlassSheet`: the dimming is the glass's
+    own tint, `Glass.clear.tint(tint)` (`:101`), not a layer.
+  - Clear's text is the system's hierarchical primary and secondary in the forced dark appearance
+    (`ToneMap.swift:240-244`): white at about 85 % and 55 %. Tertiary text is off on the glass
+    (`allowsTertiaryText`).
+  - **The working tree** changes Clear to `Tint(white: 0.03, opacity: systemDark ? 0.32 : 0.4)`, with
+    the tests and the user guide to match. The user guide now says "a dark dimming that keeps the
+    white content readable".
+- **The arithmetic.** It uses sRGB-space blending, which is how Core Animation composites by
+  default, and WCAG 2 contrast.
+  - The worst case is an ordinary one: a white page or window behind the BatteryPulse window. The
+    backdrop under Clear's glass is then `(1 − α)·white + α·0.03`.
+  - Reproduce with the 10-line Python in "Measure".
+
+  | Clear's dimming | primary text (white 85 %) | secondary text (white 55 %) |
+  |---|---|---|
+  | `7bb2ac7` Light: white 6 % | **1.0:1** (white on white) | 1.0:1 |
+  | `7bb2ac7` Dark: near-black 22 % | 1.55:1 | 1.34:1 |
+  | working tree Dark: 32 % | 1.96:1 | 1.57:1 |
+  | working tree Light: 40 % | 2.41:1 | 1.82:1 |
+  | 50 % | 3.21:1 | 2.24:1 |
+  | 60 % | 4.41:1 | 2.83:1 |
+  | **65 %** | **5.22:1** | **3.21:1** |
+  | 70 % | 6.22:1 | 3.66:1 |
+
+  - WCAG AA asks for 4.5:1 for text and 3:1 for large or bold text.
+  - At `7bb2ac7`, Clear in Light is white text on a white wash. That is the reported problem.
+  - The in-progress values roughly double the contrast but stay below 3:1 even for primary text.
+    The user guide's new "keeps the white content readable" would not be true over a bright window.
+  - The halo doesn't close the gap. A 6 pt blur under a 1–2 pt glyph stroke puts only a fraction of
+    its 0.55 peak under the stroke, and the 1 pt shadow helps the edges, not the fills.
+  - **[unverified]** Apple documents `Glass.tint(_:)` as the glass's tint colour, not as a dimming
+    layer, so the effective α may be lower than the number. Apple's guidance for the clear variant
+    over bright content is a separate dimming layer.
+- **Change** (on top of the in-progress edit):
+  1. `WindowLook.swift` (BatteryCore), Clear: `case .clear: Tint(white: 0.03, opacity: 0.65)` in
+     both appearances. The worst case, a white window behind, is the same in Light and Dark.
+     - Replace the doc comment's Clear sentence with: "Clear's dimming is near-black 65 % in both
+       appearances: the least that keeps its white text at 4.5:1 (primary) and 3:1 (secondary)
+       over a white window behind (`WindowLookTests`)."
+     - `WindowLookTests`: expect `Tint(white: 0.03, opacity: 0.65)` for both appearances.
+     - Add this test, which fails at `7bb2ac7` and in the working tree (the file needs
+       `import Foundation` for `pow`):
+       ```swift
+       /// White text over a white window behind Clear's dimming (sRGB blend, WCAG contrast).
+       @Test(arguments: [false, true])
+       func clearKeepsTextReadableOverAWhiteWindow(systemDark: Bool) throws {
+           let tint = try #require(policy(.clear).sheetTint(systemDark: systemDark))
+           func linear(_ c: Double) -> Double { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+           let backdrop = (1 - tint.opacity) + tint.opacity * tint.white
+           func contrast(text opacity: Double) -> Double {
+               let text = opacity + (1 - opacity) * backdrop
+               return (linear(text) + 0.05) / (linear(backdrop) + 0.05)
+           }
+           #expect(contrast(text: 0.85) >= 4.5)  // primary
+           #expect(contrast(text: 0.55) >= 3.0)  // secondary
+       }
+       ```
+  2. Make the number real: measure first, and change `GlassSheet` only if the measurement says so.
+     - On the M5, put a Clear window over a white TextEdit page. Read the backdrop with Digital
+       Color Meter (sRGB) in a gap between groups.
+     - Expected: about 94 of 255 at α = 0.65, and about 156 at 0.40.
+     - If the reading is more than about 10 above that, the glass tint is weaker than its number.
+       Then draw the dimming as Apple's dimming layer. `GlassSheet` takes `Glass.clear` without a
+       tint and adds `.overlay { if let tint { Rectangle().fill(tint) } }` before `.ignoresSafeArea()`.
+     - Do that for Clear only: pass `dimsWithLayer: policy.effective == .clear` from
+       `WindowBackground` (`:86`). Translucent keeps its glass tint, so its look doesn't change
+       unasked.
+  3. `docs/USER_GUIDE.md:149`, Clear:
+     - "almost sharp" becomes "sharp but dimmed, so white text stays readable over bright windows";
+     - drop "while the glass is a little lighter or smokier with the system appearance": it is the
+       same in both now.
+     - No UI string changes. The Settings footer ("The hardest to read, and uses more energy.")
+       stays true.
+- **Measure:**
+  - Linux: `swift test --filter WindowLookTests`. The new test fails before (2.41 and 1.96 for
+    primary text in the working tree, 1.0 at `7bb2ac7`) and passes after.
+  - The table: `python3 -I -c` with `lin(c) = c/12.92 if c <= 0.04045 else ((c+0.055)/1.055)**2.4`,
+    `bg = (1-a) + a*0.03`, `text = t + (1-t)*bg`, `(lin(text)+0.05)/(lin(bg)+0.05)`.
+  - On the M5, test Overview, Power, History, Health and one device page in Clear, Light and Dark,
+    over a white TextEdit page and over a busy photo wallpaper:
+    - Accessibility Inspector → Audit → Contrast on each page, before and after: fewer contrast
+      warnings after.
+    - Screenshots for the maintainer's OK.
+  - The Digital Color Meter reading from step 2.
+  - S4w (playbook §2.4): a plain fill adds no blur pass, so expect no change in Clear's energy or
+    hitches.
+- **Risk:** medium, and only visual. Clear becomes clearly darker. The desktop still shows through
+  sharp, at 35 % of its brightness.
+  - If the maintainer wants more desktop between groups, there is an alternative:
+    - Keep the sheet at 0.40 and add a near-black plate at 0.42 under each group
+      (`Card`/`CardGroup`/`LookForm` in Clear).
+    - That gives `1 − 0.60 × 0.58 = 0.65` under the content and 0.40 in the gutters.
+    - But a plate is a surface, which Clear's design avoids today (`groupSurface == .none`), and it
+      touches `Main/`.
+  - Either way, the contrast test pins the floor.
+- **Owner:** unowned. Playbook §3.2 lists neither `BatteryCore/WindowLook.swift` nor
+  `App/WindowLook.swift`. Give it to WP-9, which already re-measures the four styles' screens (S4w),
+  or to a one-item package before Phase B. **Rule:** "real bugs" (user-reported); CLAUDE.md
+  "Content stays free of glass and materials" (the fix is a plain fill, not more glass).
+
+### CH-14 [readability] The window-style tiles copy the policy's tints by hand; keep the in-progress change that reads them
+- **Where:** `Settings/WindowLookSettings.swift:150-159` (`7bb2ac7`).
+  - The Translucent tile is `isDark ? .black.opacity(0.45) : .white.opacity(0.45)` (`:155`) and the
+    Clear tile is `isDark ? Color(white: 0.03).opacity(0.22) : .white.opacity(0.06)` (`:158`), both
+    by hand.
+  - At `7bb2ac7` they match `WindowLookPolicy.sheetTint` only by copy. Any change to Clear, such as
+    the in-progress edit or CH-13, leaves the tile showing the old, lighter Clear.
+  - The working tree already replaces both literals with
+    `WindowLookPolicy(setting: look, reduceTransparency: false, increaseContrast: false).sheetTint(systemDark: isDark)`
+    (working-tree `:150-162`). That is the right change. The override is left out because the tile
+    shows the style as chosen, and `isDark` is the system appearance, which Settings keeps.
+- **Change:** keep that hunk when the in-progress edit is committed. If it is dropped, make the same
+  change. Ten lines, no new string. The marks' 1.5 pt shadow (`:107-110`) stays: it is a miniature
+  of the real halo, not a copy.
+- **Measure:**
+  - The Mac build compiles (CI macOS job).
+  - On the M5, Settings → General, Light and Dark: the Clear tile's sky darkens along with each
+    change to `sheetTint` (in-progress values, then CH-13's), with no edit to this file.
+  - The Standard, Frosted and Translucent tiles are pixel-identical to 0.6.0 in screenshots.
+- **Risk:** none; the preview is a static `Canvas`.
+- **Owner:** WP-9. **Rule:** readability (a value duplicated by hand).
 
 ## P2
 
@@ -421,7 +665,7 @@ added CH-08 to CH-11.
   change the localized key. Keep.
 - **`PreviewTilePicker`**: buttons with `.isSelected` are announced correctly. An
   `accessibilityRepresentation { Picker … }` would change the VoiceOver experience without a
-  reported problem. Keep. The custom glass selection is on CLAUDE.md's allow list.
+  reported problem. Keep. (The glass selection does not stay: CH-12.)
 - **`WindowLookPreview`**: four static `Canvas` drawings, two with a blur filter. They are redrawn
   only on an appearance change. Keep.
 - **`AppIconView`**:
