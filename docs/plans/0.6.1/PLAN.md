@@ -302,11 +302,14 @@ B3.
   review of each `@concurrent` cover it.
 - **Parallel with:** WP-UR.
 
-#### WP-UR: The two user-reported look bugs (P1)
+#### WP-UR: The user-reported look bugs (P1)
 
-- **Goal:** the tile picker no longer floods the style it shows, and Clear stays readable over a
-  white window.
-- **Items** (two commits, so each can be reverted alone):
+- **Goal:** the tile picker no longer floods the style it shows, Clear stays readable over a
+  white window, and a glass-sheet window minimizes without a black frame.
+- **The maintainer's choice comes first.** CH-12 (glass or an accent outline only) and CH-13
+  (Clear at 0.40/0.32, about 0.50, or 0.65) were put to the maintainer on 2026-10-16. Their answer
+  replaces the defaults below and gates G10 and G11; without an answer, the defaults stand.
+- **Items** (one commit each, so each can be reverted alone):
   - **CH-12**, on top of `ec61436`: remove the tile picker's selection glass.
     - Delete the `GlassEffectContainer`, `@Namespace glassNamespace`, `let flows`,
       `.glassEffect`, `.glassEffectID` and `.glassEffectTransition`, and the glass comments.
@@ -330,16 +333,38 @@ B3.
     over untinted `Glass.clear` inside `GlassSheet`, for Clear only (the verified audit's step 3);
     the contrast test then holds by construction. Its macOS job must be green. D3 merges it only
     under G11.
+  - **UR-3, black frame on minimize** (reported 2026-10-16 on 0.6.0, M5): in Clear, minimizing the
+    window (the yellow button or Command-M) turns its background black first, then the genie
+    animation runs.
+    - Likely cause, unverified: the minimize animation works from a snapshot of the window's own
+      layers. The glass sheet's backdrop (the desktop sampled behind the window) is not part of it,
+      so the sheet falls back to its tint, near-black in Clear's forced dark appearance.
+    - First establish the extent from the code and Apple's documentation: does the same apply to
+      Translucent (same sheet) and to Frosted (a material behind the window)? The M5 answers it in
+      session step V4.
+    - Candidate fixes, smallest first, choosing the first that is documented to work:
+      (a) observe `NSWindow.willMiniaturizeNotification` and `didDeminiaturizeNotification` for the
+      tracked window and, between them, draw the sheet's place as a still fill in the window's own
+      tone (no glass), so the snapshot has something to show; (b) make sure the window stays
+      non-opaque with a clear `backgroundColor` while a glass sheet is shown, if SwiftUI leaves it
+      opaque; (c) if every glass window on macOS 27 does this, write it down in USER_GUIDE and the
+      ROADMAP decisions and change nothing.
+    - The swap must not animate (a background swap is not a motion event) and must not survive
+      a restore; Standard and Frosted stay untouched unless step one shows they are affected.
 - **Owns:** the tile picker in `Settings/SettingsView.swift`, `BatteryCore/WindowLook.swift`,
-  `GlassSheet` in `App/WindowLook.swift` (variant branch only), `WindowLookTests`, the glass list in
-  `MotionGuardTests`, and the glass-list lines of CLAUDE.md, ROADMAP and USER_GUIDE.
+  `App/WindowLook.swift` (`GlassSheet` on the variant branch; UR-3's minimize handling),
+  `WindowLookTests`, the glass list in `MotionGuardTests`, and the glass-list lines of CLAUDE.md,
+  ROADMAP and USER_GUIDE.
 - **Gates:** G10 and G11 (§3.6), decided by the maintainer in the session.
 - **Acceptance:**
   - `swift test --filter "MotionGuardTests|WindowLookTests"`, the lint and the macOS job pass, on
     both branches.
-  - `git grep -h -o -F glassEffect -- Sources/BatteryPulseApp/Settings | wc -l` prints 0.
+  - `git grep -h -o -F glassEffect -- Sources/BatteryPulseApp/Settings | wc -l` prints 0 (only if
+    the maintainer chose the accent outline).
+  - UR-3: session step V4 shows no black frame when minimizing and restoring the main and the
+    compact window in each style, in Light and Dark.
   - No string changes.
-- **Effort:** S, 2–3 runs. **Risk:** low; only the look changes, and only after the maintainer signs
+- **Effort:** S–M, 3–4 runs (UR-3 adds one). **Risk:** low; only the look changes, and only after the maintainer signs
   off.
 - **Parallel with:** WP-1. It must merge before WP-9.
 
@@ -1174,7 +1199,9 @@ in; Digital Color Meter open with "Display native values".
 3. **V2, Clear** (4 min): `bash docs/plans/0.6.1/m5-session.sh v2`. Window Style Clear, the main window over a blank white
    TextEdit page, Light then Dark. Read a gap between groups and type both values (expected ≈ 94).
    Is the text readable? Then look once over a busy part of the desktop. Sign off (G11).
-4. **V4, the chart readout** (4 min): `bash docs/plans/0.6.1/m5-session.sh v4`. History 24 h with the pointer over a
+4. **V4, the chart readout and minimizing** (6 min): `bash docs/plans/0.6.1/m5-session.sh v4`. In
+   each style, minimize and restore the main window with Shift held (the slow genie animation):
+   no black frame (UR-3). History 24 h with the pointer over a
    chart: one screenshot per style (Standard, Frosted, Translucent, Clear) in Light and in Dark. Is
    the readout readable, above all on Clear? Are Frosted's and Translucent's sidebar and toolbar
    acceptable (0.6.0 open check)? Approve (G12).
@@ -1512,6 +1539,7 @@ Package names are those of §3. "Rider" means it ships with that package unless 
 | CH-11 | WP-9 (full) | P3 | Reuse `SettingsPage` |
 | CH-12 | WP-UR | P1 | G10 |
 | CH-13 | WP-UR | P1 | G11 |
+| UR-3 | WP-UR | P1 | Black frame on minimize in Clear (maintainer, 2026-10-16); session V4 |
 | CB-02 | WP-12 (ROADMAP 0.7 entry) | P3 | No code in 0.6.1 |
 | CB-04 | WP-1 | P2 | `bpulseTests`, parser table |
 | CB-05 | WP-5 | P3 | `CaptureFormat.swift` |
