@@ -14,7 +14,7 @@ public enum WindowLook: String, CaseIterable, Sendable {
     case frosted
     /// One sheet of clear Liquid Glass with a dimming layer; colours kept, no cards.
     case translucent
-    /// One sheet of clear Liquid Glass without dimming; all content turns white.
+    /// One sheet of clear Liquid Glass with a dark dimming; all content turns white.
     case clear
 
     /// Unknown or missing stored values read as ``standard``.
@@ -164,19 +164,21 @@ public struct WindowLookPolicy: Equatable, Sendable {
         ToneMap(style: toneStyle, onGlassSheet: usesGlassSheet)
     }
 
-    /// Clear puts a soft shadow under each group of white content, its only legibility aid.
+    /// Clear puts a soft shadow under each group of white content, on top of its dimming.
     public var shadowsContent: Bool {
         effective == .clear
     }
 
     /// The glass sheet's tint for the system appearance: Translucent's dimming layer (black 45 %
-    /// in Dark, a white wash of 45 % in Light) or Clear's faint tone (near-black 22 % in Dark,
-    /// white 6 % in Light). `nil` without a sheet.
+    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming (near-black 40 % in Light,
+    /// 32 % in Dark, where the glass is already smokier). Clear's content is white in both, so
+    /// a white wash would leave it unreadable over a bright desktop; the dimming keeps the glass
+    /// colourless and the desktop visible. `nil` without a sheet.
     public func sheetTint(systemDark: Bool) -> Tint? {
         switch effective {
         case .standard, .frosted: nil
         case .translucent: Tint(white: systemDark ? 0 : 1, opacity: 0.45)
-        case .clear: systemDark ? Tint(white: 0.03, opacity: 0.22) : Tint(white: 1, opacity: 0.06)
+        case .clear: Tint(white: 0.03, opacity: systemDark ? 0.32 : 0.4)
         }
     }
 
@@ -189,8 +191,8 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 }
 
-/// Clear's legibility aid: with no dimming layer, each group of white content (a card, a Form
-/// row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
+/// Clear's second legibility aid, on top of its dimming: each group of white content (a card, a
+/// Form row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
 /// composited pair per group, never per text, and never on the sidebar or the toolbar.
 public struct ContentTreatment: Equatable, Sendable {
     public let shadowOpacity: Double

@@ -101,7 +101,7 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   Clear; code name `WindowLook`, never `WindowStyle`, which is SwiftUI's), decided by
   `WindowLookPolicy` in BatteryCore: Frosted is a standard material behind the window
   (`containerBackground(_:for: .window)`); Translucent and Clear are one `.clear` glass sheet
-  behind the whole window, Translucent with a dimming tint, Clear with only a faint tone, the
+  behind the whole window, Translucent with a dimming tint, Clear with a dark dimming, the
   window in the dark appearance, a graphite control tint (never white) and every colour through
   the tone map (`\.tones`, `App/ToneStyle.swift`; no system colour names in `Main/`,
   `App/Localized.swift` or `App/DemoController.swift`). The sheet is the only glass under other

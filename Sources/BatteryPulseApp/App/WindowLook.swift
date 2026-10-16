@@ -81,7 +81,7 @@ private struct WindowBackground: ViewModifier {
                     for: .window)
         case .glassSheet:
             // Translucent and Clear: one sheet of clear glass behind the sidebar, the toolbar and
-            // the content, tinted with Translucent's dimming layer or Clear's faint tone.
+            // the content, tinted with Translucent's dimming layer or Clear's dark dimming.
             content.containerBackground(for: .window) {
                 GlassSheet(tint: policy.sheetTint(systemDark: systemDark).map { Color($0) })
             }

@@ -126,8 +126,10 @@ import Testing
         typealias Tint = WindowLookPolicy.Tint
         #expect(policy(.translucent).sheetTint(systemDark: true) == Tint(white: 0, opacity: 0.45))
         #expect(policy(.translucent).sheetTint(systemDark: false) == Tint(white: 1, opacity: 0.45))
-        #expect(policy(.clear).sheetTint(systemDark: true) == Tint(white: 0.03, opacity: 0.22))
-        #expect(policy(.clear).sheetTint(systemDark: false) == Tint(white: 1, opacity: 0.06))
+        // Clear's content is white in both appearances, so its dimming is dark in both: a white
+        // wash left it unreadable over a bright desktop on the M5.
+        #expect(policy(.clear).sheetTint(systemDark: true) == Tint(white: 0.03, opacity: 0.32))
+        #expect(policy(.clear).sheetTint(systemDark: false) == Tint(white: 0.03, opacity: 0.4))
         for dark in [false, true] {
             #expect(policy(.standard).sheetTint(systemDark: dark) == nil)
             #expect(policy(.frosted).sheetTint(systemDark: dark) == nil)

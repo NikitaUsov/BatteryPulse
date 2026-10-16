@@ -147,15 +147,19 @@ private struct WindowLookPainter: Sendable {
             }
             let frost = isDark ? Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.7) : .white.opacity(0.5)
             context.fill(Path(bounds), with: .color(frost))
-        case .translucent:
-            context.drawLayer { blurred in
-                blurred.addFilter(.blur(radius: 1.5))
-                drawWallpaper(in: &blurred, bounds: bounds)
+        case .translucent, .clear:
+            // The desktop through the glass, a little soft under Translucent and almost sharp
+            // under Clear, with the sheet's own tint on top.
+            if look == .translucent {
+                context.drawLayer { blurred in
+                    blurred.addFilter(.blur(radius: 1.5))
+                    drawWallpaper(in: &blurred, bounds: bounds)
+                }
             }
-            context.fill(Path(bounds), with: .color(isDark ? .black.opacity(0.45) : .white.opacity(0.45)))
-        case .clear:
-            // The desktop almost sharp; only a faint tone of the glass.
-            context.fill(Path(bounds), with: .color(isDark ? Color(white: 0.03).opacity(0.22) : .white.opacity(0.06)))
+            let policy = WindowLookPolicy(setting: look, reduceTransparency: false, increaseContrast: false)
+            if let tint = policy.sheetTint(systemDark: isDark) {
+                context.fill(Path(bounds), with: .color(Color(white: tint.white, opacity: tint.opacity)))
+            }
         }
     }
 
