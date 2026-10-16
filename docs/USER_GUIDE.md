@@ -407,8 +407,10 @@ adds maximum capacity, cycle count and temperature.
 3. Search for **BatteryPulse** and drag the widget where you want it.
 
 The widget reads the battery itself, so it keeps working while BatteryPulse isn't running.
-macOS limits how often widgets refresh, so it may lag a few minutes behind; while BatteryPulse
-runs, it refreshes the widget right away when you plug in or unplug.
+macOS limits how often widgets refresh, so it may lag behind: by up to half an hour while
+BatteryPulse isn't running. While it runs, it refreshes the widget right away when you plug in or
+unplug and once macOS has its first estimate, and at most every quarter of an hour while the
+charge or the estimate moves.
 
 Replacing BatteryPulse with a new version from the DMG removes the widgets you placed; add them
 again from the gallery as above.
