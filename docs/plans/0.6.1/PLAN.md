@@ -115,6 +115,7 @@ B3.
 | B6 | WP-8b | WP-9 (P2) | WP-8b needs WP-8a and WP-6a (`release.yml`); WP-9 needs WP-5 and WP-UR |
 | B7 | WP-2c (P2) | — | WP-2b |
 | C1 | WP-11 | WP-12 (merges last) | all of Phase B; WP-11 needs WP-8a's maps |
+| C2 | WP-11b (P3, only under G13) | — | WP-11; merges before WP-12 |
 | D1 | measure and freeze the RC | — | Phase C |
 | D2 | M5 session (maintainer) | | D1 |
 | D3 | release | | D2, or its defaults |
@@ -375,8 +376,8 @@ B3.
 
     This puts the 0.6.0 → 0.6.1 install path under CI, which matters because the update runs
     0.6.0's installer, and from then on every macOS run launches the app. If the runner can't open
-    a GUI app, WP-8a records that in Appendix C and drops step 6; the session defaults that rely on
-    it (§3.6) then fall back to "revert".
+    a GUI app, WP-8a records that in Appendix C and drops step 6; F11's default (§3.6) then becomes
+    "revert".
 - **Owns:** `scripts/build-app.sh` (except the `PROFILING` block), the packaging and upload steps
   of `ci.yml` and `release.yml`, and the rows of `size-budget.json`.
 - **Shares:** `release.yml` with WP-6a's key-check hunk.
@@ -1031,7 +1032,7 @@ depends on alone, with BatteryKit on top under its name; about 6 files gain the 
 
 | Step | Checks | If it fails | If it doesn't run |
 |---|---|---|---|
-| F6 pages | WP-2b, WP-3b, WP-5, WP-9 on real data | D3 reverts the commits behind the broken page | Ship on the tests and the CI launch smoke |
+| F6 pages | WP-2b, WP-3b, WP-5, WP-9 on real data | D3 reverts the commits behind the broken page | Ship on the tests (and the CI launch smoke, if it runs) |
 | F11 relaunch, alerts, login item | WP-4 (SW-09), WP-2a (CH-08), WP-11 (AC-03) | D3 reverts the failing item's commit | Ship if the CI launch smoke runs; otherwise revert WP-4's four SW-09 commits |
 | F12, the window part | WP-6a (SEC-02, AC-01), SEC-03's `Cache.db` | D3 reverts that item's commit | Ship on the Linux tests |
 | Optional: F5, F9, burst, memory, energy | `a32bfae`, SZ-07, E3 and `994c09d`, E18, energy | Reported; D3 reverts the item named | "Not measured"; the Linux and CI checks stand |
