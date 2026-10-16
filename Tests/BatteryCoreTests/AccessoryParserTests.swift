@@ -190,6 +190,19 @@ import Testing
         #expect(accessories[1].name == "Other Buds")
     }
 
+    @Test func nameComesFromTheEarbudsNotTheCase() {
+        var budsCase = source("Buds Case", category: "Audio Battery Case", percent: 90)
+        var left = source("Buds", part: "Left", percent: 60)
+        budsCase[Key.groupIdentifier] = .string("group-1")
+        left[Key.groupIdentifier] = .string("group-1")
+        // The case is published first, and its name says "Case".
+        let accessories = AccessoryParser.accessories(from: [budsCase, left])
+        #expect(accessories.map(\.name) == ["Buds"])
+        #expect(accessories.first?.parts.map(\.role) == [.left, .case])
+        // A lone case keeps its own name.
+        #expect(AccessoryParser.accessories(from: [budsCase]).map(\.name) == ["Buds Case"])
+    }
+
     @Test func sharedRoleKeepsTheFirstPart() {
         let accessories = AccessoryParser.accessories(from: [
             source("Buds", part: "Left", percent: 40), source("Buds", part: "Left", percent: 90),

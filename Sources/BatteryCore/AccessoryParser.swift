@@ -61,7 +61,9 @@ public enum AccessoryParser {
                 ?? (categories.isEmpty ? .other : .headphones)
             return AccessoryBattery(
                 id: id,
-                name: members.lazy.compactMap { string($0.source[Key.name]) }.first ?? "",
+                // The case's own name says "Case"; the accessory is named after its earbuds.
+                name: (members.filter { $0.part.role != .case } + members.filter { $0.part.role == .case })
+                    .lazy.compactMap { string($0.source[Key.name]) }.first ?? "",
                 kind: kind,
                 transport: AccessoryTransport(string(first.source[Key.transport])),
                 parts: parts.sorted { order(of: $0.role) < order(of: $1.role) })
