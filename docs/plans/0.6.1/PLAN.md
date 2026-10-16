@@ -10,19 +10,20 @@ audits), and `research/*.md` for detail. CLAUDE.md wins over all of them.
 
 ## 1. At a glance
 
-- **Phases:** A (WP-0a ‖ WP-0b, the baseline branch, then WP-1 ‖ WP-UR); B in pairs (WP-8a, 2a,
-  6a, 2b; the budget checkpoint; then 5, 4, 6b, 3a, 3b, 7, 8b; P2: WP-9, WP-2c); C (WP-11 ‖ WP-12);
-  D (D1 freeze, D2 M5, D3 release).
+- **Phases:** A (WP-0a ‖ WP-0b, the baseline branch, then WP-1 ‖ WP-UR); B in pairs (WP-8a,
+  2a, 6a, 2b; the budget checkpoint; then 5, 4, 6b, 3a, 3b, 7, 8b; P2: WP-9, WP-2c); C (WP-11 ‖
+  WP-12, then WP-11b if G13 passes); D (D1 freeze, D2 M5, D3 release).
 - **How:** at most 2 agents, never two on the same file; one `claude/061-*` worktree branch per
-  package; an implementation run and a review run; merged `--no-ff` into `claude/nice-faraday-k08mhb`;
-  CI green after every merge.
+  package; an implementation run and a review run; merged `--no-ff` into
+  `claude/nice-faraday-k08mhb`; CI green after every merge.
 - **P1 (about 37–43 runs, plus 3 kept for fix-forward: 40–46):** the measurement tools; the two
   user-reported look bugs; the Swift 6.4 manifest; a DMG about half the size; the signing,
   release-notes and update-integrity fixes; one read per notify burst and two-key SMC polls in the
   app; History and Raw Data off the main actor; dead code removed by link maps; guard tests.
   `Observations`, `Mutex` and the installer's `@concurrent` are P1 too, unless §6's checkpoint cuts
   WP-4, WP-6b or WP-7.
-- **If the budget allows (P2, about 4–5 runs):** WP-9 (views), WP-2c (Low Power Mode, display sleep).
+- **If the budget allows (P2, about 4–5 runs):** WP-9 (views), WP-2c (Low Power Mode, display
+  sleep).
 - **0.6.2:** main actor by default (WP-10), the MobileDevice helper, Enhanced Security, Icon
   Composer, E4b, and every item whose gate only the M5 can decide.
 - **Budget:** a checkpoint after B2 decides the cut before any cuttable package starts (§6). The
@@ -1128,9 +1129,9 @@ Anchors at `c9ea33c`:
 
 **What it takes:** a core of about 30 minutes hands-on (steps 1–7) that decides every gate, then
 optional extras of about 15 minutes hands-on and 15 minutes unattended. Every command runs from
-`~/BatteryPulse` as `bash docs/plans/0.6.1/m5-session.sh <step>`. D1 bakes the PR number and the CI run IDs into the
-script, so no command has a placeholder. A session cut short still leaves every gate decided, by an
-answer or by its §3.6 default. The session doesn't touch the installed 0.6.0 for good: `prepare`
+`~/BatteryPulse` as `bash docs/plans/0.6.1/m5-session.sh <step>`. D1 bakes the PR number and the
+CI run IDs into the script, so no command has a placeholder. A session cut short still leaves
+every gate decided, by an answer or by its §3.6 default. The session doesn't touch the installed 0.6.0 for good: `prepare`
 backs up the app, settings and data; F12 installs 0.6.0 back with the candidate's own installer;
 each block ends by restoring the settings.
 
@@ -1239,6 +1240,9 @@ per-hour figures are extrapolated and noisier. A difference under 15 % counts as
    - notification permission is kept.
 3. On any failure, run `gh release edit v0.6.1 --prerelease`, which makes `releases/latest` serve
    0.6.0 again, and report it.
+4. In everyday use during the first day (no session time): after half an hour on battery, the
+   widget's charge is within 2 points of the popover's and its "Lasts until" within about 15
+   minutes of the popover's estimate (`994c09d`). If not, send a screenshot with both.
 
 This is the only M5 step outside the session. It can't run earlier, because the app fetches only
 `releases/latest`. The CI install-path step and F12 cover its risky parts beforehand.
