@@ -181,6 +181,7 @@ private func reading(connected: Bool) -> BatteryReading {
         clock.advance(by: .milliseconds(100))
         provider.simulateSystemChange()
         clock.advance(by: .milliseconds(49))
+        #expect(clock.sleeperCount == 1, "149 ms after the first notification, the read still waits")
         #expect(provider.readCount == 1)
         clock.advance(by: .milliseconds(1))
         await settle { provider.readCount == 2 }
