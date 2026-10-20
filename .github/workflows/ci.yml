@@ -147,6 +147,14 @@ jobs:
           name: size-${{ github.sha }}
           path: build/size.json
           if-no-files-found: error
+      - name: Upload the link maps
+        # For size attribution: which object file and symbol each byte of the shipped binaries
+        # comes from.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: link-maps-${{ github.sha }}
+          path: build/maps/
+          if-no-files-found: error
       - name: Upload the dSYMs
         # The debug information stripped from the shipped binaries, for symbolicating a crash
         # report of this build.

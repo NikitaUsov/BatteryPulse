@@ -42,13 +42,19 @@ DMG="$BUILD_DIR/$NAME.dmg"
 #   never calls. The widget keeps _main too, though it starts in _NSExtensionMain: it costs
 #   nothing.
 RELEASE_FLAGS=(-Xlinker -exported_symbol -Xlinker _main)
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget
+# Each link also writes a link map, which attributes every byte of the binary to an object file
+# and a symbol (for size work; build/maps, a CI artifact). They sit next to the build products,
+# so a link that is up to date keeps a map that matches its binary.
+MAPS="$PWD/.build/link-maps"
+mkdir -p "$MAPS"
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD_DIR/maps"
+cp "$MAPS/BatteryPulse.map" "$MAPS/BatteryPulseWidget.map" "$BUILD_DIR/maps/"
 cp "$BINARY" "$APP/Contents/MacOS/BatteryPulse"
 
 # App icon: every size iconutil expects, rendered from the 1024 px master.
