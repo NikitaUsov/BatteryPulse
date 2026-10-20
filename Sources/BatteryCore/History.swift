@@ -173,12 +173,17 @@ public struct HistoryDay: Sendable, Equatable, Codable {
         return String(repeating: "0", count: max(0, width - digits.count)) + digits
     }
 
-    /// Noon of the day, for plotting.
+    /// Noon of the day, for plotting. Builds a calendar for the one day; many days share one
+    /// through ``HistoryDayPoint/points(from:timeZone:)``.
     public func date(calendar: Calendar = .current) -> Date? {
+        date(gregorian: Self.gregorian(in: calendar.timeZone))
+    }
+
+    /// Noon of the day in `gregorian`, a Gregorian calendar.
+    func date(gregorian: Calendar) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        return Self.gregorian(in: calendar.timeZone).date(
-            from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        return gregorian.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
     }
 
     static func gregorian(in timeZone: TimeZone) -> Calendar {

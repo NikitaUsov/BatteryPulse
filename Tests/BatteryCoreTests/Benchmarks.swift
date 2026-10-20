@@ -10,7 +10,8 @@ import Testing
 /// line, `bench <id> <workload> median_ms=<median> runs=15`. Testable imports change the
 /// optimization a little, so compare only a before and an after on the same machine and
 /// toolchain. The workloads exist at 0.6.0 too, so the file ran on the baseline branch; since
-/// WP-5, B4's `raw.display` and B5's `raw.filter.joined` measure 0.6.1's Raw Data display rows.
+/// WP-5, B4's `raw.display` and B5's `raw.filter.joined` measure 0.6.1's Raw Data display rows, and
+/// since WP-3b B3 measures ``HistoryChartData``.
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["BP_BENCH"] == "1"))
 struct Benchmarks {
     static let runs = 15
@@ -80,21 +81,20 @@ struct Benchmarks {
         Self.report("B2", "history.samples.7d.tail", Self.median(of: tail))
     }
 
-    /// B3: what the History page computes from the samples: chart points, spans and statistics, for
-    /// a day of minute samples and a week in ten-minute buckets.
-    @Test func b3HistoryChartData() {
+    /// B3: what the History page computes from the samples, ``HistoryChartData/make(samples:period:end:includesStatistics:)``
+    /// for a day of minute samples and a week in ten-minute buckets. Until WP-3b the workload was
+    /// the chart points, spans and statistics alone, which `make` still builds.
+    @Test func b3HistoryChartData() throws {
         let week = Self.week()
-        let periods: [(name: String, samples: [HistorySample], bucket: TimeInterval?)] = [
-            ("24h", Array(week.suffix(24 * 60)), nil),
-            ("7d", week, 10 * 60),
+        let end = try #require(week.last).time
+        let periods: [(name: String, samples: [HistorySample], period: HistoryPeriod)] = [
+            ("24h", Array(week.suffix(24 * 60)), .day),
+            ("7d", week, .week),
         ]
         for period in periods {
             let timing = Self.time {
-                (
-                    HistoryPoint.points(from: period.samples, bucket: period.bucket),
-                    HistorySpan.spans(from: period.samples),
-                    HistoryStatistics(samples: period.samples)
-                )
+                HistoryChartData.make(
+                    samples: period.samples, period: period.period, end: end, includesStatistics: true)
             }
             Self.report("B3", "history.chart.\(period.name)", timing.median)
         }
