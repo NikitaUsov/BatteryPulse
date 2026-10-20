@@ -52,9 +52,8 @@ enum IDeviceModelName {
 
     /// A model the system doesn't declare gets a dynamic type, whose description says nothing.
     private static func lookUp(_ productType: String) -> String? {
-        // Typed as optional, so this compiles whether the initializer is failable or not.
-        let tagClass: UTTagClass? = UTTagClass(rawValue: "com.apple.device-model-code")
-        guard let tagClass, let type = UTType(tag: productType, tagClass: tagClass, conformingTo: nil),
+        let tagClass = UTTagClass(rawValue: "com.apple.device-model-code")
+        guard let type = UTType(tag: productType, tagClass: tagClass, conformingTo: nil),
             !type.isDynamic, let name = type.localizedDescription, !name.isEmpty, name != productType
         else { return nil }
         return name
