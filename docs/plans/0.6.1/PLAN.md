@@ -1459,21 +1459,20 @@ WP-11's map-driven deletions, WP-12 or D1–D3.
    6. publishing.
 8. **Post-release check** (§4b, 5 min), with the prerelease rollback if it fails.
 
-## 8. Open questions for the maintainer
+## 8. The maintainer's answers (2026-10-20)
 
-1. Has 0.6.0 ever hung or crashed in the iPhone/iPad code on the M5? Examples: an iPhone page that
-   stays stuck, or a beachball after plugging in an iPhone. *Default: no, so SEC-10 stays in
-   0.6.2.*
-2. Is it OK to move "main actor by default" (WP-10) to 0.6.2, as that release's first package with a
-   longer M5 check? *Default: yes.*
-3. Device JSON dates (CB-02): keep them for 0.7, or make them a recorded exception in 0.6.1, with
-   one changed golden line and a note? *Default: 0.7.*
-4. Do you want GitHub's immutable releases turned on? It is a repository setting only you can
-   change, and nothing in this plan depends on it. *Default: unchanged.*
-5. Is the budget about 40 agent runs over about two weeks? P1 alone needs 40–46 with the reserve.
-   *Default: 40; the checkpoint after B2 (§6) decides the cut before any cuttable package runs.*
-6. If WP-11 finds that `HMACDeviceKeyDeriver` keeps CryptoKit in the widget, do you want it out in
-   0.6.1 (WP-11b, about 2 runs, only within budget)? *Default: no; 0.6.2.*
+- **Tile picker (CH-12, G10):** the accent outline only; the selection glass goes. G10 is decided:
+  no glass, so the pixel test is not needed.
+- **Clear (CH-13, G11):** 0.65 in both appearances. The plain-fill variant stays held for the M5
+  reading (G11), as planned.
+- **Q1:** no MobileDevice hang or crash seen; SEC-10 stays in 0.6.2.
+- **Q2:** WP-10 (main actor by default) moves to 0.6.2.
+- **Q3:** device JSON dates (CB-02) wait for 0.7.
+- **Q4:** immutable releases stay as they are.
+- **Q5:** the whole plan, P2 included if the budget allows; the checkpoint after B2 still applies.
+- **Q6:** CryptoKit in the widget (K-03) waits for 0.6.2 unless G13 and the budget allow WP-11b.
+- **Branches:** pushing `claude/061-<pkg>` and `claude/baseline-0.6.0` is allowed; they are
+  deleted after the release.
 
 ## Appendix A: traceability
 

@@ -3,7 +3,7 @@
 0.6.1 is an optimization and foundation release: readability, speed, energy, security, size and
 less unneeded code, measured before and after, with no loss of functionality.
 
-State on 2026-10-16: planning done, implementation paused until the maintainer says go.
+State on 2026-10-16: planning done.
 
 - `research/` — best-practice research in five areas (SwiftUI, Swift 6.4, energy, security,
   size), each item checked against its source and the code by a second reviewer.
@@ -16,8 +16,7 @@ State on 2026-10-16: planning done, implementation paused until the maintainer s
   acceptance checks, effort and the cut line; the measurements, the one M5 session, the proof of
   no lost functionality, the release steps, open questions and the traceability appendix.
 
-Next: the maintainer's answers to `PLAN.md` §8 and the two look decisions (tile picker selection,
-Clear's dimming), then Phase A.
+Implementation started on 2026-10-20 with the maintainer's answers recorded in `PLAN.md` §8.
 
 These notes are planning material for this release; they leave the repository once 0.6.1 ships
 (the decisions that last go to `docs/ROADMAP.md`).
