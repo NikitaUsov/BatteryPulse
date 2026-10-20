@@ -68,8 +68,11 @@ import Testing
         #expect(seen.percents.isEmpty)
         change(to: 79)
         await settle(untilSeen: 1)
-        // The same reading again: the monitor keeps its snapshot, so nothing changed.
+        // The same reading again: the monitor keeps its snapshot, so nothing changed. It gets a
+        // turn of its own, or the next change would hide a value it yielded.
         monitor.refresh()
+        await wait(for: .milliseconds(50))
+        #expect(seen.percents == [79])
         change(to: 78)
         await settle(untilSeen: 2)
         await wait(for: .milliseconds(50))
