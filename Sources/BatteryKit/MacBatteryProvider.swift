@@ -15,21 +15,18 @@ import BatteryCore
 /// - `IOPSCopyPowerSourcesInfo` — the public power-source API that backs the menu bar
 ///   (percent, time remaining, health condition).
 /// - `IOPSCopyExternalPowerAdapterDetails` — the connected adapter.
-/// - The SMC's battery keys (``SMCBattery``), a second source for the temperature and cell
-///   voltages, read at most every ``smcInterval`` seconds.
+/// - The SMC's battery keys (``SMCBattery``): the live pack voltage and current, and a second
+///   source for the temperature and cell voltages. A key takes one round trip of about
+///   0.2–0.5 ms, so all 16 take about 3–8 ms (derived, not measured). ``read()`` asks for every
+///   key; ``read(scope:)`` with `.live` asks only for the live pair and keeps the rest from the
+///   read that last asked for them (``SMCValueCache``).
 ///
 /// Changes are pushed through notify(3) power-source keys, so no polling is needed unless the UI
 /// shows live current/power values.
 @MainActor
 public final class MacBatteryProvider: BatteryProvider {
-    /// The SMC's current and voltage are live (the registry's copy can lag a minute), so they
-    /// are read again for any refresh more than this far apart.
-    public static let smcInterval: TimeInterval = 2
-
     private let smc: SMCClient?
-    private var smcCache: (date: Date, values: PropertyDictionary)?
-    /// The SMC's live pack voltage and current, the `smc.power` part of a read.
-    private static let smcPowerKeys: Set<SMCFourCC> = ["B0AV", "B0AC"]
+    private var smcCache = SMCValueCache()
 
     /// - Parameter readsSMC: `false` where the SMC can't be opened anyway, such as in the
     ///   sandboxed widget, so no attempt shows up as a sandbox violation.
@@ -37,7 +34,13 @@ public final class MacBatteryProvider: BatteryProvider {
         smc = readsSMC ? SMCClient() : nil
     }
 
+    /// Reads everything, every SMC key included, as `bpulse` and the widget always have. A read
+    /// within ``SMCValueCache/minimumAge`` of the last one reuses its SMC values.
     public func read() -> BatteryReading? {
+        read(scope: .full)
+    }
+
+    public func read(scope: BatteryReadScope) -> BatteryReading? {
         let interval = Diagnostics.begin("read")
         defer { interval.end() }
         let smartBattery = Diagnostics.measure("registry") { Self.smartBatteryProperties() }
@@ -45,7 +48,7 @@ public final class MacBatteryProvider: BatteryProvider {
         guard smartBattery != nil || powerSource != nil else { return nil }
 
         let adapterDetails = Diagnostics.measure("adapter") { Self.externalAdapterDetails() }
-        let smcCapture = smartBattery == nil ? [:] : smcValues()
+        let smcCapture = smartBattery == nil ? [:] : smcValues(readsOtherKeys: scope == .full)
         let parse = Diagnostics.begin("parse")
         var reading = BatteryReading(
             smartBattery: smartBattery ?? [:],
@@ -59,17 +62,17 @@ public final class MacBatteryProvider: BatteryProvider {
         return reading
     }
 
-    private func smcValues() -> PropertyDictionary {
+    /// The SMC's values after asking for the groups that are due: the live pair (`smc.power`) and,
+    /// for a full read, the rest (`smc.other`).
+    private func smcValues(readsOtherKeys: Bool) -> PropertyDictionary {
         guard let smc else { return [:] }
-        if let smcCache, Date().timeIntervalSince(smcCache.date) < Self.smcInterval { return smcCache.values }
-        // The same keys as one read, timed as the live pair and the rest; the order doesn't matter.
-        let power = Diagnostics.measure("smc.power") { smc.read(SMCBattery.keys.filter(Self.smcPowerKeys.contains)) }
-        let other = Diagnostics.measure("smc.other") {
-            smc.read(SMCBattery.keys.filter { !Self.smcPowerKeys.contains($0) })
+        let now = ContinuousClock.now
+        for group in smcCache.groupsToRead(at: now, readsOtherKeys: readsOtherKeys) {
+            let name: StaticString = group == .live ? "smc.power" : "smc.other"
+            let answers = Diagnostics.measure(name) { smc.read(group.keys) }
+            smcCache.store(answers, for: group, at: now)
         }
-        let values = SMCBattery.capture(power + other)
-        smcCache = (Date(), values)
-        return values
+        return smcCache.capture
     }
 
     /// notify(3) keys from IOPowerSources.h: `kIOPSNotifyAnyPowerSource` and
