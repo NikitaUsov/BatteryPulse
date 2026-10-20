@@ -1925,3 +1925,31 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
 - **Docs for WP-12:** USER_GUIDE gets the sentence about Low Power Mode, reduced resources, heat
   and display sleep; CLAUDE.md lists `LiveRefreshPolicy`. The release-notes text is in the message
   of 7aecd92.
+
+### C1 (WP-11, WP-12), merged 2026-10-20
+
+- **DC-1 superseded:** debug link maps keep every function, and Swift 6.4 marks every public
+  symbol of a library object `[no dead strip]` (not only Swift Build's prelink), so link maps can't
+  show dead library code. WP-11 used the Linux index store (252 declarations with no reference
+  from Sources) cross-checked with comment-stripped `git grep -w` over all Sources, and the
+  shipped release maps for the app and widget modules. The review restored `SMCResult`'s cases as
+  the protocol's documentation (both audits had kept them).
+- **0.6.2 size lever:** `-Xswiftc -Xfrontend -Xswiftc -internalize-at-link` on the widget cut its
+  `__text` 928,452 → 674,756 B (−27 %) in a native release build; untested with Swift Build's
+  prelink and at runtime, so it needs a widget render check first.
+- **K-03 / G13:** a lower target would take about 187 KB of BatteryKit and CryptoKit (kept by
+  `HMACDeviceKeyDeriver` and `UpdateSignatureVerifier`) out of the widget; both conditions met;
+  Q6 holds it for 0.6.2.
+- **SZ-06:** app `__text` 1.93 MB is 53 % app module, 35 % BatteryCore, 12 % BatteryKit; the widget
+  is 72 % BatteryCore. `CaptureRecorder` (77 KB, used only by `bpulse --record`) is the largest
+  BatteryCore file in the widget.
+- **Size after WP-11:** DMG 1,438,629 B; app binary 2,856,976 B; widget 1,379,792 B.
+- **SW-15:** 203 PerformanceHints (85 existential, 72 implicit copies, 46 untyped throws), none
+  on a measured hot path; no change.
+- **Guards:** SecurityGuardTests and EnergyGuardTests scan every target, Darwin blocks included,
+  and caught six injected violations; pins at the tip: `Task.detached` 1, `URLSession.shared` 0,
+  `@unchecked Sendable` 4, activities only in `UpdateInstaller`, reloads only in `WidgetRefresher`,
+  no `Material` in `Main/`, four EN-1 one-shots. The 6-hour update tick's tolerance is 36 min.
+- **For F11:** the Launch at Login toggle and approval (AC-03); the menu bar toggles and label
+  agree and the icon style survives a relaunch (CH-09); after `defaults delete` the app shows icon
+  plus percentage.
