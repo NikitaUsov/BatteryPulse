@@ -309,6 +309,12 @@ private struct ReleaseNotesText: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
+                // A link opens only over https; anything else does nothing.
+                .environment(
+                    \.openURL,
+                    OpenURLAction { url in
+                        ReleaseNotes.isAllowedLink(url) ? .systemAction : .discarded
+                    })
         }
         .frame(height: 220)
         .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))

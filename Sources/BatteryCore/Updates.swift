@@ -253,6 +253,14 @@ public enum ReleaseNotes {
         }
         return joiner.lines.joined(separator: "\n")
     }
+
+    /// Whether a link in the notes may open: `https` only, on any host. Anyone who can publish a
+    /// release can write its notes, and they stay editable after publishing, so a `file:` or
+    /// custom-scheme link would otherwise open something on this Mac.
+    public static func isAllowedLink(_ url: URL) -> Bool {
+        let url = url.absoluteURL
+        return url.scheme?.lowercased() == "https" && url.host()?.isEmpty == false
+    }
 }
 
 extension ReleaseNotes {
