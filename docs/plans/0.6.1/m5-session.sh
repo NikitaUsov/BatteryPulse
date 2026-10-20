@@ -23,10 +23,10 @@
 # until then prepare and send stop with a message.
 set -euo pipefail
 
-PR="TBD"       # the D1 pull request
-RUN_A="TBD"    # the CI run of claude/baseline-0.6.0
-RUN_B="TBD"    # the 0.5.99 CI run of the release candidate
-RUN_FILL="TBD" # the CI run of claude/061-ur-clearfill
+PR="11"       # the D1 pull request
+RUN_A="39413159534"    # the CI run of claude/baseline-0.6.0
+RUN_B="39492991212"    # the 0.5.99 CI run of the release candidate
+RUN_FILL="39483537868" # the CI run of claude/061-ur-clearfill
 
 REPO="NikitaUsov/BatteryPulse"
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
