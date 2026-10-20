@@ -1,5 +1,4 @@
 #if os(macOS)
-import AppKit
 import BatteryCore
 import BatteryKit
 import SwiftUI
