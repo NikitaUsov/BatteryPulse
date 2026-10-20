@@ -19,6 +19,8 @@ struct MenuBarLabel: View {
     /// and asks again when the item comes back.
     @AppStorage(AppSettings.showInMenuBarKey) private var isInserted = true
     @Environment(\.openWindow) private var openWindow
+    // macOS 27. The label isn't inside `.motionPolicy()`, so it reads this itself.
+    @Environment(\.systemPrefersReducedResourceUsage) private var systemPrefersReducedResourceUsage
     /// How many members of the label are on screen. The `Group`'s modifiers apply to each member,
     /// so one member going (the icon turned off, Demo Mode ending) must not withdraw the polling
     /// that the others still show; the last one going does.
@@ -27,6 +29,22 @@ struct MenuBarLabel: View {
     private var content: MenuBarContent {
         MenuBarContent(
             showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
+    }
+
+    /// How often the label asks for fresh readings, or `nil` for never: power changes without OS
+    /// notifications, so it is polled gently while shown, and less often while the system asks
+    /// to save energy (``LiveRefreshPolicy``). Low Power Mode and the thermal state come from
+    /// `ProcessInfo`, never from the snapshot, which Demo Mode simulates.
+    ///
+    /// Nobody sees the label while the displays sleep or the session is switched out, so the
+    /// request goes then; coming back asks again, which reads once. The OS's change
+    /// notifications still update the battery meanwhile, and History keeps recording.
+    private var liveRefreshRequest: Duration? {
+        guard isInserted, ScreenActivity.shared.isActive, let base = content.liveRefreshInterval else { return nil }
+        let power = SystemPowerState.shared
+        return LiveRefreshPolicy.interval(
+            base: base, reducesResources: power.isLowPowerModeEnabled || systemPrefersReducedResourceUsage,
+            thermal: power.thermalState)
     }
 
     var body: some View {
@@ -56,8 +74,7 @@ struct MenuBarLabel: View {
             WindowOpener.openWindow = openWindow
             Diagnostics.menuBarAppeared()
         }
-        .onChange(of: isInserted ? content.liveRefreshInterval : nil, initial: true) { _, interval in
-            // Power changes without OS notifications, so poll gently while it is shown.
+        .onChange(of: liveRefreshRequest, initial: true) { _, interval in
             monitor.setLiveRefreshInterval(interval, for: "menuBar")
         }
         .onDisappear {
