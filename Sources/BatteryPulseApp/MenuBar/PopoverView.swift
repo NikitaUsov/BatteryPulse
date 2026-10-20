@@ -10,7 +10,6 @@ struct PopoverView: View {
     let accessories: AccessoryMonitor
     @Environment(DemoController.self) private var demo
     @Environment(UpdateChecker.self) private var updater
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
     @Environment(\.motion) private var motion
 
@@ -60,12 +59,10 @@ struct PopoverView: View {
 
             HStack {
                 Button("Open BatteryPulse") {
-                    WindowOpener.openWindow = openWindow
                     WindowOpener.showMainWindow()
                 }
                 Spacer()
                 Button {
-                    WindowOpener.openWindow = openWindow
                     WindowOpener.show(WindowID.about)
                 } label: {
                     Image(systemName: "info.circle")

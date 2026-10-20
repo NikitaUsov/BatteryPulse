@@ -78,8 +78,13 @@ enum Phrases {
         case .frameworkUnavailable:
             String(localized: "This Mac can't read iPhones and iPads: Apple's device support isn't available.")
         case .subscriptionFailed, .deviceNotFound, .timedOut:
-            String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
+            deviceListFailed
         }
+    }
+
+    /// Listing devices failed or timed out; trying again may work.
+    static var deviceListFailed: String {
+        String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
     }
 
     /// "Charging at 31.3 W" / "Discharging at 7.5 W", or just the state.
@@ -135,9 +140,17 @@ enum Phrases {
     /// the tier means when only the capacity (below 80 %) warns.
     static func healthWarning(_ tier: BatteryPresentation.LevelTier, condition raw: String?) -> String {
         if let raw, raw != "Normal", raw != "Good", let text = condition(raw) { return text }
-        return tier == .critical
-            ? String(localized: "Check Battery", comment: "Battery condition")
-            : String(localized: "Service Recommended", comment: "Battery condition")
+        return condition(for: tier)
+    }
+
+    /// A health tier in the words of a battery condition: an iPhone's or iPad's condition, which
+    /// comes from its capacity alone, and a Mac's warning when only its capacity warns.
+    static func condition(for tier: BatteryPresentation.LevelTier) -> String {
+        switch tier {
+        case .normal: String(localized: "Normal", comment: "Battery condition")
+        case .low: String(localized: "Service Recommended", comment: "Battery condition")
+        case .critical: String(localized: "Check Battery", comment: "Battery condition")
+        }
     }
 
     static func thermal(_ state: ThermalState) -> String {

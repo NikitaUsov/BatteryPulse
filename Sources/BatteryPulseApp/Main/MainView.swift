@@ -391,7 +391,7 @@ private struct CopyReportButton: View {
             }
         }
         .disabled(!canCopy)
-        .help(help)
+        .modifier(OptionalHelp(text: help))
         .task(id: copied) {
             guard copied else { return }
             try? await Task.sleep(for: .seconds(1.5))
@@ -414,8 +414,13 @@ private struct CopyReportButton: View {
         }
     }
 
-    private var help: Text {
+    /// None on Accessories, which never have a report.
+    private var help: Text? {
         switch selection {
+        case .accessories:
+            return nil
+        case .devicesIntro:
+            return Text("Connect the device to copy a report")
         case .device:
             if demo.isActive { return Text("Not available in Demo Mode") }
             if !canCopy { return Text("Connect the device to copy a report") }
@@ -446,6 +451,19 @@ private struct CopyReportButton: View {
         pasteboard.setString(text, forType: .string)
         withAnimation(motion.crossfade) { copied = true }
         AccessibilityNotification.Announcement(String(localized: "Report copied")).post()
+    }
+}
+
+/// A tooltip only when there is one to show.
+private struct OptionalHelp: ViewModifier {
+    let text: Text?
+
+    func body(content: Content) -> some View {
+        if let text {
+            content.help(text)
+        } else {
+            content
+        }
     }
 }
 #endif

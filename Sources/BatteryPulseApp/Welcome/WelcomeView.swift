@@ -29,12 +29,9 @@ struct WelcomeView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            Form {
+            SettingsPage {
                 GeneralSettings()
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-            .fixedSize(horizontal: false, vertical: true)
 
             HStack {
                 Button("Quit") { NSApp.terminate(nil) }
