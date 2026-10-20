@@ -11,9 +11,11 @@ import SwiftUI
 // window's content, which happens only when the person changes the setting or an accessibility
 // setting; the main window's page survives in scene storage, and the window's registrations (live
 // refresh, the Dock icon policy) sit outside the modifier, so a rebuild never drops or repeats
-// them. Everything else (the policy, the tones) reaches the content as values. Nothing here animates: a background swap is not a motion
-// event, and a crossfade of materials would cost a blur pass per frame. That includes the glass
-// sheet's swap for a still fill while the window minimizes.
+// them. Everything else (the policy, the tones) reaches the content as values.
+//
+// Nothing here animates: a background swap is not a motion event, and a crossfade of materials
+// would cost a blur pass per frame. That includes the glass sheet's swap for a still fill while
+// the window minimizes.
 
 extension EnvironmentValues {
     /// What this window draws. `.windowLook()` sets it on the main and compact windows; every
