@@ -63,6 +63,7 @@ final class WidgetRefresher {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
             Diagnostics.event("widget.reload", trigger: "update")
+            Diagnostics.widget.notice("Reloading the widget after an update")
         }
     }
 
@@ -75,6 +76,10 @@ final class WidgetRefresher {
         else { return }
         WidgetCenter.shared.reloadTimelines(ofKind: BatteryWidgetKind.battery)
         Diagnostics.event("widget.reload", trigger: "policy")
+        // One line per reload, so `log show` counts a day's reloads against WidgetKit's budget.
+        let percent = snapshot.chargePercent.map { String(Int($0.rounded())) } ?? "-"
+        Diagnostics.widget.notice(
+            "Reloading the widget: \(snapshot.chargeState.rawValue, privacy: .public), \(percent, privacy: .public)%")
     }
 }
 #endif
