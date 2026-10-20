@@ -150,7 +150,8 @@ struct HistoryView: View {
             guard motion.isVisible else { return }
             while !Task.isCancelled {
                 await load()
-                try? await Task.sleep(for: .seconds(60))
+                // About once a minute: the axis creeps forward, so a few seconds either way don't show.
+                try? await Task.sleep(for: .seconds(60), tolerance: .seconds(15))
             }
         }
     }
