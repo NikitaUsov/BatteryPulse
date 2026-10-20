@@ -11,8 +11,12 @@ import Testing
     /// Stands in for a DMG.
     private let file = Data((0..<10_000).map { UInt8(truncatingIfNeeded: $0 &* 7 &+ 3) })
 
-    private func verifier(for key: Curve25519.Signing.PrivateKey) throws -> UpdateSignatureVerifier {
-        try #require(UpdateSignatureVerifier(publicKeyBase64: key.publicKey.rawRepresentation.base64EncodedString()))
+    private func verifier(for keys: Curve25519.Signing.PrivateKey...) throws -> UpdateSignatureVerifier {
+        try #require(UpdateSignatureVerifier(publicKeysBase64: keys.map { base64($0) }))
+    }
+
+    private func base64(_ key: Curve25519.Signing.PrivateKey) -> String {
+        key.publicKey.rawRepresentation.base64EncodedString()
     }
 
     @Test func acceptsTheSignatureOfTheMatchingKey() throws {
@@ -51,12 +55,37 @@ import Testing
     }
 
     @Test func refusesMalformedPublicKeys() {
-        #expect(UpdateSignatureVerifier(publicKeyBase64: "") == nil)
-        #expect(UpdateSignatureVerifier(publicKeyBase64: "not base64") == nil)
-        #expect(UpdateSignatureVerifier(publicKeyBase64: Data(count: 31).base64EncodedString()) == nil)
+        #expect(UpdateSignatureVerifier(publicKeysBase64: [""]) == nil)
+        #expect(UpdateSignatureVerifier(publicKeysBase64: ["not base64"]) == nil)
+        #expect(UpdateSignatureVerifier(publicKeysBase64: [Data(count: 31).base64EncodedString()]) == nil)
+        #expect(UpdateSignatureVerifier(publicKeysBase64: []) == nil)
     }
 
-    @Test func theBuiltInReleaseKeyLoads() {
+    /// The rotation: version N trusts {K1, K2}, so the release signed with K2 installs; a version
+    /// that trusts only K1 refuses it. Throwaway keys, never the release key.
+    @Test func aListedSecondKeyVerifies() throws {
+        let first = Curve25519.Signing.PrivateKey()
+        let second = Curve25519.Signing.PrivateKey()
+        let signature = try second.signature(for: file)
+        #expect(try verifier(for: first, second).isValid(signature: signature, for: file))
+        #expect(try verifier(for: second, first).isValid(signature: signature, for: file))
+        #expect(try !verifier(for: first).isValid(signature: signature, for: file))
+        // Listing a second key doesn't weaken the first.
+        #expect(try verifier(for: first, second).isValid(signature: first.signature(for: file), for: file))
+        let foreign = try Curve25519.Signing.PrivateKey().signature(for: file)
+        #expect(try !verifier(for: first, second).isValid(signature: foreign, for: file))
+    }
+
+    @Test func anEmptyOrMalformedEntryIsIgnored() throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let signature = try key.signature(for: file)
+        let entries = ["", "  ", "not base64", Data(count: 31).base64EncodedString(), base64(key)]
+        let verifier = try #require(UpdateSignatureVerifier(publicKeysBase64: entries))
+        #expect(verifier.isValid(signature: signature, for: file))
+        #expect(!verifier.isValid(signature: signature, for: file + [0]))
+    }
+
+    @Test func theBuiltInReleaseKeysLoad() {
         #expect(UpdateSignatureVerifier.release != nil)
     }
 

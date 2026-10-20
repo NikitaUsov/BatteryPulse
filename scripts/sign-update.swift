@@ -9,11 +9,13 @@
 //   swift scripts/sign-update.swift --generate-key
 //       Prints a new private key. Keep it secret: it becomes the UPDATE_SIGNING_KEY secret of the
 //       `release` environment (not a repository secret; see release.yml), and its public key goes
-//       into Sources/BatteryCore/ReleaseSigning.swift.
+//       into ReleaseSigning.publicKeys in Sources/BatteryCore/ReleaseSigning.swift.
+//   swift scripts/sign-update.swift --help
+//       Prints this usage and how to rotate the key.
 //
 // Keys are raw 32-byte Curve25519 signing keys in base64, as CryptoKit's `rawRepresentation`.
-// The app installs an update itself only if the public key built into it verifies the
-// signature, so a DMG replaced on GitHub without this key is refused.
+// The app installs an update itself only if a public key built into it verifies the
+// signature, so a DMG replaced on GitHub without one of those keys is refused.
 import CryptoKit
 import Foundation
 
@@ -22,6 +24,17 @@ let usage = """
            swift scripts/sign-update.swift --verify <file> <public key>
            swift scripts/sign-update.swift --public-key
            swift scripts/sign-update.swift --generate-key
+           swift scripts/sign-update.swift --help
+    """
+
+let rotation = """
+    Rotating the key: the app trusts every key in ReleaseSigning.publicKeys, and release.yml
+    refuses a secret whose key isn't listed. Version N lists the current key K1 and the next key
+    K2 and is still signed with K1. Version N+1 is signed with K2: put K2's private key into the
+    UPDATE_SIGNING_KEY secret of the release environment. Versions from N on install it in-app;
+    older ones, which trust only K1, show the release page instead. A later version drops K1
+    from the list. Releases are signed only by the release workflow, never by hand, and nobody
+    else asks for or handles the private key.
     """
 
 func fail(_ message: String) -> Never {
@@ -58,6 +71,9 @@ func base64(_ key: Curve25519.Signing.PublicKey) -> String {
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 switch arguments.first {
+case "--help" where arguments.count == 1:
+    print(usage + "\n\n" + rotation)
+
 case "--generate-key" where arguments.count == 1:
     print(Curve25519.Signing.PrivateKey().rawRepresentation.base64EncodedString())
 

@@ -109,9 +109,23 @@ import Testing
         #expect(UpdateIntegrity.signature(fromSigFile: Data(repeating: 0x41, count: 4096)) == nil)
     }
 
-    @Test func theReleaseKeyIsARawCurve25519Key() throws {
-        let key = try #require(Data(base64Encoded: ReleaseSigning.publicKey))
-        #expect(key.count == 32)
+    @Test func theReleaseKeysAreRawCurve25519Keys() {
+        #expect(!ReleaseSigning.publicKeys.isEmpty)
+        #expect(ReleaseSigning.rawKeys(ReleaseSigning.publicKeys).count == ReleaseSigning.publicKeys.count)
+        // The key every release since 0.4.0 is signed with stays trusted; dropping it is the last
+        // step of a rotation (scripts/sign-update.swift --help).
+        #expect(ReleaseSigning.publicKeys.contains("R3LDmkmupenX1gnEnR7n+gEllH8oIDbWODJoGJ/m+dg="))
+    }
+
+    @Test func malformedKeyEntriesAreIgnored() {
+        let first = Data(repeating: 1, count: 32)
+        let second = Data(repeating: 2, count: 32)
+        let entries = [
+            "", "not base64", Data(count: 31).base64EncodedString(), Data(count: 33).base64EncodedString(),
+            first.base64EncodedString(), " " + second.base64EncodedString() + " ", first.base64EncodedString(),
+        ]
+        #expect(ReleaseSigning.rawKeys(entries) == [first, second])
+        #expect(ReleaseSigning.rawKeys([]).isEmpty)
     }
 
     @Test func installsOnlyFromAWritableUntranslocatedRelease() throws {

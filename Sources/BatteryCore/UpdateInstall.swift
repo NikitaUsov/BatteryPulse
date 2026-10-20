@@ -21,7 +21,7 @@ public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
     case downloadFailed
     /// The DMG doesn't match GitHub's digest: a broken or incomplete download.
     case digestMismatch
-    /// The DMG's signature doesn't verify with ``ReleaseSigning/publicKey``.
+    /// The DMG's signature doesn't verify with any of ``ReleaseSigning/publicKeys``.
     case badSignature
     case mountFailed
     /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version.
