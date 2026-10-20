@@ -1863,3 +1863,24 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   (none does that).
 - **Docs for WP-12:** USER_GUIDE "Updates" says automatic checks skip Low Data Mode and expensive
   networks; CLAUDE.md lists `UpdateNetwork` (end of `UpdateChecker.swift`).
+
+### B5 (WP-3b, WP-7), merged 2026-10-20
+
+- **History view:** `HistoryChartData` (with `HistoryPeriod`, `HistoryChartValue`,
+  `HistoryPowerValue`, `HistoryDayPoint`) is built in a `@concurrent` load and assigned once; the
+  charts look up names and tones once per body. Main actor work removed per power-chart body: about
+  5,800 localizations and interpolations for a day. B3 on Linux is inconclusive under load (two
+  alternation sets disagree); D1 reruns it. Audio Graphs values are unchanged (same labels, series
+  and scale order; a test checks the lines against the old derivation). `Main/History/` has six
+  files. AV-08's readout is a Card surface with a hairline; G12 can revert e490fb1 alone.
+- **Export menu:** now enabled by dated days, so a store whose summaries all have unparseable day
+  keys disables Export; HistoryStore only writes `yyyy-MM-dd`, so no real store is affected.
+- **Device stack:** `@unchecked Sendable` 7 → 4 (`MobileDeviceLibrary`, `MobileDeviceSink`, `Watch`,
+  `AppearanceVariants`). `RTLD_LOCAL | RTLD_FIRST` (MobileDevice) and `RTLD_NOLOAD | RTLD_FIRST`
+  (IOKit) resolve every symbol on macOS 27. bpulse's `frameworkUnavailable` text on stderr ends
+  with the MobileDevice version; stdout and exit codes are unchanged. A new `Devices/` folder is
+  0700. A registry that can't be decoded or set aside leaves the store read-only instead of being
+  overwritten. The CI smoke requires `--accessories --json` to exit 0 (a canary for the private
+  symbol). CORE-01: `.data` description 0.55 → 0.33 ms per pass over the fixtures' blobs.
+- **Docs for WP-12:** CLAUDE.md names `Main/History/` and BatteryCore's `HistoryChartData`; there
+  is no `Material` left in `Main/`, so WP-12's rule starts with zero exceptions.
