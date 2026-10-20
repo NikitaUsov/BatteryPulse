@@ -446,6 +446,9 @@ enum UpdateInstallSteps {
         await detach(mountPoint)
     }
 
+    /// macOS 27 marks `hdiutil attach` and `detach` deprecated in favour of `diskutil image attach`
+    /// and `diskutil eject`. They still work, and 0.6.0's installer and the CI install-path step use
+    /// them, so they stay; the move to `diskutil image` is 0.6.2 work, with its own test.
     private static let hdiutil = "/usr/bin/hdiutil"
 
     private static func detach(_ mountPoint: URL) async {
