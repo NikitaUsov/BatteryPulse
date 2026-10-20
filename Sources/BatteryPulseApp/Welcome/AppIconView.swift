@@ -80,14 +80,6 @@ struct AppIconView: View {
     }
 }
 
-extension MotionPolicy {
-    /// The welcome icon's pulse line drawing in, once: `nil` unless one-off extras are allowed.
-    /// The short delay lets the window finish appearing first.
-    fileprivate var iconDrawIn: Animation? {
-        allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil
-    }
-}
-
 /// The icon's pulse line: a dark outline under a light line, both drawn up to `end` (0…1).
 private struct Pulse: View {
     let end: CGFloat

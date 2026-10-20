@@ -123,9 +123,13 @@ the Accessories page; `bpulse --accessories --raw` saves what accessories report
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open and can be
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
-or on another Space), and every 10 seconds when the menu bar shows power. Otherwise BatteryPulse updates when macOS reports a
-change, plus one reading a minute for the history while recording is on (the default; turn it
-off in Settings → Advanced), so it uses almost no CPU in the background.
+or on another Space), and every 10 seconds when the menu bar shows power. In Low Power Mode,
+when macOS asks apps to save resources, or when the Mac runs hot, they refresh less often: every
+5 seconds in windows and every 30 seconds in the menu bar. While the displays sleep or the Mac
+is switched to another user, the menu bar stops refreshing power and catches up once you're
+back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
+the history while recording is on (the default; turn it off in Settings → Advanced), so it uses
+almost no CPU in the background.
 
 ### Motion and Liquid Glass
 
@@ -346,7 +350,9 @@ Everything stays on your Mac, in
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Devices`. BatteryPulse keeps
 each device's name (as its label), model, OS version, last values and history under a key made
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
-device data are never written. Demo Mode shows a simulated iPhone in place of your devices.
+device data are never written. Only your account can read the folder, and BatteryPulse's
+messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
+shows a simulated iPhone in place of your devices.
 
 ## Accessories
 
@@ -459,7 +465,9 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 BatteryPulse checks GitHub for a new version daily, weekly, monthly or never, as you choose in
 Settings → General (daily at first), and **BatteryPulse → Check for Updates…** checks right
-away with any choice. When a new version is out, the first
+away with any choice. Automatic checks skip Low Data Mode and expensive networks, such as a
+Personal Hotspot, and try again later; Check for Updates… checks on any network. When a new
+version is out, the first
 check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
 Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
 available** in the menu bar popover instead, which opens the same window.
@@ -471,12 +479,16 @@ when:
 
 - BatteryPulse runs from where it was downloaded instead of from Applications (move it there
   first);
-- your account can't change the folder BatteryPulse is in;
-- the release has no signature.
+- your account can't change the folder BatteryPulse is in.
 
-If anything goes wrong, nothing is replaced and the window offers Download instead. Permissions
-you gave BatteryPulse in Privacy & Security may be asked for again after an update, and widgets
-may need adding again (see [Widget](#widget)).
+If the release has no signature, or the downloaded update fails one of the checks that show it is
+genuine (its signature, GitHub's checksum, the app inside or that app's code signature),
+BatteryPulse installs nothing and doesn't offer the download either: the window says what
+failed and offers **Open Release Page**, so you can look at the release on GitHub before
+installing anything. If anything else goes wrong, such as a download that stops, nothing is
+replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
+Security may be asked for again after an update, and widgets may need adding again (see
+[Widget](#widget)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see
@@ -484,13 +496,15 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 and Relaunch takes over.
 
 The check and the download of an update you chose to install are the only requests
-BatteryPulse sends to the internet: GitHub sees your IP address, the app's version and your
-language, as with any web request, and nothing else about your Mac is sent. The only other
+BatteryPulse sends to the internet, and their answers aren't kept in a network cache: GitHub
+sees your IP address, the app's version and your language, as with any web request, and nothing
+else about your Mac is sent. The only other
 connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
+`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
+symbols that turn a crash report into readable function names; you don't need either.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.

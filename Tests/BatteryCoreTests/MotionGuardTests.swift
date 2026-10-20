@@ -14,9 +14,13 @@ import Testing
 /// - an animation that doesn't go through `\.motion`: `withAnimation` or `.animation(…)` with an
 ///   animation of its own (or the default one), which would ignore Reduce Motion and hidden
 ///   windows. Only `App/Motion.swift`, where the presets are built, is exempt;
+/// - an animation built outside `App/Motion.swift` (`Animation.…`, `.smooth(…)`, `.linear(…)` and
+///   the other constructors), even one gated by hand: every timing is a preset there;
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
+/// - a material in `Main/` (`Material`, `.regularMaterial`, `.bar`): content stays free of glass
+///   and materials, and the window style's background is the only material;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
 ///   outside the tone map's bridge, where it would bypass Clear's monochrome, and there a colour
 ///   read as a property (`tier.color`), which comes from the standard tones, not the window's;
@@ -96,12 +100,41 @@ import Testing
         words(#/\.color\b(?!\s*\()/#)
     }
 
+    /// A material by name (`Material.thin`, `.ultraThinMaterial`, `.bar` as a style); a
+    /// `.materialize` transition doesn't count.
+    private static var material: Regex<Substring> {
+        words(
+            #/\bMaterial\b|\b(?:ultraThin|thin|regular|thick|ultraThick)Material\b|\bbackgroundMaterial\b|\(\s*\.bar\s*[,)]/#
+        )
+    }
+
     /// APIs that make a window see-through or change its appearance; `containerBackground(…,
     /// for: .window)` is checked by its arguments, so the widget's own background stays allowed.
     private static var windowBackgroundAPI: Regex<Substring> {
         words(
             #/\bNSVisualEffectView\b|\bNSGlassEffectView\b|\bmaterialActiveAppearance\s*\(|\bpreferredColorScheme\s*\(|\.appearance\s*=(?!=)/#
         )
+    }
+
+    /// An animation built from its parts: `Animation.smooth`, or a constructor such as
+    /// `.smooth(duration:)`. `\bAnimation` needs its word boundary, so `DemoAnimation.allCases`
+    /// doesn't count; `.linear` without a call is a progress view style.
+    private static var animationConstructor: Regex<Substring> {
+        words(
+            #/\bAnimation\s*\.|\.(?:smooth|snappy|bouncy|spring|interactiveSpring|interpolatingSpring|easeIn|easeOut|easeInOut|linear|timingCurve)\s*\(/#
+        )
+    }
+
+    /// Text that every ``animationConstructor`` match holds, so a file without any skips it: a
+    /// `Regex` is slow on Linux.
+    static let animationLiterals = [
+        "Animation", ".smooth", ".snappy", ".bouncy", ".spring", ".interactiveSpring", ".interpolatingSpring",
+        ".easeIn", ".easeOut", ".linear", ".timingCurve",
+    ]
+
+    /// The identifier that ends right before `index`, such as `motion` in `motion.linear(`.
+    private static func identifier(before index: String.Index, in code: String) -> String {
+        String(code[..<index].reversed().prefix { $0.isLetter || $0.isNumber || $0 == "_" }.reversed())
     }
 
     /// Phase and keyframe animators, as views or modifiers; without `trigger:` they loop.
@@ -154,6 +187,12 @@ import Testing
             for match in code.matches(of: words(#/\bwithAnimation\s*\{/#)) {
                 flag(match.range.lowerBound, "withAnimation with the default animation; use a \\.motion preset")
             }
+            // `motion.linear(_:)` is the preset, not the constructor.
+            let builds = animationLiterals.contains { code.contains($0) }
+            for match in builds ? code.matches(of: animationConstructor) : []
+            where identifier(before: match.range.lowerBound, in: code) != "motion" {
+                flag(match.range.lowerBound, "an animation built outside Motion.swift; add a preset there")
+            }
         }
         for call in SourceScanner.calls(named: #/\.animation/#, in: code) where call.isModifier {
             if !buildsPresets, !goesThroughMotion(call.firstArgument) {
@@ -174,6 +213,12 @@ import Testing
         if !glassAllowList.contains(path) {
             for match in code.matches(of: words(#/\bglassEffect\s*\(/#)) {
                 flag(match.range.lowerBound, "glassEffect outside the floating controls (see CLAUDE.md)")
+            }
+        }
+        // Every match holds `Material` or `.bar`; a `Regex` over the other files is slow on Linux.
+        if path.hasPrefix("BatteryPulseApp/Main/"), code.contains("Material") || code.contains(".bar") {
+            for match in code.matches(of: material) {
+                flag(match.range.lowerBound, "a material in the windows' content; groups use a Card surface")
             }
         }
         if path == windowLookFile {
@@ -266,9 +311,18 @@ import Testing
         "Text(\"x\").animation(.smooth) { $0.opacity(on ? 1 : 0) }",
         "Text(\"x\").transition(.opacity.animation(.easeInOut))",
         "HStack { }\n    .animation(.default, value: showsAdapter)",
+        // Animations built outside the presets, even when gated by hand (CH-01).
+        "var drawIn: Animation? { motion.allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil }",
+        "let fade = Animation.easeInOut(duration: 0.2)",
+        "let bounce: Animation = .spring(response: 0.3, dampingFraction: 0.8)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
+        // Skipping a file without the literals could hide a constructor that has none of them.
+        let code = SourceScanner.codeOnly(source)
+        if code.contains(Self.animationConstructor) {
+            #expect(Self.animationLiterals.contains { code.contains($0) }, "\(source)")
+        }
     }
 
     @Test(arguments: [
@@ -301,6 +355,11 @@ import Testing
         "Text(\"\"\"\n  .animation(.smooth, value: snapshot)\n  \"\"\")",
         "Text(#\"a \"quoted\" .animation(.smooth)\"#)",
         "GlassEffectContainer { bar.glassEffectID(\"bar\", in: ns) }",
+        // A type whose name ends in Animation, the preset `motion.linear(_:)`, and a progress
+        // view style (CH-01).
+        "ForEach(DemoAnimation.allCases) { Text($0.title) }",
+        "withAnimation(motion.linear(Self.frame / .seconds(1))) { advance() }",
+        "ProgressView(value: 0.5).progressViewStyle(.linear)",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -319,6 +378,29 @@ import Testing
         #expect(flags(sheet, path: "BatteryPulseApp/Main/OverviewView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
+    }
+
+    /// AV-08: the chart readout, like all content, has no material of its own.
+    @Test(arguments: [
+        "readout.background(.regularMaterial, in: .rect(cornerRadius: 8))",
+        "readout.background(Material.thin)",
+        "readout.background(.ultraThinMaterial)",
+        "toolbar.background(.bar)",
+        "let fill: Material = .thick",
+        "content.environment(\\.backgroundMaterial, .regular)",
+    ])
+    func noMaterialInTheWindowsContent(source: String) {
+        #expect(flags(source, path: "BatteryPulseApp/Main/History/HistoryChartParts.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/MenuBar/PopoverView.swift"), "\(source)")
+    }
+
+    @Test func materialGuardAllows() {
+        let path = "BatteryPulseApp/Main/DemoView.swift"
+        #expect(!flags("bar.glassEffectTransition(motion.level == .full ? .materialize : .identity)", path: path))
+        #expect(!flags("// A plain fill, not a second Material", path: path))
+        #expect(!flags("readout.background(tones.style(.surface), in: .rect(cornerRadius: 8))", path: path))
     }
 
     @Test(arguments: [
@@ -454,6 +536,9 @@ import Testing
         let modifier = "content.animation(.smooth(duration: 0.25), value: rounded)"
         #expect(!flags(modifier, path: "BatteryPulseApp/App/Motion.swift"))
         #expect(flags(modifier, path: "BatteryPulseApp/App/DemoController.swift"))
+        let drawIn = "var iconDrawIn: Animation? { allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil }"
+        #expect(!flags(drawIn, path: "BatteryPulseApp/App/Motion.swift"))
+        #expect(flags(drawIn, path: "BatteryPulseApp/Welcome/AppIconView.swift"))
         // The presets file still follows the other rules.
         #expect(flags("content.animation(motion.change, value: snapshot)", path: "BatteryPulseApp/App/Motion.swift"))
     }
