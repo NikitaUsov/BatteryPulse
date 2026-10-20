@@ -8,11 +8,6 @@ import notify
 import os
 #endif
 
-/// Wraps a value that is only touched in a thread-safe way (e.g. observer tokens).
-struct UncheckedSendable<Value>: @unchecked Sendable {
-    let value: Value
-}
-
 extension ThermalState {
     init(_ state: ProcessInfo.ThermalState) {
         switch state {
@@ -41,14 +36,15 @@ func observeNotifications(
     handler: @escaping @MainActor @Sendable () -> Void
 ) -> @Sendable () -> Void {
     let center = NotificationCenter.default
-    let tokens = names.map { name in
+    // The tokens aren't Sendable, but they are never mutated, and `removeObserver` is thread-safe:
+    // the remover may run on any thread, from `BatteryObservation.deinit`.
+    nonisolated(unsafe) let tokens = names.map { name in
         center.addObserver(forName: name, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { handler() }
         }
     }
-    let box = UncheckedSendable(value: tokens)
     return {
-        for token in box.value {
+        for token in tokens {
             NotificationCenter.default.removeObserver(token)
         }
     }
