@@ -118,6 +118,8 @@ public enum UpdateIntegrity {
 /// - **After a failed check:** the app never offers the refused DMG, only the release page
 ///   (``UpdateFallback/releasePage``), and the browser opens only `https` pages on github.com
 ///   (``ReleaseLinks``).
+/// - **Release notes:** anyone who can publish a release can write them, and they stay editable,
+///   so a link in them opens only over `https`, on any host (``ReleaseNotes/isAllowedLink(_:)``).
 /// - **Which version:** the copy taken out of the DMG must be this app at exactly the release's
 ///   version, and newer than the running one, so an older signed release can't be installed
 ///   over a newer one (``checkStagedBundle(identifier:version:expectedIdentifier:release:current:)``).
