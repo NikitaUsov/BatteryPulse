@@ -114,6 +114,9 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (`NonisolatedNonsendingByDefault`). Work that leaves the main actor (decoding, hashing,
   building chart data or Raw Data rows) is a `@concurrent` function over `Sendable` values, not
   `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`).
+- Observation: a service follows `@Observable` state in a named task over
+  `Observations { … }.dropFirst()` (the start value is no change) and cancels it in `stop()`;
+  never `withObservationTracking`.
 - Energy: every periodic `sleep(for:)` passes `tolerance:` of at least 10 % of its interval
   (one-shots go on `EnergyGuardTests`' list with their reason); no `Timer`, Combine or dispatch
   timer (`asyncAfter` only for the device transport's timeouts); `beginActivity` only around an
