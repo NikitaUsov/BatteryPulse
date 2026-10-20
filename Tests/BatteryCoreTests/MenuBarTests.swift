@@ -111,7 +111,8 @@ import Testing
 
     @Test func iconStyles() {
         #expect(MenuBarIconStyle.allCases == [.symbol, .modern, .classic, .percentageInside, .ring])
-        #expect(MenuBarIconStyle.allCases.filter { !$0.isDrawn } == [.symbol])
+        // Every style but the SF Symbol is drawn with shapes.
+        #expect(MenuBarIconStyle.allCases.filter { BatteryIconLayout(style: $0, state: .sample) == nil } == [.symbol])
         #expect(MenuBarIconStyle(rawValue: "percentageInside") == .percentageInside)
         // The values of the icon style before 0.4 aren't styles any more.
         #expect(MenuBarIconStyle(rawValue: "standard") == nil)

@@ -128,7 +128,4 @@ public enum MenuBarIconStyle: String, Sendable, CaseIterable {
     case ring
 
     public static let `default` = MenuBarIconStyle.modern
-
-    /// Drawn with shapes rather than an SF Symbol.
-    public var isDrawn: Bool { self != .symbol }
 }

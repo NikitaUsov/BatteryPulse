@@ -16,11 +16,6 @@ public enum WindowLook: String, CaseIterable, Sendable {
     case translucent
     /// One sheet of clear Liquid Glass with a dark dimming; all content turns white.
     case clear
-
-    /// Unknown or missing stored values read as ``standard``.
-    public init(stored: String?) {
-        self = stored.flatMap(Self.init(rawValue:)) ?? .standard
-    }
 }
 
 /// What a window actually draws, from the stored setting and the accessibility settings.
@@ -146,16 +141,6 @@ public struct WindowLookPolicy: Equatable, Sendable {
     /// Numbers in bold and running text in medium weight, for legibility on the glass.
     public var boldNumerals: Bool {
         usesGlassSheet
-    }
-
-    /// Whether text may use the tertiary level; on the glass it is too faint.
-    public var allowsTertiaryText: Bool {
-        !usesGlassSheet
-    }
-
-    /// Groups are told apart by hairlines instead of surfaces.
-    public var dividesGroupsWithHairlines: Bool {
-        groupSurface == .none
     }
 
     /// Clear puts its window in the dark appearance: content is white in Light and Dark alike.
