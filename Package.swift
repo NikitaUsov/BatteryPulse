@@ -7,6 +7,7 @@ let strict: [SwiftSetting] = [
     .enableUpcomingFeature("ExistentialAny"),
     .enableUpcomingFeature("MemberImportVisibility"),
     .enableUpcomingFeature("InferIsolatedConformances"),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
     .enableUpcomingFeature("ImmutableWeakCaptures"),
     .treatWarning("NoUseUnstructuredThrowingTask", as: .error),
     .treatWarning("ImplicitStrongCapture", as: .error),
