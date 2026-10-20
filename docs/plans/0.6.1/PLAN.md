@@ -1718,3 +1718,32 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   215,181 B; every hygiene count 0. The integration tip `98b4fe7` (0.6.0 plus the four fixes and
   WP-0) reads DMG 3,704,721 B. The widget's export count again equals the app's (4195 and 4200), so
   the report reads the same binary twice or the counts happen to match: WP-8a checks.
+
+### A2 (WP-1, WP-UR), merged 2026-10-20
+
+- **Strict memory safety on Darwin:** Darwin Foundation marks `String(format:)` `@unsafe`; Linux
+  corelibs don't, so BatteryCore had 0 warnings on Linux and 9 errors on macOS and iOS. The
+  integer formats are plain Swift now (same output); the fixed-point ones go through one private
+  `BatteryReport.cFormat` with a Darwin-only `unsafe`. `CFormatEquivalenceTests` pin both. bpulse has
+  3 marked sites. An `unsafe` marker on the Linux side warns `UnnecessaryUnsafe`. WP-12 rewords
+  SW-R13 (unsafe is no longer only in BatteryKit's IOKit/SMC/MobileDevice and the app's
+  `proc_*`/`kill`).
+- **Upcoming features on Darwin:** 4 `(any NSObjectProtocol)?` tokens, 1 `import BatteryKit`, and
+  `AppDelegate` and `BatteryNotifier` conform `nonisolated` (InferIsolatedConformances). The widget
+  and the iOS BatteryKit build had 0 diagnostics.
+- **`swift package migrate` on macOS** (report in the message of `f2e3740`): 15 `@concurrent`
+  fix-its, none taken. `UpdateInstallSteps.replace` must become `@concurrent` once WP-6b calls it
+  directly. migrate can't edit this manifest (the settings come from the shared array) and exits 1.
+  The compiler colours diagnostics even into a file; strip them before grepping.
+- **Clear (CH-13):** 0.65 gives 5.22:1 primary and 3.21:1 secondary over a white window and a
+  dimmed gap of about 94/255 (G11's expected V2 reading); 0.40 gave 2.41:1, 1.82:1 and 156/255.
+- **UR-3:** `WindowLookPolicy.SheetSurface` decides the sheet's place; from `willMiniaturize` to
+  `didDeminiaturize` it is a plain fill of the sheet's own tint over the still see-through window,
+  for Translucent and Clear; Standard and Frosted are untouched. `WindowMinimizeReader` calls
+  `displayIfNeeded()` at `willMiniaturize`. Unproven until V4: if the snapshot is taken before
+  SwiftUI applies the change, the next step is an explicit transaction flush or writing the
+  behaviour down (candidate c). Check minimize and restore separately, with Shift held.
+- **The held variant** `claude/061-ur-clearfill` (`51c383c`) sits on the pre-rebase CH-13 commit;
+  D1 rebases it onto the RC before the session.
+- **Release notes (D3):** one line that the tile picker's selection is now an accent outline (the
+  0.5 notes advertised a flowing glass selection).
