@@ -260,14 +260,12 @@ struct DeveloperView: View {
     }
 
     private func copyJSON() {
-        guard let snapshot = monitor.snapshot, !monitor.isOverridden else { return }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(snapshot.redacted) else { return }
+        guard let snapshot = monitor.snapshot, !monitor.isOverridden, let json = try? snapshot.redactedJSON() else {
+            return
+        }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(String(decoding: data, as: UTF8.self), forType: .string)
+        pasteboard.setString(json, forType: .string)
     }
 
     /// Saves the redacted capture in the fixture format through the system's Save panel; a

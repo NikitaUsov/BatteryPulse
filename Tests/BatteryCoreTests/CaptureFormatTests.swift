@@ -3,14 +3,6 @@ import Foundation
 import Testing
 
 @Suite struct CaptureFormatTests {
-    /// Copy JSON's encoder.
-    private static func copyJSON(_ snapshot: BatterySnapshot) throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        return String(decoding: try encoder.encode(snapshot), as: UTF8.self)
-    }
-
     /// A capture written in the fixture format reads back as the same dictionaries, through the
     /// property list parser `bpulse --input` uses.
     @Test(arguments: Fixture.allCases)
@@ -23,13 +15,21 @@ import Testing
     }
 
     /// The real captures hold redacted serials. Any snapshot field fed from a key the capture
-    /// redacts would carry the placeholder into Copy JSON, and the serials' own key must go.
+    /// redacts would carry the placeholder into Copy JSON, and the serials' own key must go. The
+    /// text is the one the app copies, so a change to its encoding is checked too.
     @Test(arguments: Fixture.allCases.filter { $0.rawValue.hasPrefix("m5-macos27-") })
     func copyJSONHasNoSerials(fixture: Fixture) throws {
         let snapshot = try fixture.snapshot()
-        #expect(try Self.copyJSON(snapshot).contains("\"serialNumber\""), "the fixture has a serial to redact")
-        let json = try Self.copyJSON(snapshot.redacted)
+        let unredacted = String(decoding: try JSONEncoder().encode(snapshot), as: UTF8.self)
+        #expect(unredacted.contains("\"serialNumber\""), "the fixture has a serial to redact")
+        let json = try snapshot.redactedJSON()
         #expect(!json.contains("REDACTED"))
         #expect(!json.contains("\"serialNumber\""))
+        // Pretty-printed, with the top-level keys sorted.
+        let keys = json.split(separator: "\n").filter { $0.hasPrefix("  \"") }.map {
+            $0.dropFirst(3).prefix { $0 != "\"" }
+        }
+        #expect(keys.count > 5)
+        #expect(keys == keys.sorted())
     }
 }

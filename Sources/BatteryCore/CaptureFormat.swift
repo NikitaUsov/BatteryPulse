@@ -20,4 +20,13 @@ extension BatterySnapshot {
         snapshot.adapter?.serialNumber = nil
         return snapshot
     }
+
+    /// What Copy JSON puts on the clipboard: the ``redacted`` snapshot, pretty-printed with sorted
+    /// keys and ISO 8601 dates.
+    public func redactedJSON() throws -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return String(decoding: try encoder.encode(redacted), as: UTF8.self)
+    }
 }
