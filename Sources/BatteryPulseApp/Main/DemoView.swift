@@ -105,11 +105,12 @@ private struct DemoStepRow: View {
 /// Floating controls at the bottom of the main window while Demo Mode is on, so it's always
 /// clear the numbers are simulated and the demo can be stepped through or stopped from any page.
 ///
-/// The only custom Liquid Glass in the app: a control that floats over content. It materializes
-/// when the demo starts and dissolves when it stops (DemoController changes the step inside an
-/// animation), and the capsule follows the width of each scene's title. Under Reduce Motion
-/// DemoController's changes carry no animation: the bar only fades in and out, with a fade of
-/// its own, and the capsule takes each new title's width at once.
+/// One of the few places with custom Liquid Glass (CLAUDE.md and `MotionGuardTests` list them): a
+/// control that floats over content. It materializes when the demo starts and dissolves when it
+/// stops (DemoController changes the step inside an animation), and the capsule follows the width
+/// of each scene's title. Under Reduce Motion DemoController's changes carry no animation: the bar
+/// only fades in and out, with a fade of its own, and the capsule takes each new title's width at
+/// once.
 struct DemoControlBar: View {
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
