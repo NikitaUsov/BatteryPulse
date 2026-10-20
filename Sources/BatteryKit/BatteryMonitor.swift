@@ -33,6 +33,7 @@ public final class BatteryMonitor {
     @ObservationIgnored private let clock: any MonitorClock
     @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
     @ObservationIgnored private var observation: BatteryObservation?
+    // Each task has a name ("BatteryMonitor.…") for Instruments' Swift Tasks view and the debugger.
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
     @ObservationIgnored private var followUpTask: Task<Void, Never>?
@@ -130,7 +131,7 @@ public final class BatteryMonitor {
     func requestRefresh() {
         guard isRunning, pendingRefresh == nil else { return }
         let clock = clock
-        pendingRefresh = Task { [weak self] in
+        pendingRefresh = Task(name: "BatteryMonitor.pendingRefresh") { [weak self] in
             try? await clock.sleep(for: Self.coalescingWindow, tolerance: Self.coalescingTolerance)
             guard !Task.isCancelled, let self, self.isRunning else { return }
             self.pendingRefresh = nil
@@ -160,7 +161,7 @@ public final class BatteryMonitor {
         followUpTask?.cancel()
         let delays = powerChangeFollowUps
         let clock = clock
-        followUpTask = Task { [weak self] in
+        followUpTask = Task(name: "BatteryMonitor.followUps") { [weak self] in
             var previous = Duration.zero
             for delay in delays {
                 // A tenth of each gap lets the OS coalesce the wake-up with others. Gaps rather
@@ -191,7 +192,7 @@ public final class BatteryMonitor {
         liveRefreshTask = nil
         guard isRunning, let interval = liveRefreshInterval else { return }
         let clock = clock
-        liveRefreshTask = Task { [weak self] in
+        liveRefreshTask = Task(name: "BatteryMonitor.liveRefresh") { [weak self] in
             while !Task.isCancelled {
                 // Tolerance lets the OS coalesce wake-ups, which matters on battery.
                 try? await clock.sleep(for: interval, tolerance: interval / 4)
