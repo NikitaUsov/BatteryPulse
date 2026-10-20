@@ -1836,3 +1836,30 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   `os` itself.
 - **F11 decides SW-09:** if F11 fails, revert the four commits 5a21f7a, 83e4b73, fe9d7ff and
   db1de0c; if it doesn't run, ship on the CI smoke.
+
+### B4 (WP-6b, WP-3a), merged 2026-10-20
+
+- **Installer:** `Task.detached` 3 → 1 (the named leftover cleanup), `URLSession.shared` 3 → 0,
+  `@unchecked Sendable` 8 → 7 (left: four of WP-7's, `MobileDeviceLibrary`, `MobileDeviceSink`,
+  `AppearanceVariants`). G4 passes: `DownloadWatcher` is a checked `Sendable` over
+  `Mutex<URLSessionTask?>`. `withTaskCancellationShield` (macOS 27) wraps the `replace` call only.
+  Typed throws on 6.4: a closure literal must spell `throws(UpdateInstallError)` itself.
+- **G22, if F12 fails:** revert newest first 80e5d97 (E11), 2d68679 (SEC-03), 6c8868b (Mutex),
+  ea79387 (shield), dc8a363 (replace), 3d05736 (verify); the result equals 7694ea1's tree. To get
+  0.6.0's exact installer code, revert 7694ea1 (SW-11) after them. dc8a363 can't be reverted on its
+  own while ea79387 stays.
+- **SEC-03 is user-visible:** automatic checks skip Low Data Mode and expensive networks (a
+  Personal Hotspot); Check Now doesn't. A refused automatic check fails at once and the next tick
+  retries. F12 may check that no `Cache.db` or `fsCachedData` appears under
+  `~/Library/Caches/io.github.nikitausov.BatteryPulse` after a check.
+- **E7 against EN-1:** the 6-hour tick's 30-minute tolerance is 8.3 %, under EN-1's 10 %. WP-12
+  raises it to 36 minutes so the energy guard needs no exception.
+- **CORE-03:** the serial test run is 1.09 s shorter (6.50 → 5.41 s).
+- **History (G1):** 7-day cold 83.8 → 85.5 ms (unchanged; the first load decodes everything);
+  warm 85.3 → 2.6 ms (−97 %); a load after today's file gains a line 85.4 → 2.6 ms. The storage
+  round trip over a generated 13-day store gives an empty `diff -r`, and both versions read both
+  folders identically. The cache holds about 1.1 MB for a 7-day view, at most about 1.8 MB. It is
+  keyed by day and size, so a file replaced at the same size by another process is not noticed
+  (none does that).
+- **Docs for WP-12:** USER_GUIDE "Updates" says automatic checks skip Low Data Mode and expensive
+  networks; CLAUDE.md lists `UpdateNetwork` (end of `UpdateChecker.swift`).
