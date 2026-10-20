@@ -20,6 +20,7 @@ final class HistoryRecorder {
     private let monitor: BatteryMonitor
     private let store: HistoryStore
     private var task: Task<Void, Never>?
+    private var observation: Task<Void, Never>?
     private var pendingEvent: HistoryEvent? = .launch
     private var wakeObserver: (any NSObjectProtocol)?
 
@@ -38,7 +39,15 @@ final class HistoryRecorder {
                 Task { await self?.recordNow(refreshing: true) }
             }
         }
-        observe()
+        // Plugging in, unplugging and state changes arrive as new snapshots; ``HistoryPolicy``
+        // decides whether they add a sample. The snapshot at the start is no change: the first
+        // tick below records the launch.
+        observation = Task(name: "HistoryRecorder.observation") { [weak self, monitor] in
+            for await _ in Observations({ monitor.snapshot }).dropFirst() {
+                guard let self else { return }
+                await self.recordNow(refreshing: false)
+            }
+        }
         task = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.recordNow(refreshing: true)
@@ -48,16 +57,14 @@ final class HistoryRecorder {
         }
     }
 
-    /// Plugging in, unplugging and state changes arrive as new snapshots; ``HistoryPolicy``
-    /// decides whether they add a sample.
-    private func observe() {
-        withObservationTracking {
-            _ = monitor.snapshot
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                await self?.recordNow(refreshing: false)
-                self?.observe()
-            }
+    func stop() {
+        task?.cancel()
+        task = nil
+        observation?.cancel()
+        observation = nil
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+            self.wakeObserver = nil
         }
     }
 
