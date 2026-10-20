@@ -137,7 +137,8 @@ extension View {
     }
 
     /// Requests polling at `interval` from `monitor` while this view is on screen, its window is
-    /// visible and `isEnabled` is true; withdraws the request otherwise.
+    /// visible and `isEnabled` is true; withdraws the request otherwise. While the system asks to
+    /// save energy the request is for a longer interval (``LiveRefreshPolicy``).
     func liveRefresh(
         _ monitor: BatteryMonitor, every interval: Duration, client: String, isEnabled: Bool = true
     ) -> some View {
@@ -158,7 +159,7 @@ private struct MotionPolicyModifier: ViewModifier {
             reduceMotion: reduceMotion,
             prefersCrossFade: prefersCrossFade,
             isVisible: isVisible,
-            reducesResources: LowPowerMode.shared.isEnabled || systemPrefersReducedResourceUsage)
+            reducesResources: SystemPowerState.shared.isLowPowerModeEnabled || systemPrefersReducedResourceUsage)
         let isHidden = !isVisible
         content
             .environment(\.motion, policy)
@@ -198,9 +199,13 @@ private struct LiveRefreshModifier: ViewModifier {
     let isEnabled: Bool
     @Environment(\.motion) private var motion
 
-    /// The interval this view asks for right now, or `nil` for none.
+    /// The interval this view asks for right now, or `nil` for none. Low Power Mode and the
+    /// system's request to save resources come with the window's motion policy, and the thermal
+    /// state from `ProcessInfo`: none of them from the snapshot, which Demo Mode simulates.
     private var request: Duration? {
-        isEnabled && motion.isVisible ? interval : nil
+        guard isEnabled, motion.isVisible else { return nil }
+        return LiveRefreshPolicy.interval(
+            base: interval, reducesResources: motion.reducesResources, thermal: SystemPowerState.shared.thermalState)
     }
 
     func body(content: Content) -> some View {
@@ -213,26 +218,52 @@ private struct LiveRefreshModifier: ViewModifier {
 
 // MARK: - Inputs
 
-/// Low Power Mode as macOS reports it. Read from `ProcessInfo` rather than the snapshot, so a
-/// Demo Mode scene that simulates it doesn't change how the app animates.
+/// Low Power Mode and the thermal state as macOS reports them. Read from `ProcessInfo` rather
+/// than the snapshot, so a Demo Mode scene that simulates them changes neither how the app
+/// animates nor how often it reads the battery.
 @MainActor
 @Observable
-final class LowPowerMode {
-    static let shared = LowPowerMode()
+final class SystemPowerState {
+    static let shared = SystemPowerState()
 
-    private(set) var isEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-    @ObservationIgnored private var observer: (any NSObjectProtocol)?
+    private(set) var isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+    // Apple: "you must access the thermalState prior to registering for the notification."
+    private(set) var thermalState = ThermalState(system: ProcessInfo.processInfo.thermalState)
+    @ObservationIgnored private var observers: [any NSObjectProtocol] = []
 
     private init() {
-        // The app keeps one observer for its whole life.
-        observer = NotificationCenter.default.addObserver(
-            forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                let isEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-                if self.isEnabled != isEnabled { self.isEnabled = isEnabled }
+        // The app keeps the observers for its whole life.
+        let center = NotificationCenter.default
+        let names: [Notification.Name] = [
+            .NSProcessInfoPowerStateDidChange, ProcessInfo.thermalStateDidChangeNotification,
+        ]
+        observers = names.map { name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.update() }
             }
+        }
+    }
+
+    /// Reads both again; a property changes only when its value does, so views that read one
+    /// aren't updated for the other.
+    private func update() {
+        let processInfo = ProcessInfo.processInfo
+        let isLowPowerModeEnabled = processInfo.isLowPowerModeEnabled
+        if self.isLowPowerModeEnabled != isLowPowerModeEnabled { self.isLowPowerModeEnabled = isLowPowerModeEnabled }
+        let thermalState = ThermalState(system: processInfo.thermalState)
+        if self.thermalState != thermalState { self.thermalState = thermalState }
+    }
+}
+
+extension ThermalState {
+    /// macOS's thermal state; one added in a later macOS counts as nominal.
+    fileprivate init(system state: ProcessInfo.ThermalState) {
+        switch state {
+        case .nominal: self = .nominal
+        case .fair: self = .fair
+        case .serious: self = .serious
+        case .critical: self = .critical
+        @unknown default: self = .nominal
         }
     }
 }
