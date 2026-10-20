@@ -1,8 +1,6 @@
 #if os(macOS)
 import BatteryCore
 import Foundation
-import IOKit.ps
-import notify
 
 /// Batteries of connected accessories (Bluetooth keyboards, mice, trackpads, headphones) as the
 /// power management daemon publishes them: the data `pmset -g accps` shows. Needs no Bluetooth
@@ -41,29 +39,12 @@ public final class MacAccessoryProvider: AccessoryProvider {
         guard let copy = copyPowerSourcesByType else { return nil }
         guard let blob = copy(Self.accessorySources)?.takeRetainedValue(), CFGetTypeID(blob) == CFArrayGetTypeID()
         else { return AccessoryReading(sources: []) }
-        // The same calls as MacBatteryProvider.internalBatteryDescription.
-        let list = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] ?? []
-        let sources = list.compactMap { source -> PropertyDictionary? in
-            let description = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any]
-            return PropertyValue.dictionary(fromAny: description)
-        }
-        return AccessoryReading(sources: sources)
+        return AccessoryReading(
+            sources: powerSourceDescriptions(in: blob).compactMap { PropertyValue.dictionary(fromAny: $0) })
     }
 
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
-        // notify(3), as in MacBatteryProvider: notify_cancel tears down deterministically.
-        var tokens: [Int32] = []
-        for name in Self.notifications {
-            var token: Int32 = 0
-            let status = notify_register_dispatch(name, &token, .main) { _ in
-                MainActor.assumeIsolated { handler() }
-            }
-            if status == 0 { tokens.append(token) }
-        }
-        let registered = tokens
-        return BatteryObservation {
-            for token in registered { notify_cancel(token) }
-        }
+        BatteryObservation(onCancel: observeNotifyKeys(Self.notifications, handler: handler))
     }
 }
 #endif
