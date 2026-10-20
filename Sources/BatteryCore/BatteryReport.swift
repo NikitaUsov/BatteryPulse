@@ -65,7 +65,7 @@ public enum BatteryReport {
         }
         add("Condition", s.healthCondition)
         if let failure = s.permanentFailureStatus, failure != 0 {
-            add("Permanent failure", String(format: "0x%X", failure))
+            add("Permanent failure", hex(failure))
         }
         if let cycles = s.cycleCount {
             if let rated = s.designCycleCount, let used = s.cycleLifeUsed {
@@ -100,10 +100,10 @@ public enum BatteryReport {
         // The gauge reports a "not charging" reason on battery too; it only means something
         // while an adapter is connected.
         if let reason = s.notChargingReason, reason != 0, s.isExternalPowerConnected == true {
-            add("Not charging reason", String(format: "0x%X", reason))
+            add("Not charging reason", hex(reason))
         }
         if let reason = s.slowChargingReason, reason != 0, s.chargeState == .charging {
-            add("Slow charging reason", String(format: "0x%X", reason))
+            add("Slow charging reason", hex(reason))
         }
         add("System input", s.systemPowerInWatts.flatMap { $0 > 0 ? "\(fixed($0, 1)) W" : nil })
         add("System load", s.systemLoadWatts.map { "\(fixed($0, 1)) W" })
@@ -152,13 +152,30 @@ public enum BatteryReport {
     }
 
     static func fixed(_ value: Double, _ digits: Int) -> String {
-        String(format: "%.\(digits)f", value)
+        cFormat("%.\(digits)f", value)
     }
 
     /// Explicit sign, except for values that round to zero ("0.0", not "+0.0" or "-0.0").
     static func signed(_ value: Double, _ digits: Int) -> String {
         let unsigned = fixed(value, digits)
-        return Double(unsigned) == 0 ? fixed(0, digits) : String(format: "%+.\(digits)f", value)
+        return Double(unsigned) == 0 ? fixed(0, digits) : cFormat("%+.\(digits)f", value)
+    }
+
+    /// "0x1A2B": what C's `0x%X` prints for an `Int`, which is its low 32 bits.
+    static func hex(_ value: Int) -> String {
+        "0x" + String(UInt32(truncatingIfNeeded: value), radix: 16, uppercase: true)
+    }
+
+    /// C's rounding to a fixed number of digits, which nothing else in Foundation matches.
+    /// Darwin's Foundation marks `String(format:)` unsafe, since a format that doesn't match its
+    /// arguments reads memory it shouldn't; Linux's doesn't. Both callers build a format with a
+    /// single `f` conversion for the one `Double`, so this is the one place it is used.
+    private static func cFormat(_ format: String, _ value: Double) -> String {
+        #if canImport(Darwin)
+        return unsafe String(format: format, value)
+        #else
+        return String(format: format, value)
+        #endif
     }
 
     private static func joined(_ parts: [String?]) -> String? {
