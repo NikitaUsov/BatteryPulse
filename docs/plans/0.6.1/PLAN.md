@@ -1809,3 +1809,30 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
 - **Budget checkpoint (§6), after B2:** 16 runs used (plan 16-19), about 3.6 M agent tokens; the
   maintainer reports the plan's limits barely touched and chose the whole plan, so B3 onward runs
   as planned, P2 included.
+
+### B3 (WP-5, WP-4), merged 2026-10-20
+
+- **Raw Data (Linux benches, noisy):** per keystroke the filter goes from 0.6.0's five-way OR in
+  `body` (about 6.4 ms) to `RawDisplaySection.filter` over prebuilt rows (about 2.7 ms, −58 %);
+  the rows (about 5 ms) are built once per reading, off the main actor. UI-10 holds: over every
+  fixture and 18 queries the results equal 0.6.0's exactly. D1's alternating method gives the
+  official B4/B5 figures; `raw.display` and the joined filter don't exist on the baseline.
+- **Behaviour note:** Raw Data's decoded text follows a region change on the next reading (2 s)
+  rather than at once; the other pages follow it through the autoupdating locale.
+- **New BatteryCore pieces for CLAUDE.md (WP-12):** `CaptureFormat.swift`
+  (`PropertyValue.xmlPropertyListData`, `BatterySnapshot.redacted`, the Copy JSON encoder), and
+  `RawDisplayRow`/`RawDisplaySection` in `RawKeyGlossary.swift`. `Task.detached` is down to 3, all
+  in `UpdateInstaller` (WP-6b).
+- **Observations:** all four observation loops are named tasks over `Observations { }.dropFirst()`
+  with a `stop()`; `withObservationTracking` is gone from Sources. On Swift 6.4.1 the pattern
+  yields nothing for the start value, one value per change, one value for two changes in a turn,
+  and a change before the task's first `next()` counts as the start value (nothing changes in that
+  window at launch). G5: `import UserNotifications` without `@preconcurrency` builds clean.
+- **E15 day:** 40 reloads in the synthetic day (8 state, 6 estimate arrivals, 26 movement, the
+  4-an-hour cap hit), against the bound 78; `WidgetReloadPolicy` unchanged.
+- **E8:** a history sample may carry power values up to 20 s old; the launch smoke shows one read
+  before `menuBarReady` and no extra `trigger=history` read.
+- **MemberImportVisibility:** a file that calls `Logger` through the app's `Diagnostics` imports
+  `os` itself.
+- **F11 decides SW-09:** if F11 fails, revert the four commits 5a21f7a, 83e4b73, fe9d7ff and
+  db1de0c; if it doesn't run, ship on the CI smoke.
