@@ -213,6 +213,7 @@ if [ "$PROFILING" = 1 ]; then
 </plist>
 PLIST
   codesign --force --sign - --options runtime --entitlements "$PROFILING_ENTITLEMENTS" "$APP"
+  rm "$PROFILING_ENTITLEMENTS"
 else
   codesign --force --sign - --options runtime "$APP"
 fi
@@ -236,6 +237,17 @@ cat > "$POSTURE/none.entitlements" <<PLIST
 <dict/>
 </plist>
 PLIST
+# What a profiling build's app may have, written here rather than read from the file it was signed
+# with, so an entitlement added to that file fails the check too.
+cat > "$POSTURE/profiling.entitlements" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.get-task-allow</key><true/>
+</dict>
+</plist>
+PLIST
 # normalize <plist> <name>: the plist as plutil writes it, in $POSTURE/<name>.plist.
 normalize() { plutil -convert xml1 -o "$POSTURE/$2.plist" "$1"; }
 # signed_entitlements <bundle> <name>: the bundle's entitlements, normalized; an empty dictionary
@@ -253,8 +265,7 @@ signed_entitlements "$APP" app
 signed_entitlements "$APPEX" widget
 normalize Resources/BatteryPulseWidget.entitlements widget-expected
 if [ "$PROFILING" = 1 ]; then
-  normalize "$PROFILING_ENTITLEMENTS" app-expected
-  rm "$PROFILING_ENTITLEMENTS"
+  normalize "$POSTURE/profiling.entitlements" app-expected
 else
   normalize "$POSTURE/none.entitlements" app-expected
 fi
