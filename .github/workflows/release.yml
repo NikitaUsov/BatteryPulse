@@ -32,6 +32,30 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+      - name: Check the release notes
+        # The notes become the release's text, which the Software Update window shows to everyone
+        # updating, so they must open with this version's heading: "## What's new in 0.6.1", or
+        # "## What's new in 0.6" for 0.6.0. The script reads only VERSION and NOTES, so it can run
+        # by hand on a draft before the tag: set the two variables and run its lines.
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+          NOTES: .github/release-notes.md
+        run: |
+          version="${VERSION#v}"
+          heading="## What's new in $version"
+          short="## What's new in ${version%.0}"
+          expected="\"$short\""
+          [ "$short" = "$heading" ] || expected="\"$short\" or \"$heading\""
+          if [ ! -s "$NOTES" ]; then
+            echo "::error file=$NOTES::$NOTES is missing or empty; the notes of $version open with $expected."
+            exit 1
+          fi
+          first="$(head -n 1 "$NOTES" | tr -d '\r')"
+          if [ "$first" != "$heading" ] && [ "$first" != "$short" ]; then
+            echo "::error file=$NOTES,line=1::$NOTES opens with \"$first\"; the notes of $version open with $expected."
+            exit 1
+          fi
+          echo "$NOTES opens with \"$first\""
       - name: Check the update signing key
         # The app installs an update itself only if the DMG is signed with the private half of
         # one of ReleaseSigning.publicKeys, so stop before building when the secret is missing or
