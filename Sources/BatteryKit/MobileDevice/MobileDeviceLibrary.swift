@@ -1,6 +1,7 @@
 #if os(macOS)
 import BatteryCore
 import Foundation
+import os
 
 /// Apple's private MobileDevice framework (the one Finder and Xcode use to talk to iPhones and
 /// iPads), opened with `dlopen` on first use and never linked: a Mac without it, or a macOS that
@@ -79,7 +80,42 @@ struct MobileDeviceLibrary: @unchecked Sendable {
     /// Loaded at most once per process.
     static let shared: Result<MobileDeviceLibrary, IDeviceError> = load()
 
+    /// Loads the framework, and logs its version once: what changed is the first question when a
+    /// macOS update breaks device reading.
     private static func load() -> Result<MobileDeviceLibrary, IDeviceError> {
+        // Read before loading, from the bundle's Info.plist, so even a framework that can't be
+        // loaded is named.
+        let name = "MobileDevice " + (paths.lazy.compactMap(Self.version(ofFrameworkAt:)).first ?? "(version unknown)")
+        let result = bind()
+        switch result {
+        case .success:
+            Diagnostics.device.info("\(name, privacy: .public) loaded")
+        case .failure(let error):
+            // The detail is dlerror's text or the missing symbols; it names paths.
+            Diagnostics.device.error("\(name, privacy: .public) can't be used: \(error.description)")
+        }
+        // In the error text too, which bpulse prints on standard error, never on standard output.
+        return result.mapError { error in
+            guard case .frameworkUnavailable(let detail) = error else { return error }
+            return .frameworkUnavailable(detail + "; " + name)
+        }
+    }
+
+    /// `CFBundleShortVersionString`, with `CFBundleVersion` when it differs, of the framework
+    /// whose binary is at `path`. Reading the bundle's Info.plist loads no code.
+    static func version(ofFrameworkAt path: String) -> String? {
+        let framework = URL(fileURLWithPath: path).deletingLastPathComponent()
+        guard let info = Bundle(url: framework)?.infoDictionary else { return nil }
+        let short = info["CFBundleShortVersionString"] as? String
+        let build = info["CFBundleVersion"] as? String
+        return switch (short, build) {
+        case (let short?, let build?) where short != build: "\(short) (\(build))"
+        case (let short?, _): short
+        case (nil, let build): build
+        }
+    }
+
+    private static func bind() -> Result<MobileDeviceLibrary, IDeviceError> {
         var found: (handle: UnsafeMutableRawPointer, path: String)?
         var errors: [String] = []
         for path in paths {

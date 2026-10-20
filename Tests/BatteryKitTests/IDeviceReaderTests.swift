@@ -457,3 +457,15 @@ extension LockedValue where Value == Int {
         release.signal()
     }
 }
+
+#if os(macOS)
+/// Runs on CI's macOS, where Xcode installs MobileDevice.
+@Suite struct MobileDeviceLibraryTests {
+    /// The version for the error text and the log comes from the bundle's Info.plist, before and
+    /// without loading the framework.
+    @Test func versionIsRead() {
+        let versions = MobileDeviceLibrary.paths.compactMap(MobileDeviceLibrary.version(ofFrameworkAt:))
+        #expect(versions.contains { !$0.isEmpty })
+    }
+}
+#endif
