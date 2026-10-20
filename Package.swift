@@ -23,7 +23,8 @@ let package = Package(
         .library(name: "BatteryCore", targets: ["BatteryCore"]),
         // OS integration: IOKit on macOS, UIDevice on iOS, plus the observable monitor.
         .library(name: "BatteryKit", targets: ["BatteryKit"]),
-        // Command-line battery report for macOS (`swift run bpulse`).
+        // Command-line battery report (`swift run bpulse`). It reads this Mac's battery on macOS;
+        // `--input` (a saved capture) and `--export` (a history folder) also run on Linux.
         .executable(name: "bpulse", targets: ["bpulse"]),
         // The menu-bar app (`swift run BatteryPulse`; `scripts/build-app.sh` packages it).
         .executable(name: "BatteryPulse", targets: ["BatteryPulseApp"]),
