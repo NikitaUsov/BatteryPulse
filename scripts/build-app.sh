@@ -34,13 +34,30 @@ esac
 APP="$BUILD_DIR/$NAME.app"
 DMG="$BUILD_DIR/$NAME.dmg"
 
-swift build -c release --product BatteryPulse
-swift build -c release --product BatteryPulseWidget
+# The shipped binaries' release flags, on these two command lines only: swift test and CI's bpulse
+# build don't get them, and Package.swift holds only the language policy.
+# - Export only _main. An executable without plug-ins that link back to it needs no exported
+#   symbols; the export list makes every other global private, so each binary exports one name
+#   instead of the about 4,200 public names of BatteryCore and BatteryKit. It doesn't shrink the
+#   code: what -dead_strip keeps doesn't depend on the exports. The widget keeps _main too,
+#   though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
+#   widget_other_exports out of size-report.sh's hygiene checks too.
+# - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
+#   and the History store ran no slower with it.
+RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
+# Each link also writes a link map, which attributes every byte of the binary to an object file
+# and a symbol (for size work; build/maps, a CI artifact). They sit next to the build products,
+# so a link that is up to date keeps a map that matches its binary.
+MAPS="$PWD/.build/link-maps"
+mkdir -p "$MAPS"
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD_DIR/maps"
+cp "$MAPS/BatteryPulse.map" "$MAPS/BatteryPulseWidget.map" "$BUILD_DIR/maps/"
 cp "$BINARY" "$APP/Contents/MacOS/BatteryPulse"
 
 # App icon: every size iconutil expects, rendered from the 1024 px master.
@@ -127,18 +144,55 @@ PLIST
 plutil -lint "$APPEX/Contents/Info.plist" >/dev/null
 
 # Both halves of the extension entry point must be there: linked to start in _NSExtensionMain,
-# and the WidgetBundle kept in the binary by @main. Output is captured first so an early grep
-# exit can't fail the pipeline.
-SYMBOLS="$(nm -m "$WIDGET")"
+# and the WidgetBundle kept in the binary by @main. They read the unstripped binary in $BIN_PATH:
+# the bundle copy loses these symbols below. Output is captured first so an early grep exit
+# can't fail the pipeline.
+SYMBOLS="$(nm -m "$BIN_PATH/BatteryPulseWidget")"
 if ! grep -F "_NSExtensionMain" <<<"$SYMBOLS" >/dev/null; then
   echo "error: the widget is not linked through _NSExtensionMain" >&2
   exit 1
 fi
-DEMANGLED="$(nm "$WIDGET" | xcrun swift-demangle)"
+DEMANGLED="$(nm "$BIN_PATH/BatteryPulseWidget" | xcrun swift-demangle)"
 if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null; then
   echo "error: the WidgetBundle is missing from the widget binary" >&2
   exit 1
 fi
+
+# Ship stripped executables: the symbol table and the debug map serve debugging and crash
+# symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
+# them, tied to each binary by its UUID, and go into $NAME-dSYMs.zip (a CI artifact and a release
+# asset). strip -x removes the local symbols; the export list left _main the only global one
+# besides the imports, so _main stays exported (a plain strip would remove it too). A profiling
+# build keeps its symbols for Instruments and the memory tools.
+DSYMS="$BUILD_DIR/dSYMs"
+mkdir -p "$DSYMS"
+uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
+for product in BatteryPulse BatteryPulseWidget; do
+  # Swift Build writes a dSYM next to each release product; dsymutil makes one if that is missing
+  # or belongs to an older link.
+  if [ -d "$BIN_PATH/$product.dSYM" ] && [ "$(uuids "$BIN_PATH/$product.dSYM")" = "$(uuids "$BIN_PATH/$product")" ]; then
+    cp -R "$BIN_PATH/$product.dSYM" "$DSYMS/"
+    echo "$product.dSYM: from $BIN_PATH"
+  else
+    xcrun dsymutil "$BIN_PATH/$product" -o "$DSYMS/$product.dSYM"
+    echo "$product.dSYM: made by dsymutil"
+  fi
+done
+if [ "$PROFILING" = 0 ]; then
+  xcrun strip -x "$APP/Contents/MacOS/BatteryPulse" "$WIDGET"
+fi
+for product in BatteryPulse BatteryPulseWidget; do
+  binary="$APP/Contents/MacOS/BatteryPulse"
+  [ "$product" = BatteryPulse ] || binary="$WIDGET"
+  expected="$(uuids "$binary")"
+  if [ -z "${expected// /}" ] || [ "$(uuids "$DSYMS/$product.dSYM")" != "$expected" ]; then
+    echo "error: $product.dSYM doesn't match the binary in the bundle" >&2
+    exit 1
+  fi
+  echo "$product.dSYM matches the binary in the bundle: UUID ${expected% }"
+done
+ditto -c -k "$DSYMS" "$BUILD_DIR/$NAME-dSYMs.zip"
+rm -rf "$DSYMS"
 
 # Inside out, and never --deep when signing: it would re-sign the widget without its
 # entitlements.
@@ -166,19 +220,26 @@ if ! grep -F "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" >/dev/null; the
   exit 1
 fi
 
-# Drag-to-install DMG: the app next to a link to /Applications.
+# Drag-to-install DMG: the app next to a link to /Applications. It is ULMO (LZMA), the smallest
+# compressed format hdiutil makes, which macOS 10.15 and later attach; every BatteryPulse updater
+# attaches it with /usr/bin/hdiutil, and the signature covers the file's bytes whatever the format.
+# It is made the space-optimal way hdiutil(1) documents: a read/write image of the folder, then a
+# conversion, so the compressed image holds no unused space.
 STAGING="$BUILD_DIR/dmg"
+READ_WRITE="$BUILD_DIR/$NAME-rw.dmg"
 mkdir -p "$STAGING"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 # hdiutil occasionally fails with "Resource busy" right after the files were written
-# (seen on hosted CI runners), so flush and retry.
+# (seen on hosted CI runners), so flush and retry. The conversion reads an image hdiutil has just
+# written, so it is retried with the creation.
 sync
 for attempt in 1 2 3 4 5; do
-  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDZO "$DMG" && break
+  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDRW "$READ_WRITE" \
+    && hdiutil convert -quiet "$READ_WRITE" -format ULMO -ov -o "$DMG" && break
   [ "$attempt" -eq 5 ] && exit 1
   sleep 5
 done
-rm -rf "$STAGING"
+rm -rf "$STAGING" "$READ_WRITE"
 
 echo "Built $APP and $DMG ($VERSION, build $BUILD_NUMBER)"

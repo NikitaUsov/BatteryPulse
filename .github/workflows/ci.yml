@@ -147,26 +147,96 @@ jobs:
           name: size-${{ github.sha }}
           path: build/size.json
           if-no-files-found: error
-      - name: Report build facts
-        # Information for the size work, never a failure: whether release builds leave .dSYM
-        # folders in the bin path, whether the widget's link line has -dead_strip and lacks
-        # -export_dynamic (it relinks the widget verbosely, after packaging), and whether hdiutil
-        # offers ULMO.
-        continue-on-error: true
+      - name: Upload the link maps
+        # For size attribution: which object file and symbol each byte of the shipped binaries
+        # comes from.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: link-maps-${{ github.sha }}
+          path: build/maps/
+          if-no-files-found: error
+      - name: Upload the dSYMs
+        # The debug information stripped from the shipped binaries, for symbolicating a crash
+        # report of this build.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: BatteryPulse-dSYMs-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
+          path: build/BatteryPulse-dSYMs.zip
+          if-no-files-found: error
+      - name: Install the way 0.6.0 does, then launch
+        # The update to this version runs the installed version's installer, so do with this DMG
+        # what 0.6.0's does: attach it with its hdiutil arguments (UpdateInstallPolicy
+        # .attachArguments), copy the app out, check its identifier and version, check its code
+        # signature with the flags of checkCodeSignature (strict, every architecture, nested code),
+        # and detach. These stay 0.6.0's even if this version's installer changes. Then launch the
+        # copy: after 30 s it must still run, have logged menuBarReady (its menu bar item
+        # appeared) and left no crash report, and it must quit when asked.
+        # It takes about a minute; a hung attach, open or quit ends here, not at the job's limit.
+        timeout-minutes: 5
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          bin="$(swift build -c release --product BatteryPulseWidget --show-bin-path)"
-          [ -d "$bin" ] || exit 0
-          dsyms="$(cd "$bin" && ls -d -- *.dSYM 2>/dev/null | tr '\n' ' ')"
-          rm -f "$bin/BatteryPulseWidget"
-          swift build -c release --product BatteryPulseWidget -v > "$RUNNER_TEMP/widget-link.log" 2>&1 || true
-          dead_strip="$(grep -c -e '-dead_strip' "$RUNNER_TEMP/widget-link.log" || true)"
-          export_dynamic="$(grep -c -e '-export_dynamic' "$RUNNER_TEMP/widget-link.log" || true)"
-          formats="$( (hdiutil help create; hdiutil create -help) 2>&1 | grep -o -E 'UL[A-Z]{2}|LZ[A-Z]+' | sort -u | tr '\n' ' ')"
-          {
-            echo "### Build facts"
-            echo
-            echo "- .dSYM in \`$bin\`: ${dsyms:-none}"
-            echo "- widget link, lines with -dead_strip: $dead_strip; with -export_dynamic: $export_dynamic"
-            echo "- hdiutil create formats starting UL or LZ: ${formats:-none}"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-          grep -E -e '-dead_strip|-export_dynamic|BatteryPulseWidget(\.build)?/.*(\.o|LinkFileList)| -o ' "$RUNNER_TEMP/widget-link.log" | cut -c1-2000 | tail -5 || true
+          mount_point="$RUNNER_TEMP/BatteryPulse-update"
+          app="$RUNNER_TEMP/install/BatteryPulse.app"
+          mkdir -p "$mount_point" "$RUNNER_TEMP/install"
+          hdiutil attach build/BatteryPulse.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount_point"
+          ditto "$mount_point/BatteryPulse.app" "$app"
+          identifier="$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")"
+          version="$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")"
+          built="$(plutil -extract CFBundleShortVersionString raw -o - build/BatteryPulse.app/Contents/Info.plist)"
+          echo "Installed $identifier $version"
+          if [ "$identifier" != io.github.nikitausov.BatteryPulse ] || [ "$version" != "${VERSION:-$built}" ]; then
+            echo "error: the DMG holds $identifier $version, not io.github.nikitausov.BatteryPulse ${VERSION:-$built}" >&2
+            exit 1
+          fi
+          codesign --verify --strict --deep --all-architectures "$app"
+          hdiutil detach "$mount_point"
+
+          log stream --level debug --style compact --predicate 'subsystem == "io.github.nikitausov.BatteryPulse"' > "$RUNNER_TEMP/launch.log" 2>&1 &
+          log_pid=$!
+          disown "$log_pid"
+          touch "$RUNNER_TEMP/launch-marker"
+          sleep 2
+          open "$app"
+          sleep 30
+          status=0
+          if pgrep -x BatteryPulse > /dev/null; then
+            echo "BatteryPulse is running"
+          else
+            echo "error: BatteryPulse isn't running 30 s after launch" >&2
+            status=1
+          fi
+          if grep -F "perf event menuBarReady" "$RUNNER_TEMP/launch.log"; then
+            echo "The menu bar item appeared"
+          else
+            echo "error: no menuBarReady event in the log" >&2
+            status=1
+          fi
+          # Asked only while it runs (a missing process has already failed the step), in the
+          # background, so a consent prompt can't hold the step.
+          quit_pid=
+          if pgrep -x BatteryPulse > /dev/null; then
+            osascript -e 'tell application id "io.github.nikitausov.BatteryPulse" to quit' &
+            quit_pid=$!
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
+              pgrep -x BatteryPulse > /dev/null || break
+              sleep 1
+            done
+            if pgrep -x BatteryPulse > /dev/null; then
+              echo "error: BatteryPulse didn't quit when asked" >&2
+              pkill -x BatteryPulse || true
+              status=1
+            fi
+          fi
+          kill "$log_pid" ${quit_pid:+"$quit_pid"} 2> /dev/null || true
+          # ReportCrash writes a report a moment after the process ends, so a crash while quitting
+          # gets that moment to show up.
+          sleep 5
+          crashes="$(find "$HOME/Library/Logs/DiagnosticReports" /Library/Logs/DiagnosticReports -name 'BatteryPulse*' -newer "$RUNNER_TEMP/launch-marker" 2> /dev/null || true)"
+          if [ -n "$crashes" ]; then
+            echo "error: crash reports: $crashes" >&2
+            status=1
+          fi
+          echo "Last lines of the app's log:"
+          tail -20 "$RUNNER_TEMP/launch.log"
+          exit "$status"
