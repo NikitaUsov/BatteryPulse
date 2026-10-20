@@ -78,8 +78,13 @@ enum Phrases {
         case .frameworkUnavailable:
             String(localized: "This Mac can't read iPhones and iPads: Apple's device support isn't available.")
         case .subscriptionFailed, .deviceNotFound, .timedOut:
-            String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
+            deviceListFailed
         }
+    }
+
+    /// Listing devices failed or timed out; trying again may work.
+    static var deviceListFailed: String {
+        String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
     }
 
     /// "Charging at 31.3 W" / "Discharging at 7.5 W", or just the state.

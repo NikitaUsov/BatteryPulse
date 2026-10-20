@@ -326,7 +326,7 @@ struct DeviceView: View {
         // looks unplugged, and this is the only way back for it.
         if devices.isStalled {
             guard entry.connection != nil else {
-                return ShownProblem(text: Phrases.deviceUnavailable(.timedOut(seconds: 0)), canRetry: true)
+                return ShownProblem(text: Phrases.deviceListFailed, canRetry: true)
             }
             return ShownProblem(
                 text: Phrases.deviceProblem(.transportFailed(.timedOut), name: name, connection: entry.connection),
