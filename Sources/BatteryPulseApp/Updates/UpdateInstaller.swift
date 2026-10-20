@@ -172,7 +172,7 @@ final class UpdateInstaller {
                 let failure = error as? UpdateInstallError ?? .downloadFailed
                 let version = release.version.description
                 let reason = String(describing: failure)
-                UpdateInstallSteps.log.error(
+                Diagnostics.update.error(
                     "Installing \(version, privacy: .public) failed: \(reason, privacy: .public)")
                 phase = .failed(failure)
             }
@@ -244,7 +244,7 @@ final class UpdateInstaller {
         // Updates the registration even if the modification date looks unchanged.
         let status = LSRegisterURL(bundleURL as CFURL, true)
         if status != 0 {
-            UpdateInstallSteps.log.error("LSRegisterURL failed: \(status, privacy: .public)")
+            Diagnostics.update.error("LSRegisterURL failed: \(status, privacy: .public)")
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -256,8 +256,9 @@ final class UpdateInstaller {
         do {
             try process.run()
         } catch {
+            // An error description can carry a path, so it stays private.
             let reason = String(describing: error)
-            UpdateInstallSteps.log.error("Couldn't start the relaunch: \(reason, privacy: .public)")
+            Diagnostics.update.error("Couldn't start the relaunch: \(reason, privacy: .private)")
             phase = .failed(.relaunchFailed)
             return
         }
@@ -331,8 +332,6 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecke
 
 /// The installation steps that touch the disk; they run off the main actor.
 enum UpdateInstallSteps {
-    static let log = Logger(subsystem: "io.github.nikitausov.BatteryPulse", category: "update")
-
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
     static func prepareDownloadFolder(bundleIdentifier: String) throws -> URL {
         do {
@@ -415,7 +414,7 @@ enum UpdateInstallSteps {
 
         guard renamex_np(staged.path, target.path, UInt32(RENAME_SWAP)) == 0 else {
             let reason = String(cString: strerror(errno))
-            log.error("Swapping the app failed: \(reason, privacy: .public)")
+            Diagnostics.update.error("Swapping the app failed: \(reason, privacy: .public)")
             throw UpdateInstallError.replaceFailed
         }
         swapped = true
@@ -515,9 +514,13 @@ enum UpdateInstallSteps {
         }
         let flags = SecCSFlags(rawValue: kSecCSStrictValidate | kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
         var error: Unmanaged<CFError>?
-        guard SecStaticCodeCheckValidityWithErrors(code, flags, nil, &error) == errSecSuccess else {
+        let status = SecStaticCodeCheckValidityWithErrors(code, flags, nil, &error)
+        guard status == errSecSuccess else {
+            // The status is a plain code; the error's description can carry the path, so it stays private.
             let reason = error.map { String(describing: $0.takeRetainedValue()) } ?? "unknown"
-            log.error("The new version's code signature isn't valid: \(reason, privacy: .public)")
+            Diagnostics.update.error(
+                "The new version's code signature isn't valid (\(status, privacy: .public)): \(reason, privacy: .private)"
+            )
             throw UpdateInstallError.invalidCodeSignature
         }
     }
