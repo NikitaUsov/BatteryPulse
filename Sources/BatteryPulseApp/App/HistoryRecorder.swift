@@ -25,6 +25,10 @@ final class HistoryRecorder {
     private var pendingEvent: HistoryEvent? = .launch
     private var wakeObserver: (any NSObjectProtocol)?
 
+    /// A read this recent serves the minute tick and the sample after a wake as it is: with power
+    /// in the menu bar, the monitor reads every 10 s anyway.
+    static let freshReadAge: Duration = .seconds(20)
+
     init(monitor: BatteryMonitor, store: HistoryStore = AppHistory.store) {
         self.monitor = monitor
         self.store = store
@@ -71,8 +75,9 @@ final class HistoryRecorder {
 
     private func recordNow(refreshing: Bool) async {
         guard AppSettings.recordsHistory, !monitor.isOverridden else { return }
-        // Values like power change without a system notification, so the timer reads them fresh.
-        if refreshing { monitor.refresh(trigger: .history) }
+        // Values like power change without a system notification, so the timer reads them fresh,
+        // unless a read just did. The first tick reuses the monitor's read at launch.
+        if refreshing, !monitor.hasRead(within: Self.freshReadAge) { monitor.refresh(trigger: .history) }
         guard let snapshot = monitor.snapshot else { return }
         let interval = Diagnostics.begin("history.record")
         defer { interval.end() }
