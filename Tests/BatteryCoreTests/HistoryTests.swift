@@ -145,7 +145,7 @@ import Testing
         #expect(try await store.record(sample(0, 90)))
         #expect(try await store.record(sample(0.2, 90)) == false)
         #expect(try await store.record(sample(1, 89.8)))
-        #expect(try await store.samples(since: start).count == 2)
+        #expect(try await store.samples(from: start).count == 2)
         // 1_800_000_000 is 2027-01-15 08:00 UTC.
         let dayFile = directory.appendingPathComponent("samples/2027-01-15.jsonl")
         #expect(FileManager.default.fileExists(atPath: dayFile.path))
@@ -156,7 +156,7 @@ import Testing
         try handle.write(contentsOf: Data(#"{"t":18000"#.utf8))
         try handle.close()
         let reopened = HistoryStore(directory: directory, now: { .distantFuture })
-        #expect(try await reopened.samples(since: start).count == 2)
+        #expect(try await reopened.samples(from: start).count == 2)
         #expect(try await reopened.record(sample(1.2, 89.8)) == false, "remembers the last sample")
 
         // A day later: a second file, and a range reads only what it needs.
@@ -172,7 +172,7 @@ import Testing
         #expect(files.count == 11)
 
         try await reopened.clear()
-        #expect(try await reopened.samples(since: .distantPast).isEmpty)
+        #expect(try await reopened.samples(from: .distantPast).isEmpty)
         #expect(try await reopened.dailySummaries().isEmpty)
     }
 
@@ -184,7 +184,7 @@ import Testing
         for day in 0..<5 { #expect(try await store.record(sample(Double(day) * 24 * 60, 80))) }
         // The Mac's date is set 40 days ahead for a moment.
         #expect(try await store.record(sample(44 * 24 * 60, 79)))
-        #expect(try await store.samples(since: .distantPast).count == 6)
+        #expect(try await store.samples(from: .distantPast).count == 6)
         // After the clock is set back and the app relaunched, the stray future sample isn't taken
         // as the last one.
         let today = start.addingTimeInterval(4 * 24 * 60 * 60)
@@ -242,7 +242,7 @@ import Testing
         try (lines.joined(separator: "\n") + "\n").write(
             to: directory.appendingPathComponent("samples.jsonl"), atomically: true, encoding: .utf8)
         let store = HistoryStore(directory: directory)
-        #expect(try await store.samples(since: .distantPast).count == 2)
+        #expect(try await store.samples(from: .distantPast).count == 2)
         #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples.jsonl").path))
         #expect(
             FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples/2027-01-16.jsonl").path))

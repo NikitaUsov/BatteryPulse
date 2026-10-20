@@ -182,8 +182,8 @@ import Testing
             HistorySample(device: battery, at: Self.start.addingTimeInterval(60)))
         try await store.history(for: Self.pad).record(
             HistorySample(device: battery, at: Self.start.addingTimeInterval(120)))
-        #expect(try await phoneHistory.samples(since: .distantPast).count == 1)
-        #expect(try await store.history(for: Self.pad).samples(since: .distantPast).count == 2)
+        #expect(try await phoneHistory.samples(from: .distantPast).count == 1)
+        #expect(try await store.history(for: Self.pad).samples(from: .distantPast).count == 2)
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.phone.rawValue).path))
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.pad.rawValue).path))
     }
@@ -202,7 +202,7 @@ import Testing
         #expect(try await Self.makeStore(directory).load() == [pad])
         #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.phone.rawValue).path))
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.pad.rawValue).path))
-        #expect(try await store.history(for: Self.phone).samples(since: .distantPast).isEmpty)
+        #expect(try await store.history(for: Self.phone).samples(from: .distantPast).isEmpty)
     }
 
     @Test func forgetDoesNotResurrectDays() async throws {

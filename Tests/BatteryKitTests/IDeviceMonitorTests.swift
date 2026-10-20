@@ -327,7 +327,7 @@ struct MonitorHarness {
 
     func samples(_ key: DeviceKey) async throws -> [HistorySample] {
         try await DeviceStore(directory: directory, now: { .distantFuture }).history(for: key)
-            .samples(since: .distantPast)
+            .samples(from: .distantPast)
     }
 
     func exists(_ name: String) -> Bool {

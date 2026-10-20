@@ -127,10 +127,6 @@ public actor HistoryStore {
             .sorted { $0.time < $1.time }
     }
 
-    public func samples(since start: Date) throws -> [HistorySample] {
-        try samples(from: start)
-    }
-
     private func sampleURL(_ day: String) -> URL {
         samplesDirectory.appendingPathComponent(day + ".jsonl")
     }
