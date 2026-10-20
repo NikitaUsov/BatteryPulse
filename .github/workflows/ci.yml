@@ -57,6 +57,30 @@ jobs:
       - uses: actions/checkout@v5
       - name: Toolchain
         run: xcodebuild -version && swift --version
+      - name: Migration report (temporary)
+        # A report, never a change: the four migratable features leave the manifest for this step,
+        # migrate builds every target and applies its fix-its, the diff and the diagnostics are
+        # printed, and the checkout is restored.
+        continue-on-error: true
+        run: |
+          grep -v -E 'enableUpcomingFeature\("(ExistentialAny|MemberImportVisibility|InferIsolatedConformances|NonisolatedNonsendingByDefault)"\)' Package.swift > "$RUNNER_TEMP/Package.swift"
+          cp "$RUNNER_TEMP/Package.swift" Package.swift
+          git diff --stat
+          swift package migrate --to-feature ExistentialAny,MemberImportVisibility,InferIsolatedConformances,NonisolatedNonsendingByDefault > "$RUNNER_TEMP/migrate.log" 2>&1 || echo "migrate exited with $?"
+          echo "### Diagnostics"
+          grep -E '^/.*: (warning|error): ' "$RUNNER_TEMP/migrate.log" | grep -v '/.build/' | sort -u || true
+          echo "### Tail"
+          tail -20 "$RUNNER_TEMP/migrate.log"
+          echo "### Fix-its"
+          git diff -- Sources Tests
+          git checkout -- .
+          rm -rf .build
+      - name: iOS diagnostics (temporary)
+        # The same settings on the iOS build, before the gate below can stop the job.
+        continue-on-error: true
+        run: |
+          xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet > "$RUNNER_TEMP/ios.log" 2>&1 || echo "xcodebuild exited with $?"
+          grep -E '(warning|error): ' "$RUNNER_TEMP/ios.log" | sort -u || true
       - name: Test
         # The warning gate, as in the Linux job.
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
