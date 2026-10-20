@@ -1,3 +1,36 @@
+## What's new in 0.6.1
+
+- **Smaller and lighter:** the download shrinks from 3.7 MB to 1.4 MB (−61 %), and the
+  installed app takes 4.7 MB instead of about 11 MB. Each battery update macOS announces, such
+  as plugging in or unplugging, is now read once instead of twice. With battery power in the
+  menu bar, an hour of BatteryPulse takes TBD (M5) less energy, TBD (M5) less CPU time and
+  TBD (M5) fewer idle wake-ups.
+- **Tile pickers:** Window Style and Icon Style in Settings mark your choice with an accent
+  outline. The flowing glass selection that 0.5 brought is gone, so the tiles show each style
+  as it is.
+- **Clear** dims the desktop more, so its white text stays readable even over a bright window
+  behind it, and minimizing a Clear window no longer turns it black before it goes to the Dock.
+- **Widget:** it refreshes once the estimate arrives after you plug in or unplug, and again when
+  the charge or the estimate moves, so its "Full at" or "Lasts until" time keeps up with the
+  app's.
+- **Accessories:** earbuds are named after the buds, not their case.
+- **Safer updates:** an update that has no signature or fails a check that shows it is genuine
+  is no longer offered as a download. BatteryPulse says what failed and offers **Open Release
+  Page** instead. Automatic update checks skip Low Data Mode and expensive networks, such as a
+  Personal Hotspot, and try again later; Check for Updates… still checks on any network.
+- **Saving energy:** in Low Power Mode, when macOS asks apps to save resources, or when the Mac
+  runs hot, live values refresh less often: every 5 seconds in windows and every 30 seconds in
+  the menu bar. While the displays sleep, the menu bar stops refreshing power and catches up
+  when you're back.
+- **Fixes:** the power value in the menu bar no longer stops updating when the icon is turned off
+  or Demo Mode ends; a Mac that reports 0 rated cycles no longer breaks the cycle gauge; Export
+  Capture tells you when it can't save the file; the "notifications are off" note updates when
+  you come back from System Settings; and Copy Report's tooltip is right on pages without a
+  report.
+
+Updating from 0.6.0: **Install and Relaunch** in the update window installs 0.6.1 from inside
+the app.
+
 ## What's new in 0.6
 
 - **iPhone and iPad:** turn on *Read iPhone and iPad batteries* in Settings → General and a
