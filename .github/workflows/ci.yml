@@ -77,6 +77,9 @@ jobs:
           head -20 smc.txt
           echo "bpulse --smc exited with $status ($(wc -l < smc.txt) lines)"
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          # A canary for the private IOPSCopyPowerSourcesByType: --accessories --json exits with 2
+          # only when this macOS no longer has it. The VM has no accessories: an empty list and 0.
+          .build/release/bpulse --accessories --json || exit 1
           # Loading MobileDevice and watching for devices must not crash or hang; the VM has no
           # iPhone, so 2 ("no device") is expected.
           .build/release/bpulse --devices
