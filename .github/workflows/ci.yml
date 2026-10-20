@@ -163,3 +163,70 @@ jobs:
           name: BatteryPulse-dSYMs-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse-dSYMs.zip
           if-no-files-found: error
+      - name: Install the way 0.6.0 does, then launch
+        # The update to this version runs the installed version's installer, so do with this DMG
+        # what 0.6.0's does: attach it with its hdiutil arguments (UpdateInstallPolicy
+        # .attachArguments), copy the app out, check its identifier and version, check its code
+        # signature with the flags of checkCodeSignature (strict, every architecture, nested code),
+        # and detach. These stay 0.6.0's even if this version's installer changes. Then launch the
+        # copy: after 30 s it must still run, have logged menuBarReady (its menu bar item
+        # appeared) and left no crash report, and it must quit when asked.
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mount_point="$RUNNER_TEMP/BatteryPulse-update"
+          app="$RUNNER_TEMP/install/BatteryPulse.app"
+          mkdir -p "$mount_point" "$RUNNER_TEMP/install"
+          hdiutil attach build/BatteryPulse.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount_point"
+          ditto "$mount_point/BatteryPulse.app" "$app"
+          identifier="$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")"
+          version="$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")"
+          built="$(plutil -extract CFBundleShortVersionString raw -o - build/BatteryPulse.app/Contents/Info.plist)"
+          echo "Installed $identifier $version"
+          if [ "$identifier" != io.github.nikitausov.BatteryPulse ] || [ "$version" != "${VERSION:-$built}" ]; then
+            echo "error: the DMG holds $identifier $version, not io.github.nikitausov.BatteryPulse ${VERSION:-$built}" >&2
+            exit 1
+          fi
+          codesign --verify --strict --deep --all-architectures "$app"
+          hdiutil detach "$mount_point"
+
+          log stream --level debug --style compact --predicate 'subsystem == "io.github.nikitausov.BatteryPulse"' > "$RUNNER_TEMP/launch.log" 2>&1 &
+          log_pid=$!
+          touch "$RUNNER_TEMP/launch-marker"
+          sleep 2
+          open "$app"
+          sleep 30
+          status=0
+          if pgrep -x BatteryPulse > /dev/null; then
+            echo "BatteryPulse is running"
+          else
+            echo "error: BatteryPulse isn't running 30 s after launch" >&2
+            status=1
+          fi
+          if grep -F "perf event menuBarReady" "$RUNNER_TEMP/launch.log"; then
+            echo "The menu bar item appeared"
+          else
+            echo "error: no menuBarReady event in the log" >&2
+            status=1
+          fi
+          # In the background, so a consent prompt can't hold the step.
+          osascript -e 'tell application id "io.github.nikitausov.BatteryPulse" to quit' &
+          quit_pid=$!
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            pgrep -x BatteryPulse > /dev/null || break
+            sleep 1
+          done
+          if pgrep -x BatteryPulse > /dev/null; then
+            echo "error: BatteryPulse didn't quit when asked" >&2
+            pkill -x BatteryPulse || true
+            status=1
+          fi
+          kill "$log_pid" "$quit_pid" 2> /dev/null || true
+          crashes="$(find "$HOME/Library/Logs/DiagnosticReports" /Library/Logs/DiagnosticReports -name 'BatteryPulse*' -newer "$RUNNER_TEMP/launch-marker" 2> /dev/null || true)"
+          if [ -n "$crashes" ]; then
+            echo "error: crash reports: $crashes" >&2
+            status=1
+          fi
+          echo "Last lines of the app's log:"
+          tail -20 "$RUNNER_TEMP/launch.log"
+          exit "$status"
