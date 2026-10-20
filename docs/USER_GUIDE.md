@@ -350,7 +350,9 @@ Everything stays on your Mac, in
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Devices`. BatteryPulse keeps
 each device's name (as its label), model, OS version, last values and history under a key made
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
-device data are never written. Demo Mode shows a simulated iPhone in place of your devices.
+device data are never written. Only your account can read the folder, and BatteryPulse's
+messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
+shows a simulated iPhone in place of your devices.
 
 ## Accessories
 
@@ -501,7 +503,8 @@ connections are to your own iPhone or iPad while **Read iPhone and iPad batterie
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
+`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
+symbols that turn a crash report into readable function names; you don't need either.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
