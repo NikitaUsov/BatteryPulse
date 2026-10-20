@@ -71,8 +71,9 @@ version="$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/In
 commit="${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}"
 
 dmg_bytes="$(bytes "$DMG")"
-dmg_info="$(hdiutil imageinfo "$DMG")"
-dmg_format="$(awk -F': ' '$1 == "Format" { print $2; exit }' <<<"$dmg_info")"
+# `diskutil image info` prints "Image Format: <code>" (hdiutil imageinfo is deprecated in macOS 27).
+dmg_info="$(diskutil image info "$DMG")"
+dmg_format="$(awk -F': ' '$1 ~ /^[[:space:]]*Image Format$/ { print $2; exit }' <<<"$dmg_info")"
 dmg_format="${dmg_format:-unknown}"
 app_kb="$(du -sk "$APP" | cut -f1)"
 app_binary_bytes="$(bytes "$APP_BINARY")"
@@ -152,7 +153,14 @@ if [ -n "${GH_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ] && command -v gh >/
   fi
 fi
 
+# The first lines of each export listing, whose header names the file it read, and how many
+# exported names the two binaries share.
+export_names() {
+  xcrun dyld_info -exports "$1" 2>/dev/null | awk '$1 ~ /^0x[0-9A-Fa-f]+$/ { print $2 }' | sort -u || true
+}
 app_exports_sample="$(xcrun dyld_info -exports "$APP_BINARY" 2>&1 || true)"
+widget_exports_sample="$(xcrun dyld_info -exports "$WIDGET_BINARY" 2>&1 || true)"
+shared_exports="$(comm -12 <(export_names "$APP_BINARY") <(export_names "$WIDGET_BINARY") | wc -l | tr -d ' ')"
 
 report="$(
   echo "### Size ($version, ${commit:0:7})"
@@ -183,11 +191,15 @@ report="$(
   echo
   echo "Budget: $ceilings ceilings in \`$BUDGET\`. $budget_note"
   echo
-  echo "<details><summary><code>dyld_info -exports</code> output format (app, first lines)</summary>"
+  echo "<details><summary><code>dyld_info -exports</code>, first lines of each binary</summary>"
   echo
   echo '```'
   head -6 <<<"$app_exports_sample"
+  echo
+  head -6 <<<"$widget_exports_sample"
   echo '```'
+  echo
+  echo "Names exported by both binaries: $shared_exports."
   echo "</details>"
 )"
 echo "$report"
