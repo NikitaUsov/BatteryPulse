@@ -61,6 +61,37 @@ import Testing
         #expect(battery["Blob"]?.description == "<000102>")
     }
 
+    /// Two lowercase digits a byte, leading zeros kept, as `%02x` prints them.
+    @Test func dataDescription() {
+        #expect(PropertyValue.data(Data([0x00, 0xAB, 0x0F])).description == "<00ab0f>")
+        #expect(PropertyValue.data(Data()).description == "<>")
+    }
+
+    /// A hostile reply nested 10,000 deep converts to a bounded value instead of overflowing the
+    /// stack; anything nested deeper than the limit is dropped.
+    @Test func nestingIsBounded() {
+        var node: Any = 1
+        for _ in 0..<10_000 { node = [node] }
+        let value = PropertyValue(any: node)
+        // Taken apart from the outside in: dropping it whole would recurse once per level.
+        while let array = node as? [Any], let inner = array.first { node = inner }
+
+        var depth = 0
+        var current = value
+        while case .array(let items)? = current {
+            depth += 1
+            current = items.first
+        }
+        #expect(depth == PropertyValue.maxDepth)
+        #expect(current == nil, "the containers below the limit are dropped")
+
+        // Real trees keep everything.
+        let shallow: [String: Any] = ["A": ["B": [["C": [1, 2]]]]]
+        #expect(
+            PropertyValue(any: shallow)
+                == .dictionary(["A": .dictionary(["B": .array([.dictionary(["C": .array([.int(1), .int(2)])])])])]))
+    }
+
     @Test func roundTripsThroughPropertyListSerialization() throws {
         let original: PropertyDictionary = [
             "Amperage": .int(-1024),

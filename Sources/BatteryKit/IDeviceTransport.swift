@@ -1,6 +1,7 @@
 import BatteryCore
 import Dispatch
 import Foundation
+import Synchronization
 
 /// Reads iPhones and iPads attached to the Mac by USB or Wi-Fi.
 ///
@@ -172,7 +173,7 @@ public enum IDeviceReader {
 
     /// How far an attempt got: replies received, then calls that succeeded.
     static func progress(of capture: IDeviceCapture) -> Int {
-        capture.exchanges.filter { $0.reply != nil }.count * 100 + capture.steps.filter(\.status.isSuccess).count
+        capture.exchanges.count(where: { $0.reply != nil }) * 100 + capture.steps.count(where: \.status.isSuccess)
     }
 
     /// One attempt over one link. Every call made is in ``IDeviceCapture/steps``.
@@ -310,7 +311,8 @@ extension IDeviceConnection {
 ///
 /// The calls themselves can't be cancelled: a call stuck inside the framework keeps `queue`
 /// busy, and later work waits behind it. The relay's socket timeouts make that unlikely; the
-/// deadline guarantees the caller (the CLI) never hangs.
+/// deadline guarantees the caller (`bpulse` or ``IDeviceMonitor``) never waits longer than
+/// `timeout`.
 public enum BlockingWork {
     public static func run<T: Sendable>(
         on queue: DispatchQueue, timeout: TimeInterval, _ work: @escaping @Sendable () throws -> T
@@ -325,20 +327,16 @@ public enum BlockingWork {
     }
 
     /// Resumes a continuation exactly once, whichever of the work and the deadline comes first.
-    private final class ResumeOnce<T: Sendable>: @unchecked Sendable {
-        private let lock = NSLock()
-        private var continuation: CheckedContinuation<T, any Error>?
+    private final class ResumeOnce<T: Sendable>: Sendable {
+        private let continuation: Mutex<CheckedContinuation<T, any Error>?>
 
         init(_ continuation: CheckedContinuation<T, any Error>) {
-            self.continuation = continuation
+            self.continuation = Mutex(continuation)
         }
 
         func resume(with result: Result<T, any Error>) {
-            lock.lock()
-            let pending = continuation
-            continuation = nil
-            lock.unlock()
-            pending?.resume(with: result)
+            // Taken under the lock, resumed outside it.
+            continuation.withLock { $0.take() }?.resume(with: result)
         }
     }
 }
@@ -355,16 +353,18 @@ public enum BlockingWork {
 /// those not read yet are listed by identifier alone ("Unknown device"), and the transport skips
 /// the remaining reads once its queue frees up. The trade-off: a stuck device costs the devices
 /// read after it their names, never the list itself.
-public final class IDeviceListBuilder: @unchecked Sendable {
-    // `@unchecked`: every stored `var` is guarded by `lock`.
-    private let lock = NSLock()
+public final class IDeviceListBuilder: Sendable {
+    private struct State {
+        /// `nil` until discovery ends.
+        var entries: [IDeviceInfo]?
+        /// Counts discovery and each identity read; a deadline that finds it unchanged ends the wait.
+        var step = 0
+        /// `nil` once the caller has its answer.
+        var continuation: CheckedContinuation<[IDeviceInfo], any Error>?
+    }
+
+    private let state = Mutex(State())
     private let identityTimeout: TimeInterval
-    /// `nil` until discovery ends.
-    private var entries: [IDeviceInfo]?
-    /// Counts discovery and each identity read; a deadline that finds it unchanged ends the wait.
-    private var step = 0
-    /// `nil` once the caller has its answer.
-    private var continuation: CheckedContinuation<[IDeviceInfo], any Error>?
 
     private init(identityTimeout: TimeInterval) {
         self.identityTimeout = identityTimeout
@@ -397,38 +397,39 @@ public final class IDeviceListBuilder: @unchecked Sendable {
     /// Discovery ended with these devices, unnamed. Returns whether to read their identities:
     /// `false` once the caller has stopped waiting.
     public func begin(_ devices: [IDeviceInfo]) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard continuation != nil else { return false }
-        entries = devices
-        advance()
-        return true
+        let step: Int? = state.withLock { state in
+            guard state.continuation != nil else { return nil }
+            state.entries = devices
+            state.step += 1
+            return state.step
+        }
+        return startDeadline(of: step)
     }
 
     /// The identity read for the device at `index` in ``begin(_:)``'s list. Returns whether to
     /// read the next one: `false` once the caller has stopped waiting.
     public func record(_ info: IDeviceInfo, at index: Int) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard continuation != nil, entries?.indices.contains(index) == true else { return false }
-        entries?[index] = info
-        advance()
-        return true
+        let step: Int? = state.withLock { state in
+            guard state.continuation != nil, state.entries?.indices.contains(index) == true else { return nil }
+            state.entries?[index] = info
+            state.step += 1
+            return state.step
+        }
+        return startDeadline(of: step)
     }
 
     private func wait(with continuation: CheckedContinuation<[IDeviceInfo], any Error>) {
-        lock.lock()
-        defer { lock.unlock() }
-        self.continuation = continuation
+        state.withLock { $0.continuation = continuation }
     }
 
-    /// Starts the next read's deadline. Called with `lock` held.
-    private func advance() {
-        step += 1
-        let current = step
+    /// Starts the deadline of the read that `step` begins; `false`, and none, when the caller
+    /// has stopped waiting.
+    private func startDeadline(of step: Int?) -> Bool {
+        guard let step else { return false }
         DispatchQueue.global().asyncAfter(deadline: .now() + identityTimeout) {
-            self.identityOverran(step: current)
+            self.identityOverran(step: step)
         }
+        return true
     }
 
     private func workEnded(throwing error: (any Error)?) {
@@ -454,15 +455,15 @@ public final class IDeviceListBuilder: @unchecked Sendable {
         taken.continuation.resume(returning: IDeviceList.sorted(taken.entries ?? []))
     }
 
-    /// Takes the caller's continuation, so it is resumed once; with `step`, only while no read
-    /// has ended since that step.
+    /// Takes the caller's continuation, so it is resumed once (outside the lock); with `step`,
+    /// only while no read has ended since that step.
     private func take(ifStillAt step: Int? = nil) -> (
         continuation: CheckedContinuation<[IDeviceInfo], any Error>, entries: [IDeviceInfo]?
     )? {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let pending = continuation, step == nil || step == self.step else { return nil }
-        continuation = nil
-        return (pending, entries)
+        state.withLock { state in
+            guard let pending = state.continuation, step == nil || step == state.step else { return nil }
+            state.continuation = nil
+            return (pending, state.entries)
+        }
     }
 }

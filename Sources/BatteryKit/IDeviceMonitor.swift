@@ -2,6 +2,10 @@ import BatteryCore
 import Foundation
 import Observation
 
+#if canImport(os)
+import os
+#endif
+
 /// USB arrivals and terminations of Apple mobile devices: the trigger for listing devices.
 public protocol IDeviceAttachEvents: Sendable {
     /// One element per USB arrival or termination of an Apple mobile device, plus one right
@@ -150,7 +154,13 @@ public final class IDeviceMonitor {
     public func start(enabled: Bool) async {
         if !hasLoaded {
             hasLoaded = true
-            let loaded = (try? await store.load()) ?? []
+            let loaded: [RememberedDevice]
+            do {
+                loaded = try await store.load()
+            } catch {
+                DeviceLog.storeFailed("Reading the remembered devices", error)
+                loaded = []
+            }
             // A device read before the registry arrived is kept.
             let known = Set(remembered.map(\.id))
             remembered += loaded.filter { !known.contains($0.id) }
@@ -256,7 +266,13 @@ public final class IDeviceMonitor {
         remembered.removeAll { $0.id == id }
         recomputeEntries()
         let remaining = remembered
-        await onDisk { store in try? await store.forget(id, remaining: remaining) }.value
+        await onDisk { store in
+            do {
+                try await store.forget(id, remaining: remaining)
+            } catch {
+                DeviceLog.storeFailed("Forgetting a device", error, device: id)
+            }
+        }.value
         pump()
     }
 
@@ -267,7 +283,13 @@ public final class IDeviceMonitor {
 
     /// Clears every device's history; the registry stays.
     public func clearHistory() async {
-        await onDisk { store in try? await store.clearHistory() }.value
+        await onDisk { store in
+            do {
+                try await store.clearHistory()
+            } catch {
+                DeviceLog.storeFailed("Clearing the devices' history", error)
+            }
+        }.value
     }
 
     /// Writes pending daily summaries before the app quits.
@@ -399,9 +421,9 @@ public final class IDeviceMonitor {
         } catch {
             // Never replaced: a new secret would orphan every history. This session works with
             // a secret of its own and remembers nothing.
+            DeviceLog.storeFailed("Reading the device secret", error)
             cannotRemember = true
-            var generator = SystemRandomNumberGenerator()
-            keys = keys ?? makeKeys(Data((0..<32).map { _ in UInt8.random(in: .min ... .max, using: &generator) }))
+            keys = keys ?? makeKeys(Data((0..<32).map { _ in UInt8.random(in: .min ... .max) }))
         }
     }
 
@@ -420,6 +442,7 @@ public final class IDeviceMonitor {
         }
         switch result {
         case .failure(let error):
+            DeviceLog.transportFailed("Listing devices", error)
             switch error as? IDeviceError {
             case .timedOut?: stall()
             case .frameworkUnavailable?, .subscriptionFailed?: unavailable = error as? IDeviceError
@@ -496,6 +519,7 @@ public final class IDeviceMonitor {
         let now = clock.now()
         switch result {
         case .failure(let error):
+            DeviceLog.transportFailed("Reading a device", error, device: key)
             switch error as? IDeviceError {
             case .deviceNotFound?:
                 detach(key, at: now)
@@ -567,11 +591,23 @@ public final class IDeviceMonitor {
         let devices = remembered
         let records = recordsHistory()
         onDisk { store in
-            try? await store.save(devices)
+            do {
+                try await store.save(devices)
+            } catch {
+                DeviceLog.storeFailed("Saving the remembered devices", error)
+            }
             guard records else { return }
             let history = await store.history(for: key)
-            _ = try? await history.record(HistorySample(device: battery, at: now))
-            try? await history.record(HistoryDay(device: battery, day: HistoryDay.key(for: now)), at: now)
+            do {
+                _ = try await history.record(HistorySample(device: battery, at: now))
+            } catch {
+                DeviceLog.storeFailed("Recording a device's sample", error, device: key)
+            }
+            do {
+                try await history.record(HistoryDay(device: battery, day: HistoryDay.key(for: now)), at: now)
+            } catch {
+                DeviceLog.storeFailed("Recording a device's day", error, device: key)
+            }
         }
     }
 
@@ -596,7 +632,13 @@ public final class IDeviceMonitor {
             if let connection, !cannotRemember {
                 remembered[index] = remembered[index].seen(over: connection, at: lastSeen)
                 let devices = remembered
-                onDisk { store in try? await store.save(devices) }
+                onDisk { store in
+                    do {
+                        try await store.save(devices)
+                    } catch {
+                        DeviceLog.storeFailed("Saving the remembered devices", error)
+                    }
+                }
             }
         } else {
             sessions[key] = nil
@@ -717,5 +759,56 @@ public final class IDeviceMonitor {
         }
         recomputeEntries()
         pump()
+    }
+}
+
+/// The `device` log lines of ``IDeviceMonitor``: failures that would otherwise leave no trace.
+/// The monitor carries on after each. Error domains, codes and case names are public; error
+/// descriptions (they can hold a path) are private, and a device's key is hashed, so the lines
+/// about one device can be matched without naming it.
+enum DeviceLog {
+    /// A ``DeviceStore`` or history call failed.
+    static func storeFailed(_ action: String, _ error: any Error, device: DeviceKey? = nil) {
+        let error = error as NSError
+        log(action, reason: "\(error.domain) \(error.code)", detail: error.localizedDescription, device: device)
+    }
+
+    /// A transport call failed. A device that went away is expected; anything else is an error.
+    static func transportFailed(_ call: String, _ error: any Error, device: DeviceKey? = nil) {
+        guard let failure = error as? IDeviceError else { return storeFailed(call, error, device: device) }
+        log(
+            call, reason: failure.caseName, detail: failure.description, device: device,
+            isExpected: failure == .deviceNotFound)
+    }
+
+    private static func log(
+        _ action: String, reason: String, detail: String, device: DeviceKey?, isExpected: Bool = false
+    ) {
+        #if canImport(os)
+        let level: OSLogType = isExpected ? .info : .error
+        if let key = device?.rawValue {
+            Diagnostics.device.log(
+                level: level,
+                """
+                \(action, privacy: .public) failed (\(reason, privacy: .public)) for device \
+                \(key, privacy: .private(mask: .hash)): \(detail)
+                """)
+        } else {
+            Diagnostics.device.log(
+                level: level, "\(action, privacy: .public) failed (\(reason, privacy: .public)): \(detail)")
+        }
+        #endif
+    }
+}
+
+extension IDeviceError {
+    /// The case's name, which logs as public; ``description`` can hold paths.
+    var caseName: String {
+        switch self {
+        case .frameworkUnavailable: "frameworkUnavailable"
+        case .subscriptionFailed: "subscriptionFailed"
+        case .deviceNotFound: "deviceNotFound"
+        case .timedOut: "timedOut"
+        }
     }
 }

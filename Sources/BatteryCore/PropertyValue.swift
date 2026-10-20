@@ -20,17 +20,29 @@ public typealias PropertyDictionary = [String: PropertyValue]
 // MARK: - Conversion from Foundation / CoreFoundation values
 
 extension PropertyValue {
-    /// Converts a Foundation property-list object. Unsupported values (e.g. `Date`) yield `nil`.
+    /// The deepest nesting of containers converted. IORegistry entries, lockdown values and
+    /// diagnostics relay replies are about 6 deep; the limit only bounds the recursion for a
+    /// malformed or hostile device reply.
+    static let maxDepth = 64
+
+    /// Converts a Foundation property-list object. Unsupported values (e.g. `Date`) yield `nil`,
+    /// and so do containers nested deeper than ``maxDepth``: they are dropped from their parent.
     public init?(any value: Any) {
+        self.init(any: value, depth: 0)
+    }
+
+    private init?(any value: Any, depth: Int) {
         switch value {
         case let string as String:
             self = .string(string)
         case let data as Data:
             self = .data(data)
         case let dictionary as [String: Any]:
-            self = .dictionary(dictionary.compactMapValues(PropertyValue.init(any:)))
+            guard depth < Self.maxDepth else { return nil }
+            self = .dictionary(dictionary.compactMapValues { PropertyValue(any: $0, depth: depth + 1) })
         case let array as [Any]:
-            self = .array(array.compactMap(PropertyValue.init(any:)))
+            guard depth < Self.maxDepth else { return nil }
+            self = .array(array.compactMap { PropertyValue(any: $0, depth: depth + 1) })
         default:
             guard let number = Self.number(from: value) else { return nil }
             self = number
@@ -140,7 +152,8 @@ extension PropertyValue: CustomStringConvertible {
         case .int(let value): String(value)
         case .double(let value): String(value)
         case .string(let value): value
-        case .data(let value): "<\(value.map(Self.hexByte).joined())>"
+        // Lowercase, two digits a byte, as C's `%02x` prints them.
+        case .data(let value): "<" + UpdateIntegrity.hex(value) + ">"
         case .array(let values): "[" + values.map(\.description).joined(separator: ", ") + "]"
         case .dictionary(let values):
             "{"
@@ -148,11 +161,5 @@ extension PropertyValue: CustomStringConvertible {
                 .map { "\($0.key) = \($0.value)" }
                 .joined(separator: "; ") + "}"
         }
-    }
-
-    /// Two lowercase hex digits, as C's `%02x` prints a byte.
-    private static func hexByte(_ byte: UInt8) -> String {
-        let digits = String(byte, radix: 16)
-        return digits.count == 1 ? "0" + digits : digits
     }
 }

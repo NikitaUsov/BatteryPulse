@@ -11,7 +11,7 @@ final class FakeAccessoryProvider: AccessoryProvider {
     private(set) var readCount = 0
     private(set) var observeCount = 0
     private(set) var handler: (@MainActor @Sendable () -> Void)?
-    let cancellations = Counter()
+    let cancellations = LockedValue(0)
 
     init(next: AccessoryReading?) {
         self.next = next
@@ -98,7 +98,7 @@ private func reading(_ percents: [Int]) -> AccessoryReading {
         let monitor = AccessoryMonitor(provider: provider)
         monitor.start()
 
-        let changes = Counter()
+        let changes = LockedValue(0)
         withObservationTracking {
             _ = monitor.accessories
             _ = monitor.isAvailable

@@ -125,7 +125,7 @@ final class ManualClock {
         time = LockedValue(start)
     }
 
-    var now: Date { time.get() }
+    var now: Date { time.value }
 
     /// The earliest time a sleeper waits for.
     var nextWake: Date? { sleepers.map(\.until).min() }
@@ -134,7 +134,7 @@ final class ManualClock {
     var monitorClock: IDeviceMonitorClock {
         let time = time
         return IDeviceMonitorClock(
-            now: { time.get() },
+            now: { time.value },
             sleep: { @MainActor [self] until in try await self.sleep(until: until) })
     }
 

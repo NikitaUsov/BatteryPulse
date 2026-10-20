@@ -10,9 +10,8 @@ import IOKit
 /// while nothing is plugged in. Apple mobile devices are `IOUSBHostDevice`s with vendor 0x05AC and
 /// a product ID in ``mobileProductIDs``; other Apple USB devices (keyboards, adapters) are
 /// ignored. All IOKit state lives on one private serial queue.
-final class USBDeviceWatcher: IDeviceAttachEvents, @unchecked Sendable {
-    // `@unchecked`: the only stored property is the queue; each stream's state is a `Watch`,
-    // touched only on that queue.
+final class USBDeviceWatcher: IDeviceAttachEvents, Sendable {
+    /// Each stream's state is a `Watch`, touched only on this queue.
     private let queue = DispatchQueue(label: "io.github.nikitausov.BatteryPulse.usb-devices")
 
     static let appleVendorID = 0x05AC
@@ -68,6 +67,8 @@ final class USBDeviceWatcher: IDeviceAttachEvents, @unchecked Sendable {
 /// The IOKit state of one `changes()` stream. Used only on the watcher's queue; IOKit calls the
 /// callbacks there too (`IONotificationPortSetDispatchQueue`).
 private final class Watch: @unchecked Sendable {
+    // `@unchecked`: the `var`s are touched only on the watcher's serial queue, where IOKit calls
+    // back too; the class is Sendable only so the stream's handlers can hand it to that queue.
     let continuation: AsyncStream<IDeviceAttachChange>.Continuation
     private var port: IONotificationPortRef?
     private var arrivals: io_iterator_t = 0

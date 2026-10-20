@@ -1,8 +1,7 @@
 #if os(macOS)
 import BatteryCore
 import Foundation
-import IOKit.ps
-import notify
+import os
 
 /// Batteries of connected accessories (Bluetooth keyboards, mice, trackpads, headphones) as the
 /// power management daemon publishes them: the data `pmset -g accps` shows. Needs no Bluetooth
@@ -25,45 +24,39 @@ public final class MacAccessoryProvider: AccessoryProvider {
         "com.apple.system.accpowersources.timeremaining",
         "com.apple.system.accpowersources.source",
     ]
-    /// IOKit is linked already (for the public power source functions), so this only returns a
-    /// handle to the loaded image.
+    /// IOKit is linked already (for the public power source functions). `RTLD_NOLOAD` makes sure
+    /// the handle is only borrowed from the loaded image, `RTLD_FIRST` that the lookup searches
+    /// IOKit alone.
     static let ioKitPath = "/System/Library/Frameworks/IOKit.framework/IOKit"
 
     private let copyPowerSourcesByType: CopyPowerSourcesByType?
 
     public init() {
-        copyPowerSourcesByType = dlopen(Self.ioKitPath, RTLD_NOW)
+        copyPowerSourcesByType = dlopen(Self.ioKitPath, RTLD_NOW | RTLD_NOLOAD | RTLD_FIRST)
             .flatMap { dlsym($0, "IOPSCopyPowerSourcesByType") }
             .map { unsafeBitCast($0, to: CopyPowerSourcesByType.self) }
+        if copyPowerSourcesByType == nil {
+            // dlerror's text names paths, so it stays private.
+            let reason = dlerror().map { String(cString: $0) } ?? "no error text"
+            Diagnostics.accessory.error(
+                "IOPSCopyPowerSourcesByType isn't available, so accessories are shown as unavailable: \(reason)")
+        }
     }
 
     public func read() -> AccessoryReading? {
         guard let copy = copyPowerSourcesByType else { return nil }
-        guard let blob = copy(Self.accessorySources)?.takeRetainedValue(), CFGetTypeID(blob) == CFArrayGetTypeID()
-        else { return AccessoryReading(sources: []) }
-        // The same calls as MacBatteryProvider.internalBatteryDescription.
-        let list = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] ?? []
-        let sources = list.compactMap { source -> PropertyDictionary? in
-            let description = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any]
-            return PropertyValue.dictionary(fromAny: description)
+        guard let blob = copy(Self.accessorySources)?.takeRetainedValue() else { return AccessoryReading(sources: []) }
+        guard CFGetTypeID(blob) == CFArrayGetTypeID() else {
+            Diagnostics.accessory.error(
+                "IOPSCopyPowerSourcesByType returned CF type \(CFGetTypeID(blob)), not a list; no accessories shown")
+            return AccessoryReading(sources: [])
         }
-        return AccessoryReading(sources: sources)
+        return AccessoryReading(
+            sources: powerSourceDescriptions(in: blob).compactMap { PropertyValue.dictionary(fromAny: $0) })
     }
 
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
-        // notify(3), as in MacBatteryProvider: notify_cancel tears down deterministically.
-        var tokens: [Int32] = []
-        for name in Self.notifications {
-            var token: Int32 = 0
-            let status = notify_register_dispatch(name, &token, .main) { _ in
-                MainActor.assumeIsolated { handler() }
-            }
-            if status == 0 { tokens.append(token) }
-        }
-        let registered = tokens
-        return BatteryObservation {
-            for token in registered { notify_cancel(token) }
-        }
+        BatteryObservation(onCancel: observeNotifyKeys(Self.notifications, handler: handler))
     }
 }
 #endif
