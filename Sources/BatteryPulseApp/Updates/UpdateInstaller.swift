@@ -181,7 +181,7 @@ final class UpdateInstaller {
     private func fetchSignature(_ url: URL) async throws -> Data {
         let result: (Data, URLResponse)
         do {
-            result = try await URLSession.shared.data(for: request(url))
+            result = try await UpdateNetwork.user.data(for: request(url))
         } catch {
             throw Self.downloadError(error)
         }
@@ -206,7 +206,7 @@ final class UpdateInstaller {
         defer { progress.cancel() }
         let result: (URL, URLResponse)
         do {
-            result = try await URLSession.shared.download(for: request(url), delegate: watcher)
+            result = try await UpdateNetwork.user.download(for: request(url), delegate: watcher)
         } catch {
             throw Self.downloadError(error)
         }
