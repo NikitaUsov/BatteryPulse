@@ -14,26 +14,15 @@ enum HistorySource: Hashable {
 /// how capacity and cycles change over months. This Mac's, or a remembered iPhone's or iPad's,
 /// picked in the toolbar.
 struct HistoryView: View {
-    enum Period: String, CaseIterable, Identifiable {
-        case day, week
-        var id: Self { self }
-        var length: TimeInterval { self == .day ? 24 * 60 * 60 : 7 * 24 * 60 * 60 }
-        /// Minute samples for a day; ten-minute averages for a week (about 1,000 points).
-        var bucket: TimeInterval? { self == .day ? nil : 10 * 60 }
-    }
-
     /// The period picked in the toolbar.
-    @State private var period: Period = .day
-    /// The period of the data on screen. It follows ``period`` once that period's samples are
-    /// loaded, so the charts never draw the old data on the new period's axis.
-    @State private var loadedPeriod: Period?
-    @State private var points: [HistoryPoint] = []
-    @State private var spans: [HistorySpan] = []
-    @State private var statistics: HistoryStatistics?
-    @State private var days: [HistoryDay] = []
-    @State private var hasLoaded = false
+    @State private var period: HistoryPeriod = .day
+    /// The charts and figures on screen, built off the main actor and assigned in one step. Their
+    /// period follows ``period`` once that period's samples are loaded, so the charts never draw
+    /// the old data on the new period's axis.
+    @State private var chart = HistoryChartData(period: .day, end: Date())
+    /// The daily summaries, at noon of their days.
+    @State private var days: [HistoryDayPoint] = []
     @State private var selectedTime: Date?
-    @State private var end = Date()
     /// The Export menu's pick while its file is prepared.
     @State private var exportRequest: HistoryExportRequest?
     /// The source picked in the toolbar; Show in History on a device page sets it too.
@@ -41,7 +30,7 @@ struct HistoryView: View {
     /// Settings → Advanced → Record battery history, observed so the empty page's sentence
     /// follows it at once.
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
-    /// The source of the data on screen, like ``loadedPeriod``.
+    /// The source of the data on screen, like ``chart``'s period; `nil` until the first load.
     @State private var loadedSource: HistorySource?
     /// The store the data on screen came from, for exporting what History shows.
     @State private var loadedStore: HistoryStore?
@@ -59,14 +48,14 @@ struct HistoryView: View {
     /// Restarts the reload loop when the period or the source changes or the window is shown
     /// again.
     private struct ReloadKey: Equatable {
-        var period: Period
+        var period: HistoryPeriod
         var source: HistorySource
         var isVisible: Bool
     }
 
     /// What the charts show at a time: switching either crossfades them.
     private struct ShownKey: Hashable {
-        var period: Period
+        var period: HistoryPeriod
         var source: HistorySource
     }
 
@@ -132,8 +121,8 @@ struct HistoryView: View {
             // glass selection. Only while History is shown.
             ToolbarItem(placement: .principal) {
                 Picker("Period", selection: $period) {
-                    Text("24 Hours").tag(Period.day)
-                    Text("7 Days").tag(Period.week)
+                    Text("24 Hours").tag(HistoryPeriod.day)
+                    Text("7 Days").tag(HistoryPeriod.week)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -142,7 +131,8 @@ struct HistoryView: View {
             // History keeps, whatever the period.
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                HistoryExportMenu(request: $exportRequest, isEnabled: hasLoaded && !(points.isEmpty && days.isEmpty))
+                HistoryExportMenu(
+                    request: $exportRequest, isEnabled: hasLoaded && !(chart.points.isEmpty && days.isEmpty))
             }
         }
         .modifier(HistoryExporter(request: $exportRequest, target: exportTarget))
@@ -165,7 +155,7 @@ struct HistoryView: View {
     /// The charts and figures for the loaded period, or why there are none.
     private var periodContent: some View {
         VStack(spacing: 16) {
-            if hasLoaded, points.isEmpty {
+            if hasLoaded, chart.points.isEmpty {
                 ContentUnavailableView {
                     Label("No History Yet", systemImage: "chart.xyaxis.line")
                 } description: {
@@ -186,10 +176,10 @@ struct HistoryView: View {
             } else {
                 Card("Charge") { chargeChart }
                 Card("Power") { powerChart }
-                if points.contains(where: { $0.temperatureCelsius != nil }) {
+                if chart.hasTemperature {
                     Card("Temperature") { temperatureChart }
                 }
-                if let statistics { statisticsRow(statistics) }
+                if let statistics = chart.statistics { statisticsRow(statistics) }
             }
         }
     }
@@ -215,57 +205,45 @@ struct HistoryView: View {
         }
     }
 
+    /// Reads and builds off the main actor (``HistoryLoad``); here only the assignment runs.
     private func load() async {
         let period = self.period
         let interval = Diagnostics.begin("history.load", trigger: period == .day ? "day" : "week")
         defer { interval.end() }
         let source = effectiveSource
         let store: HistoryStore
-        var end = Date()
-        let samples: [HistorySample]
         switch source {
-        case .mac:
-            store = AppHistory.store
-            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length))) ?? []
-        case .device(let key):
-            // A device is recorded only while it is connected: the axis ends at its last sample,
-            // so its last charging session shows.
-            store = await devices.historyStore(for: key)
-            end = min(end, (try? await store.latestSampleTime()) ?? end)
-            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length), to: end)) ?? []
+        case .mac: store = AppHistory.store
+        case .device(let key): store = await devices.historyStore(for: key)
         }
-        let points = HistoryPoint.points(from: samples, bucket: period.bucket)
-        let spans = HistorySpan.spans(from: samples)
-        // Drain and time on battery mean nothing for a device sampled only while on a cable.
-        let statistics = samples.isEmpty || source != .mac ? nil : HistoryStatistics(samples: samples)
-        let days = (try? await store.dailySummaries()) ?? []
+        let loaded = await HistoryLoad.read(store, source: source, period: period, now: Date())
         // A newer period or a hidden window cancelled this load; its data is stale.
         guard !Task.isCancelled else { return }
         // The daily summaries don't depend on the period, so their charts never animate.
-        self.days = days
+        days = loaded.days
         let apply = {
-            self.end = end
-            self.points = points
-            self.spans = spans
-            self.statistics = statistics
-            loadedPeriod = period
+            chart = loaded.chart
             loadedSource = source
             loadedStore = store
-            hasLoaded = true
         }
         // Only a period or source switch animates. The minute reload never does: it would redraw
         // three charts of up to 1,440 points for nothing. `change` moves the card below to the
         // new height; under Reduce Motion it is `nil` and only the charts fade.
-        if let loadedPeriod, loadedPeriod != period || loadedSource != source {
+        if let loadedSource, chart.period != period || loadedSource != source {
             withAnimation(motion.change, apply)
         } else {
             apply()
         }
     }
 
+    /// Whether a load has finished, so an empty chart means no history rather than not yet read.
+    private var hasLoaded: Bool {
+        loadedSource != nil
+    }
+
     /// The period of the charts on screen.
-    private var shownPeriod: Period {
-        loadedPeriod ?? period
+    private var shownPeriod: HistoryPeriod {
+        hasLoaded ? chart.period : period
     }
 
     /// The source of the charts on screen.
@@ -274,7 +252,7 @@ struct HistoryView: View {
     }
 
     private var domain: ClosedRange<Date> {
-        end.addingTimeInterval(-shownPeriod.length)...end
+        chart.end.addingTimeInterval(-shownPeriod.length)...chart.end
     }
 
     // MARK: - Charts
@@ -283,7 +261,7 @@ struct HistoryView: View {
     private var chargeChart: some View {
         VStack(alignment: .trailing, spacing: 6) {
             Chart {
-                ForEach(spans) { span in
+                ForEach(chart.spans) { span in
                     RectangleMark(
                         xStart: .value(ChartKey.start, span.start), xEnd: .value(ChartKey.end, span.end),
                         yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
@@ -292,7 +270,7 @@ struct HistoryView: View {
                     .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
                     .accessibilityHidden(true)
                 }
-                ForEach(points) { point in
+                ForEach(chart.points) { point in
                     if let percent = point.percent {
                         LineMark(
                             x: .value("Time", point.time), y: .value("Charge", percent),
@@ -328,8 +306,8 @@ struct HistoryView: View {
 
     @ViewBuilder
     private var powerChart: some View {
-        let chart = Chart {
-            ForEach(points) { point in
+        let plot = Chart {
+            ForEach(chart.points) { point in
                 if let watts = point.batteryWatts {
                     powerLine(point, watts: watts, series: "battery", name: String(localized: "Battery"))
                 }
@@ -367,12 +345,12 @@ struct HistoryView: View {
         .frame(height: 180)
         if tones.isMonochrome {
             // Clear: every line is white, so the Mac's is dashed and fainter, in the legend too.
-            chart.chartLineStyleScale([
+            plot.chartLineStyleScale([
                 String(localized: "Battery"): lineStyle(.batteryPower),
                 String(localized: "Mac"): lineStyle(.systemLoad),
             ])
         } else {
-            chart
+            plot
         }
     }
 
@@ -397,7 +375,7 @@ struct HistoryView: View {
 
     private var temperatureChart: some View {
         Chart {
-            ForEach(points) { point in
+            ForEach(chart.points) { point in
                 if let celsius = point.temperatureCelsius {
                     LineMark(
                         x: .value("Time", point.time), y: .value("Temperature", celsius),
@@ -443,7 +421,7 @@ struct HistoryView: View {
         _ proxy: ChartProxy, _ value: @escaping (HistoryPoint) -> String?
     ) -> some View {
         SelectionOverlay(
-            proxy: proxy, points: points, selection: $selectedTime, showsDate: shownPeriod == .week, value: value)
+            proxy: proxy, points: chart.points, selection: $selectedTime, showsDate: shownPeriod == .week, value: value)
     }
 
     // MARK: - Figures
@@ -480,8 +458,7 @@ struct HistoryView: View {
 
     @ViewBuilder
     private var healthCharts: some View {
-        let dated = days.compactMap { day in day.date().map { DayPoint(date: $0, day: day) } }
-        if dated.count < 2 {
+        if days.count < 2 {
             Text("Capacity and cycles appear here after BatteryPulse has run on two different days.")
                 .foregroundStyle(.secondary)
         } else {
@@ -489,7 +466,7 @@ struct HistoryView: View {
                 Text("Capacity compared with design")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Chart(dated) { entry in
+                Chart(days) { entry in
                     if let capacity = entry.day.capacityToDesignPercent {
                         LineMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
                             .foregroundStyle(tones.style(.chart(.capacity)))
@@ -503,7 +480,7 @@ struct HistoryView: View {
                 Text("Cycle count")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Chart(dated) { entry in
+                Chart(days) { entry in
                     if let cycles = entry.day.cycleCount {
                         LineMark(x: .value("Day", entry.date), y: .value("Cycles", cycles))
                             .interpolationMethod(.stepEnd)
@@ -579,10 +556,33 @@ private struct SelectionOverlay: View {
     }
 }
 
-/// A daily summary placed at noon of its day.
-private struct DayPoint: Identifiable {
-    let date: Date
-    let day: HistoryDay
-    var id: String { day.day }
+/// One load of the History page: the period's charts and figures, and the daily summaries.
+private struct HistoryLoad: Sendable {
+    var chart: HistoryChartData
+    var days: [HistoryDayPoint]
+
+    /// Reads `source`'s samples for `period` up to `now` and its daily summaries from `store`, and
+    /// builds the charts from them, off the main actor.
+    @concurrent
+    static func read(
+        _ store: HistoryStore, source: HistorySource, period: HistoryPeriod, now: Date
+    ) async -> HistoryLoad {
+        var end = now
+        let samples: [HistorySample]
+        switch source {
+        case .mac:
+            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length))) ?? []
+        case .device:
+            // A device is recorded only while it is connected: the axis ends at its last sample,
+            // so its last charging session shows.
+            end = min(end, (try? await store.latestSampleTime()) ?? end)
+            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length), to: end)) ?? []
+        }
+        let days = (try? await store.dailySummaries()) ?? []
+        return HistoryLoad(
+            // Drain and time on battery mean nothing for a device sampled only while on a cable.
+            chart: .make(samples: samples, period: period, end: end, includesStatistics: source == .mac),
+            days: HistoryDayPoint.points(from: days))
+    }
 }
 #endif
