@@ -53,6 +53,7 @@ final class WidgetRefresher {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
+            Diagnostics.event("widget.reload", trigger: "update")
         }
     }
 
@@ -64,6 +65,7 @@ final class WidgetRefresher {
             policy.shouldReload(for: snapshot, at: .now)
         else { return }
         WidgetCenter.shared.reloadTimelines(ofKind: BatteryWidgetKind.battery)
+        Diagnostics.event("widget.reload", trigger: "policy")
     }
 }
 #endif

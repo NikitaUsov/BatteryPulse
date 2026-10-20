@@ -25,7 +25,7 @@ struct DeveloperView: View {
         let groups = RawSectionGroup.groups(in: allSections)
         // A source that this reading lacks (the adapter's details after unplugging) shows all.
         let shownGroup = source.flatMap { groups.contains($0) ? $0 : nil }
-        let sections = filteredSections(in: shownGroup)
+        let sections = Diagnostics.measure("raw.filter") { filteredSections(in: shownGroup) }
         // The Liquid Glass sidebar floats over the detail column, and a scroll view whose edge
         // touches it is stretched underneath. A Table wider than it shows then starts at the
         // window edge with its Key column behind the sidebar. A point of padding keeps it clear of
@@ -126,7 +126,7 @@ struct DeveloperView: View {
             return
         }
         let sections = await Task.detached(priority: .userInitiated) {
-            RawSection.sections(for: reading.redactedRawCapture)
+            Diagnostics.measure("raw.rebuild") { RawSection.sections(for: reading.redactedRawCapture) }
         }.value
         // Identical readings leave the table alone. Assigned after an `await`, so outside any
         // animation, Demo Mode's included: hundreds of rows change with every reading and must

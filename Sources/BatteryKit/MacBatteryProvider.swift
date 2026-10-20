@@ -28,6 +28,8 @@ public final class MacBatteryProvider: BatteryProvider {
 
     private let smc: SMCClient?
     private var smcCache: (date: Date, values: PropertyDictionary)?
+    /// The SMC's live pack voltage and current, the `smc.power` part of a read.
+    private static let smcPowerKeys: Set<SMCFourCC> = ["B0AV", "B0AC"]
 
     /// - Parameter readsSMC: `false` where the SMC can't be opened anyway, such as in the
     ///   sandboxed widget, so no attempt shows up as a sandbox violation.
@@ -36,25 +38,36 @@ public final class MacBatteryProvider: BatteryProvider {
     }
 
     public func read() -> BatteryReading? {
-        let smartBattery = Self.smartBatteryProperties()
-        let powerSource = Self.internalBatteryDescription()
+        let interval = Diagnostics.begin("read")
+        defer { interval.end() }
+        let smartBattery = Diagnostics.measure("registry") { Self.smartBatteryProperties() }
+        let powerSource = Diagnostics.measure("iops") { Self.internalBatteryDescription() }
         guard smartBattery != nil || powerSource != nil else { return nil }
 
+        let adapterDetails = Diagnostics.measure("adapter") { Self.externalAdapterDetails() }
+        let smcCapture = smartBattery == nil ? [:] : smcValues()
+        let parse = Diagnostics.begin("parse")
         var reading = BatteryReading(
             smartBattery: smartBattery ?? [:],
             powerSource: powerSource ?? [:],
-            adapterDetails: Self.externalAdapterDetails() ?? [:],
-            smc: smartBattery == nil ? [:] : smcValues(),
+            adapterDetails: adapterDetails ?? [:],
+            smc: smcCapture,
             timestamp: Date()
         )
         reading.snapshot.applySystemState()
+        parse.end()
         return reading
     }
 
     private func smcValues() -> PropertyDictionary {
         guard let smc else { return [:] }
         if let smcCache, Date().timeIntervalSince(smcCache.date) < Self.smcInterval { return smcCache.values }
-        let values = SMCBattery.capture(smc.read(SMCBattery.keys))
+        // The same keys as one read, timed as the live pair and the rest; the order doesn't matter.
+        let power = Diagnostics.measure("smc.power") { smc.read(SMCBattery.keys.filter(Self.smcPowerKeys.contains)) }
+        let other = Diagnostics.measure("smc.other") {
+            smc.read(SMCBattery.keys.filter { !Self.smcPowerKeys.contains($0) })
+        }
+        let values = SMCBattery.capture(power + other)
         smcCache = (Date(), values)
         return values
     }
@@ -97,7 +110,7 @@ public final class MacBatteryProvider: BatteryProvider {
         defer { IOObjectRelease(service) }
 
         guard var dictionary = properties(of: service) else { return nil }
-        let children = childProperties(of: service, depth: 1)
+        let children = Diagnostics.measure("children") { childProperties(of: service, depth: 1) }
         if !children.isEmpty { dictionary[RegistryChildren.childrenKey] = children }
         return PropertyValue.dictionary(fromAny: dictionary)
     }

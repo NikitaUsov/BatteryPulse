@@ -45,8 +45,8 @@ public final class BatteryMonitor {
     public func start() {
         guard !isRunning else { return }
         isRunning = true
-        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
-        refresh()
+        observation = activeProvider.observeChanges { [weak self] in self?.providerChanged() }
+        refresh(trigger: .launch)
         scheduleLiveRefresh()
     }
 
@@ -57,12 +57,17 @@ public final class BatteryMonitor {
         isOverridden = provider != nil
         guard isRunning else { return }
         observation?.cancel()
-        observation = activeProvider.observeChanges { [weak self] in self?.refresh() }
-        refresh()
+        observation = activeProvider.observeChanges { [weak self] in self?.providerChanged() }
+        refresh(trigger: .demo)
     }
 
     private var activeProvider: any BatteryProvider {
         overrideProvider ?? provider
+    }
+
+    /// A change notification of the device, or a step of the demo's.
+    private func providerChanged() {
+        refresh(trigger: overrideProvider == nil ? .notify : .demo)
     }
 
     public func stop() {
@@ -81,7 +86,7 @@ public final class BatteryMonitor {
         let isNewRequest = interval != nil && liveRefreshRequests[client] == nil
         liveRefreshRequests[client] = interval
         // A view that just appeared shouldn't wait a full interval for fresh values.
-        if isNewRequest, isRunning { refresh() }
+        if isNewRequest, isRunning { refresh(trigger: .poll) }
 
         let effective = liveRefreshRequests.values.min()
         guard effective != liveRefreshInterval else { return }
@@ -89,7 +94,10 @@ public final class BatteryMonitor {
         scheduleLiveRefresh()
     }
 
-    public func refresh() {
+    /// Reads the battery now. `trigger` only labels the `refresh` interval.
+    public func refresh(trigger: RefreshTrigger = .manual) {
+        let interval = Diagnostics.begin("refresh", trigger: trigger.name)
+        defer { interval.end() }
         let new = activeProvider.read()
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) { hasBattery = new != nil }
@@ -109,7 +117,7 @@ public final class BatteryMonitor {
                 try? await Task.sleep(for: delay - elapsed)
                 elapsed = delay
                 guard !Task.isCancelled, let self, self.isRunning else { return }
-                self.refresh()
+                self.refresh(trigger: .followUp)
             }
         }
     }
@@ -135,7 +143,7 @@ public final class BatteryMonitor {
                 // Tolerance lets the OS coalesce wake-ups, which matters on battery.
                 try? await Task.sleep(for: interval, tolerance: interval / 4)
                 guard !Task.isCancelled, let self else { return }
-                self.refresh()
+                self.refresh(trigger: .poll)
             }
         }
     }

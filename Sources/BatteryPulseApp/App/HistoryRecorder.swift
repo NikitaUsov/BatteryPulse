@@ -64,8 +64,10 @@ final class HistoryRecorder {
     private func recordNow(refreshing: Bool) async {
         guard AppSettings.recordsHistory, !monitor.isOverridden else { return }
         // Values like power change without a system notification, so the timer reads them fresh.
-        if refreshing { monitor.refresh() }
+        if refreshing { monitor.refresh(trigger: .history) }
         guard let snapshot = monitor.snapshot else { return }
+        let interval = Diagnostics.begin("history.record")
+        defer { interval.end() }
         let now = Date()
         let event = pendingEvent
         let recorded = (try? await store.record(HistorySample(snapshot, at: now, event: event))) ?? false
