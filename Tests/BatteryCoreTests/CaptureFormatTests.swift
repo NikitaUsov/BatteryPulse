@@ -11,6 +11,17 @@ import Testing
         return String(decoding: try encoder.encode(snapshot), as: UTF8.self)
     }
 
+    /// A capture written in the fixture format reads back as the same dictionaries, through the
+    /// property list parser `bpulse --input` uses.
+    @Test(arguments: Fixture.allCases)
+    func captureRoundTrips(fixture: Fixture) throws {
+        let capture = try fixture.reading().redactedRawCapture
+        let data = try PropertyValue.xmlPropertyListData(capture)
+        #expect(data.starts(with: Data("<?xml".utf8)))
+        let root = try PropertyListSerialization.propertyList(from: data, format: nil)
+        #expect(PropertyValue.dictionary(fromAny: root) == capture)
+    }
+
     /// The real captures hold redacted serials. Any snapshot field fed from a key the capture
     /// redacts would carry the placeholder into Copy JSON, and the serials' own key must go.
     @Test(arguments: Fixture.allCases.filter { $0.rawValue.hasPrefix("m5-macos27-") })

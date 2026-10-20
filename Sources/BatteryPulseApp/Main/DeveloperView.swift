@@ -275,9 +275,7 @@ struct DeveloperView: View {
     private func exportCapture() {
         guard let reading = monitor.reading, !monitor.isOverridden else { return }
         do {
-            let plist = PropertyValue.dictionary(reading.redactedRawCapture).foundationValue
-            capture = CaptureFile(
-                data: try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0))
+            capture = CaptureFile(data: try PropertyValue.xmlPropertyListData(reading.redactedRawCapture))
             exportsCapture = true
         } catch {
             exportFailure = error.localizedDescription
