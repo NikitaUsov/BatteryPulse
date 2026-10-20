@@ -27,10 +27,6 @@ import Testing
 ///   `preferredColorScheme`, assigning `.appearance`) outside `App/WindowLook.swift`, and any
 ///   animation in that file: the window style's background never animates.
 @Suite struct MotionGuardTests {
-    private static let sources = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        .appendingPathComponent("Sources")
-
     /// Paths relative to `Sources/`.
     static let glassAllowList: Set<String> = [
         // The floating Demo Mode bar.
@@ -123,7 +119,11 @@ import Testing
 
     /// Every rule broken in `source`, as "path:line: message".
     static func violations(in source: String, path: String) -> [String] {
-        let code = codeOnly(source)
+        violations(inCode: SourceScanner.codeOnly(source), path: path)
+    }
+
+    /// Every rule broken in `code`, a source already blanked by ``SourceScanner/codeOnly(_:)``.
+    static func violations(inCode code: String, path: String) -> [String] {
         var found: [(String.Index, String)] = []
         func flag(_ index: String.Index, _ message: String) { found.append((index, message)) }
 
@@ -136,10 +136,11 @@ import Testing
         for match in code.matches(of: indefiniteRepeat) {
             flag(match.range.lowerBound, "a symbol effect that repeats indefinitely")
         }
-        for call in calls(named: animator, in: code) where !call.arguments.contains(words(#/\btrigger\s*:/#)) {
+        for call in SourceScanner.calls(named: animator, in: code)
+        where !call.arguments.contains(words(#/\btrigger\s*:/#)) {
             flag(call.start, "\(call.name) without trigger: loops continuously")
         }
-        for call in calls(named: #/\.symbolEffect/#, in: code) where call.isModifier {
+        for call in SourceScanner.calls(named: #/\.symbolEffect/#, in: code) where call.isModifier {
             if call.arguments.contains(words(#/\bisActive\s*:/#)) {
                 flag(call.start, "symbolEffect(_:isActive:) runs until removed; use symbolEffect(_:value:)")
             } else if !call.arguments.contains(words(#/\bvalue\s*:/#)) {
@@ -148,7 +149,7 @@ import Testing
         }
         let buildsPresets = motionPresetFiles.contains(path)
         if !buildsPresets {
-            for call in calls(named: words(#/\bwithAnimation/#), in: code)
+            for call in SourceScanner.calls(named: words(#/\bwithAnimation/#), in: code)
             where !goesThroughMotion(call.firstArgument) {
                 flag(call.start, "withAnimation with an animation of its own; use a \\.motion preset")
             }
@@ -156,7 +157,7 @@ import Testing
                 flag(match.range.lowerBound, "withAnimation with the default animation; use a \\.motion preset")
             }
         }
-        for call in calls(named: #/\.animation/#, in: code) where call.isModifier {
+        for call in SourceScanner.calls(named: #/\.animation/#, in: code) where call.isModifier {
             if !buildsPresets, !goesThroughMotion(call.firstArgument) {
                 flag(call.start, ".animation with an animation of its own; use a \\.motion preset")
             }
@@ -187,7 +188,7 @@ import Testing
             for match in code.matches(of: windowBackgroundAPI) {
                 flag(match.range.lowerBound, "a window background or appearance outside App/WindowLook.swift")
             }
-            for call in calls(named: words(#/\bcontainerBackground/#), in: code)
+            for call in SourceScanner.calls(named: words(#/\bcontainerBackground/#), in: code)
             where call.arguments.contains(words(#/\bfor\s*:\s*\.window\b/#)) {
                 flag(call.start, "a window background outside App/WindowLook.swift")
             }
@@ -210,202 +211,26 @@ import Testing
         }
     }
 
-    // MARK: Scanning
-
-    struct Call {
-        var name: String
-        var start: String.Index
-        /// Text between the parentheses.
-        var arguments: Substring
-        /// Applied to a view (`view.symbolEffect(…)`), not an implicit member such as
-        /// `.contentTransition(.symbolEffect(.replace))` or `case .animation(let a):`.
-        var isModifier: Bool
-
-        /// The top-level arguments, trimmed.
-        var topLevelArguments: [String] {
-            var depth = 0
-            var piece = ""
-            var pieces: [String] = []
-            for character in arguments {
-                switch character {
-                case "(", "[", "{": depth += 1
-                case ")", "]", "}": depth -= 1
-                case "," where depth == 0:
-                    pieces.append(piece)
-                    piece = ""
-                    continue
-                default: break
-                }
-                piece.append(character)
-            }
-            pieces.append(piece)
-            return pieces.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        }
-
-        /// The first argument's expression, whatever its label.
-        var firstArgument: String {
-            topLevelArguments.first ?? ""
-        }
-
-        /// The expression of a top-level argument with this label.
-        func argument(labeled label: String) -> String? {
-            for piece in topLevelArguments {
-                guard piece.hasPrefix(label) else { continue }
-                let rest = piece.dropFirst(label.count).drop { $0 == " " }
-                if rest.first == ":" { return rest.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines) }
-            }
-            return nil
-        }
-    }
-
-    /// Calls of `name` followed by `(`, with their balanced argument text.
-    static func calls(named name: Regex<Substring>, in code: String) -> [Call] {
-        var result: [Call] = []
-        for match in code.matches(of: name) {
-            var index = match.range.upperBound
-            while index < code.endIndex, code[index] == " " { index = code.index(after: index) }
-            guard index < code.endIndex, code[index] == "(" else { continue }
-            let open = code.index(after: index)
-            var depth = 1
-            var cursor = open
-            while cursor < code.endIndex, depth > 0 {
-                if code[cursor] == "(" { depth += 1 }
-                if code[cursor] == ")" { depth -= 1 }
-                cursor = code.index(after: cursor)
-            }
-            guard depth == 0 else { continue }
-            let close = code.index(before: cursor)
-            result.append(
-                Call(
-                    name: String(code[match.range]).trimmingCharacters(in: .punctuationCharacters),
-                    start: match.range.lowerBound,
-                    arguments: code[open..<close],
-                    isModifier: isModifier(dotAt: match.range.lowerBound, in: code)))
-        }
-        return result
-    }
-
-    /// Whether the member access at `dot` continues an expression (a modifier) rather than
-    /// starting an implicit member expression.
-    static func isModifier(dotAt dot: String.Index, in code: String) -> Bool {
-        guard code[dot] == "." else { return false }
-        var index = dot
-        var sawSpace = false
-        while index > code.startIndex {
-            index = code.index(before: index)
-            let character = code[index]
-            if character.isWhitespace {
-                sawSpace = true
-                continue
-            }
-            switch character {
-            case ")", "]", "}", "\"": return true
-            // `view?.symbolEffect(…)` against `flag ? .symbolEffect(…) : …`.
-            case "?", "!": return !sawSpace
-            default:
-                guard character.isLetter || character.isNumber || character == "_" else { return false }
-                var start = index
-                while start > code.startIndex {
-                    let previous = code.index(before: start)
-                    let c = code[previous]
-                    guard c.isLetter || c.isNumber || c == "_" else { break }
-                    start = previous
-                }
-                let word = code[start...index]
-                let keywords: Set<Substring> = ["return", "case", "in", "else", "try", "await", "then", "some", "any"]
-                // `Transition.symbolEffect(…)` is a static member of a type, not a modifier.
-                return !keywords.contains(word) && !(word.first?.isUppercase ?? false)
-            }
-        }
-        return false
-    }
-
-    /// `source` with comments and the contents of string literals replaced by spaces; line breaks
-    /// and the quotes themselves stay, so positions and line numbers match the original.
-    static func codeOnly(_ source: String) -> String {
-        let characters = Array(source)
-        var output = characters
-        var index = 0
-        func blank(_ range: Range<Int>) {
-            for i in range where characters[i] != "\n" { output[i] = " " }
-        }
-        func starts(with prefix: String, at i: Int) -> Bool {
-            let p = Array(prefix)
-            return i + p.count <= characters.count && Array(characters[i..<(i + p.count)]) == p
-        }
-        while index < characters.count {
-            if starts(with: "//", at: index) {
-                var end = index
-                while end < characters.count, characters[end] != "\n" { end += 1 }
-                blank(index..<end)
-                index = end
-            } else if starts(with: "/*", at: index) {
-                var depth = 0
-                var end = index
-                repeat {
-                    if starts(with: "/*", at: end) {
-                        depth += 1
-                        end += 2
-                    } else if starts(with: "*/", at: end) {
-                        depth -= 1
-                        end += 2
-                    } else {
-                        end += 1
-                    }
-                } while depth > 0 && end < characters.count
-                blank(index..<min(end, characters.count))
-                index = end
-            } else if characters[index] == "\"" || (characters[index] == "#" && starts(with: "#\"", at: index)) {
-                var hashes = 0
-                var open = index
-                while characters[open] == "#" {
-                    hashes += 1
-                    open += 1
-                }
-                let isMultiline = starts(with: "\"\"\"", at: open)
-                let quote = isMultiline ? "\"\"\"" : "\""
-                let closing = quote + String(repeating: "#", count: hashes)
-                var end = open + quote.count
-                while end < characters.count, !starts(with: closing, at: end) {
-                    if hashes == 0, characters[end] == "\\" { end += 1 }
-                    if !isMultiline, characters[end] == "\n" { break }
-                    end += 1
-                }
-                let contentEnd = min(end, characters.count)
-                blank((open + quote.count)..<contentEnd)
-                index = min(contentEnd + closing.count, characters.count)
-            } else {
-                index += 1
-            }
-        }
-        return String(output)
-    }
-
     // MARK: Tests
 
-    @Test func appAndWidgetFollowTheMotionRules() throws {
-        var violations: [String] = []
-        var scanned = 0
-        for target in ["BatteryPulseApp", "BatteryPulseWidget"] {
-            let directory = Self.sources.appendingPathComponent(target)
-            let enumerator = try #require(
-                FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
-            for case let url as URL in enumerator where url.pathExtension == "swift" {
-                let components = url.standardizedFileURL.pathComponents
-                let sourcesIndex = try #require(components.lastIndex(of: "Sources"))
-                let path = components[(sourcesIndex + 1)...].joined(separator: "/")
-                violations += Self.violations(in: try String(contentsOf: url, encoding: .utf8), path: path)
-                scanned += 1
-            }
-        }
-        #expect(scanned > 20)
+    /// One case per file, so a failure names the file and the files are scanned in parallel.
+    @Test(arguments: (try? SourceScanner.files.get()) ?? [])
+    func appAndWidgetFollowTheMotionRules(_ file: SourceScanner.File) {
+        let violations = Self.violations(inCode: file.code, path: file.path)
         #expect(violations.isEmpty, "\(violations.joined(separator: "\n"))")
+    }
+
+    /// The file list behind the cases above: readable, and not empty or cut short.
+    @Test func scansTheAppAndTheWidget() throws {
+        #expect(try SourceScanner.files.get().count > 20)
     }
 
     @Test func allowListedFilesExist() {
         let lists = Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles)
         for path in lists.union([Self.toneMapBridge, Self.windowLookFile]) {
-            #expect(FileManager.default.fileExists(atPath: Self.sources.appendingPathComponent(path).path), "\(path)")
+            #expect(
+                FileManager.default.fileExists(atPath: SourceScanner.sources.appendingPathComponent(path).path),
+                "\(path)")
         }
     }
 
@@ -592,7 +417,7 @@ import Testing
     /// wraps.
     @Test func windowRegistrationsStayOutsideTheWindowLook() throws {
         func code(_ path: String) throws -> String {
-            Self.codeOnly(try String(contentsOf: Self.sources.appendingPathComponent(path), encoding: .utf8))
+            try SourceScanner.file(path).code
         }
         let registration = #/\.(?:liveRefresh|trackedWindow)\s*\(/#
         let look = #/\.windowLook\s*\(\s*\)/#
