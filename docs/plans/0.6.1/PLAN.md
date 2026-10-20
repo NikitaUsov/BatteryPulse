@@ -1908,3 +1908,20 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   BatteryCore.
 - **Docs for WP-12:** the lint line includes `scripts`; CLAUDE.md names the posture check,
   `scripts/string-tables.swift`, `Main/Components/` and the Settings panes.
+
+### B7 (WP-2c), merged 2026-10-20
+
+- **E6:** `LiveRefreshPolicy` turns a base of 2 s or less into 5 s and triples a longer one
+  (10 → 30 s) under Low Power Mode, reduced resource usage, or a serious or critical thermal state
+  (fair doesn't count). `LowPowerMode` in `App/Motion.swift` is now `SystemPowerState` (Low Power
+  Mode and the thermal state, from `ProcessInfo`); animation still follows only Low Power Mode and
+  reduced resources.
+- **E5:** `ScreenActivity` (NSWorkspace's notification center) withdraws the menu bar's request
+  while the displays sleep or the session is switched out; a switch back in also ends a missed
+  display sleep. An app launched while the displays sleep polls until the next sleep and wake, as
+  0.6.0 did. History recording and notify reads are unaffected.
+- **For the session (optional):** in S2, Low Power Mode drops the menu bar from 6 reads a minute
+  to 2; F11's `monitor` log shows "Live refresh off" while the displays sleep and one read on wake.
+- **Docs for WP-12:** USER_GUIDE gets the sentence about Low Power Mode, reduced resources, heat
+  and display sleep; CLAUDE.md lists `LiveRefreshPolicy`. The release-notes text is in the message
+  of 7aecd92.
