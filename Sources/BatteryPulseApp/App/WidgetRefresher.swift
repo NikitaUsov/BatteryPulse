@@ -4,6 +4,7 @@ import BatteryKit
 import Foundation
 import Observation
 import WidgetKit
+import os
 
 /// Asks WidgetKit to reload the battery widget when the battery changes enough to matter
 /// (``WidgetReloadPolicy``). The widget reads the battery itself; this only says when. Demo
@@ -12,24 +13,27 @@ import WidgetKit
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private var policy = WidgetReloadPolicy()
+    private var observation: Task<Void, Never>?
 
     init(monitor: BatteryMonitor) {
         self.monitor = monitor
     }
 
+    /// Evaluates every change of the monitor's snapshot. The snapshot at the start is no change,
+    /// so a launch doesn't reload the widget.
     func start() {
-        observe()
-    }
-
-    private func observe() {
-        withObservationTracking {
-            _ = monitor.snapshot
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluate()
-                self?.observe()
+        guard observation == nil else { return }
+        observation = Task(name: "WidgetRefresher.observation") { [weak self, monitor] in
+            for await _ in Observations({ monitor.snapshot }).dropFirst() {
+                guard let self else { return }
+                self.evaluate()
             }
         }
+    }
+
+    func stop() {
+        observation?.cancel()
+        observation = nil
     }
 
     /// Ends the widget extension left running by the previous version. After the app is replaced
@@ -40,7 +44,10 @@ final class WidgetRefresher {
     static func endPreviousExtension() {
         var pids = [pid_t](repeating: 0, count: 4096)
         let count = proc_listallpids(&pids, Int32(pids.count * MemoryLayout<pid_t>.stride))
-        guard count > 0 else { return }
+        guard count > 0 else {
+            Diagnostics.widget.error("Listing the processes failed; the previous widget extension may still run")
+            return
+        }
         var ended = false
         for pid in pids.prefix(Int(count)) where pid > 0 {
             var name = [CChar](repeating: 0, count: 64)
@@ -50,10 +57,13 @@ final class WidgetRefresher {
             if processName == extensionExecutable, kill(pid, SIGTERM) == 0 { ended = true }
         }
         guard ended else { return }
-        Task { @MainActor in
+        Diagnostics.widget.notice("Ended the previous version's widget extension")
+        // Main actor already: the class is.
+        Task {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
             Diagnostics.event("widget.reload", trigger: "update")
+            Diagnostics.widget.notice("Reloading the widget after an update")
         }
     }
 
@@ -66,6 +76,10 @@ final class WidgetRefresher {
         else { return }
         WidgetCenter.shared.reloadTimelines(ofKind: BatteryWidgetKind.battery)
         Diagnostics.event("widget.reload", trigger: "policy")
+        // One line per reload, so `log show` counts a day's reloads against WidgetKit's budget.
+        let percent = snapshot.chargePercent.map { String(Int($0.rounded())) } ?? "-"
+        Diagnostics.widget.notice(
+            "Reloading the widget: \(snapshot.chargeState.rawValue, privacy: .public), \(percent, privacy: .public)%")
     }
 }
 #endif

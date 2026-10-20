@@ -3,7 +3,7 @@ import BatteryCore
 import BatteryKit
 import Foundation
 import Observation
-@preconcurrency import UserNotifications
+import UserNotifications
 
 /// Posts the battery notifications the user turned on in Settings → Notifications. It reacts to
 /// every new reading of the Mac's battery and every change of the accessories, so it needs no
@@ -22,6 +22,8 @@ final class BatteryNotifier: NSObject {
     /// The accessory threshold last seen, so only a change of it re-evaluates.
     private var lastAccessoryThreshold: Int?
     private var defaultsObserver: (any NSObjectProtocol)?
+    private var batteryObservation: Task<Void, Never>?
+    private var accessoryObservation: Task<Void, Never>?
 
     init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
@@ -38,8 +40,22 @@ final class BatteryNotifier: NSObject {
     func start() {
         guard Self.isAvailable else { return }
         UNUserNotificationCenter.current().delegate = self
-        observe()
-        observeAccessories()
+        // Every change of the monitor's snapshot. The snapshot at the start is no change, so a
+        // launch alone posts nothing about the Mac's battery.
+        batteryObservation = Task(name: "BatteryNotifier.batteryObservation") { [weak self, monitor] in
+            for await _ in Observations({ monitor.snapshot }).dropFirst() {
+                guard let self else { return }
+                self.evaluate()
+            }
+        }
+        // Every change of the accessory list, which the monitor reassigns only when it changed.
+        // The list at the start is evaluated right below.
+        accessoryObservation = Task(name: "BatteryNotifier.accessoryObservation") { [weak self, accessories] in
+            for await _ in Observations({ accessories.accessories }).dropFirst() {
+                guard let self else { return }
+                self.evaluateAccessories()
+            }
+        }
         // An accessory can stay at the same level for an hour: one that is already low at launch
         // alerts now, not at its next change.
         evaluateAccessories()
@@ -55,6 +71,17 @@ final class BatteryNotifier: NSObject {
                 guard threshold != self.lastAccessoryThreshold else { return }
                 self.accessoryThresholdChanged(to: threshold)
             }
+        }
+    }
+
+    func stop() {
+        batteryObservation?.cancel()
+        batteryObservation = nil
+        accessoryObservation?.cancel()
+        accessoryObservation = nil
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+            self.defaultsObserver = nil
         }
     }
 
@@ -74,18 +101,6 @@ final class BatteryNotifier: NSObject {
         }
     }
 
-    /// Re-arms on every change of the monitor's snapshot.
-    private func observe() {
-        withObservationTracking {
-            _ = monitor.snapshot
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluate()
-                self?.observe()
-            }
-        }
-    }
-
     private func evaluate() {
         let settings = AppSettings.alerts
         guard settings.isAnyEnabled, !monitor.isOverridden, let snapshot = monitor.snapshot else { return }
@@ -98,19 +113,6 @@ final class BatteryNotifier: NSObject {
         }
         for alert in alerts {
             post(alert, snapshot)
-        }
-    }
-
-    /// Re-arms on every change of the accessory list, which the monitor reassigns only when it
-    /// changed.
-    private func observeAccessories() {
-        withObservationTracking {
-            _ = accessories.accessories
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluateAccessories()
-                self?.observeAccessories()
-            }
         }
     }
 

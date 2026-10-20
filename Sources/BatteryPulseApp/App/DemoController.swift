@@ -207,9 +207,11 @@ final class DemoController {
         case .animation: tick = Self.frame
         case .scene: tick = Self.sceneTick
         }
-        clock = Task { [weak self] in
+        clock = Task(name: "DemoController.clock") { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: tick)
+                // A tenth of a tick lets macOS coalesce the wake-up; each tick advances the demo by
+                // exactly one tick, so a later one only slows it down a little.
+                try? await Task.sleep(for: tick, tolerance: tick / 10)
                 guard !Task.isCancelled, let self else { return }
                 self.advance(by: tick)
             }
