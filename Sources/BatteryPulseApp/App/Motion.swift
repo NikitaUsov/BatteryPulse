@@ -10,7 +10,8 @@ import SwiftUI
 // changes with every 2 s reading), and it goes through `\.motion`, so Reduce Motion turns it into
 // a fade and a hidden window animates nothing. `MotionGuardTests` checks the sources for the
 // rest: no repeating or per-frame animation, no animation that bypasses `\.motion`, nothing in
-// the menu bar label.
+// the menu bar label. The one longer animation is the welcome icon's 0.8 s draw-in, a one-off
+// flourish (`iconDrawIn`).
 //
 // Under Reduce Motion nothing moves. SwiftUI doesn't drop explicit animations for it, and an
 // animation on a container animates every frame in it, so the presets split by what they may
@@ -42,6 +43,7 @@ extension EnvironmentValues {
 /// | ``replacement`` | fades in, goes at once | the same | at once |
 /// | ``symbolSwap`` | symbol Replace | opacity | identity |
 /// | ``boltTransition`` | symbol Draw On | opacity | opacity |
+/// | ``iconDrawIn`` | smooth, 0.8 s after 0.2 s; `nil` while saving energy | `nil` | `nil` |
 extension MotionPolicy {
     /// State changes that move or resize something: plugging in, a new charge state, a row or
     /// section appearing, a ring or a bar growing, a container whose layout changes. `nil` under
@@ -114,6 +116,14 @@ extension MotionPolicy {
     @MainActor var boltTransition: AnyTransition {
         // If Draw On turns out not to suit `bolt.fill`, `.symbolEffect(.appear)` is the fallback.
         level == .full ? AnyTransition(.symbolEffect(.drawOn)) : .opacity
+    }
+
+    /// The welcome icon's pulse line drawing in, once per launch: the one animation longer than
+    /// 0.35 s, so it is a flourish (``MotionPolicy/allowsFlourish``), `nil` under Reduce Motion,
+    /// in Low Power Mode and while the system asks to save resources. The short delay lets the
+    /// window finish appearing first.
+    var iconDrawIn: Animation? {
+        allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil
     }
 }
 
