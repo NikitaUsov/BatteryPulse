@@ -19,6 +19,8 @@ import Testing
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
+/// - a material in `Main/` (`Material`, `.regularMaterial`, `.bar`): content stays free of glass
+///   and materials, and the window style's background is the only material;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
 ///   outside the tone map's bridge, where it would bypass Clear's monochrome, and there a colour
 ///   read as a property (`tier.color`), which comes from the standard tones, not the window's;
@@ -96,6 +98,14 @@ import Testing
     /// `tones.color(.level(tier))` or a context's `.color(ink)` shading don't count.
     private static var standardToneColor: Regex<Substring> {
         words(#/\.color\b(?!\s*\()/#)
+    }
+
+    /// A material by name (`Material.thin`, `.ultraThinMaterial`, `.bar` as a style); a
+    /// `.materialize` transition doesn't count.
+    private static var material: Regex<Substring> {
+        words(
+            #/\bMaterial\b|\b(?:ultraThin|thin|regular|thick|ultraThick)Material\b|\bbackgroundMaterial\b|\(\s*\.bar\s*[,)]/#
+        )
     }
 
     /// APIs that make a window see-through or change its appearance; `containerBackground(…,
@@ -203,6 +213,12 @@ import Testing
         if !glassAllowList.contains(path) {
             for match in code.matches(of: words(#/\bglassEffect\s*\(/#)) {
                 flag(match.range.lowerBound, "glassEffect outside the floating controls (see CLAUDE.md)")
+            }
+        }
+        // Every match holds `Material` or `.bar`; a `Regex` over the other files is slow on Linux.
+        if path.hasPrefix("BatteryPulseApp/Main/"), code.contains("Material") || code.contains(".bar") {
+            for match in code.matches(of: material) {
+                flag(match.range.lowerBound, "a material in the windows' content; groups use a Card surface")
             }
         }
         if path == windowLookFile {
@@ -362,6 +378,29 @@ import Testing
         #expect(flags(sheet, path: "BatteryPulseApp/Main/OverviewView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
+    }
+
+    /// AV-08: the chart readout, like all content, has no material of its own.
+    @Test(arguments: [
+        "readout.background(.regularMaterial, in: .rect(cornerRadius: 8))",
+        "readout.background(Material.thin)",
+        "readout.background(.ultraThinMaterial)",
+        "toolbar.background(.bar)",
+        "let fill: Material = .thick",
+        "content.environment(\\.backgroundMaterial, .regular)",
+    ])
+    func noMaterialInTheWindowsContent(source: String) {
+        #expect(flags(source, path: "BatteryPulseApp/Main/History/HistoryChartParts.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/MenuBar/PopoverView.swift"), "\(source)")
+    }
+
+    @Test func materialGuardAllows() {
+        let path = "BatteryPulseApp/Main/DemoView.swift"
+        #expect(!flags("bar.glassEffectTransition(motion.level == .full ? .materialize : .identity)", path: path))
+        #expect(!flags("// A plain fill, not a second Material", path: path))
+        #expect(!flags("readout.background(tones.style(.surface), in: .rect(cornerRadius: 8))", path: path))
     }
 
     @Test(arguments: [
