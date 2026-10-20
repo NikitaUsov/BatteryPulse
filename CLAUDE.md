@@ -112,9 +112,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   own. `MemberImportVisibility` is on, so a file imports every module whose members it uses
   (`os` for a `Logger` call through `Diagnostics`, BatteryCore for a `MotionPolicy` member).
   BatteryCore and bpulse build with strict memory safety: an unavoidable unsafe call is marked
-  `unsafe` with its reason (`BatteryReport.cFormat`'s Darwin-only `String(format:)`, bpulse's
-  three); on Linux, where Foundation doesn't mark them, the marker sits under `#if`. The other
-  unsafe code is BatteryKit's IOKit, SMC and MobileDevice files and the app's `proc_*` calls.
+  `unsafe` with its reason (bpulse's three pointer and format calls, and `BatteryReport.cFormat`'s
+  `String(format:)`, which only Darwin's Foundation marks, so its marker sits under
+  `#if canImport(Darwin)`: an unneeded one warns). The rest of the unsafe code is BatteryKit's
+  system bindings (IOKit, SMC, MobileDevice, notify) and the app's `proc_*` calls.
 - Concurrency: a plain `async` function runs on its caller's actor
   (`NonisolatedNonsendingByDefault`). Work that leaves the main actor (decoding, hashing,
   building chart data or Raw Data rows) is a `@concurrent` function over `Sendable` values, not
