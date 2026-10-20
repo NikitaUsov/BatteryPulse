@@ -143,3 +143,26 @@ jobs:
           name: size-${{ github.sha }}
           path: build/size.json
           if-no-files-found: error
+      - name: Report build facts
+        # Information for the size work, never a failure: whether release builds leave .dSYM
+        # folders in the bin path, whether the widget's link line has -dead_strip and lacks
+        # -export_dynamic (it relinks the widget verbosely, after packaging), and whether hdiutil
+        # offers ULMO.
+        continue-on-error: true
+        run: |
+          bin="$(swift build -c release --product BatteryPulseWidget --show-bin-path)"
+          [ -d "$bin" ] || exit 0
+          dsyms="$(cd "$bin" && ls -d -- *.dSYM 2>/dev/null | tr '\n' ' ')"
+          rm -f "$bin/BatteryPulseWidget"
+          swift build -c release --product BatteryPulseWidget -v > "$RUNNER_TEMP/widget-link.log" 2>&1 || true
+          dead_strip="$(grep -c -e '-dead_strip' "$RUNNER_TEMP/widget-link.log" || true)"
+          export_dynamic="$(grep -c -e '-export_dynamic' "$RUNNER_TEMP/widget-link.log" || true)"
+          formats="$( (hdiutil help create; hdiutil create -help) 2>&1 | grep -o -E 'UL[A-Z]{2}|LZ[A-Z]+' | sort -u | tr '\n' ' ')"
+          {
+            echo "### Build facts"
+            echo
+            echo "- .dSYM in \`$bin\`: ${dsyms:-none}"
+            echo "- widget link, lines with -dead_strip: $dead_strip; with -export_dynamic: $export_dynamic"
+            echo "- hdiutil create formats starting UL or LZ: ${formats:-none}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -E -e '-dead_strip|-export_dynamic|BatteryPulseWidget(\.build)?/.*(\.o|LinkFileList)| -o ' "$RUNNER_TEMP/widget-link.log" | cut -c1-2000 | tail -5 || true
