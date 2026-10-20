@@ -68,7 +68,7 @@ jobs:
           git diff --stat
           swift package migrate --to-feature ExistentialAny,MemberImportVisibility,InferIsolatedConformances,NonisolatedNonsendingByDefault > "$RUNNER_TEMP/migrate.log" 2>&1 || echo "migrate exited with $?"
           echo "### Diagnostics"
-          grep -E '^/.*: (warning|error): ' "$RUNNER_TEMP/migrate.log" | grep -v '/.build/' | sort -u || true
+          perl -pe 's/\e\[[0-9;]*m|\e\]8;;[^\e]*\e\\//g' "$RUNNER_TEMP/migrate.log" | grep -E '^/.*: (warning|error): ' | grep -v '/.build/' | sort -u || true
           echo "### Tail"
           tail -20 "$RUNNER_TEMP/migrate.log"
           echo "### Fix-its"
