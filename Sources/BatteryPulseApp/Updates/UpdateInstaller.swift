@@ -6,6 +6,7 @@ import CoreServices
 import Foundation
 import Observation
 import Security
+import Synchronization
 import os
 
 /// Installs an update from inside the app, so the user doesn't download the DMG and replace the
@@ -310,17 +311,16 @@ extension UpdateInstallError {
 
 /// Hands the progress of a download made with `URLSession.download(for:delegate:)` to the main
 /// actor, which polls it.
-private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let lock = NSLock()
-    private var task: URLSessionTask?
+private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
+    private let task = Mutex<URLSessionTask?>(nil)
 
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
-        lock.withLock { self.task = task }
+        self.task.withLock { $0 = task }
     }
 
     /// The fraction received, or `nil` before the size is known.
     func fraction(expectedSize: Int64?) -> Double? {
-        guard let task = lock.withLock({ self.task }) else { return nil }
+        guard let task = self.task.withLock({ $0 }) else { return nil }
         let reported = task.countOfBytesExpectedToReceive
         let expected = reported > 0 ? reported : (expectedSize ?? 0)
         guard expected > 0 else { return nil }
