@@ -1473,6 +1473,9 @@ WP-11's map-driven deletions, WP-12 or D1–D3.
 - **Q6:** CryptoKit in the widget (K-03) waits for 0.6.2 unless G13 and the budget allow WP-11b.
 - **Branches:** pushing `claude/061-<pkg>` and `claude/baseline-0.6.0` is allowed; they are
   deleted after the release.
+- **Architecture:** delegated (2026-10-20). Technical and architectural choices are made in the
+  run by Apple's practices and this plan's rules, without asking; only what the maintainer sees
+  or does (look, behaviour, settings, the M5 session, the release) goes to the maintainer.
 
 ## Appendix A: traceability
 
