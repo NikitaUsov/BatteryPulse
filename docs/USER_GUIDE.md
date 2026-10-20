@@ -473,12 +473,16 @@ when:
 
 - BatteryPulse runs from where it was downloaded instead of from Applications (move it there
   first);
-- your account can't change the folder BatteryPulse is in;
-- the release has no signature.
+- your account can't change the folder BatteryPulse is in.
 
-If anything goes wrong, nothing is replaced and the window offers Download instead. Permissions
-you gave BatteryPulse in Privacy & Security may be asked for again after an update, and widgets
-may need adding again (see [Widget](#widget)).
+If the release has no signature, or the downloaded update fails one of the checks that show it is
+genuine (its signature, GitHub's checksum, the app inside or that app's code signature),
+BatteryPulse installs nothing and doesn't offer the download either: the window says what
+failed and offers **Open Release Page**, so you can look at the release on GitHub before
+installing anything. If anything else goes wrong, such as a download that stops, nothing is
+replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
+Security may be asked for again after an update, and widgets may need adding again (see
+[Widget](#widget)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see

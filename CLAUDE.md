@@ -63,8 +63,10 @@ through the App Store. Reference hardware: MacBook Air M5.
   <version>`, checks the secret's key against `ReleaseSigning.publicKeys`, signs the DMG with
   `scripts/sign-update.swift` and the `UPDATE_SIGNING_KEY` secret of the `release` environment
   (`BatteryPulse.dmg.sig`; `--help` is the key rotation runbook) and publishes
-  `BatteryPulse-dSYMs.zip` beside them; the app's `Updates/UpdateInstaller` refuses an update
-  without a valid signature. Never ask for or handle the private key.
+  `BatteryPulse-dSYMs.zip` beside them. The app's `Updates/UpdateInstaller` refuses an update
+  without a `.sig` or one that fails its signature, digest, bundle or code-signature check, and
+  then offers only the release page, never the DMG (`UpdateFallback`). Never ask for or handle
+  the private key.
 - `scripts/` — `build-app.sh` (packages the app, `PROFILING=1` for an Instruments build, and
   fails on any signing-posture violation, listing each), `size-report.sh` with
   `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated

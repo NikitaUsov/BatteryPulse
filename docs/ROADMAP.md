@@ -185,16 +185,19 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   one and, always, an Ed25519 signature of the DMG (`BatteryPulse.dmg.sig`, made by
   `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret of
   the `release` environment, which needs the maintainer's approval for each run,
-  checked against the key in `ReleaseSigning.swift`). It mounts the DMG at a private mount
+  checked against the keys in `ReleaseSigning.publicKeys`). It mounts the DMG at a private mount
   point, copies the app into a temporary folder on the app's volume, clears quarantine, and
   checks the bundle ID, that the version is exactly the release's and newer than the running
   one (so a signed old build can't be installed over a newer one), and a strict code-signature
   validation. Then it swaps the bundles with `renamex_np(RENAME_SWAP)`, registers the new one
   with `LSRegisterURL` and relaunches through `/bin/sh`, which waits for the old process to end
   and runs `open -n`; the old copy is deleted at the next launch. Translocated copies, folders
-  the user can't write, development builds, releases without a signature and any error fall
-  back to Download in the browser. There is one built-in key and no rotation yet: a lost key
-  means one manual DMG install with the new key's build. Follow-ups: re-register the login item
+  the user can't write, development builds and the other errors fall back to Download in the
+  browser; since 0.6.1 a release without a signature, or a download that fails the digest,
+  signature, bundle or code-signature check, gets a warning and the release page instead, never
+  the DMG. The built-in keys are a list, so a new key can ship before it signs (`swift
+  scripts/sign-update.swift --help` is the rotation runbook); a lost key still means one manual
+  DMG install with the new key's build. Follow-ups: re-register the login item
   and reload the widget timelines on the first launch after an update.
 - [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
   kept them on the M5; an in-app update is still to be checked.) Replacing 0.3.0 with 0.3.1 from the DMG
