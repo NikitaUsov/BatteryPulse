@@ -1712,3 +1712,9 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   workflows set `DEVELOPER_DIR` to it, the baseline branch too, so before and after use the same
   compiler. The Linux container is Swift 6.4.1. `actions/checkout` has v6 (v6.0.3): WP-8b moves both
   workflows to it, pinned by SHA with `persist-credentials: false` (SEC-06).
+- **The "before" (A1′), `claude/baseline-0.6.0` at `076873d`, Xcode 27.1, run 39413159534:** DMG
+  (UDZO) 3,699,952 B; `.app` 11,180 KB; app binary 7,618,784 B (`__text` 2,116,636 B, 4195
+  exports); widget binary 3,172,800 B (`__text` 1,084,028 B); `.lproj` 410,328 B; `AppIcon.icns`
+  215,181 B; every hygiene count 0. The integration tip `98b4fe7` (0.6.0 plus the four fixes and
+  WP-0) reads DMG 3,704,721 B. The widget's export count again equals the app's (4195 and 4200), so
+  the report reads the same binary twice or the counts happen to match: WP-8a checks.
