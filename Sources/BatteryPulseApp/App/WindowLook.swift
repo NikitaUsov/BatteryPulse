@@ -251,8 +251,7 @@ final class SystemAppearance {
     }
 
     private func update() {
-        let isDark = Self.readIsDark()
-        if self.isDark != isDark { self.isDark = isDark }
+        isDark = Self.readIsDark()
     }
 
     private static func readIsDark() -> Bool {

@@ -244,14 +244,11 @@ final class SystemPowerState {
         }
     }
 
-    /// Reads both again; a property changes only when its value does, so views that read one
-    /// aren't updated for the other.
+    /// Reads both again. The observable setters skip a value equal to the current one, so views
+    /// that read one aren't updated for the other.
     private func update() {
-        let processInfo = ProcessInfo.processInfo
-        let isLowPowerModeEnabled = processInfo.isLowPowerModeEnabled
-        if self.isLowPowerModeEnabled != isLowPowerModeEnabled { self.isLowPowerModeEnabled = isLowPowerModeEnabled }
-        let thermalState = ThermalState(system: processInfo.thermalState)
-        if self.thermalState != thermalState { self.thermalState = thermalState }
+        isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+        thermalState = ThermalState(system: ProcessInfo.processInfo.thermalState)
     }
 }
 
@@ -311,8 +308,7 @@ final class ScreenActivity {
             screensAreAsleep = false
         default: return
         }
-        let isActive = !screensAreAsleep && !sessionIsSwitchedOut
-        if self.isActive != isActive { self.isActive = isActive }
+        isActive = !screensAreAsleep && !sessionIsSwitchedOut
     }
 }
 

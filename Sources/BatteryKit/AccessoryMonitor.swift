@@ -12,8 +12,8 @@ import Observation
 @MainActor
 @Observable
 public final class AccessoryMonitor {
-    /// Reassigned only when the list changed, so views and the notifier don't react to equal
-    /// reads.
+    /// An equal read leaves it unchanged (the observable setter skips equal values), so views and
+    /// the notifier don't react to it.
     public private(set) var accessories: [AccessoryBattery] = []
     /// `nil` before the first read; `false` when this system doesn't publish accessory
     /// batteries.
@@ -56,17 +56,15 @@ public final class AccessoryMonitor {
         pendingRead?.cancel()
         pendingRead = nil
         let reading = Diagnostics.measure("accessory.read") { activeProvider?.read() }
-        let isAvailable = reading != nil
-        if self.isAvailable != isAvailable { self.isAvailable = isAvailable }
-        let accessories = reading?.accessories ?? []
-        if self.accessories != accessories { self.accessories = accessories }
+        isAvailable = reading != nil
+        accessories = reading?.accessories ?? []
     }
 
     /// Shows readings from `provider` instead of the system's until called with `nil`, like
     /// ``BatteryMonitor/setOverride(_:)``; the system's notifications pause meanwhile.
     public func setOverride(_ provider: (any AccessoryProvider)?) {
         overrideProvider = provider
-        if isOverridden != (provider != nil) { isOverridden = provider != nil }
+        isOverridden = provider != nil
         guard isRunning else { return }
         observeActiveProvider()
         refresh()
