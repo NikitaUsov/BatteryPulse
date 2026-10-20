@@ -39,7 +39,7 @@ jobs:
         # Fails early, with the manifest's own error, if Package.swift doesn't evaluate.
         run: swift package dump-package > /dev/null
       - name: Lint
-        run: swift format lint --strict --recursive Sources Tests Package.swift
+        run: swift format lint --strict --recursive Sources Tests Package.swift scripts
       - name: Build
         # The warning gate: every compiler warning fails the job, except a deprecation, which stays a
         # warning (a kept deprecated API is marked with @diagnose). Release builds don't get it, so a

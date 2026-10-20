@@ -6,7 +6,9 @@
 #   PROFILING=1 scripts/build-app.sh   # build/BatteryPulse-profiling.{app,dmg}, see below
 #
 # The app is ad-hoc signed. A notarized build needs a Developer ID certificate; until then,
-# each downloaded version must be approved once in System Settings → Privacy & Security.
+# each version downloaded with a browser must be approved once in System Settings → Privacy &
+# Security. An update installed from inside the app needs no approval: its download isn't
+# quarantined (see LSFileQuarantineEnabled below).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
