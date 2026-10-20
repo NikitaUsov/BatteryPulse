@@ -8,9 +8,18 @@
   "respectsExistingLineBreaks": true,
   "lineBreakBeforeEachArgument": false,
   "rules": {
+    "AlwaysUseLiteralForEmptyCollectionInit": true,
     "AlwaysUseLowerCamelCase": false,
     "NeverForceUnwrap": true,
-    "OrderedImports": true
+    "NeverUseForceTry": true,
+    "NeverUseImplicitlyUnwrappedOptionals": true,
+    "NoEmptyLinesOpeningClosingBraces": true,
+    "NoLeadingUnderscores": true,
+    "OmitExplicitReturns": true,
+    "OrderedImports": true,
+    "UseEarlyExits": true,
+    "UseWhereClausesInForLoops": true,
+    "ValidateDocumentationComments": true
   },
   "indentConditionalCompilationBlocks": false,
   "indentSwitchCaseLabels": false

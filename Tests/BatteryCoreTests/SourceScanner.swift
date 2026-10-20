@@ -98,8 +98,7 @@ enum SourceScanner {
 
         /// The expression of a top-level argument with this label.
         func argument(labeled label: String) -> String? {
-            for piece in topLevelArguments {
-                guard piece.hasPrefix(label) else { continue }
+            for piece in topLevelArguments where piece.hasPrefix(label) {
                 let rest = piece.dropFirst(label.count).drop { $0 == " " }
                 if rest.first == ":" { return rest.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines) }
             }

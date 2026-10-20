@@ -125,7 +125,12 @@ enum MobileDeviceDiscovery {
     /// Subscribes, waits for the attached devices, runs `body` with them grouped per device
     /// (USB first) while still subscribed, then unsubscribes.
     ///
-    /// - Parameter wanted: a UDID to stop waiting for as soon as it appears.
+    /// - Parameters:
+    ///   - library: the loaded MobileDevice framework.
+    ///   - wanted: a UDID to stop waiting for as soon as it appears.
+    ///   - body: the work to do with the attached devices.
+    /// - Returns: what `body` returns.
+    /// - Throws: ``IDeviceError/subscriptionFailed(_:)``, or what `body` throws.
     static func withAttachedDevices<T>(
         library: MobileDeviceLibrary, waitingFor wanted: String?,
         _ body: ([[IDeviceAttachment<AnyObject>]]) throws -> T

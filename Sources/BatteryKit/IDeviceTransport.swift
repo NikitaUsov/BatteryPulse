@@ -8,14 +8,15 @@ import Foundation
 /// client of usbmuxd and lockdown could replace it if Apple breaks the framework; parsing and
 /// reports only see ``IDeviceInfo`` and ``IDeviceCapture``.
 public protocol IDeviceTransport: Sendable {
-    /// The attached devices, one entry per device even when it is attached by USB and Wi-Fi, in
-    /// ``IDeviceList/sorted(_:)`` order (by identifier, so the same order either way). Throws
-    /// ``IDeviceError``.
+    /// The attached devices.
     ///
     /// - Parameter readingIdentity: connect to each device for its name, model and OS version
     ///   (`bpulse --devices`); a device whose identity isn't read in time is listed by identifier
     ///   alone (see ``IDeviceListBuilder``). Without it no device is connected to and the entries
     ///   carry only the identifier and interfaces (`bpulse --device <n>`).
+    /// - Returns: one entry per device even when it is attached by USB and Wi-Fi, in
+    ///   ``IDeviceList/sorted(_:)`` order (by identifier, so the same order either way).
+    /// - Throws: ``IDeviceError``.
     func devices(readingIdentity: Bool) async throws -> [IDeviceInfo]
 
     /// Reads the battery of the device with this ``IDeviceInfo/id``. Problems on the device
@@ -129,7 +130,10 @@ public enum IDeviceReader {
     /// stops waiting. Devices attached by USB are read first: a device that stops answering is
     /// most likely on Wi-Fi, and the reads queued behind a stuck one never happen.
     ///
-    /// - Parameter link: the link for one attachment; made only when its device is read.
+    /// - Parameters:
+    ///   - groups: the attachments, grouped per device.
+    ///   - builder: the list being built.
+    ///   - link: the link for one attachment; made only when its device is read.
     public static func readIdentities<Item>(
         of groups: [[IDeviceAttachment<Item>]], into builder: IDeviceListBuilder,
         link: (IDeviceAttachment<Item>) -> any IDeviceLink

@@ -146,6 +146,7 @@ public enum IDeviceBatteryParser {
     ///   - entry: the battery's registry entry.
     ///   - pack: the `AppleSmartBatteryPack` entry, where iOS 27 keeps the temperature.
     ///   - lockdown: the `com.apple.mobile.battery` lockdown domain.
+    ///   - source: the registry class of `entry` (``IDeviceBattery/source``).
     /// - Returns: `nil` unless the entry has a positive design, nominal or full-charge capacity,
     ///   so a stray dictionary never becomes a battery.
     public static func battery(

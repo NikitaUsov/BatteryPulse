@@ -50,7 +50,9 @@ public struct Signposts: Sendable {
     private let signposter: OSSignposter
     private let log: Logger
 
-    /// - Parameter log: The logger of the `perf` category, which gets the lines.
+    /// - Parameters:
+    ///   - subsystem: The subsystem of the signposts.
+    ///   - log: The logger of the `perf` category, which gets the lines.
     public init(subsystem: String, log: Logger) {
         signposter = OSSignposter(subsystem: subsystem, category: .pointsOfInterest)
         self.log = log
