@@ -70,6 +70,21 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Package app (DMG)
         run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Refuse a profiling build
+        # PROFILING=1 signs the app with get-task-allow (scripts/build-app.sh); such a build is
+        # never published.
+        run: |
+          if [ -e build/BatteryPulse-profiling.app ] || [ -e build/BatteryPulse-profiling.dmg ]; then
+            echo "::error::build/ holds a profiling build (PROFILING=1), which is never published."
+            exit 1
+          fi
+          for bundle in build/BatteryPulse.app build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex; do
+            entitlements="$(codesign -d --entitlements - "$bundle" 2>/dev/null || true)"
+            if grep -F get-task-allow <<<"$entitlements" >/dev/null; then
+              echo "::error::$bundle is signed with get-task-allow, like a profiling build; it is never published."
+              exit 1
+            fi
+          done
       - name: Sign DMG
         # Writes build/BatteryPulse.dmg.sig, which the in-app updater checks before installing.
         env:
