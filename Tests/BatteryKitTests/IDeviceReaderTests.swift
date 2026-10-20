@@ -294,8 +294,10 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
     }
 }
 
-/// `bpulse --devices` and `--device <n>` over ``FakeTransport``. UDIDs are SYNTHETIC.
-@Suite struct IDeviceListingTests {
+/// `bpulse --devices` and `--device <n>` over ``FakeTransport``. UDIDs are SYNTHETIC. A
+/// continuation that is never resumed would hang the run: the time limit names the test, and the
+/// CI job's timeout ends it.
+@Suite(.timeLimit(.minutes(1))) struct IDeviceListingTests {
     private static let phoneID = "00008150-001A2B3C4D5E801C"
     private static let padID = "00008030-000A11B22C33D4E5"
     private static let otherID = "00008140-000F00000000ABCD"
@@ -429,7 +431,8 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
     }
 }
 
-@Suite struct BlockingWorkTests {
+/// The time limit names a test whose continuation is never resumed; the CI job's timeout ends it.
+@Suite(.timeLimit(.minutes(1))) struct BlockingWorkTests {
     private let queue = DispatchQueue(label: "BlockingWorkTests")
 
     @Test func returnsTheResult() async throws {
