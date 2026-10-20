@@ -23,6 +23,10 @@ public final class BatteryMonitor {
     public private(set) var liveRefreshInterval: Duration?
     /// `true` while readings come from an override provider (Demo Mode) instead of the device.
     public private(set) var isOverridden = false
+    /// When the battery was last read, whether or not the reading changed anything. Unlike
+    /// ``snapshot``'s timestamp, which moves only with the state, this tells a caller that would
+    /// read again whether a recent read is good enough. Not observed: it changes on every read.
+    @ObservationIgnored public private(set) var lastReadAt: ContinuousClock.Instant?
 
     @ObservationIgnored private let provider: any BatteryProvider
     @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
@@ -99,6 +103,7 @@ public final class BatteryMonitor {
         let interval = Diagnostics.begin("refresh", trigger: trigger.name)
         defer { interval.end() }
         let new = activeProvider.read()
+        lastReadAt = .now
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) { hasBattery = new != nil }
         if !Self.isSameReading(new, reading) { reading = new }

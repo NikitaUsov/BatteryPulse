@@ -85,6 +85,20 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         #expect(monitor.reading?.snapshot.timestamp == Date(timeIntervalSince1970: 1))
     }
 
+    @Test func everyReadIsStamped() throws {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = BatteryMonitor(provider: provider)
+        #expect(monitor.lastReadAt == nil)
+
+        monitor.start()
+        let first = try #require(monitor.lastReadAt)
+        provider.next = reading(percent: 80, at: 2)
+        monitor.refresh()
+        // The snapshot keeps its timestamp, since only that changed, but the read still counts.
+        #expect(monitor.snapshot?.timestamp == Date(timeIntervalSince1970: 1))
+        #expect(try #require(monitor.lastReadAt) >= first)
+    }
+
     @Test func changedRawDataRepublishesReading() {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let monitor = BatteryMonitor(provider: provider)
