@@ -1779,3 +1779,33 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   turned off and asks again when it comes back. F11 can check it with the `monitor` log category.
 - **Docs for WP-12:** USER_GUIDE line 492 should mention `BatteryPulse-dSYMs.zip` beside the DMG
   and its `.sig`.
+
+### B2 (WP-6a, WP-2b), merged 2026-10-20
+
+- **SEC-01 is user-visible:** a release whose signature, digest, bundle or code signature fails,
+  or that has no `.sig`, shows a warning and Open Release Page (not the default button) instead of
+  Download. D3's release notes mention it. F12 checks: a corrupted `.sig` shows only Open Release
+  Page and Return does nothing; a `file://` link in the notes does nothing; text selection in the
+  notes survives a download; the Russian labels fit.
+- **Links:** `ReleaseLinks.browserURL(for:)` opens only `https` on `github.com`, otherwise the
+  releases page; release-notes links open over `https` on any host (`ReleaseNotes.isAllowedLink`).
+  `URL.host` is deprecated at 27.2, so the code uses `host()`.
+- **Keys:** `ReleaseSigning.publicKeys` holds today's key only; `release.yml` checks the secret's
+  key against the list, skips commented-out keys, and exports the matching key. The rotation
+  runbook is `swift scripts/sign-update.swift --help`. The check was dry-run on macOS with a
+  throwaway key (temporary commit, dropped).
+- **Docs for WP-12:** USER_GUIDE (about lines 469-476) still says Download is offered when the
+  release has no signature; CLAUDE.md line 19 says "the Ed25519 public key" (now a key list);
+  ROADMAP line 188 says "the key in ReleaseSigning.swift".
+- **SMC (E4a):** the 60 s decision lives in `BatteryMonitor` on its `MonitorClock` through
+  `BatteryProvider.read(scope:)` (`.full` or `.live`, default `read()`); `SMCReadPolicy` and
+  `SMCValueCache` are in BatteryCore's `SMC.swift`. `read()` is `.full`, so bpulse and the widget
+  read every key as before (at most every 2 s, per group). A manual read (Copy Report) is full.
+  MainView sends the page signal while Power or Raw Data is visible. `BatteryReadScope.live` is
+  where E4b (0.6.2) can reuse the registry and IOPS dictionaries.
+- **K-04 for WP-7:** `observeNotifyKeys(_:handler:)` and `powerSourceDescriptions(in:)` sit in
+  the macOS block of `SystemNotifications.swift`; `MacAccessoryProvider` can pass its own blob.
+- **SW-R6:** 8 `@unchecked Sendable` in Sources (was 9).
+- **Budget checkpoint (§6), after B2:** 16 runs used (plan 16-19), about 3.6 M agent tokens; the
+  maintainer reports the plan's limits barely touched and chose the whole plan, so B3 onward runs
+  as planned, P2 included.
