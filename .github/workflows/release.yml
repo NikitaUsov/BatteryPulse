@@ -34,8 +34,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Check the update signing key
         # The app installs an update itself only if the DMG is signed with the private half of
-        # ReleaseSigning.publicKey, so stop before building when the secret is missing or is
-        # another key.
+        # one of ReleaseSigning.publicKeys, so stop before building when the secret is missing or
+        # belongs to a key the app doesn't list.
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: |
@@ -43,17 +43,20 @@ jobs:
             echo "::error::The UPDATE_SIGNING_KEY secret is missing or empty. Add it to the release environment in Settings > Environments (see scripts/sign-update.swift)."
             exit 1
           fi
-          expected="$(sed -n 's/^ *public static let publicKey = "\([^"]*\)"$/\1/p' Sources/BatteryCore/ReleaseSigning.swift)"
+          # One quoted base64 key (44 characters) per line of the publicKeys array. A line that is
+          # only a comment doesn't count: the app doesn't trust a key commented out of the list.
+          expected="$(sed -n '/static let publicKeys = \[/,/^ *\]/p' Sources/BatteryCore/ReleaseSigning.swift \
+            | grep -v '^[[:space:]]*//' | grep -oE '"[A-Za-z0-9+/]{43}="' | tr -d '"' || true)"
           if [ -z "$expected" ]; then
-            echo "::error::Can't read ReleaseSigning.publicKey from Sources/BatteryCore/ReleaseSigning.swift."
+            echo "::error::Can't read ReleaseSigning.publicKeys from Sources/BatteryCore/ReleaseSigning.swift."
             exit 1
           fi
           actual="$(swift scripts/sign-update.swift --public-key)"
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::UPDATE_SIGNING_KEY belongs to the public key $actual, but the app expects $expected (ReleaseSigning.publicKey)."
+          if ! grep -qxF -- "$actual" <<<"$expected"; then
+            echo "::error::UPDATE_SIGNING_KEY belongs to the public key $actual, but the app trusts only $(paste -sd ' ' - <<<"$expected") (ReleaseSigning.publicKeys)."
             exit 1
           fi
-          echo "UPDATE_PUBLIC_KEY=$expected" >> "$GITHUB_ENV"
+          echo "UPDATE_PUBLIC_KEY=$actual" >> "$GITHUB_ENV"
       - name: Test
         run: swift test
       - name: Resolve version

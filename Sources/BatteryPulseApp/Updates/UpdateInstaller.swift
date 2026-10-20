@@ -18,7 +18,8 @@ import os
 /// is deleted at the next launch. Files the app downloads itself aren't quarantined (the
 /// Info.plist has no `LSFileQuarantineEnabled`), so the new version opens without Open Anyway.
 ///
-/// Every failure leaves the installed app untouched and falls back to the browser download.
+/// Every failure leaves the installed app untouched. The window then offers the browser download,
+/// or only the release page after a failed integrity check (``UpdateFallback``).
 @MainActor
 @Observable
 final class UpdateInstaller {
@@ -279,7 +280,7 @@ extension UpdateInstallError {
             )
         case .folderNotWritable:
             String(localized: "BatteryPulse can't replace itself in its folder, so install the update from the DMG.")
-        case .notSigned: String(localized: "This release can only be installed from the DMG.")
+        case .notSigned: String(localized: "This release isn't signed, so BatteryPulse can't install it.")
         case .notNewer: String(localized: "This version isn't newer than the one you have.")
         case .downloadFailed:
             String(localized: "The update couldn't be downloaded. Check your internet connection.")

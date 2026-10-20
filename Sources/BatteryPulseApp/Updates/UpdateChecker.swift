@@ -50,14 +50,13 @@ final class UpdateChecker {
     @ObservationIgnored private var rateLimitedUntil: Date?
 
     /// A build without a real version: CI artifacts and `swift run`.
-    var isUnversioned: Bool { currentVersion == AppVersion(parts: [0, 0, 0]) }
+    var isUnversioned: Bool { currentVersion == UpdateInstallPolicy.unversioned }
 
-    // swift-format-ignore: NeverForceUnwrap
-    static let endpoint = URL(string: "https://api.github.com/repos/NikitaUsov/BatteryPulse/releases/latest")!
+    static let endpoint = ReleaseChannel.latestRelease
 
     init(bundle: Bundle = .main) {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        let current = version.flatMap(AppVersion.init) ?? AppVersion(parts: [0, 0, 0])
+        let current = version.flatMap(AppVersion.init) ?? UpdateInstallPolicy.unversioned
         currentVersion = current
         installer = UpdateInstaller(currentVersion: current, bundle: bundle)
         lastCheck = UserDefaults.standard.object(forKey: AppSettings.lastUpdateCheckKey) as? Date
@@ -103,7 +102,14 @@ final class UpdateChecker {
     /// Opens the DMG's download in the browser: the way to update when the app can't install
     /// the update itself.
     func download(_ release: ReleaseInfo) {
-        NSWorkspace.shared.open(release.downloadURL ?? release.pageURL)
+        NSWorkspace.shared.open(ReleaseLinks.browserURL(for: release.downloadURL ?? release.pageURL))
+        dismiss()
+    }
+
+    /// Opens the release's page in the browser instead of its DMG, after the DMG failed a check
+    /// that shows who made it (``UpdateFallback/releasePage``).
+    func openReleasePage(_ release: ReleaseInfo) {
+        NSWorkspace.shared.open(ReleaseLinks.browserURL(for: release.pageURL))
         dismiss()
     }
 

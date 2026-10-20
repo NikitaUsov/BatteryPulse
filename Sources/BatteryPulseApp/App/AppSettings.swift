@@ -150,20 +150,16 @@ enum WhatsNewPolicy {
     /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
     /// release would show What's New twice.
     static func markSeen(_ version: AppVersion) {
-        guard version != AppVersion(parts: [0, 0, 0]) else { return }
+        guard version != UpdateInstallPolicy.unversioned else { return }
         UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }
 
 enum AppLinks {
-    // swift-format-ignore: NeverForceUnwrap
-    static let project = URL(string: "https://github.com/NikitaUsov/BatteryPulse")!
-    // swift-format-ignore: NeverForceUnwrap
-    static let releases = URL(string: "https://github.com/NikitaUsov/BatteryPulse/releases")!
-    // swift-format-ignore: NeverForceUnwrap
-    static let license = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/LICENSE")!
-    // swift-format-ignore: NeverForceUnwrap
-    static let help = URL(string: "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")!
+    static let project = ReleaseChannel.project
+    static let releases = ReleaseLinks.browserURL(for: ReleaseChannel.releasesPage)
+    static let license = ReleaseChannel.file("LICENSE")
+    static let help = ReleaseChannel.file("docs/USER_GUIDE.md")
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!

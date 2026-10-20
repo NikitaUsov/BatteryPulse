@@ -48,6 +48,37 @@ import Testing
         #expect(release.publishedAt == Date(timeIntervalSince1970: 1_792_003_956))
     }
 
+    /// The links 0.6.0 spelled out one by one, now derived from one repository constant.
+    @Test func theReleaseChannelKeepsTheLinks() {
+        #expect(
+            ReleaseChannel.latestRelease.absoluteString
+                == "https://api.github.com/repos/NikitaUsov/BatteryPulse/releases/latest")
+        #expect(ReleaseChannel.project.absoluteString == "https://github.com/NikitaUsov/BatteryPulse")
+        #expect(ReleaseChannel.releasesPage.absoluteString == "https://github.com/NikitaUsov/BatteryPulse/releases")
+        #expect(
+            ReleaseChannel.file("docs/USER_GUIDE.md").absoluteString
+                == "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")
+        #expect(ReleaseChannel.assetName == "BatteryPulse.dmg")
+    }
+
+    @Test func notesOpenOnlyHTTPSLinks() throws {
+        func allowed(_ string: String) throws -> Bool {
+            ReleaseNotes.isAllowedLink(try #require(URL(string: string)))
+        }
+        #expect(try allowed("https://github.com/NikitaUsov/BatteryPulse/releases"))
+        #expect(try allowed("https://developer.apple.com/documentation/swiftui"))
+        #expect(try allowed("HTTPS://Example.com/x"))
+        let page = try #require(URL(string: "https://github.com/NikitaUsov/BatteryPulse/releases/tag/v0.6.0"))
+        #expect(ReleaseNotes.isAllowedLink(try #require(URL(string: "../v0.5.0", relativeTo: page))))
+        for refused in [
+            "http://github.com/NikitaUsov/BatteryPulse", "file:///System", "someapp://open?x=1",
+            "x-apple.systempreferences:com.apple.Localization-Settings.extension", "mailto:someone@example.com",
+            "https:no-host",
+        ] {
+            #expect(try !allowed(refused), "\(refused)")
+        }
+    }
+
     @Test func rejectsWhatIsNotAStableRelease() {
         #expect(throws: ReleaseInfo.ParseError.notARelease) {
             try ReleaseInfo.parse(gitHubJSON: Data(#"{"message": "Not Found"}"#.utf8))
