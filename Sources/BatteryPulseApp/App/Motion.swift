@@ -303,7 +303,12 @@ final class ScreenActivity {
         case NSWorkspace.screensDidSleepNotification: screensAreAsleep = true
         case NSWorkspace.screensDidWakeNotification: screensAreAsleep = false
         case NSWorkspace.sessionDidResignActiveNotification: sessionIsSwitchedOut = true
-        case NSWorkspace.sessionDidBecomeActiveNotification: sessionIsSwitchedOut = false
+        case NSWorkspace.sessionDidBecomeActiveNotification:
+            // Switching back in happens at a lit screen. A session that was switched out may not
+            // hear that the displays woke for another user, so this ends a sleep it saw begin;
+            // otherwise the label would stay without polling until the next sleep and wake.
+            sessionIsSwitchedOut = false
+            screensAreAsleep = false
         default: return
         }
         let isActive = !screensAreAsleep && !sessionIsSwitchedOut
