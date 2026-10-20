@@ -210,6 +210,8 @@ struct HistoryView: View {
 
     private func load() async {
         let period = self.period
+        let interval = Diagnostics.begin("history.load", trigger: period == .day ? "day" : "week")
+        defer { interval.end() }
         let source = effectiveSource
         let store: HistoryStore
         var end = Date()

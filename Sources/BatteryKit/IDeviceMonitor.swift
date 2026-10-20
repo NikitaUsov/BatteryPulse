@@ -379,12 +379,14 @@ public final class IDeviceMonitor {
         recomputeEntries()
         let generation = generation
         operation = Task { [weak self] in
+            let interval = Diagnostics.begin("device.read")
             let result: Result<IDeviceCapture, any Error>
             do {
                 result = .success(try await transport.capture(deviceID: udid))
             } catch {
                 result = .failure(error)
             }
+            interval.end()
             self?.finishRead(key, result: result, generation: generation)
         }
     }

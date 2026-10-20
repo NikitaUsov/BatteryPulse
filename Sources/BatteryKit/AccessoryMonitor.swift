@@ -55,7 +55,7 @@ public final class AccessoryMonitor {
     public func refresh() {
         pendingRead?.cancel()
         pendingRead = nil
-        let reading = activeProvider?.read()
+        let reading = Diagnostics.measure("accessory.read") { activeProvider?.read() }
         let isAvailable = reading != nil
         if self.isAvailable != isAvailable { self.isAvailable = isAvailable }
         let accessories = reading?.accessories ?? []

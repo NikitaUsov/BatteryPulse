@@ -125,7 +125,10 @@ struct MainView: View {
 
     private var selection: SidebarItem {
         get { SidebarItem(storageKey: storedSelection) ?? .overview }
-        nonmutating set { storedSelection = newValue.storageKey }
+        nonmutating set {
+            if newValue != selection { Diagnostics.pageWillSwitch() }
+            storedSelection = newValue.storageKey
+        }
     }
 
     /// The row the sidebar highlights. A restored device page with no device listed shows the
@@ -184,6 +187,7 @@ struct MainView: View {
                     monitor: monitor, accessories: accessories, selection: selection,
                     historySource: $historySource, showInHistory: showInHistory
                 )
+                .onAppear { Diagnostics.pageAppeared(selection) }
                 .id(selection)
                 .transition(.opacity)
             }

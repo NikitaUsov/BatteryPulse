@@ -49,29 +49,33 @@ import Testing
         var strings: [String: Entry]
     }
 
-    private func catalog() throws -> Catalog {
-        let url = Self.repository.appendingPathComponent("Resources/Localizable.xcstrings")
+    /// The catalog and the source keys, decoded and scanned once for all the tests below.
+    private static let decodedCatalog: Result<Catalog, any Error> = Result {
+        let url = repository.appendingPathComponent("Resources/Localizable.xcstrings")
         return try JSONDecoder().decode(Catalog.self, from: Data(contentsOf: url))
+    }
+    private static let scannedSourceKeys: Result<Set<String>, any Error> = Result { try scanSourceKeys() }
+
+    private func catalog() throws -> Catalog {
+        try Self.decodedCatalog.get()
     }
 
     private func sourceKeys() throws -> Set<String> {
+        try Self.scannedSourceKeys.get()
+    }
+
+    /// The localized literals of the app and the widget, from ``SourceScanner``'s files.
+    private static func scanSourceKeys() throws -> Set<String> {
         var keys = RawKeyGlossary.summaries
-        var files: [URL] = []
-        for target in ["BatteryPulseApp", "BatteryPulseWidget"] {
-            let directory = Self.repository.appendingPathComponent("Sources/" + target)
-            let enumerator = try #require(
-                FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
-            files += enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
-        }
-        for url in files {
-            let source = try String(contentsOf: url, encoding: .utf8)
-            var literals = source.matches(of: Self.localizingCall).map { String($0.output.1) }
-            literals += source.matches(of: Self.tupleLiteral).map { String($0.output.1) }
+        for file in try SourceScanner.files.get() {
+            let source = file.text
+            var literals = source.matches(of: localizingCall).map { String($0.output.1) }
+            literals += source.matches(of: tupleLiteral).map { String($0.output.1) }
             for block in source.matches(of: #/var \w+: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
-                literals += block.output.body.matches(of: Self.caseLiteral).map { String($0.output.1) }
+                literals += block.output.body.matches(of: caseLiteral).map { String($0.output.1) }
             }
-            for literal in literals where !Self.verbatim.contains(literal) {
-                keys.insert(Self.catalogKey(for: literal))
+            for literal in literals where !verbatim.contains(literal) {
+                keys.insert(catalogKey(for: literal))
             }
         }
         return keys
