@@ -180,6 +180,28 @@ import Testing
                 == .unexpectedBundle)
     }
 
+    /// An older release never replaces a newer copy, even signed with the release key: it isn't
+    /// offered, Install and Relaunch isn't, and a DMG whose app is older than the one running, or
+    /// than the release it came with, is refused before the swap.
+    @Test func refusesADowngrade() throws {
+        let release = try ReleaseInfo.parse(gitHubJSON: signedJSON)
+        let newer = AppVersion(parts: [0, 5])
+        #expect(!UpdatePolicy.shouldOffer(release, current: newer, skipped: nil, userInitiated: true))
+        #expect(
+            UpdateInstallPolicy.blocker(
+                release: release, current: newer, bundlePath: "/Applications/BatteryPulse.app", canWrite: true)
+                == .notNewer)
+        let id = "io.github.nikitausov.BatteryPulse"
+        func check(_ version: String, release: AppVersion, current: AppVersion) -> UpdateInstallError? {
+            UpdateInstallPolicy.checkStagedBundle(
+                identifier: id, version: version, expectedIdentifier: id, release: release, current: current)
+        }
+        #expect(check("0.4.0", release: Self.v040, current: newer) == .notNewer)
+        #expect(check("0.4.0", release: Self.v040, current: Self.v040) == .notNewer)
+        #expect(check("0.3.1", release: Self.v040, current: Self.v031) == .unexpectedBundle)
+        #expect(check("0.4.0", release: Self.v040, current: Self.v031) == nil)
+    }
+
     @Test func mountsReadOnlyWithoutFinder() {
         let arguments = UpdateInstallPolicy.attachArguments(image: "/tmp/a b/BatteryPulse.dmg", mountPoint: "/tmp/m")
         #expect(arguments.first == "attach")

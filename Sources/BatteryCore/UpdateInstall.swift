@@ -110,6 +110,22 @@ public enum UpdateIntegrity {
 }
 
 /// When the app may replace itself, and the commands it runs to do so.
+///
+/// The updater's boundaries:
+/// - **Who made the update:** only an Ed25519 signature by one of ``ReleaseSigning/publicKeys``
+///   lets the app install a DMG. GitHub's digest shows only that the download is intact, so the
+///   hosts the DMG and its signature come from aren't filtered: the signature is the authority.
+/// - **After a failed check:** the app never offers the refused DMG, only the release page
+///   (``UpdateFallback/releasePage``), and the browser opens only `https` pages on github.com
+///   (``ReleaseLinks``).
+/// - **Which version:** the copy taken out of the DMG must be this app at exactly the release's
+///   version, and newer than the running one, so an older signed release can't be installed
+///   over a newer one (``checkStagedBundle(identifier:version:expectedIdentifier:release:current:)``).
+/// - **Not a boundary:** another process of the same user. It could change the DMG between the
+///   check and the mount, or the new copy between the check and the swap, but it can replace the
+///   app anyway, so the updater doesn't try to defend against it.
+/// - **Quarantine:** the app clears it on the new copy, and the Info.plist has no
+///   `LSFileQuarantineEnabled`, so the new version opens without Open Anyway.
 public enum UpdateInstallPolicy {
     /// The version builds without one get: they never install updates.
     public static let unversioned = AppVersion(parts: [0, 0, 0])
