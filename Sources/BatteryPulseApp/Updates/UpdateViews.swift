@@ -118,36 +118,33 @@ struct UpdateView: View {
             }
         case .available(let release):
             let version = release.version.description
+            let installer = updater.installer
+            // Only while idle: a blocker looks at the file system, and during a download this runs
+            // on every progress step.
+            let blocker = installer.phase == .idle ? installer.blocker(for: release) : nil
             Text("A New Version of BatteryPulse Is Available")
                 .font(.title3.weight(.semibold))
             Text("BatteryPulse \(version) is available; you have \(current).")
                 .foregroundStyle(.secondary)
-            ScrollView {
-                Text(notes(release))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-            }
-            .frame(height: 220)
-            .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
+            ReleaseNotesText(notes: release.notes, baseURL: release.pageURL)
             // A new phase fades in where the old one was, which goes at once: the window resizes
             // once per phase and the buttons below move at most once, with it. The download bar
             // inside a phase is never animated, because its fraction changes five times a second.
             ZStack(alignment: .topLeading) {
-                installStatus(release)
+                installStatus(blocker: blocker)
                     .id(phaseKind)
                     .transition(motion.replacement)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            installActions(release)
+            installActions(release, blocker: blocker)
         }
     }
 
-    /// How the update gets installed, the installation's progress, or why it stopped.
+    /// How the update gets installed, the installation's progress, or why it stopped. `blocker`
+    /// is the idle phase's reason why the app can't install the update itself.
     @ViewBuilder
-    private func installStatus(_ release: ReleaseInfo) -> some View {
-        let installer = updater.installer
-        switch installer.phase {
+    private func installStatus(blocker: UpdateInstallError?) -> some View {
+        switch updater.installer.phase {
         case .downloading(let fraction):
             ProgressView(value: fraction) {
                 Text("Downloading…")
@@ -170,7 +167,6 @@ struct UpdateView: View {
         case .failed(let error):
             warning(error)
         case .idle:
-            let blocker = installer.blocker(for: release)
             if let blocker, blocker.fallback == .releasePage {
                 warning(blocker)
             } else {
@@ -223,21 +219,18 @@ struct UpdateView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// What stops the app from installing `release` itself: the failed installation's error, or
-    /// while idle the blocker; `nil` when Install and Relaunch can be offered.
-    private func problem(for release: ReleaseInfo) -> UpdateInstallError? {
-        switch updater.installer.phase {
-        case .failed(let error): error
-        case .idle: updater.installer.blocker(for: release)
-        case .downloading, .verifying, .installing, .relaunching: nil
-        }
+    /// What stops the app from installing the update itself: the failed installation's error, or
+    /// the idle phase's blocker; `nil` when Install and Relaunch can be offered.
+    private func problem(blocker: UpdateInstallError?) -> UpdateInstallError? {
+        if case .failed(let error) = updater.installer.phase { return error }
+        return blocker
     }
 
     /// Install and Relaunch when the app can replace itself, otherwise the browser download, or
     /// only the release page after a failed integrity check. Two rows, so the longer Russian
     /// labels fit the window.
     @ViewBuilder
-    private func installActions(_ release: ReleaseInfo) -> some View {
+    private func installActions(_ release: ReleaseInfo, blocker: UpdateInstallError?) -> some View {
         let installer = updater.installer
         if installer.isBusy {
             HStack {
@@ -260,7 +253,7 @@ struct UpdateView: View {
             }
             HStack {
                 Spacer()
-                if let problem = problem(for: release) {
+                if let problem = problem(blocker: blocker) {
                     switch problem.fallback {
                     case .none:
                         // The new version is in place; it only has to be opened.
@@ -297,16 +290,37 @@ struct UpdateView: View {
         close()
     }
 
-    private func notes(_ release: ReleaseInfo) -> AttributedString {
-        let markdown = ReleaseNotes.inlineMarkdown(release.notes)
-        let options = AttributedString.MarkdownParsingOptions(
-            interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
-        return (try? AttributedString(markdown: markdown, options: options, baseURL: release.pageURL))
-            ?? AttributedString(release.notes)
-    }
-
     private func close() {
         dismissWindow(id: WindowID.update)
+    }
+}
+
+/// The release notes, scrollable and selectable. Its inputs stay the same while a download
+/// updates the window five times a second, so SwiftUI skips its body instead of parsing the
+/// notes again on every step.
+private struct ReleaseNotesText: View {
+    let notes: String
+    /// The release page, which relative links resolve against.
+    let baseURL: URL
+
+    var body: some View {
+        ScrollView {
+            Text(Self.notes(notes, baseURL: baseURL))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+        }
+        .frame(height: 220)
+        .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
+    }
+
+    /// GitHub Markdown as attributed text: inline syntax only, with headings as bold lines.
+    static func notes(_ notes: String, baseURL: URL) -> AttributedString {
+        let markdown = ReleaseNotes.inlineMarkdown(notes)
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
+        return (try? AttributedString(markdown: markdown, options: options, baseURL: baseURL))
+            ?? AttributedString(notes)
     }
 }
 
