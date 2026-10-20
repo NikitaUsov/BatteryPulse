@@ -4,6 +4,10 @@ import PackageDescription
 // The language policy, in one place: every target, tests included, builds with these settings,
 // and no target passes compiler flags of its own (the widget's two flags only shape the extension).
 let strict: [SwiftSetting] = [
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("MemberImportVisibility"),
+    .enableUpcomingFeature("InferIsolatedConformances"),
+    .enableUpcomingFeature("ImmutableWeakCaptures"),
     .treatWarning("NoUseUnstructuredThrowingTask", as: .error),
     .treatWarning("ImplicitStrongCapture", as: .error),
     .treatWarning("ErrorInFutureSwiftVersion", as: .error),
