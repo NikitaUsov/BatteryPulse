@@ -466,7 +466,7 @@ private func reading(connected: Bool) -> BatteryReading {
         #expect(provider.readCount == 2)
     }
 
-    // MARK: - Slow values (EN-4)
+    // MARK: - Slow values
 
     @Test func slowValuesAtMostOnceAMinute() {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))

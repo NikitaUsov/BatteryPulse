@@ -10,7 +10,7 @@ import os
 ///
 /// A call takes about 0.2–0.5 ms (at worst ~11 ms on an M4 Max), and key info is cached, so the
 /// 16 battery keys take about 3–8 ms on the main actor (derived from the call time, not
-/// measured), and a poll's two live keys well under 1 ms.
+/// measured), and a poll's two live keys about 0.4–1 ms.
 @MainActor
 public final class SMCClient {
     public enum Failure: Error, Equatable {

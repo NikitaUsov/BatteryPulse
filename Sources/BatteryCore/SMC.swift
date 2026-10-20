@@ -416,7 +416,7 @@ public enum SMCBattery {
     }
 }
 
-/// How often a battery read asks the SMC for ``SMCBattery/otherKeys`` (EN-4). Off by default:
+/// How often a battery read asks the SMC for ``SMCBattery/otherKeys``. Off by default:
 /// every read asks for every key, as `bpulse --watch`, `bpulse --record` and the widget do. The
 /// app's battery monitor turns it on, so its polls ask only for ``SMCBattery/liveKeys``.
 public struct SMCReadPolicy: Sendable, Equatable {

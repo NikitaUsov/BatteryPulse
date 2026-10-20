@@ -22,7 +22,7 @@ extension BatteryProvider {
     }
 }
 
-/// What a battery read fetches again (EN-4).
+/// What a battery read fetches again.
 public enum BatteryReadScope: Sendable {
     /// Everything, as ``BatteryProvider/read()`` does: on a Mac, every SMC key.
     case full

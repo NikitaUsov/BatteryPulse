@@ -271,7 +271,7 @@ struct SMCTests {
         #expect(SMCParamBlock.Command.allCases.map(\.rawValue) == [5, 8, 9])
     }
 
-    // MARK: - What a read asks for (EN-4)
+    // MARK: - What a read asks for
 
     @Test func theTwoGroupsHoldEveryKeyOnce() {
         #expect(SMCBattery.keys.count == 16)
