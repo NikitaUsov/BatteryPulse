@@ -23,7 +23,12 @@ jobs:
       - name: Lint
         run: swift format lint --strict --recursive Sources Tests Package.swift
       - name: Build
-        run: swift build --build-tests
+        # The warning gate: every compiler warning fails the job, except a deprecation, which stays a
+        # warning (a kept deprecated API is marked with @diagnose). Release builds don't get it, so a
+        # newer Xcode can't fail the release of a commit that passed here.
+        run: >-
+          swift build --build-tests
+          -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
 
@@ -39,7 +44,8 @@ jobs:
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: Test
-        run: swift test
+        # The warning gate, as in the Linux job.
+        run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Smoke-run bpulse
