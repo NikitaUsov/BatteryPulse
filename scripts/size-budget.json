@@ -1,0 +1,4 @@
+{
+  "about": "Ceilings for scripts/size-report.sh: at most one per numeric row of build/size.json, under ceilings, in the row's unit (bytes; KB for app_kb; a count for the exports). A row above its ceiling fails the report. Raising a ceiling is a commit of its own that says why.",
+  "ceilings": {}
+}

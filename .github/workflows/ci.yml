@@ -107,6 +107,12 @@ jobs:
             exit 1
           fi
           BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Size report
+        # The size table and the bundle hygiene counts go to the step summary and build/size.json.
+        # The token is for the comparison with the latest release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/size-report.sh
       - name: Smoke-test update signing
         # The release signs with a secret this job doesn't get, so sign with a throwaway key:
         # the signature must verify, and a changed DMG must not.
@@ -130,4 +136,10 @@ jobs:
         with:
           name: BatteryPulse-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse.dmg
+          if-no-files-found: error
+      - name: Upload the size report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: size-${{ github.sha }}
+          path: build/size.json
           if-no-files-found: error
