@@ -269,59 +269,39 @@ jobs:
           tail -20 "$RUNNER_TEMP/launch.log"
           exit "$status"
 
-  # TEMPORARY (WP-11, removed before merge): the dead-code maps of DC-1 and the K-03/G13 facts.
+  # TEMPORARY (WP-11, removed before merge): why public library code survives -dead_strip.
   deadcode:
     name: Dead-code maps (temporary)
     runs-on: xcode-27
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - name: Debug -dead_strip maps, _main the only export
+      - name: why_live on public BatteryCore code the widget never calls
         run: |
           out="$PWD/build/deadcode"
           mkdir -p "$out"
-          flags=(-Xlinker -dead_strip -Xlinker -exported_symbol -Xlinker _main)
-          for system in swiftbuild native; do
-            for product in BatteryPulse BatteryPulseWidget bpulse; do
-              swift build --build-system "$system" --scratch-path ".build-$system" --product "$product" \
-                "${flags[@]}" -Xlinker -map -Xlinker "$out/$system-debug-$product.map" \
-                || echo "error: $system $product failed" | tee -a "$out/failures.txt"
-            done
-          done
-          ls -l "$out"
-      - name: Release widget, native, for G13
-        run: |
-          out="$PWD/build/deadcode"
           flags=(-c release -Xswiftc -Osize --build-system native --scratch-path .build-native --product BatteryPulseWidget
             -Xlinker -dead_strip -Xlinker -exported_symbol -Xlinker _main)
-          swift build "${flags[@]}" -Xlinker -map -Xlinker "$out/native-release-BatteryPulseWidget.map" || true
-          bin="$(swift build "${flags[@]}" --show-bin-path)/BatteryPulseWidget"
-          otool -L "$bin" | tee "$out/native-release-widget-otool.txt" || true
-          nm -um "$bin" | grep -i crypto | tee "$out/native-release-widget-crypto.txt" || true
-          for sym in $(nm -u "$bin" | grep -i CryptoKit | head -4); do
-            echo "=== why_live $sym" >> "$out/why_live.txt"
-            swift build "${flags[@]}" -Xlinker -why_live -Xlinker "$sym" -Xlinker -map -Xlinker "$out/scratch.map" -v >> "$out/why_live.txt" 2>&1 || true
+          swift build "${flags[@]}" > /dev/null
+          obj=.build-native/arm64-apple-macosx/release/BatteryCore.build
+          for sym in '_$s11BatteryCore0A6ReportO4text3forSSAA0A8SnapshotV_tFZ' \
+            '_$s11BatteryCore14RawKeyGlossaryO4keysShySSGvgZ' \
+            '_$s11BatteryCore10RawSectionV8sections3forSayACGSDySSAA13PropertyValueOG_tFZ'; do
+            echo "=== why_live $sym" | tee -a "$out/why_live.txt"
+            swift build "${flags[@]}" -Xlinker -why_live -Xlinker "$sym" -Xlinker -map -Xlinker "$out/scratch.map" -v 2>&1 \
+              | grep -v '^/Applications\|^Apple Swift\|^Target:\|^Planning\|^Building\|^Write\|^Build of\|deprecated' \
+              | tee -a "$out/why_live.txt" | head -40
           done
-          rm -f "$out/scratch.map"
-          # The shipped (Swift Build) release widget, for comparison.
-          rflags=(-c release -Xswiftc -Osize --product BatteryPulseWidget -Xlinker -exported_symbol -Xlinker _main)
-          swift build "${rflags[@]}" -Xlinker -map -Xlinker "$out/swiftbuild-release-BatteryPulseWidget.map" || true
-          sbin="$(swift build "${rflags[@]}" --show-bin-path)/BatteryPulseWidget"
-          otool -L "$sbin" | tee "$out/swiftbuild-release-widget-otool.txt" || true
-          for sym in $(nm -u "$sbin" | grep -i CryptoKit | head -4); do
-            echo "=== why_live $sym" >> "$out/swiftbuild-why_live.txt"
-            swift build "${rflags[@]}" -Xlinker -dead_strip -Xlinker -why_live -Xlinker "$sym" -Xlinker -map -Xlinker "$out/scratch.map" -v >> "$out/swiftbuild-why_live.txt" 2>&1 || true
+          echo "=== nm -m of the three symbols in their objects"
+          for f in BatteryReport RawKeyGlossary; do
+            nm -m "$obj/$f.swift.o" | grep -E '0A6ReportO4text3for|GlossaryO4keysShySSGvgZ$|RawSectionV8sections3for' | head -5
           done
-          rm -f "$out/scratch.map"
-          grep -v '^\[\|^ *$' "$out/why_live.txt" | grep -i -A12 'why_live\|CryptoKit' | head -150 || true
-      - name: Upload the maps
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: deadcode-${{ github.sha }}
-          path: build/deadcode/
-          if-no-files-found: error
+          echo "=== no-dead-strip symbols in BatteryReport.swift.o: $(nm -m "$obj/BatteryReport.swift.o" | grep -c 'no dead strip')"
+          nm -m "$obj/BatteryReport.swift.o" | grep 'no dead strip' | head -5
+          otool -lv "$obj/BatteryReport.swift.o" | grep -A3 -i 'flags' | head -8
+          echo "=== the link command"
+          swift build "${flags[@]}" -Xlinker -map -Xlinker "$out/scratch.map" -v 2>&1 | grep -E '(^| )(/[^ ]*/)?(ld|clang|swiftc) ' | grep -o -- '-Xlinker [^ ]*\|-export[^ ]*\|-dead_strip[^ ]*' | sort | uniq -c
