@@ -312,7 +312,7 @@ import Testing
         // Content is never glass: the cards' "Glass Cards" option is gone.
         #expect(flags(glass, path: "BatteryPulseApp/Main/Components/Card.swift"))
         // The tile pickers mark their choice with an accent outline only.
-        #expect(flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
+        #expect(flags(glass, path: "BatteryPulseApp/Settings/PreviewTilePicker.swift"))
         // The window's glass sheet: allowed, but never interactive (`windowBackgroundNeverAnimates`).
         let sheet = "Rectangle().fill(.clear).glassEffect(Glass.clear.tint(tint), in: .rect)"
         #expect(!flags(sheet, path: "BatteryPulseApp/App/WindowLook.swift"))
