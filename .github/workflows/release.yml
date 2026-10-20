@@ -16,6 +16,8 @@ on:
         description: Version to release, without the v (for example 0.2.0)
         required: true
 
+# contents: write is for gh release create, the only write. Actions are pinned to the full commit
+# SHA of the tag named in their comment, and expressions reach shell scripts only through env:.
 permissions:
   contents: write
 
@@ -31,7 +33,10 @@ jobs:
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # gh gets the token through GH_TOKEN, so it isn't left in .git/config for the build.
+          persist-credentials: false
       - name: Check the release notes
         # The notes become the release's text, which the Software Update window shows to everyone
         # updating, so they must open with this version's heading: "## What's new in 0.6.1", or
@@ -100,7 +105,9 @@ jobs:
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Package app (DMG)
-        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: scripts/build-app.sh
       - name: Refuse a profiling build
         # PROFILING=1 signs the app with get-task-allow (scripts/build-app.sh); such a build is
         # never published.

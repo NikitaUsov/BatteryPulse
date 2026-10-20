@@ -17,6 +17,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job only reads the repository. Actions are pinned to the full commit SHA of the tag named
+# in their comment, and expressions reach shell scripts only through env:.
+permissions:
+  contents: read
+
 jobs:
   linux:
     name: Linux · core tests
@@ -26,7 +31,10 @@ jobs:
     # minutes.
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
+          persist-credentials: false
       - name: Check the manifest
         # Fails early, with the manifest's own error, if Package.swift doesn't evaluate.
         run: swift package dump-package > /dev/null
@@ -54,7 +62,10 @@ jobs:
       # beside it. Use the newest release, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
+          persist-credentials: false
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: Test
@@ -65,26 +76,27 @@ jobs:
       - name: Smoke-run bpulse
         # Hosted runners are VMs without a battery, so exit status 2 ("no battery") is expected.
         run: |
+          # Each command's status has its own name and is checked right after the command.
           set +e
           .build/release/bpulse
-          status=$?
-          battery_status=$status
-          echo "bpulse exited with $status"
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          battery_status=$?
+          echo "bpulse exited with $battery_status"
+          [ "$battery_status" -eq 0 ] || [ "$battery_status" -eq 2 ] || exit 1
           # The SMC listing must not crash, with or without an SMC in the VM.
           .build/release/bpulse --smc > smc.txt
-          status=$?
+          smc_status=$?
           head -20 smc.txt
-          echo "bpulse --smc exited with $status ($(wc -l < smc.txt) lines)"
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          echo "bpulse --smc exited with $smc_status ($(wc -l < smc.txt) lines)"
+          [ "$smc_status" -eq 0 ] || [ "$smc_status" -eq 2 ] || exit 1
           # A canary for the private IOPSCopyPowerSourcesByType: --accessories --json exits with 2
           # only when this macOS no longer has it. The VM has no accessories: an empty list and 0.
           .build/release/bpulse --accessories --json || exit 1
           # Loading MobileDevice and watching for devices must not crash or hang; the VM has no
           # iPhone, so 2 ("no device") is expected.
           .build/release/bpulse --devices
-          status=$?
-          echo "bpulse --devices exited with $status"
+          devices_status=$?
+          echo "bpulse --devices exited with $devices_status"
+          [ "$devices_status" -eq 0 ] || [ "$devices_status" -eq 2 ] || exit 1
           # --record takes no output format: usage error.
           .build/release/bpulse --record "$RUNNER_TEMP/rec" --json; [ $? -eq 1 ] || exit 1
           # Without a battery it ends with 2 and creates nothing. (With one it would record until
@@ -93,7 +105,19 @@ jobs:
           if [ "$battery_status" -eq 2 ]; then
             .build/release/bpulse --record "$RUNNER_TEMP/rec"; [ $? -eq 2 ] && [ ! -e "$RUNNER_TEMP/rec" ] || exit 1
           fi
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+      - name: Render the fixtures with the release bpulse
+        # Darwin's Foundation bridges property list values differently from Linux, where the tests
+        # render the captures, so here the release build renders each one in each output form.
+        run: |
+          renders=0
+          for fixture in Tests/BatteryCoreTests/Fixtures/*.plist; do
+            for form in "" --json --raw; do
+              .build/release/bpulse --input "$fixture" ${form:+"$form"} > /dev/null \
+                || { echo "error: bpulse --input $fixture $form exited with $?" >&2; exit 1; }
+              renders=$((renders + 1))
+            done
+          done
+          echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
         # None of them is built or run anywhere else: the first two need a Mac with a display, the
         # others a running BatteryPulse.
@@ -108,12 +132,13 @@ jobs:
       - name: Package app (DMG)
         env:
           VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "error: '$VERSION' is not a version like 0.5.99" >&2
             exit 1
           fi
-          BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+          scripts/build-app.sh
       - name: Size report
         # The size table and the bundle hygiene counts go to the step summary and build/size.json.
         # The token is for the comparison with the latest release.
