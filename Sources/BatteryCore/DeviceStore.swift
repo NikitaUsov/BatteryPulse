@@ -78,7 +78,8 @@ public actor DeviceStore {
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: temporary.path)
         do {
             try FileManager.default.moveItem(at: temporary, to: secretURL)
-        } catch  where FileManager.default.fileExists(atPath: secretURL.path) {
+        } catch {
+            guard FileManager.default.fileExists(atPath: secretURL.path) else { throw error }
             return nil
         }
         return bytes
