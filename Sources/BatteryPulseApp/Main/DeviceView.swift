@@ -205,9 +205,9 @@ struct DeviceView: View {
                     fraction: health / 100,
                     value: formatter.percent(health),
                     number: health,
-                    caption: condition(tier),
+                    caption: Phrases.condition(for: tier),
                     tint: tones.color(.level(tier)),
-                    badge: tones.badge(for: tier) == .inverted ? condition(tier) : nil
+                    badge: tones.badge(for: tier) == .inverted ? Phrases.condition(for: tier) : nil
                 )
             }
             if let cycles = battery.cycleCount {
@@ -234,14 +234,6 @@ struct DeviceView: View {
     private func chargeCaption(_ battery: IDeviceBattery) -> String? {
         guard let current = battery.currentCapacityMAh, let full = battery.fullChargeCapacityMAh else { return nil }
         return String(localized: "\(current.formatted()) of \(formatter.milliampHours(full))")
-    }
-
-    private func condition(_ tier: BatteryPresentation.LevelTier) -> String {
-        switch tier {
-        case .normal: String(localized: "Normal", comment: "Battery condition")
-        case .low: String(localized: "Service Recommended", comment: "Battery condition")
-        case .critical: String(localized: "Check Battery", comment: "Battery condition")
-        }
     }
 
     // MARK: - Details
