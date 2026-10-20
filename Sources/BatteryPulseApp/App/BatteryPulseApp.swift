@@ -167,8 +167,8 @@ enum WindowID {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var defaultsObserver: NSObjectProtocol?
+final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
+    private var defaultsObserver: (any NSObjectProtocol)?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Not in applicationWillFinishLaunching: changing the policy that early is unreliable.

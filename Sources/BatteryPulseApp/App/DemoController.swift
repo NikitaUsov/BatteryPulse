@@ -64,7 +64,7 @@ final class DemoController {
     @ObservationIgnored private var elapsed: Duration = .zero
     @ObservationIgnored private var tourIndex = 0
     @ObservationIgnored private var variation = 0
-    @ObservationIgnored private var defaultsObserver: NSObjectProtocol?
+    @ObservationIgnored private var defaultsObserver: (any NSObjectProtocol)?
 
     /// The clock while an animation plays: one frame.
     private static let frame: Duration = .milliseconds(200)
