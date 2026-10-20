@@ -92,7 +92,7 @@ final class UpdateInstaller {
             return
         }
         phase = .downloading(nil)
-        work = Task { await run(release) }
+        work = Task(name: "UpdateInstaller.install") { await run(release) }
     }
 
     func cancel() {
@@ -196,7 +196,7 @@ final class UpdateInstaller {
     private func download(_ url: URL, to destination: URL, expectedSize: Int64?) async throws {
         let watcher = DownloadWatcher()
         // Polls the transfer, since the async download API reports no progress of its own.
-        let progress = Task { [weak self] in
+        let progress = Task(name: "UpdateInstaller.downloadProgress") { [weak self] in
             while !Task.isCancelled {
                 if let self, case .downloading = self.phase {
                     self.phase = .downloading(watcher.fraction(expectedSize: expectedSize))

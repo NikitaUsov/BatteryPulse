@@ -65,7 +65,7 @@ final class UpdateChecker {
     /// Starts the automatic checks; each tick checks only when the chosen interval has passed.
     func startAutomaticChecks() {
         guard schedule == nil, !isUnversioned else { return }
-        schedule = Task { [weak self] in
+        schedule = Task(name: "UpdateChecker.schedule") { [weak self] in
             // Let launch finish first.
             try? await Task.sleep(for: .seconds(20))
             while !Task.isCancelled {
@@ -84,7 +84,7 @@ final class UpdateChecker {
             userIsWaiting = true
             return
         }
-        Task { await check(userInitiated: true) }
+        Task(name: "UpdateChecker.checkNow") { await check(userInitiated: true) }
     }
 
     func skip(_ release: ReleaseInfo) {
