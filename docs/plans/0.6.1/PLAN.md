@@ -1884,3 +1884,27 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   symbol). CORE-01: `.data` description 0.55 → 0.33 ms per pass over the fixtures' blobs.
 - **Docs for WP-12:** CLAUDE.md names `Main/History/` and BatteryCore's `HistoryChartData`; there
   is no `Material` left in `Main/`, so WP-12's rule starts with zero exceptions.
+
+### B6 (WP-8b, WP-9), merged 2026-10-20
+
+- **Signing posture (SEC-07):** `build-app.sh` lists every violation and fails; nine flips each
+  failed in a scratch run. On macOS 27, `codesign -d --entitlements - --xml` prints nothing for an
+  app with no entitlements, and after `plutil -convert xml1` the widget's signed entitlements are
+  byte-identical to its file. `codesign -dv` shows `flags=0x10002(adhoc,runtime)`.
+- **Release notes heading (CB-06):** the first release step after checkout; D1/D3 dry-run it with
+  `VERSION=0.6.1 NOTES=<draft>`. Today's notes open with "0.6" and fail, as they should.
+- **Pins:** checkout v6.0.3 is `df4cb1c…` (annotated tag peeled); a lightweight `v6.1.0` on
+  `d23441a…` (the moving `v6`) exists with no CHANGELOG entry; upload-artifact v7.0.2
+  (`cf430e0…`) exists. Both stay as pinned for 0.6.1; 0.6.2 can look at them.
+- **SZ-07:** `.lproj` 412,540 → 238,124 B; DMG about −1.3 %. `en.lproj` stays, empty; English
+  lookups return the key; Russian keeps its table. `scripts/string-tables.swift` checks every
+  translated table has every catalog key.
+- **Size at the B6 tip (before WP-11):** DMG about 1.44-1.47 MB (the B1 low of 1.37 MB grew by
+  about 0.1 MB with B2-B5's code); app binary 2,871,440 B, widget 1,396,336 B.
+- **Views:** `Main/Components/` (one file per component; `Card.swift` keeps `Card`, `CardGroup`,
+  `LookForm`), Settings split into one file per pane; G9 decided (the fallback tooltips); SUI-15
+  found no violations. `AccessoriesView.swift` still imports AppKit without using it (WP-11).
+- **MemberImportVisibility:** a file that reads `motion.isVisible` (a BatteryCore member) imports
+  BatteryCore.
+- **Docs for WP-12:** the lint line includes `scripts`; CLAUDE.md names the posture check,
+  `scripts/string-tables.swift`, `Main/Components/` and the Settings panes.
