@@ -56,7 +56,11 @@ public struct HistoryChartData: Sendable, Equatable {
         data.spans = HistorySpan.spans(from: samples)
         data.statistics = includesStatistics && !samples.isEmpty ? HistoryStatistics(samples: samples) : nil
         // The lines' values and series names, so the chart neither unwraps, formats nor
-        // interpolates per point. One pair of series names per segment.
+        // interpolates per point. One pair of series names per segment. Each line has at most one
+        // value per point (power two), so the arrays never grow while they fill.
+        data.charge.reserveCapacity(data.points.count)
+        data.temperature.reserveCapacity(data.points.count)
+        data.power.reserveCapacity(2 * data.points.count)
         var series = (segment: -1, battery: "", load: "")
         for point in data.points {
             if let percent = point.percent {
