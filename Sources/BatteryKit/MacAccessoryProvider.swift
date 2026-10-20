@@ -1,6 +1,7 @@
 #if os(macOS)
 import BatteryCore
 import Foundation
+import os
 
 /// Batteries of connected accessories (Bluetooth keyboards, mice, trackpads, headphones) as the
 /// power management daemon publishes them: the data `pmset -g accps` shows. Needs no Bluetooth
@@ -33,12 +34,22 @@ public final class MacAccessoryProvider: AccessoryProvider {
         copyPowerSourcesByType = dlopen(Self.ioKitPath, RTLD_NOW)
             .flatMap { dlsym($0, "IOPSCopyPowerSourcesByType") }
             .map { unsafeBitCast($0, to: CopyPowerSourcesByType.self) }
+        if copyPowerSourcesByType == nil {
+            // dlerror's text names paths, so it stays private.
+            let reason = dlerror().map { String(cString: $0) } ?? "no error text"
+            Diagnostics.accessory.error(
+                "IOPSCopyPowerSourcesByType isn't available, so accessories are shown as unavailable: \(reason)")
+        }
     }
 
     public func read() -> AccessoryReading? {
         guard let copy = copyPowerSourcesByType else { return nil }
-        guard let blob = copy(Self.accessorySources)?.takeRetainedValue(), CFGetTypeID(blob) == CFArrayGetTypeID()
-        else { return AccessoryReading(sources: []) }
+        guard let blob = copy(Self.accessorySources)?.takeRetainedValue() else { return AccessoryReading(sources: []) }
+        guard CFGetTypeID(blob) == CFArrayGetTypeID() else {
+            Diagnostics.accessory.error(
+                "IOPSCopyPowerSourcesByType returned CF type \(CFGetTypeID(blob)), not a list; no accessories shown")
+            return AccessoryReading(sources: [])
+        }
         return AccessoryReading(
             sources: powerSourceDescriptions(in: blob).compactMap { PropertyValue.dictionary(fromAny: $0) })
     }
