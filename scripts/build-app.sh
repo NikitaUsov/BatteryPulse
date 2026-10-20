@@ -73,14 +73,11 @@ done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 rm -rf "$ICONSET"
 
-# Localizations: compile the String Catalog into <language>.lproj folders. English is the
-# source language, so its folder may come out empty; it still declares the localization.
+# Localizations: compile the String Catalog into <language>.lproj folders, checked below once the
+# widget has its copy. English is the source language, so its folder may come out empty; it still
+# declares the localization.
 xcrun xcstringstool compile --output-directory "$APP/Contents/Resources" Resources/Localizable.xcstrings
 mkdir -p "$APP/Contents/Resources/en.lproj"
-if ! ls "$APP/Contents/Resources/ru.lproj/"Localizable.* >/dev/null 2>&1; then
-  echo "error: the Russian localization was not compiled" >&2
-  exit 1
-fi
 
 # LSUIElement: launch without a Dock icon, so the default menu-bar mode (and Open at login)
 # never flashes one. DockIconPolicy promotes the app to a regular one at run time when the menu
@@ -119,6 +116,11 @@ WIDGET="$APPEX/Contents/MacOS/BatteryPulseWidget"
 mkdir -p "$APPEX/Contents/MacOS" "$APPEX/Contents/Resources"
 cp "$BIN_PATH/BatteryPulseWidget" "$WIDGET"
 cp -R "$APP/Contents/Resources/"*.lproj "$APPEX/Contents/Resources/"
+# Both bundles must keep an en.lproj and, for each translation, a table with every catalog key.
+# English ships no table while every one of its entries is its own key, as xcstringstool writes
+# the strings keyed by their English text: a lookup without a table returns the key anyway. A
+# table with any other entry is kept.
+swift scripts/string-tables.swift Resources/Localizable.xcstrings "$APP/Contents/Resources" "$APPEX/Contents/Resources"
 cat > "$APPEX/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
