@@ -390,7 +390,9 @@ The release numbers go into the performance baseline at release.
 - [x] Energy: every periodic wake-up allows macOS at least 10 % of its interval to coalesce it;
   live values refresh less often in Low Power Mode, under reduced resources or when the Mac runs
   hot, and the menu bar stops polling while the displays sleep
-- [ ] Less code: code no product uses, found with the linker's maps, removed
+- [x] Less code: members no product uses, found with the index store and checked with `git grep`
+  (Swift keeps public library symbols from dead stripping, so the linker's maps can't show them),
+  removed; unused `Codable` conformances dropped and the report's sections folded into its lines
 - [x] Guard tests on Linux for every target, Darwin code included: `SecurityGuardTests` (where
   `dlopen`, IOKit user clients, `Process` and `kill` may appear; `URLSession.shared`,
   `Task.detached` and `@unchecked Sendable` as they stand), `EnergyGuardTests` (tolerances,
