@@ -109,6 +109,10 @@ struct BatteryPulseApp: App {
                 .environment(demo)
         }
         .menuBarExtraStyle(.window)
+        // Removing the item may keep its label alive: withdraw the label's polling here too.
+        .onChange(of: showInMenuBar) {
+            if !showInMenuBar { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        }
 
         Window("Welcome to BatteryPulse", id: WindowID.welcome) {
             WelcomeView()
