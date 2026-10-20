@@ -33,10 +33,12 @@ let package = Package(
     ],
     targets: [
         // The parsers of untrusted input (captures, device property lists, the release JSON) live
-        // here, so the compiler checks that none of it uses unsafe constructs.
+        // here, so the compiler flags every unsafe construct. The one left is marked: C's
+        // fixed-point formatting, which Darwin's Foundation declares unsafe (`BatteryReport`).
         .target(name: "BatteryCore", swiftSettings: strict + [.strictMemorySafety()]),
         .target(name: "BatteryKit", dependencies: ["BatteryCore"], swiftSettings: strict),
-        // It reads capture files too; its two Foundation calls that take a pointer are marked.
+        // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
+        // a pointer, and the macOS-only SMC listing's `String(format:)`.
         .executableTarget(
             name: "bpulse",
             dependencies: ["BatteryCore", "BatteryKit"],
