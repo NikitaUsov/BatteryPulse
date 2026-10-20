@@ -15,7 +15,14 @@ struct MenuBarLabel: View {
     @AppStorage(AppSettings.menuBarShowsPowerKey) private var showsPower = false
     @AppStorage(AppSettings.menuBarShowsTemperatureKey) private var showsTemperature = false
     @AppStorage(AppSettings.menuBarIconStyleKey) private var iconStyle = MenuBarIconStyle.default
+    /// Whether the item is in the menu bar. A label that outlives the item's removal stops polling,
+    /// and asks again when the item comes back.
+    @AppStorage(AppSettings.showInMenuBarKey) private var isInserted = true
     @Environment(\.openWindow) private var openWindow
+    /// How many members of the label are on screen. The `Group`'s modifiers apply to each member,
+    /// so one member going (the icon turned off, Demo Mode ending) must not withdraw the polling
+    /// that the others still show; the last one going does.
+    @State private var shownMembers = 0
 
     private var content: MenuBarContent {
         MenuBarContent(
@@ -45,14 +52,18 @@ struct MenuBarLabel: View {
             transaction.disablesAnimations = true
         }
         .onAppear {
+            shownMembers += 1
             WindowOpener.openWindow = openWindow
             Diagnostics.menuBarAppeared()
         }
-        .onChange(of: content.liveRefreshInterval, initial: true) { _, interval in
+        .onChange(of: isInserted ? content.liveRefreshInterval : nil, initial: true) { _, interval in
             // Power changes without OS notifications, so poll gently while it is shown.
             monitor.setLiveRefreshInterval(interval, for: "menuBar")
         }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        .onDisappear {
+            shownMembers -= 1
+            if shownMembers == 0 { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        }
     }
 
     /// A drawn battery rendered to an image, since the status item doesn't reliably draw shapes;
