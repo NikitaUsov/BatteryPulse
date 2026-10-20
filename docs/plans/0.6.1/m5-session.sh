@@ -150,9 +150,17 @@ perf_capture() {
 }
 
 # perf_stop <pid>: gives the stream a moment to write the last lines, then ends it like Control-C.
+# A script's background jobs start with SIGINT ignored, so if that doesn't end the stream within
+# 3 s, SIGTERM does; otherwise every stopped stream would keep running after the session.
 perf_stop() {
   sleep 2
   kill -INT "$1" 2>/dev/null || true
+  local tries=0
+  while kill -0 "$1" 2>/dev/null && [ "$tries" -lt 10 ]; do
+    sleep 0.3
+    tries=$((tries + 1))
+  done
+  kill -TERM "$1" 2>/dev/null || true
 }
 
 today_samples() {
