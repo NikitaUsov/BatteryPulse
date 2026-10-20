@@ -157,7 +157,7 @@ enum WhatsNewPolicy {
 
 enum AppLinks {
     static let project = ReleaseChannel.project
-    static let releases = ReleaseChannel.releasesPage
+    static let releases = ReleaseLinks.browserURL(for: ReleaseChannel.releasesPage)
     static let license = ReleaseChannel.file("LICENSE")
     static let help = ReleaseChannel.file("docs/USER_GUIDE.md")
     /// System Settings → General → Language & Region, where per-app languages are chosen.

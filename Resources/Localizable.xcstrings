@@ -899,6 +899,17 @@
         }
       }
     },
+    "BatteryPulse couldn't confirm this update came from its developer. Check the release page before installing anything.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось подтвердить, что это обновление выпущено его разработчиком. Прежде чем что-либо устанавливать, проверьте страницу выпуска."
+          }
+        }
+      }
+    },
     "BatteryPulse couldn't look for devices. Try again in a moment.": {
       "extractionState": "manual",
       "localizations": {
@@ -5001,6 +5012,17 @@
         }
       }
     },
+    "Open Release Page": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть страницу выпуска"
+          }
+        }
+      }
+    },
     "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens.": {
       "extractionState": "manual",
       "localizations": {
@@ -6942,13 +6964,13 @@
         }
       }
     },
-    "This release can only be installed from the DMG.": {
+    "This release isn't signed, so BatteryPulse can't install it.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Этот выпуск можно установить только из DMG."
+            "value": "Этот выпуск не подписан, поэтому BatteryPulse не может его установить."
           }
         }
       }

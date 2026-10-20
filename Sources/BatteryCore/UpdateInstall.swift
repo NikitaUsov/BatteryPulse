@@ -1,9 +1,9 @@
 import Foundation
 
 /// Why BatteryPulse can't install an update itself, or why an installation stopped. Every case
-/// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap),
-/// and the user can still download the DMG in the browser.
-public enum UpdateInstallError: Error, Sendable, Equatable {
+/// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap);
+/// ``fallback`` says what the Software Update window offers instead.
+public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
     // Checked before Install and Relaunch is offered.
     /// A build without a version (CI artifacts, `swift run`).
     case developmentBuild
@@ -37,9 +37,33 @@ public enum UpdateInstallError: Error, Sendable, Equatable {
     /// A network failure is worth another try; the other checks would fail the same way again.
     public var isRetryable: Bool { self == .downloadFailed }
 
-    /// Whether the browser download is still the way forward. After ``relaunchFailed`` the
-    /// update is already installed.
-    public var fallsBackToDownload: Bool { self != .relaunchFailed }
+    /// The DMG failed a check that shows it is the release workflow's, or has no signature to
+    /// check. The app can't tell a broken release from a forged one, so it never offers that DMG.
+    public var isIntegrityFailure: Bool {
+        switch self {
+        case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature: true
+        case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
+            .replaceFailed, .relaunchFailed:
+            false
+        }
+    }
+
+    /// What the window offers when the app doesn't install the update itself.
+    public var fallback: UpdateFallback {
+        if isIntegrityFailure { return .releasePage }
+        return self == .relaunchFailed ? .none : .downloadDMG
+    }
+}
+
+/// The way forward when BatteryPulse doesn't install an update itself.
+public enum UpdateFallback: Sendable, Equatable {
+    /// The DMG in the browser: nothing says it isn't genuine, the app just can't install it here.
+    case downloadDMG
+    /// A warning and the release page, never the DMG: offering the file the app refused would
+    /// steer the user past the check.
+    case releasePage
+    /// Nothing: the update is already installed.
+    case none
 }
 
 /// Checks for the downloaded DMG that need no platform frameworks.

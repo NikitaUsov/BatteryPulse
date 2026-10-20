@@ -171,6 +171,21 @@ public enum ReleaseChannel {
     }
 }
 
+/// The pages the update code opens in the browser.
+public enum ReleaseLinks {
+    /// `url` when it is `https` on github.com, otherwise the releases page. A release's page and
+    /// download URLs come from GitHub's answer; GitHub builds them on github.com, so this changes
+    /// nothing for a genuine release and keeps any other answer from opening something else.
+    /// Downloads inside the app aren't filtered: the signature decides those.
+    public static func browserURL(for url: URL) -> URL {
+        let url = url.absoluteURL
+        guard url.scheme?.lowercased() == "https", url.host()?.lowercased() == "github.com" else {
+            return ReleaseChannel.releasesPage
+        }
+        return url
+    }
+}
+
 /// How often BatteryPulse checks for updates on its own. Check for Updates works with any of them.
 public enum UpdateFrequency: String, Sendable, CaseIterable {
     case daily, weekly, monthly, never

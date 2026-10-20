@@ -168,42 +168,74 @@ struct UpdateView: View {
             }
             .progressViewStyle(.linear)
         case .failed(let error):
-            VStack(alignment: .leading, spacing: 4) {
-                Label {
-                    Text(error.message)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                        .symbolEffect(.bounce, options: .nonRepeating, value: failures)
-                }
-                if error.fallsBackToDownload {
-                    Text("You can download the update and install it from the DMG instead.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.footnote)
-            .fixedSize(horizontal: false, vertical: true)
+            warning(error)
         case .idle:
-            Group {
-                if let blocker = installer.blocker(for: release) {
-                    if let reason = blocker.reason {
-                        Text(reason)
+            let blocker = installer.blocker(for: release)
+            if let blocker, blocker.fallback == .releasePage {
+                warning(blocker)
+            } else {
+                Group {
+                    if let blocker {
+                        if let reason = blocker.reason {
+                            Text(reason)
+                        }
+                        Text(
+                            "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens."
+                        )
+                    } else {
+                        Text(
+                            "BatteryPulse downloads the update, checks its signature, replaces this copy and opens again."
+                        )
                     }
-                    Text(
-                        "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens."
-                    )
-                } else {
-                    Text("BatteryPulse downloads the update, checks its signature, replaces this copy and opens again.")
                 }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// Install and Relaunch when the app can replace itself, otherwise the browser download.
-    /// Two rows, so the longer Russian labels fit the window.
+    /// A warning: why the update wasn't installed, or can't be, and the way forward that
+    /// ``UpdateFallback`` allows.
+    private func warning(_ error: UpdateInstallError) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label {
+                Text(error.message)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: failures)
+            }
+            switch error.fallback {
+            case .downloadDMG:
+                Text("You can download the update and install it from the DMG instead.")
+                    .foregroundStyle(.secondary)
+            case .releasePage:
+                Text(
+                    "BatteryPulse couldn't confirm this update came from its developer. Check the release page before installing anything."
+                )
+                .foregroundStyle(.secondary)
+            case .none:
+                EmptyView()
+            }
+        }
+        .font(.footnote)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// What stops the app from installing `release` itself: the failed installation's error, or
+    /// while idle the blocker; `nil` when Install and Relaunch can be offered.
+    private func problem(for release: ReleaseInfo) -> UpdateInstallError? {
+        switch updater.installer.phase {
+        case .failed(let error): error
+        case .idle: updater.installer.blocker(for: release)
+        case .downloading, .verifying, .installing, .relaunching: nil
+        }
+    }
+
+    /// Install and Relaunch when the app can replace itself, otherwise the browser download, or
+    /// only the release page after a failed integrity check. Two rows, so the longer Russian
+    /// labels fit the window.
     @ViewBuilder
     private func installActions(_ release: ReleaseInfo) -> some View {
         let installer = updater.installer
@@ -228,28 +260,40 @@ struct UpdateView: View {
             }
             HStack {
                 Spacer()
-                if installer.phase == .failed(.relaunchFailed) {
-                    // The new version is in place; it only has to be opened.
-                    Button("Quit BatteryPulse") { NSApp.terminate(nil) }
-                        .keyboardShortcut(.defaultAction)
-                } else if installer.phase == .idle, installer.blocker(for: release) == nil {
+                if let problem = problem(for: release) {
+                    switch problem.fallback {
+                    case .none:
+                        // The new version is in place; it only has to be opened.
+                        Button("Quit BatteryPulse") { NSApp.terminate(nil) }
+                            .keyboardShortcut(.defaultAction)
+                    case .releasePage:
+                        // Never the default button: Return doesn't lead past a failed check.
+                        Button("Open Release Page") { openReleasePage(release) }
+                    case .downloadDMG:
+                        if installer.canRetry {
+                            Button("Try Again") { installer.install(release) }
+                        }
+                        Button("Download") { download(release) }
+                            .keyboardShortcut(.defaultAction)
+                    }
+                } else {
                     Button("Download") { download(release) }
                     Button("Install and Relaunch") { installer.install(release) }
-                        .keyboardShortcut(.defaultAction)
-                } else {
-                    if installer.canRetry {
-                        Button("Try Again") { installer.install(release) }
-                    }
-                    Button("Download") { download(release) }
                         .keyboardShortcut(.defaultAction)
                 }
             }
         }
     }
 
-    /// The DMG in the browser: the fallback whenever the app can't install the update itself.
+    /// The DMG in the browser: the fallback when the app can't install the update itself.
     private func download(_ release: ReleaseInfo) {
         updater.download(release)
+        close()
+    }
+
+    /// The release page in the browser, after the DMG failed an integrity check.
+    private func openReleasePage(_ release: ReleaseInfo) {
+        updater.openReleasePage(release)
         close()
     }
 

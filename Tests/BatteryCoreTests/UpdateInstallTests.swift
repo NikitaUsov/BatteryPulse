@@ -230,8 +230,63 @@ import Testing
     @Test func errorsSayWhatComesNext() {
         #expect(UpdateInstallError.downloadFailed.isRetryable)
         #expect(!UpdateInstallError.badSignature.isRetryable)
-        #expect(UpdateInstallError.badSignature.fallsBackToDownload)
-        #expect(!UpdateInstallError.relaunchFailed.fallsBackToDownload)
         #expect(UpdateInstallPolicy.signatureAssetName(for: "BatteryPulse.dmg") == "BatteryPulse.dmg.sig")
+    }
+
+    /// After a failed integrity check, or for a release without a signature, the window offers
+    /// only the release page, never the DMG the app refused.
+    @Test func everyErrorMapsToItsFallback() {
+        let expected: [UpdateInstallError: UpdateFallback] = [
+            .developmentBuild: .downloadDMG,
+            .translocated: .downloadDMG,
+            .folderNotWritable: .downloadDMG,
+            .notSigned: .releasePage,
+            .notNewer: .downloadDMG,
+            .downloadFailed: .downloadDMG,
+            .digestMismatch: .releasePage,
+            .badSignature: .releasePage,
+            .mountFailed: .downloadDMG,
+            .unexpectedBundle: .releasePage,
+            .invalidCodeSignature: .releasePage,
+            .replaceFailed: .downloadDMG,
+            .relaunchFailed: .none,
+        ]
+        #expect(Set(expected.keys) == Set(UpdateInstallError.allCases))
+        for error in UpdateInstallError.allCases {
+            #expect(error.fallback == expected[error], "\(error)")
+            #expect(error.isIntegrityFailure == (expected[error] == .releasePage), "\(error)")
+        }
+        // An integrity failure is never worth another try.
+        #expect(!UpdateInstallError.allCases.contains { $0.isIntegrityFailure && $0.isRetryable })
+    }
+
+    @Test func theBrowserOpensOnlyGitHubPages() throws {
+        func opens(_ string: String) throws -> URL {
+            ReleaseLinks.browserURL(for: try #require(URL(string: string)))
+        }
+        let page = "https://github.com/NikitaUsov/BatteryPulse/releases/tag/v0.4.0"
+        let download = "https://github.com/NikitaUsov/BatteryPulse/releases/download/v0.4.0/BatteryPulse.dmg"
+        #expect(try opens(page).absoluteString == page)
+        #expect(try opens(download).absoluteString == download)
+        #expect(
+            try opens("HTTPS://GitHub.com/NikitaUsov/BatteryPulse").absoluteString.lowercased().hasPrefix(
+                "https://github.com/"))
+        // A repository that moved still opens: no exact prefix is pinned.
+        #expect(try opens("https://github.com/someone/Renamed/releases").absoluteString.hasSuffix("/Renamed/releases"))
+        let relative = try #require(URL(string: "releases/tag/v1", relativeTo: URL(string: "https://github.com/a/b/")))
+        #expect(ReleaseLinks.browserURL(for: relative).absoluteString == "https://github.com/a/b/releases/tag/v1")
+
+        for refused in [
+            "http://github.com/NikitaUsov/BatteryPulse/releases",
+            "file:///Applications/BatteryPulse.app",
+            "someapp://github.com/x",
+            "x-apple.systempreferences:com.apple.Localization-Settings.extension",
+            "https://example.com/BatteryPulse.dmg",
+            "https://github.com.example.com/x",
+            "https://objects.githubusercontent.com/x",
+            "https://github.com@example.com/x",
+        ] {
+            #expect(try opens(refused) == ReleaseChannel.releasesPage, "\(refused)")
+        }
     }
 }
