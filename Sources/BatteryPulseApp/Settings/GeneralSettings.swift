@@ -60,15 +60,16 @@ struct GeneralSettings: View {
                         .foregroundStyle(.red)
                 }
             }
+            // On the row they refresh, not on the Section, which may give each of its rows a copy.
+            .onAppear { launchAtLogin.refresh() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                launchAtLogin.refresh()
+            }
             Picker("Window to open", selection: $prefersCompactWindow) {
                 Text("Full window").tag(false)
                 Text("Compact window").tag(true)
             }
             Toggle("Show welcome window at startup", isOn: $showWelcomeAtLaunch)
-        }
-        .onAppear { launchAtLogin.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            launchAtLogin.refresh()
         }
 
         if includesWindowStyle {

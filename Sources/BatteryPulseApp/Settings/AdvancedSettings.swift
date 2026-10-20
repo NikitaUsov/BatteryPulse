@@ -20,6 +20,13 @@ struct AdvancedSettings: View {
                 .onChange(of: recordsHistory) { devices.historySettingChanged() }
             LabeledContent("Recorded history") {
                 Button("Clear History…", role: .destructive) { confirmsClearing = true }
+                    // On the button that asks, not on the Section, which may give each of its
+                    // rows a copy.
+                    .confirmationDialog("Clear the battery history?", isPresented: $confirmsClearing) {
+                        Button("Clear History", role: .destructive, action: clearHistory)
+                    } message: {
+                        Text("The charts start over. This can't be undone.")
+                    }
             }
         } header: {
             Text("History")
@@ -32,26 +39,6 @@ struct AdvancedSettings: View {
                     Text("iPhones and iPads connected by cable are recorded too, every 5 minutes.")
                 }
             }
-        }
-        .confirmationDialog("Clear the battery history?", isPresented: $confirmsClearing) {
-            Button("Clear History", role: .destructive) {
-                // Every device's history too; the remembered devices stay.
-                Task {
-                    do {
-                        try await AppHistory.store.clear()
-                    } catch {
-                        // Some or all of the history stays on disk. The error's domain and code
-                        // are public, its description, which can name a path, is not.
-                        let error = error as NSError
-                        Diagnostics.history.error(
-                            "Clearing the history failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
-                        )
-                    }
-                    await devices.clearHistory()
-                }
-            }
-        } message: {
-            Text("The charts start over. This can't be undone.")
         }
 
         Section {
@@ -77,6 +64,23 @@ struct AdvancedSettings: View {
                     Button("About BatteryPulse") { WindowOpener.show(WindowID.about) }
                 }
             }
+        }
+    }
+
+    /// Every device's history too; the remembered devices stay.
+    private func clearHistory() {
+        Task {
+            do {
+                try await AppHistory.store.clear()
+            } catch {
+                // Some or all of the history stays on disk. The error's domain and code are
+                // public, its description, which can name a path, is not.
+                let error = error as NSError
+                Diagnostics.history.error(
+                    "Clearing the history failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+                )
+            }
+            await devices.clearHistory()
         }
     }
 }
