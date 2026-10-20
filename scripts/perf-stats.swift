@@ -51,7 +51,8 @@ struct PerfLine {
     var start: Double { time - (milliseconds ?? 0) / 1000 }
 }
 
-/// Days from 1970-01-01 to a proleptic Gregorian date (H. Hinnant's days_from_civil).
+/// Days from 1970-01-01 to a proleptic Gregorian date: the days-from-civil algorithm, which
+/// counts in 400-year eras starting on March 1 so that February comes last.
 func daysSince1970(year: Int, month: Int, day: Int) -> Int {
     let shiftedYear = month <= 2 ? year - 1 : year
     let era = (shiftedYear >= 0 ? shiftedYear : shiftedYear - 399) / 400
