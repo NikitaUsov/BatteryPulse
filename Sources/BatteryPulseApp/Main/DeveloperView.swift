@@ -12,12 +12,13 @@ struct DeveloperView: View {
     @State private var filter = ""
     /// The source picked in the toolbar; `nil` shows every section.
     @State private var source: RawSectionGroup?
-    @State private var selection: Set<RawRow.ID> = []
+    @State private var selection: Set<RawDisplayRow.ID> = []
     @State private var showsInspector = false
-    /// The table for the current reading. Built off the main actor when the reading changes, not
-    /// on every body evaluation: showing the inspector or typing in the filter re-evaluates the
-    /// body, and the main window reads the battery every 2 s.
-    @State private var allSections: [RawSection] = []
+    /// The table for the current reading, with every cell's text and each row's search text.
+    /// Built off the main actor when the reading changes, not on every body evaluation: showing
+    /// the inspector, selecting or typing in the filter re-evaluates the body, and the main window
+    /// reads the battery every 2 s.
+    @State private var allSections: [RawDisplaySection] = []
     @Environment(\.motion) private var motion
     @Environment(\.windowLook) private var look
 
@@ -126,7 +127,11 @@ struct DeveloperView: View {
             return
         }
         let sections = await Task.detached(priority: .userInitiated) {
-            Diagnostics.measure("raw.rebuild") { RawSection.sections(for: reading.redactedRawCapture) }
+            Diagnostics.measure("raw.rebuild") {
+                RawDisplaySection.sections(
+                    for: reading.redactedRawCapture, decoded: { RawValueText.string(for: $0) },
+                    summary: RawValueText.summary)
+            }
         }.value
         // Identical readings leave the table alone. Assigned after an `await`, so outside any
         // animation, Demo Mode's included: hundreds of rows change with every reading and must
@@ -136,8 +141,8 @@ struct DeveloperView: View {
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
-    private func rawTable(_ sections: [RawSection]) -> some View {
-        Table(of: RawRow.self, selection: $selection) {
+    private func rawTable(_ sections: [RawDisplaySection]) -> some View {
+        Table(of: RawDisplayRow.self, selection: $selection) {
             TableColumn("Key") { row in
                 Text(verbatim: row.path)
                     .font(.callout.monospaced())
@@ -155,7 +160,7 @@ struct DeveloperView: View {
             .width(min: 60, ideal: 90)
             TableColumn("Decoded") { row in
                 if let decoded = row.decoded {
-                    Text(RawValueText.string(for: decoded))
+                    Text(verbatim: decoded)
                         .monospacedDigit()
                         .lineLimit(1)
                         .fontWeight(look.boldNumerals ? .medium : nil)
@@ -163,13 +168,12 @@ struct DeveloperView: View {
             }
             .width(min: 70, ideal: 130)
             TableColumn("Description") { row in
-                if let summary = row.info?.summary {
-                    let text = RawValueText.summary(summary)
-                    Text(text)
+                if let summary = row.summary {
+                    Text(verbatim: summary)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .fontWeight(look.boldNumerals ? .medium : nil)
-                        .help(text)
+                        .help(summary)
                 }
             }
             .width(min: 100, ideal: 260)
@@ -184,7 +188,7 @@ struct DeveloperView: View {
                 }
             }
         }
-        .contextMenu(forSelectionType: RawRow.ID.self) { ids in
+        .contextMenu(forSelectionType: RawDisplayRow.ID.self) { ids in
             Button("Show in Inspector") {
                 selection = ids
                 showsInspector = true
@@ -204,45 +208,25 @@ struct DeveloperView: View {
     }
 
     /// The selected rows with the title of the dictionary each comes from.
-    private var inspectedRows: [(row: RawRow, source: String)] {
+    private var inspectedRows: [(row: RawDisplayRow, source: String)] {
         allSections.flatMap { section in
             section.rows.filter { selection.contains($0.id) }.map { (row: $0, source: section.title) }
         }
     }
 
-    /// The sections of `group` (all for `nil`) with the rows that match the filter.
-    private func filteredSections(in group: RawSectionGroup?) -> [RawSection] {
-        let sections = RawSectionGroup.sections(allSections, in: group)
-        let query = filter.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return sections }
-        return sections.compactMap { section in
-            var section = section
-            section.rows = section.rows.filter { matches($0, query) }
-            return section.rows.isEmpty ? nil : section
-        }
-    }
-
-    private func matches(_ row: RawRow, _ query: String) -> Bool {
-        if row.path.localizedCaseInsensitiveContains(query) || row.value.localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let decoded = row.decoded, RawValueText.string(for: decoded).localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let summary = row.info?.summary {
-            return summary.localizedCaseInsensitiveContains(query)
-                || RawValueText.summary(summary).localizedCaseInsensitiveContains(query)
-        }
-        return false
+    /// The sections of `group` (all for `nil`) with the rows that match the filter: one search of
+    /// each row's prepared text, which formats and translates nothing.
+    private func filteredSections(in group: RawSectionGroup?) -> [RawDisplaySection] {
+        RawDisplaySection.filter(RawSectionGroup.sections(allSections, in: group), by: filter)
     }
 
     // MARK: - Copying
 
-    private func rows(_ ids: Set<RawRow.ID>) -> [RawRow] {
+    private func rows(_ ids: Set<RawDisplayRow.ID>) -> [RawDisplayRow] {
         allSections.flatMap(\.rows).filter { ids.contains($0.id) }
     }
 
-    private func copy(_ ids: Set<RawRow.ID>, as text: KeyPath<RawRow, String>) {
+    private func copy(_ ids: Set<RawDisplayRow.ID>, as text: KeyPath<RawDisplayRow, String>) {
         let lines = rows(ids).map { $0[keyPath: text] }
         guard !lines.isEmpty else { return }
         let pasteboard = NSPasteboard.general
@@ -250,7 +234,7 @@ struct DeveloperView: View {
         pasteboard.setString(lines.joined(separator: "\n"), forType: .string)
     }
 
-    private func providers(for ids: Set<RawRow.ID>) -> [NSItemProvider] {
+    private func providers(for ids: Set<RawDisplayRow.ID>) -> [NSItemProvider] {
         let lines = rows(ids).map(\.line)
         guard !lines.isEmpty else { return [] }
         return [NSItemProvider(object: lines.joined(separator: "\n") as NSString)]
@@ -284,7 +268,7 @@ struct DeveloperView: View {
 
 /// The selected raw value in full: key, source, description, value and decoding.
 private struct RawRowInspector: View {
-    let selection: [(row: RawRow, source: String)]
+    let selection: [(row: RawDisplayRow, source: String)]
 
     var body: some View {
         if selection.count == 1, let row = selection.first?.row, let source = selection.first?.source {
@@ -298,8 +282,8 @@ private struct RawRowInspector: View {
                     }
                 }
                 Section("Description") {
-                    if let summary = row.info?.summary {
-                        Text(RawValueText.summary(summary))
+                    if let summary = row.summary {
+                        Text(verbatim: summary)
                             .textSelection(.enabled)
                     } else {
                         Text("No description for this key yet.")
@@ -313,7 +297,7 @@ private struct RawRowInspector: View {
                 }
                 if let decoded = row.decoded {
                     Section("Decoded") {
-                        Text(RawValueText.string(for: decoded))
+                        Text(verbatim: decoded)
                             .textSelection(.enabled)
                     }
                 }
@@ -334,7 +318,7 @@ private struct RawRowInspector: View {
     }
 }
 
-extension RawRow {
+extension RawDisplayRow {
     /// `BatteryData.DesignCapacity = 5760`, for the clipboard.
     fileprivate var line: String { "\(path) = \(value)" }
 }

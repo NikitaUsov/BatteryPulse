@@ -1214,3 +1214,81 @@ public struct RawSection: Sendable, Identifiable, Equatable {
         )
     }
 }
+
+/// A row of the Developer table with every text it shows, built once per reading, so neither the
+/// cells nor the filter format a value or look up a translation.
+public struct RawDisplayRow: Sendable, Identifiable, Equatable {
+    /// The ``RawRow/id``.
+    public let id: String
+    /// The ``RawRow/path``.
+    public let path: String
+    /// The ``RawRow/value``.
+    public let value: String
+    /// The decoded value in the app's wording; `nil` for a key without a decoding.
+    public let decoded: String?
+    /// The glossary's summary in the app's language; `nil` for a key the glossary lacks.
+    public let summary: String?
+    /// The glossary's English summary, which the filter searches too.
+    public let englishSummary: String?
+    /// Everything the filter searches, one text per line.
+    public let searchText: String
+
+    /// `decoded` and `summary` word a decoded value and translate an English summary.
+    public init(_ row: RawRow, decoded: (DecodedRawValue) -> String, summary: (String) -> String) {
+        id = row.id
+        path = row.path
+        value = row.value
+        self.decoded = row.decoded.map(decoded)
+        englishSummary = row.info?.summary
+        self.summary = englishSummary.map(summary)
+        searchText = [path, value, self.decoded, englishSummary, self.summary].compactMap { $0 }.joined(
+            separator: "\n")
+    }
+
+    /// Whether the key, the value, the decoded value or a summary contains `query`, ignoring case
+    /// but not diacritics, which tell Russian letters apart (U+0438 and U+0439, U+0435 and U+0451).
+    ///
+    /// One search over the joined text finds what searching each text on its own finds, since
+    /// a match can't run across a line break that the query lacks. A query with a line break,
+    /// which only pasting can enter, searches each text on its own.
+    public func matches(_ query: String) -> Bool {
+        guard query.contains(where: \.isNewline) else { return searchText.localizedCaseInsensitiveContains(query) }
+        return [path, value, decoded, englishSummary, summary].contains {
+            $0?.localizedCaseInsensitiveContains(query) ?? false
+        }
+    }
+}
+
+/// One dictionary of the Developer table, with its rows' text.
+public struct RawDisplaySection: Sendable, Identifiable, Equatable {
+    /// The ``RawSection/id``.
+    public let id: String
+    /// The ``RawSection/title``.
+    public let title: String
+    public var rows: [RawDisplayRow]
+
+    public init(_ section: RawSection, decoded: (DecodedRawValue) -> String, summary: (String) -> String) {
+        id = section.id
+        title = section.title
+        rows = section.rows.map { RawDisplayRow($0, decoded: decoded, summary: summary) }
+    }
+
+    /// The table for a raw capture: ``RawSection/sections(for:)`` with every row's text.
+    public static func sections(
+        for capture: PropertyDictionary, decoded: (DecodedRawValue) -> String, summary: (String) -> String
+    ) -> [RawDisplaySection] {
+        RawSection.sections(for: capture).map { RawDisplaySection($0, decoded: decoded, summary: summary) }
+    }
+
+    /// The rows of `sections` that match `query` (``RawDisplayRow/matches(_:)``), without the
+    /// sections left empty. A query of spaces, or none, keeps everything.
+    public static func filter(_ sections: [RawDisplaySection], by query: String) -> [RawDisplaySection] {
+        let query = query.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return sections }
+        return sections.compactMap { section in
+            var section = section
+            section.rows = section.rows.filter { $0.matches(query) }
+            return section.rows.isEmpty ? nil : section
+        }
+    }
+}
