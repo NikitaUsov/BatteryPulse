@@ -173,7 +173,7 @@ public final class BatteryMonitor {
         lastReadAt = clock.now
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) {
-            logBatteryChange(found: new != nil)
+            logBatteryChange(found: new != nil, trigger: trigger)
             hasBattery = new != nil
         }
         if !Self.isSameReading(new, reading) { reading = new }
@@ -188,12 +188,13 @@ public final class BatteryMonitor {
     }
 
     /// A read found a battery where the previous one found none, or the other way around.
-    private func logBatteryChange(found: Bool) {
+    private func logBatteryChange(found: Bool, trigger: RefreshTrigger) {
         #if canImport(os)
         if found {
             Diagnostics.monitor.info("Battery found")
-        } else if hasBattery == true, overrideProvider == nil {
-            // A battery doesn't go away: both the registry and the power source lookup failed.
+        } else if hasBattery == true, overrideProvider == nil, trigger != .demo {
+            // A battery doesn't go away: both the registry and the power source lookup failed. The
+            // read that ends Demo Mode is no such case: on a Mac without one, the demo's was the last.
             Diagnostics.monitor.error("The battery read found no battery")
         } else {
             Diagnostics.monitor.info("No battery")
