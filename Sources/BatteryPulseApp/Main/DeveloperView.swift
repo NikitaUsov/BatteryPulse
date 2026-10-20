@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import CoreTransferable
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -19,6 +20,10 @@ struct DeveloperView: View {
     /// the inspector, selecting or typing in the filter re-evaluates the body, and the main window
     /// reads the battery every 2 s.
     @State private var allSections: [RawDisplaySection] = []
+    /// The capture Export Capture hands to the system's Save panel, and why saving it failed.
+    @State private var capture: CaptureFile?
+    @State private var exportsCapture = false
+    @State private var exportFailure: String?
     @Environment(\.motion) private var motion
     @Environment(\.windowLook) private var look
 
@@ -106,6 +111,26 @@ struct DeveloperView: View {
             }
             .disabled(monitor.reading == nil)
             .task(id: monitor.reading) { await rebuild() }
+            // On the page rather than in the toolbar item, where presentations are unreliable on
+            // macOS, and after `disabled`, so the alert's button works without a reading.
+            .fileExporter(
+                isPresented: $exportsCapture, item: capture, contentTypes: [.xml],
+                defaultFilename: "BatteryPulse-capture.xml",
+                onCompletion: { result in
+                    if case .failure(let error) = result { exportFailure = error.localizedDescription }
+                    capture = nil
+                },
+                onCancellation: { capture = nil }
+            )
+            .alert(Text("Couldn't Export Capture"), isPresented: exportFailureShown) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: exportFailure ?? "")
+            }
+    }
+
+    private var exportFailureShown: Binding<Bool> {
+        Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })
     }
 
     /// The title of a source in the switch: short, and the API's own name where it has no other.
@@ -247,16 +272,28 @@ struct DeveloperView: View {
         pasteboard.setString(String(decoding: data, as: UTF8.self), forType: .string)
     }
 
+    /// Saves the redacted capture in the fixture format through the system's Save panel; a
+    /// failure to write the file shows an alert.
     private func exportCapture() {
         guard let reading = monitor.reading, !monitor.isOverridden else { return }
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.xml]
-        panel.nameFieldStringValue = "BatteryPulse-capture.xml"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let plist = PropertyValue.dictionary(reading.redactedRawCapture).foundationValue
-        if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
-            try? data.write(to: url, options: .atomic)
+        do {
+            let plist = PropertyValue.dictionary(reading.redactedRawCapture).foundationValue
+            capture = CaptureFile(
+                data: try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0))
+            exportsCapture = true
+        } catch {
+            exportFailure = error.localizedDescription
         }
+    }
+}
+
+/// A raw capture for the system's Save panel: the XML property list that `bpulse --raw` writes and
+/// `bpulse --input` reads.
+private struct CaptureFile: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .xml) { file in file.data }
     }
 }
 
