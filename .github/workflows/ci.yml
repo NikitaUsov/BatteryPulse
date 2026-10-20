@@ -81,8 +81,12 @@ jobs:
           fi
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
       - name: Check the verification scripts
-        # Neither script is built or run anywhere else; they need a Mac with a display.
-        run: bash -n scripts/menu-bar-shots.sh && swiftc -typecheck scripts/display-metrics.swift
+        # None of them is built or run anywhere else: the first two need a Mac with a display, the
+        # others a running BatteryPulse.
+        run: |
+          bash -n scripts/menu-bar-shots.sh
+          swiftc -typecheck scripts/display-metrics.swift
+          swiftc -typecheck scripts/rusage.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
