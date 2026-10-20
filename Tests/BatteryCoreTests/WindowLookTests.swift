@@ -137,6 +137,29 @@ import Testing
         }
     }
 
+    /// While a window minimizes, sits in the Dock and is restored, the sheet's place is a plain
+    /// fill of the same tint: the animation shows only the window's own layers, without the
+    /// desktop the glass samples.
+    @Test(arguments: [false, true])
+    func minimizingSwapsTheGlassForAStillFill(systemDark: Bool) throws {
+        typealias Surface = WindowLookPolicy.SheetSurface
+        for look in [WindowLook.translucent, .clear] {
+            let policy = policy(look)
+            let tint = try #require(policy.sheetTint(systemDark: systemDark))
+            #expect(policy.sheetSurface(systemDark: systemDark, isMinimized: false) == Surface.glass(tint: tint))
+            #expect(policy.sheetSurface(systemDark: systemDark, isMinimized: true) == Surface.fill(tint))
+            // Never an opaque frame, and never nothing: the desktop shows through a dimmed sheet.
+            #expect(tint.opacity > 0 && tint.opacity < 1)
+        }
+        // Standard and Frosted have no sheet, so minimizing changes nothing.
+        for look in [WindowLook.standard, .frosted] {
+            for minimized in [false, true] {
+                #expect(policy(look).sheetSurface(systemDark: systemDark, isMinimized: minimized) == nil)
+            }
+        }
+        #expect(policy(.clear, reduceTransparency: true).sheetSurface(systemDark: systemDark, isMinimized: true) == nil)
+    }
+
     @Test func onlyClearTreatsItsContent() throws {
         for look in [WindowLook.standard, .frosted, .translucent] {
             #expect(policy(look).contentTreatment(systemDark: false) == nil)

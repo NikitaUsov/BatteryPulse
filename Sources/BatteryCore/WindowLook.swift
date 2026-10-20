@@ -54,6 +54,15 @@ public struct WindowLookPolicy: Equatable, Sendable {
         case reduceTransparency, increaseContrast
     }
 
+    /// What the glass sheet's place behind the window draws.
+    public enum SheetSurface: Sendable, Equatable {
+        /// The clear glass with the sheet's tint, over the desktop it samples.
+        case glass(tint: Tint)
+        /// A still, plain fill and no glass, from the moment the window starts to minimize until
+        /// it has been restored.
+        case fill(Tint)
+    }
+
     /// A colour-neutral tint: a grey level (0 black, 1 white) at an opacity.
     public struct Tint: Equatable, Sendable {
         public let white: Double
@@ -180,6 +189,21 @@ public struct WindowLookPolicy: Equatable, Sendable {
         case .translucent: Tint(white: systemDark ? 0 : 1, opacity: 0.45)
         case .clear: Tint(white: 0.03, opacity: systemDark ? 0.32 : 0.4)
         }
+    }
+
+    /// What the glass sheet's place draws: the tinted glass, or, while the window minimizes, sits
+    /// in the Dock and is restored, a plain fill of the same tint at the tint's own opacity over
+    /// the still see-through window.
+    ///
+    /// The minimize animation and the Dock show the window's own layers, and the desktop that the
+    /// glass samples behind the window isn't one of them, so the sheet would turn near-black for
+    /// the whole animation. The fill is the sheet without its blur, and never opaque, so the
+    /// desktop still shows through it. The swap is not a motion event and never animates; the
+    /// glass comes back once the window is restored. `nil` without a sheet: Standard and Frosted
+    /// draw as always.
+    public func sheetSurface(systemDark: Bool, isMinimized: Bool) -> SheetSurface? {
+        guard let tint = sheetTint(systemDark: systemDark) else { return nil }
+        return isMinimized ? .fill(tint) : .glass(tint: tint)
     }
 
     /// Clear's treatment under each group of white content, for the system appearance: a tight
