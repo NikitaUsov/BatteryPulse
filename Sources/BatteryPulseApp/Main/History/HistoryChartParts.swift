@@ -27,6 +27,7 @@ struct SelectionOverlay: View {
     @Binding var selection: Date?
     let showsDate: Bool
     let value: (HistoryPoint) -> String?
+    @Environment(\.tones) private var tones
 
     var body: some View {
         GeometryReader { geometry in
@@ -63,8 +64,10 @@ struct SelectionOverlay: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(.regularMaterial, in: .rect(cornerRadius: 6, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.separator, lineWidth: 0.5))
+        // A card's own surface with the window style's hairline: content, so no material (CLAUDE.md).
+        .background(.background.secondary, in: .rect(cornerRadius: 6, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(tones.style(.hairline), lineWidth: 0.5))
     }
 }
 
