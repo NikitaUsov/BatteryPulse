@@ -332,8 +332,10 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable 
     }
 }
 
-/// The installation steps that touch the disk; they run off the main actor. Each throws only an
-/// ``UpdateInstallError``; cancellation is checked between them, in the installer's `run`.
+/// The installation steps that touch the disk. `verify`, `replace` and `removeLeftovers` run off
+/// the main actor; preparing and emptying the downloads folder is quick and runs on the caller's.
+/// The steps that can fail throw only an ``UpdateInstallError``; cancellation is checked between
+/// them, in the installer's `run`.
 enum UpdateInstallSteps {
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
     static func prepareDownloadFolder(bundleIdentifier: String) throws(UpdateInstallError) -> URL {
