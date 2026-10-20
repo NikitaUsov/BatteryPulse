@@ -53,7 +53,8 @@ final class WidgetRefresher {
             if processName == extensionExecutable, kill(pid, SIGTERM) == 0 { ended = true }
         }
         guard ended else { return }
-        Task { @MainActor in
+        // Main actor already: the class is.
+        Task {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
             Diagnostics.event("widget.reload", trigger: "update")
