@@ -511,6 +511,22 @@ private func reading(connected: Bool) -> BatteryReading {
         #expect(provider.scopes.last == .full, "the minute counts from the last full read")
     }
 
+    @Test func aManualReadFetchesSlowValues() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        clock.advance(by: .seconds(2))
+        monitor.refresh()
+        #expect(provider.scopes == [.full, .full], "Copy Report takes every value fresh")
+        clock.advance(by: .seconds(30))
+        monitor.refresh(trigger: .poll)
+        // 61 s after the launch read, 59 s after the manual one.
+        clock.advance(by: .seconds(29))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes == [.full, .full, .live, .live], "the minute counts from the manual read")
+    }
+
     @Test func leavingDemoModeReadsSlowValuesAgain() {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let demo = MockBatteryProvider(next: reading(percent: 50, at: 1))

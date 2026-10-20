@@ -13,8 +13,8 @@ import os
 /// Views that show fast-moving values (current, power) request polling with
 /// ``setLiveRefreshInterval(_:for:)`` and withdraw it with `nil`; the shortest active request
 /// wins. Polls fetch only what changes from poll to poll: the values that change slowly are read
-/// at most once a minute (``smcPolicy``), or on every read while a view that shows them asks for
-/// it with ``setShowsSlowValues(_:for:)``.
+/// at most once a minute (``smcPolicy``), on every read while a view that shows them asks for
+/// it with ``setShowsSlowValues(_:for:)``, and on a ``RefreshTrigger/manual`` read.
 @MainActor
 @Observable
 public final class BatteryMonitor {
@@ -202,8 +202,11 @@ public final class BatteryMonitor {
         defer { interval.end() }
         pendingRefresh?.cancel()
         pendingRefresh = nil
-        let readsSlowValues = Self.smcPolicy.readsOtherKeys(
-            age: slowValuesReadAt.map { clock.now - $0 }, isShown: !slowValueClients.isEmpty)
+        // A caller that needs a value now, such as Copy Report, gets the slow values fresh too.
+        let readsSlowValues =
+            trigger == .manual
+            || Self.smcPolicy.readsOtherKeys(
+                age: slowValuesReadAt.map { clock.now - $0 }, isShown: !slowValueClients.isEmpty)
         let new = activeProvider.read(scope: readsSlowValues ? .full : .live)
         lastReadAt = clock.now
         if readsSlowValues { slowValuesReadAt = lastReadAt }
