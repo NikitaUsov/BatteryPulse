@@ -5,8 +5,8 @@ import Foundation
 // SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps them to backgrounds and
 // modifiers. Code says "window look" because SwiftUI already has a `WindowStyle`.
 
-/// The window style setting, from the most opaque to the most transparent. The raw values are
-/// stored in the defaults, so they never change.
+/// The window style setting, from an opaque window to clear glass. The raw values are stored in
+/// the defaults, so they never change.
 public enum WindowLook: String, CaseIterable, Sendable {
     /// An opaque window with cards, as before 0.6.
     case standard
@@ -179,15 +179,16 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 
     /// The glass sheet's tint for the system appearance: Translucent's dimming layer (black 45 %
-    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming (near-black 40 % in Light,
-    /// 32 % in Dark, where the glass is already smokier). Clear's content is white in both, so
-    /// a white wash would leave it unreadable over a bright desktop; the dimming keeps the glass
-    /// colourless and the desktop visible. `nil` without a sheet.
+    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming, near-black 65 % in both.
+    /// Clear's content is white in both appearances, so a white wash would leave it unreadable
+    /// over a bright desktop. 65 % is the smallest round value that keeps white text at 4.5:1 and
+    /// secondary text at 3:1 even over a white window behind it; the glass stays colourless and
+    /// the desktop visible. `nil` without a sheet.
     public func sheetTint(systemDark: Bool) -> Tint? {
         switch effective {
         case .standard, .frosted: nil
         case .translucent: Tint(white: systemDark ? 0 : 1, opacity: 0.45)
-        case .clear: Tint(white: 0.03, opacity: systemDark ? 0.32 : 0.4)
+        case .clear: Tint(white: 0.03, opacity: 0.65)
         }
     }
 
