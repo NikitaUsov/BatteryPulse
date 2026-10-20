@@ -23,6 +23,7 @@ final class BatteryNotifier: NSObject {
     private var lastAccessoryThreshold: Int?
     private var defaultsObserver: (any NSObjectProtocol)?
     private var batteryObservation: Task<Void, Never>?
+    private var accessoryObservation: Task<Void, Never>?
 
     init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
@@ -47,7 +48,14 @@ final class BatteryNotifier: NSObject {
                 self.evaluate()
             }
         }
-        observeAccessories()
+        // Every change of the accessory list, which the monitor reassigns only when it changed.
+        // The list at the start is evaluated right below.
+        accessoryObservation = Task(name: "BatteryNotifier.accessoryObservation") { [weak self, accessories] in
+            for await _ in Observations({ accessories.accessories }).dropFirst() {
+                guard let self else { return }
+                self.evaluateAccessories()
+            }
+        }
         // An accessory can stay at the same level for an hour: one that is already low at launch
         // alerts now, not at its next change.
         evaluateAccessories()
@@ -69,6 +77,8 @@ final class BatteryNotifier: NSObject {
     func stop() {
         batteryObservation?.cancel()
         batteryObservation = nil
+        accessoryObservation?.cancel()
+        accessoryObservation = nil
         if let defaultsObserver {
             NotificationCenter.default.removeObserver(defaultsObserver)
             self.defaultsObserver = nil
@@ -103,19 +113,6 @@ final class BatteryNotifier: NSObject {
         }
         for alert in alerts {
             post(alert, snapshot)
-        }
-    }
-
-    /// Re-arms on every change of the accessory list, which the monitor reassigns only when it
-    /// changed.
-    private func observeAccessories() {
-        withObservationTracking {
-            _ = accessories.accessories
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluateAccessories()
-                self?.observeAccessories()
-            }
         }
     }
 
