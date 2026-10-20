@@ -228,12 +228,15 @@ rusage() {
 
 # MARK: - Settings
 
-# The settings the session works with; each block ends by putting yours back.
+# The settings the session works with; each block ends by putting yours back. The menu bar shows
+# the icon and the charge only, and Open BatteryPulse opens the main window, whatever yours say.
 session_settings() {
   set_default updateFrequency -string never
   set_default menuBarShowsIcon -bool true
   set_default menuBarShowsCharge -bool true
   set_default menuBarShowsPower -bool false
+  set_default menuBarShowsTemperature -bool false
+  set_default prefersCompactWindow -bool false
 }
 
 # Your settings exactly as they were. `defaults import` adds to the keys a domain has (a key the
@@ -461,7 +464,7 @@ step_prepare() {
     sed 's/^/- build /' "$WORK/builds.txt"
     echo "- your app: $(cat "$BACKUP/version")"
     echo "- macOS: $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
-    echo "- cycle count: $(ioreg -r -c AppleSmartBattery | awk -F' = ' '/"CycleCount"/ { print $2; exit }')"
+    echo "- cycle count: $(ioreg -r -c AppleSmartBattery | awk -F' = ' '$1 ~ /"CycleCount"$/ { print $2; exit }')"
     echo "- kern.pervasive_energy: $(sysctl -n kern.pervasive_energy 2>/dev/null || echo unavailable)"
     echo "- charge: $(pmset -g batt | grep -o -E '[0-9]+%' | head -1), $(pmset -g batt | head -1 | sed "s/.*'\(.*\)'.*/\1/")"
     echo "- Low Power Mode: $(pmset -g | awk '$1 == "lowpowermode" { found = 1; print $2 } END { if (!found) print "unknown" }')"
@@ -515,7 +518,8 @@ clear_check() {
   for mode in light dark; do
     appearance "$mode"
     value "$label-$mode" "$mode: Digital Color Meter in a gap between groups (expected about 94)?"
-    reading="${VALUE%% *}"
+    # The leading number, so "110", "110/255" and "110 note" all count.
+    reading="${VALUE%%[!0-9]*}"
     case "$reading" in
       "" | *[!0-9]*) ;;
       *) if [ "$reading" -gt 104 ]; then HIGH="$HIGH $mode"; fi ;;
@@ -566,8 +570,18 @@ step_v4() {
       ask "V4-$look-$mode" "Is the chart readout readable?"
     done
   done
-  pause "Still Clear: open the compact window (Compact Window in the main window's toolbar)"
-  ask UR-3-compact "In Light and in Dark, Shift-minimize and Shift-restore the compact window. Did a black frame appear? (n: none)"
+  # UR-3 covers the compact window too, in each style and appearance (WP-UR's acceptance).
+  for look in standard frosted translucent clear; do
+    quit_app
+    set_default windowLook -string "$look"
+    set_default prefersCompactWindow -bool true
+    launch
+    for mode in light dark; do
+      appearance "$mode"
+      pause "Window Style $look, $mode: open the compact window (Open BatteryPulse in the menu bar panel)"
+      ask "UR-3-compact-$look-$mode" "Shift-minimize the compact window, then Shift-click it in the Dock. Did a black frame appear? (n: none; else say which)"
+    done
+  done
   ask V4-materials "Are Frosted's and Translucent's sidebar and toolbar acceptable?"
   ask G12 "Approve the four styles?"
   shots_after="$(find "$SHOTS" -type f | wc -l | tr -d ' ')"
@@ -639,7 +653,7 @@ step_f11() {
   echo "samples today: $before → $after (expected exactly one more)"
   pause "Close every BatteryPulse window"
   ask F11-power "With every window closed, does the power value in the menu bar keep changing?"
-  ask F11-settings "Are your settings all there, the menu bar toggles matching the label, and the icon style unchanged?"
+  ask F11-settings "Apart from what the session sets (no update checks; icon, charge and power in the menu bar; the main window to open), are your settings all there, the menu bar toggles matching the label, and the icon style unchanged?"
   pause "Settings frontmost: set \"When charged to\" below the current charge, then plug in"
   ask F11-alert "Did a notification arrive within about 10 s, and does clicking it bring BatteryPulse forward?"
   pause "Turn on Open at login (approve it in System Settings if asked)"
@@ -798,11 +812,14 @@ s2_window() {
 }
 
 # s7_launches <build> <count>: S7 for one build: cold launches, each timed from open to its
-# menuBarReady line, and the reads before it.
+# menuBarReady line, and the reads before it. Power stays in the menu bar as in S2: the menu
+# bar's request at launch read again in 0.6.0 and reuses the launch read in the candidate, the
+# 2 → 1 reads before menuBarReady that WP-2a left for the session to measure.
 s7_launches() {
   local build="$1" count="$2" capture launch_number=0 start starts="" waited before
   install_build "$build"
   session_settings
+  set_default menuBarShowsPower -bool true
   capture="$WORK/launch-$build.ndjson"
   perf_capture "$capture"
   while [ "$launch_number" -lt "$count" ]; do
@@ -834,7 +851,8 @@ s7_launches() {
 step_energy() {
   record "## Energy (S2, S7)"
   if ! on_battery; then pause "Unplug the Mac"; fi
-  pause "Quit other apps, then leave the Mac alone for about 15 minutes; the display stays on"
+  # An open window can come back at each launch and would poll every 2 s.
+  pause "Close every BatteryPulse window and quit other apps, then leave the Mac alone for about 15 minutes; the display stays on"
   # Keeps the display on until this script ends, also after Control-C.
   caffeinate -d -w $$ &
   s2_window A 240

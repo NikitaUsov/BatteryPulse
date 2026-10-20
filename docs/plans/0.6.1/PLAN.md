@@ -1199,12 +1199,12 @@ in; Digital Color Meter open with "Display native values".
 3. **V2, Clear** (4 min): `bash docs/plans/0.6.1/m5-session.sh v2`. Window Style Clear, the main window over a blank white
    TextEdit page, Light then Dark. Read a gap between groups and type both values (expected ≈ 94).
    Is the text readable? Then look once over a busy part of the desktop. Sign off (G11).
-4. **V4, the chart readout and minimizing** (6 min): `bash docs/plans/0.6.1/m5-session.sh v4`. In
-   each style, minimize and restore the main window with Shift held (the slow genie animation):
-   no black frame (UR-3). History 24 h with the pointer over a
-   chart: one screenshot per style (Standard, Frosted, Translucent, Clear) in Light and in Dark. Is
-   the readout readable, above all on Clear? Are Frosted's and Translucent's sidebar and toolbar
-   acceptable (0.6.0 open check)? Approve (G12).
+4. **V4, the chart readout and minimizing** (8 min): `bash docs/plans/0.6.1/m5-session.sh v4`. In
+   each style, in Light and in Dark, minimize and restore the main window with Shift held (the
+   slow genie animation), and then the compact window: no black frame (UR-3). History 24 h with
+   the pointer over a chart: one screenshot per style (Standard, Frosted, Translucent, Clear) in
+   Light and in Dark. Is the readout readable, above all on Clear? Are Frosted's and
+   Translucent's sidebar and toolbar acceptable (0.6.0 open check)? Approve (G12).
 5. **F8, widget** (2 min): `bash docs/plans/0.6.1/m5-session.sh f8`. Add the BatteryPulse widget to the desktop; it shows
    the charge. The script checks that `pluginkit -mv -i io.github.nikitausov.BatteryPulse.Widget`
    shows the `/Applications` path (G3).
@@ -1247,8 +1247,9 @@ in; Digital Color Meter open with "Display native values".
   `history.load` cold and warm.
 - **Energy** (about 15 min unattended; unplug first, then leave the Mac): `bash docs/plans/0.6.1/m5-session.sh energy`. S2
   (power in the menu bar, no window) as A then B, each 1 minute to settle plus 4 minutes of
-  `rusage.swift`; then S7, 5 cold launches per build from `open` to the `menuBarReady` line, with
-  the reads before it counted. `caffeinate -d` keeps the display on.
+  `rusage.swift`; then S7, power still in the menu bar, 5 cold launches per build from `open` to
+  the `menuBarReady` line, with the reads before it counted (WP-2a expects 2 → 1).
+  `caffeinate -d` keeps the display on.
 
 Shorter windows than the playbook's 30 minutes, and one A/B pair instead of three, mean the
 per-hour figures are extrapolated and noisier. A difference under 15 % counts as noise.
