@@ -111,6 +111,16 @@ import Testing
 }
 
 @Suite struct BatteryIconStateTests {
+    /// The digits in the icon read the same as the percentage the formatter writes, half steps
+    /// included (42.5 is "42%" in both).
+    @Test(arguments: Array(stride(from: 0.0, through: 100.0, by: 0.5)))
+    func digitsRoundLikeTheFormatter(percent: Double) throws {
+        let english = BatteryFormatter(locale: Locale(identifier: "en_US"))
+        let snapshot = BatterySnapshot(timestamp: .now, chargePercent: percent, chargeState: .discharging)
+        let digits = try #require(BatteryIconState(snapshot: snapshot).percent)
+        #expect("\(digits)%" == english.percent(percent))
+    }
+
     @Test func dischargingIsMonochromeWithoutGlyph() throws {
         let state = BatteryIconState(snapshot: try Fixture.m5OnBattery.snapshot())
         #expect(state == BatteryIconState(level: 0.7, percent: 70, glyph: .none, tint: .monochrome))
