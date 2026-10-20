@@ -7,9 +7,11 @@ import Testing
     private let english = BatteryFormatter(locale: Locale(identifier: "en_US"))
     /// Russian number formatting. The unit symbols are stand-ins: the app's real ones live in the
     /// String Catalog, the only place in the repository with Russian text.
-    private let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) {
-        BatteryFormatter.englishSymbol($0) + "-ru"
-    }
+    private let russian = BatteryFormatter(
+        locale: Locale(identifier: "ru_RU"),
+        symbols: .init(
+            watts: "W-ru", milliampHours: "mAh-ru", volts: "V-ru", millivolts: "mV-ru", milliamps: "mA-ru", amps: "A-ru"
+        ))
 
     /// Locales differ in which space they use; compare with all of them normalized.
     private func plain(_ text: String) -> String {
@@ -44,6 +46,22 @@ import Testing
         #expect(plain(english.celsius(31.24)) == "31.2 °C")
         #expect(plain(russian.celsius(31.24)) == "31,2 °C")
         #expect(plain(english.celsius(33.69, fractionDigits: 0)) == "34 °C")
+    }
+
+    /// USB power offers: whole volts without decimals, otherwise only the decimals they need.
+    @Test(arguments: [(20000, "20 V", "20 V-ru"), (3300, "3.3 V", "3,3 V-ru"), (3250, "3.25 V", "3,25 V-ru")])
+    func compactVolts(millivolts: Int, english expected: String, russian expectedRussian: String) {
+        #expect(plain(english.compactVolts(millivolts: millivolts)) == expected)
+        #expect(plain(russian.compactVolts(millivolts: millivolts)) == expectedRussian)
+    }
+
+    /// A plain value, so views can compare it: equal for the same locale and symbols only.
+    @Test func equality() {
+        #expect(BatteryFormatter(locale: Locale(identifier: "en_US")) == english)
+        #expect(BatteryFormatter(locale: Locale(identifier: "ru_RU")) != english)
+        #expect(BatteryFormatter(locale: Locale(identifier: "ru_RU")) != russian)
+        #expect(BatteryFormatter().symbols == .english)
+        #expect(BatteryFormatter(locale: .autoupdatingCurrent) == BatteryFormatter(locale: .autoupdatingCurrent))
     }
 
     @Test func durations() {

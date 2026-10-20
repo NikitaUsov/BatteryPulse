@@ -41,7 +41,8 @@ func record(into folder: String) async throws -> Never {
         for capture in step.captures {
             let url = folderURL.appendingPathComponent(capture.fileName)
             do {
-                try Data(xmlPropertyList(capture.reading.redactedRawCapture).utf8).write(to: url, options: .atomic)
+                try PropertyValue.xmlPropertyListData(capture.reading.redactedRawCapture).write(
+                    to: url, options: .atomic)
             } catch {
                 fail("bpulse: cannot write \(url.path): \(error.localizedDescription)", code: 1)
             }

@@ -170,12 +170,7 @@ func render(_ reading: BatteryReading, as format: OutputFormat, compact: Bool) t
 }
 
 func xmlPropertyList(_ dictionary: PropertyDictionary) throws -> String {
-    let data = try PropertyListSerialization.data(
-        fromPropertyList: PropertyValue.dictionary(dictionary).foundationValue,
-        format: .xml,
-        options: 0
-    )
-    return String(decoding: data, as: UTF8.self)
+    String(decoding: try PropertyValue.xmlPropertyListData(dictionary), as: UTF8.self)
 }
 
 /// A device read: the report, the parsed battery as JSON, or the redacted capture. Device

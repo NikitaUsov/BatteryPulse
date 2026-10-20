@@ -213,8 +213,9 @@ struct DeviceView: View {
             if let cycles = battery.cycleCount {
                 // The gauge's own rating wins over Apple's published one for the model.
                 let rated =
-                    battery.designCycleCount
-                    ?? IDeviceModel.ratedCycles(productType: entry.productType, deviceClass: entry.deviceClass) ?? 1000
+                    BatteryPresentation.ratedCycles(battery.designCycleCount)
+                    ?? IDeviceModel.ratedCycles(productType: entry.productType, deviceClass: entry.deviceClass)
+                    ?? BatteryPresentation.fallbackRatedCycles
                 GaugeTile(
                     title: "Cycle count",
                     fraction: Double(cycles) / Double(rated),

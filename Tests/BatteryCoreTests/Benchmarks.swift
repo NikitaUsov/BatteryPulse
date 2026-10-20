@@ -9,7 +9,8 @@ import Testing
 /// Each workload runs once to warm up, then ``runs`` times on `ContinuousClock`, and prints one
 /// line, `bench <id> <workload> median_ms=<median> runs=15`. Testable imports change the
 /// optimization a little, so compare only a before and an after on the same machine and
-/// toolchain. The workloads exist at 0.6.0 too, so the same file runs on the baseline branch.
+/// toolchain. The workloads exist at 0.6.0 too, so the file ran on the baseline branch; since
+/// WP-5, B4's `raw.display` and B5's `raw.filter.joined` measure 0.6.1's Raw Data display rows.
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["BP_BENCH"] == "1"))
 struct Benchmarks {
     static let runs = 15
@@ -80,9 +81,11 @@ struct Benchmarks {
         }
     }
 
-    /// B4: the Raw Data table for the fixture with the most rows: the redacted capture's sections,
-    /// plus the text each row shows that BatteryCore builds (the path, the value and the glossary
-    /// summary).
+    /// B4: the Raw Data table for the fixture with the most rows: the redacted capture's sections
+    /// with the text each row shows that BatteryCore builds (`raw.sections`, the 0.6.0 workload),
+    /// and the display rows the page builds once per reading, off the main actor: every cell's
+    /// text, the decoded values formatted and the summaries looked up, plus the search text
+    /// (`raw.display`).
     @Test func b4RawSections() throws {
         let reading = try Self.largestRawCapture()
         let timing = Self.time {
@@ -91,18 +94,26 @@ struct Benchmarks {
             }
         }
         Self.report("B4", "raw.sections", timing.median)
+        let display = Self.time {
+            RawDisplaySection.sections(
+                for: reading.redactedRawCapture, decoded: RawDisplayTests.decodedText,
+                summary: RawDisplayTests.localizedSummary)
+        }
+        Self.report("B4", "raw.display", display.median)
     }
 
     /// B5: Raw Data's filter, a six-letter query over every row of that fixture: the five-way OR
-    /// that 0.6.0 runs per row against one search string per row, built beforehand.
+    /// that 0.6.0 ran per row, against ``RawDisplaySection/filter(_:by:)`` over the display rows.
     @Test func b5RawFilter() throws {
-        let rows = RawSection.sections(for: try Self.largestRawCapture().redactedRawCapture).flatMap(\.rows)
+        let capture = try Self.largestRawCapture().redactedRawCapture
+        let rows = RawSection.sections(for: capture).flatMap(\.rows)
+        let display = RawDisplaySection.sections(
+            for: capture, decoded: RawDisplayTests.decodedText, summary: RawDisplayTests.localizedSummary)
         let query = "charge"
-        let old = Self.time { rows.filter { Self.matchesFiveWays($0, query) }.count }
-        let searchTexts = rows.map(Self.searchText)
-        let new = Self.time { searchTexts.filter { $0.localizedCaseInsensitiveContains(query) }.count }
-        // The joined text finds the same rows, give or take a match across two of its parts.
-        #expect(old.last <= new.last)
+        let old = Self.time { rows.filter { RawDisplayTests.matchesFiveWays($0, query) }.count }
+        let new = Self.time { RawDisplaySection.filter(display, by: query).reduce(0) { $0 + $1.rows.count } }
+        // The same rows.
+        #expect(old.last == new.last)
         Self.report("B5", "raw.filter.fiveWay", old.median)
         Self.report("B5", "raw.filter.joined", new.median)
     }
@@ -202,53 +213,5 @@ struct Benchmarks {
             }
             try data.write(to: folder.appendingPathComponent(day + ".jsonl"))
         }
-    }
-
-    /// 0.6.0's Raw Data match: the path, the value, the decoded value's text and the glossary
-    /// summary in English and in the app's language, each searched on its own.
-    static func matchesFiveWays(_ row: RawRow, _ query: String) -> Bool {
-        if row.path.localizedCaseInsensitiveContains(query) || row.value.localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let decoded = row.decoded, decodedText(decoded).localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let summary = row.info?.summary {
-            return summary.localizedCaseInsensitiveContains(query)
-                || localizedSummary(summary).localizedCaseInsensitiveContains(query)
-        }
-        return false
-    }
-
-    /// The same five texts, joined into one string per row.
-    static func searchText(_ row: RawRow) -> String {
-        let summary = row.info?.summary
-        return [row.path, row.value, row.decoded.map(decodedText), summary, summary.map(localizedSummary)]
-            .compactMap { $0 }.joined(separator: "\n")
-    }
-
-    private static let formatter = BatteryFormatter(locale: Locale(identifier: "en_US"))
-
-    /// A stand-in for the app's `RawValueText`, which only builds on macOS: the same formatter
-    /// calls for the measured values, a plain description for the rest.
-    static func decodedText(_ decoded: DecodedRawValue) -> String {
-        let f = formatter
-        switch decoded {
-        case .milliampHours(let value): return f.milliampHours(value)
-        case .millivolts(let value): return f.volts(millivolts: value, fractionDigits: 3)
-        case .milliamps(let value): return f.milliamps(value)
-        case .milliwatts(let value): return f.watts(Double(value) / 1000, fractionDigits: 2)
-        case .percent(let value): return f.percent(value)
-        case .celsius(let value): return f.celsius(value)
-        case .minutes(let value): return f.duration(minutes: value)
-        case .seconds(let value): return f.duration(seconds: value)
-        default: return String(describing: decoded)
-        }
-    }
-
-    /// The app looks the English summary up in its catalog; here the bundle has none, so this
-    /// costs the lookup and returns the English text.
-    static func localizedSummary(_ english: String) -> String {
-        Bundle.main.localizedString(forKey: english, value: english, table: nil)
     }
 }

@@ -105,7 +105,10 @@ struct CompactView: View {
                     row("Maximum capacity", formatter.percent(health) + condition)
                 }
                 if let cycles = s.cycleCount {
-                    row("Cycle count", s.designCycleCount.map { Phrases.count(cycles, of: $0) } ?? cycles.formatted())
+                    row(
+                        "Cycle count",
+                        BatteryPresentation.ratedCycles(s.designCycleCount).map { Phrases.count(cycles, of: $0) }
+                            ?? cycles.formatted())
                 }
                 if let watts = s.batteryPowerWatts {
                     row("Battery power", formatter.watts(watts, signed: true))

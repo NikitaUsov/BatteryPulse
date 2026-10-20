@@ -45,14 +45,17 @@ public enum RawSectionGroup: String, Sendable, Hashable, CaseIterable {
         }
     }
 
-    /// The groups that have at least one of `sections`, in table order.
-    public static func groups(in sections: [RawSection]) -> [RawSectionGroup] {
+    /// The groups that have at least one of `sections`, in table order. The sections are
+    /// ``RawSection``s or the ``RawDisplaySection``s built from them, which keep their ids.
+    public static func groups<Section: Identifiable>(in sections: [Section]) -> [RawSectionGroup]
+    where Section.ID == String {
         let present = Set(sections.compactMap { RawSectionGroup(sectionID: $0.id) })
         return allCases.filter(present.contains)
     }
 
     /// The sections of `group`, in their order; every section for `nil`.
-    public static func sections(_ sections: [RawSection], in group: RawSectionGroup?) -> [RawSection] {
+    public static func sections<Section: Identifiable>(_ sections: [Section], in group: RawSectionGroup?) -> [Section]
+    where Section.ID == String {
         guard let group else { return sections }
         return sections.filter { RawSectionGroup(sectionID: $0.id) == group }
     }

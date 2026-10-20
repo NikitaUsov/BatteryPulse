@@ -2000,6 +2000,18 @@
         }
       }
     },
+    "Couldn't Export Capture": {
+      "extractionState": "manual",
+      "comment": "Alert title when the raw data capture can't be saved",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось экспортировать снимок"
+          }
+        }
+      }
+    },
     "Couldn't Export History": {
       "extractionState": "manual",
       "comment": "Alert title when the history file can't be read or saved",
