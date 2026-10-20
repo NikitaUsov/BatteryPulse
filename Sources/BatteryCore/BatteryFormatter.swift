@@ -6,31 +6,41 @@ import Foundation
 /// Numbers, percentages and durations use Foundation format styles. Unit symbols come from the
 /// caller, so the app can localize them through its String Catalog (`Measurement` formatting is
 /// not available in swift-corelibs-foundation, where this type is tested).
-public struct BatteryFormatter: Sendable {
-    public enum Unit: Sendable, CaseIterable {
-        case watts, milliampHours, volts, millivolts, milliamps, amps
+///
+/// A plain value: two formatters with the same locale and symbols are equal, so a view that takes
+/// one can be compared with its previous inputs.
+public struct BatteryFormatter: Sendable, Equatable {
+    /// The symbol written after each unit's numbers.
+    public struct UnitSymbols: Sendable, Equatable {
+        public var watts: String
+        public var milliampHours: String
+        public var volts: String
+        public var millivolts: String
+        public var milliamps: String
+        public var amps: String
+
+        public init(
+            watts: String, milliampHours: String, volts: String, millivolts: String, milliamps: String, amps: String
+        ) {
+            self.watts = watts
+            self.milliampHours = milliampHours
+            self.volts = volts
+            self.millivolts = millivolts
+            self.milliamps = milliamps
+            self.amps = amps
+        }
+
+        /// "W", "mAh", "V", "mV", "mA" and "A".
+        public static let english = UnitSymbols(
+            watts: "W", milliampHours: "mAh", volts: "V", millivolts: "mV", milliamps: "mA", amps: "A")
     }
 
     public var locale: Locale
-    public var symbol: @Sendable (Unit) -> String
+    public var symbols: UnitSymbols
 
-    public init(
-        locale: Locale = .current,
-        symbol: @escaping @Sendable (Unit) -> String = BatteryFormatter.englishSymbol
-    ) {
+    public init(locale: Locale = .current, symbols: UnitSymbols = .english) {
         self.locale = locale
-        self.symbol = symbol
-    }
-
-    public static func englishSymbol(_ unit: Unit) -> String {
-        switch unit {
-        case .watts: "W"
-        case .milliampHours: "mAh"
-        case .volts: "V"
-        case .millivolts: "mV"
-        case .milliamps: "mA"
-        case .amps: "A"
-        }
+        self.symbols = symbols
     }
 
     /// `91` → "91%" (en) or "91 %" (ru).
@@ -40,32 +50,32 @@ public struct BatteryFormatter: Sendable {
 
     /// `-10.34` → "−10.3 W" (en); Russian uses a decimal comma and its own unit symbol.
     public func watts(_ value: Double, fractionDigits: Int = 1, signed: Bool = false) -> String {
-        withUnit(number(value, fractionDigits: fractionDigits, signed: signed), .watts)
+        withUnit(number(value, fractionDigits: fractionDigits, signed: signed), symbols.watts)
     }
 
     /// `5862` → "5,862 mAh" (en); Russian groups digits with a space.
     public func milliampHours(_ value: Int) -> String {
-        withUnit(value.formatted(.number.locale(locale)), .milliampHours)
+        withUnit(value.formatted(.number.locale(locale)), symbols.milliampHours)
     }
 
     /// `12176` mV → "12.18 V".
     public func volts(millivolts: Int, fractionDigits: Int = 2) -> String {
-        withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), .volts)
+        withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), symbols.volts)
     }
 
     /// `6` → "6 mV", for small differences such as the spread between cells.
     public func millivolts(_ value: Int) -> String {
-        withUnit(value.formatted(.number.locale(locale)), .millivolts)
+        withUnit(value.formatted(.number.locale(locale)), symbols.millivolts)
     }
 
     /// `2990` mA → "2.99 A".
     public func amps(milliamps: Int, fractionDigits: Int = 2) -> String {
-        withUnit(number(Double(milliamps) / 1000, fractionDigits: fractionDigits), .amps)
+        withUnit(number(Double(milliamps) / 1000, fractionDigits: fractionDigits), symbols.amps)
     }
 
     /// `-612` → "−612 mA".
     public func milliamps(_ value: Int, signed: Bool = false) -> String {
-        withUnit(number(Double(value), fractionDigits: 0, signed: signed), .milliamps)
+        withUnit(number(Double(value), fractionDigits: 0, signed: signed), symbols.milliamps)
     }
 
     /// `342` → "5 hr, 42 min" (en), with the locale's own abbreviations elsewhere.
@@ -101,7 +111,7 @@ public struct BatteryFormatter: Sendable {
             .replacingOccurrences(of: "-", with: "\u{2212}")
     }
 
-    private func withUnit(_ number: String, _ unit: Unit) -> String {
-        number + "\u{00A0}" + symbol(unit)
+    private func withUnit(_ number: String, _ symbol: String) -> String {
+        number + "\u{00A0}" + symbol
     }
 }

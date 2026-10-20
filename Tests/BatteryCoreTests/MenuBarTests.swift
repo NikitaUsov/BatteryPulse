@@ -37,7 +37,9 @@ import Testing
     }
 
     @Test func titleFollowsLocale() throws {
-        let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) { $0 == .watts ? "W-ru" : "?" }
+        var symbols = BatteryFormatter.UnitSymbols.english
+        symbols.watts = "W-ru"
+        let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU"), symbols: symbols)
         let content = MenuBarContent(showsPower: true, showsTemperature: true)
         let title = content.title(for: try Fixture.m5OnBatterySMC.snapshot(), formatter: russian)
         #expect(title.replacingOccurrences(of: "\u{00A0}", with: " ") == "47 % · −8,3 W-ru · 34 °C")

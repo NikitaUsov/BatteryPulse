@@ -9,19 +9,18 @@ import SwiftUI
 // Strings (so every placeholder is %@), and numbers go through BatteryFormatter.app.
 
 extension BatteryFormatter {
-    /// Formatter for the current locale with localized unit symbols.
-    static var app: BatteryFormatter {
-        BatteryFormatter(locale: .current) { unit in
-            switch unit {
-            case .watts: String(localized: "W", comment: "Unit symbol: watts")
-            case .milliampHours: String(localized: "mAh", comment: "Unit symbol: milliampere-hours")
-            case .volts: String(localized: "V", comment: "Unit symbol: volts")
-            case .millivolts: String(localized: "mV", comment: "Unit symbol: millivolts")
-            case .milliamps: String(localized: "mA", comment: "Unit symbol: milliamperes")
-            case .amps: String(localized: "A", comment: "Unit symbol: amperes")
-            }
-        }
-    }
+    /// The app's formatter, built once: the user's region, which it follows when it changes in
+    /// System Settings, and the catalog's unit symbols, looked up once per launch like the rest of
+    /// the app's language.
+    static let app = BatteryFormatter(
+        locale: .autoupdatingCurrent,
+        symbols: UnitSymbols(
+            watts: String(localized: "W", comment: "Unit symbol: watts"),
+            milliampHours: String(localized: "mAh", comment: "Unit symbol: milliampere-hours"),
+            volts: String(localized: "V", comment: "Unit symbol: volts"),
+            millivolts: String(localized: "mV", comment: "Unit symbol: millivolts"),
+            milliamps: String(localized: "mA", comment: "Unit symbol: milliamperes"),
+            amps: String(localized: "A", comment: "Unit symbol: amperes")))
 }
 
 /// Localized phrases built from battery state.
