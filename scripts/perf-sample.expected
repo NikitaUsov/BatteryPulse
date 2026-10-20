@@ -1,0 +1,17 @@
+intervals (ms)
+name          trigger  count  p50     p95
+history.load  -        1      48.250  48.250
+read          -        6      1.100   2.000
+refresh       launch   2      2.100   2.500
+refresh       notify   4      1.200   1.800
+refresh       poll     1      1.000   1.000
+
+events
+name           trigger  count
+menuBarReady   -        2
+widget.reload  -        1
+
+processes
+pid  image         reads  reads before menuBarReady  widget reloads  reads per notify burst
+101  BatteryPulse  3      1                          1               2
+202  BatteryPulse  3      1                          0               1

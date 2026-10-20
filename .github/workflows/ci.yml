@@ -5,6 +5,13 @@ on:
     branches: [main, "claude/**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        # A test build that the in-app updater treats as older than a real release, so its Install
+        # and Relaunch can be tried. Pushes build 0.0.0.
+        description: Version to build into the app, without the v (for example 0.5.99); empty for 0.0.0
+        required: false
+        default: ""
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,12 +22,23 @@ jobs:
     name: Linux · core tests
     runs-on: ubuntu-latest
     container: swift:6.4-noble
+    # A hung test would otherwise hold the runner for GitHub's 6-hour default; a run takes 3-5
+    # minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+      - name: Check the manifest
+        # Fails early, with the manifest's own error, if Package.swift doesn't evaluate.
+        run: swift package dump-package > /dev/null
       - name: Lint
         run: swift format lint --strict --recursive Sources Tests Package.swift
       - name: Build
-        run: swift build --build-tests
+        # The warning gate: every compiler warning fails the job, except a deprecation, which stays a
+        # warning (a kept deprecated API is marked with @diagnose). Release builds don't get it, so a
+        # newer Xcode can't fail the release of a commit that passed here.
+        run: >-
+          swift build --build-tests
+          -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
 
@@ -29,12 +47,15 @@ jobs:
     # macOS 27 + Xcode 27 image (preview label): the package targets macOS 27, so its tests
     # can't run on older hosts.
     runs-on: xcode-27
+    # The same for a hung test or smoke run.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: Test
-        run: swift test
+        # The warning gate, as in the Linux job.
+        run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Smoke-run bpulse
@@ -67,12 +88,31 @@ jobs:
           fi
           [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
       - name: Check the verification scripts
-        # Neither script is built or run anywhere else; they need a Mac with a display.
-        run: bash -n scripts/menu-bar-shots.sh && swiftc -typecheck scripts/display-metrics.swift
+        # None of them is built or run anywhere else: the first two need a Mac with a display, the
+        # others a running BatteryPulse.
+        run: |
+          bash -n scripts/menu-bar-shots.sh
+          swiftc -typecheck scripts/display-metrics.swift
+          swiftc -typecheck scripts/rusage.swift
+          swiftc -typecheck scripts/perf-stats.swift
+          swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
-        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: '$VERSION' is not a version like 0.5.99" >&2
+            exit 1
+          fi
+          BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+      - name: Size report
+        # The size table and the bundle hygiene counts go to the step summary and build/size.json.
+        # The token is for the comparison with the latest release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/size-report.sh
       - name: Smoke-test update signing
         # The release signs with a secret this job doesn't get, so sign with a throwaway key:
         # the signature must verify, and a changed DMG must not.
@@ -91,8 +131,38 @@ jobs:
           fi
           rm build/tampered.dmg build/tampered.dmg.sig build/BatteryPulse.dmg.sig
       - name: Upload DMG
-        uses: actions/upload-artifact@v4
+        # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: BatteryPulse-${{ github.sha }}
+          name: BatteryPulse-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse.dmg
           if-no-files-found: error
+      - name: Upload the size report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: size-${{ github.sha }}
+          path: build/size.json
+          if-no-files-found: error
+      - name: Report build facts
+        # Information for the size work, never a failure: whether release builds leave .dSYM
+        # folders in the bin path, whether the widget's link line has -dead_strip and lacks
+        # -export_dynamic (it relinks the widget verbosely, after packaging), and whether hdiutil
+        # offers ULMO.
+        continue-on-error: true
+        run: |
+          bin="$(swift build -c release --product BatteryPulseWidget --show-bin-path)"
+          [ -d "$bin" ] || exit 0
+          dsyms="$(cd "$bin" && ls -d -- *.dSYM 2>/dev/null | tr '\n' ' ')"
+          rm -f "$bin/BatteryPulseWidget"
+          swift build -c release --product BatteryPulseWidget -v > "$RUNNER_TEMP/widget-link.log" 2>&1 || true
+          dead_strip="$(grep -c -e '-dead_strip' "$RUNNER_TEMP/widget-link.log" || true)"
+          export_dynamic="$(grep -c -e '-export_dynamic' "$RUNNER_TEMP/widget-link.log" || true)"
+          formats="$( (hdiutil help create; hdiutil create -help) 2>&1 | grep -o -E 'UL[A-Z]{2}|LZ[A-Z]+' | sort -u | tr '\n' ' ')"
+          {
+            echo "### Build facts"
+            echo
+            echo "- .dSYM in \`$bin\`: ${dsyms:-none}"
+            echo "- widget link, lines with -dead_strip: $dead_strip; with -export_dynamic: $export_dynamic"
+            echo "- hdiutil create formats starting UL or LZ: ${formats:-none}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -E -e '-dead_strip|-export_dynamic|BatteryPulseWidget(\.build)?/.*(\.o|LinkFileList)| -o ' "$RUNNER_TEMP/widget-link.log" | cut -c1-2000 | tail -5 || true

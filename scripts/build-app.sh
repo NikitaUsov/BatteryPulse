@@ -3,6 +3,7 @@
 #
 #   scripts/build-app.sh            # version from the latest git tag, build 1
 #   VERSION=0.2.0 BUILD_NUMBER=7 scripts/build-app.sh
+#   PROFILING=1 scripts/build-app.sh   # build/BatteryPulse-profiling.{app,dmg}, see below
 #
 # The app is ad-hoc signed. A notarized build needs a Developer ID certificate; until then,
 # each downloaded version must be approved once in System Settings → Privacy & Security.
@@ -19,8 +20,19 @@ fi
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 BUILD_DIR="build"
-APP="$BUILD_DIR/BatteryPulse.app"
-DMG="$BUILD_DIR/BatteryPulse.dmg"
+# PROFILING=1: a build for Instruments and the memory tools (leaks, vmmap, footprint), which
+# can't attach to a hardened process without get-task-allow. Only the app gets the entitlement,
+# not the widget. The outputs are named BatteryPulse-profiling so they can't pass for a release,
+# and release.yml refuses them: get-task-allow hands the app's task port to any process of the
+# user, so a profiling build is never published.
+PROFILING="${PROFILING:-0}"
+case "$PROFILING" in
+  0) NAME="BatteryPulse" ;;
+  1) NAME="BatteryPulse-profiling" ;;
+  *) echo "error: PROFILING must be 0 or 1, not '$PROFILING'" >&2; exit 1 ;;
+esac
+APP="$BUILD_DIR/$NAME.app"
+DMG="$BUILD_DIR/$NAME.dmg"
 
 swift build -c release --product BatteryPulse
 swift build -c release --product BatteryPulseWidget
@@ -131,7 +143,22 @@ fi
 # Inside out, and never --deep when signing: it would re-sign the widget without its
 # entitlements.
 codesign --force --sign - --options runtime --entitlements Resources/BatteryPulseWidget.entitlements "$APPEX"
-codesign --force --sign - --options runtime "$APP"
+if [ "$PROFILING" = 1 ]; then
+  PROFILING_ENTITLEMENTS="$BUILD_DIR/profiling.entitlements"
+  cat > "$PROFILING_ENTITLEMENTS" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.get-task-allow</key><true/>
+</dict>
+</plist>
+PLIST
+  codesign --force --sign - --options runtime --entitlements "$PROFILING_ENTITLEMENTS" "$APP"
+  rm "$PROFILING_ENTITLEMENTS"
+else
+  codesign --force --sign - --options runtime "$APP"
+fi
 codesign --verify --strict --deep "$APP"
 ENTITLEMENTS="$(codesign -d --entitlements - "$APPEX" 2>/dev/null)"
 if ! grep -F "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" >/dev/null; then
