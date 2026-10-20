@@ -497,11 +497,7 @@ enum UpdateInstallSteps {
     /// The same app, exactly the release's version, newer than the running one.
     private static func checkBundle(_ bundle: URL, identifier: String, release: AppVersion, current: AppVersion) throws
     {
-        let plist = bundle.appendingPathComponent("Contents/Info.plist")
-        let info =
-            (try? Data(contentsOf: plist)).flatMap {
-                try? PropertyListSerialization.propertyList(from: $0, format: nil)
-            } as? [String: Any]
+        let info = infoDictionary(ofBundleAt: bundle)
         if let problem = UpdateInstallPolicy.checkStagedBundle(
             identifier: info?["CFBundleIdentifier"] as? String,
             version: info?["CFBundleShortVersionString"] as? String,
@@ -531,15 +527,19 @@ enum UpdateInstallSteps {
         removeDownloads(bundleIdentifier: bundleIdentifier)
         guard let leftover, !bundleIdentifier.isEmpty else { return }
         let app = URL(fileURLWithPath: leftover, isDirectory: true)
-        let plist = app.appendingPathComponent("Contents/Info.plist")
-        let info =
-            (try? Data(contentsOf: plist)).flatMap {
-                try? PropertyListSerialization.propertyList(from: $0, format: nil)
-            } as? [String: Any]
-        guard info?["CFBundleIdentifier"] as? String == bundleIdentifier else { return }
+        guard infoDictionary(ofBundleAt: app)?["CFBundleIdentifier"] as? String == bundleIdentifier else { return }
         try? FileManager.default.removeItem(at: app)
         // The temporary folder it was in, if nothing else is there.
         _ = rmdir(app.deletingLastPathComponent().path)
+    }
+
+    /// The Info.plist of the app at `bundle`, or `nil` if it can't be read. Read from the file,
+    /// not through `Bundle(url:)`, which returns one cached instance per path for the life of
+    /// the process.
+    private static func infoDictionary(ofBundleAt bundle: URL) -> [String: Any]? {
+        let plist = bundle.appendingPathComponent("Contents/Info.plist")
+        guard let data = try? Data(contentsOf: plist) else { return nil }
+        return (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
     }
 }
 #endif
