@@ -24,14 +24,15 @@ public final class MacAccessoryProvider: AccessoryProvider {
         "com.apple.system.accpowersources.timeremaining",
         "com.apple.system.accpowersources.source",
     ]
-    /// IOKit is linked already (for the public power source functions), so this only returns a
-    /// handle to the loaded image.
+    /// IOKit is linked already (for the public power source functions). `RTLD_NOLOAD` makes sure
+    /// the handle is only borrowed from the loaded image, `RTLD_FIRST` that the lookup searches
+    /// IOKit alone.
     static let ioKitPath = "/System/Library/Frameworks/IOKit.framework/IOKit"
 
     private let copyPowerSourcesByType: CopyPowerSourcesByType?
 
     public init() {
-        copyPowerSourcesByType = dlopen(Self.ioKitPath, RTLD_NOW)
+        copyPowerSourcesByType = dlopen(Self.ioKitPath, RTLD_NOW | RTLD_NOLOAD | RTLD_FIRST)
             .flatMap { dlsym($0, "IOPSCopyPowerSourcesByType") }
             .map { unsafeBitCast($0, to: CopyPowerSourcesByType.self) }
         if copyPowerSourcesByType == nil {

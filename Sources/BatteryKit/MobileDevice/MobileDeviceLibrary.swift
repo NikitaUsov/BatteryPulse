@@ -119,7 +119,9 @@ struct MobileDeviceLibrary: @unchecked Sendable {
         var found: (handle: UnsafeMutableRawPointer, path: String)?
         var errors: [String] = []
         for path in paths {
-            if let handle = dlopen(path, RTLD_NOW) {
+            // Local: its symbols don't join the global namespace. First: lookups through the
+            // handle search this image only; a function that leaves it shows up as missing.
+            if let handle = dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_FIRST) {
                 found = (handle, path)
                 break
             }

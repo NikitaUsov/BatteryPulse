@@ -467,5 +467,10 @@ extension LockedValue where Value == Int {
         let versions = MobileDeviceLibrary.paths.compactMap(MobileDeviceLibrary.version(ofFrameworkAt:))
         #expect(versions.contains { !$0.isEmpty })
     }
+
+    /// Every required function is found through the handle, which searches MobileDevice alone.
+    @Test func loads() {
+        #expect(throws: Never.self) { try MobileDeviceLibrary.shared.get() }
+    }
 }
 #endif
