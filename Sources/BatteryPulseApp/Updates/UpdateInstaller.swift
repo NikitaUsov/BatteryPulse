@@ -152,9 +152,13 @@ final class UpdateInstaller {
             if isQuitting { throw CancellationError() }
 
             phase = .installing
-            let previous = try await UpdateInstallSteps.replace(
-                target: bundleURL, image: image, identifier: identifier, release: release.version,
-                current: currentVersion)
+            // Once checked, the update goes in: nothing in the swap checks for cancellation, and
+            // the shield keeps it that way.
+            let previous = try await withTaskCancellationShield {
+                try await UpdateInstallSteps.replace(
+                    target: bundleURL, image: image, identifier: identifier, release: release.version,
+                    current: currentVersion)
+            }
             // The running process still uses the previous version's files; it goes at the next launch.
             UserDefaults.standard.set(previous.path, forKey: AppSettings.updateLeftoverKey)
             if !isQuitting { relaunch() }
