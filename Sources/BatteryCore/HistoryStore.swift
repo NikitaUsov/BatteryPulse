@@ -4,6 +4,9 @@ import Foundation
 /// - `samples/YYYY-MM-DD.jsonl`: minute samples, one file per UTC day, so a time zone change
 ///   can't mix days up. Old days are dropped by deleting their file; nothing is rewritten.
 /// - `days.jsonl`: one summary per local day, kept for good.
+///
+/// Past days' files never change, so each is decoded once per session and kept in memory; a file
+/// that grew (today's) is read on from where the last read ended.
 public actor HistoryStore {
     public let directory: URL
     private var samplesDirectory: URL { directory.appendingPathComponent("samples") }
@@ -24,6 +27,8 @@ public actor HistoryStore {
     /// One encoder for every line this store writes: sorted keys keep the files stable.
     private let encoder: JSONEncoder
     private let decoder = JSONDecoder()
+    /// The samples decoded from each day's file this session, by day.
+    private var decodedDays: [String: DecodedDay] = [:]
     /// What this store has done on disk, for the work-count tests.
     private(set) var activity = Activity()
 
@@ -35,6 +40,21 @@ public actor HistoryStore {
         var daysWrites = 0
         /// Looks for the legacy samples file.
         var legacyChecks = 0
+        /// Lines of day files handed to the decoder.
+        var decodedSampleLines = 0
+    }
+
+    /// A day file as far as this session has read it. The key is the day plus the file's size:
+    /// appends only ever add to a file, so the same size means the same lines.
+    private struct DecodedDay {
+        /// The bytes read so far.
+        var size: UInt64 = 0
+        /// Where the last complete line ends; a file that grew is read on from here.
+        var offset: UInt64 = 0
+        /// The samples of the complete lines, then of an unterminated last line if it decodes.
+        var samples: [HistorySample] = []
+        /// How many of `samples` come from complete lines.
+        var completeCount = 0
     }
 
     /// Capacities in mAh move by a few units every few minutes; a day's summary is saved at
@@ -102,7 +122,7 @@ public actor HistoryStore {
         let first = Self.fileDay(for: start)
         let last = end == .distantFuture ? "9999-12-31" : Self.fileDay(for: end)
         return try sampleDays().filter { $0 >= first && $0 <= last }
-            .flatMap { try readLines(HistorySample.self, from: sampleURL($0)) }
+            .flatMap { try samples(inDay: $0) }
             .filter { $0.time >= start && $0.time <= end }
             .sorted { $0.time < $1.time }
     }
@@ -136,7 +156,7 @@ public actor HistoryStore {
     private func latestSample() throws -> HistorySample? {
         let latestPlausibleDay = Self.fileDay(for: now().addingTimeInterval(24 * 60 * 60))
         for day in try sampleDays().reversed() where day <= latestPlausibleDay {
-            if let last = try readLines(HistorySample.self, from: sampleURL(day)).max(by: { $0.time < $1.time }) {
+            if let last = try samples(inDay: day).max(by: { $0.time < $1.time }) {
                 return last
             }
         }
@@ -147,10 +167,13 @@ public actor HistoryStore {
     /// ahead (which moves the sample's date and `now` together) can't push the real ones out.
     static let keptDayFiles = Int(HistoryPolicy.retention / (24 * 60 * 60)) + 1
 
-    /// Deletes the files of days before `day`, except the newest ``keptDayFiles``.
+    /// Deletes the files of days before `day`, except the newest ``keptDayFiles``, and forgets
+    /// their samples. It runs at each day rollover, so a day that comes back (a clock set back)
+    /// is read from its new file.
     private func prune(before day: String) throws {
         for old in try sampleDays().dropLast(Self.keptDayFiles) where old < day {
             try FileManager.default.removeItem(at: sampleURL(old))
+            decodedDays[old] = nil
         }
     }
 
@@ -166,6 +189,8 @@ public actor HistoryStore {
                 try writeLines(group.sorted { $0.time < $1.time }, to: sampleURL(day))
             }
             try FileManager.default.removeItem(at: legacySamplesURL)
+            // The split rewrote whole day files.
+            decodedDays = [:]
         }
         hasCheckedLegacySamples = true
     }
@@ -226,6 +251,7 @@ public actor HistoryStore {
         lastSample = nil
         hasLoadedLastSample = true
         prunedThrough = nil
+        decodedDays = [:]
         days = [:]
         writtenDays = [:]
     }
@@ -261,6 +287,49 @@ public actor HistoryStore {
             data.append(0x0A)
         }
         try data.write(to: url, options: .atomic)
+    }
+
+    /// The samples in a day's file, in file order, decoding only what this session hasn't. Like
+    /// ``readLines(_:from:)``, it skips lines that don't decode.
+    private func samples(inDay day: String) throws -> [HistorySample] {
+        let url = sampleURL(day)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            decodedDays[day] = nil
+            return []
+        }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        // Taken out while it changes, so its samples aren't copied, and left out if a read fails.
+        var decoded = decodedDays.removeValue(forKey: day) ?? DecodedDay()
+        let size = try handle.seekToEnd()
+        if size == decoded.size {
+            decodedDays[day] = decoded
+            return decoded.samples
+        }
+        // A smaller file was replaced, not appended to: it is read from the start.
+        if size < decoded.size { decoded = DecodedDay() }
+        // An unterminated last line is read again with whatever follows it.
+        decoded.samples.removeSubrange(decoded.completeCount...)
+        try handle.seek(toOffset: decoded.offset)
+        let data = try handle.readToEnd() ?? Data()
+        // The last piece follows the last newline: empty, or a line not yet ended.
+        let lines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
+        let rest = lines.last ?? Data()
+        for line in lines.dropLast() where !line.isEmpty {
+            decode(line, into: &decoded.samples)
+        }
+        decoded.completeCount = decoded.samples.count
+        if !rest.isEmpty { decode(rest, into: &decoded.samples) }
+        decoded.offset += UInt64(data.count - rest.count)
+        decoded.size = decoded.offset + UInt64(rest.count)
+        decodedDays[day] = decoded
+        return decoded.samples
+    }
+
+    /// Appends the sample on `line`, a slice of a file's data, if it decodes.
+    private func decode(_ line: Data, into samples: inout [HistorySample]) {
+        activity.decodedSampleLines += 1
+        if let sample = try? decoder.decode(HistorySample.self, from: line) { samples.append(sample) }
     }
 
     /// Reads a JSON Lines file, skipping lines that don't decode (a write cut short by a crash).
