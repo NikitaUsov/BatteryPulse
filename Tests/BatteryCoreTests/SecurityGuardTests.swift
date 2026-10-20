@@ -61,6 +61,13 @@ import Testing
                 pattern: words(#/\bIORegistryEntrySetCFPropert(?:y|ies)\b/#),
                 allowed: [:],
                 message: "the I/O Registry is only read"),
+            // SW-05: work leaves the caller's actor through `@concurrent` functions. The one
+            // detached task left is the installer's fire-and-forget cleanup of a previous copy.
+            Placement(
+                literals: ["detached"],
+                pattern: words(#/\bTask\s*\.\s*detached\b/#),
+                allowed: ["BatteryPulseApp/Updates/UpdateInstaller.swift": 1],
+                message: "Task.detached; offload with a @concurrent function"),
             Placement(
                 literals: ["Process", "NSTask", "posix_spawn", "execv"],
                 pattern: words(#/\bProcess\b|\bNSTask\b|\bposix_spawn\w*|\bexecv\w*\s*\(/#),
@@ -141,6 +148,16 @@ import Testing
         #expect(calls.map(\.name) == ["IOConnectCallStructMethod"])
         #expect(calls.first?.topLevelArguments.dropFirst().first == "Self.selector")
         #expect(code.contains(Self.words(#/\bstatic\s+let\s+selector\s*:\s*UInt32\s*=\s*2\b/#)))
+    }
+
+    /// SW-05: one detached task, the installer's leftover cleanup.
+    @Test func oneDetachedTask() {
+        let installer = "BatteryPulseApp/Updates/UpdateInstaller.swift"
+        let detached = "Task.detached(name: \"x\", priority: .utility) { work() }\n"
+        #expect(!flags(detached, path: installer))
+        #expect(flags(detached + detached, path: installer))
+        #expect(flags(detached, path: "BatteryPulseApp/Main/MainView.swift"))
+        #expect(!flags("Task(name: \"x\") { await work() }", path: "BatteryPulseApp/Main/MainView.swift"))
     }
 
     private static let somewhere = "BatteryKit/MacBatteryProvider.swift"
