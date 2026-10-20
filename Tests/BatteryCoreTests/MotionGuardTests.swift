@@ -310,7 +310,7 @@ import Testing
         let glass = "bar.glassEffect(.regular.interactive(), in: .capsule)"
         #expect(!flags(glass, path: "BatteryPulseApp/Main/DemoView.swift"))
         // Content is never glass: the cards' "Glass Cards" option is gone.
-        #expect(flags(glass, path: "BatteryPulseApp/Main/Components.swift"))
+        #expect(flags(glass, path: "BatteryPulseApp/Main/Components/Card.swift"))
         // The tile pickers mark their choice with an accent outline only.
         #expect(flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
         // The window's glass sheet: allowed, but never interactive (`windowBackgroundNeverAnimates`).
@@ -383,7 +383,7 @@ import Testing
             #expect(flags("content.tint( .white.opacity(0.9))", path: path))
         }
         #expect(!flags("content.tint(policy.tones.controlTintColor)", path: "BatteryPulseApp/App/WindowLook.swift"))
-        #expect(!flags("bolt.foregroundStyle(.white)", path: "BatteryPulseApp/Main/Components.swift"))
+        #expect(!flags("bolt.foregroundStyle(.white)", path: "BatteryPulseApp/Main/Components/BatteryGlyph.swift"))
     }
 
     @Test func windowLookGuardAllows() {
