@@ -429,6 +429,46 @@ Decisions that last beyond 0.6.1:
 - **Looks.** The tile pickers mark the choice with an accent outline; selection glass would
   return only with a pixel test. Clear dims at 0.65 in both appearances.
 
+#### Performance baseline (0.6.0 → 0.6.1)
+
+Before is `claude/baseline-0.6.0` (0.6.0 plus the instrumentation), after the release candidate,
+both built with Xcode 27.1 on the CI runner; the published 0.6.0 DMG was 3,670,713 B.
+
+| Size | 0.6.0 | 0.6.1 | Change |
+|---|---|---|---|
+| DMG | 3,699,952 B (UDZO) | 1,439,093 B (ULMO) | −61 % |
+| Installed app | 11,180 KB | 4,608 KB | −59 % |
+| App binary (`__text`) | 7,618,784 B (2,116,636 B) | 2,856,976 B (1,917,508 B) | −62 % (−9 %) |
+| Widget binary (`__text`) | 3,172,800 B (1,084,028 B) | 1,379,792 B (942,748 B) | −57 % (−13 %) |
+| Exports per binary | 4,195 | 1 (`_main`) | |
+| String tables (`.lproj`) | 410,328 B | 238,124 B | −42 % |
+| Build-machine paths in the binaries | 0 | 0 | |
+
+| Linux benchmark (release, median of three alternated runs) | 0.6.0 | 0.6.1 |
+|---|---|---|
+| History, 7 days, first load | 75 ms | 80 ms (unchanged within noise) |
+| History, 7 days, warm load | 77 ms | 2.5 ms |
+| History, 7 days, after today's file grows | — | 2.4 ms |
+| Raw Data sections | 3.8 ms | 2.6 ms |
+| Raw Data filter per keystroke (0.6.0's five-way match in the view; 0.6.1's prebuilt rows) | 7.6 ms | 2.4 ms |
+| Parse and report (B1, B6) | | no change beyond noise |
+
+| Code | 0.6.0 | 0.6.1 |
+|---|---|---|
+| Lines: BatteryCore / BatteryKit / app / widget / bpulse | 9,336 / 2,731 / 8,562 / 207 / 483 | 9,995 / 3,291 / 9,229 / 215 / 480 |
+| Lines: tests; `@Test` | 9,737; 539 | 12,519; 658 |
+| Compiler warnings; swift-format findings | 0; 0 | 0 (now a CI gate); 0 |
+| `@unchecked Sendable` | 9 | 4 |
+| `withObservationTracking` | 4 | 0 |
+| `Task.detached` | 4 | 1 |
+| `URLSession.shared` | 3 | 0 |
+| `try?` | 67 | 51 |
+| `@MainActor` in the app | 38 | 35 |
+| `Task.sleep` without a tolerance | 10 | 4 (one-shots) |
+
+Energy, the read path and launch on the MacBook Air M5 come from the release candidate's session
+and are added at release; what isn't measured there moves to the 0.6.2 session.
+
 ### Stage 1.7: 0.6.2 (next)
 
 Deferred from 0.6.1, each for the reason given:

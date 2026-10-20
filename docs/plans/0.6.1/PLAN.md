@@ -1955,3 +1955,17 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
 - **For F11:** the Launch at Login toggle and approval (AC-03); the menu bar toggles and label
   agree and the icon style survives a relaunch (CH-09); after `defaults delete` the app shows icon
   plus percentage.
+
+### D1, 2026-10-20
+
+- **Measured** (`$SP/d1/results.md` in the session's scratchpad; the numbers are in ROADMAP's
+  "Performance baseline"): every §4a anchor at `c9ea33c` matched; the RC has 0 warnings and 0
+  lint findings; 641 tests on Linux, 658 on macOS.
+- **§5 on Linux:** the bpulse golden diff (55 runs per binary) is empty for `ref`/`rc` and for
+  `shipped`/`rc` once the wall-clock `timestamp` and `exportedAt` fields are masked; the storage
+  round trip is byte-identical both ways (17 files, devices included); settings and identifiers
+  are 36/36 with an empty diff once `scripts/perf-sample.ndjson` (a sample log header whose
+  escaped quote matches the regex) is excluded; asset names unchanged, today's key listed, and the
+  published v0.6.0 DMG verifies against it.
+- **Ceilings:** `scripts/size-budget.json` at the RC plus about 5 %; exports stay at 1.
+- **Release notes:** drafted with three "TBD (M5)" energy markers; CB-06's check passes for 0.6.1.
