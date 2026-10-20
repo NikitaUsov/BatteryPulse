@@ -24,6 +24,10 @@ jobs:
     name: Build and publish DMG
     runs-on: xcode-27
     environment: release
+    env:
+      # The image's default is still Xcode 27.0; 27.1 (27A9275, the release build) is installed
+      # beside it. Use the newest release, never a beta.
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
     steps:
