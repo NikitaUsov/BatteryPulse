@@ -189,6 +189,7 @@ for product in BatteryPulse BatteryPulseWidget; do
     echo "error: $product.dSYM doesn't match the binary in the bundle" >&2
     exit 1
   fi
+  echo "$product.dSYM matches the binary in the bundle: UUID ${expected% }"
 done
 ditto -c -k "$DSYMS" "$BUILD_DIR/$NAME-dSYMs.zip"
 rm -rf "$DSYMS"
