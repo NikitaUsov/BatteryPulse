@@ -63,6 +63,13 @@ public struct BatteryFormatter: Sendable, Equatable {
         withUnit(number(Double(millivolts) / 1000, fractionDigits: fractionDigits), symbols.volts)
     }
 
+    /// Volts with only the decimals the value needs, at most two: `20000` mV → "20 V", `3300` →
+    /// "3.3 V", `3250` → "3.25 V". For USB power offers, which step in tens of millivolts.
+    public func compactVolts(millivolts: Int) -> String {
+        let digits = millivolts % 1000 == 0 ? 0 : millivolts % 100 == 0 ? 1 : 2
+        return volts(millivolts: millivolts, fractionDigits: digits)
+    }
+
     /// `6` → "6 mV", for small differences such as the spread between cells.
     public func millivolts(_ value: Int) -> String {
         withUnit(value.formatted(.number.locale(locale)), symbols.millivolts)

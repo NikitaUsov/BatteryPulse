@@ -48,6 +48,13 @@ import Testing
         #expect(plain(english.celsius(33.69, fractionDigits: 0)) == "34 °C")
     }
 
+    /// USB power offers: whole volts without decimals, otherwise only the decimals they need.
+    @Test(arguments: [(20000, "20 V", "20 V-ru"), (3300, "3.3 V", "3,3 V-ru"), (3250, "3.25 V", "3,25 V-ru")])
+    func compactVolts(millivolts: Int, english expected: String, russian expectedRussian: String) {
+        #expect(plain(english.compactVolts(millivolts: millivolts)) == expected)
+        #expect(plain(russian.compactVolts(millivolts: millivolts)) == expectedRussian)
+    }
+
     /// A plain value, so views can compare it: equal for the same locale and symbols only.
     @Test func equality() {
         #expect(BatteryFormatter(locale: Locale(identifier: "en_US")) == english)

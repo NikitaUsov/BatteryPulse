@@ -49,19 +49,19 @@ enum RawValueText {
     private static func powerDataObject(_ object: USBPowerDataObject, _ f: BatteryFormatter) -> String {
         switch object {
         case .fixed(let voltage, let current):
-            let volts = volts(voltage, f)
+            let volts = f.compactVolts(millivolts: voltage)
             let amps = f.amps(milliamps: current)
             return String(localized: "Fixed \(volts) × \(amps)")
         case .variable(let minVoltage, let maxVoltage, let current):
-            let range = "\(volts(minVoltage, f))–\(volts(maxVoltage, f))"
+            let range = "\(f.compactVolts(millivolts: minVoltage))–\(f.compactVolts(millivolts: maxVoltage))"
             let amps = f.amps(milliamps: current)
             return String(localized: "Variable \(range) × \(amps)")
         case .battery(let minVoltage, let maxVoltage, let power):
-            let range = "\(volts(minVoltage, f))–\(volts(maxVoltage, f))"
+            let range = "\(f.compactVolts(millivolts: minVoltage))–\(f.compactVolts(millivolts: maxVoltage))"
             let watts = f.watts(Double(power) / 1000, fractionDigits: 0)
             return String(localized: "Battery \(range), \(watts)")
         case .programmable(let minVoltage, let maxVoltage, let current):
-            let range = "\(volts(minVoltage, f))–\(volts(maxVoltage, f))"
+            let range = "\(f.compactVolts(millivolts: minVoltage))–\(f.compactVolts(millivolts: maxVoltage))"
             let amps = f.amps(milliamps: current)
             return String(localized: "PPS \(range) × \(amps)")
         case .otherAugmented(let raw):
@@ -83,12 +83,6 @@ enum RawValueText {
         case .calculating: String(localized: "Calculating…")
         case .none: String(localized: "None")
         }
-    }
-
-    /// Whole volts without decimals ("20 V"), otherwise as many as needed ("3.3 V").
-    private static func volts(_ millivolts: Int, _ f: BatteryFormatter) -> String {
-        let digits = millivolts % 1000 == 0 ? 0 : millivolts % 100 == 0 ? 1 : 2
-        return f.volts(millivolts: millivolts, fractionDigits: digits)
     }
 }
 #endif
