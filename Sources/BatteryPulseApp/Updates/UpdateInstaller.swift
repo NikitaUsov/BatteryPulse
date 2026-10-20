@@ -201,7 +201,7 @@ final class UpdateInstaller {
                 if let self, case .downloading = self.phase {
                     self.phase = .downloading(watcher.fraction(expectedSize: expectedSize))
                 }
-                try? await Task.sleep(for: .milliseconds(200))
+                try? await Task.sleep(for: .milliseconds(200), tolerance: .milliseconds(50))
             }
         }
         defer { progress.cancel() }

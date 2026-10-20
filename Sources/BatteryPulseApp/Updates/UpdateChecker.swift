@@ -66,11 +66,11 @@ final class UpdateChecker {
     func startAutomaticChecks() {
         guard schedule == nil, !isUnversioned else { return }
         schedule = Task(name: "UpdateChecker.schedule") { [weak self] in
-            // Let launch finish first.
-            try? await Task.sleep(for: .seconds(20))
+            // Let launch finish first. The tolerances let macOS coalesce these wake-ups with others.
+            try? await Task.sleep(for: .seconds(20), tolerance: .seconds(5))
             while !Task.isCancelled {
                 await self?.checkIfDue()
-                try? await Task.sleep(for: .seconds(6 * 60 * 60))
+                try? await Task.sleep(for: .seconds(6 * 60 * 60), tolerance: .seconds(30 * 60))
             }
         }
     }
