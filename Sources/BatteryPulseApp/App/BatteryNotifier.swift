@@ -3,7 +3,7 @@ import BatteryCore
 import BatteryKit
 import Foundation
 import Observation
-@preconcurrency import UserNotifications
+import UserNotifications
 
 /// Posts the battery notifications the user turned on in Settings → Notifications. It reacts to
 /// every new reading of the Mac's battery and every change of the accessories, so it needs no
