@@ -4,6 +4,16 @@ import Foundation
 
 /// Localized text for decoded raw values and glossary summaries in the Developer section.
 enum RawValueText {
+    /// The Developer table for `reading`'s redacted capture with every cell's text, built off the
+    /// caller's actor (`raw.rebuild`).
+    @concurrent
+    static func sections(for reading: BatteryReading) async -> [RawDisplaySection] {
+        Diagnostics.measure("raw.rebuild") {
+            RawDisplaySection.sections(
+                for: reading.redactedRawCapture, decoded: { string(for: $0) }, summary: summary)
+        }
+    }
+
     static func string(for decoded: DecodedRawValue, _ f: BatteryFormatter = .app) -> String {
         switch decoded {
         case .milliampHours(let value): f.milliampHours(value)

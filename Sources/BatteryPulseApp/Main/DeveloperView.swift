@@ -126,13 +126,7 @@ struct DeveloperView: View {
             allSections = []
             return
         }
-        let sections = await Task.detached(priority: .userInitiated) {
-            Diagnostics.measure("raw.rebuild") {
-                RawDisplaySection.sections(
-                    for: reading.redactedRawCapture, decoded: { RawValueText.string(for: $0) },
-                    summary: RawValueText.summary)
-            }
-        }.value
+        let sections = await RawValueText.sections(for: reading)
         // Identical readings leave the table alone. Assigned after an `await`, so outside any
         // animation, Demo Mode's included: hundreds of rows change with every reading and must
         // never animate.
