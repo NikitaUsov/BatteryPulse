@@ -31,9 +31,16 @@ let package = Package(
         .executable(name: "BatteryPulseWidget", targets: ["BatteryPulseWidget"]),
     ],
     targets: [
-        .target(name: "BatteryCore", swiftSettings: strict),
+        // The parsers of untrusted input (captures, device property lists, the release JSON) live
+        // here, so the compiler checks that none of it uses unsafe constructs.
+        .target(name: "BatteryCore", swiftSettings: strict + [.strictMemorySafety()]),
         .target(name: "BatteryKit", dependencies: ["BatteryCore"], swiftSettings: strict),
-        .executableTarget(name: "bpulse", dependencies: ["BatteryCore", "BatteryKit"], swiftSettings: strict),
+        // It reads capture files too; its two Foundation calls that take a pointer are marked.
+        .executableTarget(
+            name: "bpulse",
+            dependencies: ["BatteryCore", "BatteryKit"],
+            swiftSettings: strict + [.strictMemorySafety()]
+        ),
         .executableTarget(name: "BatteryPulseApp", dependencies: ["BatteryCore", "BatteryKit"], swiftSettings: strict),
         .executableTarget(
             name: "BatteryPulseWidget",

@@ -277,7 +277,8 @@ func exportHistory(_ kind: HistoryExportKind, _ options: Options) async -> Never
         ?? HistoryStore.defaultDirectory(bundleIdentifier: HistoryStore.appBundleIdentifier)
     // A file in its place has nothing to export either.
     var isDirectory: ObjCBool = false
-    guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue
+    guard unsafe FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
+        isDirectory.boolValue
     else {
         fail(
             "bpulse: no history at \(directory.path). BatteryPulse records it while it runs (Settings → Advanced → History).",
@@ -367,7 +368,7 @@ if let folder = options.recordFolder {
 func loadCapture(at path: String) -> PropertyDictionary {
     do {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
-        let root = try PropertyListSerialization.propertyList(from: data, format: nil)
+        let root = try unsafe PropertyListSerialization.propertyList(from: data, format: nil)
         guard let capture = PropertyValue.dictionary(fromAny: root) else {
             fail("bpulse: \(path) is not a property list dictionary.", code: 1)
         }
