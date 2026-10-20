@@ -209,16 +209,95 @@ if [ "$PROFILING" = 1 ]; then
 </plist>
 PLIST
   codesign --force --sign - --options runtime --entitlements "$PROFILING_ENTITLEMENTS" "$APP"
-  rm "$PROFILING_ENTITLEMENTS"
 else
   codesign --force --sign - --options runtime "$APP"
 fi
 codesign --verify --strict --deep "$APP"
-ENTITLEMENTS="$(codesign -d --entitlements - "$APPEX" 2>/dev/null)"
-if ! grep -F "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" >/dev/null; then
-  echo "error: the widget is not sandboxed" >&2
+
+# The signing posture, checked on every build so that a weaker one can't ship:
+# - both bundles run with the hardened runtime;
+# - neither is signed with get-task-allow, except the app of a profiling build;
+# - the app has no entitlements (a profiling build: get-task-allow alone), and the widget exactly
+#   the ones in its file, which include the sandbox;
+# - neither Info.plist has LSFileQuarantineEnabled (an in-app update would then need Open
+#   Anyway) or NSAppTransportSecurity (an exception to App Transport Security).
+# Entitlements are compared as XML plists that plutil has rewritten, so neither the key order nor
+# codesign's formatting matters. Every violation is listed before the build fails.
+POSTURE="$BUILD_DIR/posture"
+mkdir -p "$POSTURE"
+cat > "$POSTURE/none.entitlements" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>
+PLIST
+# normalize <plist> <name>: the plist as plutil writes it, in $POSTURE/<name>.plist.
+normalize() { plutil -convert xml1 -o "$POSTURE/$2.plist" "$1"; }
+# signed_entitlements <bundle> <name>: the bundle's entitlements, normalized; an empty dictionary
+# when it has none.
+signed_entitlements() {
+  if ! codesign -d --entitlements - --xml "$1" >"$POSTURE/$2.signed" 2>"$POSTURE/$2.log"; then
+    cat "$POSTURE/$2.log" >&2
+    echo "error: can't read the entitlements of $1" >&2
+    exit 1
+  fi
+  [ -s "$POSTURE/$2.signed" ] || cp "$POSTURE/none.entitlements" "$POSTURE/$2.signed"
+  normalize "$POSTURE/$2.signed" "$2"
+}
+signed_entitlements "$APP" app
+signed_entitlements "$APPEX" widget
+normalize Resources/BatteryPulseWidget.entitlements widget-expected
+if [ "$PROFILING" = 1 ]; then
+  normalize "$PROFILING_ENTITLEMENTS" app-expected
+  rm "$PROFILING_ENTITLEMENTS"
+else
+  normalize "$POSTURE/none.entitlements" app-expected
+fi
+violations=0
+violation() {
+  echo "error: $1" >&2
+  violations=$((violations + 1))
+}
+for bundle in "$APP" "$APPEX"; do
+  # The code directory's flags, for example flags=0x10002(adhoc,runtime).
+  details="$(codesign -dv "$bundle" 2>&1)"
+  grep -Eq 'flags=0x[0-9a-fA-F]+\([^)]*runtime' <<<"$details" || violation "$bundle lacks the hardened runtime"
+done
+if grep -F "com.apple.security.get-task-allow" "$POSTURE/widget.plist" >/dev/null; then
+  violation "the widget is signed with get-task-allow"
+fi
+if [ "$PROFILING" = 0 ] && grep -F "com.apple.security.get-task-allow" "$POSTURE/app.plist" >/dev/null; then
+  violation "the app is signed with get-task-allow, which only a profiling build may have"
+fi
+if ! cmp -s "$POSTURE/app-expected.plist" "$POSTURE/app.plist"; then
+  if [ "$PROFILING" = 1 ]; then
+    violation "the app's entitlements must be get-task-allow alone (expected < > signed):"
+  else
+    violation "the app must have no entitlements (expected < > signed):"
+  fi
+  diff "$POSTURE/app-expected.plist" "$POSTURE/app.plist" >&2 || true
+fi
+if ! cmp -s "$POSTURE/widget-expected.plist" "$POSTURE/widget.plist"; then
+  violation "the widget's entitlements differ from Resources/BatteryPulseWidget.entitlements (file < > signed):"
+  diff "$POSTURE/widget-expected.plist" "$POSTURE/widget.plist" >&2 || true
+fi
+if ! grep -F "com.apple.security.app-sandbox" "$POSTURE/widget.plist" >/dev/null; then
+  violation "the widget is not sandboxed"
+fi
+for plist in "$APP/Contents/Info.plist" "$APPEX/Contents/Info.plist"; do
+  for key in LSFileQuarantineEnabled NSAppTransportSecurity; do
+    if plutil -extract "$key" xml1 -o - "$plist" >/dev/null 2>&1; then
+      violation "$plist must not contain $key"
+    fi
+  done
+done
+rm -rf "$POSTURE"
+if [ "$violations" -gt 0 ]; then
+  echo "error: the signing posture is wrong (violations: $violations)" >&2
   exit 1
 fi
+echo "Signing posture: hardened runtime, the expected entitlements, no quarantine or ATS keys"
 
 # Drag-to-install DMG: the app next to a link to /Applications. It is ULMO (LZMA), the smallest
 # compressed format hdiutil makes, which macOS 10.15 and later attach; every BatteryPulse updater
