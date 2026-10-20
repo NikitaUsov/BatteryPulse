@@ -127,18 +127,52 @@ PLIST
 plutil -lint "$APPEX/Contents/Info.plist" >/dev/null
 
 # Both halves of the extension entry point must be there: linked to start in _NSExtensionMain,
-# and the WidgetBundle kept in the binary by @main. Output is captured first so an early grep
-# exit can't fail the pipeline.
-SYMBOLS="$(nm -m "$WIDGET")"
+# and the WidgetBundle kept in the binary by @main. They read the unstripped binary in $BIN_PATH:
+# the bundle copy loses these symbols below. Output is captured first so an early grep exit
+# can't fail the pipeline.
+SYMBOLS="$(nm -m "$BIN_PATH/BatteryPulseWidget")"
 if ! grep -F "_NSExtensionMain" <<<"$SYMBOLS" >/dev/null; then
   echo "error: the widget is not linked through _NSExtensionMain" >&2
   exit 1
 fi
-DEMANGLED="$(nm "$WIDGET" | xcrun swift-demangle)"
+DEMANGLED="$(nm "$BIN_PATH/BatteryPulseWidget" | xcrun swift-demangle)"
 if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null; then
   echo "error: the WidgetBundle is missing from the widget binary" >&2
   exit 1
 fi
+
+# Ship stripped executables: the symbol table and the debug map serve debugging and crash
+# symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
+# them, tied to each binary by its UUID, and go into $NAME-dSYMs.zip (a CI artifact and a release
+# asset). A profiling build keeps its symbols for Instruments and the memory tools.
+DSYMS="$BUILD_DIR/dSYMs"
+mkdir -p "$DSYMS"
+uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
+for product in BatteryPulse BatteryPulseWidget; do
+  # Swift Build writes a dSYM next to each release product; dsymutil makes one if that is missing
+  # or belongs to an older link.
+  if [ -d "$BIN_PATH/$product.dSYM" ] && [ "$(uuids "$BIN_PATH/$product.dSYM")" = "$(uuids "$BIN_PATH/$product")" ]; then
+    cp -R "$BIN_PATH/$product.dSYM" "$DSYMS/"
+    echo "$product.dSYM: from $BIN_PATH"
+  else
+    xcrun dsymutil "$BIN_PATH/$product" -o "$DSYMS/$product.dSYM"
+    echo "$product.dSYM: made by dsymutil"
+  fi
+done
+if [ "$PROFILING" = 0 ]; then
+  xcrun strip "$APP/Contents/MacOS/BatteryPulse" "$WIDGET"
+fi
+for product in BatteryPulse BatteryPulseWidget; do
+  binary="$APP/Contents/MacOS/BatteryPulse"
+  [ "$product" = BatteryPulse ] || binary="$WIDGET"
+  expected="$(uuids "$binary")"
+  if [ -z "${expected// /}" ] || [ "$(uuids "$DSYMS/$product.dSYM")" != "$expected" ]; then
+    echo "error: $product.dSYM doesn't match the binary in the bundle" >&2
+    exit 1
+  fi
+done
+ditto -c -k "$DSYMS" "$BUILD_DIR/$NAME-dSYMs.zip"
+rm -rf "$DSYMS"
 
 # Inside out, and never --deep when signing: it would re-sign the widget without its
 # entitlements.

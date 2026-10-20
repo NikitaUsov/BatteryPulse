@@ -8,9 +8,9 @@
 # appends to $GITHUB_STEP_SUMMARY. With GH_TOKEN set it compares the DMG with the latest
 # release's, for information.
 #
-# It fails only when a row exceeds its ceiling in scripts/size-budget.json. The hygiene counts
-# are reported, not enforced, until the shipped binaries are stripped: today they still carry the
-# build machine's paths.
+# It fails when a row exceeds its ceiling in scripts/size-budget.json, or when a bundle hygiene
+# count isn't 0: the Swift runtime loaded from the bundle, a Frameworks folder, build products
+# such as a dSYM inside the bundle, or the build machine's paths in a shipped (stripped) binary.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -179,7 +179,7 @@ report="$(
   echo "| \`AppIcon.icns\` | $icns_bytes B |"
   echo
   [ -z "$latest_note" ] || { echo "$latest_note"; echo; }
-  echo "#### Bundle hygiene (counted, not yet enforced; each should be 0)"
+  echo "#### Bundle hygiene (each must be 0)"
   echo
   echo "| Check | Count |"
   echo "|---|---|"
@@ -207,7 +207,20 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   echo "$report" >>"$GITHUB_STEP_SUMMARY"
 fi
 
+failed=0
 if [ -n "$over_budget" ]; then
   echo "error: over the size budget:$over_budget" >&2
-  exit 1
+  failed=1
 fi
+hygiene="rpath_libswift $hygiene_rpath_libswift
+frameworks_folders $hygiene_frameworks
+build_products $hygiene_build_products
+app_build_machine_paths $hygiene_app_paths
+widget_build_machine_paths $hygiene_widget_paths"
+while read -r key value; do
+  if [ "$value" != 0 ]; then
+    echo "error: bundle hygiene: $key is $value, not 0" >&2
+    failed=1
+  fi
+done <<<"$hygiene"
+exit "$failed"

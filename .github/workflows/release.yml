@@ -111,8 +111,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         # The DMG and its signature keep stable names, so releases/latest/download/BatteryPulse.dmg
-        # always works and the app finds BatteryPulse.dmg.sig next to it.
+        # always works and the app finds BatteryPulse.dmg.sig next to it. BatteryPulse-dSYMs.zip
+        # holds the debug information stripped from the shipped binaries, for crash reports.
         run: |
-          gh release create "v$VERSION" build/BatteryPulse.dmg build/BatteryPulse.dmg.sig \
+          gh release create "v$VERSION" build/BatteryPulse.dmg build/BatteryPulse.dmg.sig build/BatteryPulse-dSYMs.zip \
             --target "$GITHUB_SHA" --title "BatteryPulse $VERSION" \
             --notes-file .github/release-notes.md --generate-notes
