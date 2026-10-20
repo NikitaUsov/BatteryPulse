@@ -96,7 +96,8 @@ jobs:
           fi
           rm build/tampered.dmg build/tampered.dmg.sig build/BatteryPulse.dmg.sig
       - name: Upload DMG
-        uses: actions/upload-artifact@v4
+        # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: BatteryPulse-${{ github.sha }}
           path: build/BatteryPulse.dmg
