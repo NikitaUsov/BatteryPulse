@@ -78,6 +78,18 @@ import Testing
                 pattern: words(#/\b(?:kill|killpg)\s*\(/#),
                 allowed: ["BatteryPulseApp/App/WidgetRefresher.swift": .max],
                 message: "a process is signalled only by the widget refresher"),
+            // SW-R6: the four types whose safety the compiler can't check, each saying why: a C
+            // function table, two that C callbacks reach, and a pair of immutable images.
+            Placement(
+                literals: ["@unchecked"],
+                pattern: words(#/@unchecked\s+Sendable\b/#),
+                allowed: [
+                    "BatteryKit/MobileDevice/MobileDeviceLibrary.swift": 1,
+                    "BatteryKit/MobileDevice/MobileDeviceTransport.swift": 1,
+                    "BatteryKit/MobileDevice/USBDeviceWatcher.swift": 1,
+                    "BatteryPulseApp/MenuBar/BatteryIconView.swift": 1,
+                ],
+                message: "@unchecked Sendable; use a checked Sendable (Mutex, a let) or an actor"),
         ]
     }
 
@@ -214,6 +226,18 @@ import Testing
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))
         #expect(flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+    }
+
+    /// SW-R6: four `@unchecked Sendable` types, one in each listed file.
+    @Test func fourUncheckedSendableTypes() {
+        let allowed = Self.placements.first { $0.message.hasPrefix("@unchecked") }?.allowed ?? [:]
+        #expect(allowed.values.reduce(0, +) == 4)
+        let watcher = "final class DownloadWatcher: @unchecked Sendable {}"
+        #expect(flags(watcher, path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        let sink = "final class MobileDeviceSink: @unchecked Sendable {}\n"
+        #expect(!flags(sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(flags(sink + sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(!flags("final class DownloadWatcher: Sendable {}"))
     }
 
     @Test func reportsLineNumbers() {
