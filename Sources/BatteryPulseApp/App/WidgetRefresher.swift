@@ -12,24 +12,27 @@ import WidgetKit
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private var policy = WidgetReloadPolicy()
+    private var observation: Task<Void, Never>?
 
     init(monitor: BatteryMonitor) {
         self.monitor = monitor
     }
 
+    /// Evaluates every change of the monitor's snapshot. The snapshot at the start is no change,
+    /// so a launch doesn't reload the widget.
     func start() {
-        observe()
-    }
-
-    private func observe() {
-        withObservationTracking {
-            _ = monitor.snapshot
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluate()
-                self?.observe()
+        guard observation == nil else { return }
+        observation = Task(name: "WidgetRefresher.observation") { [weak self, monitor] in
+            for await _ in Observations({ monitor.snapshot }).dropFirst() {
+                guard let self else { return }
+                self.evaluate()
             }
         }
+    }
+
+    func stop() {
+        observation?.cancel()
+        observation = nil
     }
 
     /// Ends the widget extension left running by the previous version. After the app is replaced
