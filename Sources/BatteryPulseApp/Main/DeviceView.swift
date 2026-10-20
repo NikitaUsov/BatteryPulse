@@ -91,10 +91,10 @@ struct DeviceView: View {
         }
         // Reads every minute while the page can be seen. Hiding clears only this device: the
         // page switched away from disappears after the new one appeared.
-        .task(id: motion.isVisible) {
+        .onChange(of: motion.isVisible, initial: true) { _, isVisible in
             guard !isDemo else { return }
-            devices.setPageVisible(entry.id, motion.isVisible)
-            if motion.isVisible { devices.listIfStale() }
+            devices.setPageVisible(entry.id, isVisible)
+            if isVisible { devices.listIfStale() }
         }
         .onDisappear {
             if !isDemo { devices.setPageVisible(entry.id, false) }

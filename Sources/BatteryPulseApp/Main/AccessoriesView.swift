@@ -158,10 +158,7 @@ private struct RefreshWhenShown: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onAppear {
-                if motion.isVisible { monitor.refresh() }
-            }
-            .onChange(of: motion.isVisible) { _, isVisible in
+            .onChange(of: motion.isVisible, initial: true) { _, isVisible in
                 if isVisible { monitor.refresh() }
             }
     }
