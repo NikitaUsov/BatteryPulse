@@ -231,14 +231,15 @@ mkdir -p "$STAGING"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 # hdiutil occasionally fails with "Resource busy" right after the files were written
-# (seen on hosted CI runners), so flush and retry.
+# (seen on hosted CI runners), so flush and retry. The conversion reads an image hdiutil has just
+# written, so it is retried with the creation.
 sync
 for attempt in 1 2 3 4 5; do
-  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDRW "$READ_WRITE" && break
+  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDRW "$READ_WRITE" \
+    && hdiutil convert -quiet "$READ_WRITE" -format ULMO -ov -o "$DMG" && break
   [ "$attempt" -eq 5 ] && exit 1
   sleep 5
 done
-hdiutil convert -quiet "$READ_WRITE" -format ULMO -ov -o "$DMG"
 rm -rf "$STAGING" "$READ_WRITE"
 
 echo "Built $APP and $DMG ($VERSION, build $BUILD_NUMBER)"
