@@ -34,8 +34,16 @@ struct BatteryEntry: TimelineEntry {
 }
 
 struct BatteryTimelineProvider: TimelineProvider {
+    /// A generic battery in the real layout, which WidgetKit draws redacted while the widget
+    /// loads. A Mac without a battery still gets "No battery information" from `getTimeline`.
     func placeholder(in context: Context) -> BatteryEntry {
-        BatteryEntry(date: .now, snapshot: nil)
+        BatteryEntry(date: .now, snapshot: Self.sample)
+    }
+
+    private static var sample: BatterySnapshot {
+        BatterySnapshot(
+            timestamp: .now, chargePercent: 80, chargeState: .discharging, timeToEmptyMinutes: 300,
+            fullChargeCapacityMAh: 4_500, designCapacityMAh: 4_500, cycleCount: 100, temperatureCelsius: 30)
     }
 
     func getSnapshot(in context: Context, completion: @escaping @Sendable (BatteryEntry) -> Void) {
