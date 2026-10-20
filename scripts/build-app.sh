@@ -34,8 +34,16 @@ esac
 APP="$BUILD_DIR/$NAME.app"
 DMG="$BUILD_DIR/$NAME.dmg"
 
-swift build -c release --product BatteryPulse
-swift build -c release --product BatteryPulseWidget
+# The shipped binaries' release flags, on these two command lines only: swift test and CI's bpulse
+# build don't get them, and Package.swift holds only the language policy.
+# - Export only _main. An executable without plug-ins that link back to it needs no exported
+#   symbols, and with an export list every other global is private to the binary, so -dead_strip
+#   (on SwiftPM's link line) drops the public code of BatteryCore and BatteryKit that the binary
+#   never calls. The widget keeps _main too, though it starts in _NSExtensionMain: it costs
+#   nothing.
+RELEASE_FLAGS=(-Xlinker -exported_symbol -Xlinker _main)
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse
+swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 
