@@ -6,28 +6,20 @@ import SwiftUI
 /// What the menu bar item shows and how its battery icon looks.
 struct MenuBarSettings: View {
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
-    // The defaults of MenuBarContent: the icon and the charge.
-    @AppStorage(AppSettings.menuBarShowsIconKey) private var showsIcon = true
-    @AppStorage(AppSettings.menuBarShowsChargeKey) private var showsCharge = true
-    @AppStorage(AppSettings.menuBarShowsPowerKey) private var showsPower = false
-    @AppStorage(AppSettings.menuBarShowsTemperatureKey) private var showsTemperature = false
-    @AppStorage(AppSettings.menuBarIconStyleKey) private var iconStyle = MenuBarIconStyle.default
+    private var choices = MenuBarChoices()
 
-    private var content: MenuBarContent {
-        MenuBarContent(
-            showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
-    }
+    private var content: MenuBarContent { choices.content }
 
     var body: some View {
         Section {
             // The last item that is on can't be turned off: the status item would be empty.
-            Toggle("Battery icon", isOn: $showsIcon)
+            Toggle("Battery icon", isOn: choices.$showsIcon)
                 .disabled(content.isOnlyItem(.icon))
-            Toggle("Percentage", isOn: $showsCharge)
+            Toggle("Percentage", isOn: choices.$showsCharge)
                 .disabled(content.isOnlyItem(.charge))
-            Toggle("Battery power", isOn: $showsPower)
+            Toggle("Battery power", isOn: choices.$showsPower)
                 .disabled(content.isOnlyItem(.power))
-            Toggle("Temperature", isOn: $showsTemperature)
+            Toggle("Temperature", isOn: choices.$showsTemperature)
                 .disabled(content.isOnlyItem(.temperature))
         } header: {
             Text("Show")
@@ -41,7 +33,9 @@ struct MenuBarSettings: View {
         .disabled(!showInMenuBar)
 
         Section {
-            PreviewTilePicker(selection: $iconStyle, values: MenuBarIconStyle.allCases, title: \.title) { style in
+            PreviewTilePicker(
+                selection: choices.$iconStyle, values: MenuBarIconStyle.allCases, title: \.title
+            ) { style in
                 MenuBarIconPreview(style: style, magnification: PreviewTile.iconMagnification)
             }
         } header: {

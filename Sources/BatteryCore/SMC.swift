@@ -428,8 +428,6 @@ public struct SMCReadPolicy: Sendable, Equatable {
         self.otherKeysInterval = otherKeysInterval
     }
 
-    /// Every key on every read: the default.
-    public static let everyRead = SMCReadPolicy()
     /// The app's: the other keys at most once a minute, and on every read while a page that shows
     /// them (Power, Raw Data) is on screen.
     public static let everyMinute = SMCReadPolicy(otherKeysInterval: .seconds(60))

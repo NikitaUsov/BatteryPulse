@@ -58,16 +58,7 @@ public enum IDeviceReport {
         if !b.cellVoltagesMV.isEmpty {
             add("Cells", b.cellVoltagesMV.map(String.init).joined(separator: " / ") + " mV")
         }
-        if let adapter = b.adapter {
-            var parts: [String] = []
-            if let watts = adapter.watts { parts.append("\(watts) W") }
-            if let name = adapter.name ?? adapter.adapterDescription { parts.append(name) }
-            if let voltage = adapter.voltageMV, let current = adapter.currentMA {
-                parts.append("\(fixed(Double(voltage) / 1000, 1)) V × \(fixed(Double(current) / 1000, 2)) A")
-            }
-            if adapter.isWireless == true { parts.append("wireless") }
-            add("Adapter", parts.isEmpty ? "connected" : parts.joined(separator: " · "))
-        }
+        add("Adapter", b.adapter.map(BatteryReport.adapterSummary))
         add("Source", b.source.map { "\($0) entry, diagnostics relay" })
         return lines
     }
@@ -78,12 +69,7 @@ public enum IDeviceReport {
     }
 
     public static func text(for capture: IDeviceCapture) -> String {
-        let lines = lines(for: capture)
-        let width = lines.map(\.label.count).max() ?? 0
-        return
-            lines
-            .map { $0.label.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.value }
-            .joined(separator: "\n")
+        BatteryReport.text(lines(for: capture))
     }
 
     /// "iPhone18,2 · iOS 27.0.1 (24A350) · USB · ID …801C"; the owner's device name is left out.

@@ -3,7 +3,8 @@ import Foundation
 /// One point-in-time reading of the battery and power state.
 ///
 /// Every field is optional: macOS exposes far more than iOS, and the set of IORegistry keys
-/// changes between macOS releases (macOS 27 dropped battery temperature and cell voltages). Units are encoded in property names
+/// changes between macOS releases (macOS 27 moved the battery temperature and cell voltages to
+/// the child entries below `AppleSmartBattery`). Units are encoded in property names
 /// (`MAh` = milliamp-hours, `MV` = millivolts, `MA` = milliamps, `MW` = milliwatts).
 public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var timestamp: Date
@@ -208,11 +209,6 @@ public struct PowerAdapter: Sendable, Equatable, Codable {
         self.isWireless = isWireless
         self.profiles = profiles
         self.activeProfileIndex = activeProfileIndex
-    }
-
-    /// The negotiated USB-PD profile, if known.
-    public var activeProfile: PowerProfile? {
-        profiles.first { $0.index == activeProfileIndex }
     }
 }
 

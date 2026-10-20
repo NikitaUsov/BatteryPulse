@@ -80,11 +80,9 @@ public enum BatteryPresentation {
 }
 
 /// One flattened raw IORegistry value, e.g. `AppleSmartBattery.BatteryData.DesignCapacity`.
-public struct RawEntry: Sendable, Equatable, Identifiable {
+public struct RawEntry: Sendable, Equatable {
     public var path: String
     public var property: PropertyValue
-    public var id: String { path }
-    public var value: String { property.description }
 
     public init(path: String, property: PropertyValue) {
         self.path = path

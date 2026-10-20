@@ -283,7 +283,6 @@ struct SMCTests {
 
     @Test func policyIsOffByDefault() {
         let policy = SMCReadPolicy()
-        #expect(policy == .everyRead)
         #expect(policy.otherKeysInterval == nil)
         for age in [nil, Duration.zero, .seconds(1), .seconds(59), .seconds(3600)] {
             #expect(policy.readsOtherKeys(age: age, isShown: false), "every read asks for every key")

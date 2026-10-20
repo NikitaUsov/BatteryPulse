@@ -61,6 +61,14 @@ import Testing
         #expect(MenuBarContent(showsCharge: false).isOnlyItem(.icon))
     }
 
+    /// The app's menu bar choices fall back to these for a key never written, so a new install
+    /// (or one after `defaults delete`) shows the icon and the percentage, with the modern icon.
+    @Test func defaultsAreTheIconAndThePercentage() {
+        #expect(MenuBarContent.default.items == [.icon, .charge])
+        #expect(MenuBarContent.default == MenuBarContent(items: [.icon, .charge]))
+        #expect(MenuBarIconStyle.default == .modern)
+    }
+
     @Test func itemsRoundTrip() {
         for mask in 0..<16 {
             let items = Set(MenuBarItem.allCases.enumerated().filter { mask & (1 << $0.offset) != 0 }.map(\.element))
@@ -103,7 +111,8 @@ import Testing
 
     @Test func iconStyles() {
         #expect(MenuBarIconStyle.allCases == [.symbol, .modern, .classic, .percentageInside, .ring])
-        #expect(MenuBarIconStyle.allCases.filter { !$0.isDrawn } == [.symbol])
+        // Every style but the SF Symbol is drawn with shapes.
+        #expect(MenuBarIconStyle.allCases.filter { BatteryIconLayout(style: $0, state: .sample) == nil } == [.symbol])
         #expect(MenuBarIconStyle(rawValue: "percentageInside") == .percentageInside)
         // The values of the icon style before 0.4 aren't styles any more.
         #expect(MenuBarIconStyle(rawValue: "standard") == nil)

@@ -25,11 +25,6 @@ extension BatterySnapshot {
         return min(100, Double(current) / Double(full) * 100)
     }
 
-    /// Capacity lost relative to design, in percent.
-    public var wearPercent: Double? {
-        healthPercent.map { max(0, 100 - $0) }
-    }
-
     /// Share of the rated cycle life already used (1.0 = rated cycles reached).
     public var cycleLifeUsed: Double? {
         guard let cycles = cycleCount, let rated = designCycleCount, rated > 0 else { return nil }

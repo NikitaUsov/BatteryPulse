@@ -10,11 +10,12 @@ import Testing
         WindowLookPolicy(setting: look, reduceTransparency: reduceTransparency, increaseContrast: increaseContrast)
     }
 
-    @Test func defaultIsStandard() {
-        #expect(WindowLook(stored: nil) == .standard)
-        #expect(WindowLook(stored: "bogus") == .standard)
-        #expect(WindowLook(stored: "") == .standard)
-        #expect(WindowLook(stored: "clear") == .clear)
+    /// The setting is an `@AppStorage` with the default `.standard`, which a missing or unknown
+    /// stored value reads as.
+    @Test func unknownStoredValuesAreNoStyle() {
+        #expect(WindowLook(rawValue: "bogus") == nil)
+        #expect(WindowLook(rawValue: "") == nil)
+        #expect(WindowLook(rawValue: "clear") == .clear)
     }
 
     /// Stored in the defaults: a rename after release would reset everyone's choice.
@@ -85,16 +86,17 @@ import Testing
             let policy = policy(look)
             #expect(policy.usesGlassSheet)
             #expect(policy.boldNumerals)
-            #expect(!policy.allowsTertiaryText)
-            #expect(policy.dividesGroupsWithHairlines)
+            // Tertiary text is too faint on the glass: it reads as secondary.
+            #expect(policy.tones.tone(.text(.tertiary)) == policy.tones.tone(.text(.secondary)))
+            #expect(policy.groupSurface == .none)
             #expect(policy.hidesFormBackground)
             #expect(policy.clearsFormRows)
         }
         let standard = policy(.standard)
         #expect(!standard.usesGlassSheet)
         #expect(!standard.boldNumerals)
-        #expect(standard.allowsTertiaryText)
-        #expect(!standard.dividesGroupsWithHairlines)
+        #expect(standard.tones.tone(.text(.tertiary)) != standard.tones.tone(.text(.secondary)))
+        #expect(standard.groupSurface == .card)
         #expect(!standard.hidesFormBackground)
         #expect(!standard.clearsFormRows)
         // Frosted only drops the form background: its sections stay lighter layers.
@@ -102,8 +104,8 @@ import Testing
         #expect(frosted.hidesFormBackground)
         #expect(!frosted.clearsFormRows)
         #expect(!frosted.boldNumerals)
-        #expect(frosted.allowsTertiaryText)
-        #expect(!frosted.dividesGroupsWithHairlines)
+        #expect(frosted.tones.tone(.text(.tertiary)) != frosted.tones.tone(.text(.secondary)))
+        #expect(frosted.groupSurface == .frostLayer)
     }
 
     @Test func onlyClearIsMonochromeAndDark() {

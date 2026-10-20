@@ -233,24 +233,23 @@ struct BatteryIconCanvas: View {
     }
 }
 
-/// An icon style as it looks in the menu bar, for Settings. Every style takes the same frame
-/// (``BatteryIconLayout/previewSize``), so the tiles match.
+/// An icon style as it looks in the menu bar, for Settings, at the sample state. Every style takes
+/// the same frame (``BatteryIconLayout/previewSize``), so the tiles match.
 struct MenuBarIconPreview: View {
     let style: MenuBarIconStyle
-    var state = BatteryIconState.sample
-    var magnification: CGFloat = 1.5
+    let magnification: CGFloat
 
     var body: some View {
         let size = BatteryIconLayout.previewSize
+        let state = BatteryIconState.sample
         Group {
             if let layout = BatteryIconLayout(style: style, state: state) {
                 BatteryIconCanvas(layout: layout, state: state, magnification: magnification)
             } else {
-                let snapshot = BatterySnapshot(
-                    timestamp: .now, chargePercent: state.level * 100,
-                    chargeState: state.glyph == .bolt ? .charging : .discharging)
+                let symbol = BatteryPresentation.symbolName(
+                    percent: state.level * 100, state: state.glyph == .bolt ? .charging : .discharging)
                 // Fitted to the bar styles' battery (the canvas less the bolt's overshoot).
-                Image(systemName: BatteryPresentation.symbolName(for: snapshot))
+                Image(systemName: symbol)
                     .resizable()
                     .scaledToFit()
                     .frame(width: CGFloat(size.width) * magnification, height: CGFloat(size.height - 2) * magnification)

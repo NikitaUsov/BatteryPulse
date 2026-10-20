@@ -1,7 +1,7 @@
 import Foundation
 
 /// Something worth a notification.
-public enum BatteryAlert: String, Sendable, CaseIterable, Codable {
+public enum BatteryAlert: String, Sendable, CaseIterable {
     /// Charging reached the user's limit, so the Mac can be unplugged.
     case chargeLimitReached
     /// On battery and down to the user's threshold.

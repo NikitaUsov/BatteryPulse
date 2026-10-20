@@ -9,10 +9,7 @@ import Testing
     static let iPhone17ProMax = "iphone17promax-ios27.0.1-usb"
 
     static func capture(_ name: String) throws -> IDeviceCapture {
-        let url = try #require(Bundle.module.url(forResource: name, withExtension: "plist", subdirectory: "Fixtures"))
-        let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
-        let raw = try #require(PropertyValue.dictionary(fromAny: root))
-        return try #require(IDeviceCapture(rawCapture: raw))
+        try #require(IDeviceCapture(rawCapture: try fixtureDictionary(name)))
     }
 
     @Test func iPhone17ProMaxOnIOS27() throws {
@@ -76,7 +73,7 @@ import Testing
             }
         }
         let fixture = try Self.capture(Self.iPhone17ProMax).rawCapture
-        guard case .dictionary(let raw) = withUUID(.dictionary(fixture)) else { return }
+        let raw = try #require(withUUID(.dictionary(fixture)).dictionaryValue)
         #expect(String(describing: raw).contains("112311953"))
         let capture = try #require(IDeviceCapture(rawCapture: raw))
         #expect(!String(describing: capture.redactedRawCapture).contains("112311953"))

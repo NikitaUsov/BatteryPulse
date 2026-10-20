@@ -661,8 +661,7 @@ public final class IDeviceMonitor {
     }
 
     private func recomputeEntries() {
-        let next = IDeviceRoster.entries(remembered: remembered, sessions: sessions, hidden: hidden, now: clock.now())
-        if next != entries { entries = next }
+        entries = IDeviceRoster.entries(remembered: remembered, sessions: sessions, hidden: hidden, now: clock.now())
     }
 
     @discardableResult
