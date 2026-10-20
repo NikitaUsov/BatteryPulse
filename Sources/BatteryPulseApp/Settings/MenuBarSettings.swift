@@ -33,8 +33,9 @@ struct MenuBarSettings: View {
         .disabled(!showInMenuBar)
 
         Section {
-            PreviewTilePicker(selection: choices.$iconStyle, values: MenuBarIconStyle.allCases, title: \.title) {
-                style in
+            PreviewTilePicker(
+                selection: choices.$iconStyle, values: MenuBarIconStyle.allCases, title: \.title
+            ) { style in
                 MenuBarIconPreview(style: style, magnification: PreviewTile.iconMagnification)
             }
         } header: {
