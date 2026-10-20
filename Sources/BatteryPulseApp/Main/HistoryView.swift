@@ -144,7 +144,10 @@ struct HistoryView: View {
         }
         .modifier(HistoryExporter(request: $exportRequest, target: exportTarget))
         .navigationSubtitle(subtitle)
-        .task(id: ReloadKey(period: period, source: effectiveSource, isVisible: motion.isVisible)) {
+        .task(
+            id: ReloadKey(period: period, source: effectiveSource, isVisible: motion.isVisible),
+            name: "HistoryView.reload"
+        ) {
             // Reload as new samples arrive, but not while the window can't be seen; it reloads
             // as soon as it can again.
             guard motion.isVisible else { return }
