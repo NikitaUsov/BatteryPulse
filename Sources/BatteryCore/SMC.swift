@@ -119,11 +119,23 @@ public enum SMCParamBlock {
     }
 }
 
-/// The `result` bytes the client tells apart, from Apple's PowerManagement source; any other byte
-/// is reported as it is.
+/// The `result` byte: success, error and key-not-found from Apple's PowerManagement source, the
+/// rest as the SMC protocol is commonly documented.
 public enum SMCResult: UInt8, Sendable {
     case success = 0x00
+    case error = 0x01
+    case commCollision = 0x80
+    case spuriousData = 0x81
+    case badCommand = 0x82
+    case badParameter = 0x83
     case keyNotFound = 0x84
+    case notReadable = 0x85
+    case notWritable = 0x86
+    case keySizeMismatch = 0x87
+    case framingError = 0x88
+    case badArgument = 0x89
+    case timeout = 0xB7
+    case keyIndexRange = 0xB8
 }
 
 public struct SMCKeyInfo: Sendable, Equatable {
@@ -415,6 +427,7 @@ public struct SMCReadPolicy: Sendable, Equatable {
     public init(otherKeysInterval: Duration? = nil) {
         self.otherKeysInterval = otherKeysInterval
     }
+
     /// The app's: the other keys at most once a minute, and on every read while a page that shows
     /// them (Power, Raw Data) is on screen.
     public static let everyMinute = SMCReadPolicy(otherKeysInterval: .seconds(60))
