@@ -126,7 +126,8 @@ final class UpdateInstaller {
         let leftover = UpdateInstallPolicy.leftoverToDelete(
             recorded: recorded, runningBundlePath: bundle.bundleURL.resolvingSymlinksInPath().path)
         let identifier = bundle.bundleIdentifier ?? ""
-        Task.detached(priority: .utility) {
+        // Fire and forget: launch doesn't wait for the deletion, and nothing needs its result.
+        Task.detached(name: "UpdateInstaller.removeLeftovers", priority: .utility) {
             UpdateInstallSteps.removeLeftovers(leftover: leftover, bundleIdentifier: identifier)
         }
     }
