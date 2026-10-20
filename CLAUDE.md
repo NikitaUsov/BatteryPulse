@@ -92,7 +92,8 @@ through the App Store. Reference hardware: MacBook Air M5.
 
 - `swift build`, `swift test` — run from the repo root.
 - `swift format lint --strict -r Sources Tests Package.swift scripts` — CI fails on any warning;
-  `swift format format -i -r Sources Tests Package.swift` fixes most of them (config: `.swift-format`).
+  `swift format format -i -r Sources Tests Package.swift scripts` fixes most of them (config:
+  `.swift-format`).
 - `swift run bpulse --input Tests/BatteryCoreTests/Fixtures/<name>.plist` — render a capture.
 
 The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift toolchain in cloud sessions.
@@ -108,9 +109,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
 - Linux Foundation quirk: NSNumber 0/1 casts to `Bool`, and `Int` in `Any` doesn't cast to
   `Int64` — go through `PropertyValue(any:)`, never cast raw values directly.
 - Tests use swift-testing (`import Testing`, `@Test`, `#expect`).
-- Language: every target builds with `Package.swift`'s `strict` settings and no flags of its
-  own. `MemberImportVisibility` is on, so a file imports every module whose members it uses
-  (`os` for a `Logger` call through `Diagnostics`, BatteryCore for a `MotionPolicy` member).
+- Language: every target builds with `Package.swift`'s `strict` settings and no compiler flags of
+  its own (the widget's two only shape the extension). `MemberImportVisibility` is on, so a file
+  imports every module whose members it uses (`os` for a `Logger` call through `Diagnostics`,
+  BatteryCore for a `MotionPolicy` member).
   BatteryCore and bpulse build with strict memory safety: an unavoidable unsafe call is marked
   `unsafe` with its reason (bpulse's three pointer and format calls, and `BatteryReport.cFormat`'s
   `String(format:)`, which only Darwin's Foundation marks, so its marker sits under
@@ -127,9 +129,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (one-shots go on `EnergyGuardTests`' list with their reason); no `Timer`, Combine or dispatch
   timer (`asyncAfter` only for the device transport's timeouts); `beginActivity` only around an
   install; widget reloads only in `WidgetRefresher`, through `WidgetReloadPolicy`.
-- The SwiftUI environment carries only rarely changing `Equatable` values (`\.motion`, `\.tones`,
-  `\.windowLook`); never `snapshot`, `reading`, dates, timers or geometry, which would re-render
-  every view that reads them.
+- The SwiftUI environment's values are rarely changing `Equatable` ones (`\.motion`, `\.tones`,
+  `\.windowLook`, `\.contentTreatment`), and its objects are `@Observable` services that views
+  read property by property; never `snapshot`, `reading`, dates, timers or geometry as a value,
+  which would re-render every view that reads it.
 - Logging: `Diagnostics` (an app and a BatteryKit twin), one `Logger` per category of the
   `io.github.nikitausov.BatteryPulse` subsystem: `monitor`, `smc`, `iokit`, `history`, `device`,
   `accessory`, `update`, `widget`, `perf`. A failure that loses data or a feature is logged, not
