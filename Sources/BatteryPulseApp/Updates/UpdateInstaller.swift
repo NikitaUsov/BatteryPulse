@@ -147,10 +147,7 @@ final class UpdateInstaller {
             try Task.checkCancellation()
 
             phase = .verifying
-            let digest = release.downloadDigest
-            try await Task.detached(priority: .userInitiated) {
-                try UpdateInstallSteps.verify(image: image, signature: signature, digest: digest)
-            }.value
+            try await UpdateInstallSteps.verify(image: image, signature: signature, digest: release.downloadDigest)
             try Task.checkCancellation()
             if isQuitting { throw CancellationError() }
 
@@ -360,8 +357,9 @@ enum UpdateInstallSteps {
     }
 
     /// Checks the downloaded DMG before anything mounts it: GitHub's digest when the release has
-    /// one, then the release signature, which must be valid.
-    static func verify(image: URL, signature: Data, digest: String?) throws(UpdateInstallError) {
+    /// one, then the release signature, which must be valid. `@concurrent`: hashing the DMG and
+    /// checking the signature is synchronous work that must not hold the caller's actor.
+    @concurrent static func verify(image: URL, signature: Data, digest: String?) async throws(UpdateInstallError) {
         let data: Data
         do {
             data = try Data(contentsOf: image, options: .mappedIfSafe)
