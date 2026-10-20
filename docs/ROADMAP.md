@@ -17,10 +17,9 @@ charging state.
   Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
   system's sidebar, toolbar and controls, plus custom glass only on controls that float over
-  content (the Demo Mode bar, the selection of the tile pickers in Settings). Content uses
-  standard fills and is never glass. Motion is short, plays once on a battery event or a user
-  action, turns into fades under Reduce Motion, and stops in windows that can't be seen and in
-  the menu bar label.
+  content (the Demo Mode bar). Content uses standard fills and is never glass. Motion is short,
+  plays once on a battery event or a user action, turns into fades under Reduce Motion, and
+  stops in windows that can't be seen and in the menu bar label.
 - **Window styles (0.6):** the main and compact windows offer Standard (default), Frosted,
   Translucent and Clear (Settings → General). Standard and Frosted follow the HIG: Frosted is a
   standard material as the app background. Translucent and Clear knowingly go against it (Liquid
