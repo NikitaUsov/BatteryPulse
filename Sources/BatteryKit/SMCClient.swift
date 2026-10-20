@@ -36,13 +36,8 @@ public final class SMCClient {
         0x1000_0003, kern_return_t(bitPattern: 0xE000_02CD), kern_return_t(bitPattern: 0xE000_02C0),
     ]
 
-    /// Closes the port when the client goes away, without touching main-actor state from deinit.
-    private final class Port {
-        var value: io_connect_t = 0
-        deinit { if value != 0 { IOServiceClose(value) } }
-    }
-
-    private let port = Port()
+    /// The open connection, or 0.
+    private var port: io_connect_t = 0
     private var keyInfo: [SMCFourCC: SMCKeyInfo] = [:]
     /// Keys this Mac doesn't have; they're never asked about again.
     private var missing: Set<SMCFourCC> = []
@@ -51,6 +46,11 @@ public final class SMCClient {
     private var isUnavailable = false
 
     public init() {}
+
+    // A plain deinit may read `port`: it is Sendable, and nothing else can touch the client by now.
+    deinit {
+        if port != 0 { IOServiceClose(port) }
+    }
 
     /// The listed keys this Mac has and lets us read. Missing keys are remembered, so after the
     /// first call this costs one round trip per present key.
@@ -143,11 +143,11 @@ public final class SMCClient {
         _ command: SMCParamBlock.Command, key: SMCFourCC = SMCFourCC(rawValue: 0), dataSize: UInt32 = 0,
         index: UInt32 = 0
     ) throws(Failure) -> SMCParamBlock.Reply {
-        if port.value == 0 { port.value = try Self.openConnection() }
+        if port == 0 { port = try Self.openConnection() }
         let input = SMCParamBlock.request(command, key: key, dataSize: dataSize, index: index)
         var output = [UInt8](repeating: 0, count: SMCParamBlock.size)
         var outputSize = SMCParamBlock.size
-        let connection = port.value
+        let connection = port
         let status = input.withUnsafeBytes { inBuffer in
             output.withUnsafeMutableBytes { outBuffer in
                 IOConnectCallStructMethod(
@@ -158,7 +158,7 @@ public final class SMCClient {
         guard status == kIOReturnSuccess else {
             if Self.connectionLost.contains(status) {
                 IOServiceClose(connection)
-                port.value = 0
+                port = 0
             }
             throw .call(status)
         }
