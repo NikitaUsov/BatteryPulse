@@ -33,12 +33,6 @@ import Testing
         return try #require(AccessoryReading(rawCapture: raw))
     }
 
-    private func fixture(_ name: String) throws -> PropertyDictionary {
-        let url = try #require(Bundle.module.url(forResource: name, withExtension: "plist", subdirectory: "Fixtures"))
-        let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
-        return try #require(PropertyValue.dictionary(fromAny: root))
-    }
-
     @Test func rawCaptureRoundTripsThroughAPropertyList() throws {
         let reading = try AccessoryFixture.synthetic.reading()
         let copy = try readBack(reading.rawCapture)
@@ -119,8 +113,8 @@ import Testing
     }
 
     @Test func rejectsOtherCaptures() throws {
-        #expect(AccessoryReading(rawCapture: try fixture(Fixture.m5OnBattery.rawValue)) == nil)
-        #expect(AccessoryReading(rawCapture: try fixture(RealIDeviceCaptureTests.iPhone17ProMax)) == nil)
+        #expect(AccessoryReading(rawCapture: try fixtureDictionary(Fixture.m5OnBattery.rawValue)) == nil)
+        #expect(AccessoryReading(rawCapture: try fixtureDictionary(RealIDeviceCaptureTests.iPhone17ProMax)) == nil)
         #expect(AccessoryReading(rawCapture: [AccessoryReading.CaptureKey.sources: .array([.string("x")])]) == nil)
         #expect(AccessoryReading(rawCapture: [AccessoryReading.CaptureKey.sources: .string("x")]) == nil)
         #expect(IDeviceCapture(rawCapture: try AccessoryFixture.synthetic.raw()) == nil)

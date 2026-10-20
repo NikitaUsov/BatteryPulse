@@ -24,15 +24,17 @@ enum Fixture: String, CaseIterable {
     static let timestamp = Date(timeIntervalSince1970: 1_800_000_000)
 
     func reading() throws -> BatteryReading {
-        let url = try #require(
-            Bundle.module.url(forResource: rawValue, withExtension: "plist", subdirectory: "Fixtures")
-        )
-        let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
-        let capture = try #require(PropertyValue.dictionary(fromAny: root))
-        return BatteryReading(rawCapture: capture, timestamp: Self.timestamp)
+        BatteryReading(rawCapture: try fixtureDictionary(rawValue), timestamp: Self.timestamp)
     }
 
     func snapshot() throws -> BatterySnapshot {
         try reading().snapshot
     }
+}
+
+/// The capture `Fixtures/<name>.plist`: a Mac's, a device's or the accessories'.
+func fixtureDictionary(_ name: String) throws -> PropertyDictionary {
+    let url = try #require(Bundle.module.url(forResource: name, withExtension: "plist", subdirectory: "Fixtures"))
+    let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
+    return try #require(PropertyValue.dictionary(fromAny: root))
 }
