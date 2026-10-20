@@ -5,8 +5,8 @@ import Foundation
 // SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps them to backgrounds and
 // modifiers. Code says "window look" because SwiftUI already has a `WindowStyle`.
 
-/// The window style setting, from the most opaque to the most transparent. The raw values are
-/// stored in the defaults, so they never change.
+/// The window style setting, from an opaque window to clear glass. The raw values are stored in
+/// the defaults, so they never change.
 public enum WindowLook: String, CaseIterable, Sendable {
     /// An opaque window with cards, as before 0.6.
     case standard
@@ -52,6 +52,15 @@ public struct WindowLookPolicy: Equatable, Sendable {
     /// Why ``effective`` differs from ``setting``.
     public enum Override: Sendable, Equatable {
         case reduceTransparency, increaseContrast
+    }
+
+    /// What the glass sheet's place behind the window draws.
+    public enum SheetSurface: Sendable, Equatable {
+        /// The clear glass with the sheet's tint, over the desktop it samples.
+        case glass(tint: Tint)
+        /// A still, plain fill and no glass, from the moment the window starts to minimize until
+        /// it has been restored.
+        case fill(Tint)
     }
 
     /// A colour-neutral tint: a grey level (0 black, 1 white) at an opacity.
@@ -170,16 +179,32 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 
     /// The glass sheet's tint for the system appearance: Translucent's dimming layer (black 45 %
-    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming (near-black 40 % in Light,
-    /// 32 % in Dark, where the glass is already smokier). Clear's content is white in both, so
-    /// a white wash would leave it unreadable over a bright desktop; the dimming keeps the glass
-    /// colourless and the desktop visible. `nil` without a sheet.
+    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming, near-black 65 % in both.
+    /// Clear's content is white in both appearances, so a white wash would leave it unreadable
+    /// over a bright desktop. 65 % is the smallest round value that keeps white text at 4.5:1 and
+    /// secondary text at 3:1 even over a white window behind it; the glass stays colourless and
+    /// the desktop visible. `nil` without a sheet.
     public func sheetTint(systemDark: Bool) -> Tint? {
         switch effective {
         case .standard, .frosted: nil
         case .translucent: Tint(white: systemDark ? 0 : 1, opacity: 0.45)
-        case .clear: Tint(white: 0.03, opacity: systemDark ? 0.32 : 0.4)
+        case .clear: Tint(white: 0.03, opacity: 0.65)
         }
+    }
+
+    /// What the glass sheet's place draws: the tinted glass, or, while the window minimizes, sits
+    /// in the Dock and is restored, a plain fill of the same tint at the tint's own opacity over
+    /// the still see-through window.
+    ///
+    /// The minimize animation and the Dock show the window's own layers, and the desktop that the
+    /// glass samples behind the window isn't one of them, so the sheet would turn near-black for
+    /// the whole animation. The fill is the sheet without its blur, and never opaque, so the
+    /// desktop still shows through it. The swap is not a motion event and never animates; the
+    /// glass comes back once the window is restored. `nil` without a sheet: Standard and Frosted
+    /// draw as always.
+    public func sheetSurface(systemDark: Bool, isMinimized: Bool) -> SheetSurface? {
+        guard let tint = sheetTint(systemDark: systemDark) else { return nil }
+        return isMinimized ? .fill(tint) : .glass(tint: tint)
     }
 
     /// Clear's treatment under each group of white content, for the system appearance: a tight

@@ -138,15 +138,15 @@ animate. The History switch and the Demo Mode bar use Liquid Glass; the cards st
 ### Window style
 
 **Window Style** in Settings → General chooses how the main window and the compact window look,
-from the most opaque to the most transparent. Each tile in the picker shows a little window in
-that style:
+from an opaque window to clear glass that shows the desktop sharp. Each tile in the picker
+shows a little window in that style:
 
 | Style | What it looks like |
 |-------|--------------------|
 | **Standard** | An opaque window with cards, as in earlier versions. The default. |
 | **Frosted** | The desktop shows through the window, blurred and frosted, like the widget gallery of macOS. The cards become faint, lighter layers; the Raw Data table stays opaque. The frost stays when the window is in the background. |
 | **Translucent** | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
-| **Clear** | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through almost sharp under a dark dimming that keeps the white content readable, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark, while the glass is a little lighter or smokier with the system appearance. |
+| **Clear** | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark. |
 
 The change applies at once to both windows. Settings, the menu bar popover, the welcome window
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
