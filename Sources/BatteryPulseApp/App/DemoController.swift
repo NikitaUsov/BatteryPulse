@@ -207,7 +207,7 @@ final class DemoController {
         case .animation: tick = Self.frame
         case .scene: tick = Self.sceneTick
         }
-        clock = Task { [weak self] in
+        clock = Task(name: "DemoController.clock") { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: tick)
                 guard !Task.isCancelled, let self else { return }

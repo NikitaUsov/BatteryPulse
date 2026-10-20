@@ -48,7 +48,7 @@ final class HistoryRecorder {
                 await self.recordNow(refreshing: false)
             }
         }
-        task = Task { [weak self] in
+        task = Task(name: "HistoryRecorder.tick") { [weak self] in
             while !Task.isCancelled {
                 await self?.recordNow(refreshing: true)
                 // The tolerance lets macOS coalesce this wake-up with others.
