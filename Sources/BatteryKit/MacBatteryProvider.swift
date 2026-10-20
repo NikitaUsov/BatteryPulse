@@ -2,7 +2,6 @@
 import Foundation
 import IOKit
 import IOKit.ps
-import notify
 import BatteryCore
 
 /// Reads the internal battery through IOKit.
@@ -86,21 +85,9 @@ public final class MacBatteryProvider: BatteryProvider {
         // Apple: "you must access the thermalState prior to registering for the notification."
         _ = ProcessInfo.processInfo.thermalState
         let removeObservers = observeNotifications(systemStateNotifications, handler: handler)
-
-        // notify(3) rather than IOPSNotificationCreateRunLoopSource: invalidating that run loop
-        // source never releases its CFMachPort, so every stop() would leak a port and a
-        // notifyd registration. notify_cancel tears down deterministically.
-        var tokens: [Int32] = []
-        for name in Self.powerSourceNotifications {
-            var token: Int32 = 0
-            let status = notify_register_dispatch(name, &token, .main) { _ in
-                MainActor.assumeIsolated { handler() }
-            }
-            if status == 0 { tokens.append(token) }
-        }
-        let registered = tokens
+        let cancelPowerSources = observeNotifyKeys(Self.powerSourceNotifications, handler: handler)
         return BatteryObservation {
-            for token in registered { notify_cancel(token) }
+            cancelPowerSources()
             removeObservers()
         }
     }
@@ -153,19 +140,11 @@ public final class MacBatteryProvider: BatteryProvider {
     }
 
     static func internalBatteryDescription() -> PropertyDictionary? {
-        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-            let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
-        else { return nil }
-
-        for source in sources {
-            guard
-                let description = IOPSGetPowerSourceDescription(info, source)?
-                    .takeUnretainedValue() as? [String: Any],
-                description["Type"] as? String == "InternalBattery"
-            else { continue }
-            return PropertyValue.dictionary(fromAny: description)
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return nil }
+        let battery = powerSourceDescriptions(in: info).first {
+            $0[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
         }
-        return nil
+        return PropertyValue.dictionary(fromAny: battery)
     }
 
     static func externalAdapterDetails() -> PropertyDictionary? {
