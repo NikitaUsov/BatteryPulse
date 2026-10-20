@@ -28,6 +28,17 @@ public enum BatteryPresentation {
     /// narrower than that noise would turn the arrow back and forth every few readings.
     public static let powerFlowDeadBandWatts = 0.15
 
+    /// The rated cycle count a cycle gauge measures against when the battery reports none.
+    public static let fallbackRatedCycles = 1000
+
+    /// The battery's own rated cycle count, or `nil` when it reports none or 0. A Mac can report
+    /// `DesignCycleCount9C = 0`, which would make a gauge's fraction infinite and its caption
+    /// read "of 0 rated".
+    public static func ratedCycles(_ design: Int?) -> Int? {
+        guard let design, design > 0 else { return nil }
+        return design
+    }
+
     /// Level colors used by the app: green above 20 % or while charging, then orange, then red.
     public enum LevelTier: Sendable, Equatable {
         case normal, low, critical

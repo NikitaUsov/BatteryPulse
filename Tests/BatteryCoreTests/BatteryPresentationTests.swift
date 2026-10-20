@@ -4,6 +4,16 @@ import Testing
 @testable import BatteryCore
 
 @Suite struct BatteryPresentationTests {
+    /// A battery that reports no rating, or 0 as a Mac can, gets none: the gauges then measure
+    /// against the fallback and the text rows show the plain count.
+    @Test func ratedCycles() {
+        #expect(BatteryPresentation.ratedCycles(nil) == nil)
+        #expect(BatteryPresentation.ratedCycles(0) == nil)
+        #expect(BatteryPresentation.ratedCycles(-1) == nil)
+        #expect(BatteryPresentation.ratedCycles(1000) == 1000)
+        #expect(BatteryPresentation.fallbackRatedCycles == 1000)
+    }
+
     @Test(
         arguments: [
             (95.0, ChargeState.discharging, "battery.100percent"),

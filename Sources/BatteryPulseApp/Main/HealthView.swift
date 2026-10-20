@@ -58,7 +58,10 @@ struct HealthView: View {
                         tint: tones.color(.level(BatteryPresentation.healthTier(for: snapshot))), diameter: 128))
             }
             if let cycles = snapshot.cycleCount {
-                Gauge(value: Double(cycles) / Double(snapshot.designCycleCount ?? 1000) * filled) {
+                let rated =
+                    BatteryPresentation.ratedCycles(snapshot.designCycleCount)
+                    ?? BatteryPresentation.fallbackRatedCycles
+                Gauge(value: Double(cycles) / Double(rated) * filled) {
                     Text("Cycle count")
                 } currentValueLabel: {
                     Text(cycles.formatted())
@@ -97,7 +100,8 @@ struct HealthView: View {
             if let cycles = snapshot.cycleCount {
                 ValueRow(
                     "Cycle count",
-                    snapshot.designCycleCount.map { Phrases.count(cycles, of: $0) } ?? cycles.formatted())
+                    BatteryPresentation.ratedCycles(snapshot.designCycleCount).map { Phrases.count(cycles, of: $0) }
+                        ?? cycles.formatted())
             }
             if let used = snapshot.cycleLifeUsed {
                 ValueRow("Rated cycle life used", formatter.percent(used * 100))

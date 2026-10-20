@@ -105,7 +105,9 @@ struct OverviewView: View {
                 )
             }
             if let cycles = snapshot.cycleCount {
-                let rated = snapshot.designCycleCount ?? 1000
+                let rated =
+                    BatteryPresentation.ratedCycles(snapshot.designCycleCount)
+                    ?? BatteryPresentation.fallbackRatedCycles
                 GaugeTile(
                     title: "Cycle count",
                     fraction: Double(cycles) / Double(rated),
