@@ -331,10 +331,11 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecke
     }
 }
 
-/// The installation steps that touch the disk; they run off the main actor.
+/// The installation steps that touch the disk; they run off the main actor. Each throws only an
+/// ``UpdateInstallError``; cancellation is checked between them, in the installer's `run`.
 enum UpdateInstallSteps {
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
-    static func prepareDownloadFolder(bundleIdentifier: String) throws -> URL {
+    static func prepareDownloadFolder(bundleIdentifier: String) throws(UpdateInstallError) -> URL {
         do {
             let folder = try downloadsFolder(bundleIdentifier: bundleIdentifier)
             try? FileManager.default.removeItem(at: folder)
@@ -360,7 +361,7 @@ enum UpdateInstallSteps {
 
     /// Checks the downloaded DMG before anything mounts it: GitHub's digest when the release has
     /// one, then the release signature, which must be valid.
-    static func verify(image: URL, signature: Data, digest: String?) throws {
+    static func verify(image: URL, signature: Data, digest: String?) throws(UpdateInstallError) {
         let data: Data
         do {
             data = try Data(contentsOf: image, options: .mappedIfSafe)
@@ -381,7 +382,7 @@ enum UpdateInstallSteps {
     /// previous version is now.
     static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
-    ) async throws -> URL {
+    ) async throws(UpdateInstallError) -> URL {
         let fileManager = FileManager.default
         let staging: URL
         do {
@@ -396,7 +397,7 @@ enum UpdateInstallSteps {
         }
         let staged = staging.appendingPathComponent(target.lastPathComponent, isDirectory: true)
 
-        try await withMountedImage(image) { mountPoint in
+        try await withMountedImage(image) { mountPoint throws(UpdateInstallError) in
             let source = mountPoint.appendingPathComponent("BatteryPulse.app", isDirectory: true)
             let values = try? source.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
             guard values?.isDirectory == true, values?.isSymbolicLink != true else {
@@ -423,7 +424,9 @@ enum UpdateInstallSteps {
     }
 
     /// Mounts `image` at a private mount point for `body`, and detaches it afterwards.
-    private static func withMountedImage(_ image: URL, _ body: (URL) throws -> Void) async throws {
+    private static func withMountedImage(
+        _ image: URL, _ body: (URL) throws(UpdateInstallError) -> Void
+    ) async throws(UpdateInstallError) {
         let mountPoint = FileManager.default.temporaryDirectory
             .appendingPathComponent("BatteryPulse-update-\(UUID().uuidString)", isDirectory: true)
         do {
@@ -498,8 +501,9 @@ enum UpdateInstallSteps {
     }
 
     /// The same app, exactly the release's version, newer than the running one.
-    private static func checkBundle(_ bundle: URL, identifier: String, release: AppVersion, current: AppVersion) throws
-    {
+    private static func checkBundle(
+        _ bundle: URL, identifier: String, release: AppVersion, current: AppVersion
+    ) throws(UpdateInstallError) {
         let info = infoDictionary(ofBundleAt: bundle)
         if let problem = UpdateInstallPolicy.checkStagedBundle(
             identifier: info?["CFBundleIdentifier"] as? String,
@@ -511,7 +515,7 @@ enum UpdateInstallSteps {
     }
 
     /// The ad-hoc signature seals every file of the app and its widget; any change breaks it.
-    private static func checkCodeSignature(_ bundle: URL) throws {
+    private static func checkCodeSignature(_ bundle: URL) throws(UpdateInstallError) {
         var code: SecStaticCode?
         guard SecStaticCodeCreateWithPath(bundle as CFURL, [], &code) == errSecSuccess, let code else {
             throw UpdateInstallError.invalidCodeSignature
