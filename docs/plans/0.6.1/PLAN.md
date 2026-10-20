@@ -1707,3 +1707,8 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
 - **K-02:** the swift-testing time limit reports "Time limit was exceeded: 60.000 seconds" on Linux,
   and the process then hangs until killed, so the job timeout is what ends a hang. The CI half was
   not run. Output of a killed `swift test` redirected to a file is lost; run it under a pty.
+- **Toolchain (2026-10-20):** Xcode 27.1 (27A9275, Swift 6.4) shipped on 2026-10-15. The
+  `xcode-27` image still defaults to 27.0 but has 27.1 at `/Applications/Xcode_27.1.app`, so both
+  workflows set `DEVELOPER_DIR` to it, the baseline branch too, so before and after use the same
+  compiler. The Linux container is Swift 6.4.1. `actions/checkout` has v6 (v6.0.3): WP-8b moves both
+  workflows to it, pinned by SHA with `persist-credentials: false` (SEC-06).
