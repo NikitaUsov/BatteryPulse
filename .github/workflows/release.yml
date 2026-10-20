@@ -24,6 +24,8 @@ jobs:
     name: Build and publish DMG
     runs-on: xcode-27
     environment: release
+    # A hung step would otherwise hold the runner for GitHub's 6-hour default.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - name: Check the update signing key
