@@ -355,14 +355,36 @@ private func reading(connected: Bool) -> BatteryReading {
         monitor.setLiveRefreshInterval(.seconds(15), for: "menuBar")
         monitor.setLiveRefreshInterval(.seconds(2), for: "popover")
         #expect(monitor.liveRefreshInterval == .seconds(2))
-        // Opening a view refreshes right away instead of after the first interval.
-        #expect(provider.readCount == 3)
+        // Opening a view refreshes right away instead of after the first interval; the second
+        // view uses that read.
+        #expect(provider.readCount == 2)
 
         monitor.setLiveRefreshInterval(nil, for: "popover")
         #expect(monitor.liveRefreshInterval == .seconds(15))
         monitor.setLiveRefreshInterval(nil, for: "menuBar")
         #expect(monitor.liveRefreshInterval == nil)
-        #expect(provider.readCount == 3)
+        #expect(provider.readCount == 2)
+        monitor.stop()
+    }
+
+    @Test func newRequestReusesARecentRead() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        // At launch the menu bar asks for polling right after the first read.
+        monitor.setLiveRefreshInterval(.seconds(10), for: "menuBar")
+        #expect(provider.readCount == 1)
+        #expect(monitor.hasRead(within: .seconds(1)))
+        clock.advance(by: .milliseconds(999))
+        monitor.setLiveRefreshInterval(.seconds(2), for: "popover")
+        #expect(provider.readCount == 1, "a read under a second old is fresh enough")
+
+        clock.advance(by: .milliseconds(1))
+        #expect(!monitor.hasRead(within: .seconds(1)))
+        monitor.setLiveRefreshInterval(.seconds(2), for: "compact")
+        #expect(provider.readCount == 2)
+        #expect(monitor.hasRead(within: .seconds(1)))
         monitor.stop()
     }
 

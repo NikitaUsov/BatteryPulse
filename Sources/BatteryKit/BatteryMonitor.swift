@@ -120,8 +120,10 @@ public final class BatteryMonitor {
     public func setLiveRefreshInterval(_ interval: Duration?, for client: String = "default") {
         let isNewRequest = interval != nil && liveRefreshRequests[client] == nil
         liveRefreshRequests[client] = interval
-        // A view that just appeared shouldn't wait a full interval for fresh values.
-        if isNewRequest, isRunning { refresh(trigger: .poll) }
+        // A view that just appeared shouldn't wait a full interval for fresh values, but a read
+        // under a second old is fresh enough: at launch, the menu bar's request would otherwise
+        // read again right after `start()`.
+        if isNewRequest, isRunning, !hasRead(within: .seconds(1)) { refresh(trigger: .poll) }
 
         let effective = liveRefreshRequests.values.min()
         guard effective != liveRefreshInterval else { return }
@@ -137,6 +139,13 @@ public final class BatteryMonitor {
         }
         #endif
         scheduleLiveRefresh()
+    }
+
+    /// Whether the battery was read less than `age` ago, on the monitor's clock: a caller that
+    /// would read again can use the current values instead.
+    public func hasRead(within age: Duration) -> Bool {
+        guard let lastReadAt else { return false }
+        return clock.now - lastReadAt < age
     }
 
     /// Reads the battery once the current burst of change notifications is over: the first of them
