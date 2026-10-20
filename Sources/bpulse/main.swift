@@ -57,7 +57,7 @@ enum OutputFormat {
     case text, json, raw, smc
 }
 
-struct Options {
+struct Options: Equatable {
     var format = OutputFormat.text
     var watchInterval: Double?
     var inputPath: String?

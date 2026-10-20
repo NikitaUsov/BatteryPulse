@@ -65,5 +65,7 @@ let package = Package(
             swiftSettings: strict
         ),
         .testTarget(name: "BatteryKitTests", dependencies: ["BatteryKit"], swiftSettings: strict),
+        // The option parser; the output forms are covered by rendering the fixtures (`--input`).
+        .testTarget(name: "bpulseTests", dependencies: ["bpulse", "BatteryCore"], swiftSettings: strict),
     ]
 )
