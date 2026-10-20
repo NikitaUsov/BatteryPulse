@@ -61,6 +61,14 @@ import Testing
         #expect(MenuBarContent(showsCharge: false).isOnlyItem(.icon))
     }
 
+    /// The app's menu bar choices fall back to these for a key never written, so a new install
+    /// (or one after `defaults delete`) shows the icon and the percentage, with the modern icon.
+    @Test func defaultsAreTheIconAndThePercentage() {
+        #expect(MenuBarContent.default.items == [.icon, .charge])
+        #expect(MenuBarContent.default == MenuBarContent(items: [.icon, .charge]))
+        #expect(MenuBarIconStyle.default == .modern)
+    }
+
     @Test func itemsRoundTrip() {
         for mask in 0..<16 {
             let items = Set(MenuBarItem.allCases.enumerated().filter { mask & (1 << $0.offset) != 0 }.map(\.element))
