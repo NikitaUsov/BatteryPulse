@@ -57,7 +57,7 @@ enum OutputFormat {
     case text, json, raw, smc
 }
 
-struct Options {
+struct Options: Equatable {
     var format = OutputFormat.text
     var watchInterval: Double?
     var inputPath: String?
@@ -277,7 +277,8 @@ func exportHistory(_ kind: HistoryExportKind, _ options: Options) async -> Never
         ?? HistoryStore.defaultDirectory(bundleIdentifier: HistoryStore.appBundleIdentifier)
     // A file in its place has nothing to export either.
     var isDirectory: ObjCBool = false
-    guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue
+    guard unsafe FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
+        isDirectory.boolValue
     else {
         fail(
             "bpulse: no history at \(directory.path). BatteryPulse records it while it runs (Settings → Advanced → History).",
@@ -323,7 +324,7 @@ func smcKeyList() -> String {
             key.description, info.type.description, String(info.size), "0x" + String(info.attributes, radix: 16),
         ]
         if readPrefixes.contains(where: key.description.hasPrefix), let value = try? smc.read(key) {
-            fields.append(value.payload.map { String(format: "%02x", $0) }.joined())
+            fields.append(value.payload.map { unsafe String(format: "%02x", $0) }.joined())
             fields += value.number.map { [String($0)] } ?? []
         }
         lines.append(fields.joined(separator: "  "))
@@ -367,7 +368,7 @@ if let folder = options.recordFolder {
 func loadCapture(at path: String) -> PropertyDictionary {
     do {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
-        let root = try PropertyListSerialization.propertyList(from: data, format: nil)
+        let root = try unsafe PropertyListSerialization.propertyList(from: data, format: nil)
         guard let capture = PropertyValue.dictionary(fromAny: root) else {
             fail("bpulse: \(path) is not a property list dictionary.", code: 1)
         }

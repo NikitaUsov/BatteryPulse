@@ -21,7 +21,7 @@ final class BatteryNotifier: NSObject {
     private var accessoryState: AccessoryAlertState
     /// The accessory threshold last seen, so only a change of it re-evaluates.
     private var lastAccessoryThreshold: Int?
-    private var defaultsObserver: NSObjectProtocol?
+    private var defaultsObserver: (any NSObjectProtocol)?
 
     init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
@@ -223,7 +223,7 @@ final class BatteryNotifier: NSObject {
     }
 }
 
-extension BatteryNotifier: UNUserNotificationCenterDelegate {
+extension BatteryNotifier: nonisolated UNUserNotificationCenterDelegate {
     /// Show alerts even while BatteryPulse is the active app, which it is whenever Settings or
     /// the popover is open, and keep them in Notification Center.
     nonisolated func userNotificationCenter(

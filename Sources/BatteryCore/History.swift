@@ -164,7 +164,13 @@ public struct HistoryDay: Sendable, Equatable, Codable {
     /// whatever calendar the user has chosen, so stored keys stay comparable for good.
     public static func key(for date: Date, calendar: Calendar = .current) -> String {
         let c = gregorian(in: calendar.timeZone).dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+        let fields = [(c.year ?? 0, 4), (c.month ?? 0, 2), (c.day ?? 0, 2)]
+        return fields.map { zeroPadded($0, width: $1) }.joined(separator: "-")
+    }
+
+    private static func zeroPadded(_ number: Int, width: Int) -> String {
+        let digits = String(number)
+        return String(repeating: "0", count: max(0, width - digits.count)) + digits
     }
 
     /// Noon of the day, for plotting.

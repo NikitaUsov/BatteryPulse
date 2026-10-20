@@ -43,7 +43,7 @@ public enum IDeviceReport {
         add("First use", b.firstUseDate.map(day))
         add("Condition", b.errorCondition)
         if let failure = b.permanentFailureStatus, failure != 0 {
-            add("Permanent failure", String(format: "0x%X", failure))
+            add("Permanent failure", BatteryReport.hex(failure))
         }
         add("Temperature", b.temperatureCelsius.map { "\(fixed($0, 1)) °C" })
         add("Voltage", b.voltageMV.map { "\(fixed(Double($0) / 1000, 2)) V" })

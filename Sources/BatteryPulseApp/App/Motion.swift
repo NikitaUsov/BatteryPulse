@@ -221,7 +221,7 @@ final class LowPowerMode {
     static let shared = LowPowerMode()
 
     private(set) var isEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-    @ObservationIgnored private var observer: NSObjectProtocol?
+    @ObservationIgnored private var observer: (any NSObjectProtocol)?
 
     private init() {
         // The app keeps one observer for its whole life.
