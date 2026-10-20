@@ -15,6 +15,9 @@ jobs:
     name: Linux · core tests
     runs-on: ubuntu-latest
     container: swift:6.4-noble
+    # A hung test would otherwise hold the runner for GitHub's 6-hour default; a run takes 3-5
+    # minutes.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - name: Lint
@@ -29,6 +32,8 @@ jobs:
     # macOS 27 + Xcode 27 image (preview label): the package targets macOS 27, so its tests
     # can't run on older hosts.
     runs-on: xcode-27
+    # The same for a hung test or smoke run.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - name: Toolchain
