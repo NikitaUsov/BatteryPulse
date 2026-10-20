@@ -96,7 +96,7 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   controls that float over content, each cluster inside one `GlassEffectContainer`, `.regular`
   variant. Never `glassEffect` on content (cards, tiles, charts, tables, readouts), never glass on
   glass. Custom glass appears only in `Main/DemoView.swift` (the floating demo bar) and
-  `App/WindowLook.swift`; the Settings tile pickers mark their choice with an accent outline. The one
+  `App/WindowLook.swift`; the Settings tile pickers use an accent outline. The one
   exception is the window style setting (Settings → General: Standard / Frosted / Translucent /
   Clear; code name `WindowLook`, never `WindowStyle`, which is SwiftUI's), decided by
   `WindowLookPolicy` in BatteryCore: Frosted is a standard material behind the window
