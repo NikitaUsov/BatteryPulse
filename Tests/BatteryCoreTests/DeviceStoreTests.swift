@@ -53,6 +53,18 @@ import Testing
         #expect(Self.files(in: directory).map(\.lastPathComponent) == ["key"], "no temporary file left behind")
     }
 
+    /// The folder the secret creates is 0700; the secret is 0600.
+    @Test func secretFolderIsCreatedWith0700() async throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        _ = try await Self.makeStore(directory).secret()
+        func mode(_ url: URL) throws -> Int? {
+            (try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? NSNumber)?.intValue
+        }
+        #expect(try mode(directory) == 0o700)
+        #expect(try mode(directory.appendingPathComponent("key")) == 0o600)
+    }
+
     @Test func secretReadErrorIsNotReplaced() async throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }

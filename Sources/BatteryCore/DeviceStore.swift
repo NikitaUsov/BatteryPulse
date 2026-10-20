@@ -61,15 +61,18 @@ public actor DeviceStore {
 
     /// Writes a new secret through a temporary file. The move never replaces an existing file,
     /// so a secret that appeared meanwhile wins; then `nil` tells the caller to read it.
+    ///
+    /// A folder it creates is 0700, so only this user can list or enter it; an existing folder
+    /// keeps its mode (`~/Library` is 0700 anyway).
     private func createSecret() throws -> Data? {
         // The default generator is the system's cryptographically secure one.
         let bytes = Data((0..<Self.secretLength).map { _ in UInt8.random(in: .min ... .max) })
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let temporary = directory.appendingPathComponent(".key-" + UUID().uuidString)
-        guard
-            FileManager.default.createFile(
-                atPath: temporary.path, contents: bytes, attributes: [.posixPermissions: 0o600])
-        else { throw CocoaError(.fileWriteUnknown) }
+        guard FileManager.default.createFile(atPath: temporary.path, contents: bytes) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
         defer { try? FileManager.default.removeItem(at: temporary) }
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: temporary.path)
         do {
