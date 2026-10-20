@@ -2,6 +2,10 @@ import BatteryCore
 import Foundation
 import Observation
 
+#if canImport(os)
+import os
+#endif
+
 /// Observable battery state for SwiftUI.
 ///
 /// Event-driven by default: it re-reads only when the OS posts a power change, which costs
@@ -122,6 +126,16 @@ public final class BatteryMonitor {
         let effective = liveRefreshRequests.values.min()
         guard effective != liveRefreshInterval else { return }
         liveRefreshInterval = effective
+        #if canImport(os)
+        // The clients are names from the code, such as "menuBar" and "popover".
+        let clients = liveRefreshRequests.keys.sorted().joined(separator: ", ")
+        if let effective {
+            Diagnostics.monitor.debug(
+                "Live refresh every \(effective.description, privacy: .public) for \(clients, privacy: .public)")
+        } else {
+            Diagnostics.monitor.debug("Live refresh off")
+        }
+        #endif
         scheduleLiveRefresh()
     }
 
@@ -149,12 +163,33 @@ public final class BatteryMonitor {
         let new = activeProvider.read()
         lastReadAt = clock.now
         let wasConnected = snapshot?.isExternalPowerConnected
-        if hasBattery != (new != nil) { hasBattery = new != nil }
+        if hasBattery != (new != nil) {
+            logBatteryChange(found: new != nil)
+            hasBattery = new != nil
+        }
         if !Self.isSameReading(new, reading) { reading = new }
         if !Self.isSameState(new?.snapshot, snapshot) { snapshot = new?.snapshot }
         if let wasConnected, let isConnected = new?.snapshot.isExternalPowerConnected, isConnected != wasConnected {
+            #if canImport(os)
+            let reads = powerChangeFollowUps.count
+            Diagnostics.monitor.debug("External power connected: \(isConnected); reading again \(reads) times")
+            #endif
             scheduleFollowUps()
         }
+    }
+
+    /// A read found a battery where the previous one found none, or the other way around.
+    private func logBatteryChange(found: Bool) {
+        #if canImport(os)
+        if found {
+            Diagnostics.monitor.info("Battery found")
+        } else if hasBattery == true, overrideProvider == nil {
+            // A battery doesn't go away: both the registry and the power source lookup failed.
+            Diagnostics.monitor.error("The battery read found no battery")
+        } else {
+            Diagnostics.monitor.info("No battery")
+        }
+        #endif
     }
 
     private func scheduleFollowUps() {
