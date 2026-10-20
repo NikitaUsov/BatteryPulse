@@ -61,6 +61,12 @@ import Testing
         #expect(battery["Blob"]?.description == "<000102>")
     }
 
+    /// Two lowercase digits a byte, leading zeros kept, as `%02x` prints them.
+    @Test func dataDescription() {
+        #expect(PropertyValue.data(Data([0x00, 0xAB, 0x0F])).description == "<00ab0f>")
+        #expect(PropertyValue.data(Data()).description == "<>")
+    }
+
     @Test func roundTripsThroughPropertyListSerialization() throws {
         let original: PropertyDictionary = [
             "Amperage": .int(-1024),

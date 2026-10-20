@@ -140,7 +140,8 @@ extension PropertyValue: CustomStringConvertible {
         case .int(let value): String(value)
         case .double(let value): String(value)
         case .string(let value): value
-        case .data(let value): "<\(value.map(Self.hexByte).joined())>"
+        // Lowercase, two digits a byte, as C's `%02x` prints them.
+        case .data(let value): "<" + UpdateIntegrity.hex(value) + ">"
         case .array(let values): "[" + values.map(\.description).joined(separator: ", ") + "]"
         case .dictionary(let values):
             "{"
@@ -148,11 +149,5 @@ extension PropertyValue: CustomStringConvertible {
                 .map { "\($0.key) = \($0.value)" }
                 .joined(separator: "; ") + "}"
         }
-    }
-
-    /// Two lowercase hex digits, as C's `%02x` prints a byte.
-    private static func hexByte(_ byte: UInt8) -> String {
-        let digits = String(byte, radix: 16)
-        return digits.count == 1 ? "0" + digits : digits
     }
 }
