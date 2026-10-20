@@ -118,6 +118,8 @@ final class UpdateChecker {
     private func check(userInitiated: Bool) async {
         // A check would replace the release being installed in the window.
         guard status != .checking, !installer.isBusy else { return }
+        let interval = Diagnostics.begin("update.check", trigger: userInitiated ? "user" : "automatic")
+        defer { interval.end() }
         installer.reset()
         status = .checking
         userIsWaiting = userIsWaiting || userInitiated

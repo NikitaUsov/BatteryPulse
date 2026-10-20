@@ -44,7 +44,10 @@ struct MenuBarLabel: View {
             transaction.animation = nil
             transaction.disablesAnimations = true
         }
-        .onAppear { WindowOpener.openWindow = openWindow }
+        .onAppear {
+            WindowOpener.openWindow = openWindow
+            Diagnostics.menuBarAppeared()
+        }
         .onChange(of: content.liveRefreshInterval, initial: true) { _, interval in
             // Power changes without OS notifications, so poll gently while it is shown.
             monitor.setLiveRefreshInterval(interval, for: "menuBar")
