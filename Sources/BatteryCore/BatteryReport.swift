@@ -11,28 +11,13 @@ public enum BatteryReport {
         public var value: String
     }
 
-    /// A titled group of lines, used by the app's Details window.
-    public struct Section: Sendable, Equatable {
-        public var title: String
-        public var lines: [Line]
-    }
-
     public static func lines(for s: BatterySnapshot) -> [Line] {
-        sections(for: s).flatMap(\.lines)
-    }
-
-    public static func sections(for s: BatterySnapshot) -> [Section] {
-        var sections: [Section] = []
         var lines: [Line] = []
         func add(_ label: String, _ value: String?) {
             if let value { lines.append(Line(label: label, value: value)) }
         }
-        func close(_ title: String) {
-            if !lines.isEmpty { sections.append(Section(title: title, lines: lines)) }
-            lines = []
-        }
 
-        // No serial number: this text is meant to be pasted into public bug reports.
+        // Charge. No serial number: this text is meant to be pasted into public bug reports.
         add("Battery", joined([s.deviceName, s.manufacturer]))
 
         if let percent = s.chargePercent {
@@ -54,8 +39,8 @@ public enum BatteryReport {
         if let watts = s.batteryPowerWatts, let voltage = s.voltageMV, let amperage = s.amperageMA {
             add("Battery power", "\(signed(watts, 1)) W  (\(fixed(Double(voltage) / 1000, 2)) V × \(amperage) mA)")
         }
-        close("Charge")
 
+        // Health.
         if let health = s.healthPercent, let ratio = s.capacityToDesignPercent, let design = s.designCapacityMAh {
             let full = s.nominalChargeCapacityMAh ?? s.fullChargeCapacityMAh ?? 0
             var value = "\(fixed(health, 1)) %  (\(full) of \(design) mAh design"
@@ -81,18 +66,9 @@ public enum BatteryReport {
             if let spread = s.cellVoltageSpreadMV { value += "  (spread \(spread) mV)" }
             add("Cells", value)
         }
-        close("Health")
 
-        if let adapter = s.adapter {
-            var parts: [String] = []
-            if let watts = adapter.watts { parts.append("\(watts) W") }
-            if let name = adapter.name ?? adapter.adapterDescription { parts.append(name) }
-            if let voltage = adapter.voltageMV, let current = adapter.currentMA {
-                parts.append("\(fixed(Double(voltage) / 1000, 1)) V × \(fixed(Double(current) / 1000, 2)) A")
-            }
-            if adapter.isWireless == true { parts.append("wireless") }
-            add("Adapter", parts.isEmpty ? "connected" : parts.joined(separator: " · "))
-        }
+        // Power.
+        add("Adapter", s.adapter.map(adapterSummary))
         if let current = s.chargingCurrentMA, let voltage = s.chargingVoltageMV, current > 0, voltage > 0 {
             let perCell = s.isChargingVoltagePerCell ? " per cell" : ""
             add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V" + perCell)
@@ -111,15 +87,19 @@ public enum BatteryReport {
             add("Adapter loss", "\(fixed(loss, 1)) W")
         }
         add("Optimized charging", s.isOptimizedChargingEngaged.map { $0 ? "holding charge" : "inactive" })
-        close("Power")
+
+        // System.
         add("Low Power Mode", s.isLowPowerModeEnabled.map { $0 ? "on" : "off" })
         add("Thermal state", s.thermalState?.rawValue)
-        close("System")
-        return sections
+        return lines
     }
 
     public static func text(for snapshot: BatterySnapshot) -> String {
-        let lines = lines(for: snapshot)
+        text(lines(for: snapshot))
+    }
+
+    /// The lines as two columns, the values aligned two spaces after the longest label.
+    static func text(_ lines: [Line]) -> String {
         let width = lines.map(\.label.count).max() ?? 0
         return
             lines
@@ -128,6 +108,19 @@ public enum BatteryReport {
     }
 
     // MARK: - Formatting helpers
+
+    /// "96 W · USB-C Power Adapter · 20.0 V × 4.80 A", or "connected" when the adapter says
+    /// nothing about itself.
+    static func adapterSummary(_ adapter: PowerAdapter) -> String {
+        var parts: [String] = []
+        if let watts = adapter.watts { parts.append("\(watts) W") }
+        if let name = adapter.name ?? adapter.adapterDescription { parts.append(name) }
+        if let voltage = adapter.voltageMV, let current = adapter.currentMA {
+            parts.append("\(fixed(Double(voltage) / 1000, 1)) V × \(fixed(Double(current) / 1000, 2)) A")
+        }
+        if adapter.isWireless == true { parts.append("wireless") }
+        return parts.isEmpty ? "connected" : parts.joined(separator: " · ")
+    }
 
     static func stateDescription(_ s: BatterySnapshot) -> String {
         switch s.chargeState {

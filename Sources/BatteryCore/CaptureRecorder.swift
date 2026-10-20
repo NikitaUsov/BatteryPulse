@@ -253,7 +253,7 @@ public struct CaptureRecorder: Sendable {
         } else {
             due.append((.start, current))
         }
-        // With fewer slots than captures due, the `before` capture goes first.
+        // With fewer slots than captures due, the `before` capture is the one left out.
         due = Array(due.suffix(max(0, maxCaptures - capturesWritten)))
 
         var captures: [Capture] = []

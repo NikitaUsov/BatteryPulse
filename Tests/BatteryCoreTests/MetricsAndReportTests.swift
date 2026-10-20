@@ -161,11 +161,12 @@ import Testing
         #expect(value("Adapter loss", in: lossless) == nil)
     }
 
-    @Test func sectionsGroupTheFlatReport() throws {
-        let s = try Fixture.m5Charging.snapshot()
-        let sections = BatteryReport.sections(for: s)
-        #expect(sections.map(\.title) == ["Charge", "Health", "Power", "System"])
-        #expect(sections.flatMap(\.lines) == BatteryReport.lines(for: s))
+    @Test func reportKeepsItsGroupOrder() throws {
+        let labels = BatteryReport.lines(for: try Fixture.m5Charging.snapshot()).map(\.label)
+        // The first line of the charge, health and power groups.
+        let starts = ["Charge", "Health", "Adapter"].compactMap { labels.firstIndex(of: $0) }
+        #expect(starts.count == 3)
+        #expect(starts == starts.sorted())
     }
 
     @Test func notChargingOnAdapter() {
