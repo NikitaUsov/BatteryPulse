@@ -161,10 +161,13 @@ public final class BatteryMonitor {
         let delays = powerChangeFollowUps
         let clock = clock
         followUpTask = Task { [weak self] in
-            var elapsed = Duration.zero
+            var previous = Duration.zero
             for delay in delays {
-                try? await clock.sleep(for: delay - elapsed)
-                elapsed = delay
+                // A tenth of each gap lets the OS coalesce the wake-up with others. Gaps rather
+                // than deadlines: after the Mac sleeps through some, they don't all fire at once.
+                let gap = delay - previous
+                try? await clock.sleep(for: gap, tolerance: gap / 10)
+                previous = delay
                 guard !Task.isCancelled, let self, self.isRunning else { return }
                 self.refresh(trigger: .followUp)
             }

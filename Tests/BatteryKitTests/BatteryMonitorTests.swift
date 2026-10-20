@@ -388,6 +388,9 @@ private func reading(connected: Bool) -> BatteryReading {
         }
         #expect(provider.readCount == 8)
         #expect(clock.sleeperCount == 0)
+        // Each sleep may end up to a tenth of its gap late.
+        let gaps: [Duration] = [.seconds(3), .seconds(5), .seconds(7), .seconds(15), .seconds(30)]
+        #expect(Array(clock.sleeps.suffix(5)) == gaps.map { .init(delay: $0, tolerance: $0 / 10) })
 
         // Stopping cancels pending follow-ups.
         provider.next = reading(connected: false)
