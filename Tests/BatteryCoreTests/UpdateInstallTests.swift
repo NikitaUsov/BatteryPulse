@@ -232,8 +232,12 @@ import Testing
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         // No process has this ID, so the script doesn't wait.
-        process.arguments = UpdateInstallPolicy.relaunchArguments(
+        var arguments = UpdateInstallPolicy.relaunchArguments(
             appPath: appPath, processID: Int32.max, opener: opener.path)
+        // The app's script gives the old process a second more; the test runs it without that pause.
+        #expect(arguments[1].contains("sleep 1; exec"))
+        arguments[1] = arguments[1].replacingOccurrences(of: "sleep 1;", with: "sleep 0;")
+        process.arguments = arguments
         try process.run()
         process.waitUntilExit()
         #expect(process.terminationStatus == 0)

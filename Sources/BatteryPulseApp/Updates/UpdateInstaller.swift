@@ -6,6 +6,7 @@ import CoreServices
 import Foundation
 import Observation
 import Security
+import Synchronization
 import os
 
 /// Installs an update from inside the app, so the user doesn't download the DMG and replace the
@@ -92,7 +93,7 @@ final class UpdateInstaller {
             return
         }
         phase = .downloading(nil)
-        work = Task { await run(release) }
+        work = Task(name: "UpdateInstaller.install") { await run(release) }
     }
 
     func cancel() {
@@ -126,7 +127,8 @@ final class UpdateInstaller {
         let leftover = UpdateInstallPolicy.leftoverToDelete(
             recorded: recorded, runningBundlePath: bundle.bundleURL.resolvingSymlinksInPath().path)
         let identifier = bundle.bundleIdentifier ?? ""
-        Task.detached(priority: .utility) {
+        // Fire and forget: launch doesn't wait for the deletion, and nothing needs its result.
+        Task.detached(name: "UpdateInstaller.removeLeftovers", priority: .utility) {
             UpdateInstallSteps.removeLeftovers(leftover: leftover, bundleIdentifier: identifier)
         }
     }
@@ -134,6 +136,10 @@ final class UpdateInstaller {
     // MARK: - Steps
 
     private func run(_ release: ReleaseInfo) async {
+        // Keeps the app out of App Nap and the Mac from idle sleep from the download to the
+        // relaunch; the only activity BatteryPulse ever holds, ended on every way out.
+        let activity = ProcessInfo.processInfo.beginActivity(options: .userInitiated, reason: "Installing an update")
+        defer { ProcessInfo.processInfo.endActivity(activity) }
         let identifier = bundleIdentifier
         do {
             guard let imageURL = release.downloadURL, let signatureURL = release.signatureURL else {
@@ -146,21 +152,18 @@ final class UpdateInstaller {
             try Task.checkCancellation()
 
             phase = .verifying
-            let digest = release.downloadDigest
-            try await Task.detached(priority: .userInitiated) {
-                try UpdateInstallSteps.verify(image: image, signature: signature, digest: digest)
-            }.value
+            try await UpdateInstallSteps.verify(image: image, signature: signature, digest: release.downloadDigest)
             try Task.checkCancellation()
             if isQuitting { throw CancellationError() }
 
             phase = .installing
-            let target = bundleURL
-            let version = release.version
-            let current = currentVersion
-            let previous = try await Task.detached(priority: .userInitiated) {
+            // Once checked, the update goes in: nothing in the swap checks for cancellation, and
+            // the shield keeps it that way.
+            let previous = try await withTaskCancellationShield {
                 try await UpdateInstallSteps.replace(
-                    target: target, image: image, identifier: identifier, release: version, current: current)
-            }.value
+                    target: bundleURL, image: image, identifier: identifier, release: release.version,
+                    current: currentVersion)
+            }
             // The running process still uses the previous version's files; it goes at the next launch.
             UserDefaults.standard.set(previous.path, forKey: AppSettings.updateLeftoverKey)
             if !isQuitting { relaunch() }
@@ -172,7 +175,7 @@ final class UpdateInstaller {
                 let failure = error as? UpdateInstallError ?? .downloadFailed
                 let version = release.version.description
                 let reason = String(describing: failure)
-                UpdateInstallSteps.log.error(
+                Diagnostics.update.error(
                     "Installing \(version, privacy: .public) failed: \(reason, privacy: .public)")
                 phase = .failed(failure)
             }
@@ -182,7 +185,7 @@ final class UpdateInstaller {
     private func fetchSignature(_ url: URL) async throws -> Data {
         let result: (Data, URLResponse)
         do {
-            result = try await URLSession.shared.data(for: request(url))
+            result = try await UpdateNetwork.user.data(for: request(url))
         } catch {
             throw Self.downloadError(error)
         }
@@ -196,18 +199,18 @@ final class UpdateInstaller {
     private func download(_ url: URL, to destination: URL, expectedSize: Int64?) async throws {
         let watcher = DownloadWatcher()
         // Polls the transfer, since the async download API reports no progress of its own.
-        let progress = Task { [weak self] in
+        let progress = Task(name: "UpdateInstaller.downloadProgress") { [weak self] in
             while !Task.isCancelled {
                 if let self, case .downloading = self.phase {
                     self.phase = .downloading(watcher.fraction(expectedSize: expectedSize))
                 }
-                try? await Task.sleep(for: .milliseconds(200))
+                try? await Task.sleep(for: .milliseconds(200), tolerance: .milliseconds(50))
             }
         }
         defer { progress.cancel() }
         let result: (URL, URLResponse)
         do {
-            result = try await URLSession.shared.download(for: request(url), delegate: watcher)
+            result = try await UpdateNetwork.user.download(for: request(url), delegate: watcher)
         } catch {
             throw Self.downloadError(error)
         }
@@ -244,7 +247,7 @@ final class UpdateInstaller {
         // Updates the registration even if the modification date looks unchanged.
         let status = LSRegisterURL(bundleURL as CFURL, true)
         if status != 0 {
-            UpdateInstallSteps.log.error("LSRegisterURL failed: \(status, privacy: .public)")
+            Diagnostics.update.error("LSRegisterURL failed: \(status, privacy: .public)")
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -256,8 +259,9 @@ final class UpdateInstaller {
         do {
             try process.run()
         } catch {
+            // An error description can carry a path, so it stays private.
             let reason = String(describing: error)
-            UpdateInstallSteps.log.error("Couldn't start the relaunch: \(reason, privacy: .public)")
+            Diagnostics.update.error("Couldn't start the relaunch: \(reason, privacy: .private)")
             phase = .failed(.relaunchFailed)
             return
         }
@@ -311,17 +315,16 @@ extension UpdateInstallError {
 
 /// Hands the progress of a download made with `URLSession.download(for:delegate:)` to the main
 /// actor, which polls it.
-private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let lock = NSLock()
-    private var task: URLSessionTask?
+private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
+    private let task = Mutex<URLSessionTask?>(nil)
 
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
-        lock.withLock { self.task = task }
+        self.task.withLock { $0 = task }
     }
 
     /// The fraction received, or `nil` before the size is known.
     func fraction(expectedSize: Int64?) -> Double? {
-        guard let task = lock.withLock({ self.task }) else { return nil }
+        guard let task = self.task.withLock({ $0 }) else { return nil }
         let reported = task.countOfBytesExpectedToReceive
         let expected = reported > 0 ? reported : (expectedSize ?? 0)
         guard expected > 0 else { return nil }
@@ -329,12 +332,13 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, @unchecke
     }
 }
 
-/// The installation steps that touch the disk; they run off the main actor.
+/// The installation steps that touch the disk. `verify`, `replace` and `removeLeftovers` run off
+/// the main actor; preparing and emptying the downloads folder is quick and runs on the caller's.
+/// The steps that can fail throw only an ``UpdateInstallError``; cancellation is checked between
+/// them, in the installer's `run`.
 enum UpdateInstallSteps {
-    static let log = Logger(subsystem: "io.github.nikitausov.BatteryPulse", category: "update")
-
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
-    static func prepareDownloadFolder(bundleIdentifier: String) throws -> URL {
+    static func prepareDownloadFolder(bundleIdentifier: String) throws(UpdateInstallError) -> URL {
         do {
             let folder = try downloadsFolder(bundleIdentifier: bundleIdentifier)
             try? FileManager.default.removeItem(at: folder)
@@ -359,8 +363,9 @@ enum UpdateInstallSteps {
     }
 
     /// Checks the downloaded DMG before anything mounts it: GitHub's digest when the release has
-    /// one, then the release signature, which must be valid.
-    static func verify(image: URL, signature: Data, digest: String?) throws {
+    /// one, then the release signature, which must be valid. `@concurrent`: hashing the DMG and
+    /// checking the signature is synchronous work that must not hold the caller's actor.
+    @concurrent static func verify(image: URL, signature: Data, digest: String?) async throws(UpdateInstallError) {
         let data: Data
         do {
             data = try Data(contentsOf: image, options: .mappedIfSafe)
@@ -378,10 +383,11 @@ enum UpdateInstallSteps {
 
     /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
     /// volume), checks the copy and swaps it with `target` in one rename. Returns where the
-    /// previous version is now.
-    static func replace(
+    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
+    /// code signature check are synchronous work that must not hold the caller's actor.
+    @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
-    ) async throws -> URL {
+    ) async throws(UpdateInstallError) -> URL {
         let fileManager = FileManager.default
         let staging: URL
         do {
@@ -396,7 +402,7 @@ enum UpdateInstallSteps {
         }
         let staged = staging.appendingPathComponent(target.lastPathComponent, isDirectory: true)
 
-        try await withMountedImage(image) { mountPoint in
+        try await withMountedImage(image) { mountPoint throws(UpdateInstallError) in
             let source = mountPoint.appendingPathComponent("BatteryPulse.app", isDirectory: true)
             let values = try? source.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
             guard values?.isDirectory == true, values?.isSymbolicLink != true else {
@@ -415,7 +421,7 @@ enum UpdateInstallSteps {
 
         guard renamex_np(staged.path, target.path, UInt32(RENAME_SWAP)) == 0 else {
             let reason = String(cString: strerror(errno))
-            log.error("Swapping the app failed: \(reason, privacy: .public)")
+            Diagnostics.update.error("Swapping the app failed: \(reason, privacy: .public)")
             throw UpdateInstallError.replaceFailed
         }
         swapped = true
@@ -423,7 +429,9 @@ enum UpdateInstallSteps {
     }
 
     /// Mounts `image` at a private mount point for `body`, and detaches it afterwards.
-    private static func withMountedImage(_ image: URL, _ body: (URL) throws -> Void) async throws {
+    private static func withMountedImage(
+        _ image: URL, _ body: (URL) throws(UpdateInstallError) -> Void
+    ) async throws(UpdateInstallError) {
         let mountPoint = FileManager.default.temporaryDirectory
             .appendingPathComponent("BatteryPulse-update-\(UUID().uuidString)", isDirectory: true)
         do {
@@ -447,6 +455,9 @@ enum UpdateInstallSteps {
         await detach(mountPoint)
     }
 
+    /// macOS 27 marks `hdiutil attach` and `detach` deprecated in favour of `diskutil image attach`
+    /// and `diskutil eject`. They still work, and 0.6.0's installer and the CI install-path step use
+    /// them, so they stay; the move to `diskutil image` is 0.6.2 work, with its own test.
     private static let hdiutil = "/usr/bin/hdiutil"
 
     private static func detach(_ mountPoint: URL) async {
@@ -495,13 +506,10 @@ enum UpdateInstallSteps {
     }
 
     /// The same app, exactly the release's version, newer than the running one.
-    private static func checkBundle(_ bundle: URL, identifier: String, release: AppVersion, current: AppVersion) throws
-    {
-        let plist = bundle.appendingPathComponent("Contents/Info.plist")
-        let info =
-            (try? Data(contentsOf: plist)).flatMap {
-                try? PropertyListSerialization.propertyList(from: $0, format: nil)
-            } as? [String: Any]
+    private static func checkBundle(
+        _ bundle: URL, identifier: String, release: AppVersion, current: AppVersion
+    ) throws(UpdateInstallError) {
+        let info = infoDictionary(ofBundleAt: bundle)
         if let problem = UpdateInstallPolicy.checkStagedBundle(
             identifier: info?["CFBundleIdentifier"] as? String,
             version: info?["CFBundleShortVersionString"] as? String,
@@ -512,16 +520,20 @@ enum UpdateInstallSteps {
     }
 
     /// The ad-hoc signature seals every file of the app and its widget; any change breaks it.
-    private static func checkCodeSignature(_ bundle: URL) throws {
+    private static func checkCodeSignature(_ bundle: URL) throws(UpdateInstallError) {
         var code: SecStaticCode?
         guard SecStaticCodeCreateWithPath(bundle as CFURL, [], &code) == errSecSuccess, let code else {
             throw UpdateInstallError.invalidCodeSignature
         }
         let flags = SecCSFlags(rawValue: kSecCSStrictValidate | kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
         var error: Unmanaged<CFError>?
-        guard SecStaticCodeCheckValidityWithErrors(code, flags, nil, &error) == errSecSuccess else {
+        let status = SecStaticCodeCheckValidityWithErrors(code, flags, nil, &error)
+        guard status == errSecSuccess else {
+            // The status is a plain code; the error's description can carry the path, so it stays private.
             let reason = error.map { String(describing: $0.takeRetainedValue()) } ?? "unknown"
-            log.error("The new version's code signature isn't valid: \(reason, privacy: .public)")
+            Diagnostics.update.error(
+                "The new version's code signature isn't valid (\(status, privacy: .public)): \(reason, privacy: .private)"
+            )
             throw UpdateInstallError.invalidCodeSignature
         }
     }
@@ -531,15 +543,19 @@ enum UpdateInstallSteps {
         removeDownloads(bundleIdentifier: bundleIdentifier)
         guard let leftover, !bundleIdentifier.isEmpty else { return }
         let app = URL(fileURLWithPath: leftover, isDirectory: true)
-        let plist = app.appendingPathComponent("Contents/Info.plist")
-        let info =
-            (try? Data(contentsOf: plist)).flatMap {
-                try? PropertyListSerialization.propertyList(from: $0, format: nil)
-            } as? [String: Any]
-        guard info?["CFBundleIdentifier"] as? String == bundleIdentifier else { return }
+        guard infoDictionary(ofBundleAt: app)?["CFBundleIdentifier"] as? String == bundleIdentifier else { return }
         try? FileManager.default.removeItem(at: app)
         // The temporary folder it was in, if nothing else is there.
         _ = rmdir(app.deletingLastPathComponent().path)
+    }
+
+    /// The Info.plist of the app at `bundle`, or `nil` if it can't be read. Read from the file,
+    /// not through `Bundle(url:)`, which returns one cached instance per path for the life of
+    /// the process.
+    private static func infoDictionary(ofBundleAt bundle: URL) -> [String: Any]? {
+        let plist = bundle.appendingPathComponent("Contents/Info.plist")
+        guard let data = try? Data(contentsOf: plist) else { return nil }
+        return (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
     }
 }
 #endif
