@@ -41,7 +41,9 @@ DMG="$BUILD_DIR/$NAME.dmg"
 #   (on SwiftPM's link line) drops the public code of BatteryCore and BatteryKit that the binary
 #   never calls. The widget keeps _main too, though it starts in _NSExtensionMain: it costs
 #   nothing.
-RELEASE_FLAGS=(-Xlinker -exported_symbol -Xlinker _main)
+# - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
+#   and the History store ran no slower with it.
+RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
 # Each link also writes a link map, which attributes every byte of the binary to an object file
 # and a symbol (for size work; build/maps, a CI artifact). They sit next to the build products,
 # so a link that is up to date keeps a map that matches its binary.
