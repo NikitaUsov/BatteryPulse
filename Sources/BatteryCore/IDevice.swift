@@ -21,7 +21,7 @@ public enum IDeviceConnection: String, Sendable, Codable, CaseIterable {
 }
 
 /// An iPhone or iPad attached to the Mac, as listed by `bpulse --devices`.
-public struct IDeviceInfo: Sendable, Equatable, Codable, Identifiable {
+public struct IDeviceInfo: Sendable, Equatable, Identifiable {
     /// The device's UDID. Never printed or written to a capture; see ``redactedIdentifier``.
     public var id: String
     /// The name the owner gave the device (`DeviceName`).

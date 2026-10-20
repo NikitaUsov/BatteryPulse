@@ -2,7 +2,7 @@ import Foundation
 
 /// What lockdown says about a device, before any session: even a device that doesn't trust this
 /// Mac has a name and a model. `REDACTED` or empty values are `nil`.
-public struct IDeviceIdentity: Sendable, Equatable, Codable {
+public struct IDeviceIdentity: Sendable, Equatable {
     /// The name the owner gave the device.
     public var name: String?
     /// `iPhone`, `iPad`.
