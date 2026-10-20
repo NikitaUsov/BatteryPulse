@@ -70,7 +70,7 @@ final class UpdateChecker {
             try? await Task.sleep(for: .seconds(20), tolerance: .seconds(5))
             while !Task.isCancelled {
                 await self?.checkIfDue()
-                try? await Task.sleep(for: .seconds(6 * 60 * 60), tolerance: .seconds(30 * 60))
+                try? await Task.sleep(for: .seconds(6 * 60 * 60), tolerance: .seconds(36 * 60))
             }
         }
     }
