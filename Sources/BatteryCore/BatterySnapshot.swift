@@ -210,11 +210,6 @@ public struct PowerAdapter: Sendable, Equatable, Codable {
         self.profiles = profiles
         self.activeProfileIndex = activeProfileIndex
     }
-
-    /// The negotiated USB-PD profile, if known.
-    public var activeProfile: PowerProfile? {
-        profiles.first { $0.index == activeProfileIndex }
-    }
 }
 
 /// One USB Power Delivery voltage/current pair an adapter advertises.

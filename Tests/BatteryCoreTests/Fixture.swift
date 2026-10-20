@@ -38,3 +38,10 @@ func fixtureDictionary(_ name: String) throws -> PropertyDictionary {
     let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
     return try #require(PropertyValue.dictionary(fromAny: root))
 }
+
+extension PowerAdapter {
+    /// The negotiated USB-PD profile; the app marks it in its list by `activeProfileIndex`.
+    var activeProfile: PowerProfile? {
+        profiles.first { $0.index == activeProfileIndex }
+    }
+}
