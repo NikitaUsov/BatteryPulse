@@ -400,8 +400,7 @@ public final class IDeviceMonitor {
             // Never replaced: a new secret would orphan every history. This session works with
             // a secret of its own and remembers nothing.
             cannotRemember = true
-            var generator = SystemRandomNumberGenerator()
-            keys = keys ?? makeKeys(Data((0..<32).map { _ in UInt8.random(in: .min ... .max, using: &generator) }))
+            keys = keys ?? makeKeys(Data((0..<32).map { _ in UInt8.random(in: .min ... .max) }))
         }
     }
 

@@ -12,7 +12,7 @@ final class MockBatteryProvider: BatteryProvider {
     /// What each read was asked to fetch.
     private(set) var scopes: [BatteryReadScope] = []
     private(set) var handler: (@MainActor @Sendable () -> Void)?
-    let cancellations = Counter()
+    let cancellations = LockedValue(0)
 
     init(next: BatteryReading?) {
         self.next = next
@@ -52,12 +52,6 @@ private final class FullReadProvider: BatteryProvider {
     func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
         BatteryObservation {}
     }
-}
-
-final class Counter: Sendable {
-    private let count = Mutex(0)
-    var value: Int { count.withLock { $0 } }
-    func increment() { count.withLock { $0 += 1 } }
 }
 
 /// A clock that stands still until a test advances it, so each of the monitor's sleeps (the

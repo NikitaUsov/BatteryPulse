@@ -1,6 +1,7 @@
 import BatteryCore
 import Dispatch
 import Foundation
+import Synchronization
 import Testing
 
 @testable import BatteryKit
@@ -271,26 +272,24 @@ final class FakeTransport: IDeviceTransport, @unchecked Sendable {
     }
 }
 
-/// A value set on one thread and read on another.
-final class LockedValue<Value: Sendable>: @unchecked Sendable {
-    // `@unchecked`: `value` is guarded by `lock`.
-    private let lock = NSLock()
-    private var value: Value
+/// A value set on one thread and read on another: the test target's one locked box.
+final class LockedValue<Value: Sendable>: Sendable {
+    private let state: Mutex<Value>
 
     init(_ value: Value) {
-        self.value = value
+        state = Mutex(value)
     }
+
+    var value: Value { state.withLock { $0 } }
 
     func set(_ newValue: Value) {
-        lock.lock()
-        defer { lock.unlock() }
-        value = newValue
+        state.withLock { $0 = newValue }
     }
+}
 
-    func get() -> Value {
-        lock.lock()
-        defer { lock.unlock() }
-        return value
+extension LockedValue where Value == Int {
+    func increment() {
+        state.withLock { $0 += 1 }
     }
 }
 
@@ -404,7 +403,7 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
         #expect(devices == [IDeviceInfo(id: "A"), IDeviceInfo(id: "B", name: "Named")])
         read.signal()
         try await BlockingWork.run(on: queue, timeout: 15) {}
-        #expect(lateRecord.get() == false, "the caller has its list: stop reading")
+        #expect(lateRecord.value == false, "the caller has its list: stop reading")
     }
 
     @Test func errorsPassOn() async {

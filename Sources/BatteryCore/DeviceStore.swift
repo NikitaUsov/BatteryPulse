@@ -62,8 +62,8 @@ public actor DeviceStore {
     /// Writes a new secret through a temporary file. The move never replaces an existing file,
     /// so a secret that appeared meanwhile wins; then `nil` tells the caller to read it.
     private func createSecret() throws -> Data? {
-        var generator = SystemRandomNumberGenerator()
-        let bytes = Data((0..<Self.secretLength).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+        // The default generator is the system's cryptographically secure one.
+        let bytes = Data((0..<Self.secretLength).map { _ in UInt8.random(in: .min ... .max) })
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let temporary = directory.appendingPathComponent(".key-" + UUID().uuidString)
         guard

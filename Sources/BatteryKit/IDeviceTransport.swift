@@ -173,7 +173,7 @@ public enum IDeviceReader {
 
     /// How far an attempt got: replies received, then calls that succeeded.
     static func progress(of capture: IDeviceCapture) -> Int {
-        capture.exchanges.filter { $0.reply != nil }.count * 100 + capture.steps.filter(\.status.isSuccess).count
+        capture.exchanges.count(where: { $0.reply != nil }) * 100 + capture.steps.count(where: \.status.isSuccess)
     }
 
     /// One attempt over one link. Every call made is in ``IDeviceCapture/steps``.
