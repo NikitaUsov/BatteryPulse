@@ -244,6 +244,9 @@ public actor HistoryStore {
     }
 
     public func clear() throws {
+        // The cache goes first: a removal that fails part way (the app ignores the error) must
+        // not keep the samples of files it did delete, which a re-created file would extend.
+        decodedDays = [:]
         for url in [samplesDirectory, daysURL, legacySamplesURL] where FileManager.default.fileExists(atPath: url.path)
         {
             try FileManager.default.removeItem(at: url)
@@ -251,7 +254,6 @@ public actor HistoryStore {
         lastSample = nil
         hasLoadedLastSample = true
         prunedThrough = nil
-        decodedDays = [:]
         days = [:]
         writtenDays = [:]
     }
