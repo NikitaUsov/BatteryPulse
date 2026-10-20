@@ -208,8 +208,13 @@ if ! grep -F "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" >/dev/null; the
   exit 1
 fi
 
-# Drag-to-install DMG: the app next to a link to /Applications.
+# Drag-to-install DMG: the app next to a link to /Applications. It is ULMO (LZMA), the smallest
+# compressed format hdiutil makes, which macOS 10.15 and later attach; every BatteryPulse updater
+# attaches it with /usr/bin/hdiutil, and the signature covers the file's bytes whatever the format.
+# It is made the space-optimal way hdiutil(1) documents: a read/write image of the folder, then a
+# conversion, so the compressed image holds no unused space.
 STAGING="$BUILD_DIR/dmg"
+READ_WRITE="$BUILD_DIR/$NAME-rw.dmg"
 mkdir -p "$STAGING"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
@@ -217,10 +222,11 @@ ln -s /Applications "$STAGING/Applications"
 # (seen on hosted CI runners), so flush and retry.
 sync
 for attempt in 1 2 3 4 5; do
-  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDZO "$DMG" && break
+  hdiutil create -quiet -volname "BatteryPulse" -srcfolder "$STAGING" -ov -format UDRW "$READ_WRITE" && break
   [ "$attempt" -eq 5 ] && exit 1
   sleep 5
 done
-rm -rf "$STAGING"
+hdiutil convert -quiet "$READ_WRITE" -format ULMO -ov -o "$DMG"
+rm -rf "$STAGING" "$READ_WRITE"
 
 echo "Built $APP and $DMG ($VERSION, build $BUILD_NUMBER)"
