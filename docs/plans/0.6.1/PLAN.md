@@ -1264,7 +1264,8 @@ per-hour figures are extrapolated and noisier. A difference under 15 % counts as
    - `codesign -dv --verbose=4 /Applications/BatteryPulse.app 2>&1 | grep flags` shows
      `flags=0x10002(adhoc,runtime)`;
    - `xattr -l /Applications/BatteryPulse.app` shows no quarantine;
-   - `sfltool dumpbtm | grep -i -A3 batterypulse` still lists the login item, if it was on;
+   - `sudo sfltool dumpbtm | grep -i -A3 batterypulse` still lists the login item, if it was on
+     (without sudo, sfltool waits for an authorization that never comes);
    - notification permission is kept.
 3. On any failure, run `gh release edit v0.6.1 --prerelease`, which makes `releases/latest` serve
    0.6.0 again, and report it.
