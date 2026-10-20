@@ -123,9 +123,13 @@ the Accessories page; `bpulse --accessories --raw` saves what accessories report
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open and can be
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
-or on another Space), and every 10 seconds when the menu bar shows power. Otherwise BatteryPulse updates when macOS reports a
-change, plus one reading a minute for the history while recording is on (the default; turn it
-off in Settings → Advanced), so it uses almost no CPU in the background.
+or on another Space), and every 10 seconds when the menu bar shows power. In Low Power Mode,
+when macOS asks apps to save resources, or when the Mac runs hot, they refresh less often: every
+5 seconds in windows and every 30 seconds in the menu bar. While the displays sleep or the Mac
+is switched to another user, the menu bar stops refreshing power and catches up once you're
+back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
+the history while recording is on (the default; turn it off in Settings → Advanced), so it uses
+almost no CPU in the background.
 
 ### Motion and Liquid Glass
 

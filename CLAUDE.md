@@ -27,7 +27,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   `DeviceKey`/`RememberedDevice`/`DeviceStore`/`IDeviceSchedule`/`IDeviceModel`/`DemoDevice`
   (remembered iPhones and iPads, their history and read schedule), `Accessory*`/`DemoAccessories`
   (Bluetooth accessory batteries: model, parser, pseudonymized capture, alerts, report),
-  `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`), `WindowLook`
+  `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`), `LiveRefreshPolicy`
+  (slower polls in Low Power Mode, under reduced resources or heat), `WindowLook`
   (`WindowLookPolicy`) and `ToneMap` (window styles). Must stay free of Apple-only frameworks.
 - `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
   children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
@@ -40,7 +41,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   through `dlsym`, refreshed on the `com.apple.system.accpowersources.*` notifications).
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings keys,
   Dock icon policy, localized phrases, `DemoController`, `Diagnostics` (loggers and signposts),
-  `Motion` with the `\.motion` environment value and its presets), `Main/` (sidebar window:
+  `Motion` with the `\.motion` environment value and its presets, plus `SystemPowerState` and
+  `ScreenActivity`, which slow or stop polls), `Main/` (sidebar window:
   Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
   iPhone/iPad and Accessories, and the Developer section with Raw Data and Demo Mode; the compact
   window; `Main/Components/`, one file per component, `Card.swift` with `Card`, `CardGroup` and
