@@ -9,6 +9,8 @@ import Testing
 final class MockBatteryProvider: BatteryProvider {
     var next: BatteryReading?
     private(set) var readCount = 0
+    /// What each read was asked to fetch.
+    private(set) var scopes: [BatteryReadScope] = []
     private(set) var handler: (@MainActor @Sendable () -> Void)?
     let cancellations = Counter()
 
@@ -21,6 +23,11 @@ final class MockBatteryProvider: BatteryProvider {
         return next
     }
 
+    func read(scope: BatteryReadScope) -> BatteryReading? {
+        scopes.append(scope)
+        return read()
+    }
+
     func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
         self.handler = handler
         let cancellations = cancellations
@@ -29,6 +36,21 @@ final class MockBatteryProvider: BatteryProvider {
 
     func simulateSystemChange() {
         handler?()
+    }
+}
+
+/// A provider with no slow values: it only implements the full read.
+@MainActor
+private final class FullReadProvider: BatteryProvider {
+    private(set) var readCount = 0
+
+    func read() -> BatteryReading? {
+        readCount += 1
+        return nil
+    }
+
+    func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
+        BatteryObservation {}
     }
 }
 
@@ -442,5 +464,86 @@ private func reading(connected: Bool) -> BatteryReading {
         #expect(clock.sleeperCount == 0)
         clock.advance(by: .seconds(60))
         #expect(provider.readCount == 2)
+    }
+
+    // MARK: - Slow values
+
+    @Test func slowValuesAtMostOnceAMinute() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+        #expect(provider.scopes == [.full], "the first read fetches everything")
+
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        clock.advance(by: .seconds(57))
+        monitor.refresh(trigger: .notify)
+        #expect(provider.scopes == [.full, .live, .live])
+        clock.advance(by: .seconds(1))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes.last == .full, "a minute after the last full read")
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes.last == .live)
+    }
+
+    @Test func aViewThatShowsSlowValuesGetsThemOnEveryRead() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        monitor.setShowsSlowValues(true, for: "main")
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        monitor.setShowsSlowValues(true, for: "popover")
+        monitor.setShowsSlowValues(false, for: "main")
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes == [.full, .full, .full], "while any client shows them")
+
+        monitor.setShowsSlowValues(false, for: "popover")
+        monitor.setShowsSlowValues(false, for: "popover")
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes.last == .live)
+        clock.advance(by: .seconds(58))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes.last == .full, "the minute counts from the last full read")
+    }
+
+    @Test func aManualReadFetchesSlowValues() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        clock.advance(by: .seconds(2))
+        monitor.refresh()
+        #expect(provider.scopes == [.full, .full], "Copy Report takes every value fresh")
+        clock.advance(by: .seconds(30))
+        monitor.refresh(trigger: .poll)
+        // 61 s after the launch read, 59 s after the manual one.
+        clock.advance(by: .seconds(29))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes == [.full, .full, .live, .live], "the minute counts from the manual read")
+    }
+
+    @Test func leavingDemoModeReadsSlowValuesAgain() {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let demo = MockBatteryProvider(next: reading(percent: 50, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        monitor.setOverride(demo)
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .demo)
+        monitor.setOverride(nil)
+        #expect(demo.scopes == [.full, .live])
+        #expect(provider.scopes == [.full, .full], "the device's slow values are as old as the demo")
+    }
+
+    @Test func providersWithoutSlowValuesReadInFull() {
+        let provider = FullReadProvider()
+        #expect(provider.read(scope: .live) == nil)
+        #expect(provider.readCount == 1)
     }
 }

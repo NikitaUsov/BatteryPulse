@@ -245,6 +245,14 @@ struct MainView: View {
         .windowLook()
         // Polls every 2 s while the window can be seen and the page shows live values.
         .liveRefresh(monitor, every: .seconds(2), client: "main", isEnabled: selection.showsLiveValues)
+        // Power and Raw Data show values that change slowly, such as the SMC's cell voltages: while
+        // either can be seen, every read fetches them, and otherwise at most once a minute.
+        .onChange(
+            of: (selection == .power || selection == .developer) && motion.isVisible, initial: true
+        ) { _, shows in
+            monitor.setShowsSlowValues(shows, for: "main")
+        }
+        .onDisappear { monitor.setShowsSlowValues(false, for: "main") }
         .trackedWindow(WindowID.main)
     }
 

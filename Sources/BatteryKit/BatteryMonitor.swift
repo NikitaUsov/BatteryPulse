@@ -12,7 +12,9 @@ import os
 /// nothing while idle, and a burst of such notifications is one read (``requestRefresh()``).
 /// Views that show fast-moving values (current, power) request polling with
 /// ``setLiveRefreshInterval(_:for:)`` and withdraw it with `nil`; the shortest active request
-/// wins.
+/// wins. Polls fetch only what changes from poll to poll: the values that change slowly are read
+/// at most once a minute (``smcPolicy``), on every read while a view that shows them asks for
+/// it with ``setShowsSlowValues(_:for:)``, and on a ``RefreshTrigger/manual`` read.
 @MainActor
 @Observable
 public final class BatteryMonitor {
@@ -42,6 +44,14 @@ public final class BatteryMonitor {
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
     @ObservationIgnored private var followUpTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+    /// When a read last fetched the slow values, on ``clock``.
+    @ObservationIgnored private var slowValuesReadAt: ContinuousClock.Instant?
+    @ObservationIgnored private var slowValueClients: Set<String> = []
+
+    /// How often reads fetch the values that change slowly, such as the SMC's cell voltages and
+    /// temperatures: at most once a minute, where a provider's own ``BatteryProvider/read()``
+    /// fetches them every time.
+    static let smcPolicy = SMCReadPolicy.everyMinute
 
     /// How long a burst of change notifications may last: one read follows the first of them
     /// after this window, give or take ``coalescingTolerance``, which lets the OS fold the wake-up
@@ -83,6 +93,8 @@ public final class BatteryMonitor {
     public func setOverride(_ provider: (any BatteryProvider)?) {
         overrideProvider = provider
         isOverridden = provider != nil
+        // The device's slow values are as old as the demo: read them with the device's first.
+        slowValuesReadAt = nil
         guard isRunning else { return }
         observation?.cancel()
         observation = activeProvider.observeChanges { [weak self] in self?.providerChanged() }
@@ -141,6 +153,27 @@ public final class BatteryMonitor {
         scheduleLiveRefresh()
     }
 
+    /// Asks for the values that change slowly, such as the SMC's cell voltages and temperatures, to
+    /// be read on every read while `client` (e.g. "main") shows them; `false` withdraws the request.
+    /// Without requests they are read at most once a minute.
+    public func setShowsSlowValues(_ shows: Bool, for client: String = "default") {
+        guard shows != slowValueClients.contains(client) else { return }
+        if shows {
+            slowValueClients.insert(client)
+        } else {
+            slowValueClients.remove(client)
+        }
+        #if canImport(os)
+        // The clients are names from the code, such as "main".
+        let clients = slowValueClients.sorted().joined(separator: ", ")
+        if clients.isEmpty {
+            Diagnostics.monitor.debug("Slow values at most once a minute")
+        } else {
+            Diagnostics.monitor.debug("Slow values on every read for \(clients, privacy: .public)")
+        }
+        #endif
+    }
+
     /// Whether the battery was read less than `age` ago, on the monitor's clock: a caller that
     /// would read again can use the current values instead.
     public func hasRead(within age: Duration) -> Bool {
@@ -169,8 +202,14 @@ public final class BatteryMonitor {
         defer { interval.end() }
         pendingRefresh?.cancel()
         pendingRefresh = nil
-        let new = activeProvider.read()
+        // A caller that needs a value now, such as Copy Report, gets the slow values fresh too.
+        let readsSlowValues =
+            trigger == .manual
+            || Self.smcPolicy.readsOtherKeys(
+                age: slowValuesReadAt.map { clock.now - $0 }, isShown: !slowValueClients.isEmpty)
+        let new = activeProvider.read(scope: readsSlowValues ? .full : .live)
         lastReadAt = clock.now
+        if readsSlowValues { slowValuesReadAt = lastReadAt }
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) {
             logBatteryChange(found: new != nil, trigger: trigger)
