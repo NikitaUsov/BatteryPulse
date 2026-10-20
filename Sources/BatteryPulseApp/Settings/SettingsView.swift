@@ -3,6 +3,7 @@ import AppKit
 import BatteryCore
 import BatteryKit
 import SwiftUI
+import os
 
 /// The Settings window (⌘,).
 struct SettingsView: View {
@@ -441,7 +442,16 @@ struct AdvancedSettings: View {
             Button("Clear History", role: .destructive) {
                 // Every device's history too; the remembered devices stay.
                 Task {
-                    try? await AppHistory.store.clear()
+                    do {
+                        try await AppHistory.store.clear()
+                    } catch {
+                        // Some or all of the history stays on disk. The error's domain and code
+                        // are public, its description, which can name a path, is not.
+                        let error = error as NSError
+                        Diagnostics.history.error(
+                            "Clearing the history failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+                        )
+                    }
                     await devices.clearHistory()
                 }
             }
