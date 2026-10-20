@@ -353,6 +353,21 @@ struct NotificationSettings: View {
                 Text("Off").tag(0)
                 ForEach([80, 85, 90, 95, 100], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
             }
+            // On a row that is always there, not on a Section or the rows that come and go with
+            // isDenied, so each runs once and the task doesn't restart.
+            .task { isDenied = await BatteryNotifier.isDenied() }
+            // Notifications may have been turned on or off in System Settings meanwhile.
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                Task { isDenied = await BatteryNotifier.isDenied() }
+            }
+            .onChange(of: [chargeLimit, lowBattery, accessoryLow, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
+                // Ask for permission the first time something is turned on.
+                guard AppSettings.alerts.isAnyEnabled else { return }
+                Task {
+                    _ = await BatteryNotifier.requestAuthorization()
+                    isDenied = await BatteryNotifier.isDenied()
+                }
+            }
             Picker("When the battery falls to", selection: $lowBattery) {
                 Text("Off").tag(0)
                 ForEach([10, 20, 30], id: \.self) { Text(formatter.percent(Double($0))).tag($0) }
@@ -389,15 +404,6 @@ struct NotificationSettings: View {
                         }
                     }
                 }
-            }
-        }
-        .task { isDenied = await BatteryNotifier.isDenied() }
-        .onChange(of: [chargeLimit, lowBattery, accessoryLow, service ? 1 : 0, heat ? 1 : 0]) { _, _ in
-            // Ask for permission the first time something is turned on.
-            guard AppSettings.alerts.isAnyEnabled else { return }
-            Task {
-                _ = await BatteryNotifier.requestAuthorization()
-                isDenied = await BatteryNotifier.isDenied()
             }
         }
     }
