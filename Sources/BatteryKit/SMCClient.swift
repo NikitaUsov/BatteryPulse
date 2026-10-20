@@ -2,6 +2,7 @@
 import BatteryCore
 import Foundation
 import IOKit
+import os
 
 /// A read-only client of the AppleSMC user client. It works without root or entitlements in an
 /// app that isn't sandboxed, and only ever sends the read commands of ``SMCParamBlock/Command``
@@ -45,6 +46,8 @@ public final class SMCClient {
     private var keyInfo: [SMCFourCC: SMCKeyInfo] = [:]
     /// Keys this Mac doesn't have; they're never asked about again.
     private var missing: Set<SMCFourCC> = []
+    /// Keys whose failure was logged this session (``logOnce(_:reason:)``).
+    private var loggedFailures: Set<SMCFourCC> = []
     private var isUnavailable = false
 
     public init() {}
@@ -56,20 +59,52 @@ public final class SMCClient {
             guard !isUnavailable, !missing.contains(key) else { return nil }
             do throws(Failure) {
                 return try read(key)
-            } catch .serviceNotFound, .open {
-                isUnavailable = true  // no AppleSMC, or the sandbox refused: stop trying
-                return nil
-            } catch .keyNotFound, .unreadable, .unsupportedSize {
-                missing.insert(key)
-                return nil
-            } catch .call(let status) where status == Self.notPrivileged {
-                // macOS 27 refuses some keys to unprivileged clients; the rest keep working.
-                missing.insert(key)
-                return nil
             } catch {
+                note(error, for: key)
                 return nil
             }
         }
+    }
+
+    /// What a failed read of `key` means for the next reads, logged in the `smc` category. Keys and
+    /// codes are public: they come from the code and the SMC, never from the user.
+    private func note(_ failure: Failure, for key: SMCFourCC) {
+        let name = key.description
+        switch failure {
+        case .serviceNotFound:
+            isUnavailable = true  // no AppleSMC, as in a virtual machine: stop trying
+            Diagnostics.smc.notice("No AppleSMC service; the SMC's battery keys are not read")
+        case .open(let status):
+            isUnavailable = true  // the sandbox refused: stop trying
+            let code = Self.hex(UInt32(bitPattern: status))
+            Diagnostics.smc.error("Opening the SMC failed (\(code, privacy: .public)); its battery keys are not read")
+        case .keyNotFound, .unreadable, .unsupportedSize:
+            missing.insert(key)
+            Diagnostics.smc.debug("\(name, privacy: .public) isn't readable on this Mac; not asked again")
+        case .call(let status) where status == Self.notPrivileged:
+            // macOS 27 refuses some keys to unprivileged clients; the rest keep working.
+            missing.insert(key)
+            Diagnostics.smc.debug("\(name, privacy: .public) needs privileges; not asked again")
+        case .call(let status):
+            logOnce(key, reason: "IOKit status \(Self.hex(UInt32(bitPattern: status)))")
+        case .truncatedReply(let size):
+            logOnce(key, reason: "a reply of \(size) bytes")
+        case .smc(_, let result):
+            logOnce(key, reason: "SMC result \(Self.hex(UInt32(result)))")
+        }
+    }
+
+    /// A failure that may pass, such as a result of 0x85 while the SMC is busy around sleep: the key
+    /// is asked for again on the next read, and logged once per session, or polls would repeat it.
+    private func logOnce(_ key: SMCFourCC, reason: String) {
+        guard loggedFailures.insert(key).inserted else { return }
+        let name = key.description
+        Diagnostics.smc.error("Reading \(name, privacy: .public) failed (\(reason, privacy: .public)); asked again")
+    }
+
+    /// `0xe00002c2`: IOKit statuses and SMC results read best in hex.
+    private static func hex(_ value: UInt32) -> String {
+        "0x" + String(value, radix: 16)
     }
 
     public func read(_ key: SMCFourCC) throws(Failure) -> SMCRawValue {
