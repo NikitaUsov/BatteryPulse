@@ -5,6 +5,13 @@ on:
     branches: [main, "claude/**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        # A test build that the in-app updater treats as older than a real release, so its Install
+        # and Relaunch can be tried. Pushes build 0.0.0.
+        description: Version to build into the app, without the v (for example 0.5.99); empty for 0.0.0
+        required: false
+        default: ""
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -92,7 +99,14 @@ jobs:
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
-        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: '$VERSION' is not a version like 0.5.99" >&2
+            exit 1
+          fi
+          BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
       - name: Smoke-test update signing
         # The release signs with a secret this job doesn't get, so sign with a throwaway key:
         # the signature must verify, and a changed DMG must not.
@@ -114,6 +128,6 @@ jobs:
         # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: BatteryPulse-${{ github.sha }}
+          name: BatteryPulse-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse.dmg
           if-no-files-found: error
