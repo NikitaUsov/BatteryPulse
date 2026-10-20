@@ -22,6 +22,7 @@ final class BatteryNotifier: NSObject {
     /// The accessory threshold last seen, so only a change of it re-evaluates.
     private var lastAccessoryThreshold: Int?
     private var defaultsObserver: (any NSObjectProtocol)?
+    private var batteryObservation: Task<Void, Never>?
 
     init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
@@ -38,7 +39,14 @@ final class BatteryNotifier: NSObject {
     func start() {
         guard Self.isAvailable else { return }
         UNUserNotificationCenter.current().delegate = self
-        observe()
+        // Every change of the monitor's snapshot. The snapshot at the start is no change, so a
+        // launch alone posts nothing about the Mac's battery.
+        batteryObservation = Task(name: "BatteryNotifier.batteryObservation") { [weak self, monitor] in
+            for await _ in Observations({ monitor.snapshot }).dropFirst() {
+                guard let self else { return }
+                self.evaluate()
+            }
+        }
         observeAccessories()
         // An accessory can stay at the same level for an hour: one that is already low at launch
         // alerts now, not at its next change.
@@ -58,6 +66,15 @@ final class BatteryNotifier: NSObject {
         }
     }
 
+    func stop() {
+        batteryObservation?.cancel()
+        batteryObservation = nil
+        if let defaultsObserver {
+            NotificationCenter.default.removeObserver(defaultsObserver)
+            self.defaultsObserver = nil
+        }
+    }
+
     /// Off clears the state at once. On, the evaluation waits for the answer to the permission
     /// prompt Settings shows the first time an alert is turned on: a notification posted before
     /// it is allowed is dropped, and the accessory would then stay quiet until it charges.
@@ -71,18 +88,6 @@ final class BatteryNotifier: NSObject {
             // Returns at once, without a prompt, once the user has answered.
             _ = await BatteryNotifier.requestAuthorization()
             self?.evaluateAccessories()
-        }
-    }
-
-    /// Re-arms on every change of the monitor's snapshot.
-    private func observe() {
-        withObservationTracking {
-            _ = monitor.snapshot
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.evaluate()
-                self?.observe()
-            }
         }
     }
 
