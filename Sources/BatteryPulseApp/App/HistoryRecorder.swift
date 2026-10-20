@@ -4,6 +4,7 @@ import BatteryCore
 import BatteryKit
 import Foundation
 import Observation
+import os
 
 /// Where the app keeps its battery history.
 enum AppHistory {
@@ -77,9 +78,28 @@ final class HistoryRecorder {
         defer { interval.end() }
         let now = Date()
         let event = pendingEvent
-        let recorded = (try? await store.record(HistorySample(snapshot, at: now, event: event))) ?? false
+        let recorded: Bool
+        do {
+            recorded = try await store.record(HistorySample(snapshot, at: now, event: event))
+        } catch {
+            recorded = false
+            Self.logWriteFailure("a sample", error)
+        }
         if recorded, event != nil, pendingEvent == event { pendingEvent = nil }
-        try? await store.record(HistoryDay(snapshot, day: HistoryDay.key(for: now)), at: now)
+        do {
+            try await store.record(HistoryDay(snapshot, day: HistoryDay.key(for: now)), at: now)
+        } catch {
+            Self.logWriteFailure("the day's summary", error)
+        }
+    }
+
+    /// A failed write leaves a gap in the charts, so it is logged. `what` is static text; the
+    /// error's domain and code are public, its description, which can name a path, is not.
+    static func logWriteFailure(_ what: String, _ error: any Error) {
+        let error = error as NSError
+        Diagnostics.history.error(
+            "Writing \(what, privacy: .public) failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+        )
     }
 }
 #endif

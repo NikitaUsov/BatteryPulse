@@ -4,6 +4,7 @@ import BatteryKit
 import Foundation
 import Observation
 import WidgetKit
+import os
 
 /// Asks WidgetKit to reload the battery widget when the battery changes enough to matter
 /// (``WidgetReloadPolicy``). The widget reads the battery itself; this only says when. Demo
@@ -43,7 +44,10 @@ final class WidgetRefresher {
     static func endPreviousExtension() {
         var pids = [pid_t](repeating: 0, count: 4096)
         let count = proc_listallpids(&pids, Int32(pids.count * MemoryLayout<pid_t>.stride))
-        guard count > 0 else { return }
+        guard count > 0 else {
+            Diagnostics.widget.error("Listing the processes failed; the previous widget extension may still run")
+            return
+        }
         var ended = false
         for pid in pids.prefix(Int(count)) where pid > 0 {
             var name = [CChar](repeating: 0, count: 64)
@@ -53,6 +57,7 @@ final class WidgetRefresher {
             if processName == extensionExecutable, kill(pid, SIGTERM) == 0 { ended = true }
         }
         guard ended else { return }
+        Diagnostics.widget.notice("Ended the previous version's widget extension")
         // Main actor already: the class is.
         Task {
             try? await Task.sleep(for: .seconds(1))

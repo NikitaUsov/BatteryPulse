@@ -208,7 +208,11 @@ final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await UpdateInstaller.current?.finishBeforeQuitting()
-            try? await AppHistory.store.flush()
+            do {
+                try await AppHistory.store.flush()
+            } catch {
+                HistoryRecorder.logWriteFailure("the day's summaries before quitting", error)
+            }
             await AppDevices.monitor.flushHistory()
             NSApp.reply(toApplicationShouldTerminate: true)
         }
