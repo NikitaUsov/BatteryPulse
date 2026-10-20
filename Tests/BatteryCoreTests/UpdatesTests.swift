@@ -48,6 +48,19 @@ import Testing
         #expect(release.publishedAt == Date(timeIntervalSince1970: 1_792_003_956))
     }
 
+    /// The links 0.6.0 spelled out one by one, now derived from one repository constant.
+    @Test func theReleaseChannelKeepsTheLinks() {
+        #expect(
+            ReleaseChannel.latestRelease.absoluteString
+                == "https://api.github.com/repos/NikitaUsov/BatteryPulse/releases/latest")
+        #expect(ReleaseChannel.project.absoluteString == "https://github.com/NikitaUsov/BatteryPulse")
+        #expect(ReleaseChannel.releasesPage.absoluteString == "https://github.com/NikitaUsov/BatteryPulse/releases")
+        #expect(
+            ReleaseChannel.file("docs/USER_GUIDE.md").absoluteString
+                == "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")
+        #expect(ReleaseChannel.assetName == "BatteryPulse.dmg")
+    }
+
     @Test func rejectsWhatIsNotAStableRelease() {
         #expect(throws: ReleaseInfo.ParseError.notARelease) {
             try ReleaseInfo.parse(gitHubJSON: Data(#"{"message": "Not Found"}"#.utf8))

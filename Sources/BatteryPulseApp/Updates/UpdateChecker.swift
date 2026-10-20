@@ -52,8 +52,7 @@ final class UpdateChecker {
     /// A build without a real version: CI artifacts and `swift run`.
     var isUnversioned: Bool { currentVersion == AppVersion(parts: [0, 0, 0]) }
 
-    // swift-format-ignore: NeverForceUnwrap
-    static let endpoint = URL(string: "https://api.github.com/repos/NikitaUsov/BatteryPulse/releases/latest")!
+    static let endpoint = ReleaseChannel.latestRelease
 
     init(bundle: Bundle = .main) {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String

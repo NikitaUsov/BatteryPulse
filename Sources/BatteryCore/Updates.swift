@@ -113,7 +113,9 @@ public struct ReleaseInfo: Sendable, Equatable {
 
     /// Parses the GitHub API response; `assetName` picks the download, and the asset of that name
     /// plus `.sig` its signature.
-    public static func parse(gitHubJSON data: Data, assetName: String = "BatteryPulse.dmg") throws -> ReleaseInfo {
+    public static func parse(gitHubJSON data: Data, assetName: String = ReleaseChannel.assetName) throws
+        -> ReleaseInfo
+    {
         let release: GitHubRelease
         do {
             release = try JSONDecoder().decode(GitHubRelease.self, from: data)
@@ -135,6 +137,37 @@ public struct ReleaseInfo: Sendable, Equatable {
             signatureURL: release.assets?.first { $0.name == signatureName }?.browserDownloadURL,
             publishedAt: release.publishedAt.flatMap { try? Date($0, strategy: .iso8601) }
         )
+    }
+}
+
+/// Where BatteryPulse's releases come from: the GitHub repository, its API endpoint, its releases
+/// page and the asset the app installs. The app's links derive from these, so a moved repository
+/// is one edit.
+///
+/// Nothing checks a URL against these prefixes: GitHub builds each release's page and download
+/// URLs itself, and after a rename or transfer it answers with the new ones, which an exact match
+/// would refuse.
+public enum ReleaseChannel {
+    /// The repository on GitHub, `owner/name`.
+    public static let repository = "NikitaUsov/BatteryPulse"
+    /// The project's page.
+    public static let project = url("https://github.com/\(repository)")
+    /// Every release with its notes and assets.
+    public static let releasesPage = url("https://github.com/\(repository)/releases")
+    /// GitHub's API for the latest release that is neither a draft nor a pre-release.
+    public static let latestRelease = url("https://api.github.com/repos/\(repository)/releases/latest")
+    /// The DMG every release attaches under the same name, so `releases/latest/download/` links
+    /// keep working. Its signature is the asset of this name plus `.sig`.
+    public static let assetName = "BatteryPulse.dmg"
+
+    /// A file of the default branch, as github.com shows it.
+    public static func file(_ path: String) -> URL {
+        url("https://github.com/\(repository)/blob/main/\(path)")
+    }
+
+    // swift-format-ignore: NeverForceUnwrap
+    private static func url(_ string: String) -> URL {
+        URL(string: string)!
     }
 }
 
