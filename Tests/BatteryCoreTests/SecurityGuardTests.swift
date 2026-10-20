@@ -44,6 +44,13 @@ import Testing
                     "BatteryKit/MacAccessoryProvider.swift": .max,
                 ],
                 message: "dlopen/dlsym only for MobileDevice and the accessory power sources"),
+            // SEC-03: the update traffic goes through `UpdateNetwork`'s ephemeral sessions, which
+            // cache nothing on disk and keep automatic checks off Low Data Mode.
+            Placement(
+                literals: ["URLSession"],
+                pattern: words(#/\bURLSession\s*\.\s*shared\b/#),
+                allowed: [:],
+                message: "URLSession.shared caches on disk; use UpdateNetwork's sessions"),
             Placement(
                 literals: ["IOServiceOpen", "IOConnect"],
                 pattern: words(#/\bIOServiceOpen\b|\bIOConnect\w+/#),
@@ -114,6 +121,14 @@ import Testing
                 FileManager.default.fileExists(atPath: SourceScanner.sources.appendingPathComponent(path).path),
                 "\(path)")
         }
+    }
+
+    /// SEC-03: no request goes through the shared session.
+    @Test func noSharedURLSession() {
+        #expect(flags("let (data, response) = try await URLSession.shared.data(for: request)"))
+        #expect(flags("let session = URLSession .shared", path: "BatteryPulseApp/Updates/UpdateChecker.swift"))
+        #expect(!flags("let (data, _) = try await UpdateNetwork.user.data(for: request)"))
+        #expect(!flags("let session = URLSession(configuration: .ephemeral)"))
     }
 
     /// The SMC client's one user-client call: `IOConnectCallStructMethod` with selector 2
