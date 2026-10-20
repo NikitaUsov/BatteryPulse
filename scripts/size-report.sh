@@ -11,7 +11,7 @@
 # It fails when a row exceeds its ceiling in scripts/size-budget.json, or when a bundle hygiene
 # count isn't 0: the Swift runtime loaded from the bundle, a Frameworks folder, build products
 # such as a dSYM inside the bundle, the build machine's paths in a shipped (stripped) binary, or
-# an exported symbol other than _main.
+# an export list other than _main alone.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -58,14 +58,21 @@ export_names() {
   xcrun dyld_info -exports "$1" 2>/dev/null | awk '$1 ~ /^0x[0-9A-Fa-f]+$/ { print $2 }' | sort -u || true
 }
 
-# Exported names other than _main: each shipped executable exports only _main. "null" if
-# dyld_info fails.
+# Each shipped executable exports _main and nothing else: the number of other exported names,
+# plus 1 if _main isn't exported. "null" if dyld_info fails.
 other_exports() {
+  local names others
   if [ "$(exports "$1")" = null ]; then
     echo null
     return
   fi
-  export_names "$1" | grep -c -v -x -F _main || true
+  names="$(export_names "$1")"
+  others=0
+  if [ -n "$names" ]; then
+    others="$(grep -c -v -x -F _main <<<"$names" || true)"
+  fi
+  grep -q -x -F _main <<<"$names" || others=$((others + 1))
+  echo "$others"
 }
 
 # Lines of `strings -a` that name a path in a user's home folder, such as the CI runner's
@@ -205,8 +212,8 @@ report="$(
   echo "| \`.dSYM\`, \`.o\` and \`.swiftmodule\` in the bundle | $hygiene_build_products |"
   echo "| \`/Users/\` strings in the app binary | $hygiene_app_paths |"
   echo "| \`/Users/\` strings in the widget binary | $hygiene_widget_paths |"
-  echo "| Exports other than \`_main\`, app | $hygiene_app_other_exports |"
-  echo "| Exports other than \`_main\`, widget | $hygiene_widget_other_exports |"
+  echo "| Exports other than \`_main\` (+1 without \`_main\`), app | $hygiene_app_other_exports |"
+  echo "| Exports other than \`_main\` (+1 without \`_main\`), widget | $hygiene_widget_other_exports |"
   echo
   echo "Budget: $ceilings ceilings in \`$BUDGET\`. $budget_note"
   echo

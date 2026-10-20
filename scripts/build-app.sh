@@ -37,10 +37,11 @@ DMG="$BUILD_DIR/$NAME.dmg"
 # The shipped binaries' release flags, on these two command lines only: swift test and CI's bpulse
 # build don't get them, and Package.swift holds only the language policy.
 # - Export only _main. An executable without plug-ins that link back to it needs no exported
-#   symbols, and with an export list every other global is private to the binary, so -dead_strip
-#   (on SwiftPM's link line) drops the public code of BatteryCore and BatteryKit that the binary
-#   never calls. The widget keeps _main too, though it starts in _NSExtensionMain: it costs
-#   nothing.
+#   symbols; the export list makes every other global private, so each binary exports one name
+#   instead of the about 4,200 public names of BatteryCore and BatteryKit. It doesn't shrink the
+#   code: what -dead_strip keeps doesn't depend on the exports. The widget keeps _main too,
+#   though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
+#   widget_other_exports out of size-report.sh's hygiene checks too.
 # - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
 #   and the History store ran no slower with it.
 RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
@@ -160,7 +161,9 @@ fi
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
 # them, tied to each binary by its UUID, and go into $NAME-dSYMs.zip (a CI artifact and a release
-# asset). A profiling build keeps its symbols for Instruments and the memory tools.
+# asset). strip -x removes the local symbols; the export list left _main the only global one
+# besides the imports, so _main stays exported (a plain strip would remove it too). A profiling
+# build keeps its symbols for Instruments and the memory tools.
 DSYMS="$BUILD_DIR/dSYMs"
 mkdir -p "$DSYMS"
 uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
@@ -176,7 +179,7 @@ for product in BatteryPulse BatteryPulseWidget; do
   fi
 done
 if [ "$PROFILING" = 0 ]; then
-  xcrun strip "$APP/Contents/MacOS/BatteryPulse" "$WIDGET"
+  xcrun strip -x "$APP/Contents/MacOS/BatteryPulse" "$WIDGET"
 fi
 for product in BatteryPulse BatteryPulseWidget; do
   binary="$APP/Contents/MacOS/BatteryPulse"
