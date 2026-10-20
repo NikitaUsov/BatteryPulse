@@ -151,6 +151,25 @@ import Testing
         #expect(try await Self.makeStore(directory).load().count == 1)
     }
 
+    /// A registry that doesn't decode and can't be set aside stays as it is. Here a dangling link
+    /// holds the set-aside name: `fileExists` doesn't see it and the move won't replace it.
+    @Test func registryThatCannotBeSetAsideIsNeverOverwritten() async throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("devices.json")
+        let garbage = Data("not a registry".utf8)
+        try garbage.write(to: url)
+        try FileManager.default.createSymbolicLink(
+            atPath: directory.appendingPathComponent("devices.unreadable.json").path,
+            withDestinationPath: directory.appendingPathComponent("missing").path)
+        let store = Self.makeStore(directory)
+        await #expect(throws: (any Error).self) { try await store.load() }
+        #expect(await store.isReadOnly)
+        try await store.save([try Self.device(Self.phone)])
+        #expect(try Data(contentsOf: url) == garbage)
+    }
+
     @Test func historyIsSeparatePerDevice() async throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }

@@ -14,7 +14,8 @@ import Foundation
 public actor DeviceStore {
     public let directory: URL
     /// A newer registry version was found; ``save(_:)`` writes nothing, so this version never
-    /// overwrites what a newer one wrote. Also set when the registry exists but can't be read.
+    /// overwrites what a newer one wrote. Also set when the registry exists but can't be read,
+    /// or can't be set aside.
     public private(set) var isReadOnly = false
     private var stores: [DeviceKey: HistoryStore] = [:]
     /// The clock of each device's ``HistoryStore``, injectable for tests.
@@ -88,7 +89,8 @@ public actor DeviceStore {
     /// The remembered devices. A missing file gives none. A newer version gives none and makes
     /// the store read-only. A file that doesn't decode is set aside as `devices.unreadable.json`
     /// (replacing an older one) and gives none; histories re-attach as devices reconnect, since
-    /// their keys don't change. A file that can't be read throws and makes the store read-only.
+    /// their keys don't change. A file that can't be read, or can't be set aside, throws and makes
+    /// the store read-only.
     public func load() throws -> [RememberedDevice] {
         guard FileManager.default.fileExists(atPath: registryURL.path) else { return [] }
         let data: Data
@@ -108,10 +110,16 @@ public actor DeviceStore {
         do {
             return try decoder.decode(RememberedDeviceFile.self, from: data).devices
         } catch {
-            if FileManager.default.fileExists(atPath: unreadableRegistryURL.path) {
-                try FileManager.default.removeItem(at: unreadableRegistryURL)
+            do {
+                if FileManager.default.fileExists(atPath: unreadableRegistryURL.path) {
+                    try FileManager.default.removeItem(at: unreadableRegistryURL)
+                }
+                try FileManager.default.moveItem(at: registryURL, to: unreadableRegistryURL)
+            } catch {
+                // The file is still in place: a save would overwrite it.
+                isReadOnly = true
+                throw error
             }
-            try FileManager.default.moveItem(at: registryURL, to: unreadableRegistryURL)
             return []
         }
     }
