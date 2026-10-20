@@ -32,11 +32,10 @@ final class MockBatteryProvider: BatteryProvider {
     }
 }
 
-final class Counter: @unchecked Sendable {
-    private let lock = NSLock()
-    private var count = 0
-    var value: Int { lock.withLock { count } }
-    func increment() { lock.withLock { count += 1 } }
+final class Counter: Sendable {
+    private let count = Mutex(0)
+    var value: Int { count.withLock { $0 } }
+    func increment() { count.withLock { $0 += 1 } }
 }
 
 /// A clock that stands still until a test advances it, so each of the monitor's sleeps (the
