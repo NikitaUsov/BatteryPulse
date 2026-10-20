@@ -2,13 +2,15 @@ import Foundation
 import Testing
 
 /// The sources of the code that only compiles on macOS, for the suites that guard its rules on
-/// Linux (``MotionGuardTests``, ``LocalizationCatalogTests``), and the helpers that scan them:
-/// code with comments and string literals blanked out, and calls with their argument text.
+/// Linux (``MotionGuardTests``, ``LocalizationCatalogTests``), every target's sources for the
+/// rules that hold everywhere (``SecurityGuardTests``, ``EnergyGuardTests``), and the helpers
+/// that scan them: code with comments and string literals blanked out, and calls with their
+/// argument text.
 ///
-/// Every Swift file of `Sources/BatteryPulseApp` and `Sources/BatteryPulseWidget` is read and
-/// blanked once per test process (``files``), however many suites and tests look at it.
+/// Every Swift file of `Sources` is read and blanked once per test process (``files``,
+/// ``allFiles``), however many suites and tests look at it.
 enum SourceScanner {
-    /// A Swift file of the app or the widget.
+    /// A Swift file of `Sources`.
     struct File: Sendable, CustomTestStringConvertible {
         /// Relative to `Sources/`, such as `BatteryPulseApp/Main/MainView.swift`.
         var path: String
@@ -30,9 +32,19 @@ enum SourceScanner {
     /// The targets whose code only compiles on macOS.
     static let targets = ["BatteryPulseApp", "BatteryPulseWidget"]
 
+    /// The other targets: Linux compiles them, but their `#if os(macOS)` blocks only CI does.
+    static let otherTargets = ["BatteryCore", "BatteryKit", "bpulse"]
+
     /// Every Swift file of ``targets``, ordered by path. A `static let`, so it is built once, on
     /// first use, whichever test gets there first.
-    static let files: Result<[File], any Error> = Result {
+    static let files: Result<[File], any Error> = Result { try scan(targets) }
+
+    /// Every Swift file of every target, ordered by path; ``files`` are not read twice.
+    static let allFiles: Result<[File], any Error> = Result {
+        try (files.get() + scan(otherTargets)).sorted { $0.path < $1.path }
+    }
+
+    private static func scan(_ targets: [String]) throws -> [File] {
         var files: [File] = []
         for target in targets {
             let directory = sources.appendingPathComponent(target)
