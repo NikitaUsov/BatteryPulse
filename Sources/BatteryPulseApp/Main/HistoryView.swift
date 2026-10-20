@@ -38,6 +38,9 @@ struct HistoryView: View {
     @State private var exportRequest: HistoryExportRequest?
     /// The source picked in the toolbar; Show in History on a device page sets it too.
     @Binding private var source: HistorySource
+    /// Settings → Advanced → Record battery history, observed so the empty page's sentence
+    /// follows it at once.
+    @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
     /// The source of the data on screen, like ``loadedPeriod``.
     @State private var loadedSource: HistorySource?
     /// The store the data on screen came from, for exporting what History shows.
@@ -166,7 +169,7 @@ struct HistoryView: View {
                 ContentUnavailableView {
                     Label("No History Yet", systemImage: "chart.xyaxis.line")
                 } description: {
-                    if AppSettings.recordsHistory {
+                    if recordsHistory {
                         if case .device = shownSource {
                             Text(
                                 "BatteryPulse records an iPhone or iPad every 5 minutes while it's connected by cable.")
