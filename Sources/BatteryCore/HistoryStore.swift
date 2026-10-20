@@ -18,6 +18,24 @@ public actor HistoryStore {
     /// What `days.jsonl` holds, to tell whether a summary changed enough to write right away.
     private var writtenDays: [String: HistoryDay] = [:]
     private var lastDaysWrite: Date?
+    /// Whether this session has looked for the legacy samples file. No version since writes
+    /// it, so it is split at the session's first call and not looked for again.
+    private var hasCheckedLegacySamples = false
+    /// One encoder for every line this store writes: sorted keys keep the files stable.
+    private let encoder: JSONEncoder
+    private let decoder = JSONDecoder()
+    /// What this store has done on disk, for the work-count tests.
+    private(set) var activity = Activity()
+
+    /// Work counts, never timing.
+    struct Activity: Equatable {
+        /// Samples appended to a day file.
+        var appends = 0
+        /// Rewrites of `days.jsonl`.
+        var daysWrites = 0
+        /// Looks for the legacy samples file.
+        var legacyChecks = 0
+    }
 
     /// Capacities in mAh move by a few units every few minutes; a day's summary is saved at
     /// most this often unless its health or cycle count changed.
@@ -29,6 +47,9 @@ public actor HistoryStore {
     public init(directory: URL, now: @escaping @Sendable () -> Date = { Date() }) {
         self.directory = directory
         self.now = now
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        self.encoder = encoder
     }
 
     /// BatteryPulse's bundle identifier, for tools that read its history (`bpulse --export`).
@@ -54,6 +75,8 @@ public actor HistoryStore {
     /// Records `sample` if ``HistoryPolicy`` says it adds something; returns whether it did.
     @discardableResult
     public func record(_ sample: HistorySample) throws -> Bool {
+        // Only the session's first call looks for the legacy file and the last sample; after
+        // that, the policy check comes before anything touches the disk.
         try migrateLegacySamples()
         if !hasLoadedLastSample {
             lastSample = try latestSample()
@@ -131,15 +154,20 @@ public actor HistoryStore {
         }
     }
 
-    /// Splits the old single samples file into day files, once.
+    /// Splits the old single samples file into day files, at the session's first call. A failed
+    /// split is tried again at the next call.
     private func migrateLegacySamples() throws {
-        guard FileManager.default.fileExists(atPath: legacySamplesURL.path) else { return }
-        let samples = try readLines(HistorySample.self, from: legacySamplesURL)
-        try FileManager.default.createDirectory(at: samplesDirectory, withIntermediateDirectories: true)
-        for (day, group) in Dictionary(grouping: samples, by: { Self.fileDay(for: $0.time) }) {
-            try writeLines(group.sorted { $0.time < $1.time }, to: sampleURL(day))
+        guard !hasCheckedLegacySamples else { return }
+        activity.legacyChecks += 1
+        if FileManager.default.fileExists(atPath: legacySamplesURL.path) {
+            let samples = try readLines(HistorySample.self, from: legacySamplesURL)
+            try FileManager.default.createDirectory(at: samplesDirectory, withIntermediateDirectories: true)
+            for (day, group) in Dictionary(grouping: samples, by: { Self.fileDay(for: $0.time) }) {
+                try writeLines(group.sorted { $0.time < $1.time }, to: sampleURL(day))
+            }
+            try FileManager.default.removeItem(at: legacySamplesURL)
         }
-        try FileManager.default.removeItem(at: legacySamplesURL)
+        hasCheckedLegacySamples = true
     }
 
     // MARK: - Daily summaries
@@ -187,6 +215,7 @@ public actor HistoryStore {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try writeLines(days.values.sorted { $0.day < $1.day }, to: daysURL)
         writtenDays = days
+        activity.daysWrites += 1
     }
 
     public func clear() throws {
@@ -203,16 +232,10 @@ public actor HistoryStore {
 
     // MARK: - Files
 
-    private static func encoder() -> JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        return encoder
-    }
-
     private func append(_ value: some Encodable, to url: URL) throws {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        var line = try Self.encoder().encode(value)
+        var line = try encoder.encode(value)
         line.append(0x0A)
         if let handle = try? FileHandle(forUpdating: url) {
             defer { try? handle.close() }
@@ -228,10 +251,10 @@ public actor HistoryStore {
         } else {
             try line.write(to: url, options: .atomic)
         }
+        activity.appends += 1
     }
 
     private func writeLines(_ values: [some Encodable], to url: URL) throws {
-        let encoder = Self.encoder()
         var data = Data()
         for value in values {
             data.append(try encoder.encode(value))
@@ -243,8 +266,7 @@ public actor HistoryStore {
     /// Reads a JSON Lines file, skipping lines that don't decode (a write cut short by a crash).
     private func readLines<T: Decodable>(_ type: T.Type, from url: URL) throws -> [T] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }
-        let data = try Data(contentsOf: url)
-        let decoder = JSONDecoder()
-        return data.split(separator: 0x0A).compactMap { try? decoder.decode(T.self, from: Data($0)) }
+        // Each line is a slice of the file's data, decoded where it is.
+        return try Data(contentsOf: url).split(separator: 0x0A).compactMap { try? decoder.decode(T.self, from: $0) }
     }
 }
