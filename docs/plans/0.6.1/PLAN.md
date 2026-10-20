@@ -1682,3 +1682,28 @@ Packages append one line per fact here: what they found, on which job, and which
 This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks.
 
 - (none yet)
+
+### A1 (WP-0a, WP-0b), merged 2026-10-20
+
+- **perf triggers:** a seventh refresh trigger, `followUp`, marks the reads after a plug change
+  (playbook §2.2 names it); `perf-stats.swift` accepts any trigger string. The trigger field also
+  carries each interval's static detail (`history.load` day or week, `update.check` user or
+  automatic, `page.switch` the page, `widget.reload` policy or update).
+- **SMC parts:** `smc.power` and `smc.other` are two reads of the same keys (B0AV and B0AC first,
+  then the rest); `MacBatteryProvider`'s private `smcPowerKeys` is what WP-2b's `liveKeys` replaces.
+- **Linux numbers (noisy, another agent running):** B2 7-day store cold 72 ms in release (106 ms in
+  debug), so G1 points to the decode cache; B4 raw sections 3.5 ms; B5 five-way filter 6.9 ms against
+  joined 2.1 ms. Guard suites in parallel 1.8 s → 0.8 s.
+- **macOS job facts (run 39411206693):** `.dSYM` folders for all three products are in the release
+  bin path; the widget's link line has `-dead_strip` and no `-export_dynamic`; `hdiutil create` lists
+  ULFO and ULMO; `hdiutil imageinfo` is deprecated in favour of `diskutil image info`; plutil reads
+  the JSON budget. DMG (UDZO) 3,676,272 B, `.app` 11,112 KB, app binary 7,568,864 B, widget binary
+  3,157,120 B; the hygiene counts are all 0, including `/Users/` strings, unlike the size research's
+  133 in an unstripped binary. App and widget both report 4170 exports: WP-8a checks that the widget
+  count reads the widget binary.
+- **Flaky test:** `BatteryMonitorTests.pluggingInIsFollowedByExtraReads` failed once on macOS
+  (wall-clock sleeps of 10-150 ms under load) and passed on the next runs. WP-2a's E3 (an injected
+  `Clock`) must make it deterministic.
+- **K-02:** the swift-testing time limit reports "Time limit was exceeded: 60.000 seconds" on Linux,
+  and the process then hangs until killed, so the job timeout is what ends a hang. The CI half was
+  not run. Output of a killed `swift test` redirected to a file is lost; run it under a pty.
