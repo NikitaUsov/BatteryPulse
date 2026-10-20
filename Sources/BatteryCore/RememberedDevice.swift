@@ -91,10 +91,6 @@ public struct RememberedDevice: Sendable, Equatable, Codable, Identifiable {
         return battery
     }
 
-    public var identity: IDeviceIdentity {
-        IDeviceIdentity(name: name, deviceClass: deviceClass, productType: productType, osVersion: osVersion)
-    }
-
     /// "iPadOS" for an iPad, "iOS" otherwise.
     public var osName: String { IDeviceInfo.osName(deviceClass: deviceClass) }
 }

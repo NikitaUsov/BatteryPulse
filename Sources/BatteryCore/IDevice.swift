@@ -22,7 +22,7 @@ public enum IDeviceConnection: String, Sendable, Codable, CaseIterable {
 
 /// An iPhone or iPad attached to the Mac, as listed by `bpulse --devices`.
 public struct IDeviceInfo: Sendable, Equatable, Identifiable {
-    /// The device's UDID. Never printed or written to a capture; see ``redactedIdentifier``.
+    /// The device's UDID. Never printed or written to a capture; see ``redactedIdentifier(_:)``.
     public var id: String
     /// The name the owner gave the device (`DeviceName`).
     public var name: String?
@@ -57,10 +57,6 @@ public struct IDeviceInfo: Sendable, Equatable, Identifiable {
     }
 
     /// Enough of the UDID to tell two devices apart in a terminal: its last four characters.
-    public var redactedIdentifier: String {
-        Self.redactedIdentifier(id)
-    }
-
     public static func redactedIdentifier(_ identifier: String) -> String {
         let trimmed = identifier.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 8 else { return "…" }
