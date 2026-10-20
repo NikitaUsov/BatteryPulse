@@ -1747,3 +1747,35 @@ This covers the playbook §4 CI questions, the gates of §3.6 and the SDK checks
   D1 rebases it onto the RC before the session.
 - **Release notes (D3):** one line that the tile picker's selection is now an accent outline (the
   0.5 notes advertised a flowing glass selection).
+
+### B1 (WP-8a, WP-2a), merged 2026-10-20
+
+- **Size, before → after (Xcode 27.1):** DMG 3,699,952 B UDZO → 1,366,997 B ULMO (−63 %); `.app`
+  11,180 → 4,588 KB (−59 %); app binary 7,618,784 → 2,733,408 B (−64 %), `__text` −14.5 %, exports
+  4195 → 1; widget 3,172,800 → 1,309,408 B (−59 %), `__text` −18.3 %, exports 4195 → 1. The DMG
+  varies by about 10 B between runs (timestamps); D1's ceilings allow for it.
+- **Why the export counts matched:** both binaries export the same 4200 names, the public API of
+  BatteryCore and BatteryKit. A plain `strip` also removes `_main`; `strip -x` with the export
+  list keeps exactly `_main`.
+- **Dead code stays for another reason:** SZ-02 cut no `__text`. `-why_live` shows unused library
+  code (for example `RawSection.sections(for:)` in the widget) kept as `dont-dead-strip` atoms
+  from Swift Build's prelinked library objects (`BatteryCore.o`), and Swift Build's `-r` link of a
+  library target takes no `-Xlinker` flags. Input for WP-11, G13 and K-03: the link maps attribute
+  size but can't show code removed.
+- **G2 (-Osize):** adopted; no Linux bench median regressed (B2 7-day cold 93 → 79 ms).
+- **Deprecated in macOS 27:** `hdiutil attach` and `detach` warn ("use diskutil image attach" and
+  "diskutil eject"); `hdiutil imageinfo` too. They work, so 0.6.0's installer installs the ULMO
+  DMG. Moving the app's installer to `diskutil image` is WP-6b's if it fits, else 0.6.2.
+- **CI launch smoke:** the runner opens GUI apps; `menuBarReady` came about 1.3 s after the launch
+  refresh; `osascript` quits it with no prompt. F11's default stays "ship if the CI smoke runs".
+- **G3 / F8:** the widget, stripped and exporting only `_main`, must still render on the M5. If D3
+  drops the widget's export flag, it also drops `widget_other_exports` from the hygiene list.
+- **Coalescing (E3):** one read 150 ms after the first notification of a burst, 100 ms tolerance,
+  so at most 250 ms added to plug and unplug. The monitor takes an internal `MonitorClock`
+  (`Clock` with `ContinuousClock.Instant`); every monitor test runs on a manual clock, so the
+  flaky test is gone (25 parallel runs under load, 0 failures). `hasRead(within:)` is public for
+  WP-4.
+- **CH-08:** the label counts its shown members; the Scene withdraws the request when the item is
+  turned off and asks again when it comes back. F11 can check it with the `monitor` log category.
+- **Docs for WP-12:** USER_GUIDE line 492 should mention `BatteryPulse-dSYMs.zip` beside the DMG
+  and its `.sig`.
