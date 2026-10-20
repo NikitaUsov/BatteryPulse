@@ -17,6 +17,9 @@ struct ChargeChart: View {
 
     var body: some View {
         let line = tones.style(.chart(.charge))
+        // Charging a little stronger than holding the charge.
+        let charging = tones.style(.chargingSpan)
+        let holding = tones.style(.holdingSpan)
         VStack(alignment: .trailing, spacing: 6) {
             Chart {
                 ForEach(data.spans) { span in
@@ -24,8 +27,7 @@ struct ChargeChart: View {
                         xStart: .value(ChartKey.start, span.start), xEnd: .value(ChartKey.end, span.end),
                         yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
                     )
-                    // Charging a little stronger than holding the charge.
-                    .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
+                    .foregroundStyle(span.kind == .charging ? charging : holding)
                     .accessibilityHidden(true)
                 }
                 ForEach(data.charge) { value in
