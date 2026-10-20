@@ -43,9 +43,10 @@ jobs:
             echo "::error::The UPDATE_SIGNING_KEY secret is missing or empty. Add it to the release environment in Settings > Environments (see scripts/sign-update.swift)."
             exit 1
           fi
-          # One quoted base64 key (44 characters) per line of the publicKeys array.
+          # One quoted base64 key (44 characters) per line of the publicKeys array. A line that is
+          # only a comment doesn't count: the app doesn't trust a key commented out of the list.
           expected="$(sed -n '/static let publicKeys = \[/,/^ *\]/p' Sources/BatteryCore/ReleaseSigning.swift \
-            | grep -oE '"[A-Za-z0-9+/]{43}="' | tr -d '"' || true)"
+            | grep -v '^[[:space:]]*//' | grep -oE '"[A-Za-z0-9+/]{43}="' | tr -d '"' || true)"
           if [ -z "$expected" ]; then
             echo "::error::Can't read ReleaseSigning.publicKeys from Sources/BatteryCore/ReleaseSigning.swift."
             exit 1
