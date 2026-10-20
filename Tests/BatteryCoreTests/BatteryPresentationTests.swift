@@ -97,7 +97,7 @@ import Testing
         #expect(entries.count > 300)
         #expect(Set(entries.map(\.path)).count == entries.count)
         #expect(entries.contains(RawEntry(path: "AppleSmartBattery.BatteryData.DesignCapacity", property: .int(5760))))
-        #expect(!entries.contains { $0.path.hasSuffix("SerialString") && $0.value != "REDACTED" })
+        #expect(!entries.contains { $0.path.hasSuffix("SerialString") && $0.property.description != "REDACTED" })
     }
 
     // MARK: iPhone and iPad

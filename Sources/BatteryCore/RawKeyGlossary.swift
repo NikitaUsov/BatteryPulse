@@ -76,9 +76,6 @@ public enum RawKeyGlossary {
         Set((entries.values.map(\.summary) + families.map(\.info.summary)).compactMap { $0 })
     }
 
-    /// All glossary keys, for coverage tests.
-    public static var keys: Set<String> { Set(entries.keys) }
-
     static let entries: [String: Info] = Dictionary(uniqueKeysWithValues: table)
 
     /// Groups of similar keys explained together, matched by prefix (longest first).
