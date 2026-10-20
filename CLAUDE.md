@@ -44,7 +44,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
   iPhone/iPad and Accessories, and the Developer section with Raw Data and Demo Mode; the compact
   window; `Main/Components/`, one file per component, `Card.swift` with `Card`, `CardGroup` and
-  `LookForm`), `Updates/` (update check, Software Update and What's New windows), `MenuBar/`,
+  `LookForm`), `Updates/` (update check and `UpdateNetwork`, Software Update and What's New
+  windows), `MenuBar/`,
   `Settings/` (one file per pane), `Welcome/`. Everything is inside `#if os(macOS)`; a stub `main`
   keeps Linux builds working. Locale-independent display logic and `BatteryFormatter`
   (numbers/units per locale) live in BatteryCore so they are tested on Linux.
@@ -170,6 +171,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   for opacity and colour only. No repeating or per-frame animation, no hard-coded animation
   outside `Motion.swift`; nothing animates in the menu bar label or in a hidden window.
   `MotionGuardTests` enforces this.
+- Network: the update traffic goes only through `UpdateNetwork`'s ephemeral sessions, which
+  cache nothing on disk; automatic checks never use Low Data Mode or an expensive network, while
+  Check Now and a download the user chose use any. `URLSession.shared` appears nowhere
+  (`SecurityGuardTests`).
 - Never name third-party apps, their projects or makers anywhere: code, comments, tests, docs,
   commit messages, PRs, issues, release notes. Describe the technique or the evidence instead
   ("a public capture from an M4 Max"). Apple's own apps and frameworks are fine.

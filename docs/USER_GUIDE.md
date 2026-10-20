@@ -459,7 +459,9 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 BatteryPulse checks GitHub for a new version daily, weekly, monthly or never, as you choose in
 Settings → General (daily at first), and **BatteryPulse → Check for Updates…** checks right
-away with any choice. When a new version is out, the first
+away with any choice. Automatic checks skip Low Data Mode and expensive networks, such as a
+Personal Hotspot, and try again later; Check for Updates… checks on any network. When a new
+version is out, the first
 check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
 Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
 available** in the menu bar popover instead, which opens the same window.
@@ -484,8 +486,9 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 and Relaunch takes over.
 
 The check and the download of an update you chose to install are the only requests
-BatteryPulse sends to the internet: GitHub sees your IP address, the app's version and your
-language, as with any web request, and nothing else about your Mac is sent. The only other
+BatteryPulse sends to the internet, and their answers aren't kept in a network cache: GitHub
+sees your IP address, the app's version and your language, as with any web request, and nothing
+else about your Mac is sent. The only other
 connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
