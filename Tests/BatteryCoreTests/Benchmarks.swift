@@ -32,7 +32,8 @@ struct Benchmarks {
     }
 
     /// B2: a week of history from disk, 10,080 minute samples in 8 day files: a fresh store's first
-    /// load (cold) and its second (warm).
+    /// load (cold), its second (warm), and a third after today's file gained a line, as it does
+    /// every minute in the app (tail).
     @Test func b2HistoryStoreWeek() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -40,8 +41,15 @@ struct Benchmarks {
         try Self.writeSamples(samples, to: directory)
         let start = try #require(samples.first).time
         let end = try #require(samples.last).time
+        let today = directory.appendingPathComponent("samples/2027-01-15.jsonl")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        var next = try #require(samples.last)
+        next.time = end.addingTimeInterval(60)
+        let line = try encoder.encode(next) + Data([0x0A])
         var cold: [Duration] = []
         var warm: [Duration] = []
+        var tail: [Duration] = []
         let clock = ContinuousClock()
         // Run 0 warms up.
         for run in 0...Self.runs {
@@ -52,13 +60,24 @@ struct Benchmarks {
             begin = clock.now
             let second = try await store.samples(from: start)
             let warmTime = clock.now - begin
+            let handle = try FileHandle(forUpdating: today)
+            let size = try handle.seekToEnd()
+            try handle.write(contentsOf: line)
+            begin = clock.now
+            let third = try await store.samples(from: start)
+            let tailTime = clock.now - begin
+            try handle.truncate(atOffset: size)
+            try handle.close()
             #expect(first.count == samples.count && second.count == samples.count)
+            #expect(third.count == samples.count + 1)
             guard run > 0 else { continue }
             cold.append(coldTime)
             warm.append(warmTime)
+            tail.append(tailTime)
         }
         Self.report("B2", "history.samples.7d.cold", Self.median(of: cold))
         Self.report("B2", "history.samples.7d.warm", Self.median(of: warm))
+        Self.report("B2", "history.samples.7d.tail", Self.median(of: tail))
     }
 
     /// B3: what the History page computes from the samples: chart points, spans and statistics, for
