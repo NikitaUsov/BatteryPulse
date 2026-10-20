@@ -5,7 +5,8 @@ import Observation
 /// Observable battery state for SwiftUI.
 ///
 /// Event-driven by default: it re-reads only when the OS posts a power change, which costs
-/// nothing while idle. Views that show fast-moving values (current, power) request polling with
+/// nothing while idle, and a burst of such notifications is one read (``requestRefresh()``).
+/// Views that show fast-moving values (current, power) request polling with
 /// ``setLiveRefreshInterval(_:for:)`` and withdraw it with `nil`; the shortest active request
 /// wins.
 @MainActor
@@ -29,11 +30,20 @@ public final class BatteryMonitor {
     @ObservationIgnored public private(set) var lastReadAt: ContinuousClock.Instant?
 
     @ObservationIgnored private let provider: any BatteryProvider
+    @ObservationIgnored private let clock: any MonitorClock
     @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
     @ObservationIgnored private var observation: BatteryObservation?
     @ObservationIgnored private var liveRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
     @ObservationIgnored private var followUpTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+
+    /// How long a burst of change notifications may last: one read follows the first of them
+    /// after this window, give or take ``coalescingTolerance``, which lets the OS fold the wake-up
+    /// into another. powerd posts two notifications for one battery update, and Low Power Mode and
+    /// thermal changes post their own. Together they delay a plug or unplug by at most 250 ms.
+    static let coalescingWindow: Duration = .milliseconds(150)
+    static let coalescingTolerance: Duration = .milliseconds(100)
 
     /// When extra reads follow the adapter being plugged in or out, counted from that moment.
     /// The OS posts one notification, but its own state and the registry take up to a minute to
@@ -42,8 +52,17 @@ public final class BatteryMonitor {
         .seconds(3), .seconds(8), .seconds(15), .seconds(30), .seconds(60),
     ]
 
-    public init(provider: any BatteryProvider) {
+    public convenience init(provider: any BatteryProvider) {
+        self.init(provider: provider, clock: ContinuousClock())
+    }
+
+    /// - Parameters:
+    ///   - provider: Reads the device's battery.
+    ///   - clock: Times the polls, the follow-ups and the coalescing window, and stamps
+    ///     ``lastReadAt``. Tests pass one they advance by hand.
+    init(provider: any BatteryProvider, clock: any MonitorClock) {
         self.provider = provider
+        self.clock = clock
     }
 
     public func start() {
@@ -69,9 +88,14 @@ public final class BatteryMonitor {
         overrideProvider ?? provider
     }
 
-    /// A change notification of the device, or a step of the demo's.
+    /// A change notification of the device, read once its burst is over, or a step of the demo's,
+    /// shown at once.
     private func providerChanged() {
-        refresh(trigger: overrideProvider == nil ? .notify : .demo)
+        if overrideProvider == nil {
+            requestRefresh()
+        } else {
+            refresh(trigger: .demo)
+        }
     }
 
     public func stop() {
@@ -82,6 +106,8 @@ public final class BatteryMonitor {
         liveRefreshTask = nil
         followUpTask?.cancel()
         followUpTask = nil
+        pendingRefresh?.cancel()
+        pendingRefresh = nil
     }
 
     /// Requests polling at `interval` on behalf of `client` (e.g. "popover"); `nil` withdraws the
@@ -98,12 +124,29 @@ public final class BatteryMonitor {
         scheduleLiveRefresh()
     }
 
-    /// Reads the battery now. `trigger` only labels the `refresh` interval.
+    /// Reads the battery once the current burst of change notifications is over: the first of them
+    /// schedules a read ``coalescingWindow`` later, and the rest join it. For a value now, use
+    /// ``refresh(trigger:)``.
+    func requestRefresh() {
+        guard isRunning, pendingRefresh == nil else { return }
+        let clock = clock
+        pendingRefresh = Task { [weak self] in
+            try? await clock.sleep(for: Self.coalescingWindow, tolerance: Self.coalescingTolerance)
+            guard !Task.isCancelled, let self, self.isRunning else { return }
+            self.pendingRefresh = nil
+            self.refresh(trigger: .notify)
+        }
+    }
+
+    /// Reads the battery now; a read that a notification scheduled is no longer needed. `trigger`
+    /// only labels the `refresh` interval.
     public func refresh(trigger: RefreshTrigger = .manual) {
         let interval = Diagnostics.begin("refresh", trigger: trigger.name)
         defer { interval.end() }
+        pendingRefresh?.cancel()
+        pendingRefresh = nil
         let new = activeProvider.read()
-        lastReadAt = .now
+        lastReadAt = clock.now
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) { hasBattery = new != nil }
         if !Self.isSameReading(new, reading) { reading = new }
@@ -116,10 +159,11 @@ public final class BatteryMonitor {
     private func scheduleFollowUps() {
         followUpTask?.cancel()
         let delays = powerChangeFollowUps
+        let clock = clock
         followUpTask = Task { [weak self] in
             var elapsed = Duration.zero
             for delay in delays {
-                try? await Task.sleep(for: delay - elapsed)
+                try? await clock.sleep(for: delay - elapsed)
                 elapsed = delay
                 guard !Task.isCancelled, let self, self.isRunning else { return }
                 self.refresh(trigger: .followUp)
@@ -143,13 +187,20 @@ public final class BatteryMonitor {
         liveRefreshTask?.cancel()
         liveRefreshTask = nil
         guard isRunning, let interval = liveRefreshInterval else { return }
+        let clock = clock
         liveRefreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 // Tolerance lets the OS coalesce wake-ups, which matters on battery.
-                try? await Task.sleep(for: interval, tolerance: interval / 4)
+                try? await clock.sleep(for: interval, tolerance: interval / 4)
                 guard !Task.isCancelled, let self else { return }
                 self.refresh(trigger: .poll)
             }
         }
     }
 }
+
+/// A clock in the continuous clock's time base, which ``BatteryMonitor`` sleeps on and stamps its
+/// reads with: the system's, or a test's that moves only when told to.
+protocol MonitorClock: Clock, Sendable where Instant == ContinuousClock.Instant {}
+
+extension ContinuousClock: MonitorClock {}

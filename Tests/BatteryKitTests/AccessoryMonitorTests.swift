@@ -47,7 +47,7 @@ private func reading(_ percents: [Int]) -> AccessoryReading {
 }
 
 @MainActor
-@Suite struct AccessoryMonitorTests {
+@Suite(.timeLimit(.minutes(1))) struct AccessoryMonitorTests {
     /// Waits until `condition` holds, for at most two seconds.
     private func wait(until condition: () -> Bool) async {
         let deadline = ContinuousClock.now + .seconds(2)
