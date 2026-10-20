@@ -192,6 +192,7 @@ jobs:
 
           log stream --level debug --style compact --predicate 'subsystem == "io.github.nikitausov.BatteryPulse"' > "$RUNNER_TEMP/launch.log" 2>&1 &
           log_pid=$!
+          disown "$log_pid"
           touch "$RUNNER_TEMP/launch-marker"
           sleep 2
           open "$app"
