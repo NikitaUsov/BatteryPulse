@@ -152,13 +152,9 @@ final class UpdateInstaller {
             if isQuitting { throw CancellationError() }
 
             phase = .installing
-            let target = bundleURL
-            let version = release.version
-            let current = currentVersion
-            let previous = try await Task.detached(priority: .userInitiated) {
-                try await UpdateInstallSteps.replace(
-                    target: target, image: image, identifier: identifier, release: version, current: current)
-            }.value
+            let previous = try await UpdateInstallSteps.replace(
+                target: bundleURL, image: image, identifier: identifier, release: release.version,
+                current: currentVersion)
             // The running process still uses the previous version's files; it goes at the next launch.
             UserDefaults.standard.set(previous.path, forKey: AppSettings.updateLeftoverKey)
             if !isQuitting { relaunch() }
@@ -377,8 +373,9 @@ enum UpdateInstallSteps {
 
     /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
     /// volume), checks the copy and swaps it with `target` in one rename. Returns where the
-    /// previous version is now.
-    static func replace(
+    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
+    /// code signature check are synchronous work that must not hold the caller's actor.
+    @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
     ) async throws(UpdateInstallError) -> URL {
         let fileManager = FileManager.default
