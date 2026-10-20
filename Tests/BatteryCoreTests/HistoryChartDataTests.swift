@@ -66,6 +66,40 @@ import Testing
             !HistoryChartData.make(samples: samples, period: .day, end: start, includesStatistics: true).hasTemperature)
     }
 
+    /// The lines hold exactly what the chart drew from the points before (SUI-03), in the same
+    /// order and with the same series names, so the marks and Audio Graphs read the same.
+    @Test func linesAreThePointsValuesInDrawingOrder() {
+        for period in [HistoryPeriod.day, .week] {
+            let chart = HistoryChartData.make(samples: samples(), period: period, end: start, includesStatistics: true)
+            let points = chart.points
+            #expect(
+                chart.charge
+                    == points.compactMap { p in
+                        p.percent.map { HistoryChartValue(time: p.time, value: $0, segment: p.segment) }
+                    })
+            #expect(
+                chart.temperature
+                    == points.compactMap { p in
+                        p.temperatureCelsius.map { HistoryChartValue(time: p.time, value: $0, segment: p.segment) }
+                    })
+            var drawn: [(series: String, time: Date, watts: Double, line: HistoryPowerValue.Line)] = []
+            for p in points {
+                if let watts = p.batteryWatts { drawn.append(("battery-\(p.segment)", p.time, watts, .battery)) }
+                if let load = p.systemLoadWatts { drawn.append(("load-\(p.segment)", p.time, load, .systemLoad)) }
+            }
+            #expect(chart.power.map(\.series) == drawn.map(\.series))
+            #expect(chart.power.map(\.time) == drawn.map(\.time))
+            #expect(chart.power.map(\.watts) == drawn.map(\.watts))
+            #expect(chart.power.map(\.line) == drawn.map(\.line))
+            #expect(chart.power.map(\.id) == Array(chart.power.indices))
+        }
+        let day = HistoryChartData.make(samples: samples(), period: .day, end: start, includesStatistics: true)
+        #expect(Set(day.power.map(\.series)) == ["battery-0", "load-0", "battery-1", "load-1"])
+        // Every fourth charging minute has no load, and the first five no temperature.
+        #expect(day.power.count == 50 + 30 + 15)
+        #expect(day.temperature.count == 45)
+    }
+
     @Test func daysSitAtNoonWithOneCalendar() throws {
         let moscow = try #require(TimeZone(identifier: "Europe/Moscow"))
         var calendar = Calendar(identifier: .gregorian)

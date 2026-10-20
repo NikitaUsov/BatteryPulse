@@ -257,9 +257,13 @@ struct HistoryView: View {
 
     // MARK: - Charts
 
+    // The charts plot ``HistoryChartData``'s ready-made lines and look up each constant once per
+    // body, never per point (SUI-03).
+
     /// The legend sits under the chart, clear of the axis labels and the hover readout.
     private var chargeChart: some View {
-        VStack(alignment: .trailing, spacing: 6) {
+        let line = tones.style(.chart(.charge))
+        return VStack(alignment: .trailing, spacing: 6) {
             Chart {
                 ForEach(chart.spans) { span in
                     RectangleMark(
@@ -270,15 +274,13 @@ struct HistoryView: View {
                     .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
                     .accessibilityHidden(true)
                 }
-                ForEach(chart.points) { point in
-                    if let percent = point.percent {
-                        LineMark(
-                            x: .value("Time", point.time), y: .value("Charge", percent),
-                            series: .value(ChartKey.segment, point.segment)
-                        )
-                        .foregroundStyle(tones.style(.chart(.charge)))
-                        .interpolationMethod(.monotone)
-                    }
+                ForEach(chart.charge) { value in
+                    LineMark(
+                        x: .value("Time", value.time), y: .value("Charge", value.value),
+                        series: .value(ChartKey.segment, value.segment)
+                    )
+                    .foregroundStyle(line)
+                    .interpolationMethod(.monotone)
                 }
             }
             .chartXScale(domain: domain)
@@ -306,22 +308,20 @@ struct HistoryView: View {
 
     @ViewBuilder
     private var powerChart: some View {
+        let battery = String(localized: "Battery")
+        let mac = String(localized: "Mac")
+        let isMonochrome = tones.isMonochrome
         let plot = Chart {
-            ForEach(chart.points) { point in
-                if let watts = point.batteryWatts {
-                    powerLine(point, watts: watts, series: "battery", name: String(localized: "Battery"))
-                }
-                if let load = point.systemLoadWatts {
-                    powerLine(point, watts: load, series: "load", name: String(localized: "Mac"))
-                }
+            ForEach(chart.power) { value in
+                powerLine(value, name: value.line == .battery ? battery : mac, isMonochrome: isMonochrome)
             }
             RuleMark(y: .value(ChartKey.zero, 0))
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
         }
         .chartForegroundStyleScale([
-            String(localized: "Battery"): tones.color(.chart(.batteryPower)),
-            String(localized: "Mac"): tones.color(.chart(.systemLoad)),
+            battery: tones.color(.chart(.batteryPower)),
+            mac: tones.color(.chart(.systemLoad)),
         ])
         // A device has the battery's line alone: no legend naming the Mac.
         .chartLegend(shownSource == .mac ? .automatic : .hidden)
@@ -343,11 +343,11 @@ struct HistoryView: View {
             }
         }
         .frame(height: 180)
-        if tones.isMonochrome {
+        if isMonochrome {
             // Clear: every line is white, so the Mac's is dashed and fainter, in the legend too.
             plot.chartLineStyleScale([
-                String(localized: "Battery"): lineStyle(.batteryPower),
-                String(localized: "Mac"): lineStyle(.systemLoad),
+                battery: lineStyle(.batteryPower),
+                mac: lineStyle(.systemLoad),
             ])
         } else {
             plot
@@ -356,13 +356,13 @@ struct HistoryView: View {
 
     /// One point of a power line. In Clear the line's dash encodes its series as well as its tone.
     @ChartContentBuilder
-    private func powerLine(_ point: HistoryPoint, watts: Double, series: String, name: String) -> some ChartContent {
+    private func powerLine(_ value: HistoryPowerValue, name: String, isMonochrome: Bool) -> some ChartContent {
         let mark = LineMark(
-            x: .value("Time", point.time), y: .value("Watts", watts),
-            series: .value(ChartKey.series, "\(series)-\(point.segment)")
+            x: .value("Time", value.time), y: .value("Watts", value.watts),
+            series: .value(ChartKey.series, value.series)
         )
         .foregroundStyle(by: .value(ChartKey.line, name))
-        if tones.isMonochrome {
+        if isMonochrome {
             mark.lineStyle(by: .value(ChartKey.line, name))
         } else {
             mark
@@ -374,16 +374,15 @@ struct HistoryView: View {
     }
 
     private var temperatureChart: some View {
-        Chart {
-            ForEach(chart.points) { point in
-                if let celsius = point.temperatureCelsius {
-                    LineMark(
-                        x: .value("Time", point.time), y: .value("Temperature", celsius),
-                        series: .value(ChartKey.segment, point.segment)
-                    )
-                    .foregroundStyle(tones.style(.chart(.temperature)))
-                    .interpolationMethod(.monotone)
-                }
+        let line = tones.style(.chart(.temperature))
+        return Chart {
+            ForEach(chart.temperature) { value in
+                LineMark(
+                    x: .value("Time", value.time), y: .value("Temperature", value.value),
+                    series: .value(ChartKey.segment, value.segment)
+                )
+                .foregroundStyle(line)
+                .interpolationMethod(.monotone)
             }
         }
         .chartXScale(domain: domain)
