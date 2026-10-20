@@ -1,16 +1,18 @@
 ## What's new in 0.6.1
 
 - **Smaller and lighter:** the download shrinks from 3.7 MB to 1.4 MB (−61 %), and the
-  installed app takes 4.7 MB instead of about 11 MB. Plugging in or unplugging now reads the
-  battery once instead of twice. With battery power in the menu bar, an hour of BatteryPulse
-  takes TBD (M5) less energy, TBD (M5) less CPU time and TBD (M5) fewer idle wake-ups.
+  installed app takes 4.7 MB instead of about 11 MB. Each battery update macOS announces, such
+  as plugging in or unplugging, is now read once instead of twice. With battery power in the
+  menu bar, an hour of BatteryPulse takes TBD (M5) less energy, TBD (M5) less CPU time and
+  TBD (M5) fewer idle wake-ups.
 - **Tile pickers:** Window Style and Icon Style in Settings mark your choice with an accent
   outline. The flowing glass selection that 0.5 brought is gone, so the tiles show each style
   as it is.
 - **Clear** dims the desktop more, so its white text stays readable even over a bright window
-  behind it.
+  behind it, and minimizing a Clear window no longer turns it black before it goes to the Dock.
 - **Widget:** it refreshes once the estimate arrives after you plug in or unplug, and again when
-  the estimate moves, so its "Full at" or "Lasts until" time keeps up with the app's.
+  the charge or the estimate moves, so its "Full at" or "Lasts until" time keeps up with the
+  app's.
 - **Accessories:** earbuds are named after the buds, not their case.
 - **Safer updates:** an update that has no signature or fails a check that shows it is genuine
   is no longer offered as a download. BatteryPulse says what failed and offers **Open Release
