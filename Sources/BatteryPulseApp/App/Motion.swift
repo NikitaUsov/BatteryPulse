@@ -268,6 +268,49 @@ extension ThermalState {
     }
 }
 
+/// Whether the user can see the screens: not while the displays sleep, nor while the session is
+/// switched out (fast user switching). Windows learn this from their occlusion state; the menu
+/// bar label, which counts as on screen all the time, learns it here.
+@MainActor
+@Observable
+final class ScreenActivity {
+    static let shared = ScreenActivity()
+
+    /// The displays are awake and this user's session is the one on screen. Assumed at launch:
+    /// an app launched into a switched-out session is told so once it has finished launching.
+    private(set) var isActive = true
+    @ObservationIgnored private var screensAreAsleep = false
+    @ObservationIgnored private var sessionIsSwitchedOut = false
+    @ObservationIgnored private var observers: [any NSObjectProtocol] = []
+
+    private init() {
+        // NSWorkspace posts these to its own center only. The app keeps the observers for its
+        // whole life.
+        let center = NSWorkspace.shared.notificationCenter
+        let names = [
+            NSWorkspace.screensDidSleepNotification, NSWorkspace.screensDidWakeNotification,
+            NSWorkspace.sessionDidResignActiveNotification, NSWorkspace.sessionDidBecomeActiveNotification,
+        ]
+        observers = names.map { name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.handle(name) }
+            }
+        }
+    }
+
+    private func handle(_ name: Notification.Name) {
+        switch name {
+        case NSWorkspace.screensDidSleepNotification: screensAreAsleep = true
+        case NSWorkspace.screensDidWakeNotification: screensAreAsleep = false
+        case NSWorkspace.sessionDidResignActiveNotification: sessionIsSwitchedOut = true
+        case NSWorkspace.sessionDidBecomeActiveNotification: sessionIsSwitchedOut = false
+        default: return
+        }
+        let isActive = !screensAreAsleep && !sessionIsSwitchedOut
+        if self.isActive != isActive { self.isActive = isActive }
+    }
+}
+
 /// Reports whether any part of the window that hosts it is on screen, from the window's
 /// occlusion state: covered, minimized, on another Space, the display asleep or the screen saver
 /// all count as hidden.

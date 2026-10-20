@@ -35,8 +35,12 @@ struct MenuBarLabel: View {
     /// notifications, so it is polled gently while shown, and less often while the system asks
     /// to save energy (``LiveRefreshPolicy``). Low Power Mode and the thermal state come from
     /// `ProcessInfo`, never from the snapshot, which Demo Mode simulates.
+    ///
+    /// Nobody sees the label while the displays sleep or the session is switched out, so the
+    /// request goes then; coming back asks again, which reads once. The OS's change
+    /// notifications still update the battery meanwhile, and History keeps recording.
     private var liveRefreshRequest: Duration? {
-        guard isInserted, let base = content.liveRefreshInterval else { return nil }
+        guard isInserted, ScreenActivity.shared.isActive, let base = content.liveRefreshInterval else { return nil }
         let power = SystemPowerState.shared
         return LiveRefreshPolicy.interval(
             base: base, reducesResources: power.isLowPowerModeEnabled || systemPrefersReducedResourceUsage,
