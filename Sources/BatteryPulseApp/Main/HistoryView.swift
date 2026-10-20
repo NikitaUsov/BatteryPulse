@@ -3,6 +3,7 @@ import BatteryCore
 import BatteryKit
 import Charts
 import SwiftUI
+import os
 
 /// Whose history the History page shows: this Mac's, or a remembered iPhone's or iPad's.
 enum HistorySource: Hashable {
@@ -570,18 +571,37 @@ private struct HistoryLoad: Sendable {
         let samples: [HistorySample]
         switch source {
         case .mac:
-            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length))) ?? []
+            let start = end.addingTimeInterval(-period.length)
+            samples = await logged("the samples") { try await store.samples(from: start) } ?? []
         case .device:
             // A device is recorded only while it is connected: the axis ends at its last sample,
             // so its last charging session shows.
-            end = min(end, (try? await store.latestSampleTime()) ?? end)
-            samples = (try? await store.samples(from: end.addingTimeInterval(-period.length), to: end)) ?? []
+            let latest = await logged("the latest sample") { try await store.latestSampleTime() ?? now } ?? now
+            end = min(now, latest)
+            let (start, last) = (end.addingTimeInterval(-period.length), end)
+            samples = await logged("the samples") { try await store.samples(from: start, to: last) } ?? []
         }
-        let days = (try? await store.dailySummaries()) ?? []
+        let days = await logged("the daily summaries") { try await store.dailySummaries() } ?? []
         return HistoryLoad(
             // Drain and time on battery mean nothing for a device sampled only while on a cable.
             chart: .make(samples: samples, period: period, end: end, includesStatistics: source == .mac),
             days: HistoryDayPoint.points(from: days))
+    }
+
+    /// What `body` returns, or `nil` once its failure is logged; the page then shows no history.
+    /// Only an unreadable file or folder, or an I/O error, throws (a corrupt line is skipped). While
+    /// it lasts, a visible History page logs it once a minute. `what` is static text; the error's
+    /// domain and code are public, its description, which can name a path, is not.
+    private static func logged<Value>(_ what: String, _ body: () async throws -> Value) async -> Value? {
+        do {
+            return try await body()
+        } catch {
+            let error = error as NSError
+            Diagnostics.history.error(
+                "Reading \(what, privacy: .public) failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+            )
+            return nil
+        }
     }
 }
 #endif
