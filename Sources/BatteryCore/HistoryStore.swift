@@ -146,7 +146,7 @@ public actor HistoryStore {
 
     /// Keeps the day's summary. It is written right away for a new day or a change in health or
     /// cycle count, and otherwise at most every ``daysWriteInterval``.
-    public func record(_ day: HistoryDay, at now: Date = Date()) throws {
+    public func record(_ day: HistoryDay, at now: Date) throws {
         var days = try loadDays()
         guard days[day.day] != day else { return }
         days[day.day] = day
