@@ -1,7 +1,6 @@
 #if os(macOS)
 import BatteryCore
 import BatteryKit
-import Charts
 import SwiftUI
 import os
 
@@ -38,7 +37,6 @@ struct HistoryView: View {
     @Environment(IDeviceMonitor.self) private var devices
     @Environment(DemoController.self) private var demo
     @Environment(\.motion) private var motion
-    @Environment(\.tones) private var tones
     @Environment(\.windowLook) private var look
     private let formatter = BatteryFormatter.app
 
@@ -95,7 +93,7 @@ struct HistoryView: View {
                             .id(ShownKey(period: shownPeriod, source: shownSource))
                             .transition(motion.fadeTransition)
                     }
-                    Card("Battery Health") { healthCharts }
+                    Card("Battery Health") { HealthTrendCharts(days: days) }
                 }
             }
             .padding(20)
@@ -175,10 +173,18 @@ struct HistoryView: View {
                 }
                 .frame(minHeight: 260)
             } else {
-                Card("Charge") { chargeChart }
-                Card("Power") { powerChart }
+                Card("Charge") {
+                    ChargeChart(data: chart, period: shownPeriod, domain: domain, selection: $selectedTime)
+                }
+                Card("Power") {
+                    PowerChart(
+                        data: chart, period: shownPeriod, domain: domain, showsLegend: shownSource == .mac,
+                        selection: $selectedTime)
+                }
                 if chart.hasTemperature {
-                    Card("Temperature") { temperatureChart }
+                    Card("Temperature") {
+                        TemperatureChart(data: chart, period: shownPeriod, domain: domain, selection: $selectedTime)
+                    }
                 }
                 if let statistics = chart.statistics { statisticsRow(statistics) }
             }
@@ -256,174 +262,6 @@ struct HistoryView: View {
         chart.end.addingTimeInterval(-shownPeriod.length)...chart.end
     }
 
-    // MARK: - Charts
-
-    // The charts plot ``HistoryChartData``'s ready-made lines and look up each constant once per
-    // body, never per point (SUI-03).
-
-    /// The legend sits under the chart, clear of the axis labels and the hover readout.
-    private var chargeChart: some View {
-        let line = tones.style(.chart(.charge))
-        return VStack(alignment: .trailing, spacing: 6) {
-            Chart {
-                ForEach(chart.spans) { span in
-                    RectangleMark(
-                        xStart: .value(ChartKey.start, span.start), xEnd: .value(ChartKey.end, span.end),
-                        yStart: .value(ChartKey.bottom, 0), yEnd: .value(ChartKey.top, 100)
-                    )
-                    // Charging a little stronger than holding the charge.
-                    .foregroundStyle(tones.style(span.kind == .charging ? .chargingSpan : .holdingSpan))
-                    .accessibilityHidden(true)
-                }
-                ForEach(chart.charge) { value in
-                    LineMark(
-                        x: .value("Time", value.time), y: .value("Charge", value.value),
-                        series: .value(ChartKey.segment, value.segment)
-                    )
-                    .foregroundStyle(line)
-                    .interpolationMethod(.monotone)
-                }
-            }
-            .chartXScale(domain: domain)
-            .chartYScale(domain: 0...100)
-            .chartYAxis {
-                AxisMarks(values: [0, 25, 50, 75, 100]) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let percent = value.as(Double.self) { Text(formatter.percent(percent)) }
-                    }
-                }
-            }
-            .chartXAxis { timeAxis }
-            .chartXSelection(value: $selectedTime)
-            .chartOverlay { proxy in
-                selectionOverlay(proxy) { point in point.percent.map { formatter.percent($0) } }
-            }
-            .frame(height: 200)
-            Label("On power adapter", systemImage: "square.fill")
-                .font(.caption)
-                .foregroundStyle(tones.style(.spanLegend))
-                .labelStyle(.titleAndIcon)
-        }
-    }
-
-    @ViewBuilder
-    private var powerChart: some View {
-        let battery = String(localized: "Battery")
-        let mac = String(localized: "Mac")
-        let isMonochrome = tones.isMonochrome
-        let plot = Chart {
-            ForEach(chart.power) { value in
-                powerLine(value, name: value.line == .battery ? battery : mac, isMonochrome: isMonochrome)
-            }
-            RuleMark(y: .value(ChartKey.zero, 0))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-        }
-        .chartForegroundStyleScale([
-            battery: tones.color(.chart(.batteryPower)),
-            mac: tones.color(.chart(.systemLoad)),
-        ])
-        // A device has the battery's line alone: no legend naming the Mac.
-        .chartLegend(shownSource == .mac ? .automatic : .hidden)
-        .chartXScale(domain: domain)
-        .chartYAxis {
-            AxisMarks { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let watts = value.as(Double.self) { Text(formatter.watts(watts, fractionDigits: 0)) }
-                }
-            }
-        }
-        .chartXAxis { timeAxis }
-        .chartXSelection(value: $selectedTime)
-        .chartOverlay { proxy in
-            selectionOverlay(proxy) { point in
-                let watts = [point.batteryWatts, point.systemLoadWatts].compactMap { $0 }
-                return watts.isEmpty ? nil : watts.map { formatter.watts($0, signed: true) }.joined(separator: " · ")
-            }
-        }
-        .frame(height: 180)
-        if isMonochrome {
-            // Clear: every line is white, so the Mac's is dashed and fainter, in the legend too.
-            plot.chartLineStyleScale([
-                battery: lineStyle(.batteryPower),
-                mac: lineStyle(.systemLoad),
-            ])
-        } else {
-            plot
-        }
-    }
-
-    /// One point of a power line. In Clear the line's dash encodes its series as well as its tone.
-    @ChartContentBuilder
-    private func powerLine(_ value: HistoryPowerValue, name: String, isMonochrome: Bool) -> some ChartContent {
-        let mark = LineMark(
-            x: .value("Time", value.time), y: .value("Watts", value.watts),
-            series: .value(ChartKey.series, value.series)
-        )
-        .foregroundStyle(by: .value(ChartKey.line, name))
-        if isMonochrome {
-            mark.lineStyle(by: .value(ChartKey.line, name))
-        } else {
-            mark
-        }
-    }
-
-    private func lineStyle(_ line: ChartLine) -> StrokeStyle {
-        StrokeStyle(lineWidth: 2, lineCap: .round, dash: tones.dash(for: line).map { CGFloat($0) })
-    }
-
-    private var temperatureChart: some View {
-        let line = tones.style(.chart(.temperature))
-        return Chart {
-            ForEach(chart.temperature) { value in
-                LineMark(
-                    x: .value("Time", value.time), y: .value("Temperature", value.value),
-                    series: .value(ChartKey.segment, value.segment)
-                )
-                .foregroundStyle(line)
-                .interpolationMethod(.monotone)
-            }
-        }
-        .chartXScale(domain: domain)
-        .chartYScale(domain: .automatic(includesZero: false))
-        .chartYAxis {
-            AxisMarks { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let celsius = value.as(Double.self) { Text(formatter.celsius(celsius)) }
-                }
-            }
-        }
-        .chartXAxis { timeAxis }
-        .chartXSelection(value: $selectedTime)
-        .chartOverlay { proxy in
-            selectionOverlay(proxy) { point in point.temperatureCelsius.map { formatter.celsius($0) } }
-        }
-        .frame(height: 140)
-    }
-
-    /// Few ticks on whole hours or days: tick generation is expensive, and labels on odd times
-    /// read badly.
-    private var timeAxis: some AxisContent {
-        let period = shownPeriod
-        return AxisMarks(values: period == .day ? .stride(by: .hour, count: 6) : .stride(by: .day)) { _ in
-            AxisGridLine()
-            AxisValueLabel(
-                format: period == .day ? .dateTime.hour() : .dateTime.weekday(.abbreviated), centered: period == .week)
-        }
-    }
-
-    /// The hover line and readout, drawn over the chart rather than in it, so moving the pointer
-    /// redraws only this overlay and not every mark.
-    private func selectionOverlay(
-        _ proxy: ChartProxy, _ value: @escaping (HistoryPoint) -> String?
-    ) -> some View {
-        SelectionOverlay(
-            proxy: proxy, points: chart.points, selection: $selectedTime, showsDate: shownPeriod == .week, value: value)
-    }
-
     // MARK: - Figures
 
     private func statisticsRow(_ s: HistoryStatistics) -> some View {
@@ -454,105 +292,6 @@ struct HistoryView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-    }
-
-    @ViewBuilder
-    private var healthCharts: some View {
-        if days.count < 2 {
-            Text("Capacity and cycles appear here after BatteryPulse has run on two different days.")
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Capacity compared with design")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Chart(days) { entry in
-                    if let capacity = entry.day.capacityToDesignPercent {
-                        LineMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(tones.style(.chart(.capacity)))
-                        PointMark(x: .value("Day", entry.date), y: .value("Capacity", capacity))
-                            .foregroundStyle(tones.style(.chart(.capacity)))
-                            .symbolSize(16)
-                    }
-                }
-                .chartYScale(domain: .automatic(includesZero: false))
-                .frame(height: 140)
-                Text("Cycle count")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Chart(days) { entry in
-                    if let cycles = entry.day.cycleCount {
-                        LineMark(x: .value("Day", entry.date), y: .value("Cycles", cycles))
-                            .interpolationMethod(.stepEnd)
-                            .foregroundStyle(tones.style(.chart(.cycles)))
-                    }
-                }
-                .chartYScale(domain: .automatic(includesZero: false))
-                .frame(height: 120)
-            }
-        }
-    }
-}
-
-/// Names of internal chart dimensions (segments, series, rectangle edges). Passed as Strings,
-/// not literals, so they aren't localization keys; the user-facing ones (Time, Charge, Watts…)
-/// are literals and in the catalog, for VoiceOver and Audio Graphs.
-private enum ChartKey {
-    static let bottom = "Bottom"
-    static let top = "Top"
-    static let start = "Start"
-    static let end = "End"
-    static let line = "Line"
-    static let segment = "Segment"
-    static let series = "Series"
-    static let zero = "Zero"
-}
-
-/// The rule and readout for the point under the pointer.
-private struct SelectionOverlay: View {
-    let proxy: ChartProxy
-    let points: [HistoryPoint]
-    @Binding var selection: Date?
-    let showsDate: Bool
-    let value: (HistoryPoint) -> String?
-
-    var body: some View {
-        GeometryReader { geometry in
-            if let selection, let point = HistoryPoint.nearest(in: points, to: selection),
-                let text = value(point), let plotFrame = proxy.plotFrame,
-                let x = proxy.position(forX: point.time)
-            {
-                let frame = geometry[plotFrame]
-                let position = frame.minX + x
-                Rectangle()
-                    .fill(.secondary)
-                    .frame(width: 1, height: frame.height)
-                    .position(x: position, y: frame.midY)
-                readout(text, point.time)
-                    .fixedSize()
-                    // Keep the readout inside the plot near its edges.
-                    .position(x: min(max(position, frame.minX + 70), frame.maxX - 70), y: frame.minY + 20)
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-        // Follows the pointer exactly; a period crossfade must not drag the rule along.
-        .transaction { $0.animation = nil }
-    }
-
-    private func readout(_ value: String, _ time: Date) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.callout.weight(.semibold))
-                .monospacedDigit()
-            Text(time.formatted(date: showsDate ? .abbreviated : .omitted, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(.regularMaterial, in: .rect(cornerRadius: 6, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.separator, lineWidth: 0.5))
     }
 }
 
