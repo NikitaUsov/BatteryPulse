@@ -260,13 +260,11 @@ struct DeveloperView: View {
     }
 
     private func copyJSON() {
-        guard var snapshot = monitor.snapshot, !monitor.isOverridden else { return }
-        snapshot.serialNumber = nil
-        snapshot.adapter?.serialNumber = nil
+        guard let snapshot = monitor.snapshot, !monitor.isOverridden else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(snapshot) else { return }
+        guard let data = try? encoder.encode(snapshot.redacted) else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(String(decoding: data, as: UTF8.self), forType: .string)
