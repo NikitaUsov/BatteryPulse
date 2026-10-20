@@ -136,6 +136,10 @@ final class UpdateInstaller {
     // MARK: - Steps
 
     private func run(_ release: ReleaseInfo) async {
+        // Keeps the app out of App Nap and the Mac from idle sleep from the download to the
+        // relaunch; the only activity BatteryPulse ever holds, ended on every way out.
+        let activity = ProcessInfo.processInfo.beginActivity(options: .userInitiated, reason: "Installing an update")
+        defer { ProcessInfo.processInfo.endActivity(activity) }
         let identifier = bundleIdentifier
         do {
             guard let imageURL = release.downloadURL, let signatureURL = release.signatureURL else {
