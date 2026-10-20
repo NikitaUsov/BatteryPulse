@@ -26,7 +26,9 @@ struct SettingsView: View {
     }
 }
 
-private struct SettingsPage<Content: View>: View {
+/// A pane's grouped Form, as tall as its rows: the Settings tabs and the welcome window's
+/// settings.
+struct SettingsPage<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
