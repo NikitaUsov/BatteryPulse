@@ -50,13 +50,13 @@ final class UpdateChecker {
     @ObservationIgnored private var rateLimitedUntil: Date?
 
     /// A build without a real version: CI artifacts and `swift run`.
-    var isUnversioned: Bool { currentVersion == AppVersion(parts: [0, 0, 0]) }
+    var isUnversioned: Bool { currentVersion == UpdateInstallPolicy.unversioned }
 
     static let endpoint = ReleaseChannel.latestRelease
 
     init(bundle: Bundle = .main) {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        let current = version.flatMap(AppVersion.init) ?? AppVersion(parts: [0, 0, 0])
+        let current = version.flatMap(AppVersion.init) ?? UpdateInstallPolicy.unversioned
         currentVersion = current
         installer = UpdateInstaller(currentVersion: current, bundle: bundle)
         lastCheck = UserDefaults.standard.object(forKey: AppSettings.lastUpdateCheckKey) as? Date

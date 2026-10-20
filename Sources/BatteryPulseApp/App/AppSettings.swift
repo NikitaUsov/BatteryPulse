@@ -150,7 +150,7 @@ enum WhatsNewPolicy {
     /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
     /// release would show What's New twice.
     static func markSeen(_ version: AppVersion) {
-        guard version != AppVersion(parts: [0, 0, 0]) else { return }
+        guard version != UpdateInstallPolicy.unversioned else { return }
         UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }
