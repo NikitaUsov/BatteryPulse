@@ -1,5 +1,6 @@
 #if os(macOS)
 import BatteryKit
+import Synchronization
 import os
 
 /// The app's loggers, one per area, and its signposts: Points of Interest intervals for
@@ -36,32 +37,36 @@ enum Diagnostics {
     // MARK: Page switches
 
     /// `page.switch`: from a change of the main window's page until the new page appears.
-    @MainActor private static var pageSwitch: Signposts.Interval?
+    private static let pageSwitch = Mutex<Signposts.Interval?>(nil)
 
     /// The main window's page is changing. Another change before a page appears keeps the first
     /// start, which is when the user asked.
-    @MainActor static func pageWillSwitch() {
-        if pageSwitch == nil { pageSwitch = begin("page.switch") }
+    static func pageWillSwitch() {
+        pageSwitch.withLock { interval in
+            if interval == nil { interval = begin("page.switch") }
+        }
     }
 
     /// A page of the main window appeared; ends a page switch with the page's name.
-    @MainActor static func pageAppeared(_ page: SidebarItem) {
-        guard var interval = pageSwitch else { return }
-        pageSwitch = nil
+    static func pageAppeared(_ page: SidebarItem) {
+        let pending = pageSwitch.withLock { interval in
+            defer { interval = nil }
+            return interval
+        }
+        guard var interval = pending else { return }
         interval.trigger = page.signpostName
         interval.end()
     }
 
     // MARK: Menu bar
 
-    @MainActor private static var menuBarIsReady = false
+    /// Emits `menuBarReady` when first read: a `static let` is initialized once per process.
+    private static let menuBarReady: Void = event("menuBarReady")
 
     /// `menuBarReady`, once per process: the status item's label appeared for the first time.
     /// Its later appearances don't count.
-    @MainActor static func menuBarAppeared() {
-        guard !menuBarIsReady else { return }
-        menuBarIsReady = true
-        event("menuBarReady")
+    static func menuBarAppeared() {
+        menuBarReady
     }
 }
 
