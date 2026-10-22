@@ -32,8 +32,8 @@ charging state.
   chosen by the style), because they were asked for; they are opt-in, never the default, say
   what they cost in Settings, apply only to the main and compact windows and give way to
   Standard under Reduce Transparency or Increase Contrast. The sidebar stays the system's in
-  every style; Frosted stays frosted in inactive windows; no Low Power Mode fallback until the
-  energy is measured.
+  every style; Frosted stays frosted in inactive windows; no Low Power Mode fallback (decided on
+  2026-10-22; 0.6.2 measures each style's energy).
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -153,8 +153,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
   silicon Macs (M1–M4) as test fixtures
 - [ ] Profile in Instruments against the resource targets
-- [ ] Developer ID signing and notarization (needs a paid Apple Developer account), so the
-  first launch needs no Open Anyway
+- Not planned: Developer ID signing and notarization (no paid Apple Developer account, decided
+  on 2026-10-22, not before 1.0). Open Anyway on a first install stays, documented as a known
+  limitation at 1.0 (`docs/plans/1.0/ROADMAP.md` C16).
 
 ### Stage 1.2: Updates and About (0.4)
 
@@ -182,7 +183,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
     with Launch Services and relaunches it. Skip when the app runs translocated or outside a
     writable folder.
   - Ad-hoc identity changes with every build, so permissions tied to it (not notifications,
-    which follow the bundle ID) would be asked for again; Developer ID fixes that for good.
+    which follow the bundle ID) would be asked for again; only a Developer ID signature would fix
+    that, and there is no paid account (2026-10-22), so it stays a known limitation.
 
   As built: Install and Relaunch downloads the DMG with URLSession into
   `~/Library/Caches/<bundle ID>/Updates` and checks GitHub's SHA-256 digest when the release has
@@ -208,8 +210,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   removed them; the gallery still offered the widget, and it worked once added again. The
   in-place swap above keeps the path, registers the new copy and raises
   `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
-  keeps them or only a stable Developer ID signature does, and until then tell the user to add
-  them again
+  keeps them; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
+  coming, 2026-10-22), and the guide tells the user to add them again
 - [x] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
@@ -502,15 +504,18 @@ same baseline.
 A second maintenance and foundation release with no new features: 0.6.1's deferred backlog, the
 beta window styles' known bug, the energy measurements 0.6.1's session skipped, and the size and
 read-path groundwork that widget customization (0.7) needs. The plan: `docs/plans/0.6.2/PLAN.md`.
-Two sittings on the M5: an early one
-(about 25 minutes plus 3 hours unattended) and one on the release candidate.
+Two sittings on the M5, an early one (about 65 minutes plus 3 hours unattended) and one on the
+release candidate (about 95 minutes plus about 70 unattended), and WP-18's Xcode items (about an
+hour) whenever Xcode is open.
 
-- [ ] Clear minimizes without a black frame: an opaque fill that resembles the style while the
-  window minimizes and comes back; the Clear tile's preview looks the same selected or not; the
-  evidence (screenshots in every style, energy) that decides whether Translucent and Clear leave
-  beta
+- [ ] Clear minimizes without a black frame: an opaque graphite fill (fill (b), the maintainer's
+  choice, 2026-10-22) while the window minimizes and comes back; the Clear tile's preview looks
+  the same selected or not; the evidence (screenshots in every style, energy) that decides
+  whether Translucent and Clear leave beta
 - [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
   each window style, a burst of plug changes, memory, devices and accessories
+- [ ] A week after publishing: DMG and signature download columns in the Releases table, filled
+  for 0.2.0-0.6.1 and 0.6.2 (no telemetry)
 
 Deferred from 0.6.1, each for the reason given:
 
@@ -522,15 +527,17 @@ Deferred from 0.6.1, each for the reason given:
   the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
   `pmset -g pslog`; SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07,
   SUI-11, SUI-12, E19)
-- [ ] Xcode on the Mac: SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10)
+- [ ] Xcode on the Mac (installed on the M5; maintainer-run from Claude's step-by-step list):
+  SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
+  to its screenshots
 - [ ] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
   on alone; with `-internalize-at-link` on the widget (about −27 % of its `__text` in a test
   build), the size headroom 0.7's widget work needs
 - [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
   `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
-- [ ] Enhanced Security (SEC-08): its gate, an in-app update from 0.6.0 that launches, is
-  possible only after publishing
+- Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
+  Developer ID build it was to be retried on won't exist without the paid account)
 - [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
   Check Now cancels a waiting automatic check (E10); SEC-18's research
 - [ ] Readability and tooling: SUI-09, the DocC check (SW-21), SW-13 for BatteryKit, SZ-08 with
@@ -583,10 +590,11 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   Anyway on each DMG install, and permissions or widgets a DMG replacement may lose, are known
   limitations
 
-Decided on 2026-10-22: no paid developer account, so no Developer ID signing or notarization and
-no App Group (the History and iPhone & iPad widgets can only use a small copy of readings the app
+Decided on 2026-10-22: no paid developer account, so no Developer ID signing or notarization and no
+App Group (the History and iPhone & iPad widgets can only use a small copy of readings the app
 writes, if 0.6.2's sandbox spike shows the widget can read it); Xcode is on the M5, so the
-Xcode-only checks run; widgets in 0.7, with no 0.6.3; every other open question decided by its
+Xcode-only checks run; widgets in 0.7, with no 0.6.3; no iOS app and no charge limiting in 1.x (the
+Decisions section at the top changes in 0.7's docs pass); every other open question decided by its
 recommendation, except what 1.0 means, which awaits the maintainer.
 
 Usage so far (GitHub's API, 2026-10-22): 14 DMG downloads across all releases and 5 signature
@@ -680,7 +688,8 @@ are added to the Releases table a week after publishing. The app itself counts a
 
 Researched in October 2026 (each with an adversarial check). A paid Apple Developer account
 ($99 a year) comes up in every item: it brings Developer ID signing and notarization, which
-remove Open Anyway, keep permissions across updates and unlock iCloud.
+remove Open Anyway, keep permissions across updates and unlock iCloud. The maintainer declined
+the account on 2026-10-22 (not before 1.0), so the items that need it are not planned.
 
 - [ ] **Mac battery on the iPhone via iCloud.** Needs the paid account: CloudKit and push are
   unavailable to ad-hoc and free-team builds on both platforms. With it: a CloudKit private
@@ -724,7 +733,8 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
   charge control at all there.
 - [ ] **A package manager.** The main macOS package manager's official catalog needs
   notarization and some popularity. A personal catalog of our own works today, but every install
-  and upgrade still needs Open Anyway. Worth it after notarization.
+  and upgrade still needs Open Anyway. Not planned: the official catalog needs notarization, and
+  so the paid account the maintainer declined (2026-10-22).
 
 ## Releases
 

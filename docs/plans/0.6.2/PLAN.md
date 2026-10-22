@@ -74,10 +74,11 @@ Contents:
     - They are judged against the playbook's targets.
     - `pmset -g pslog` covers E3b and E4b's premise.
 - **Widget customization:** designed in §8 and phased in §9.1; in 0.7, with no 0.6.3 (Q-W1).
-  - **0.7 MVP:** a configurable Battery widget in every size, with accessibility, and an
-    Accessories widget if the sandbox allows it.
-  - **0.7 stretch:** the data feed (Q-W3: yes, if W0-3 finds a way), then the History and
-    iPhone & iPad widgets.
+  - **0.7 MVP:** a configurable Battery widget in small, medium and large (extra large on the
+    look check's yes, Q-W10), with accessibility, and an Accessories widget if the sandbox allows
+    it.
+  - **0.7 stretch:** the data feed (Q-W3: yes, if W0-3's candidate A or A′ works), then the
+    History and iPhone & iPad widgets.
   - **0.6.2:** only throwaway spikes (W0-1 to W0-6, with a control build) and the size headroom.
 - **Maintainer time:** two M5 sittings. Every step has a default for when it doesn't run.
   - **Session A, early:** about 65 minutes hands-on, then a 3-hour unattended window (plug the
@@ -350,7 +351,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
      What Session B doesn't reach stays open in Stage 1.5.
   4. **Stage 1.5 leftovers: not in 0.6.2** (Q-B4, decided by delegation): thicker chart lines and
      wider area fills on the sheet; the content treatment on the Raw Data table. A Session B shot
-     answered n for either keeps that style beta, and the item moves to 0.7 with it.
+     answered n for either keeps that style beta, and item 4 waits for a beta style's graduation,
+     after 1.0 (FEA-25; `docs/plans/1.0/ROADMAP.md` §4.1; plan-0.7.0 C-1).
   5. **Graduation mechanics**, only on the maintainer's answer (Session B, per style):
      - `isBeta` turns false for that style and its Beta mark goes.
      - The strings change as §3 says, and the toggle hides itself once no beta style is left
@@ -756,8 +758,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
     launched, and V-01 and F8 passed on the build.
 - **SEC-18 (research only):** a self-signed code identity for a stable designated requirement
   across updates (login item and notification grants). Without the paid account (M-1: no), it is
-  the one route left to grants that survive a DMG replacement; until then, a lost grant is a
-  documented known limitation.
+  the one route left to grants that survive a DMG replacement; until 0.9.0 weighs it
+  (`docs/plans/1.0/ROADMAP.md` §3.5), a lost grant is a documented known limitation.
   - A note for 0.7: it does **not** unlock an App Group. That needs an Apple-issued Team ID in the
     signature or a provisioning profile, and a self-signed identity has neither.
 - **Files:** SEC-08's, not used: a new `Resources/BatteryPulse.entitlements` on a throwaway branch
@@ -904,7 +906,8 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     - "Performance baseline (0.6.1 → 0.6.2)".
     - Stage 3's "how often the mAh values change", from Session A's ioreg samples; the App Nap
       half stays open.
-    - The 0.7 stage with §9.1's phases and CB-02 (D3 adds the link to `docs/plans/0.7/widgets.md`).
+    - The 0.7 stage with §9.1's phases and CB-02 (D3 adds the link to
+      `docs/plans/0.7.0/widgets.md`).
 - **Files:** `CLAUDE.md`, `docs/USER_GUIDE.md`, `docs/ROADMAP.md`.
 - **Acceptance:** `LocalizationCatalogTests` (its `docs/` scan) is green, and the review confirms
   every new CLAUDE.md line against the merged code with `git grep`.
@@ -934,7 +937,7 @@ As PLAN §3.5.
 - **D3:**
   - applies the answers or the defaults and records the numbers;
   - before removing the plan folder, moves §8, §9.1, §10's Q-W block with its answers and
-    Appendix C's W0 rows to `docs/plans/0.7/widgets.md` (English only: `LocalizationCatalogTests`
+    Appendix C's W0 rows to `docs/plans/0.7.0/widgets.md` (English only: `LocalizationCatalogTests`
     scans `docs/`), and links it from ROADMAP's 0.7 stage, so 0.7's plan cites a file that exists;
   - removes `docs/plans/0.6.2/` (and its `bash -n` line in ci.yml) and releases;
   - runs the after-publishing check: PLAN §4b's list at `6aec4d2` with 0.6.2 in place of 0.6.1
@@ -946,12 +949,12 @@ As PLAN §3.5.
     after the update);
   - in everyday use on the first day, compares the widget's charge and "Lasts until" with the
     popover's (within 2 points and about 15 minutes, `994c09d`);
-  - **a week after publishing,** records v0.6.2's DMG and `.sig` download counts from the
-    releases API in ROADMAP's Releases table, in a commit of its own (`gh api
-    repos/{owner}/{repo}/releases/tags/v0.6.2 --jq '.assets[] | "\(.name) \(.download_count)"'`).
-    Each in-app install fetches the `.sig`, so its count is a privacy-free proxy for in-app
-    updates. The app sends nothing: no telemetry is added. Every later release does the same
-    (§10, "Usage evidence").
+  - **a week after publishing,** adds DMG and `.sig` download columns to ROADMAP's Releases
+    table, fills them for 0.2.0-0.6.1 from `gh api repos/{owner}/{repo}/releases` (§10's counts),
+    and records v0.6.2's (`gh api repos/{owner}/{repo}/releases/tags/v0.6.2 --jq '.assets[] |
+    "\(.name) \(.download_count)"'`), in a commit of its own. Each in-app install fetches the
+    `.sig`, so its count is a privacy-free proxy for in-app updates. The app sends nothing: no
+    telemetry is added. Every later release does the same (§10, "Usage evidence").
 
 `WhatsNew.version` stays at 0.6.0 even if a style graduates: a graduation goes in the release notes
 only (Q-B5, decided by delegation).
@@ -1404,9 +1407,9 @@ untrusted input.
 shared-preference exception, if A is denied and A′ isn't.
 
 **If both fail:**
-- **Candidate B** (`notify(3)` state words) carries only numbers: the 24-hour charge series as
-  packed bytes, and up to two device charge levels without names. Anyone can write those words, so
-  the widget shows them as "from BatteryPulse" values and never a name.
+- **Candidate B** (`notify(3)` state words) is not used. It could carry only unnamed numbers (the
+  24-hour charge series as packed bytes, and up to two device charge levels without names), which
+  anyone can write, and that isn't worth a frozen surface before 1.0 (plan-0.7.0 §2.2).
 - **Candidate C: none.** The History and iPhone & iPad widgets are not possible: the only other
   route, an App Group, needs the paid account, which the maintainer declined (M-1, 2026-10-22).
   0.7 ships the Battery and Accessories widgets alone.
@@ -1420,7 +1423,7 @@ absent Team ID.
 | Kind | Families | Phase | Data |
 |---|---|---|---|
 | **Battery** (keeps today's kind string, so placed widgets stay) | S, M, L, XL; XL portrait later | **0.7 MVP** | own read; History rows from the feed (stretch) |
-| **Accessories** | S (the lowest), M (up to four), L (up to eight) | 0.7 MVP if W0-4 passes; else stretch through the feed | own read, else feed |
+| **Accessories** | S (the lowest), M (up to four), L (up to eight) | 0.7 MVP if W0-4 passes; else not in 0.7 (later through the feed, only if W0-3 passed) | own read, else feed |
 | **History** | M, L, XL | 0.7 stretch | feed |
 | **iPhone & iPad** | S (one device), M (two to three), L (up to six) | 0.7 stretch | feed; needs *Read iPhone and iPad batteries* |
 
@@ -1841,8 +1844,8 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 | W0-1 (c): button performs don't run | No buttons (W-9's Refresh dropped) |
 | W0-2: the control keeps placed widgets, but the configurable kind loses them | Today's kind stays static (today's look, new sizes). The configurable Battery widget ships as a new kind `io.github.nikitausov.BatteryPulse.battery.custom`, and the release notes say how to switch |
 | W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration (ROADMAP Stage 1.2 is still open). Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did. With no signed build coming (M-1: no), it stays a documented known limitation |
-| W0-3: A and A′ fail | Candidate B if it works, else C (§8.3) |
-| W0-4: accessories can't be read from the sandbox | Accessories through the feed (stretch); without the feed, no Accessories kind in 0.7 |
+| W0-3: A and A′ fail | No History or iPhone & iPad widgets (§8.3 candidate C); candidate B isn't used |
+| W0-4: accessories can't be read from the sandbox | No Accessories kind in 0.7 (plan-0.7.0 §2.2, G7-8); later through the feed, only if W0-3 passed |
 | W0-4: `widgetURL` needs a registered scheme | Register a navigation-only scheme (§8.9); no per-row links (Q-W8) |
 | W0-6: the offset format shows seconds or misbehaves | Time left is dropped from the Time parameter; clock time only |
 
@@ -1904,8 +1907,8 @@ feature in a maintenance release.
 | Phase | Contents | Gate |
 |---|---|---|
 | 0.6.2 | WP-W0: W0-1 to W0-6 with the SPIKE-C control; K-03 and `-internalize-at-link` for headroom; WP-14a's nonisolated read, which the widget's async provider reuses | none: throwaway builds |
-| 0.7 MVP (never cut) | W-1, W-2, W-3: Battery in S, M, L and XL; Layout Automatic or Custom; status lines; read time; natural-page clicks; empty states; accessibility. Also W-4, W-8 (Accessories, All or Lowest; if W0-4 passes) and W-10 | W0-1, W0-2 (§8.16 otherwise) |
-| 0.7 stretch or 0.7.x | W-5 (feed), W-6 (History; Battery's feed fields and chart), W-7 (iPhone & iPad) | W0-3 (Q-W3: yes). If W0-3 fails, not possible without the paid account (M-1: no; §8.3 candidate C) |
+| 0.7 MVP (never cut) | W-1, W-2, W-3: Battery in S, M and L (XL only on the look check's yes, Q-W10); Layout Automatic or Custom; status lines; read time; natural-page clicks; empty states; accessibility. Also W-4, W-8 (Accessories, All or Lowest; if W0-4 passes) and W-10 | W0-1, W0-2 (§8.16 otherwise) |
+| 0.7 stretch, else 1.1 (`docs/plans/1.0/ROADMAP.md` §3.2) | W-5 (feed), W-6 (History; Battery's feed fields and chart), W-7 (iPhone & iPad) | W0-3 (Q-W3: yes). If W0-3 fails, not possible without the paid account (M-1: no; §8.3 candidate C) |
 | Later | Refresh, the extra-large dashboard, extra-large portrait, per-row links, specific accessories, "why it isn't charging" after the Charge Limit capture | after 1.0 for the widget extras (Q-W2, Q-W8 to Q-W10, decided by delegation); the cause after the capture |
 
 ---
@@ -1914,9 +1917,9 @@ feature in a maintenance release.
 
 The maintainer answered on 2026-10-22. Q-B2, Q-B7 and Q-W1 are his own answers, and Q-W3 follows
 from his answer to M-1. He delegated every other question ("do it by best practices, as you see
-fit"), so each is recorded with its recommended answer and marked "decided by delegation". Q-B9 was
-settled before. No question of this plan stays open; what the maintainer still judges on sight in
-the sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
+fit"), so each is recorded with its recommended answer and marked "decided by delegation". Q-B9 and
+Q-B11 were settled before. No question of this plan stays open; what the maintainer still judges on
+sight in the sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
 `docs/plans/1.0/ROADMAP.md` §6, and 0.7's own (Q7-1 to Q7-8) in `docs/plans/0.7.0/PLAN.md` §14.
 
 **M-1, the paid Apple Developer Program account: no,** not now and not planned before 1.0 (the
@@ -1958,7 +1961,8 @@ download counts a week after publishing (D3), with no telemetry in the app.
     screenshot and graduation sets answered y. Clear's sidebar and toolbar, and contrast over
     bright or busy wallpapers, are judged in those shots.
   - The Stage 1.5 leftovers (thicker chart lines, the Raw Data table's treatment) are not done in
-    0.6.2. A shot answered n for them keeps that style beta, and WP-13 item 4 moves to 0.7 with it.
+    0.6.2. A shot answered n for them keeps that style beta, and item 4 waits for a beta style's
+    graduation, after 1.0 (FEA-25; `docs/plans/1.0/ROADMAP.md` §4.1; plan-0.7.0 C-1).
 - **Q-B5, decided by delegation: the release notes only.** Asked: announce a graduated style in
   What's New, or only in the release notes? `WhatsNew.version` stays 0.6.0, so the window doesn't
   reopen; What's New feature 3's text is reworded with the graduation (§3).
@@ -1988,6 +1992,9 @@ download counts a week after publishing (D3), with no telemetry in the app.
   on? A window style is the user's explicit choice, Reduce Transparency and Increase Contrast
   already give Standard, and Low Power Mode already slows the polls (`LiveRefreshPolicy`). S4w
   still measures each style, and ROADMAP's decision line records the numbers (G-13c).
+- **Q-B11 (branches), settled (an engineering call):** `claude/baseline-0.6.0` (`076873d`) stays
+  until 0.6.2's D3 for build A; 0.6.1's integration history stays reachable as `refs/pull/11/head`
+  (see the header), so `claude/nice-faraday-k08mhb` needn't be kept.
 
 ### For widget customization (0.7)
 
@@ -1999,7 +2006,7 @@ download counts a week after publishing (D3), with no telemetry in the app.
   1.0. No Battery Health and Power presets, unless configuration turns out impossible (§8.16).
 - **Q-W3 (the bridge): yes** (2026-10-22, following M-1: no). BatteryPulse keeps a small copy of
   the last day, week and device readings for the widgets, in its own folder (the feed, §8.3; its
-  entitlement is a W-5 detail), if W0-3 finds a candidate that works. If W0-3 fails, the History
+  entitlement is a W-5 detail), if W0-3's candidate A or A′ works. If W0-3 fails, the History
   and iPhone & iPad widgets aren't possible without the paid account (§8.3 candidate C).
 - **Q-W4 (look), decided by delegation:**
   - main visual: the number with the level symbol by default (today's), with a number with a ring
@@ -2239,4 +2246,4 @@ from the traffic API and were not re-checked.
 | B3 bench rerun; `HistoryLoad.read` profile | WP-17 | WP-17 riders |
 | `-internalize-at-link` build times and sizes | WP-15 | G-15 |
 | SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (the maintainer, from Claude's step-by-step list) | WP-18; SZ-10 ships or waits for 0.7 |
-| SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.7's notes |
+| SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.9.0's SEC-02 decision (`docs/plans/1.0/ROADMAP.md` §3.5) |

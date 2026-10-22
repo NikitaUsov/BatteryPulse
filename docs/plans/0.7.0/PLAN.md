@@ -4,6 +4,16 @@ Written 2026-10-22, the day 0.6.1 was released, for the maintainer. 0.6.2 hasn't
 0.6.2 result this plan depends on is named in §2, together with what 0.7 does if that result never
 comes.
 
+**Updated the same day with the maintainer's answers (2026-10-22).** No paid Apple Developer Program
+account, not now and not planned before 1.0 (M-1), so the History and iPhone & iPad widgets can only
+use the feed (Q-W3 is yes) and nothing in 0.7 waits for a signed build. Widgets in 0.7, no 0.6.3
+(Q-W1). Xcode is already installed on the M5 (P2 Q-B7). Every other question this plan asks (M-2,
+M-3, M-9, Q-W2, Q-W4 to Q-W13, Q7-1 to Q7-7) was delegated ("do it by best practices, as you see
+fit") and is decided as its recommended answer; the looks they lead to are still signed off in the
+look check (§6.1). Only M-5, what 1.0 means, awaits the maintainer. The usage evidence behind M-1
+(14 DMG downloads across all releases; the users are, in practice, the maintainer alone) is in §14,
+and each release now records its download counts a week after publishing (§13 step 8, NEW-23).
+
 **Sources and how they are cited**
 
 | Short | Source |
@@ -24,6 +34,8 @@ comes.
   (WP-10), so W-0 re-resolves every file:line at the v0.6.2 tag before code starts.
 - **Apple URLs:** fetched on 2026-10-22 for P2's research; the saved copies are working notes, not in
   the repository.
+- **GitHub numbers** (workflow run numbers, release download counts, repository traffic): GitHub's
+  REST API (`gh api`), 2026-10-22.
 
 **Marks:**
 - **[unverified]:** nobody has checked it.
@@ -41,8 +53,8 @@ comes.
 - New maintainer questions are `Q7-…`. P2's `Q-W…` and RD's `M-…` keep their IDs.
 
 This file is English only and names no third-party product, so it can be committed under
-`docs/plans/0.7/` as is (`LocalizationCatalogTests` scans `docs/`). CLAUDE.md wins over everything in
-it.
+`docs/plans/0.7.0/` as is (`LocalizationCatalogTests` scans `docs/`). CLAUDE.md wins over everything
+in it.
 
 Contents:
 1. At a glance
@@ -58,7 +70,7 @@ Contents:
 11. Privacy
 12. Docs
 13. Release steps
-14. Questions only the maintainer can answer
+14. The maintainer's questions and their answers
 - Appendix A: traceability of every 0.7 item
 - Appendix B: facts verified for this plan, conflicts, and what stays unverified
 - Appendix C: facts 0.7 records (filled during the release)
@@ -75,8 +87,9 @@ Contents:
   - **The Battery widget becomes configurable**, on today's kind
     `io.github.nikitausov.BatteryPulse.battery` (`BatteryPresentation.swift:115-118`).
     - It comes in small, medium and large. Extra large is added only if the look check approves its
-      layout with an explicit answer (Q-W10, §14; without one it isn't declared in 0.7), because
-      the HIG warns against "expanding a smaller widget's content to simply fill a larger area".
+      layout with an explicit answer (Q-W10, decided by delegation: two panels, on that explicit
+      yes, §14; without one it isn't declared in 0.7), because the HIG warns against "expanding a
+      smaller widget's content to simply fill a larger area".
     - **Automatic** (the default) is today's widget in small and medium, field for field
       (`BatteryPulseWidget.swift:80-150`), so a widget placed by 0.6.x looks the same after the
       update. Three states differ on purpose: an end on a later day reads "tomorrow"; the attention
@@ -95,20 +108,24 @@ Contents:
   - **The Accessories widget,** if 0.6.2's W0-4 showed the sandbox can read accessory batteries
     (P2 §8.4).
 - **Conditional (stretch):** the data feed and the History and iPhone & iPad widgets (W-5 to W-7).
-  - They run only if all of these hold:
-    - W0-3 passed with candidate A or A′;
-    - the maintainer said yes to Q-W3;
-    - the answer to M-1 (the paid account) is no.
-  - Otherwise they go to 1.1, not 0.7.x (RD §3.2, §4.1).
+  - They run only if W0-3 passed with candidate A or A′ and the MVP leaves budget. The other two
+    conditions hold since 2026-10-22: Q-W3 is yes, and M-1 (the paid account) is no, so the feed
+    is their only route (there is no App Group without the account).
+  - If W0-3 passed but they miss 0.7.0, they go to 1.1 on the feed, not 0.7.x (RD §3.2, §4.1). If
+    W0-3 failed, they are not possible without the paid account (RD §4.2).
 - **For scripts (S-1):** `bpulse --device <n> --json` writes ISO 8601 dates (CB-02). Every top-level
   JSON object `bpulse` prints gains `formatVersion`. One line in the notes covers both.
 - **Riders:**
   - Docs: the iOS promises leave README, and the bug template asks for the app version and how
     BatteryPulse was installed (DOC-09, DOC-10).
-  - ROADMAP gains a "Road to 1.0" section (M-5).
+  - ROADMAP gains a "Road to 1.0" section (M-5, awaiting the maintainer; its recommended answer
+    applies if it is still open when R-1 runs).
   - The verification matrix starts (NEW-18), and so does the quick check after each macOS 27.x
     update (NEW-22).
-  - The backup key's public half lands, once the maintainer has generated it (NEW-13, M-9).
+  - The backup key's public half lands, once the maintainer has generated it (NEW-13; M-9, decided
+    by delegation: yes).
+  - A week after publishing, 0.7.0's DMG and `.sig` download counts go into ROADMAP's Releases
+    table (NEW-23, §13 step 8). The app counts and sends nothing.
 - **Maintainer time** (§6) [estimate]:
   - **The look check, about 15 minutes at the desk.** No M5 steps: numbered choices on PNGs that CI
     renders. A second look of about 3 minutes follows W-8 (§6.1b).
@@ -116,8 +133,11 @@ Contents:
   - **A logged day** of normal use with the candidate installed. It is passive, and its end takes
     about 10 minutes (F12 runs then, §6.3).
   - **The after-publishing check,** about 10 minutes.
+  - **The backup key** (M-9): about 5 minutes in Terminal, any time before C1 (§14).
   - If 0.6.2's Session A never ran its widget spikes, there is a 35-minute spike sitting first
     (W-0S, §2.3).
+  - If 0.6.2 left any of WP-18's Xcode items, they run whenever Xcode is open, from Claude's
+    step-by-step list (C-1; Xcode is installed on the M5, Q-B7).
 - **Budget** [estimate]: about 26-29 implementation and review runs, plus 3 for fixing forward. The
   never-cut set is about 21-24 runs (§7.2). The stretch adds 8-9.
 - **Not in 0.7** (RD §4.1): Refresh buttons, extra-large portrait, the dashboard, per-row links,
@@ -132,7 +152,7 @@ Contents:
 
 | # | 0.6.2 item (P2) | What 0.7 needs from it | If it failed, was cut or never ran |
 |---|---|---|---|
-| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **File missing:** main receives only squash merges, so `docs/plans/` never enters main's history (`git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So 0.6.2's D3 is asked, as a request from this plan, to copy into `docs/plans/0.7/` before `claude/062-*` is deleted: `m5-session.sh`, its swap helper and the whole of P2 Appendix C (not only the W0 rows). Either way the release PR's `refs/pull/<n>/head` keeps them reachable (§14, Q7-8). **Spikes never ran:** W-0S runs them (§2.3) |
+| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **File missing:** main receives only squash merges, so `docs/plans/` never enters main's history (`git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So 0.6.2's D3 is asked, as a request from this plan, to copy into `docs/plans/0.7.0/` before `claude/062-*` is deleted: `m5-session.sh`, its swap helper and the whole of P2 Appendix C (not only the W0 rows). Either way the release PR's `refs/pull/<n>/head` keeps them reachable (§14, Q7-8). **Spikes never ran:** W-0S runs them (§2.3) |
 | D-2 | K-03, the `BatterySource` target (WP-15 item 1, G-15) | CryptoKit and the device stack out of the widget (about 187 KB, P2 §2.3). `MacAccessoryProvider` sits in the lower target, so W-8 needs no second split (P2 WP-15) | **Nothing blocks.** `MacAccessoryProvider` is in BatteryKit today (`BatteryKit/MacAccessoryProvider.swift`), and the widget can log through its own `Signposts(subsystem:log:)`, which is public (`BatteryKit/Diagnostics.swift`, `public struct Signposts`). **Only size suffers:** G7-10 decides, and if the widget would cross 0.6.1's ceilings, K-03 runs as written in P2 WP-15 before W-3a ("W-0K") |
 | D-3 | `-internalize-at-link` on the widget (WP-15 item 2) | About −27 % of the widget's `__text` (P2 WP-15, measured in a native build) | **Less headroom.** G7-10's cut order applies: `Path` instead of Swift Charts, SIZ-07, W-11 cut first |
 | D-4 | WP-14a, the nonisolated read (E20) | The widget's async provider reads without the `Task { @MainActor in … }` hops of today (`BatteryPulseWidget.swift:50, 56`; P2 §8.10). WP-14a covers the battery read only: `MacAccessoryProvider` stays `@MainActor` (`BatteryKit/MacAccessoryProvider.swift:14-15`), so W-8's read hops once (W-8 item 4) | **Reverted:** the provider keeps one hop around the synchronous `read()`. `WidgetReadCache` still makes it one read per burst. No blocker |
@@ -142,11 +162,12 @@ Contents:
 | D-8 | L10N-03: a way to show the widget in Russian (Session A step 3.3) | Session R checks the Russian edit sheet and widgets (§6) | **No method found:** the Russian half is recorded "not checked", never "n". `WidgetTextBudget` (W-1) checks lengths on Linux |
 | D-9 | DIS-06: did the 0.6.1 → 0.6.2 in-app update keep placed widgets? (D3's after-publishing check) | The baseline for "placed widgets survive" (G7-2) | **Lost in 0.6.2 too:** the loss comes from the update, not from configuration (P2 §8.16, the second W0-2 row). The notes then say "add it again if it's gone" |
 | D-10 | WP-21's energy numbers (S1, S2, S6, S7) | The baseline for 0.7's widget runs (§10) | **Missing:** 0.7 measures the widget's reads and reloads alone, and the comparison waits for the final 0.9.x energy run (RD C5) |
-| D-11 | The 0.6.2 session script: prepare, backup, restore, the swap helper, `send` (P2 §6, WP-21) | W-12 builds 0.7's script from it | **Removed with the plan folder in D3:** the copy D-1 asks for in `docs/plans/0.7/`, or the kept `claude/062-integration` branch. If neither exists, W-12 rebuilds the script from 0.6.1's (`6aec4d2:docs/plans/0.6.1/m5-session.sh`) and P2 §6's text (+1 run) |
+| D-11 | The 0.6.2 session script: prepare, backup, restore, the swap helper, `send` (P2 §6, WP-21) | W-12 builds 0.7's script from it | **Removed with the plan folder in D3:** the copy D-1 asks for in `docs/plans/0.7.0/`, or the kept `claude/062-integration` branch. If neither exists, W-12 rebuilds the script from 0.6.1's (`6aec4d2:docs/plans/0.6.1/m5-session.sh`) and P2 §6's text (+1 run) |
 | D-12 | WP-16, the `diskutil` installer (G-16) | F12 (at the logged day's end, §6.3) tests whichever installer the RC carries | **Reverted to `hdiutil`:** F12 runs as in 0.6.1 |
 | D-13 | QUA-05, the Charge Limit capture (optional in 0.6.2) | Nothing in 0.7's code. 0.8's NEW-01 wants it before its freeze; without it, the Charge Limit cause doesn't ship (RD §3.3, §5.1 QUA-05) | **Missing:** Session R offers it as an optional step, W-12's `charge-limit` (RD §3.2) |
 | D-14 | 0.6.2's cut list (P2 §7.2: "a cut item moves to 0.7") | — | **Without M5 time:** C-1, the Linux-only lane. **With M5 time:** Session R's optional steps, or the verification matrix (RD §3.2) |
 | D-15 | P2 §7.3's frozen list ("Widget. Same kind, look and reload policy.") | 0.7 changes the kind's configuration, its families and the reload policy on purpose (§7.3) | — |
+| D-16 | NEW-23: 0.6.2's D3 adds download columns to ROADMAP's Releases table and, a week after publishing, records v0.6.2's DMG and `.sig` counts (P2 D3; RD §1.2 item 6) | The columns 0.7.0's counts go into (§13 step 8) | **Missing:** §13 step 8 adds them and fills the earlier releases from the same releases API call (RD §3.1 item 7) |
 
 ### 2.2 The spike answers and what 0.7 ships for each
 
@@ -161,7 +182,7 @@ the session checks again.
 | **W0-1 (c):** button performs run | Nothing in 0.7: the buttons are W-9, after 1.0 | — | — |
 | **W0-1 (d):** the extracted `Summary` keys | The placeholder rule as it stands, or one reasoned exception limited to the widget's intent files (P2 §8.11) | — | W-2's CI dumps the keys, and the exception is decided then |
 | **W0-2:** placed widgets survive SPIKE-C, then SPIKE-W | Configuration on today's kind | **The control keeps them but the configurable kind loses them:** today's kind stays static, with today's look and the new sizes. The configurable widget becomes a new kind, `io.github.nikitausov.BatteryPulse.battery.custom`, and the notes say how to switch. **The control loses them too:** proceed, and the notes say "add the widget again if it's gone" | Not possible: W-0S runs it first (§2.3). Session R step 2 has no control build, so it confirms G7-2's answer but never decides it alone; W-3a keeps a ready branch for the new kind (G7-2) |
-| **W0-3:** a file or preference domain the widget can read (A, A′; B as a last resort) | The stretch may run (G7-5) | The stretch goes to 1.1 (RD §3.2). Candidate B is not used in 0.7: it would carry only unnamed numbers (P2 §8.3), not worth a frozen surface before 1.0 | The stretch goes to 1.1 |
+| **W0-3:** a file or preference domain the widget can read (A, A′; B as a last resort) | The stretch may run (G7-5); if it misses 0.7.0, 1.1 on the feed (RD §3.2) | The History and iPhone & iPad widgets are not possible without the paid account, which M-1 declined: there is no App Group (RD §4.2). Candidate B is not used: it would carry only unnamed numbers (P2 §8.3), not worth a frozen surface before 1.0 | The stretch goes to 1.1, where W0-3 runs first |
 | **W0-4 (1):** accessory batteries from the sandbox | W-8 in the MVP | No Accessories widget in 0.7 | W-0S; without it, no W-8 |
 | **W0-4 (2):** the rendering mode per Icon & widget style, Dim widgets and place | Design and check exactly the modes seen | — | Design for all three modes everywhere, and Session R checks every place. The HIG and Apple's other pages disagree about the Mac [conflict], Appendix B |
 | **W0-4 (3):** `redactionReasons` and `showsWidgetContainerBackground` | `.privacySensitive()` on names stays a cheap defence (P2 §8.8) | — | Same |
@@ -184,16 +205,17 @@ the M5 (P2 §9 reason 2). So 0.7 runs the spikes first:
 - **Then:** W-1 and S-1 can still start (they need no answer). Everything from W-2 on waits for this
   sitting.
 
-### 2.4 Decisions needed before code, with what happens without an answer
+### 2.4 Decisions needed before code, as answered on 2026-10-22
 
-| Decision | Needed by | Without an answer (default) | Source |
+| Decision | Needed by | Answer (2026-10-22) | Source |
 |---|---|---|---|
-| M-1: buy the paid account? | before W-0 ends | **No.** The stretch is then possible, if G7-5's other two conditions hold | RD §6 M-1 (which recommends yes) |
-| M-2: an iOS app? | R-1 | **Not in 1.x.** R-1 removes the iOS promises (RM:5, RM:14-15, RM:192-206; both issue templates) and updates ROADMAP's Decisions | RD M-2; R:704-706 |
-| M-3: charge limiting? | R-1 (one ROADMAP Decisions line) | **Not in 1.x:** without an answer, RD's recommended answer applies (RD §6) | RD M-3 |
-| M-5: what 1.0 means | R-1 | **RD §2 as written.** R-1 condenses it into ROADMAP | RD M-5 |
-| M-9: the backup key | K-1 | **No K-1 in 0.7.** It moves to 0.8 | RD M-9 |
-| Q-W1 to Q-W13; Q7-1 to Q7-8 | W-3a (look and behaviour); the look check (the rest) | Each has a recommended default (§14) | P2 §10; RD §5.3 |
+| M-1: buy the paid account? | before W-0 ends | **No** (the maintainer): not now, and not planned before 1.0. The stretch rests on W0-3 alone (G7-5), and nothing in 0.7 waits for a signed build (§14) | RD §6 M-1 |
+| M-2: an iOS app? | R-1 | **Not in 1.x** (by delegation). R-1 removes the iOS promises (RM:5, RM:14-15, RM:192-206; both issue templates) and updates ROADMAP's Decisions | RD M-2; R:704-706 |
+| M-3: charge limiting? | R-1 (one ROADMAP Decisions line) | **Not in 1.x** (by delegation) | RD M-3 |
+| M-5: what 1.0 means | R-1 | **Awaiting the maintainer** (asked again in plain words on 2026-10-22). If it is still open when R-1 runs, its recommended answer applies: RD §2 as written, with no fixed date and WWDC 2027 as the outer bound. R-1 condenses it into ROADMAP | RD M-5 |
+| M-9: the backup key | K-1 | **Yes** (by delegation). K-1 runs once the maintainer has generated the key; if it doesn't exist by C1, K-1 moves to 0.8 | RD M-9 |
+| Q-W1 | W-0 | **Yes** (the maintainer): widgets in 0.7, no 0.6.3 | P2 §10; RD §5.3 |
+| Q-W2 to Q-W13; Q7-1 to Q7-7 | W-3a (look and behaviour); the look check (the rest) | **As §14 recommends** (by delegation; Q-W3 yes, following the maintainer's M-1 answer). The look check signs off the looks they lead to (§6.1). Q7-8 was settled earlier | P2 §10; RD §5.3 |
 
 ### 2.5 What this plan adds to P2's design
 
@@ -211,7 +233,7 @@ Each addition is technical, so the runs decide it (P1 §8, "Architecture: delega
 - **Extra large only with a layout of its own.** The HIG says "avoid expanding a smaller widget's
   content to simply fill a larger area", and a family can be added later without breaking placed
   widgets (P2 §8.13). So extra large ships only if the look check approves it with an explicit
-  answer (Q-W10).
+  answer (Q-W10, decided by delegation: two panels, on that explicit yes).
 - **This departs from P2 §9.1 and §8.17:** extra large leaves the never-cut set ("Battery in S, M,
   L and XL"), and its recommended Automatic layout is two panels (Battery, Power) instead of P2
   §8.17's bigger Battery with 10 details. Both are the maintainer's look call (§6.1 question 3), and
@@ -287,7 +309,9 @@ P1 §3.0 and P2 §3 apply in full. In short:
 - **Session wording** (P2 §3): every yes or no question means "y = looks right". Comparisons are
   numbered choices. Screenshots and recordings are the evidence. The script reads the logs.
 - **The maintainer decides only what he sees or does** (P1 §8): look, behaviour, settings, the
-  sittings and the release.
+  sittings and the release. On 2026-10-22 he also delegated every open question of this plan but
+  M-5 ("do it by best practices, as you see fit"); the looks themselves are still his to sign off
+  in the sittings (RD §1.2 item 8).
 - **Facts go to Appendix C** of the committed copy of this plan. At D3, the lasting parts move to
   ROADMAP and the plan folder is removed (P2 D3).
 
@@ -308,17 +332,18 @@ guards; acceptance; effort; risk; rollback.
 
 - **Source:** P2 D3; P2 Appendix C; RD §3.2 "Before code"; §2 above.
 - **Items:**
-  1. Read 0.6.2's Appendix C (in `docs/plans/0.7/widgets.md`, or the copy or kept branch of D-1).
+  1. Read 0.6.2's Appendix C (in `docs/plans/0.7.0/widgets.md`, or the copy or kept branch of D-1).
      Fill this plan's Appendix C table "From 0.6.2" with each D-row and each W0 row.
   2. Pick the §2.2 row for each spike, and write the resulting scope into §4's packages as one
      commit to the committed plan.
   3. Re-resolve every file:line of this plan at the v0.6.2 tag. WP-15's git moves and WP-10's edits
      shift most of them.
-  4. Record the maintainer's answers, or their defaults: M-1, M-2, M-3, M-5, M-9, Q-W1 to Q-W13,
-     Q7-1 to Q7-8.
+  4. Record M-5's answer, or its recommended answer if it is still open (§2.4). Every other
+     decision this plan needs was recorded on 2026-10-22: M-1, M-2, M-3, M-9, Q-W1 to Q-W13 and
+     Q7-1 to Q7-8 (§14).
   5. Decide W-0S (§2.3) and W-0K (D-2).
   6. **Before `claude/062-*` is deleted** (this is asked of 0.6.2's D3 too): check that
-     `docs/plans/0.7/` holds 0.6.2's `m5-session.sh`, its swap helper and the whole P2 Appendix C
+     `docs/plans/0.7.0/` holds 0.6.2's `m5-session.sh`, its swap helper and the whole P2 Appendix C
      (D-1, D-11). If not, read them from the 0.6.2 release PR's `refs/pull/<n>/head` (Q7-8).
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
@@ -368,11 +393,11 @@ guards; acceptance; effort; risk; rollback.
 - **Effort:** S, 1 run. **Risk:** low. **Rollback:** revert the commit (the notes line goes with
   it).
 
-### R-1: Docs riders (P2; no maintainer time beyond M-2 and M-5)
+### R-1: Docs riders (P2; no maintainer time: M-2 is decided, M-5 awaits the maintainer)
 
 - **Source:** RD §3.2 "Docs riders"; INV DOC-09, DOC-10, PLT-05; RD M-2, M-5, NEW-18.
 - **Items:**
-  1. **DOC-09** (on M-2, default "not in 1.x"):
+  1. **DOC-09** (M-2, decided by delegation: not in 1.x):
      - README loses the iOS 27 badge (RM:5) and "The iOS app comes later" (RM:14-15).
      - README's "What each platform exposes" (RM:192-206) loses its iOS column and the footnote
        ("The planned workaround…", RM:205-206), whose "via analytics import*" cells would
@@ -383,16 +408,17 @@ guards; acceptance; effort; risk; rollback.
      - ROADMAP keeps Stage 2 under "Not planned".
      - **ROADMAP's Decisions** (R:8-14): "Platforms" becomes "macOS 27 minimum; BatteryKit still
        builds for iOS 27 (PLT-05)"; "Distribution (iOS): undecided" becomes "Not in 1.x (M-2)";
-       and, on M-3's recommended answer, "Distribution (macOS)" drops "(and later charge
-       limiting)" (R:10-11). ROADMAP's own iOS 27 column (R:48-60) goes in 0.9.0's restructure
-       (RD §3.5).
+       and, as M-3 decided (by delegation: not in 1.x), "Distribution (macOS)" drops "(and later
+       charge limiting)" (R:10-11). That line already records M-1's no (2026-10-22), with Open
+       Anyway and the permissions or placed widgets a DMG replacement may lose as 1.0's known
+       limitations. ROADMAP's own iOS 27 column (R:48-60) goes in 0.9.0's restructure (RD §3.5).
   2. **DOC-10:** `.github/ISSUE_TEMPLATE/bug_report.yml` asks for the BatteryPulse version (About,
      or Settings → Advanced → Version) and how it was installed (DMG, in-app update, built from
      source).
   3. **PLT-05:** ROADMAP records that CI keeps building BatteryKit for iOS (ci.yml:130-131) until
      that first costs time.
-  4. **M-5:** RD §2, condensed into a "Road to 1.0" section of ROADMAP: C1-C17 in one line each,
-     and the 1.x promises (C14).
+  4. **M-5** (awaiting the maintainer; its recommended answer if still open): RD §2, condensed
+     into a "Road to 1.0" section of ROADMAP: C1-C17 in one line each, and the 1.x promises (C14).
   5. **NEW-18:** `docs/VERIFICATION.md` starts. It has one row per USER_GUIDE feature, with the
      session and evidence (screenshot or log) from a DMG build, beginning with 0.6.2's evidence.
      0.7's rows are filled at D3. A technical choice of file; English only.
@@ -434,7 +460,8 @@ guards; acceptance; effort; risk; rollback.
        (P2 §8.6). With the attention row and "Updated %@" (§7.3), that is one of the intended
        differences from 0.6.1's small and medium look.
      - An end beyond tomorrow shows no clock time: valid estimates run up to 65,534 minutes
-       (`MacPowerParser.swift:123, 281-284`). Showing the weekday instead is a look choice (Q-W5).
+       (`MacPowerParser.swift:123, 281-284`). An end beyond tomorrow shows no clock time and no
+       weekday (Q-W5, decided by delegation, §14).
      - The end comes from the reading's time (`snapshot.timestamp`), never `entry.date`; today's
        view uses `entry.date` (`BatteryPulseWidget.swift:192, 196`), which is harmless only while
        every later entry hides the estimate (item 7).
@@ -572,8 +599,8 @@ guards; acceptance; effort; risk; rollback.
 ### W-11: The drawn-battery painter, shared with the widget (conditional on Q-W4)
 
 - **Source:** P2 §8.5 (Main visual), §8.14 W-3; RD §4.3 REJ-04 ("a move, not a redesign").
-- **Runs only if** the maintainer wants the drawn battery as a main visual (Q-W4; the recommended
-  answer offers it).
+- **Runs:** Q-W4, decided by delegation, offers the drawn battery as a main visual. The look check
+  signs off its picture (§6.1 question 4), and W-11 is cut fifth if the budget runs short (§7.2).
 - **Items:**
   1. **A SwiftUI-only target,** `BatteryArt` (macOS code inside `#if os(macOS)`, as the app's is).
      - It holds `BatteryIconPainter` and `BatteryIconCanvas`
@@ -790,8 +817,8 @@ guards; acceptance; effort; risk; rollback.
   Q-W4, Q-W10, Q-W13.
 - **Items:**
   1. **`.systemLarge`:** Automatic shows the charge block and 8 details in two columns (P2 §8.17).
-  2. **`.systemExtraLarge`, only with Q-W10's explicit approval in the look check:** a layout of
-     its own, not a stretched large.
+  2. **`.systemExtraLarge`, only with Q-W10's explicit approval in the look check** (decided by
+     delegation: two panels, on that explicit yes): a layout of its own, not a stretched large.
      - The recommendation (§14) is two panels: Battery (charge, health, cycles, capacity in mAh) and
        Power (adapter, battery power, system load, temperature, Low Power Mode).
      - **Custom** in extra large fills the Battery panel first, then Power, with up to 6 details
@@ -805,7 +832,7 @@ guards; acceptance; effort; risk; rollback.
      - **Visuals:** the number with the level symbol (today), a number with a ring, and the drawn
        battery (with W-11).
      - The ring is a plain `Circle().trim` in the widget: no `Gauge` with animation, and no glass.
-  4. **The attention row** (Q-W13: on, with no parameter):
+  4. **The attention row** (Q-W13, decided by delegation: on, with no parameter):
      - It shows for a condition other than Normal, or a thermal state of High or Critical. Those are
        the app's own words for serious and critical (`App/Localized.swift:159-161`).
      - It takes the last detail slot, with a symbol and words. Small has no detail slot, so there it
@@ -906,9 +933,10 @@ guards; acceptance; effort; risk; rollback.
      - Small always shows the lowest: the lowest `AccessoryBattery.level`, which leaves out the case
        and offline parts (`Accessory.swift:168` per P2 §8.5).
      - Earbuds appear per part, as the app shows them.
-  2. **FEA-21 "Hide fully charged":** a Bool parameter, default off, only if Q7-5 says yes. Adding
-     it later is possible but [unverified] for placed widgets (Session R step 4.4 measures it on
-     the Battery kind), so the look check decides.
+  2. **FEA-21 "Hide fully charged":** a Bool parameter, default off (Q7-5, decided by delegation:
+     offered). It is declared before D1, because adding it later may reset placed widgets'
+     choices [unverified; Session R step 4.4 measures it on the Battery kind]. The look check
+     signs off its words (§6.1 question 9), and it is cut fourth if the budget runs short (§7.2).
   3. **Kind `io.github.nikitausov.BatteryPulse.accessories`,** families small, medium and large.
   4. **The read:** one-shot `MacAccessoryProvider.read()` through a second `WidgetReadCache`.
      - Never `observeChanges(` and never `AccessoryMonitor`, which registers the notify keys
@@ -945,8 +973,8 @@ guards; acceptance; effort; risk; rollback.
 
 - **Source:** P2 WP-21 and §6 (the script's structure); RD NEW-22; INV ENG-17, QUA-16.
 - **Items:**
-  1. **`docs/plans/0.7/m5-session.sh`,** built from 0.6.2's script (D-11: the copy in
-     `docs/plans/0.7/`, or the kept branch): `prepare`, `backup`, `restore`, the swap helper,
+  1. **`docs/plans/0.7.0/m5-session.sh`,** built from 0.6.2's script (D-11: the copy in
+     `docs/plans/0.7.0/`, or the kept branch): `prepare`, `backup`, `restore`, the swap helper,
      `send`, `day-start`, `day-end`, and the steps of §6.
      - **`charge-limit`** (QUA-05): asks for the limit set in System Settings → Battery [exact menu
        path unverified on macOS 27] and checks that the charge is at least 5 points below it. It
@@ -977,7 +1005,7 @@ guards; acceptance; effort; risk; rollback.
   4. **ci.yml:** `bash -n` for both scripts. The plan script's line goes with the folder at D3.
 - **Effort:** S-M, 1-2 runs. **Risk:** none to users.
 
-### K-1: The backup release key, public half only (conditional on M-9)
+### K-1: The backup release key, public half only (M-9: yes; conditional on the key existing)
 
 - **Source:** RD NEW-13, M-9; CL ("Never ask for or handle the private key").
 - **Items:**
@@ -988,7 +1016,7 @@ guards; acceptance; effort; risk; rollback.
   - `UpdateInstallTests` (:113-117, the only test that names `ReleaseSigning`) gains:
     `publicKeys.count == 2`, and it contains the new key.
   - `release.yml`'s key check is unchanged: it still checks that the secret's key is in the list.
-- **Effort:** S, 1 run. **Without M-9:** moves to 0.8.
+- **Effort:** S, 1 run. **If the maintainer hasn't generated the key by C1:** moves to 0.8.
 
 ### C-1: 0.6.2 carry-overs that need no M5 time (P3)
 
@@ -1002,10 +1030,16 @@ guards; acceptance; effort; risk; rollback.
     Session R's optional steps; internalize's F8 is Session R step 3 (every family on the RC).
   - **WP-16 item 3** (SEC-15, timed on the M5) joins Session R's optional steps; **item 5** (the
     login item after an update) takes its evidence from §6.4's login-item check.
-  - **WP-20's SEC-08** waits for a Developer ID build after 1.0 (RD §4.1).
-  - **WP-13 items 4-5** need the maintainer's look call (Q-B4) and go with a beta style's
-    graduation (FEA-25, RD §4.1).
-  - **WP-18** floats in 0.7 only if Xcode is on the M5; otherwise not planned (RD §5.1).
+  - **WP-20's SEC-08** (Enhanced Security) is not planned: Q-B8 is no, and the Developer ID build
+    it waited for won't exist, because M-1 is no (RD §4.2). Nothing in 0.7 waits for a signed
+    build.
+  - **WP-13 items 4-5** go with a beta style's graduation (FEA-25, RD §4.1). Q-B4, decided by
+    delegation: both styles stay beta until the maintainer signs one off in a sitting.
+  - **WP-18** runs in 0.6.2: Xcode is installed on the M5 (Q-B7, 2026-10-22), and the maintainer
+    runs it from Claude's step-by-step list. Any item 0.6.2 cuts (or SZ-10's icon, if it wasn't
+    signed off) rides in 0.7 the same way, whenever Xcode is open, and nothing waits for it (RD
+    §5.1 TCI-05; Session R step 11). The icon ships only on the maintainer's y to its screenshots
+    in the four icon styles.
 - **Effort:** 0-2 runs [estimate]. Cut first after the stretch.
 
 ### Stretch: W-5 (the feed), W-6 (History), W-7 (iPhone & iPad) (conditional: G7-5)
@@ -1014,13 +1048,15 @@ Specified in P2 §8.3, §8.5 (History, iPhone & iPad, feed-only options), §8.8 
 adds only:
 - **The gate** (RD §3.2): they run only if all of these hold:
   - W0-3 passed with A or A′;
-  - Q-W3 is yes;
-  - M-1 is no;
+  - Q-W3 is yes (decided 2026-10-22, following the maintainer's M-1 answer);
+  - M-1 is no (decided 2026-10-22, by the maintainer);
   - the MVP has merged with budget left.
 
-  Otherwise they go to 1.1, on an App Group with M-1, or on the feed.
-- **One type behind the feed reader,** so an App Group container can replace the temporary
-  exception later without touching the views (RD §3.2 engineering notes).
+  If W0-3 passed but the budget ran out, they go to 1.1 on the feed. If W0-3 failed, they are not
+  possible without the paid account: there is no App Group (RD §4.2).
+- **One type behind the feed reader,** so the feed's location or entitlement can change later
+  without touching the views (RD §3.2 engineering notes); an App Group container could take its
+  place only if M-1 is ever revisited.
 - **The feed's location is not a 1.x promise** (RD C14 item 2): it links an app and a widget of the
   same version, so it may move in a minor release with a line in the notes, and its version 1
   schema only gains fields. This narrows P2 §8.13, which lists "the feed's path" as frozen.
@@ -1107,8 +1143,10 @@ As P1 §3.5 and P2 D1-D3, with 0.7's differences.
   ROADMAP's 1.1 entry, as 0.6.2's D3 did for 0.7 (RD §1.2 item 9): `widgets.md`'s §8.3 (the feed),
   §8.5's History and iPhone & iPad parts, §8.8's feed hardening, W-5 to W-7, W-9, and the Q-W
   answers.
-- Remove `docs/plans/0.7/` and its `bash -n` line.
+- Remove `docs/plans/0.7.0/` and its `bash -n` line.
 - Release (§13), then the after-publishing check (§6.4).
+- A week after publishing: the download counts into ROADMAP's Releases table (§13 step 8,
+  NEW-23).
 
 ---
 
@@ -1122,24 +1160,24 @@ rebases onto the first, and the review checks that nothing else overlaps.
 | Round | Slot 1 | Slot 2 | Waits for |
 |---|---|---|---|
 | A0 | W-0, the intake (orchestrator). W-0S if the spikes never ran | | v0.6.2 published; its D3 |
-| A1 | S-1 | R-1 | A0. R-1 also waits for M-2 and M-5, or their defaults |
+| A1 | S-1 | R-1 | A0. R-1 also waits for M-5's answer, or its recommended answer if it is still open (M-2 and M-3 are decided) |
 | A2 | W-1 | W-2, which merges after W-1 (it reads W-1's `widget-manifest.json`) | A0 (G7-1); for W-2, W0-1's processor options |
 | A3 | W-3a | W-12 | W-1 and W-2 merged |
-| A3′ (only if Q-W4 wants the drawn battery) | W-11 | W-4 | W-3a merged (W-11 then changes the widget target's dependencies on a settled base) |
+| A3′ (W-11: Q-W4 offers the drawn battery; skipped if W-11 is cut, §7.2) | W-11 | W-4 | W-3a merged (W-11 then changes the widget target's dependencies on a settled base) |
 | A4 | W-3b | W-4, if it didn't run in A3′ | W-3a (the widget files, the catalog); W-11 if it ran |
 | **Look check** | the maintainer at his desk, about 15 minutes (§6.1) | | W-3b's PNGs |
 | A5 | W-8 (G7-8) | W-3c | W-3b (the catalog, the widget files); W-4 (`BatteryPulseApp.swift`) |
 | **Look check 2** | the maintainer, about 3 minutes (§6.1b) | | W-8's PNGs |
-| A6 | K-1 (M-9) | | — |
+| A6 | K-1 (M-9: yes) | | the maintainer's backup key (§14 M-9) |
 | B (G7-5 only) | W-5, then W-6 | W-7, after W-5 | A5 |
 | C1 | W-10 (merges last) | C-1 (Linux only) | everything above |
 | D1 | freeze RC-U and RC-F | | C1 |
 | **Session R** and the logged day | the maintainer (§6.2, §6.3) | | D1 |
-| D3 | release; after publishing (§6.4) | | Session R |
+| D3 | release; after publishing (§6.4); a week later, the download counts (§13 step 8) | | Session R |
 
 **Why this order:**
 - **S-1 and R-1 first.** They need no spike answer and touch no widget file, so the slots work while
-  the maintainer answers Q-W.
+  W-0 reads 0.6.2's spike answers (the Q-W questions were decided on 2026-10-22).
 - **W-1 before everything widget-side.** Its first test pins v0.6.1's small and medium widget before
   W-3a replaces the view (P2 §8.6).
 - **W-4 beside W-3b,** or beside W-11 in A3′. W-4 owns the BatteryCore planner and
@@ -1183,30 +1221,36 @@ W-6, W-7 in sequence), `App/WidgetRefresher.swift` (W-4, then W-6 and W-7), and
 **What:** the orchestrator downloads CI's PNG artifact (W-3a item 11) and posts the pictures in a PR
 comment: every family × rendering mode, in English (and in Russian if W-3a found the way). The
 accented and vibrant pictures are marked "approximate" (W-3b item 7). The maintainer answers in the
-comment. Each answer has a default, the recommended answer of §14.
+comment. The questions behind these looks were decided on 2026-10-22 by delegation (§14), so each
+question offers the decided answer first and asks him to sign off the look it leads to; another
+answer changes it (RD §1.2 item 8).
 
 1. "Small and medium, Automatic, next to 0.6.1's widget (the picture on the left): **1** same,
    **2** different (say what)."
 2. "Large: are these the right eight details (maximum capacity, cycle count, temperature, adapter,
    system load, battery power, Low Power Mode, charge in mAh)? y, or say which to swap." (Q-W4)
 3. "Extra large: **1** two panels as shown, **2** a bigger copy of large, **3** leave extra large
-   out for now (it can come later)." (Q-W10; a size can never be removed once shipped, so only an
-   explicit 1 or 2 declares it, and no answer means 3)
+   out for now (it can come later)." (Q-W10, decided by delegation: 1, if you approve the picture;
+   a size can never be removed once shipped, so only an explicit 1 or 2 declares it, and no answer
+   means 3)
 4. "Main visuals to offer: **1** all three (number and symbol, ring, drawn battery), **2** number
-   and symbol plus ring, **3** number and symbol only." (Q-W4)
-5. "Default colours: **1** level colours, as today, **2** monochrome." (Q-W4)
+   and symbol plus ring, **3** number and symbol only." (Q-W4, decided by delegation: 1)
+5. "Default colours: **1** level colours, as today, **2** monochrome." (Q-W4, decided by
+   delegation: 1)
 6. "Time: **1** offer clock time and time left, with clock time as the default, **2** the same
-   with time left as the default, **3** clock time only." (Q-W5; only if W0-6 passed)
+   with time left as the default, **3** clock time only." (Q-W5, decided by delegation: 1; only
+   if W0-6 passed)
 7. "The words of the edit sheet (the list below, English and Russian): y = fine, or say which."
    (§8)
 8. "The attention row (picture: 'Service Recommended' in the last row, and in small in place of
-   the time line): **1** on, **2** never." (Q-W13; "off by default" would need a frozen
-   parameter, so it isn't offered)
-9. "Offer 'Hide fully charged' in the Accessories widget? y/n" (Q7-5; the Accessories pictures come
-   in §6.1b)
+   the time line): **1** on, **2** never." (Q-W13, decided by delegation: 1; "off by default"
+   would need a frozen parameter, so it isn't offered)
+9. "'Hide fully charged' in the Accessories widget, off by default: y = keep it, n = leave it out
+   of 0.7." (Q7-5, decided by delegation: y; the Accessories pictures come in §6.1b)
 
-**Without an answer:** the defaults of §14 (for question 3: no extra large). **Without PNGs**
-(W-3a's test target couldn't link): the check moves into Session R as step 3b (+10 minutes).
+**Without an answer:** the decided answers of §14; for question 3 that means no extra large,
+because only an explicit 1 or 2 declares a size. **Without PNGs** (W-3a's test target couldn't
+link): the check moves into Session R as step 3b (+10 minutes).
 
 ### 6.1b The second look (about 3 minutes, after W-8 merges)
 
@@ -1215,7 +1259,7 @@ picture's number." Without an answer, y. Without PNGs, Session R step 3 covers i
 
 ### 6.2 Session R (the release candidate, about 80 minutes hands-on)
 
-One script: `bash docs/plans/0.7/m5-session.sh <step>` (W-12). Each step says its time.
+One script: `bash docs/plans/0.7.0/m5-session.sh <step>` (W-12). Each step says its time.
 
 1. **prepare** (3 min):
    - A fresh backup into `~/bp-070/R`: the app, the defaults domain, Application Support, the
@@ -1252,11 +1296,11 @@ One script: `bash docs/plans/0.7/m5-session.sh <step>` (W-12). Each step says it
       - A **3** is recorded "not checked", never "n".
       - While the extension is in Russian, the script screenshots every placed widget (1 min).
         Then it switches the language back.
-   4. **A parameter added later** (3 min; Q7-5, RD C14 item 5): the script installs RC-P over RC-U
+   4. **A parameter added later** (3 min; RD C14 item 5): the script installs RC-P over RC-U
       (RC-U plus one dummy parameter, D1). "Open Edit Widget on the medium widget. Are the choices
       you made in 4.1 still there? y/n." The script then installs RC-U2 for the rest of the
-      session. The answer goes to Appendix C, as the evidence for Q7-5's default and for 1.1's
-      added parameters.
+      session. The answer goes to Appendix C, as the evidence for 1.1's added parameters. (Q7-5
+      was decided without it: FEA-21 is declared before D1 either way, W-8 item 2.)
    5. "Set the widget back to Automatic." The script screenshots each state.
 5. **Rendering modes and places** (14 min; G7-4):
    - The script prints your Icon & widget style and your Dim widgets on desktop setting.
@@ -1316,11 +1360,11 @@ One script: `bash docs/plans/0.7/m5-session.sh <step>` (W-12). Each step says it
     installed once and the extension isn't flipped through four versions first.
 11. **Optional, any time:**
     - **The Charge Limit capture** (QUA-05, if 0.6.2 missed it):
-      `bash docs/plans/0.7/m5-session.sh charge-limit` (W-12). The script asks for the limit set in
-      System Settings → Battery [exact menu path unverified on macOS 27] and checks that the charge
-      is at least 5 points below it. It then starts `caffeinate -i bpulse --record` into a new,
-      empty folder under `~/bp-070/` and beeps when charging stops at the limit. Keep the adapter
-      in and the lid open. About 2 minutes to set up, then unattended.
+      `bash docs/plans/0.7.0/m5-session.sh charge-limit` (W-12). The script asks for the limit set
+      in System Settings → Battery [exact menu path unverified on macOS 27] and checks that the
+      charge is at least 5 points below it. It then starts `caffeinate -i bpulse --record` into a
+      new, empty folder under `~/bp-070/` and beeps when charging stops at the limit. Keep the
+      adapter in and the lid open. About 2 minutes to set up, then unattended.
     - **The optimized charging hold** (QUA-06): `… m5-session.sh hold-watch` before bed, with the
       adapter in and the lid open. It records overnight under `caffeinate -i` and says in the
       morning whether a hold was seen [uncertain: whether macOS holds the charge while the Mac is
@@ -1328,6 +1372,8 @@ One script: `bash docs/plans/0.7/m5-session.sh <step>` (W-12). Each step says it
     - **W-11's pixel check:** `scripts/menu-bar-shots.sh` before and after.
     - **Any of 0.6.2's open checks** that C-1 couldn't carry (D-14): WP-17's page switches, SEC-15's
       timing.
+    - **Any WP-18 item 0.6.2 left** (C-1): in Xcode, from Claude's step-by-step list (Xcode is
+      installed on the M5, Q-B7). Not timed here: it runs whenever Xcode is open.
 12. **Start the logged day** (1 min; G7-11):
     - The script starts the `perf` log stream in the background, as 0.6.1's session did.
     - If the stream may not survive sleep, it also enables
@@ -1374,7 +1420,9 @@ From the restored 0.6.2, with the session's small and medium widgets still place
    - notification permission is kept.
 5. **On a 2 or 4 in step 3, or any other failure:** `gh release edit v0.7.0 --prerelease`, and fix
    forward. **On a 3:** if Session R step 2 also showed "gone", the notes already say "add it
-   again"; otherwise the notes are edited to say so, and ROADMAP Stage 1.2 records it.
+   again"; otherwise the notes are edited to say so, and ROADMAP Stage 1.2 records it. Either way
+   it is a documented known limitation, not a reason to wait: with ad-hoc signing through 1.0
+   (M-1 is no), no signed build is coming to fix it (RD C3, C7).
 6. **In everyday use on the first day:** the widget's charge and "Lasts until" against the popover,
    within 2 points and about 15 minutes (P2 D3, `994c09d`).
 
@@ -1390,6 +1438,12 @@ From the restored 0.6.2, with the session's small and medium widgets still place
     that only grows (D1-D3). It is a technical change, and ROADMAP's decisions record it.
 - **Text size and desktop widgets:** whether Text size reaches desktop widgets is [unverified]
   (P2 W0-5). A "2 unchanged" in step 7 is not a failure.
+- **Ad-hoc signing stays through 1.0** (M-1 is no):
+  - A DMG install meets Open Anyway, and a DMG replacement may cost permissions and placed
+    widgets (UG:425-426, UG:493-495). These are documented known limitations at 1.0 (RD C3, C7,
+    C16), so a loss seen in Session R step 2 or §6.4 is recorded and documented (§12), never
+    deferred to a signed build.
+  - In-app updates keep the same path as 0.6.x (`UpdateInstaller`), which is what §6.4 tests.
 
 ---
 
@@ -1400,10 +1454,10 @@ From the restored 0.6.2, with the session's small and medium widgets still place
 | Gate | Decides | Measured by | If no measurement comes |
 |---|---|---|---|
 | **G7-1** configuration | App Intents configuration, or preset kinds | 0.6.2's W0-1 (CI and Session A); W-2's CI check | W0-1 not run: W-0S. W0-1 failed: presets (FEA-13), W-2 dropped |
-| **G7-2** placed widgets | today's kind becomes configurable, or the configurable widget gets a new kind | 0.6.2's W0-2 (SPIKE-C, SPIKE-W) or W-0S; Session R step 2 confirms | No W0-2 answer: W-0S (§2.3). If Session R step 2 answers 2 or 3 although W0-2 passed: compare with D-9 (the plain 0.6.1 → 0.6.2 in-app update). If D-9 kept the widgets, merge the fallback branch, dispatch new RC-U and RC-F builds, and repeat Session R steps 1-4 (without 4.4) before D3 (+2 runs, about 35 minutes). If D-9 lost them too, the loss is the update's: ship as designed, and the notes say "add it again". **No Session R: no release** (§3) |
+| **G7-2** placed widgets | today's kind becomes configurable, or the configurable widget gets a new kind | 0.6.2's W0-2 (SPIKE-C, SPIKE-W) or W-0S; Session R step 2 confirms | No W0-2 answer: W-0S (§2.3). If Session R step 2 answers 2 or 3 although W0-2 passed: compare with D-9 (the plain 0.6.1 → 0.6.2 in-app update). If D-9 kept the widgets, merge the fallback branch, dispatch new RC-U and RC-F builds, and repeat Session R steps 1-4 (without 4.4) before D3 (+2 runs, about 35 minutes). If D-9 lost them too, the loss is the update's: ship as designed, and the notes say "add it again"; it stays a documented known limitation at 1.0 (RD C3, C7). **No Session R: no release** (§3) |
 | **G7-3** time left | the Time parameter | W0-6; Session R step 6 | Not shipped: clock time only, and the parameter isn't declared |
 | **G7-4** rendering modes | which modes are designed and checked where | W0-4 (2); Session R step 5 | All three modes designed; every place checked in Session R |
-| **G7-5** stretch | W-5 to W-7 in 0.7 | W0-3 (A or A′); Q-W3; M-1; the budget after A5 | 1.1 (RD §3.2) |
+| **G7-5** stretch | W-5 to W-7 in 0.7 | W0-3 (A or A′); the budget after A5. Q-W3 (yes) and M-1 (no) were decided on 2026-10-22 | W0-3 passed, no budget left: 1.1 on the feed (RD §3.2). W0-3 not run: 1.1, where it runs first. W0-3 failed: not possible without the paid account (RD §4.2) |
 | **G7-8** Accessories widget | W-8 | W0-4 (1); Session R steps 3 and 9 | Not in 0.7 |
 | **G7-9** URL scheme | register a navigation-only scheme | W0-4 (4), (5); Session R step 8 | No scheme. W-3c handles both the URL and the activity; if step 8 shows URL clicks don't arrive, the scheme is added before release (§7.3) |
 | **G7-10** size | ceilings and cuts | the CI size report (§9) | Within 0.6.1's ceilings: a raise in a commit of its own. Above: §9's cut order |
@@ -1420,8 +1474,9 @@ From the restored 0.6.2, with the session's small and medium widgets still place
 **Never cut:** W-0, S-1, W-1, W-2 (or FEA-13 under G7-1), W-3a, W-3b with large, W-3c, W-4, W-10,
 W-12, and D1-D3.
 
-**Conditional:** W-8 (G7-8), W-11 (Q-W4), K-1 (M-9), and extra large (Q-W10; declared only on an
-explicit 1 or 2 in look-check question 3).
+**Conditional:** W-8 (G7-8), K-1 (M-9 is yes; it needs the maintainer's key by C1), and extra
+large (Q-W10; declared only on an explicit 1 or 2 in look-check question 3). W-11 and FEA-21 are in
+(Q-W4 and Q7-5, decided by delegation) but are cut early if the budget runs short (below).
 
 **Cut in this order if the budget runs short** (a cut option is cut before D1, §3):
 1. the stretch (W-7, W-6, W-5 → 1.1);
@@ -1512,7 +1567,7 @@ and W-10's terminology pass. Keys marked (if …) exist only when their option s
 | W-3a, summaries | one `Summary` key per `ParameterSummary` branch (P2 §8.5: Automatic; Custom; Custom in small), worded with W0-1 (d)'s placeholder form [count uncertain: 2-4] |
 | W-3a, text | "Lasts until about %@ tomorrow" · "Full at %@ tomorrow" (P2 §8.6) · widget-only short forms of reused keys that are over `WidgetTextBudget` (W-1 item 5), each with its Russian, named in the commit [count unknown until W-1's test runs] |
 | W-3b | "Cycle life used" · "Cell balance" (P2 §8.5's catalogue) · panel headings only if the extra-large layout needs words beyond "Battery" and "Power" |
-| W-8 | "Batteries of your keyboard, mouse, trackpad and headphones." (gallery) · "Choose Accessories" (intent title) · "Choose which accessory batteries the widget shows." · "Lowest only" · "No accessories with batteries connected" · "Try the Accessories widget" (the Battery widget's no-battery state, if W-8) · "Hide fully charged" (if Q7-5) |
+| W-8 | "Batteries of your keyboard, mouse, trackpad and headphones." (gallery) · "Choose Accessories" (intent title) · "Choose which accessory batteries the widget shows." · "Lowest only" · "No accessories with batteries connected" · "Try the Accessories widget" (the Battery widget's no-battery state, if W-8) · "Hide fully charged" (FEA-21, Q7-5; unless cut) |
 | W-10, What's New | 2-3 features' titles and details (Q7-2), for example "Widgets you configure" and "Accessories widget", each with a one-sentence detail |
 | Stretch (W-5 to W-7) | P2 §8.5's History and iPhone & iPad parameters and states, among them "Open BatteryPulse to update" and "This device was forgotten" |
 
@@ -1666,6 +1721,8 @@ app with widgets placed.
 - **Nothing leaves the Mac.** The widget has no network: no `URLSession`, no `Network` and no push
   (REJ-57; W-3a's guard). The update check stays the only internet request (UG:502-507; RD C14
   item 8).
+- **No telemetry.** The only usage numbers are GitHub's public download counts, read from the
+  releases API a week after publishing (§13 step 8, NEW-23). The app counts and sends nothing.
 - **No new file and no new entitlement in the MVP.** The widget reads IOKit, and accessory
   batteries through the one-shot provider. Its entitlements stay the sandbox alone, pinned by W-1.
 - **What macOS stores:** the widget's configuration, which holds only the choices of §8's cases. No
@@ -1699,14 +1756,14 @@ app with widgets placed.
 
 | Document | Change | Package |
 |---|---|---|
-| `docs/USER_GUIDE.md`, Widget (UG:408-430) | **Rewritten** (DOC-07): the kinds and their sizes; Edit Widget and what each option does; Automatic keeps the look; clicks open the matching page; the reload rules (UG:419-423, updated: placed kinds only, the new reasons); VoiceOver. "The widget is new…" (UG:428-430) goes. UG:425-426 ("Replacing BatteryPulse with a new version from the DMG removes the widgets") is restated from evidence: R:202-208, D-9, Session R step 2 and §6.4 | W-10 |
-| `docs/USER_GUIDE.md`, updates (UG:488-495) | "Widgets may need adding again" kept or narrowed, by the same evidence | W-10 |
+| `docs/USER_GUIDE.md`, Widget (UG:408-430) | **Rewritten** (DOC-07): the kinds and their sizes; Edit Widget and what each option does; Automatic keeps the look; clicks open the matching page; the reload rules (UG:419-423, updated: placed kinds only, the new reasons); VoiceOver. "The widget is new…" (UG:428-430) goes. UG:425-426 ("Replacing BatteryPulse with a new version from the DMG removes the widgets") is restated from evidence: R:202-208, D-9, Session R step 2 and §6.4. Whatever the evidence shows stays a documented known limitation at 1.0 (RD C3, C7; M-1 is no, so no signed build will remove it) | W-10 |
+| `docs/USER_GUIDE.md`, updates (UG:488-495) | "Widgets may need adding again" kept or narrowed, by the same evidence; permissions after a DMG replacement stay a known limitation (RD C3) | W-10 |
 | `docs/USER_GUIDE.md`, command line (UG:561-663) | `--device --json` dates and `formatVersion` (UG:620, UG:648) | S-1 |
 | `docs/USER_GUIDE.md`, privacy (UG:502-507, UG:351-359) | Only with the stretch: the feed | W-10 |
 | `README.md` | The Widget bullets (RM:84-86, "new in 0.3") list the configurable sizes and Accessories. The iOS promises go (R-1, DOC-09). "Status: early development" stays until 0.9.0 (RD §3.5, DIS-10) | W-10, R-1 |
 | What's New | `WhatsNew.version` 0.6.0 → 0.7.0 (`UpdateViews.swift:388`), and `WhatsNew.features` replaced with 0.7's 2-3 (Q7-2). Users coming from 0.6.x see it once (`UpdatePolicy.showsWhatsNew`, `Updates.swift:232`) | W-10 |
 | `CLAUDE.md` | **Layout:** `Sources/BatteryCore/Widget/` (the model, planner, routes and manifest); `BatteryArt` if W-11; the widget's intents and their rule. **The build:** the metadata step and `appintents-check.swift`. **Guards:** the new widget rules (time text, placements, routes). **Signposts:** `widget.timeline` and its triggers; `widget.reload`'s `policy.accessories`. **The placeholder exception,** if any. **The URL scheme,** if any. **Energy:** "widget reloads only in `WidgetRefresher`, through `WidgetReloadPolicy`" becomes "… through `WidgetReloadPlanner` (per kind, placed kinds only)". **Logging:** "an app and a BatteryKit twin" (or BatterySource after 0.6.2's WP-22) gains the widget's twin (W-3a item 8). **Layout, BatteryPulseWidget:** "signed with only the app-sandbox entitlement" gains the stretch's read-only exception, only if W-5 ships. **Releases:** the build number from one clock (D1) | W-10 |
-| `docs/ROADMAP.md` | The 0.7 entry (R:543-556, which promises "every size macOS offers" and History, iPhone and iPad widgets) rewritten to what shipped, then ticked; the History and iPhone & iPad widgets, the portrait size and any family not shipped move to a new 1.1 entry (RD §3.8) that links `docs/plans/1.1/widgets.md` (D3); the Decisions edits of R-1 item 1; the build-number decision (D1); the frozen-outputs decision line (R:437-439) gains "device JSON dates and `formatVersion` shipped in 0.7"; Stage 1.2's widget line (R:202-208) updated from §6.4; Stage 4's WidgetKit line; the "Road to 1.0" section (R-1); "Next: 0.8" (RD §3.3); a "Widgets (0.7)" decisions paragraph (the kinds, Automatic frozen, the planner, the stretch's condition) | W-10, R-1 |
+| `docs/ROADMAP.md` | The 0.7 entry (R:543-556, which promises "every size macOS offers" and History, iPhone and iPad widgets) rewritten to what shipped, then ticked; the History and iPhone & iPad widgets, the portrait size and any family not shipped move to a new 1.1 entry (RD §3.8) that links `docs/plans/1.1/widgets.md` (D3); the Decisions edits of R-1 item 1; the build-number decision (D1); the frozen-outputs decision line (R:437-439) gains "device JSON dates and `formatVersion` shipped in 0.7"; Stage 1.2's widget line (R:202-208) updated from §6.4; Stage 4's WidgetKit line; the "Road to 1.0" section (R-1); "Next: 0.8" (RD §3.3); a "Widgets (0.7)" decisions paragraph (the kinds, Automatic frozen, the planner, the stretch's condition: the feed only, as M-1 is no); the Releases row, whose download counts follow a week later (§13 step 8, NEW-23) | W-10, R-1, D3 |
 | `docs/VERIFICATION.md` | New (R-1); 0.7's rows filled at D3 | R-1, D3 |
 | `.github/ISSUE_TEMPLATE/bug_report.yml` | The app version, how it was installed, no iOS | R-1 |
 | `.github/ISSUE_TEMPLATE/feature_request.yml` | The platform list offers only macOS (:17) | R-1 |
@@ -1731,8 +1788,9 @@ app with widgets placed.
    - if §6.4 or Session R saw widgets gone across the update: "If a widget is gone after the
      update, add it again from the gallery";
    - "Updating from 0.6.2: Install and Relaunch."
-3. **ROADMAP:** a Releases row `| 0.7.0 | <date> | … |` (R:691-699); §12's changes.
-4. **Remove `docs/plans/0.7/`** in the last commit, after ROADMAP holds the lasting decisions and
+3. **ROADMAP:** a Releases row `| 0.7.0 | <date> | … |` (R:691-699), its download counts left for
+   step 8; §12's changes.
+4. **Remove `docs/plans/0.7.0/`** in the last commit, after ROADMAP holds the lasting decisions and
    `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). Its `bash -n` line goes with it
    (P2 D3).
 5. **The PR** `claude/070-integration` → `main`: the D1 draft is marked ready, with the numbers,
@@ -1742,28 +1800,58 @@ app with widgets placed.
    hand. The maintainer approves the `release` environment run before any step runs
    (`release.yml:6-9`).
 7. **After publishing** (§6.4), with `gh release edit v0.7.0 --prerelease` as the rollback.
+8. **A week after publishing** (NEW-23; RD §1.2 item 6): read v0.7.0's DMG and `.sig` download
+   counts from the releases API (`gh api repos/{owner}/{repo}/releases/tags/v0.7.0 --jq '.assets[]
+   | "\(.name) \(.download_count)"'`, as 0.6.2's D3 does) and record them in ROADMAP's Releases
+   table, in a commit of its own (D-16 says what to do if the columns are missing).
+   - Each in-app install fetches the `.sig`, so its count is a privacy-free proxy for in-app
+     updates.
+   - The counts include the maintainer's own downloads and the release's signature check, so they
+     are an upper bound on anyone else.
+   - No telemetry: the app counts and sends nothing (§11).
 
 ---
 
-## 14. Questions only the maintainer can answer
+## 14. The maintainer's questions and their answers
 
-Each question has a recommended answer, which is also the default without one (unless marked
-otherwise). Technical choices are not asked, as agreed in P1 §8 ("Architecture: delegated"). They
-include App Intents, the planner, routing, the URL scheme, tests and guards, the build step and the
-size sequencing.
+**Answered on 2026-10-22.** The maintainer answered M-1 (no) and Q-W1 (yes), and Q-W3 (yes) follows
+from his M-1 answer. He delegated every other question here ("do it by best practices, as you see
+fit"), so each is decided as its recommended answer, marked "decided by delegation". Only M-5 awaits
+him. The looks these decisions lead to are still signed off in the look check (§6.1), where another
+answer changes them. Technical choices are not asked, as agreed in P1 §8 ("Architecture:
+delegated"). They include App Intents, the planner, routing, the URL scheme, tests and guards, the
+build step and the size sequencing.
 
 ### Before 0.7 starts (RD §6)
 
-- **M-1, the paid developer account.**
-  - **Recommended: yes** (RD M-1). For 0.7 this means:
-    - the History and iPhone & iPad widgets wait for an App Group in 1.1. They are not built on a
-      temporary exception now and moved later (RD §3.2);
-    - once enrollment is through, a one-evening throwaway spike (S-ID, RD §3.4) can run during 0.7,
-      with no 0.7 code, so the switch can land in 0.9.0. Never in 0.8: the running app's installer
-      performs every update, so the switch must be installed by 0.8, the first version with NEW-16's
-      safeguards (RD §3.4 step 3, C8).
-  - **Default without an answer: no,** which keeps the stretch possible.
-  - **Why widgets make the case stronger:**
+- **M-1, the paid developer account. Decided by the maintainer (2026-10-22): no.** Not now, and
+  not planned before 1.0. His reasons: a non-commercial hobby project, no budget for the account,
+  and about zero users.
+  - **Usage evidence** (GitHub's REST API, 2026-10-22):
+    - DMG downloads across all releases: 14 in total (0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1,
+      0.5.0: 2, 0.6.0: 3, 0.6.1: 1, the last being a signature check during the release);
+    - signature (`.sig`) downloads: 5. Each in-app install fetches the `.sig`, so this count is a
+      privacy-free proxy for in-app updates;
+    - repository page views: 2, by 1 visitor, in 14 days; no stars, forks or outside issues.
+
+    So the users are, in practice, the maintainer alone. From 0.6.2's D3 on, each release records
+    its counts a week after publishing (§13 step 8, NEW-23); the app counts nothing. 0.7's scope
+    stays as planned: its sittings check the Mac the widgets run on, and 1.0's "ready for others"
+    scope is unchanged (RD §2; M-5).
+  - **For 0.7 this means:**
+    - **No App Group.** The History and iPhone & iPad widgets can only use the app-written copy of
+      readings (the feed, W-5; Q-W3 is yes): in 0.7's stretch if W0-3 passed and the budget
+      allows, otherwise 1.1 on the feed. If W0-3 fails, they are not possible without the account
+      (RD §4.2).
+    - **Nothing waits for a signed build.** Developer ID signing and notarization are not planned:
+      gate G-ID, the throwaway spike S-ID and the Developer ID runbook are off the path to 1.0
+      (RD §3.4). No Developer ID spike runs during 0.7, and 0.9.0 has no Developer ID item.
+    - **Known limitations at 1.0:** Open Anyway on each DMG install, and permissions or placed
+      widgets possibly lost when a DMG replaces the app (RD C3, C7, C16). 0.7 records what Session
+      R step 2 and §6.4 show, and the guide says it (§12).
+    - **Enhanced Security and the package manager's official catalog** stay not planned: both
+      needed notarization (RD §4.2).
+  - **Kept as background, in case he changes his mind** (RD M-1):
     - An App Group is the documented way for an app and its widget to share data, and it needs a
       Team ID: app groups belong to one development team, and macOS group IDs are `<team
       identifier>.<group name>`
@@ -1771,11 +1859,19 @@ size sequencing.
       P2 §8.2). macOS 27 also denies other teams' containers without a prompt (NOTES27 161835690).
     - A stable signature may keep placed widgets and permissions across updates (R:202-208,
       R:180-181) [unverified for widgets].
-- **M-2, an iOS app.** **Recommended: not in 1.x.** R-1 then removes the iOS promises from README
-  (with the iOS column of "What each platform exposes") and both issue templates, and ROADMAP's
-  Decisions say "Not in 1.x".
-- **M-5, what 1.0 means.** **Recommended:** approve RD §2. R-1 condenses it into ROADMAP.
-- **M-9, a backup signing key.** **Recommended: yes.**
+- **M-2, an iOS app. Decided by delegation (2026-10-22): not in 1.x.** R-1 removes the iOS
+  promises from README (with the iOS column of "What each platform exposes") and both issue
+  templates, and ROADMAP's Decisions say "Not in 1.x".
+- **M-3, charge limiting. Decided by delegation (2026-10-22): not in 1.x.** R-1 drops "(and later
+  charge limiting)" from ROADMAP's Decisions.
+- **M-5, what 1.0 means. Awaiting the maintainer:** asked again in plain words on 2026-10-22 (RD
+  M-5).
+  - **Recommended (unchanged):** yes, approve RD §2 as written. 1.0 means "ready for people other
+    than you", with no fixed date and WWDC 2027 as the outer bound.
+  - **If it is still open when R-1 runs:** the recommended answer applies, and R-1 condenses RD §2
+    into ROADMAP. An answer that differs changes that section in the next release.
+- **M-9, a backup signing key. Decided by delegation (2026-10-22): yes.** Generating the key is
+  still yours (about 5 minutes):
   - Read the steps first with `swift scripts/sign-update.swift --help`. Then, in Terminal on your
     Mac (never in a chat), run `swift scripts/sign-update.swift --generate-key`. It prints the new
     private key (`sign-update.swift:9-12`). Keep it only offline (a password-manager entry or a
@@ -1784,93 +1880,94 @@ size sequencing.
     scripts/sign-update.swift --public-key; unset UPDATE_SIGNING_KEY` (:7-8). Paste the key when the
     cursor waits: nothing shows, and it stays out of the shell history. Post only the printed
     public line in the PR; Claude never sees the private half (CL).
-  - **Default without an answer:** no K-1 in 0.7.
+  - **If the key doesn't exist by C1:** K-1 moves to 0.8.
 
-**Charge limiting and an iOS app:** nothing in 0.7 argues for revisiting them.
+**Charge limiting and an iOS app:** nothing in 0.7 argues for revisiting M-2 or M-3.
 - The widget is read-only. There is no Control Center control (REJ-56), and the Mac has no
   accessory widget families (REJ-54).
 - An iOS widget (FEA-33) needs the iOS app first.
 
-### The widgets' look and behaviour (P2 §10's Q-W, with 0.7's recommendations)
+### The widgets' look and behaviour (P2 §10's Q-W, with 0.7's answers)
 
-- **Q-W1 (when):** 0.7, as this plan does. There is no 0.6.3 with static sizes (RD §5.3).
-- **Q-W2 (which widgets):**
+- **Q-W1 (when). Decided by the maintainer (2026-10-22): 0.7,** as this plan does. There is no
+  0.6.3 with static sizes (FEA-14 not planned; RD §5.3).
+- **Q-W2 (which widgets). Decided by delegation:**
   - Battery and Accessories in 0.7.
-  - History and iPhone & iPad when the bridge (without the paid account) or an App Group (with it)
-    allows, with the 90-day capacity and cycles trend offered then.
+  - History and iPhone & iPad on the feed, if W0-3 passed (Q-W3), with the 90-day capacity and
+    cycles trend offered then. There is no App Group route, because M-1 is no.
   - No preset widgets, unless configuration turns out impossible (G7-1).
-- **Q-W3 (BatteryPulse keeps a small copy of recent readings for the widgets):**
-  - **Recommended:** yes if you stay without the paid account; no if you buy it, because the App
-    Group replaces the copy in 1.1.
-  - **Default:** no copy.
-- **Q-W4 (look):**
+- **Q-W3 (BatteryPulse keeps a small copy of recent readings for the widgets). Decided 2026-10-22,
+  following the maintainer's M-1 answer (no paid account): yes,** if W0-3 passes. If it fails, the
+  History and iPhone & iPad widgets aren't possible without the account (RD §4.2).
+- **Q-W4 (look). Decided by delegation:**
   - **Main visual:** offer the number with the level symbol (the default, as today), a number with a
     ring, and a drawn battery like the menu bar's Modern style.
   - **Main value:** charge (the default), maximum capacity, temperature, and battery power with its
     update time.
   - **Colours:** level colours by default.
-  - **Large and extra-large details:** as §6.1 question 2 shows. The look check asks.
-- **Q-W5 (time):** clock time by default ("Lasts until about 16:39"), with time left ("2 hours, 13
-  minutes") offered if W0-6 passed. An end two or more days ahead (macOS estimates run up to 65,534
-  minutes) shows no time; **recommended:** keep it that way, rather than a weekday ("Lasts until
-  about Friday").
-- **Q-W6 (update time):** "Updated 14:05" only when the reading is old, with "Always" offered.
-- **Q-W7 (battery power, up to half an hour old in a widget):** offered, always shown with its
-  update time.
-- **Q-W10, 0.7's part (extra large):**
-  - **Recommended:** in 0.7, as two panels (Battery and Power), if you like it in the look check.
-    Otherwise leave it out; it can come later without touching placed widgets.
-  - **Default without an answer:** extra large is not declared in 0.7. Families are only ever
+  - **Large and extra-large details:** as §6.1 question 2 shows. The look check signs them off.
+- **Q-W5 (time). Decided by delegation:** clock time by default ("Lasts until about 16:39"), with
+  time left ("2 hours, 13 minutes") offered if W0-6 passed. An end two or more days ahead (macOS
+  estimates run up to 65,534 minutes) shows no time, rather than a weekday ("Lasts until about
+  Friday").
+- **Q-W6 (update time). Decided by delegation:** "Updated 14:05" only when the reading is old, with
+  "Always" offered.
+- **Q-W7 (battery power, up to half an hour old in a widget). Decided by delegation:** offered,
+  always shown with its update time.
+- **Q-W10, 0.7's part (extra large). Decided by delegation:**
+  - Two panels (Battery and Power) in 0.7, on your explicit yes in the look check (question 3).
+    Otherwise it is left out; it can come later without touching placed widgets.
+  - **Without an explicit 1 or 2:** extra large is not declared in 0.7. Families are only ever
     added (P2 §8.13), so it can come in a later release without touching placed widgets; a family
     can never be removed once shipped.
-  - The dashboard and the portrait size come after 1.0. Apple's pages disagree on whether the
-    portrait size exists on the Mac [conflict], Appendix B.
-- **Q-W12 (°F):** keep °C in 0.7. If you want °F where the region uses it, 0.8 changes the app and
-  the widget together, so they never disagree.
-- **Q-W13 (attention row):** on, in every widget (in small in place of the time line). "Off by
-  default" would need a frozen parameter, so the choice is on or never (look-check question 8).
-- **Q-W8, Q-W9, Q-W11:** their items come after 1.0 or with the stretch (RD §5.3). The defaults
-  stand:
+  - The dashboard and the portrait size come after 1.0, only if asked (RD §4.1). Apple's pages
+    disagree on whether the portrait size exists on the Mac [conflict], Appendix B.
+- **Q-W12 (°F). Decided by delegation:** °C, in the widget as in the app; no app-wide °F (RD
+  §3.3).
+- **Q-W13 (attention row). Decided by delegation:** on, in every widget (in small in place of the
+  time line). "Off by default" would need a frozen parameter, so the choice is on or never
+  (look-check question 8).
+- **Q-W8, Q-W9, Q-W11. Decided by delegation:** their items come after 1.0 or with the stretch (RD
+  §5.3):
   - a click anywhere opens the widget's page;
   - no Refresh button;
-  - device names shown, hidden where macOS redacts.
+  - device names shown, with `.privacySensitive()`, hidden where macOS redacts.
 
-### New for 0.7
+### New for 0.7 (decided by delegation, 2026-10-22, as recommended)
 
-- **Q7-1 (gallery names and descriptions).** "Battery: Charge, time remaining and the details you
-  choose." and "Accessories: Batteries of your keyboard, mouse, trackpad and headphones." Do these
-  read well? **Recommended:** yes. The Russian is shown in the look check.
-- **Q7-2 (What's New).** Show the What's New window once after updating to 0.7, with 2-3 entries
-  (configurable widgets; the Accessories widget; clicks open the page)?
-  - **Recommended: yes.** 0.7 is a feature release, as 0.6.0 was; fix releases left it at 0.6.0
-    (P1 §7 item 1).
-- **Q7-3 (your time).**
+- **Q7-1 (gallery names and descriptions): as written.** "Battery: Charge, time remaining and the
+  details you choose." and "Accessories: Batteries of your keyboard, mouse, trackpad and
+  headphones." The look check shows them with their Russian (question 7).
+- **Q7-2 (What's New): yes.** The What's New window shows once after updating to 0.7, with 2-3
+  entries (configurable widgets; the Accessories widget; clicks open the page). 0.7 is a feature
+  release, as 0.6.0 was; fix releases left it at 0.6.0 (P1 §7 item 1).
+- **Q7-3 (your time): as planned.**
   - The plan asks for:
     - the look check at your desk, about 15 minutes, and a second look of about 3 minutes;
     - Session R, about 80 minutes;
     - a logged day of normal use, and about 10 minutes at its end (F12);
-    - the after-publishing check, about 10 minutes.
-  - Is that OK? Which widget sizes do you actually keep on your desktop? Session R spends most of
-    its time there.
-  - **Default:** as planned.
-- **Q7-4 (if placed widgets don't survive the update).**
+    - the after-publishing check, about 10 minutes;
+    - the backup key, about 5 minutes (M-9).
+  - Session R spends most of its time on the small and medium widgets placed from 0.6.2, and shows
+    every new size once.
+  - With about no outside users (M-1's evidence), these sittings are where 0.7 is seen working at
+    all (RD C2), so they aren't shortened.
+- **Q7-4 (if placed widgets don't survive the update): the evidence decides.**
   - Session R step 2 may show your widgets gone or blank after the update.
-  - **Recommended:** let the evidence decide.
-    - If only the configurable change loses them (W0-2's control kept them): keep your widget as it
-      is, and offer the configurable one as a separate gallery entry.
-    - If every update loses them: ship as designed, and the notes say "add it again".
-- **Q7-5 ("Hide fully charged" in the Accessories widget).**
-  - **Recommended:** yes, off by default.
-  - **Default without an answer:** not offered. Adding it later may reset placed widgets'
-    settings [unverified].
-- **Q7-6 (where a click opens).** A click opens the main window at the widget's page, even if you
-  prefer the compact window, because the compact window has no pages. **Recommended:** yes.
-- **Q7-7 (small, Custom).**
-  - In the small widget, the one detail you choose takes the place of the time line (P2 §8.5),
-    because a small widget has room for one more line only.
-  - **Recommended:** yes. The alternative keeps the time line and offers no detail in small.
+  - If only the configurable change loses them (W0-2's control kept them): keep your widget as it
+    is, and offer the configurable one as a separate gallery entry.
+  - If every update loses them: ship as designed, the notes say "add it again", and it is a
+    documented known limitation at 1.0 (RD C3, C7).
+- **Q7-5 ("Hide fully charged" in the Accessories widget): yes, off by default** (FEA-21, W-8 item
+  2). It is declared before D1, because adding it later may reset placed widgets' settings
+  [unverified; Session R step 4.4 measures it].
+- **Q7-6 (where a click opens): yes.** A click opens the main window at the widget's page, even if
+  you prefer the compact window, because the compact window has no pages.
+- **Q7-7 (small, Custom): yes.** In the small widget, the one detail you choose takes the place of
+  the time line (P2 §8.5), because a small widget has room for one more line only. The alternative
+  kept the time line and offered no detail in small.
 - **Q7-8 (settled, an engineering call).** 0.6.2's D3 copies its session script, swap helper and
-  Appendix C into `docs/plans/0.7/` (D-1); the release PR's `refs/pull/<n>/head` keeps them
+  Appendix C into `docs/plans/0.7.0/` (D-1); the release PR's `refs/pull/<n>/head` keeps them
   reachable either way, so no branch has to be kept for 0.7.
 
 ---
@@ -1879,7 +1976,8 @@ size sequencing.
 
 **Sources:**
 - R at `eebf748`;
-- P2 (`plan-0.6.2.v2.md`), RD (`roadmap-1.0.md`), INV (`inventory-to-1.0.md`);
+- P2 (`docs/plans/0.6.2/PLAN.md`), RD (`docs/plans/1.0/ROADMAP.md`), INV
+  (`docs/plans/1.0/INVENTORY.md`);
 - P1 and PB at `6aec4d2:docs/plans/0.6.1/` (in PR 11's history).
 
 | Item | Source | 0.7 package or status |
@@ -1889,11 +1987,11 @@ size sequencing.
 | FEA-07 widget model in BatteryCore and the pin test | P2 §8.6, §8.13, W-1 | W-1 |
 | FEA-08 App Intents metadata step | P2 W-2; W0-1 | W-2 (or dropped under G7-1) |
 | FEA-09 Accessories widget | P2 §8.4, §8.5, W-8; W0-4 (1) | W-8 (G7-8) |
-| FEA-10, FEA-11, FEA-12 feed, History, iPhone & iPad | P2 W-5 to W-7; RD §3.2 | Stretch (G7-5), else 1.1 |
+| FEA-10, FEA-11, FEA-12 feed, History, iPhone & iPad | P2 W-5 to W-7; RD §3.2 | Stretch (G7-5: W0-3 passed; Q-W3 yes, M-1 no), else 1.1 on the feed; not possible without the paid account if W0-3 failed (RD §4.2) |
 | FEA-13 preset kinds | P2 §8.16 row 1 | Only under G7-1's fallback |
 | FEA-14 a 0.6.3 with static large sizes | P2 §9; Q-W1 | Not planned (RD §4.2) |
 | FEA-15 to FEA-20 (Refresh, portrait, dashboard, per-row links, specific accessories, "why not charging" field) | P2 §9.1 "Later"; RD §4.1 | After 1.0 |
-| FEA-21 hide fully charged accessories | P2 §8.5 | W-8, on Q7-5 |
+| FEA-21 hide fully charged accessories | P2 §8.5 | W-8 (Q7-5: yes, by delegation; cut fourth if short) |
 | QUA-14 CB-02 device JSON dates | R:554-556; P1 §8 Q3; AUD-cli-build CB-02 | S-1 |
 | NEW-11 `formatVersion` | RD §3.2, §5.2 | S-1 |
 | QUA-16 0.7's own M5 session | P2 §8.14 "The 0.7 session checks"; RD §3.2 | §6 (look check, Session R, logged day, after publishing) |
@@ -1912,14 +2010,16 @@ size sequencing.
 | A11Y-06 widget accessibility | P2 §8.15 | W-3b; Session R step 7 |
 | L10N-04 widget localization | P2 §8.11, W-10 | W-1 item 11 (the catalog test's App Intents forms), W-3a, W-3b, W-8, W-10 |
 | L10N-05 unit symbols in the widget | P2 §8.6 "Formatter" | W-3a |
-| NEW-13 backup key (public half) | RD M-9 | K-1 |
+| NEW-13 backup key (public half) | RD M-9 (yes, by delegation) | K-1 |
 | NEW-18 verification matrix (start) | RD C2, §5.2 | R-1, D3 |
 | NEW-22 quick check after macOS 27.x updates | RD §5.2 | W-12 (`scripts/quick-check.sh`) |
-| M-5's "Road to 1.0" in ROADMAP | RD §3.2 "Before code" | R-1 |
+| NEW-23 download counts a week after publishing, no telemetry | RD §1.2 item 6, §5.2; the maintainer's question about downloads (2026-10-22) | §13 step 8; D-16; §11 |
+| M-5's "Road to 1.0" in ROADMAP | RD §3.2 "Before code" | R-1 (M-5 awaits the maintainer; its recommended answer if still open) |
 | QUA-05 Charge Limit capture | R:145-146; RD §3.2 | Session R optional, if 0.6.2 missed it (W-12's `charge-limit` step) |
 | QUA-06 optimized charging hold | R:76-77; INV QUA-06 | Session R optional (W-12's `hold-watch` step, overnight `--record` under `caffeinate -i`) |
 | 0.6.2's cut items | P2 §7.2 | C-1 (Linux), Session R optional, or the matrix |
-| TCI-05, TCI-06, TCI-07, PLT-03 (Xcode items) | P2 WP-18; RD §5.1 | Float in 0.7 if Xcode is on the M5 and 0.6.2 didn't run them; else not planned |
+| TCI-05, TCI-06, TCI-07, PLT-03 (Xcode items) | P2 WP-18; RD §5.1; Q-B7 (Xcode is installed on the M5) | Run in 0.6.2, maintainer-run from Claude's step-by-step list; whatever 0.6.2 left rides in 0.7 the same way (C-1; Session R step 11) |
+| Q-B4, Q-B8 (0.6.2's answers that reach 0.7) | P2 §10 (decided by delegation, 2026-10-22) | C-1: WP-13 items 4-5 wait for a graduation; WP-20's SEC-08 not planned |
 | REJ-04 icon geometry | AUD-core CORE-16; RD §4.3 | Unchanged: W-11 moves the painter, not the geometry |
 | REJ-06 widget types out of `BatteryPresentation.swift` | AUD-core CORE-20; RD §4.3 | Taken in W-1 (the condition is met) |
 | REJ-12 `SidebarItem` as `RawRepresentable` | AUD-app-views AV-03 | Still rejected: W-3c maps to and from `PageID` |
@@ -1928,10 +2028,12 @@ size sequencing.
 | REJ-54 to REJ-59 (accessory families, Smart Stack, Control Center, push, pager, thresholds) | P2 §8.2, §8.4, §8.5 | Still rejected |
 | REJ-60 App Intents outside the widget target | P2 §8.9, §8.11 | Still rejected: W-3a, W-3c |
 | REJ-62 seconds in widget text | P2 §8.7 | Still rejected: W-10's guard |
-| Q-W1 to Q-W13 | P2 §10 | §14 |
-| M-1, M-2, M-3, M-5, M-9 | RD §6 | §14; W-0 |
+| Q-W1 to Q-W13 | P2 §10 | §14 (decided 2026-10-22: Q-W1 by the maintainer, the rest by delegation) |
+| Q7-1 to Q7-8 | this plan | §14 (Q7-1 to Q7-7 decided by delegation, 2026-10-22; Q7-8 settled) |
+| M-1, M-2, M-3, M-5, M-9 | RD §6 | §14 (decided 2026-10-22 except M-5); W-0 records M-5 |
+| M-1's consequences: no App Group, no Developer ID work, known limitations at 1.0 | RD §3.4, §4.2, C3, C7, C16 | §1, §2.2 (W0-3), G7-5, the stretch, C-1, §6.5, §12, §14 |
 | The build-number risk | ci.yml:135; `release.yml:109`; `build-app.sh:112-113` | Fixed in D1: one growing clock in both workflows (§6.5; this plan's addition) |
-| A parameter added to a shipped intent (Q7-5; 1.1's History chart, FEA-19) | P2 §8.13; RD C14 item 5 | Session R step 4.4 (RC-P), recorded in Appendix C |
+| A parameter added to a shipped intent (1.1's History chart, FEA-19) | P2 §8.13; RD C14 item 5 | Session R step 4.4 (RC-P), recorded in Appendix C |
 | What 0.7 didn't build | P2 §8.3, §8.5, §8.8; W-5 to W-7, W-9 | Moved to `docs/plans/1.1/widgets.md` at D3 |
 
 ---
@@ -2009,6 +2111,12 @@ size sequencing.
 - **The release workflow:** the notes heading accepts "0.7" or "0.7.0" (`release.yml:49-62`).
   `BUILD_NUMBER` comes from release.yml's run number (:109) and CI's from its own (ci.yml:135).
 
+**GitHub's REST API (2026-10-22), the usage evidence behind M-1** (§14; RD §1.1):
+- DMG downloads across all releases: 14 (0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1, 0.5.0: 2, 0.6.0:
+  3, 0.6.1: 1, the last a signature check during the release).
+- Signature (`.sig`) downloads: 5, a privacy-free proxy for in-app updates.
+- Repository page views: 2, by 1 visitor, in 14 days. No stars, forks or outside issues.
+
 **Apple's documentation** (fetched 2026-10-22; the saved copies are working notes, not in the repository):
 - **The budget** (https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date):
   - "For a widget the user frequently views, a daily budget typically includes from 40 to 70
@@ -2077,7 +2185,8 @@ size sequencing.
 - the rendering mode per Icon & widget style and place (W0-4 (2));
 - what a click delivers, and whether a scheme is needed (W0-4 (4), (5));
 - whether Text size reaches desktop widgets (W0-5);
-- whether adding a parameter later resets placed widgets' choices (Q7-5; Session R step 4.4);
+- whether adding a parameter later resets placed widgets' choices (Session R step 4.4; it decides
+  how 1.1 adds parameters, RD C14 item 5);
 - whether `currentConfigurations()` returns the real placements to this ad-hoc, unsandboxed app
   (W-4 item 3; Session R step 9);
 - whether a test target can link the widget executable with `-e _NSExtensionMain` (W-3a item 11);
@@ -2098,7 +2207,7 @@ size sequencing.
 
 | Fact | Shown by | Decides |
 |---|---|---|
-| D-1, D-11: where the W0 answers, the whole Appendix C and the session script are (the copy in `docs/plans/0.7/`, or the kept branch, Q7-8) | 0.6.2 D3 | W-0, W-12 |
+| D-1, D-11: where the W0 answers, the whole Appendix C and the session script are (the copy in `docs/plans/0.7.0/`, or the kept branch, Q7-8) | 0.6.2 D3 | W-0, W-12 |
 | D-2, D-3: K-03 and internalize shipped; the widget's `__text` and binary at v0.6.2 | 0.6.2 CI | G7-10; W-0K |
 | D-4: WP-14a's shape (a nonisolated protocol, or `readNonisolated(scope:)`) | 0.6.2 code | W-3a |
 | D-6: WP-10 kept or reverted | 0.6.2 | W-3c, W-4 style |
@@ -2108,7 +2217,9 @@ size sequencing.
 | D-12: the installer 0.6.2 shipped | 0.6.2 G-16 | F12 at the logged day's end (§6.3) |
 | D-13: the Charge Limit capture done or not | 0.6.2 | Session R optional |
 | W0-1 to W0-6: each answer, and §2.2's row | 0.6.2 Appendix C | every package |
-| The maintainer's answers (M-1, M-2, M-3, M-5, M-9, Q-W, Q7) | the PR | §14 |
+| D-16: ROADMAP's Releases table has download columns, with v0.6.2's counts | 0.6.2 D3 | §13 step 8 |
+| WP-18's Xcode items: what 0.6.2 ran and what it left | 0.6.2 Appendix C | C-1; Session R step 11 |
+| M-5's answer (every other decision was recorded on 2026-10-22, §14) | the maintainer | R-1 |
 
 **0.7's own:**
 
@@ -2119,10 +2230,11 @@ size sequencing.
 | Whether the render test target links; whether Russian renders | CI (W-3a) | §6.1 |
 | The look check's answers 1-9, and the second look's | the PR | W-3b, W-8, §14 |
 | Session R steps 2-9, per step: the answers, screenshots, `pluginkit`, the click routes | Session R | G7-2, G7-3, G7-4, G7-8, G7-9, G7-12, G7-13 |
-| Step 4.4: whether a parameter added to a shipped intent kept the placed widget's choices | Session R (RC-P) | Q7-5's default; 1.1's added parameters (RD C14 item 5) |
+| Step 4.4: whether a parameter added to a shipped intent kept the placed widget's choices | Session R (RC-P) | 1.1's added parameters (RD C14 item 5) |
 | Step 9: the per-kind counts from `currentConfigurations()` against the widgets placed | Session R | G7-17; W-4 item 3 |
 | Per kind: reloads requested and delivered, the share and the median delay; the widget's reads and their time per day; crash reports; faults; assertions | the logged day | G7-11, G7-16; §10 |
 | F12: RC-F came back as 0.6.2 | the logged day's end | G7-15 |
 | The golden diff against v0.6.2 | D1 | G7-14 |
 | The identifier `git grep` diff | D1 | §7.3 |
-| After publishing: the steps of §6.4 | D3 | G7-15; ROADMAP Stage 1.2 |
+| After publishing: the steps of §6.4 | D3 | G7-15; ROADMAP Stage 1.2; the guide's known limitations (§12) |
+| A week after publishing: v0.7.0's DMG and `.sig` download counts | the releases API (§13 step 8) | ROADMAP's Releases table (NEW-23) |

@@ -402,7 +402,7 @@ Each is placed in §4 or §5.
 
 | Version | Theme | Headline | Maintainer M5 time | Runs |
 |---|---|---|---|---|
-| **0.6.2** | Foundation II (P2, unchanged) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-33, plus 3 in reserve (P2 §7.2) |
+| **0.6.2** | Foundation II (P2, unchanged) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-32, plus 3 in reserve (P2 §7.2) |
 | **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates | The look check (about 15 min at the desk, no M5, plus a 3-min second look), Session R (about 80 min), a logged day and its 10-min end, the after-publishing check (about 10 min); plus a 35-min spike sitting if 0.6.2's W0 never ran (plan-0.7.0 §6, §2.3) | 26-29 plus 3 in reserve; never-cut 21-24; stretch +8-9 [estimate, plan-0.7.0 §7.2] |
 | **0.8** | Answers in the app | Why it isn't charging, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 85 min, the contrast audit included [estimate] | 29-36 [estimate] |
 | **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, the ad-hoc first install documented (C16; no Developer ID, §3.4), `bpulse` in the app | About 50 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 8-11, plus whatever 0.8's cut line moves [estimate] |
@@ -462,7 +462,7 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   | Package | Inventory rows |
   |---|---|
   | WP-10, first | PLT-01 |
-  | WP-13 | QUA-01 (fill (b), Q-B2), QUA-02, QUA-03, FEA-22 (gated), FEA-25 (optional), L10N-02; not built: FEA-23 (Q-B10), FEA-24 (Q-B2) |
+  | WP-13 | QUA-01 (fill (b), Q-B2), QUA-02, QUA-03, FEA-22 (gated), L10N-02; not built: FEA-23 (Q-B10), FEA-24 (Q-B2), FEA-25 (Q-B4: after 1.0, with a graduation) |
   | WP-14a | ENG-08 |
   | WP-14b | ENG-09, ENG-10 (both gated) |
   | WP-15 | SIZ-01, SIZ-02 (gated), SIZ-03, SIZ-04 |
@@ -491,7 +491,7 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   - The notes are as P2 D1 lists them, and D3's after-publishing check passes.
 - **M5 sessions:** A, B, the optional steps, WP-18's Xcode sitting and the after-publishing check
   (P2 §6, D3).
-- **Size:** 29-33 runs, plus 3 for fixing forward; the never-cut set is 22-26 (P2 §7.2).
+- **Size:** 29-32 runs, plus 3 for fixing forward; the never-cut set is 22-26 (P2 §7.2).
 - **What the roadmap asks alongside 0.6.2 (answers and optional steps; no change in scope):**
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
@@ -522,15 +522,15 @@ engineering lane, and items that need the M5 join Session R's optional steps.
      the 0.6.1 integration history stays reachable as `refs/pull/11/head`, which GitHub keeps.
   6. **A step of 0.6.2's D3:** `main` gets only squash merges, so `docs/plans/` never enters its
      history. Before `claude/062-*` is deleted, D3 copies `m5-session.sh`, its swap helper and the
-     whole of Appendix C into `docs/plans/0.7/`, beside `widgets.md`; the release PR's
+     whole of Appendix C into `docs/plans/0.7.0/`, beside `widgets.md`; the release PR's
      `refs/pull/<n>/head` keeps them reachable either way (plan-0.7.0 D-1).
-  7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after
-     publishing, read the release's DMG and `.sig` download counts from the releases API (`gh api
+  7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
+     read the release's DMG and `.sig` download counts from the releases API (`gh api
      repos/NikitaUsov/BatteryPulse/releases --jq '.[] | {tag_name, assets: [.assets[] | {name,
-     download_count}]}'`) and record them in ROADMAP's Releases table. 0.6.2's D3 adds the
-     column and fills it for the earlier releases from the same call. The counts include the
-     maintainer's own downloads and the release's signature check, so they are an upper bound on
-     anyone else. Nothing in the app counts or sends anything (C14 item 8).
+     download_count}]}'`) and record them in ROADMAP's Releases table. 0.6.2's D3 adds the two
+     columns (DMG, `.sig`) and fills them for the earlier releases from the same call. The counts
+     include the maintainer's own downloads and the release's signature check, so they are an upper
+     bound on anyone else. Nothing in the app counts or sends anything (C14 item 8).
 
 ### 3.2 0.7: Widgets you configure (P2 §8, §9.1)
 
@@ -900,7 +900,7 @@ below runs unless M-1 is asked again.
 | Widget extras: Refresh (FEA-15), extra-large portrait (FEA-16), the dashboard (FEA-17), per-row links (FEA-18), specific accessories (FEA-19) | Specific accessories later (Q-W2). The others only if the maintainer asks: the delegated answers to Q-W8 to Q-W10 (2026-10-22) build none of them | P2 §9.1 "Later"; scope (V, Q) |
 | Apps using the most energy (FEA-26) | a one-day spike on the M5 first | The private coalition calls are unproven without root on macOS 27 (R:576-584) |
 | MobileDevice in a helper process (SEC-03) | on evidence of a hang or crash | None seen so far (P1 §8 Q1); NEW-14 covers 1.0 |
-| Glass-sheet chart lines and Raw Data treatment (FEA-25), if 0.6.2 cut it | with a beta style's graduation | Needs the maintainer's look call (Q-B4) |
+| Glass-sheet chart lines and Raw Data treatment (FEA-25), not in 0.6.2 (Q-B4) | with a beta style's graduation | Needs the maintainer's look call (Q-B4) |
 | The glossary as data, more glossary work, other Macs' captures (SIZ-05, QUA-07) | ongoing, from contributors | Hardware not at hand (R:149-150) |
 | Private-API contingencies (PLT-04) | on breakage | They answer a failure that hasn't happened (R:603-605, R:664-667) |
 
@@ -913,12 +913,12 @@ below runs unless M-1 is asked again.
 | **The main macOS package manager's official catalog** (DIS-03) | Not planned (M-1 no) | It needs notarization, and a notability bar of 75 stars, 30 forks and 30 watchers and a repository at least 30 days old (PKG B7); all three are 0 today (`gh api`) |
 | **The History and iPhone & iPad widgets, if W0-3 fails** (FEA-10 to FEA-12) | Not possible without the paid account | If neither candidate A nor A′ works, the app's copy of the readings has no route into the sandboxed widget, and the App Group needs a Team ID (P2 §8.2, §8.3 candidate C) |
 | **An iOS app** (FEA-29 to FEA-34, DIS-02) | Not in 1.x (M-2, decided by delegation) | Public iOS APIs give only the level and the state; the analytics file's format is unchecked (R:79-81). Free-team installs expire after 7 days and work on at most 3 devices (ICL #6). The Mac already reads iPhone health (R:594-637). |
-| **iCloud: the Mac's battery on the iPhone** (FEA-28) | Keep | Needs the paid account and an iOS app (R:645-651), and M-1 and M-2 are both no |
+| **iCloud: the Mac's battery on the iPhone** (FEA-28) | Not planned (M-1 and M-2 are no) | Needs the paid account and an iOS app (R:645-651), and M-1 and M-2 are both no |
 | **Charge limiting** (FEA-27) | Not in 1.x (M-3, decided by delegation) | 1.x's promise is read-only (CLAUDE.md: the SMC is read-only; P2 §8.4: "the app changes nothing on the system"). The 80-100 % setter is a private client (R:677-684). macOS already offers the setting. The paid account wouldn't change this (CLR:105-109). |
 | Options the 2026-10-22 answers didn't take: a 0.6.3 with static large sizes (FEA-14), Clear's desktop-following fill (FEA-24), a Low Power Mode fallback for the beta styles (FEA-23), app-wide °F | Not taken | Q-W1: 0.7 and Q-B2: fill (b), both the maintainer's; Q-B10: no fallback and Q-W12: °C, both by delegation (§5.3) |
 | App Nap's effect (ENG-14); Instruments profiling (ENG-15's Instruments half) | Close as not planned at 0.9.0 | C6 measures the targets without Instruments. ENG-13 covers how often the mAh values change. |
 | iPad capture (QUA-08) | Known limitation | No iPad at hand (R:620-621) |
-| K-02's CI half (TCI-08) | Keep | P2 App A |
+| K-02's CI half (TCI-08) | Not planned | P2 App A |
 | A public beta channel | No (M-4, decided by delegation) | There are about no outside users to test it (§1.1). 0.9.x must be normal releases anyway. A beta channel changes the update contract (Updates.swift:125). |
 
 ### 4.3 Rejected, and staying rejected
@@ -976,7 +976,7 @@ condition or the reason.
 | FEA-06 | W-3 configurable Battery widget | 0.7 | MVP, never cut |
 | FEA-07 | W-1 widget model in BatteryCore | 0.7 | MVP, with the frozen-value pin test |
 | FEA-08 | W-2 App Intents metadata step | 0.7 | MVP |
-| FEA-09 | W-8 Accessories widget | 0.7 | MVP if W0-4 passed; else 1.1 |
+| FEA-09 | W-8 Accessories widget | 0.7 | MVP if W0-4 passed; else 1.1 through the feed, only if W0-3 passed |
 | FEA-10 | W-5 widget data feed | 0.7 stretch, else 1.1 | Only if W0-3 passed (Q-W3 is yes and M-1 is no, both 2026-10-22); if it misses 0.7.0, 1.1 on the feed; if W0-3 failed, not possible without the account (§4.2) |
 | FEA-11 | W-6 History widget | 0.7 stretch, else 1.1 | As FEA-10 |
 | FEA-12 | W-7 iPhone & iPad widget | 0.7 stretch, else 1.1 | As FEA-10 |
@@ -992,7 +992,7 @@ condition or the reason.
 | FEA-22 | Graduate Translucent/Clear | 0.6.2 (gated) | Final stance at 0.9.0 (M-8) |
 | FEA-23 | Low Power Mode fallback for beta styles | Not planned | Q-B10: no fallback (delegation, 2026-10-22) |
 | FEA-24 | Clear's desktop-following fill | Not planned | Q-B2 chose fill (b) (the maintainer, 2026-10-22) |
-| FEA-25 | Glass-sheet chart lines, Raw Data treatment | 0.6.2 (optional) | If cut: after 1.0, together with a graduation |
+| FEA-25 | Glass-sheet chart lines, Raw Data treatment | After 1.0 | Not in 0.6.2 (Q-B4, by delegation); with a beta style's graduation |
 | FEA-26 | Apps using the most energy | After 1.0 | A spike first (§4.1) |
 | FEA-27 | Charge limiting | Not planned | Not in 1.x (M-3) |
 | FEA-28 | Mac battery on iPhone via iCloud | Not planned | Paid account plus an iOS app |
@@ -1129,9 +1129,10 @@ condition or the reason.
 
 ### 5.3 The 22 maintainer questions of P2 §10
 
-All are decided as of 2026-10-22. The maintainer answered Q-B2, Q-B7 and Q-W1; Q-B9 and Q-B11
-were settled before; he delegated the rest ("do it by best practices, as you see fit"), so each is
-decided as its recommendation. A look a question leads to is still signed off in its sitting.
+All are decided as of 2026-10-22. The maintainer answered Q-B2, Q-B7 and Q-W1, and Q-W3 follows from
+his M-1 answer; Q-B9 and Q-B11 were settled before; he delegated the rest ("do it by best practices,
+as you see fit"), so each is decided as its recommendation. A look a question leads to is still
+signed off in its sitting.
 
 | ID | Decided | Decision |
 |---|---|---|
@@ -1147,7 +1148,7 @@ decided as its recommendation. A look a question leads to is still signed off in
 | Q-W1 | the maintainer, 2026-10-22 | 0.7; no 0.6.3 (FEA-14 not planned) |
 | Q-W2, Q-W4, Q-W5, Q-W6, Q-W7, Q-W13 | by delegation | plan-0.7.0 §14's recommendations: Battery and Accessories in 0.7, History and iPhone & iPad on the feed with the 90-day trend, no presets unless configuration fails, specific accessories later; the number with the level symbol by default, a ring and a drawn battery offered, level colours; clock time by default, time left offered if W0-6 passed; "Updated" only when old, Always offered; battery power offered with its update time; the attention row on |
 | Q-W11 | by delegation | The device name, with `.privacySensitive()` (only W-7 shows names) |
-| Q-W3 | by delegation, following M-1's no | Yes: BatteryPulse keeps a small copy of recent readings for the widgets (the feed), if W0-3 passes. If it fails, the History and iPhone & iPad widgets aren't possible without the account (§4.2) |
+| Q-W3 | following the maintainer's M-1 answer, 2026-10-22 | Yes: BatteryPulse keeps a small copy of recent readings for the widgets (the feed), if W0-3 passes. If it fails, the History and iPhone & iPad widgets aren't possible without the account (§4.2) |
 | Q-W10, extra large's layout | by delegation | Two panels (Battery and Power) in 0.7, if you approve it in the look check; otherwise extra large is left out of 0.7 (plan-0.7.0 §14) |
 | Q-W8, Q-W9; Q-W10, the dashboard and the portrait size | by delegation | A click anywhere opens the widget's page; no Refresh button; no dashboard; no portrait size. Their items (FEA-15 to FEA-18) return only if asked (§4.1) |
 | Q-W12 | by delegation | °C everywhere (0.7's recommendation); no app-wide °F (§3.3) |

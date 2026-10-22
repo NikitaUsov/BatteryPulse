@@ -37,7 +37,7 @@ account" record them; the rows they settle say so, and the counts include that.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | RN:n | `.github/release-notes.md`, line n |
-| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md` (section, package or question ID; `P2:n` is a line) |
+| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md` (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`) |
 | P1 | the 0.6.1 plan, `6aec4d2:docs/plans/0.6.1/PLAN.md` (in PR 11's history) (§6 deferred table at line 1372, Appendix A, Appendix B, Appendix C) |
 | PB | `6aec4d2:docs/plans/0.6.1/playbook.md` |
 | AUD-x | `6aec4d2:docs/plans/0.6.1/audit-x-verified.md` |
@@ -58,7 +58,7 @@ minimize frame (RN:12-13), row QUA-01.
 
 | Category | 0.6.2 | 0.7 | later | not planned | unassigned | Total |
 |---|---|---|---|---|---|---|
-| Feature | 7 | 9 | 6 | 12 | 0 | 34 |
+| Feature | 6 | 9 | 7 | 12 | 0 | 34 |
 | Quality | 10 | 2 | 0 | 2 | 2 | 16 |
 | Energy and performance | 12 | 2 | 1 | 2 | 1 | 18 |
 | Security | 4 | 1 | 1 | 1 | 1 | 8 |
@@ -69,15 +69,16 @@ minimize frame (RN:12-13), row QUA-01.
 | Platform debt | 3 | 0 | 1 | 0 | 1 | 5 |
 | Accessibility | 4 | 1 | 0 | 1 | 0 | 6 |
 | Localization | 3 | 2 | 0 | 0 | 0 | 5 |
-| **All** | **65** | **23** | **10** | **22** | **10** | **130** |
+| **All** | **64** | **23** | **11** | **22** | **10** | **130** |
 
 - **Unassigned:** 10, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
   DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other two are leftovers (ENG-18, TCI-09).
 - **Settled by the answers of 2026-10-22** (moved to not planned): FEA-14 (Q-W1: 0.7), FEA-23
-  (Q-B10: no fallback), FEA-24 (Q-B2: fill (b)), SEC-01 (Q-B8: no, and no Developer ID build).
+  (Q-B10: no fallback), FEA-24 (Q-B2: fill (b)), SEC-01 (Q-B8: no, and no Developer ID build);
+  moved to later: FEA-25 (Q-B4: not in 0.6.2, with a beta style's graduation).
 - **Decisions:** 9 for 0.6.2 (Q-B2 to Q-B11) and 13 for widget customization (Q-W1 to Q-W13), §12.
-  All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-B9 and Q-B11 settled
-  before, the rest by delegation.
+  All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-W3 following his M-1
+  answer, Q-B9 and Q-B11 settled before, the rest by delegation.
 - **What blocks them** (a row can have several): an M5 session 54 rows (42 of them in 0.6.2, since
   FEA-23 and SEC-01 left it);
   maintainer taste 25 (the questions are now answered; the looks are still signed off in the
@@ -92,9 +93,10 @@ minimize frame (RN:12-13), row QUA-01.
 
 1. **Widget customization (0.7):** 36 rows (FEA-01 to FEA-21, ENG-16, ENG-17, SEC-08, SIZ-06,
    SIZ-07, L10N-03 to L10N-05, A11Y-05, A11Y-06, TCI-10, TCI-11, DOC-07, DOC-08, QUA-16) plus the 13
-   Q-W questions. Six spikes in 0.6.2 (W0-1 to W0-6) decide the design; the MVP is the configurable Battery widget
-   in four sizes; the feed-backed History and iPhone & iPad widgets hang on an unverified sandbox
-   exception (W0-3), since an App Group needs the paid account the maintainer declined.
+   Q-W questions. Six spikes in 0.6.2 (W0-1 to W0-6) decide the design; the MVP is the configurable
+   Battery widget in small, medium and large (extra large on the look check's yes, Q-W10); the
+   feed-backed History and iPhone & iPad widgets hang on an unverified sandbox exception (W0-3),
+   since an App Group needs the paid account the maintainer declined.
 2. **M5 verification debt:** 54 rows need the MacBook Air M5, many of them checks left open since
    0.4-0.6 (Stages 1.1-1.5, 5, 6): icon styles, the beta styles' evidence, accessibility passes,
    devices and accessories, the Charge Limit capture, spreadsheets, widgets across updates.
@@ -129,8 +131,8 @@ desktop-following fill and the Enhanced Security spike.
 | FEA-06 | W-3: configurable Battery widget | `AppIntentConfiguration` on today's kind; small, medium, large, extra large; Layout Automatic or Custom; main value and visual; details (1/4/8/12); status lines; clock time or time left; level colours or monochrome; read time; attention row; empty states; natural-page clicks; drawn-battery painter moved into code the widget compiles; previews from the real reading | P2 §8.5, §8.17, §8.14 W-3, §9.1; R:545-550 | yes | XL | FEA-07, FEA-08, ENG-08 (nonisolated read), SIZ-01, SIZ-02 | M5 session (0.7), maintainer taste (Q-W4 to Q-W7, Q-W13) | 0.7 (MVP) |
 | FEA-07 | W-1: widget model in BatteryCore | `WidgetSize`, `WidgetKindID`, frozen-raw-value enums, `WidgetLayoutPlan` (`automatic` equals v0.6.1 small and medium), `WidgetTimeText`, `WidgetTextBudget`, `WidgetRow`, `WidgetSparkline`, `WidgetRoute`/`PageID`, `WidgetTimelinePlan`, and the frozen-surface pin test (kinds, raw values, routes, feed path, entitlement keys) | P2 §8.6, §8.13, §8.14 W-1 | no | L | spike answers (FEA-01 to FEA-05) | none (Linux) | 0.7 (MVP) |
 | FEA-08 | W-2: App Intents metadata step in the shipping build | The processor step in `build-app.sh` before the widget's `codesign`; the macOS job fails unless every pinned intent, parameter and `AppEnum` case is in `Metadata.appintents` | P2 §8.14 W-2 | no | M | FEA-01 | Apple API | 0.7 (MVP) |
-| FEA-09 | W-8: Accessories widget | Own one-shot read; All or Lowest (small always Lowest); earbuds per part; demo accessories in previews | P2 §8.4, §8.5 Accessories, W-8 | yes | M | FEA-04 passing, SIZ-01 (`BatterySource` holds `MacAccessoryProvider`) | Apple API | 0.7 (MVP if W0-4 passes; else stretch through the feed) |
-| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3) [Q-W3 answered yes, 2026-10-22]; an App Group would replace it but needs the paid account (P2 §8.2) [declined, 2026-10-22: the feed is the only route] | 0.7 (stretch) or 0.7.x |
+| FEA-09 | W-8: Accessories widget | Own one-shot read; All or Lowest (small always Lowest); earbuds per part; demo accessories in previews | P2 §8.4, §8.5 Accessories, W-8 | yes | M | FEA-04 passing, SIZ-01 (`BatterySource` holds `MacAccessoryProvider`) | Apple API | 0.7 (MVP if W0-4 passes; else later through the feed, if W0-3 passed) |
+| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3) [Q-W3 answered yes, 2026-10-22]; an App Group would replace it but needs the paid account (P2 §8.2) [declined, 2026-10-22: the feed is the only route] | 0.7 (stretch), else 1.1 |
 | FEA-11 | W-6: History widget, and the Battery widget's feed fields and History chart | Period 24 h or 7 d; charge, battery power, temperature; 90-day capacity and cycle trend; statistics; charging spans; average drain and time on battery as Battery details | P2 §8.5 History, W-6 | yes | M | FEA-10 | maintainer taste (Q-W2, Q-W4) | 0.7 (stretch) |
 | FEA-12 | W-7: iPhone & iPad widget | Most recently read, all, or a chosen device (`AppEntity` over the feed, or `AppEnum` only if entity queries fail); reading age always shown; names `.privacySensitive()` | P2 §8.5 iPhone & iPad, W-7 | yes | M | FEA-10, FEA-01 (b) | maintainer taste (Q-W2, Q-W11) | 0.7 (stretch) |
 | FEA-13 | Configuration fallback: preset kinds | If the edit sheet can't work: Battery (plus large and extra large), Battery Health and Power as fixed `StaticConfiguration` kinds | P2 §8.16 row 1; Q-W2 | yes | M | FEA-01 failing | evidence | 0.7 (only if W0-1 fails; Q-W2 decided: no presets otherwise) |
@@ -145,7 +147,7 @@ desktop-following fill and the Enhanced Security spike.
 | FEA-22 | Graduate Translucent and/or Clear from beta | `isBeta` false per style; Beta mark and, once none is left, the Beta window styles toggle go; `betaWindowStyles` stays frozen; What's New only on Q-B5 | P2 WP-13 items 3 and 5, G-13b; R:307-308, R:441-443, R:503-506 | yes | S | QUA-03, ENG-03 | maintainer taste, M5 session (default: stay beta) | 0.6.2 (gated) |
 | FEA-23 | Low Power Mode fallback for the beta styles | If Translucent or Clear costs ≥ 15 % more than Standard and the maintainer agrees, it gives way to Standard under Low Power Mode, decided in `WindowLookPolicy` | P2 WP-13 item 5, G-13c; Q-B10; R:31-32 | yes | S | ENG-03 | M5 session, maintainer taste (Q-B10) [decided by delegation, 2026-10-22: no fallback] | not planned (Q-B10: no fallback) |
 | FEA-24 | Clear's minimize fill that follows the desktop picture | Average of the desktop picture, decoded off the main actor when the window appears and on Space changes; only system folders and `~/Pictures`, else the grey fill; file-access prompt elsewhere unverified on macOS 27 | P2 WP-13 item 1 variant; Q-B2 | yes | M | QUA-01 | maintainer taste (Q-B2) [answered 2026-10-22: fill (b)] | not planned (Q-B2: fill (b)) |
-| FEA-25 | Glass-sheet chart lines and Raw Data treatment | Thicker chart lines and wider area fills on the sheet; the content treatment on the Raw Data table (AppKit-backed) | R:340-341; P2 WP-13 item 4; Q-B4 | yes | S | none | maintainer taste (Q-B4) | 0.6.2 (optional, cut early) |
+| FEA-25 | Glass-sheet chart lines and Raw Data treatment | Thicker chart lines and wider area fills on the sheet; the content treatment on the Raw Data table (AppKit-backed) | R:340-341; P2 WP-13 item 4; Q-B4 | yes | S | none | maintainer taste (Q-B4) [decided by delegation, 2026-10-22: not in 0.6.2] | later (Q-B4: with a graduation) |
 | FEA-26 | Apps using the most energy | Per-app watts over the last hour or day from per-coalition energy counters, with an unattributed remainder; a one-day spike first | R:576-584; P2 App A | yes | L | a spike on the M5 | Apple API (private calls, unproven without root on macOS 27), M5 session | not planned |
 | FEA-27 | Charge limiting through the system's Charge Limit | Offer macOS's own 80-100 % limit through a private client, plus a read-only report of what the firmware allows; the SMC route is closed on macOS 27 | R:677-684, R:705 | yes | L | none | Apple API (private), the maintainer's stance | not planned |
 | FEA-28 | Mac battery on the iPhone through iCloud | CloudKit private database, silent pushes, an iPhone widget, `CKQuerySubscription` alerts | R:645-651 | yes | XL | FEA-29 | paid account (CloudKit and push need it) [declined, 2026-10-22], the iOS app | not planned |
@@ -246,9 +248,9 @@ desktop-following fill and the Enhanced Security spike.
 |---|---|---|---|---|---|---|---|---|
 | DOC-01 | CLAUDE.md for 0.6.2 | `BatterySource` in the layout and "a BatterySource twin"; `read`'s four triggers and `registry.missed`; E4b; E20's isolation; main actor by default; the `diskutil` installer; the opaque minimize fill; strict memory safety for BatterySource and BatteryKit | P2 WP-22 | no | S | the packages that land | none | 0.6.2 (P1, last) |
 | DOC-02 | User Guide for 0.6.2 | Clear's known issue removed (UG:162-163); graduated styles without "beta"; a refresh sentence if E4b lands (UG:124-132); installer text | P2 WP-22 | yes | S | QUA-01, FEA-22, ENG-09 | none | 0.6.2 |
-| DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 55); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
+| DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65, and Session B about 95); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
 | DOC-04 | 0.6.2 release notes | `## What's new in 0.6.2` (checked by CB-06); only user-visible items that landed; the energy line; "Updating from 0.6.1" | P2 D1 | yes | S | DIS-08 | none | 0.6.2 |
-| DOC-05 | Plan files | Commit the 0.6.2 plan under `docs/plans/0.6.2/`; at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7/widgets.md` and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
+| DOC-05 | Plan files | Commit the 0.6.2 plan under `docs/plans/0.6.2/`; at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
 | DOC-07 | Widget docs for 0.7 | Rewrite the guide's Widget section (W-10); it still says a DMG replacement removes placed widgets (UG:425), which R:202-203 contradicts for 0.3.1 → 0.4.0, and calls the widget new (UG:428, RM:84) | P2 W-10 | yes | S | FEA-06 | none | 0.7 |
 | DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7 (with W-5) |
@@ -307,15 +309,15 @@ desktop-following fill and the Enhanced Security spike.
 ## 12. Decisions only the maintainer can make
 
 Each question is the plan's own (P2 §10, P2:1876-1961). "Default" is what would have happened
-without an answer. On 2026-10-22 the maintainer answered Q-B2, Q-B7 and Q-W1 and delegated the
-rest ("do it by best practices, as you see fit"); each delegated question is decided as its
-recommendation (the roadmap's §5.3 and plan-0.7.0 §14), and the looks are still signed off in the
-sessions.
+without an answer. On 2026-10-22 the maintainer answered Q-B2, Q-B7 and Q-W1 (Q-W3 follows from his
+M-1 answer) and delegated the rest ("do it by best practices, as you see fit"); each delegated
+question is decided as its recommendation (the roadmap's §5.3 and plan-0.7.0 §14), and the looks are
+still signed off in the sessions.
 
 | ID | Question | Category | Blocks | Default if unanswered | Decided (2026-10-22) |
 |---|---|---|---|---|---|
 | Q-B2 | Clear's minimize fill: one of three recorded fills, or one that follows the desktop picture | quality | QUA-01, FEA-24 | fill (b), the graphite composite | **The maintainer:** fill (b), the graphite composite. FEA-24 is not built |
-| Q-B4 | What still looks wrong in Translucent and Clear; which must be fixed before graduation; may Translucent graduate first | quality | FEA-22, FEA-25 | both stay beta | By delegation: both stay beta until the maintainer signs one off in Session B |
+| Q-B4 | What still looks wrong in Translucent and Clear; which must be fixed before graduation; may Translucent graduate first | quality | FEA-22, FEA-25 | both stay beta | By delegation: both stay beta until the maintainer signs one off in Session B; FEA-25 is not in 0.6.2 (later, with a graduation) |
 | Q-B5 | Announce a graduated style in What's New or only in the notes | docs | FEA-22 | `WhatsNew.version` stays 0.6.0 | By delegation: the release notes only; `WhatsNew.version` stays 0.6.0 |
 | Q-B6 | Are the two sessions' lengths acceptable; which energy scenarios matter most | energy/perf | ENG-01 to ENG-06 | the plan's sessions as written | By delegation: the sessions as written, every scenario as planned |
 | Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 | **The maintainer:** Xcode is already installed. The Xcode-only items run, maintainer-run with Claude's step-by-step list; by delegation, the Icon Composer icon ships only on the maintainer's y to its screenshots |
@@ -325,7 +327,7 @@ sessions.
 | Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 | Settled before |
 | Q-W1 | Widgets in 0.7, or first a 0.6.3 with large and extra-large sizes of the static widget | feature | FEA-06, FEA-14 | 0.7 | **The maintainer:** 0.7; no 0.6.3 (FEA-14 not planned) |
 | Q-W2 | Which kinds; specific accessories later; the 90-day trend; presets anyway | feature | FEA-09 to FEA-13, FEA-19 | all four kinds as phased, trend offered, no presets | By delegation: Battery and Accessories in 0.7; History and iPhone & iPad on the feed, with the trend; specific accessories later; no presets unless configuration fails |
-| Q-W3 | May the app keep a small copy of recent readings for the widgets | feature | FEA-10 to FEA-12 | no copy: History and iPhone & iPad widgets wait for Developer ID | By delegation, following the declined paid account: **yes**, if W0-3 passes. If it fails, those two widgets aren't possible without the account |
+| Q-W3 | May the app keep a small copy of recent readings for the widgets | feature | FEA-10 to FEA-12 | no copy: History and iPhone & iPad widgets wait for Developer ID | Following the maintainer's M-1 answer (the declined paid account): **yes**, if W0-3 passes. If it fails, those two widgets aren't possible without the account |
 | Q-W4 | Main visual, main values, colour default, large and extra-large details, History chart on placed large widgets | feature | FEA-06, FEA-11 | today's number and symbol; level colours; §8.17's lists; chart replaces the last two rows | By delegation: the default, with a ring and a drawn battery offered; charge by default, plus maximum capacity, temperature and battery power; the details as the look check shows |
 | Q-W5 | Clock time or time left, and which is the default | feature | FEA-06 | clock time | By delegation: clock time by default, time left offered if W0-6 passed |
 | Q-W6 | "Updated 14:05" only when old, or always as an option | feature | FEA-06 | only when old | By delegation: only when old, with Always offered |
@@ -414,7 +416,7 @@ Reasons are the verifiers'. "Revisit only if" is the one condition a source name
 
 ---
 
-## The paid account: what it blocks, and the case for revisiting before 1.0
+## The paid account: declined (2026-10-22), and what it would unblock
 
 **Decided 2026-10-22: no.** The maintainer declined the paid Apple Developer Program account: not
 now, and not planned before 1.0. His reasons: a non-commercial hobby project, no budget for the
