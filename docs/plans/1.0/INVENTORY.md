@@ -296,7 +296,7 @@ Each question is the plan's own (P2 §10, P2:1876-1961). "Default" is what happe
 | Q-B6 | Are the two sessions' lengths acceptable; which energy scenarios matter most | energy/perf | ENG-01 to ENG-06 | the plan's sessions as written |
 | Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 |
 | Q-B8 | Is the Enhanced Security spike worth a session step | security | SEC-01 | not run |
-| Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | F12 runs twice in Session B |
+| Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | settled: GitHub's rate limit behind a VPN; Session B checks the remaining requests first |
 | Q-B10 | Should a style costing ≥ 15 % more energy give way to Standard under Low Power Mode | feature | FEA-23 | no fallback; decision stays open |
 | Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 |
 | Q-W1 | Widgets in 0.7, or first a 0.6.3 with large and extra-large sizes of the static widget | feature | FEA-06, FEA-14 | 0.7 |

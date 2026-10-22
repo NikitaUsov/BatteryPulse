@@ -1058,7 +1058,7 @@ condition or the reason.
 | Q-B4 | 0.6.2's Session B | Recommended (= P2's default, G-13b): both styles stay beta until you sign one off |
 | Q-B5 | 0.6.2's Session B | Recommended (= P2's default, D3): release notes only; What's New stays at 0.6.0 |
 | Q-B6 | before Session A | Recommended: the sessions as written |
-| Q-B9 | before Session B | A fact only you know; unknown → Session B runs F12 twice (P2's default) |
+| Q-B9 | settled | GitHub's rate limit behind a VPN, seen in the session; Session B checks the remaining requests before F12 |
 | Q-B10 | 0.6.2's Session B | Recommended (= P2's default, G-13c): no Low Power Mode fallback |
 | Q-B7 | before Session A | Recommended: install Xcode (C10 needs Accessibility Inspector) |
 | Q-B8 | before Session A | Recommended: no (= P2's default; §3.1) |

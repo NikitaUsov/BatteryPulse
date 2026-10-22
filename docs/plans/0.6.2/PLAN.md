@@ -136,7 +136,7 @@ Events:
 | V4 readout | not readable on Standard, Translucent and Clear with the card surface | Fixed in 0.6.1 by the material; Session B's screenshots include it |
 | V4 screenshots | 0 of 8 | Session B's set is scripted: the script captures the front window |
 | F5, F9 | not run (no section in the PR comments) | Session A runs F5 (accessories, iPhone page) before W0-4; Session B runs F9 (Russian) |
-| F12 | failed on the first try (no 0.6.0 offered, 0.5.99 stayed), passed on the second (0.6.0 installed and relaunched) | G22 passed. The cause of the first failure isn't recorded: Q-B9. WP-16 keeps the CI install step |
+| F12 | failed on the first try (no 0.6.0 offered, 0.5.99 stayed), passed on the second (0.6.0 installed and relaunched) | G22 passed. The first failure was GitHub's limit of 60 unauthenticated API requests an hour per address, used up behind a VPN that shares its address; the app said "GitHub is limiting requests", and the re-run after the limit reset passed (Q-B9, settled). WP-16 keeps the CI install step |
 | Energy extras, burst, memory | not run | WP-21: A/B in Session A's unattended window, the RC in Session B |
 
 ### 2.3 Gates the numbers now decide
@@ -634,7 +634,7 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 - **Acceptance:**
   - Tests; both CI install passes.
   - Session B's F12: the RC built as 0.5.99 installs the real 0.6.1 through the `diskutil` path and
-    relaunches. F12 runs twice if Q-B9's answer is unknown.
+    relaunches. F12 runs once, after the script checks GitHub's remaining API requests (Q-B9).
 - **Gate:** G-16 (§7.1; default: back to `hdiutil`). **Effort:** S-M, 2 runs. **Risk:** medium (the
   installer first runs for real in 0.6.2 → 0.6.3).
 
@@ -1140,7 +1140,7 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 5. **Page switches** (4 min; WP-17's after): on the RC with the `perf` stream on, the script names
    each page, you click it, 10 times each. Then, only with Xcode and the profiling RC (D1), the
    same again under `xctrace`.
-6. **F12** (5 min, twice if Q-B9's answer is unknown): Check for Updates, then Install and
+6. **F12** (5 min; the script first checks GitHub's remaining API requests and asks to turn a VPN off, Q-B9): Check for Updates, then Install and
    Relaunch. The RC's `diskutil` installer installs the real 0.6.1, which relaunches (G-16).
 7. **Burst and memory** (10 min, hands-on): 3 unplug and plug cycles, 1 minute apart; History →
    7 d three times.
@@ -1904,9 +1904,9 @@ so the default stays 0.7 (Q-W1).
   - Do you want the Icon Composer icon at all? It changes how the icon looks in the Clear and
     Tinted icon styles.
 - **Q-B8:** is the Enhanced Security spike (SEC-08) worth a session step?
-- **Q-B9 (F12):** on the first try, the update window didn't offer 0.6.0 and nothing installed.
-  What happened: the window opened before the check finished, a network error, a misclick? If
-  nobody knows, Session B runs F12 twice.
+- **Q-B9 (F12), settled:** the first try failed on GitHub's limit of 60 unauthenticated API requests an hour per address, used up behind a VPN that shares its address; the app said "GitHub is limiting requests", and the re-run after the limit reset passed. Not a defect; Session B's script
+  checks the remaining requests (`api.github.com/rate_limit`) before F12 and asks to turn a VPN
+  off, and F12 runs once.
 - **Q-B10 (Low Power Mode):** if Translucent or Clear uses 15 % or more energy than Standard,
   should it give way to Standard while Low Power Mode is on?
 
@@ -2000,7 +2000,7 @@ comments.
 | F5 (iPhone page, accessories, earbuds) and accessory captures | 0.6.1 session (not run); ROADMAP 5, 6 | Session A step 2 |
 | F9 (Russian) | 0.6.1 session (not run) | Session B step 4 |
 | F11-alert, F11-login | 0.6.1 session | closed (§4, WP-0) |
-| F12's first failure | 0.6.1 session | Q-B9; F12 twice if unknown |
+| F12's first failure | 0.6.1 session | Q-B9, settled: GitHub's rate limit behind a VPN |
 | Charge Limit capture; spreadsheet exports | ROADMAP 1.1, 6 | Session B optional |
 | Widgets kept across an in-app update | ROADMAP 1.2 | 0.6.1's after-publishing check; W0-2's control; Session B F8 |
 | Widget customization | maintainer's request, 2026-10-22; ROADMAP 0.7 | §8; spikes WP-W0 in 0.6.2; W-1 to W-10 in 0.7 (§9.1) |
