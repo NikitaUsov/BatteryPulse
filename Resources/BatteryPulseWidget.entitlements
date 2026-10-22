@@ -5,5 +5,17 @@
   <!-- App extensions must be sandboxed; the app itself is not. No App Group: ad-hoc signed
        code can't claim one, so the widget reads the battery itself. -->
   <key>com.apple.security.app-sandbox</key><true/>
+  <!-- SPIKE-W (0.6.2 WP-W0, W0-3), spike branch only: two read-only ways to the feed the app
+       writes. Candidate A, the app's Widget folder in Application Support (relative to the
+       home, with a leading and a trailing slash); candidate A', a preference domain of its own,
+       never the settings domain. Nothing else of the app's data is readable. -->
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+  <array>
+    <string>/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/</string>
+  </array>
+  <key>com.apple.security.temporary-exception.shared-preference.read-only</key>
+  <array>
+    <string>io.github.nikitausov.BatteryPulse.widgetfeed</string>
+  </array>
 </dict>
 </plist>

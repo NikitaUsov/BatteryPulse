@@ -74,6 +74,8 @@ final class WidgetRefresher {
         guard !monitor.isOverridden, let snapshot = monitor.snapshot,
             policy.shouldReload(for: snapshot, at: .now)
         else { return }
+        // SPIKE-W (W0-3): the feed first, so the reloaded widget reads this write.
+        SpikeWidgetFeed.write()
         WidgetCenter.shared.reloadTimelines(ofKind: BatteryWidgetKind.battery)
         Diagnostics.event("widget.reload", trigger: "policy")
         // One line per reload, so `log show` counts a day's reloads against WidgetKit's budget.

@@ -41,6 +41,8 @@ struct BatteryPulseApp: App {
         notifier.start()
         widgetRefresher = WidgetRefresher(monitor: monitor)
         widgetRefresher.start()
+        // SPIKE-W (W0-3): a feed from launch on, which a widget that isn't running reads later.
+        SpikeWidgetFeed.write()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
         showsMainWindow = !AppSettings.showInMenuBar

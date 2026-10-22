@@ -63,6 +63,8 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
     func timeline(for configuration: BatteryWidgetIntent, in context: Context) async -> Timeline<BatteryEntry> {
         let options = BatteryWidgetOptions(configuration)
         let reading = await Self.read(options)
+        // SPIKE-W: what else the sandbox lets the widget read (W0-3, W0-4).
+        await SpikeProbes.run()
         let plan = WidgetTimelinePlan(snapshot: reading.snapshot, at: reading.date)
         let entries = plan.entries.map {
             BatteryEntry(
