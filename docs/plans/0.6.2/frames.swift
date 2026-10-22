@@ -141,8 +141,17 @@ func dump(movie: URL, folder: URL, interval: Double, width: Int) async throws {
     var firstGrey: [UInt8] = []
     var time = 0.0
     var index = 0
-    while time < duration {
-        let (image, actual) = try await generator.image(at: CMTime(seconds: time, preferredTimescale: 600))
+    sampling: while time < duration {
+        let frame: (image: CGImage, actualTime: CMTime)
+        do {
+            frame = try await generator.image(at: CMTime(seconds: time, preferredTimescale: 600))
+        } catch let error where index > 0 {
+            // A clip's last moments may hold no frame to decode: keep the frames before them.
+            FileHandle.standardError.write(
+                Data("frames: stopped at \(String(format: "%.1f", time)) s: \(error)\n".utf8))
+            break sampling
+        }
+        let (image, actual) = frame
         let name = String(format: "frame-%04ld.png", index)
         try writePNG(image, to: folder.appendingPathComponent(name))
         let frameStats = try stats(of: image)
