@@ -333,10 +333,11 @@ struct SpikeWidgetView: View {
 
     /// W0-6: the clock-time line, then the time left as §8.5 writes it (a) and with `sign: .never`
     /// (b), since an offset to a later date is negative. The system updates both; nothing reloads.
+    /// The four lines stack tightly, so a small widget still has room for the Refresh button.
     @ViewBuilder private var timeLines: some View {
         let estimate = entry.estimate
         let time = estimate.end.formatted(date: .omitted, time: .shortened)
-        Group {
+        VStack(alignment: .leading, spacing: 1) {
             Text(verbatim: "W0-6 · \(estimate.source)")
             if estimate.charging {
                 Text(String(localized: "Full at \(time)"))
