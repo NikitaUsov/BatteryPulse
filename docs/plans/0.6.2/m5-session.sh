@@ -356,7 +356,8 @@ launch() {
 set_default() { defaults write "$BUNDLE_ID" "$1" "$2" "$3"; }
 
 # The settings every step starts from (restore puts yours back): no update checks, the menu bar item
-# with the icon and the charge, the Developer section (Raw Data, Demo Mode), the main window.
+# with the icon and the charge, the Developer section (Raw Data, Demo Mode), the main window, no
+# iPhone and iPad reads.
 session_settings() {
   set_default updateFrequency -string never
   set_default showInMenuBar -bool true
@@ -366,6 +367,8 @@ session_settings() {
   set_default menuBarShowsPower -bool false
   set_default menuBarShowsTemperature -bool false
   set_default prefersCompactWindow -bool false
+  # Off, the default: F5 turns device reads on for its own step only, so no energy run watches USB.
+  set_default readDevices -bool false
 }
 
 relaunch_with_session_settings() {
