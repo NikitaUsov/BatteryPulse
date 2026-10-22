@@ -53,7 +53,11 @@ RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
 MAPS="$PWD/.build/link-maps"
 mkdir -p "$MAPS"
 swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+# SPIKE-W (0.6.2 WP-W0, W0-2, spike branch only): the widget's line also internalizes its public
+# symbols at link time, as SPIKE-I's does, so SPIKE-W is SPIKE-I plus the configuration, and W0-2
+# asks of Edit Widget what 0.7 would ship: strip, _main-only exports and -internalize-at-link.
+swift build -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link \
+  --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 
