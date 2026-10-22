@@ -6,21 +6,26 @@
 // configuration under these strings, so renaming or removing one resets or removes placed
 // widgets. Only the cases that ship are declared; a case is cut before a release candidate,
 // never after. `WidgetSurfaceTests` pins them.
+//
+// The widget model in this folder is internal until the app or the widget uses it, and each
+// declaration becomes public with its first client. BatteryCore's public code is linked whole into
+// both binaries (a public function nothing calls stays in the widget), while an internal one
+// nothing uses is left out of a release build; the tests see it through `@testable import`.
 
 /// A widget family, by its size.
-public enum WidgetSize: String, Sendable, CaseIterable {
+enum WidgetSize: String, Sendable, CaseIterable {
     case small, medium, large, extraLarge, extraLargePortrait
 }
 
 /// A widget kind: the string WidgetKit stores for every placed widget of the kind.
-public enum WidgetKindID: String, Sendable, CaseIterable {
+enum WidgetKindID: String, Sendable, CaseIterable {
     /// Today's kind, so widgets placed by 0.6.x stay.
     case battery = "io.github.nikitausov.BatteryPulse.battery"
     case accessories = "io.github.nikitausov.BatteryPulse.accessories"
 }
 
 /// A detail the Battery widget can show.
-public enum BatteryWidgetField: String, Sendable, CaseIterable {
+enum BatteryWidgetField: String, Sendable, CaseIterable {
     /// Charging, On battery, Fully charged, Charging on hold or Not charging.
     case state
     /// The time to full or to empty.
@@ -51,12 +56,12 @@ public enum BatteryWidgetField: String, Sendable, CaseIterable {
 }
 
 /// The value the Battery widget shows large.
-public enum BatteryWidgetMain: String, Sendable, CaseIterable {
+enum BatteryWidgetMain: String, Sendable, CaseIterable {
     case charge, maximumCapacity, temperature, batteryPower
 }
 
 /// How the main value is drawn.
-public enum BatteryWidgetVisual: String, Sendable, CaseIterable {
+enum BatteryWidgetVisual: String, Sendable, CaseIterable {
     /// The number with the level symbol, as in 0.6.x.
     case symbol
     /// The number inside a ring.
@@ -67,17 +72,17 @@ public enum BatteryWidgetVisual: String, Sendable, CaseIterable {
 
 /// Automatic shows a size's own details (``WidgetLayoutPlan/automatic(_:)``); Custom shows the
 /// chosen ones.
-public enum WidgetLayoutMode: String, Sendable, CaseIterable {
+enum WidgetLayoutMode: String, Sendable, CaseIterable {
     case automatic, custom
 }
 
 /// A line under the main value.
-public enum WidgetStatusLine: String, Sendable, CaseIterable {
+enum WidgetStatusLine: String, Sendable, CaseIterable {
     case state, time
 }
 
 /// How the time to full or empty reads.
-public enum WidgetTimeStyle: String, Sendable, CaseIterable {
+enum WidgetTimeStyle: String, Sendable, CaseIterable {
     /// "Lasts until about 16:39".
     case clockTime
     /// "2 hours, 13 minutes", counting down without reloads.
@@ -86,19 +91,19 @@ public enum WidgetTimeStyle: String, Sendable, CaseIterable {
 
 /// Whether tiers show in colour: level colours as in 0.6.x, or none. A tier that isn't normal
 /// also carries a ``WidgetCue`` in either style.
-public enum WidgetColorStyle: String, Sendable, CaseIterable {
+enum WidgetColorStyle: String, Sendable, CaseIterable {
     case levelColors, monochrome
 }
 
 /// When the reading's time ("Updated 14:05") shows.
-public enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
+enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
     /// Once the reading is old: from the timeline's stale entry on.
     case whenOld
     case always
 }
 
 /// Which accessories the Accessories widget lists.
-public enum AccessoryWidgetMode: String, Sendable, CaseIterable {
+enum AccessoryWidgetMode: String, Sendable, CaseIterable {
     /// Every accessory, lowest first.
     case all
     case lowest

@@ -68,7 +68,7 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
     }
 
     /// The Accessories widget's timeline: a new reading every half hour, then the stale entry.
-    public static func accessories(at date: Date) -> WidgetTimelinePlan {
+    static func accessories(at date: Date) -> WidgetTimelinePlan {
         WidgetTimelinePlan(
             entries: [
                 Entry(date: date, showsEstimate: false),

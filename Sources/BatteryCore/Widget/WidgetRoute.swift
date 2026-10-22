@@ -3,7 +3,7 @@ import Foundation
 /// A page of the main window, as `@SceneStorage("mainSelection")` keeps it: a name, or `device:`
 /// and the device's key. The strings are frozen: a window restores its page from them, and a
 /// widget's click names its page with them.
-public enum PageID: Hashable, Sendable, RawRepresentable {
+enum PageID: Hashable, Sendable, RawRepresentable {
     case overview, power, health, history, developer, demo
     /// The Devices section's introduction.
     case devices
@@ -12,13 +12,13 @@ public enum PageID: Hashable, Sendable, RawRepresentable {
     case device(DeviceKey)
 
     /// Every page with a name of its own, in the sidebar's order.
-    public static let named: [PageID] = [
+    static let named: [PageID] = [
         .overview, .power, .health, .history, .developer, .demo, .devices, .accessories,
     ]
 
-    public static let devicePrefix = "device:"
+    static let devicePrefix = "device:"
 
-    public init?(rawValue: String) {
+    init?(rawValue: String) {
         if rawValue.hasPrefix(Self.devicePrefix) {
             guard let key = DeviceKey(rawValue: String(rawValue.dropFirst(Self.devicePrefix.count))) else {
                 return nil
@@ -30,7 +30,7 @@ public enum PageID: Hashable, Sendable, RawRepresentable {
         self = page
     }
 
-    public var rawValue: String {
+    var rawValue: String {
         switch self {
         case .overview: "overview"
         case .power: "power"
@@ -50,14 +50,14 @@ public enum PageID: Hashable, Sendable, RawRepresentable {
 /// iPad. Navigation only: a link never acts, and any app or web page that opens one can do no more
 /// than show a page. A widget never opens Raw Data, Demo Mode or Demo Mode's iPhone, so those
 /// pages have no route.
-public struct WidgetRoute: Hashable, Sendable {
+struct WidgetRoute: Hashable, Sendable {
     /// Derived from the bundle identifier, so no other app's links collide with it.
-    public static let scheme = "io.github.nikitausov.batterypulse"
-    public static let host = "page"
+    static let scheme = "io.github.nikitausov.batterypulse"
+    static let host = "page"
 
-    public let page: PageID
+    let page: PageID
 
-    public init?(page: PageID) {
+    init?(page: PageID) {
         switch page {
         case .overview, .power, .health, .history, .devices, .accessories: break
         case .developer, .demo: return nil
@@ -72,7 +72,7 @@ public struct WidgetRoute: Hashable, Sendable {
     }
 
     /// The route a widget's URL names; `nil` for any other URL, so the app ignores it.
-    public init?(url: URL) {
+    init?(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
             components.scheme?.lowercased() == Self.scheme, components.host?.lowercased() == Self.host,
             components.user == nil, components.password == nil, components.port == nil,
@@ -93,7 +93,7 @@ public struct WidgetRoute: Hashable, Sendable {
         self.init(page: page)
     }
 
-    public var url: URL {
+    var url: URL {
         switch page {
         case .device(let key): Self.url("\(Self.scheme)://\(Self.host)/device/\(key.rawValue)")
         default: Self.url("\(Self.scheme)://\(Self.host)/\(page.rawValue)")

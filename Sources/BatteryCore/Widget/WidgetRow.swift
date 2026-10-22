@@ -3,25 +3,25 @@ import Foundation
 /// One detail as the widget shows it. The value is pre-formatted, or a word the widget maps to
 /// its catalog key; the label stays the field, which the widget maps to its `LocalizedStringKey`,
 /// so every widget string is a literal the localization test sees.
-public struct WidgetRow: Sendable, Equatable {
-    public var field: BatteryWidgetField
-    public var value: WidgetValue
+struct WidgetRow: Sendable, Equatable {
+    var field: BatteryWidgetField
+    var value: WidgetValue
     /// Maximum capacity and condition warn as they do in the app; the other fields are normal.
-    public var tier: BatteryPresentation.LevelTier
+    var tier: BatteryPresentation.LevelTier
 
-    public init(field: BatteryWidgetField, value: WidgetValue, tier: BatteryPresentation.LevelTier = .normal) {
+    init(field: BatteryWidgetField, value: WidgetValue, tier: BatteryPresentation.LevelTier = .normal) {
         self.field = field
         self.value = value
         self.tier = tier
     }
 
     /// The symbol that says what the tier's colour says, so colour is never the only signal.
-    public var cue: WidgetCue? { WidgetCue(tier) }
+    var cue: WidgetCue? { WidgetCue(tier) }
 
     /// `field`'s row for `snapshot`, or `nil` when the reading doesn't have it: a Mac without a
     /// pack temperature, an adapter while on battery. `time` is the entry's time text, which only
     /// the planner knows.
-    public init?(
+    init?(
         _ field: BatteryWidgetField, snapshot s: BatterySnapshot, time: WidgetTimeText?, formatter f: BatteryFormatter
     ) {
         let value: WidgetValue
@@ -81,7 +81,7 @@ public struct WidgetRow: Sendable, Equatable {
 }
 
 /// A row's value.
-public enum WidgetValue: Sendable, Equatable {
+enum WidgetValue: Sendable, Equatable {
     /// Numbers and units, shown verbatim.
     case text(String)
     case state(WidgetStateWord)
@@ -92,10 +92,10 @@ public enum WidgetValue: Sendable, Equatable {
 }
 
 /// The battery's state in the words the widget and the app use.
-public enum WidgetStateWord: Sendable, Equatable, CaseIterable {
+enum WidgetStateWord: Sendable, Equatable, CaseIterable {
     case charging, onBattery, fullyCharged, chargingOnHold, notCharging, unknown
 
-    public init(_ s: BatterySnapshot) {
+    init(_ s: BatterySnapshot) {
         self =
             switch s.chargeState {
             case .charging: .charging
@@ -108,12 +108,12 @@ public enum WidgetStateWord: Sendable, Equatable, CaseIterable {
 }
 
 /// The condition macOS reports, as the app words it; no condition (or an empty one) is Normal.
-public enum WidgetCondition: Sendable, Equatable {
+enum WidgetCondition: Sendable, Equatable {
     case normal, fair, poor, checkBattery, serviceRecommended
     /// A condition the app has no words for, shown as macOS reports it.
     case other(String)
 
-    public init(_ raw: String?) {
+    init(_ raw: String?) {
         self =
             switch raw {
             case nil, "", "Normal", "Good": .normal
@@ -126,7 +126,7 @@ public enum WidgetCondition: Sendable, Equatable {
     }
 
     /// The tier ``BatteryPresentation/healthTier(for:)`` gives the condition alone.
-    public var tier: BatteryPresentation.LevelTier {
+    var tier: BatteryPresentation.LevelTier {
         switch self {
         case .normal: .normal
         case .fair, .serviceRecommended: .low
@@ -138,10 +138,10 @@ public enum WidgetCondition: Sendable, Equatable {
 
 /// A symbol beside a value whose tier isn't normal, in every colour style and rendering mode
 /// (HIG: convey meaning without relying on colour alone).
-public enum WidgetCue: String, Sendable, CaseIterable {
+enum WidgetCue: String, Sendable, CaseIterable {
     case low, critical
 
-    public init?(_ tier: BatteryPresentation.LevelTier) {
+    init?(_ tier: BatteryPresentation.LevelTier) {
         switch tier {
         case .normal: return nil
         case .low: self = .low
@@ -149,7 +149,7 @@ public enum WidgetCue: String, Sendable, CaseIterable {
         }
     }
 
-    public var symbolName: String {
+    var symbolName: String {
         switch self {
         case .low: "exclamationmark.circle"
         case .critical: "exclamationmark.triangle.fill"
@@ -160,11 +160,11 @@ public enum WidgetCue: String, Sendable, CaseIterable {
 /// What the widget raises in every size and layout, with a symbol and words: a condition other
 /// than Normal, or a thermal state of serious or worse ("High", "Critical" in the app's words).
 /// Heat comes first: it is the one to act on now.
-public enum WidgetAttention: Sendable, Equatable {
+enum WidgetAttention: Sendable, Equatable {
     case heat(ThermalState)
     case condition(WidgetCondition)
 
-    public init?(_ s: BatterySnapshot) {
+    init?(_ s: BatterySnapshot) {
         if let thermal = s.thermalState, thermal == .serious || thermal == .critical {
             self = .heat(thermal)
             return
@@ -174,7 +174,7 @@ public enum WidgetAttention: Sendable, Equatable {
         self = .condition(condition)
     }
 
-    public var symbolName: String {
+    var symbolName: String {
         switch self {
         case .heat: "thermometer.high"
         case .condition: "exclamationmark.triangle"
