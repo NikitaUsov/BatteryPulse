@@ -19,7 +19,9 @@ import Testing
 ///   `onOpenURL`, `handlesExternalEvents` or `onContinueUserActivity`, and no other delegate
 ///   method that opens something. The app's Info.plist registers no URL scheme either
 ///   (``noURLSchemeIsRegistered()``): the widget's URL reaches the app without one, and no web
-///   page's link opens it.
+///   page's link opens it;
+/// - a `URLSession` made outside `UpdateNetwork`, or the version count's URL taken outside the
+///   update checker.
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
@@ -64,6 +66,19 @@ import Testing
                 pattern: words(#/\bURLSession\s*\.\s*shared\b/#),
                 allowed: [:],
                 message: "URLSession.shared caches on disk; use UpdateNetwork's sessions"),
+            // W-13: with `.shared` banned, `UpdateNetwork`'s two sessions are the only ones, so
+            // every request is update traffic with their configuration.
+            Placement(
+                literals: ["URLSession"],
+                pattern: words(#/\bURLSession\s*(?:\.\s*init\s*)?\(/#),
+                allowed: ["BatteryPulseApp/Updates/UpdateChecker.swift": 2],
+                message: "a new URLSession; use UpdateNetwork's sessions"),
+            // W-13: the version count is requested in one place, the automatic update check.
+            Placement(
+                literals: ["VersionCounterPolicy"],
+                pattern: words(#/\bVersionCounterPolicy\s*\.\s*url\b/#),
+                allowed: ["BatteryPulseApp/Updates/UpdateChecker.swift": 1],
+                message: "the version count's URL only in the update checker"),
             Placement(
                 literals: ["IOServiceOpen", "IOConnect"],
                 pattern: words(#/\bIOServiceOpen\b|\bIOConnect\w+/#),
@@ -228,7 +243,32 @@ import Testing
         #expect(flags("let (data, response) = try await URLSession.shared.data(for: request)"))
         #expect(flags("let session = URLSession .shared", path: "BatteryPulseApp/Updates/UpdateChecker.swift"))
         #expect(!flags("let (data, _) = try await UpdateNetwork.user.data(for: request)"))
-        #expect(!flags("let session = URLSession(configuration: .ephemeral)"))
+        #expect(!flags("let session = URLSession(configuration: .ephemeral)", path: Self.updateChecker))
+    }
+
+    private static let updateChecker = "BatteryPulseApp/Updates/UpdateChecker.swift"
+
+    /// W-13: `UpdateNetwork`'s two sessions are the only ones.
+    @Test func sessionsOnlyInUpdateNetwork() {
+        let sessions = "static let user = URLSession(configuration: configuration(automatic: false))\n"
+        #expect(!flags(sessions + sessions, path: Self.updateChecker))
+        #expect(flags(sessions + sessions + sessions, path: Self.updateChecker))
+        #expect(flags(sessions, path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        #expect(flags("let session = URLSession.init(configuration: .default)", path: "BatteryCore/Updates.swift"))
+        #expect(!flags("let configuration = URLSessionConfiguration.ephemeral"))
+        #expect(!flags("func fetch(session: URLSession) async throws -> Data"))
+        #expect(!flags("let task = session.dataTask(with: request)"))
+    }
+
+    /// W-13: the version count's URL is taken once, by the update checker.
+    @Test func versionCountURLInOnePlace() {
+        let request = "guard let url = VersionCounterPolicy.url(for: currentVersion) else { return }\n"
+        #expect(!flags(request, path: Self.updateChecker))
+        #expect(flags(request + request, path: Self.updateChecker))
+        #expect(flags(request, path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        #expect(flags(request, path: "BatteryPulseApp/App/BatteryPulseApp.swift"))
+        #expect(!flags("let due = VersionCounterPolicy.shouldCount(enabled: on, frequency: frequency)"))
+        #expect(!flags("let urlString = VersionCounterPolicy.urlString", path: "BatteryCore/Updates.swift"))
     }
 
     /// The SMC client's one user-client call: `IOConnectCallStructMethod` with selector 2
@@ -283,6 +323,10 @@ import Testing
         "MainView().onOpenURL { url in show(url) }",
         "WindowGroup { MainView() }.handlesExternalEvents(matching: [\"page\"])",
         "MainView().onContinueUserActivity(\"BatteryWidgetIntent\") { _ in }",
+        "let session = URLSession(configuration: .ephemeral)",
+        "let session = URLSession .init(configuration: configuration)",
+        "let url = VersionCounterPolicy.url(for: version)",
+        "let url = VersionCounterPolicy . url(for: version)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
