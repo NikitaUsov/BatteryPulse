@@ -204,7 +204,7 @@ question() {
     V01-notification) echo "yn|person|Did the test notification arrive, and did clicking its banner bring BatteryPulse forward?" ;;
     V01-notification-front) echo "yn|person|And again with the BatteryPulse window in front?" ;;
     V01-menubar) echo "yn|judge|Does the menu bar icon look right on a light and on a dark menu bar?" ;;
-    V01-pages) echo "yn|person|Raw Data, History, Demo Mode on and off, Check Now (close the offer of 0.6.1 without installing) and Clear History: did each work?" ;;
+    V01-pages) echo "yn|person|Raw Data, History, Demo Mode on and off, Check Now (an offered update closed without installing) and Clear History: did each work?" ;;
     V01-lid) echo "yn|judge|After the lid was closed for a minute and opened: does BatteryPulse still run with a current value in the menu bar?" ;;
     fill-clear-light | fill-clear-dark | fill-translucent-dark)
       echo "3|judge|${1#fill-}: while the window shrank into the Dock and came back: 1 like the window, or an even graphite grey, 2 a black frame, 3 something else (note)"
@@ -1183,7 +1183,7 @@ DO (person):
      Again with the BatteryPulse window in front.
   2. The menu bar icon with a light and a dark menu bar: session runs $SCRIPT appearance light, $SCRIPT shot menubar-light,
      $SCRIPT appearance dark, $SCRIPT shot menubar-dark, then $SCRIPT appearance back.
-  3. Raw Data; History; Demo Mode on and off; Check Now (it offers 0.6.1: close that window, don't install);
+  3. Raw Data; History; Demo Mode on and off; Check Now (if it offers an update, close that window without installing);
      Clear History (your data is backed up).
   4. Close the lid for a minute, then open it and log in.
 Then: $SCRIPT v01 check
@@ -1569,33 +1569,51 @@ window_exit() {
     echo "The window stopped early ($(clock)); the session runs $SCRIPT restore."
   fi
   restore_lowpowermode || true
-  pkill -f 'pmset -g pslog' 2>/dev/null || true
+  stop_pslog
   cleanup
 }
 
-# The power-source notifications with the time each arrived, in seconds to the microsecond: pmset
-# under a pseudo-terminal writes each line at once, and one zsh process stamps them.
-start_pslog() {
-  cat >"$BIN/stamp.zsh" <<'EOF'
+# NOTIFY_KEYS: the power-source notify keys: "any" (the one 0.6.1 listens to besides
+# timeremaining, MacBatteryProvider.swift) and the keyed ones powerd posts.
+NOTIFY_KEYS="com.apple.system.powersources com.apple.system.powersources.timeremaining
+com.apple.system.powersources.percent com.apple.system.powersources.source
+com.apple.system.powersources.attach com.apple.system.powersources.lowbattery"
+
+# stamped <output> <command...>: the command under a pseudo-terminal, so it writes each line at once,
+# and each line stamped by one zsh process with the time it arrived (seconds, to the microsecond).
+stamped() {
+  local output="$1"
+  shift
+  if [ ! -f "$BIN/stamp.zsh" ]; then
+    cat >"$BIN/stamp.zsh" <<'EOF'
 zmodload zsh/datetime
 while IFS= read -r line; do
   line=${line%$'\r'}
   print -r -- "$EPOCHREALTIME $line"
 done
 EOF
-  script -q /dev/null pmset -g pslog 2>&1 </dev/null | zsh -f "$BIN/stamp.zsh" >"$LOGS/pslog.txt" &
-  BACKGROUND="$BACKGROUND $!"
-  sleep 5
-  if [ -s "$LOGS/pslog.txt" ]; then
-    echo "pseudo-terminal: each line stamped when pmset wrote it" >"$LOGS/pslog-mode.txt"
-  else
-    warn "pmset -g pslog under script wrote nothing in 5 s; logging it through a plain pipe"
-    pkill -f 'pmset -g pslog' 2>/dev/null || true
-    pmset -g pslog 2>&1 </dev/null | zsh -f "$BIN/stamp.zsh" >"$LOGS/pslog.txt" &
-    BACKGROUND="$BACKGROUND $!"
-    echo "plain pipe: lines stamped when pmset's buffer reached the pipe, so the 10 ms check can't hold" \
-      >"$LOGS/pslog-mode.txt"
   fi
+  script -q /dev/null "$@" </dev/null 2>&1 | zsh -f "$BIN/stamp.zsh" >"$output" &
+  BACKGROUND="$BACKGROUND $!"
+}
+
+# `pmset -g pslog` (PLAN.md §6) and, beside it, `notifyutil -w` on every power-source key, whose
+# lines name the key for sure; the analysis reads notifyutil's lines when there are any.
+start_pslog() {
+  local key watch=""
+  stamped "$LOGS/pslog.txt" pmset -g pslog
+  for key in $NOTIFY_KEYS; do watch="$watch -w $key"; done
+  # $watch is split on purpose: one -w per key.
+  # shellcheck disable=SC2086
+  stamped "$LOGS/notify.txt" notifyutil $watch
+  sleep 5
+  pgrep -f 'pmset -g pslog' >/dev/null || warn "pmset -g pslog isn't running: F13 and E3b rest on notifyutil's lines"
+  pgrep -f 'notifyutil -w' >/dev/null || warn "notifyutil isn't running: F13 and E3b rest on pslog's lines"
+}
+
+stop_pslog() {
+  pkill -f 'pmset -g pslog' 2>/dev/null || true
+  pkill -f 'notifyutil -w' 2>/dev/null || true
 }
 
 # Every 10 s: the time, AppleSmartBattery's UpdateTime, BatteryData's RemainingCapacity,
@@ -1787,37 +1805,36 @@ field_run() {
   crash_summary "$WORK/window.marker"
 }
 
-# The pslog against the ioreg samples: F13 (every UpdateTime change has an "any" notification in the
-# 10 s before its sample), E3b (every timeremaining followed by "any" within 10 ms), the mAh cadence.
+# The notify lines against the ioreg samples: F13 (every UpdateTime change has an "any" line
+# between the sample before it and its own sample, 10 s apart), E3b (every timeremaining has an
+# "any" within 10 ms after it; also counted within 10 ms on either side), and the mAh cadence. The
+# lines are notifyutil's when it logged any, otherwise pslog's.
+NOTIFY_KINDS='
+  function kind(line) {
+    if (line ~ /powersources\.timeremaining/) return "timeremaining"
+    if (line ~ /powersources\.lowbattery/) return "lowbattery"
+    if (line ~ /powersources\.percent/) return "percent"
+    if (line ~ /powersources\.attach/) return "attach"
+    if (line ~ /powersources\.source/) return "source"
+    if (line ~ /com\.apple\.system\.powersources$/ || line ~ /com\.apple\.system\.powersources[^.]/) return "any"
+    return "other"
+  }'
+
 pslog_analysis() {
-  begin_section 92-pslog "pslog and the ioreg sampler (F13, E3b, mAh cadence)"
-  local plug_epoch=0
+  begin_section 92-pslog "pslog, notifyutil and the ioreg sampler (F13, E3b, mAh cadence)"
+  local plug_epoch=0 lines="$LOGS/notify.txt"
   if [ -f "$WORK/plug.epoch" ] && ! grep -q not "$WORK/plug.txt" 2>/dev/null; then plug_epoch="$(cat "$WORK/plug.epoch")"; fi
-  out "- pslog timing: $(cat "$LOGS/pslog-mode.txt" 2>/dev/null || echo unknown); samples: $(($(wc -l <"$LOGS/sampler.tsv") - 1)); adapter: $(cat "$WORK/plug.txt" 2>/dev/null || echo unknown)"
-  out "- pslog lines by notification key (the session checks the first lines of pslog.txt name the keys):"
-  awk '
-    function kind(line) {
-      if (line ~ /powersources\.timeremaining/) return "timeremaining"
-      if (line ~ /powersources\.lowbattery/) return "lowbattery"
-      if (line ~ /powersources\.percent/) return "percent"
-      if (line ~ /powersources\.attach/) return "attach"
-      if (line ~ /powersources\.source/) return "source"
-      if (line ~ /com\.apple\.system\.powersources$/ || line ~ /com\.apple\.system\.powersources[^.]/) return "any"
-      return "other"
-    }
-    { count[kind($0)]++ }
-    END { for (k in count) printf "%s %d\n", k, count[k] }' "$LOGS/pslog.txt" | sort >"$LOGS/pslog-kinds.txt"
+  if ! grep -q 'powersources' "$lines" 2>/dev/null; then lines="$LOGS/pslog.txt"; fi
+  out "- lines read: $(basename "$lines") (notify.txt: $(grep -c . "$LOGS/notify.txt" 2>/dev/null || echo 0) lines, pslog.txt: $(grep -c . "$LOGS/pslog.txt" 2>/dev/null || echo 0)), each stamped through a pseudo-terminal when it was written"
+  out "- samples: $(($(wc -l <"$LOGS/sampler.tsv") - 1)); adapter: $(cat "$WORK/plug.txt" 2>/dev/null || echo unknown)"
+  out "- lines by notification key (\"other\" is pmset's own text):"
+  awk "$NOTIFY_KINDS"' { count[kind($0)]++ } END { for (k in count) printf "%s %d\n", k, count[k] }' "$lines" |
+    sort >"$LOGS/pslog-kinds.txt"
   out_block "$LOGS/pslog-kinds.txt"
-  awk -v plug="$plug_epoch" '
-    function kind(line) {
-      if (line ~ /powersources\.timeremaining/) return "timeremaining"
-      if (line ~ /powersources\.(lowbattery|percent|attach|source)/) return "keyed"
-      if (line ~ /com\.apple\.system\.powersources$/ || line ~ /com\.apple\.system\.powersources[^.]/) return "any"
-      return ""
-    }
+  awk -v plug="$plug_epoch" "$NOTIFY_KINDS"'
     FNR == NR {
       k = kind($0)
-      if (k == "") next
+      if (k == "other") next
       n++; at[n] = $1 + 0; what[n] = k
       next
     }
@@ -1840,19 +1857,28 @@ pslog_analysis() {
         if (what[i] != "timeremaining") continue
         phase = (plug > 0 && at[i] >= plug) ? "charging" : "battery"
         tr[phase]++
-        # The next "any" within 10 ms, past other keys posted in the same pass.
-        for (j = i + 1; j <= n && at[j] - at[i] <= 0.010; j++) if (what[j] == "any") { follow[phase]++; break }
+        after = 0; near = 0
+        for (j = i + 1; j <= n && at[j] - at[i] <= 0.010; j++) if (what[j] == "any") { after = 1; break }
+        for (j = i - 1; j >= 1 && at[i] - at[j] <= 0.010; j--) if (what[j] == "any") { near = 1; break }
+        if (after) { follow[phase]++; near = 1 }
+        if (near) around[phase]++
       }
       split("battery charging", phases, " ")
       for (p = 1; p <= 2; p++) {
         ph = phases[p]
         hours = (lastt[ph] - first[ph]) / 3600
-        printf "%s: %.2f h sampled; UpdateTime changes %d, with an \"any\" line in their 10 s %d (F13)\n", ph, hours, changes[ph] + 0, matched[ph] + 0
-        printf "%s: timeremaining lines %d, followed by \"any\" within 10 ms %d (E3b)\n", ph, tr[ph] + 0, follow[ph] + 0
+        printf "%s: %.2f h sampled; UpdateTime changes %d, with an \"any\" line since the sample before %d (F13)\n", ph, hours, changes[ph] + 0, matched[ph] + 0
+        printf "%s: timeremaining lines %d; an \"any\" within 10 ms after %d, within 10 ms either side %d (E3b)\n", ph, tr[ph] + 0, follow[ph] + 0, around[ph] + 0
         if (hours > 0) printf "%s: RemainingCapacity changes %d, %.1f an hour\n", ph, mah[ph] + 0, mah[ph] / hours
       }
-    }' "$LOGS/pslog.txt" "$LOGS/sampler.tsv" >"$LOGS/pslog-checks.txt"
+    }' "$lines" "$LOGS/sampler.tsv" >"$LOGS/pslog-checks.txt"
   out_block "$LOGS/pslog-checks.txt"
+  out "- the first lines of each, to show what they name:"
+  {
+    head -5 "$LOGS/notify.txt" 2>/dev/null || true
+    head -8 "$LOGS/pslog.txt" 2>/dev/null || true
+  } >"$LOGS/pslog-head.txt"
+  out_block "$LOGS/pslog-head.txt"
 }
 
 step_window() {
@@ -1923,7 +1949,7 @@ step_window() {
   tee -a "$SECTION" <"$LOGS/energy-rows.md"
 
   field_run $((WINDOW_T0 + 3 * 3600)) $((WINDOW_T0 + 2 * 3600))
-  pkill -f 'pmset -g pslog' 2>/dev/null || true
+  stop_pslog
   pslog_analysis
   # Each in a subshell, so a failure there still leaves the prompts on screen.
   (restore_all) || warn "restore stopped early; run $SCRIPT restore"
