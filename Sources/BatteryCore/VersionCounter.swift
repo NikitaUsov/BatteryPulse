@@ -32,7 +32,9 @@ enum VersionCounterPolicy {
     /// Whether an automatic check that just reached GitHub also counts `current`: the count is on,
     /// automatic checks are on, `current` is a release version (``url(for:)``) other than the last
     /// one counted, and it first ran on this Mac (`versionSince`) at least ``gracePeriod`` ago.
-    /// Without that date nothing is counted. A clock moved backwards ends the wait, as it makes a
+    /// Going back to an earlier version counts it again, so a build numbered above a release, such
+    /// as a local one, never keeps that release from being counted. Without that date nothing is
+    /// counted. A clock moved backwards ends the wait, as it makes a
     /// check due (``UpdatePolicy/isCheckDue(lastCheck:now:frequency:)``).
     static func shouldCount(
         enabled: Bool, frequency: UpdateFrequency, current: AppVersion, lastCounted: AppVersion?,
