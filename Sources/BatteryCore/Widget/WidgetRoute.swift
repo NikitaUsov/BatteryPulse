@@ -66,6 +66,11 @@ public struct WidgetRoute: Hashable, Sendable {
         self.page = page
     }
 
+    /// A page ``init(page:)`` accepts.
+    init(widgetPage page: PageID) {
+        self.page = page
+    }
+
     /// The route a widget's URL names; `nil` for any other URL, so the app ignores it.
     public init?(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
