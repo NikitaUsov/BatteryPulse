@@ -1120,7 +1120,9 @@ spike_logs() {
     printf '%s\t%s %s\n' "$(stamp_ms "$stamp")" "$process" "$message" >>"$LOGS/spike-w-ms.txt"
   done < <(entries "$LOGS/spike-w.ndjson")
   touch "$MARKS"
-  awk -F '\t' 'FNR == NR { at[++n] = $1; label[n] = $3; next }
+  # FILENAME, not FNR == NR: with no marks the marks file is empty, and FNR == NR would then take
+  # every log line for a mark.
+  awk -F '\t' 'FILENAME == ARGV[1] { at[++n] = $1; label[n] = $3; next }
     {
       ms = $1
       segment = "before any mark"
@@ -1837,8 +1839,9 @@ pslog_analysis() {
   awk "$NOTIFY_KINDS"' { count[kind($0)]++ } END { for (k in count) printf "%s %d\n", k, count[k] }' "$lines" |
     sort >"$LOGS/pslog-kinds.txt"
   out_block "$LOGS/pslog-kinds.txt"
+  # FILENAME, not FNR == NR, which would read the samples as notify lines if no line was logged.
   awk -v plug="$plug_epoch" "$NOTIFY_KINDS"'
-    FNR == NR {
+    FILENAME == ARGV[1] {
       k = kind($0)
       if (k == "other") next
       n++; at[n] = $1 + 0; what[n] = k
