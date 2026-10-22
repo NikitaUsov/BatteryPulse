@@ -114,9 +114,9 @@ dependencies.
   see. Liquid Glass on the controls (the History switch in the toolbar and the Demo Mode bar),
   never on the content.
 - *Window Style* (Settings → General) for the main and compact windows: Standard, Frosted (the
-  desktop blurred behind the window), Translucent (one sheet of Liquid Glass with a dimming
-  layer) or Clear (pure glass, white content). Reduce Transparency or Increase Contrast gives
-  Standard.
+  desktop blurred behind the window), and two beta styles that Settings → Advanced → Beta window
+  styles adds: Translucent (one sheet of Liquid Glass with a dimming layer) and Clear (pure
+  glass, white content). Reduce Transparency or Increase Contrast gives Standard.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
   history while recording is on, so it uses almost no CPU in the background. The only requests to the internet are an

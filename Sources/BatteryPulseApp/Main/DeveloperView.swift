@@ -86,6 +86,9 @@ struct DeveloperView: View {
                             shownGroup.map(Self.title(of:)) ?? Text("All")
                         }
                         .fixedSize()
+                        // The label is the shown source; VoiceOver names the menu too.
+                        .accessibilityLabel(Text("Source"))
+                        .accessibilityValue(shownGroup.map(Self.title(of:)) ?? Text("All"))
                         .help("Show only the values from one source")
                     }
                 }

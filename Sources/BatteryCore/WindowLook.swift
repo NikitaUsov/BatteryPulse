@@ -1,9 +1,10 @@
 import Foundation
 
 // The window style setting (Settings → General): Standard, Frosted, and the beta styles
-// Translucent and Clear. Only the main and compact windows follow it. The decisions behind each style live here, free of
-// SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps them to backgrounds and
-// modifiers. Code says "window look" because SwiftUI already has a `WindowStyle`.
+// Translucent and Clear. Only the main and compact windows follow it. The decisions behind each
+// style live here, free of SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps
+// them to backgrounds and modifiers. Code says "window look" because SwiftUI already has a
+// `WindowStyle`.
 
 /// The window style setting, from an opaque window to clear glass. The raw values are stored in
 /// the defaults, so they never change.

@@ -382,6 +382,18 @@
         }
       }
     },
+    "Adds Translucent and Clear to Window Style in General. They are still in beta: harder to read, and they use more energy.": {
+      "extractionState": "manual",
+      "comment": "Footer of the Beta window styles toggle in Settings → Advanced",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавляет «Полупрозрачный» и «Прозрачный» в «Стиль окон» в разделе «Основные». Это бета-стили: с ними текст читается хуже, и они расходуют больше энергии."
+          }
+        }
+      }
+    },
     "Advanced": {
       "extractionState": "manual",
       "localizations": {
@@ -1062,6 +1074,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ниже 20 процентов заряд становится оранжевым."
+          }
+        }
+      }
+    },
+    "Beta": {
+      "extractionState": "manual",
+      "comment": "Mark on a beta window style's tile in Settings → General (Translucent, Clear)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета"
+          }
+        }
+      }
+    },
+    "Beta window styles": {
+      "extractionState": "manual",
+      "comment": "Toggle in Settings → Advanced that adds the beta window styles (Translucent, Clear) to Window Style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета-стили окон"
           }
         }
       }
@@ -8052,42 +8088,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Стиль окон"
-          }
-        }
-      }
-    },
-    "Beta": {
-      "extractionState": "manual",
-      "comment": "Mark on a beta window style's tile in Settings → General (Translucent, Clear)",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Бета"
-          }
-        }
-      }
-    },
-    "Beta window styles": {
-      "extractionState": "manual",
-      "comment": "Toggle in Settings → Advanced that adds the beta window styles (Translucent, Clear) to Window Style",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Бета-стили окон"
-          }
-        }
-      }
-    },
-    "Adds Translucent and Clear to Window Style in General. They are still in beta: harder to read, and they use more energy.": {
-      "extractionState": "manual",
-      "comment": "Footer of the Beta window styles toggle in Settings → Advanced",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Добавляет стили «Полупрозрачный» и «Прозрачный» в раздел «Стиль окон» основных настроек. Это бета-версии: они хуже читаются и расходуют больше энергии."
           }
         }
       }
