@@ -20,13 +20,10 @@ public struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
         case started(Pending, id: Int)
     }
 
-    private enum State: Sendable {
-        case idle
-        case reading(id: Int, since: Date, Pending)
-        case done(Value, since: Date)
-    }
-
-    private var state = State.idle
+    /// The last read: its result once it finished well, its handle while it runs.
+    private var value: Value?
+    private var pending: Pending?
+    private var since = Date.distantPast
     private var lastID = 0
 
     public init() {}
@@ -34,24 +31,23 @@ public struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
     /// The step for a request at `now`. `start` makes the new read's pending handle; it is called
     /// only when a read starts, while the caller holds its lock.
     public mutating func request(at now: Date, start: () -> Pending) -> Step {
-        switch state {
-        case .done(let value, let since) where now.timeIntervalSince(since) < Self.window:
-            return .cached(value)
-        // A read that never reported back stops answering after the window.
-        case .reading(_, let since, let pending) where now.timeIntervalSince(since) < Self.window:
-            return .join(pending)
-        case .idle, .done, .reading:
-            lastID += 1
-            let pending = start()
-            state = .reading(id: lastID, since: now, pending)
-            return .started(pending, id: lastID)
+        // A read that never reported back stops answering after the window too.
+        if now.timeIntervalSince(since) < Self.window {
+            if let value { return .cached(value) }
+            if let pending { return .join(pending) }
         }
+        lastID += 1
+        let started = start()
+        (value, pending, since) = (nil, started, now)
+        return .started(started, id: lastID)
     }
 
     /// Reports the read `id` started; `nil` means it failed, which is never cached, so the next
     /// request reads again. A report from a read already replaced is ignored.
     public mutating func finish(_ id: Int, with value: Value?) {
-        guard case .reading(let current, let since, _) = state, current == id else { return }
-        state = value.map { .done($0, since: since) } ?? .idle
+        guard id == lastID, pending != nil else { return }
+        pending = nil
+        self.value = value
+        if value == nil { since = .distantPast }
     }
 }
