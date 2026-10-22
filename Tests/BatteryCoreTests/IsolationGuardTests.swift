@@ -116,8 +116,14 @@ import Testing
             found.append(
                 "\(path): \(attributes.count) @MainActor, expected \(sites.count); the app is main-actor by default")
         }
-        for site in sites where !attributes.contains(where: { $0.hasPrefix(site) }) {
-            found.append("\(path): the kept @MainActor \"\(site)\" is gone")
+        // Each kept site takes one attribute, so two identical sites need two matching ones.
+        var unmatched = attributes
+        for site in sites {
+            if let index = unmatched.firstIndex(where: { $0.hasPrefix(site) }) {
+                unmatched.remove(at: index)
+            } else {
+                found.append("\(path): the kept @MainActor \"\(site)\" is gone")
+            }
         }
         let text = collapsed(code)
         for rule in offMain where rule.path == path {
@@ -138,13 +144,13 @@ import Testing
         #expect(violations.isEmpty, "\(violations.joined(separator: "\n"))")
     }
 
-    /// Four `@MainActor`s, in files that exist, like every file with an off-main declaration.
-    @Test func listedFilesExist() {
+    /// Four `@MainActor`s, in files the scan reads, like every file with an off-main declaration;
+    /// so the per-file test above has cases, and a moved file can't drop out of it unnoticed.
+    @Test func listedFilesAreScanned() throws {
         #expect(Self.mainActorSites.values.map(\.count).reduce(0, +) == 4)
+        let scanned = Set(try SourceScanner.files.get().map(\.path))
         for path in Set(Self.mainActorSites.keys).union(Self.offMain.map(\.path)) {
-            #expect(
-                FileManager.default.fileExists(atPath: SourceScanner.sources.appendingPathComponent(path).path),
-                "\(path)")
+            #expect(scanned.contains(path), "\(path)")
         }
     }
 
@@ -197,6 +203,11 @@ import Testing
         #expect(!Self.violations(inCode: "Task { SystemAppearance.shared.update() }", path: path).isEmpty)
         // Moved to another kind of site: same count, wrong place.
         #expect(!Self.violations(inCode: "@MainActor final class SystemAppearance {}", path: path).isEmpty)
+        // Two identical sites need two matches: one of them turned into a type annotation fails.
+        let pages = "BatteryPulseApp/Main/MainView.swift"
+        let property = "let showInHistory: @MainActor (DeviceKey) -> Void\n"
+        #expect(Self.violations(inCode: property + property, path: pages).isEmpty)
+        #expect(!Self.violations(inCode: property + "@MainActor final class Pages {}", path: pages).isEmpty)
     }
 
     @Test func flagsALostNonisolated() {
