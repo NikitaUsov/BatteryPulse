@@ -1263,7 +1263,9 @@ record_clip() {
   local movie="$1" seconds="$2" pid tries=0 limit
   rm -f "$movie"
   afplay /System/Library/Sounds/Glass.aiff &
-  screencapture -v -V "$seconds" -x "$movie" &
+  # Interactively, a typed character stops the recording; a background job's standard input would
+  # be /dev/null, whose end of input could stop it at once. A pipe that stays open outlasts -V.
+  screencapture -v -V "$seconds" -x "$movie" < <(sleep $((seconds + 10))) &
   pid=$!
   limit=$((seconds * 2 + 10))
   while kill -0 "$pid" 2>/dev/null && [ "$tries" -lt "$limit" ]; do
@@ -1601,7 +1603,9 @@ while IFS= read -r line; do
 done
 EOF
   fi
-  script -q /dev/null "$@" </dev/null 2>&1 | zsh -f "$BIN/stamp.zsh" >"$output" &
+  # script's standard input is a pipe that stays open past the window (4 hours): at an end of
+  # input, script passes it on to the command or stops, so /dev/null could end both at once.
+  script -q /dev/null "$@" < <(sleep 14400) 2>&1 | zsh -f "$BIN/stamp.zsh" >"$output" &
   BACKGROUND="$BACKGROUND $!"
 }
 
