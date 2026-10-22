@@ -65,11 +65,13 @@ read what it prints, look at the pictures, judge, and record. About 65 minutes h
 
    ```
    git -C ~/BatteryPulse fetch origin claude/nice-faraday-k08mhb
-   git -C ~/BatteryPulse worktree add --detach ~/bp-062/repo origin/claude/nice-faraday-k08mhb
+   git -C ~/BatteryPulse worktree add --detach ~/bp-062/repo FETCH_HEAD
    ```
 
-   If `~/bp-062/repo` exists already, update it instead: `git -C ~/bp-062/repo checkout --detach
-   origin/claude/nice-faraday-k08mhb`.
+   `FETCH_HEAD`, because a clone of one branch doesn't update `origin/claude/nice-faraday-k08mhb`.
+   If `~/bp-062/repo` exists already, update it instead (each worktree has its own `FETCH_HEAD`):
+   `git -C ~/bp-062/repo fetch origin claude/nice-faraday-k08mhb && git -C ~/bp-062/repo checkout
+   --detach FETCH_HEAD`.
 
    Below, `$S` stands for `bash ~/bp-062/repo/docs/plans/0.6.2/m5-session.sh`. Write it out in
    full in every command, since a shell variable may not survive from one command to the next;
