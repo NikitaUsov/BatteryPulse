@@ -162,6 +162,73 @@ if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null
   exit 1
 fi
 
+# App Intents metadata (W0-1, spike branch only). Xcode extracts it after linking a target that
+# declares intents; swift build never does, because SwiftPM sets LM_SKIP_METADATA_EXTRACTION. So
+# this runs Apple's processor with the options of Xcode's AppIntentsMetadata.xcspec, on the
+# unstripped widget binary and the inputs Swift Build left: the widget module's Swift sources and
+# the compiler's const values (*.swiftconstvalues, which Swift Build emits for the App Intents
+# protocols). It writes $APPEX/Contents/Resources/Metadata.appintents before the widget is
+# signed. The processor can exit with 0 without writing anything: CI's check fails then.
+INTENTS="$PWD/.build/appintents"
+rm -rf "$INTENTS"
+mkdir -p "$INTENTS"
+# The release build's intermediates of the widget module, such as
+# .build/out/Intermediates.noindex/BatteryPulse.build/Release/BatteryPulseWidget-p.build/Objects-normal/arm64.
+WIDGET_OBJECTS="$(find "$PWD/.build/out/Intermediates.noindex" -type d -path '*/Release/BatteryPulseWidget*.build/Objects-normal/arm64' | head -1)"
+if [ -z "$WIDGET_OBJECTS" ]; then
+  echo "error: no release intermediates of the widget module under .build/out" >&2
+  exit 1
+fi
+find "$PWD/Sources/BatteryPulseWidget" -name '*.swift' | sort >"$INTENTS/BatteryPulseWidget.SwiftFileList"
+find "$WIDGET_OBJECTS" -maxdepth 1 -name '*.swiftconstvalues' | sort >"$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+if [ ! -s "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList" ]; then
+  echo "error: Swift Build left no .swiftconstvalues in $WIDGET_OBJECTS" >&2
+  exit 1
+fi
+# No dependency has App Intents metadata of its own: both lists stay empty.
+: >"$INTENTS/BatteryPulseWidget.DependencyMetadataFileList"
+: >"$INTENTS/BatteryPulseWidget.DependencyStaticMetadataFileList"
+echo "App Intents inputs: $(wc -l <"$INTENTS/BatteryPulseWidget.SwiftFileList" | tr -d ' ') sources; const values:"
+cat "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+# An empty array expands with the ${a[@]+…} form below: macOS's bash 3.2 calls a plain "${a[@]}"
+# unbound under set -u.
+DEPENDENCY_INFO=()
+if [ -f "$WIDGET_OBJECTS/BatteryPulseWidget_dependency_info.dat" ]; then
+  DEPENDENCY_INFO=(--dependency-file "$WIDGET_OBJECTS/BatteryPulseWidget_dependency_info.dat")
+fi
+TOOLCHAIN_DIR="$(cd "$(dirname "$(xcrun --find swiftc)")/../.." && pwd)"
+XCODE_BUILD_VERSION="$(xcodebuild -version | awk '/^Build version/ { print $3 }')"
+DEPLOYMENT_TARGET=27.0
+PROCESSOR=(
+  "$(xcrun --find appintentsmetadataprocessor)"
+  --toolchain-dir "$TOOLCHAIN_DIR"
+  --module-name BatteryPulseWidget
+  --sdk-root "$(xcrun --sdk macosx --show-sdk-path)"
+  --xcode-version "$XCODE_BUILD_VERSION"
+  --platform-family macOS
+  --deployment-target "$DEPLOYMENT_TARGET"
+  --bundle-identifier "$BUNDLE_ID.Widget"
+  --output "$APPEX/Contents/Resources"
+  --target-triple "arm64-apple-macos$DEPLOYMENT_TARGET"
+  --binary-file "$BIN_PATH/BatteryPulseWidget"
+  ${DEPENDENCY_INFO[@]+"${DEPENDENCY_INFO[@]}"}
+  --stringsdata-file "$INTENTS/ExtractedAppShortcutsMetadata.stringsdata"
+  --source-file-list "$INTENTS/BatteryPulseWidget.SwiftFileList"
+  --metadata-file-list "$INTENTS/BatteryPulseWidget.DependencyMetadataFileList"
+  --static-metadata-file-list "$INTENTS/BatteryPulseWidget.DependencyStaticMetadataFileList"
+  --swift-const-vals-list "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+  --compile-time-extraction
+  --deployment-aware-processing
+  --no-app-shortcuts-localization
+)
+echo "App Intents metadata: ${PROCESSOR[*]}"
+"${PROCESSOR[@]}"
+if [ -d "$APPEX/Contents/Resources/Metadata.appintents" ]; then
+  ls -l "$APPEX/Contents/Resources/Metadata.appintents"
+else
+  echo "warning: the processor wrote no Metadata.appintents" >&2
+fi
+
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
 # them, tied to each binary by its UUID, and go into $NAME-dSYMs.zip (a CI artifact and a release
