@@ -16,6 +16,9 @@ struct WidgetManifestTests {
         #expect(data.last == UInt8(ascii: "\n"))
         let exported = try WidgetIntentManifest.shipping.json()
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: exported) == .shipping)
+        // Byte for byte: decoding ignores keys the type doesn't have, and CI's metadata check
+        // reads the file, so a hand edit could otherwise say more than the type.
+        #expect(data == exported, "Write WidgetIntentManifest.shipping.json() to scripts/widget-manifest.json")
     }
 
     /// A widget configuration in the extension's sources: its kind, intent type and families.
