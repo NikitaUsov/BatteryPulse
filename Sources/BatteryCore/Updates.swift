@@ -159,6 +159,17 @@ public enum ReleaseChannel {
     /// The DMG every release attaches under the same name, so `releases/latest/download/` links
     /// keep working. Its signature is the asset of this name plus `.sig`.
     public static let assetName = "BatteryPulse.dmg"
+    /// The small text file every release from 0.7.0 attaches for the anonymous version count
+    /// (``VersionCounterPolicy``): its download count is the number of Macs that ran the release.
+    /// It must never be removed from a published release.
+    static let counterAssetName = "BatteryPulse-count.txt"
+
+    /// The download URL of the asset `name` of the release tagged `v<version>`, as GitHub builds
+    /// its `browser_download_url`.
+    static func releaseAsset(_ name: String, of version: AppVersion) -> URL {
+        releasesPage.appendingPathComponent("download").appendingPathComponent("v\(version)")
+            .appendingPathComponent(name)
+    }
 
     /// A file of the default branch, as github.com shows it.
     public static func file(_ path: String) -> URL {
