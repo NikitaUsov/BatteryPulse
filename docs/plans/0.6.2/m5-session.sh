@@ -518,7 +518,14 @@ install_build() {
   xattr -dr com.apple.quarantine "$staged" 2>/dev/null || true
   [ "$(plist_value "$staged/Contents/Info.plist" CFBundleIdentifier)" = "$BUNDLE_ID" ] ||
     fail "$name isn't $BUNDLE_ID"
-  codesign --verify --deep --strict "$staged" 2>/dev/null || fail "$name's code signature doesn't verify"
+  if ! codesign --verify --deep --strict "$staged" 2>/dev/null; then
+    # Your own app comes back regardless: restore must not stop before your settings and data.
+    if [ "$name" != backup ]; then
+      rm -rf "$staging"
+      fail "$name's code signature doesn't verify"
+    fi
+    warn "your backed-up app's code signature doesn't verify; restore puts it back anyway"
+  fi
   version="$(plist_value "$staged/Contents/Info.plist" CFBundleShortVersionString)"
   build="$(plist_value "$staged/Contents/Info.plist" CFBundleVersion)"
   build="${build%%.*}"
