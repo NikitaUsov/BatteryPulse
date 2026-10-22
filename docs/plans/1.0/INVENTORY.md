@@ -3,6 +3,12 @@
 As of 2026-10-22, the day 0.6.1 was released. Repository at `9410861` (tree equal to v0.6.1, `7622373`
 on `main`, plus the roadmap commit). English only; names no third-party product.
 
+**Updated the same day with the maintainer's answers (2026-10-22).** No paid developer account;
+Xcode is already installed on the M5; Clear's minimize fill is (b); widgets in 0.7, no 0.6.3.
+Every other question was delegated ("do it by best practices, as you see fit") and is decided as
+its recommendation, except what 1.0 means, which awaits the maintainer. §12 and "The paid
+account" record them; the rows they settle say so, and the counts include that.
+
 ## How to read this
 
 - **One row per item**, deduplicated across every source. When several sources describe the same
@@ -14,7 +20,11 @@ on `main`, plus the roadmap commit). English only; names no third-party product.
   **maintainer taste**, **Apple API** (private, undocumented or unverified behaviour), **evidence**
   (waits for a measurement or a failure), **hardware** (a device not at hand), or **none**);
   version (the one the sources assign today: **0.6.2**, **0.7**, **later**, **not planned**,
-  **rejected**, or **unassigned** when no source assigns one).
+  **rejected**, or **unassigned** when no source assigns one). A row whose version a maintainer
+  decision of 2026-10-22 changed names the decision there. The paid-account and Xcode blockers
+  keep their category with the answer in brackets ([declined], [installed]), as do the rows whose
+  question changed their route. Every question behind "maintainer taste" is answered in §12
+  except what 1.0 means (DIS-10); the looks themselves are still signed off in the sessions.
 - **Rows marked (new)** are gaps found while sweeping that no plan lists. They cite the files that
   show the gap.
 - **Uncertainty** is marked "unverified" or "uncertain" in the row.
@@ -23,7 +33,7 @@ on `main`, plus the roadmap commit). English only; names no third-party product.
 
 | Short | File |
 |---|---|
-| R:n | `docs/ROADMAP.md`, line n |
+| R:n | `docs/ROADMAP.md` as v0.6.1 shipped it, line n |
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | RN:n | `.github/release-notes.md`, line n |
@@ -48,10 +58,10 @@ minimize frame (RN:12-13), row QUA-01.
 
 | Category | 0.6.2 | 0.7 | later | not planned | unassigned | Total |
 |---|---|---|---|---|---|---|
-| Feature | 9 | 9 | 6 | 9 | 1 | 34 |
+| Feature | 7 | 9 | 6 | 12 | 0 | 34 |
 | Quality | 10 | 2 | 0 | 2 | 2 | 16 |
 | Energy and performance | 12 | 2 | 1 | 2 | 1 | 18 |
-| Security | 5 | 1 | 1 | 0 | 1 | 8 |
+| Security | 4 | 1 | 1 | 1 | 1 | 8 |
 | Size | 4 | 2 | 1 | 0 | 0 | 7 |
 | Distribution | 5 | 0 | 0 | 3 | 2 | 10 |
 | Docs | 6 | 2 | 0 | 0 | 2 | 10 |
@@ -59,15 +69,22 @@ minimize frame (RN:12-13), row QUA-01.
 | Platform debt | 3 | 0 | 1 | 0 | 1 | 5 |
 | Accessibility | 4 | 1 | 0 | 1 | 0 | 6 |
 | Localization | 3 | 2 | 0 | 0 | 0 | 5 |
-| **All** | **68** | **23** | **10** | **18** | **11** | **130** |
+| **All** | **65** | **23** | **10** | **22** | **10** | **130** |
 
-- **Unassigned:** 11, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
-  DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other three are options or leftovers (FEA-14, ENG-18,
-  TCI-09).
+- **Unassigned:** 10, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
+  DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other two are leftovers (ENG-18, TCI-09).
+- **Settled by the answers of 2026-10-22** (moved to not planned): FEA-14 (Q-W1: 0.7), FEA-23
+  (Q-B10: no fallback), FEA-24 (Q-B2: fill (b)), SEC-01 (Q-B8: no, and no Developer ID build).
 - **Decisions:** 9 for 0.6.2 (Q-B2 to Q-B11) and 13 for widget customization (Q-W1 to Q-W13), §12.
-- **What blocks them** (a row can have several): an M5 session 54 rows (44 of them in 0.6.2);
-  maintainer taste 25; Apple API behaviour 12; Xcode on the Mac 11; the paid account 12 (7 name it,
-  5 iOS rows inherit it through FEA-29); hardware not at hand 6; evidence still to come 4.
+  All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-B9 and Q-B11 settled
+  before, the rest by delegation.
+- **What blocks them** (a row can have several): an M5 session 54 rows (42 of them in 0.6.2, since
+  FEA-23 and SEC-01 left it);
+  maintainer taste 25 (the questions are now answered; the looks are still signed off in the
+  sessions); Apple API behaviour 12; Xcode on the Mac 11 (installed on the M5, so these run,
+  maintainer-run); the paid account 12 (7 name it, 5 iOS rows inherit it through FEA-29), which the
+  maintainer declined, so they stay not planned or take the route without it; hardware not at
+  hand 6; evidence still to come 4.
 - **User-visible:** 72 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 38 M,
   6 L, 3 XL.
 
@@ -77,7 +94,7 @@ minimize frame (RN:12-13), row QUA-01.
    SIZ-07, L10N-03 to L10N-05, A11Y-05, A11Y-06, TCI-10, TCI-11, DOC-07, DOC-08, QUA-16) plus the 13
    Q-W questions. Six spikes in 0.6.2 (W0-1 to W0-6) decide the design; the MVP is the configurable Battery widget
    in four sizes; the feed-backed History and iPhone & iPad widgets hang on an unverified sandbox
-   exception or an App Group.
+   exception (W0-3), since an App Group needs the paid account the maintainer declined.
 2. **M5 verification debt:** 54 rows need the MacBook Air M5, many of them checks left open since
    0.4-0.6 (Stages 1.1-1.5, 5, 6): icon styles, the beta styles' evidence, accessibility passes,
    devices and accessories, the Charge Limit capture, spreadsheets, widgets across updates.
@@ -86,14 +103,17 @@ minimize frame (RN:12-13), row QUA-01.
 4. **Swift 6 and size foundation (0.6.2):** main actor by default (PLT-01), the `diskutil`
    installer (PLT-02), the `BatterySource` split and `-internalize-at-link` (SIZ-01, SIZ-02), strict
    memory safety for the system bindings (SEC-05): the groundwork 0.7's widget needs.
-5. **Distribution and the road to 1.0:** Developer ID and notarization (blocked on the paid
-   account, 12 rows depend on it), in-app update and login-item/widget survival across updates,
-   `bpulse` not shipped to users, the iOS promises in the README, and no written definition of 1.0
-   (DIS-01 to DIS-10, DOC-09, PLT-05).
+5. **Distribution and the road to 1.0:** Developer ID and notarization (not planned: the
+   maintainer declined the paid account on 2026-10-22; 12 rows depend on it), in-app update and
+   login-item/widget survival across updates, `bpulse` not shipped to users, the iOS promises in
+   the README, and a definition of 1.0 that awaits the maintainer (DIS-01 to DIS-10, DOC-09,
+   PLT-05).
 
 Not planned, kept visible: the iOS app and its widget and Live Activity (6 rows), iCloud, charge
-limiting, apps using the most energy, chart descriptors, the package manager, App Nap, Instruments
-profiling against the resource targets, the glossary and iPad captures, K-02's CI half.
+limiting, apps using the most energy, chart descriptors, Developer ID and the package manager, App
+Nap, Instruments profiling against the resource targets, the glossary and iPad captures, K-02's CI
+half; and, since the answers of 2026-10-22, the 0.6.3 option, the Low Power Mode fallback, Clear's
+desktop-following fill and the Enhanced Security spike.
 
 ---
 
@@ -110,11 +130,11 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 | FEA-07 | W-1: widget model in BatteryCore | `WidgetSize`, `WidgetKindID`, frozen-raw-value enums, `WidgetLayoutPlan` (`automatic` equals v0.6.1 small and medium), `WidgetTimeText`, `WidgetTextBudget`, `WidgetRow`, `WidgetSparkline`, `WidgetRoute`/`PageID`, `WidgetTimelinePlan`, and the frozen-surface pin test (kinds, raw values, routes, feed path, entitlement keys) | P2 §8.6, §8.13, §8.14 W-1 | no | L | spike answers (FEA-01 to FEA-05) | none (Linux) | 0.7 (MVP) |
 | FEA-08 | W-2: App Intents metadata step in the shipping build | The processor step in `build-app.sh` before the widget's `codesign`; the macOS job fails unless every pinned intent, parameter and `AppEnum` case is in `Metadata.appintents` | P2 §8.14 W-2 | no | M | FEA-01 | Apple API | 0.7 (MVP) |
 | FEA-09 | W-8: Accessories widget | Own one-shot read; All or Lowest (small always Lowest); earbuds per part; demo accessories in previews | P2 §8.4, §8.5 Accessories, W-8 | yes | M | FEA-04 passing, SIZ-01 (`BatterySource` holds `MacAccessoryProvider`) | Apple API | 0.7 (MVP if W0-4 passes; else stretch through the feed) |
-| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3); an App Group would replace it but needs the paid account (P2 §8.2) | 0.7 (stretch) or 0.7.x |
+| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3) [Q-W3 answered yes, 2026-10-22]; an App Group would replace it but needs the paid account (P2 §8.2) [declined, 2026-10-22: the feed is the only route] | 0.7 (stretch) or 0.7.x |
 | FEA-11 | W-6: History widget, and the Battery widget's feed fields and History chart | Period 24 h or 7 d; charge, battery power, temperature; 90-day capacity and cycle trend; statistics; charging spans; average drain and time on battery as Battery details | P2 §8.5 History, W-6 | yes | M | FEA-10 | maintainer taste (Q-W2, Q-W4) | 0.7 (stretch) |
 | FEA-12 | W-7: iPhone & iPad widget | Most recently read, all, or a chosen device (`AppEntity` over the feed, or `AppEnum` only if entity queries fail); reading age always shown; names `.privacySensitive()` | P2 §8.5 iPhone & iPad, W-7 | yes | M | FEA-10, FEA-01 (b) | maintainer taste (Q-W2, Q-W11) | 0.7 (stretch) |
-| FEA-13 | Configuration fallback: preset kinds | If the edit sheet can't work: Battery (plus large and extra large), Battery Health and Power as fixed `StaticConfiguration` kinds | P2 §8.16 row 1; Q-W2 | yes | M | FEA-01 failing | evidence | 0.7 (only if W0-1 fails, or on Q-W2) |
-| FEA-14 | Large and extra-large sizes of today's static widget, in a 0.6.3 | The one low-risk early slice: new sizes, no configuration, no App Intents, no new file | P2 §9 (P2:1859-1863); Q-W1 | yes | S | 0.6.2 shipped | maintainer taste (Q-W1; default 0.7) | unassigned (option) |
+| FEA-13 | Configuration fallback: preset kinds | If the edit sheet can't work: Battery (plus large and extra large), Battery Health and Power as fixed `StaticConfiguration` kinds | P2 §8.16 row 1; Q-W2 | yes | M | FEA-01 failing | evidence | 0.7 (only if W0-1 fails; Q-W2 decided: no presets otherwise) |
+| FEA-14 | Large and extra-large sizes of today's static widget, in a 0.6.3 | The one low-risk early slice: new sizes, no configuration, no App Intents, no new file | P2 §9 (P2:1859-1863); Q-W1 | yes | S | 0.6.2 shipped | maintainer taste (Q-W1) [answered 2026-10-22: 0.7] | not planned (Q-W1: 0.7, no 0.6.3) |
 | FEA-15 | Widget Refresh button | `AppIntent` performed in the extension (`allowedExecutionTargets`), next to the read time, on Battery and Accessories; no system change | P2 §8.9, W-9; Q-W9 | yes | S | FEA-06, FEA-01 (c) | maintainer taste (Q-W9) | later |
 | FEA-16 | Extra-large portrait size | `systemExtraLargePortrait`, macOS 27 only | P2 §8.2, W-9; Q-W10 | yes | S | FEA-06 | maintainer taste (Q-W10) | later |
 | FEA-17 | Extra-large dashboard | Mac, History, devices and accessories in one widget | P2 §8.17, W-9; Q-W10 | yes | M | FEA-09 to FEA-12 | maintainer taste (Q-W10) | later |
@@ -123,13 +143,13 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 | FEA-20 | "Why it isn't charging" widget field | Only after the Charge Limit capture decodes `notChargingReason` (`BatterySnapshot.swift:63`) | P2 §8.5 catalogue, §9.1 Later | yes | S | QUA-05 | M5 session | later |
 | FEA-21 | Hide fully charged accessories | A nice-to-have option of the Accessories widget | P2 §8.5 Accessories | yes | S | FEA-09 | maintainer taste | 0.7 (nice-to-have) |
 | FEA-22 | Graduate Translucent and/or Clear from beta | `isBeta` false per style; Beta mark and, once none is left, the Beta window styles toggle go; `betaWindowStyles` stays frozen; What's New only on Q-B5 | P2 WP-13 items 3 and 5, G-13b; R:307-308, R:441-443, R:503-506 | yes | S | QUA-03, ENG-03 | maintainer taste, M5 session (default: stay beta) | 0.6.2 (gated) |
-| FEA-23 | Low Power Mode fallback for the beta styles | If Translucent or Clear costs ≥ 15 % more than Standard and the maintainer agrees, it gives way to Standard under Low Power Mode, decided in `WindowLookPolicy` | P2 WP-13 item 5, G-13c; Q-B10; R:31-32 | yes | S | ENG-03 | M5 session, maintainer taste (default: no fallback, decision stays open) | 0.6.2 (gated) |
-| FEA-24 | Clear's minimize fill that follows the desktop picture | Average of the desktop picture, decoded off the main actor when the window appears and on Space changes; only system folders and `~/Pictures`, else the grey fill; file-access prompt elsewhere unverified on macOS 27 | P2 WP-13 item 1 variant; Q-B2 | yes | M | QUA-01 | maintainer taste (Q-B2) | 0.6.2 (only on Q-B2) |
+| FEA-23 | Low Power Mode fallback for the beta styles | If Translucent or Clear costs ≥ 15 % more than Standard and the maintainer agrees, it gives way to Standard under Low Power Mode, decided in `WindowLookPolicy` | P2 WP-13 item 5, G-13c; Q-B10; R:31-32 | yes | S | ENG-03 | M5 session, maintainer taste (Q-B10) [decided by delegation, 2026-10-22: no fallback] | not planned (Q-B10: no fallback) |
+| FEA-24 | Clear's minimize fill that follows the desktop picture | Average of the desktop picture, decoded off the main actor when the window appears and on Space changes; only system folders and `~/Pictures`, else the grey fill; file-access prompt elsewhere unverified on macOS 27 | P2 WP-13 item 1 variant; Q-B2 | yes | M | QUA-01 | maintainer taste (Q-B2) [answered 2026-10-22: fill (b)] | not planned (Q-B2: fill (b)) |
 | FEA-25 | Glass-sheet chart lines and Raw Data treatment | Thicker chart lines and wider area fills on the sheet; the content treatment on the Raw Data table (AppKit-backed) | R:340-341; P2 WP-13 item 4; Q-B4 | yes | S | none | maintainer taste (Q-B4) | 0.6.2 (optional, cut early) |
 | FEA-26 | Apps using the most energy | Per-app watts over the last hour or day from per-coalition energy counters, with an unattributed remainder; a one-day spike first | R:576-584; P2 App A | yes | L | a spike on the M5 | Apple API (private calls, unproven without root on macOS 27), M5 session | not planned |
 | FEA-27 | Charge limiting through the system's Charge Limit | Offer macOS's own 80-100 % limit through a private client, plus a read-only report of what the firmware allows; the SMC route is closed on macOS 27 | R:677-684, R:705 | yes | L | none | Apple API (private), the maintainer's stance | not planned |
-| FEA-28 | Mac battery on the iPhone through iCloud | CloudKit private database, silent pushes, an iPhone widget, `CKQuerySubscription` alerts | R:645-651 | yes | XL | FEA-29 | paid account (CloudKit and push need it), the iOS app | not planned |
-| FEA-29 | iOS app: target sharing SwiftUI components | Stage 2's first item | R:558-560; RM:14-15 | yes | XL | DIS-02 | paid account (beyond 7-day personal installs, R:13-14), the maintainer's stance | not planned |
+| FEA-28 | Mac battery on the iPhone through iCloud | CloudKit private database, silent pushes, an iPhone widget, `CKQuerySubscription` alerts | R:645-651 | yes | XL | FEA-29 | paid account (CloudKit and push need it) [declined, 2026-10-22], the iOS app | not planned |
+| FEA-29 | iOS app: target sharing SwiftUI components | Stage 2's first item | R:558-560; RM:14-15 | yes | XL | DIS-02 | paid account (beyond 7-day personal installs, R:13-14) [declined, 2026-10-22], the maintainer's stance | not planned |
 | FEA-30 | iOS: charge, state, Low Power Mode, thermal state screen | Stage 2 | R:561 | yes | M | FEA-29 | as FEA-29 | not planned |
 | FEA-31 | iOS: charging session while the app is open | %/min and an estimate to 100 % | R:562 | yes | M | FEA-29 | as FEA-29 | not planned |
 | FEA-32 | iOS: analytics file import | Cycles, health, capacity, temperature from the exportable analytics file; its format is still unchecked against a real file | R:79-81, R:563; RM:205-206 | yes | L | FEA-29 | as FEA-29; a real analytics file | not planned |
@@ -140,9 +160,9 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| QUA-01 | Clear turns black while it minimizes and comes back | An opaque minimize fill chosen from screen recordings of three candidates (today's, the tint over mid grey ≈ 19 % white, the window background); `WindowLookPolicy.minimizeFill`; Linux tests; Translucent Dark too if its recordings show it | RN:12-13; UG:162-163; R:357-359, R:503-506; P2 WP-13 item 1, G-13a; P1 App A UR-3 | yes | S | SPIKE-A2's fill switch | M5 session (Session A recordings), maintainer taste (Q-B2; default: fill (b)) | 0.6.2 (P1) |
+| QUA-01 | Clear turns black while it minimizes and comes back | An opaque minimize fill chosen from screen recordings of three candidates (today's, the tint over mid grey ≈ 19 % white, the window background); `WindowLookPolicy.minimizeFill`; Linux tests; Translucent Dark too if its recordings show it | RN:12-13; UG:162-163; R:357-359, R:503-506; P2 WP-13 item 1, G-13a; P1 App A UR-3 | yes | S | SPIKE-A2's fill switch | M5 session (Session A recordings), maintainer taste (Q-B2) [answered 2026-10-22: fill (b), the graphite composite] | 0.6.2 (P1) |
 | QUA-02 | Clear's tile preview reads differently selected and unselected (V1b) | Make the preview identical in both states; the selection changes only the outline; Session B compares pixels | P2 §2.2 V1b, WP-13 item 2; R:504-505 | yes | S | none | M5 session (scripted) | 0.6.2 (P1) |
-| QUA-03 | Beta styles: the graduation evidence | Glass sheet sampling the desktop; sidebar, toolbar, inspector and Demo Mode bar on it; graphite tint on the sidebar selection; Clear's dark appearance staying in its window; Form fills and table stripes; scroll edge under the title; full screen; Frosted beside the widget gallery; Clear's shadows in Instruments; 24 + 19 scripted screenshots | R:333-339, R:536-537; P2 WP-13 item 3, §6 Session B step 3 | yes | M | QUA-01 | M5 session, maintainer taste; Xcode on the Mac (Clear's shadows) | 0.6.2 (what Session B misses stays open in Stage 1.5) |
+| QUA-03 | Beta styles: the graduation evidence | Glass sheet sampling the desktop; sidebar, toolbar, inspector and Demo Mode bar on it; graphite tint on the sidebar selection; Clear's dark appearance staying in its window; Form fills and table stripes; scroll edge under the title; full screen; Frosted beside the widget gallery; Clear's shadows in Instruments; 24 + 19 scripted screenshots | R:333-339, R:536-537; P2 WP-13 item 3, §6 Session B step 3 | yes | M | QUA-01 | M5 session, maintainer taste; Xcode on the Mac [installed] (Clear's shadows) | 0.6.2 (what Session B misses stays open in Stage 1.5) |
 | QUA-04 | Menu bar icon styles signed off on the M5 | Symbol, Modern, Classic, Percentage Inside and Ring; the exact-level drawing with every state (bolt, plug, low, Low Power Mode); the 0.6.0 rework checks (the plug, 100 % on power, Percentage Inside with 1-3 digits). The light and dark comparison passed (V1d) | R:225-235, R:240-248; P2 §2.2 V1d, §6 optional | yes | S | none | M5 session (optional), maintainer taste | 0.6.2 (optional; else stays open) |
 | QUA-05 | Charge Limit stop-point capture | `bpulse --record` while charging to the limit; a fixture, and it decides `notChargingReason` | R:145-146, R:536; P2 §6 optional, §8.3 | indirect | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
 | QUA-06 | Optimized charging hold not yet seen in a macOS 27 capture | IOPS `Optimized Battery Charging Engaged` appears only while the charge is on hold | R:53, R:76-77 | yes | S | none | M5 session (needs the hold to happen), evidence | unassigned (new; implied by R:76-77) |
@@ -167,24 +187,24 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 | ENG-04 | Burst, covered window, memory | 3 plug cycles (1 read per burst, ≤ 1 widget reload per cycle); main window covered (S5); History → 7 d three times with `phys_footprint`; memory over the 2-hour field run | R:507-508; P2 WP-21 | indirect | S | none | M5 session (hands-on) | 0.6.2 (P1) |
 | ENG-05 | Devices and accessories energy | An iPhone attached with all windows closed (target < 1 ms/s on average), memory after 2 hours; accessories connected | R:636-637, R:668-669, R:508; P2 WP-21 S9, S10 | indirect | S | none | M5 session, hardware (if at hand) | 0.6.2 (if at hand; else stays open) |
 | ENG-06 | Sleep hygiene | No Preventing Sleep outside an install in every run; after a night with the lid closed, no wake attributed to BatteryPulse | P2 WP-21, §6 optional; PB §2.3 | indirect | S | none | M5 session (overnight, optional) | 0.6.2 (assertions always; overnight optional) |
-| ENG-07 | Stage 1.4 motion check | Frame rate in Instruments; energy with the window visible, covered, minimized, on another Space and with the display asleep; S3 (popover open) | R:298-301, R:537-538; P2 WP-21 "Not run" | indirect | M | none | M5 session (hands-on mid-run), Xcode on the Mac | later (stays open in Stage 1.4) |
+| ENG-07 | Stage 1.4 motion check | Frame rate in Instruments; energy with the window visible, covered, minimized, on another Space and with the display asleep; S3 (popover open) | R:298-301, R:537-538; P2 WP-21 "Not run" | indirect | M | none | M5 session (hands-on mid-run), Xcode on the Mac [installed] | later (stays open in Stage 1.4) |
 | ENG-08 | E20: full reads off the main actor (WP-14a) | Nonisolated `Sendable` provider (SMC state behind a `Mutex`), `@concurrent` reads with a generation number and coalescing; launch and manual reads stay synchronous; read p95 8.8 ms against a 4 ms gate | R:515-519; P2 WP-14a, §2.3, G-14a; P1 §6 | no | M | PLT-01 | M5 session (2-hour field run, V-01) | 0.6.2 (P1) |
 | ENG-09 | E4b: read the registry only when it changes (WP-14b) | Polls reuse the registry, children, IOPS and adapter dictionaries; Power and Raw Data keep re-reading; 5-minute safety net (60 s if the premise fails); `registry.missed` event; one switch `RegistryReadPolicy.cachesOnPolls`; registry is 72 % of a read | R:515-519; P2 WP-14b, G-14b; RES-energy E4b | indirect (registry values up to the safety-net age old outside Power and Raw Data) | M | ENG-08; F13 premise | M5 session (pslog and ioreg in Session A; Session B criteria) | 0.6.2 (P1, gated) |
 | ENG-10 | E3b: drop the `timeremaining` notify key | Only if every `timeremaining` is followed by "any" within about 10 ms over 2 hours on battery and 1 charging | R:517-518; P2 WP-14b item 6, G-14c; RES-energy E3b | no | S | ENG-09's pslog | M5 session (default: keep both keys) | 0.6.2 (gated) |
-| ENG-11 | Page responsiveness (WP-17) | SUI-07 narrow inputs, E19 rebuild only changed Raw Data sections, SUI-11 table rows, SUI-12 vectorized power chart, each only where the instrument shows cost; goal `page.switch` p50 under 33 ms (30-65 ms today) | R:518-519; P2 WP-17, §2.1, G-17; P1 §6 | yes | M | none | M5 session (≥ 10 switches per page), Xcode on the Mac for the SwiftUI instrument (Q-B7) | 0.6.2 (P2) |
+| ENG-11 | Page responsiveness (WP-17) | SUI-07 narrow inputs, E19 rebuild only changed Raw Data sections, SUI-11 table rows, SUI-12 vectorized power chart, each only where the instrument shows cost; goal `page.switch` p50 under 33 ms (30-65 ms today) | R:518-519; P2 WP-17, §2.1, G-17; P1 §6 | yes | M | none | M5 session (≥ 10 switches per page), Xcode on the Mac [installed] for the SwiftUI instrument (Q-B7) | 0.6.2 (P2) |
 | ENG-12 | History riders | The 24-hour view loads 5× slower than 7 days (51.6 vs 9.9 ms p50 on the M5); `history.record` p95 11.6 ms; rerun bench B3, profile `HistoryLoad.read` | P2 WP-17 riders, §2.1; P1 App C B5 | yes | S | none | none (numbers from the M5 already) | 0.6.2 (P2) |
 | ENG-13 | How often the mAh values change | Session A's ioreg sampler records `RemainingCapacity` every 10 s | R:574-575; P2 Session A step 9, WP-22 | no | S | none | M5 session (unattended) | 0.6.2 |
 | ENG-14 | App Nap and the minute timer | Whether App Nap applies to a status-item-only app | R:574-575; RES-energy §6 item 1; PB §4; P2 App A | no | S | none | M5 session | not planned |
-| ENG-15 | Profile against the resource targets | About 0 % CPU idle, under 30 MB RAM, binary under 5 MB, in Instruments | R:46, R:151; P2 App A (memory partly covered by WP-21) | no | M | none | Xcode on the Mac | not planned |
+| ENG-15 | Profile against the resource targets | About 0 % CPU idle, under 30 MB RAM, binary under 5 MB, in Instruments | R:46, R:151; P2 App A (memory partly covered by WP-21) | no | M | none | Xcode on the Mac [installed] | not planned |
 | ENG-16 | W-4: widget reload planner | `WidgetReloadPlanner` per kind inside `WidgetRefresher`, `currentConfigurations()`, day tests (Battery ≤ E15's day + 7; all kinds < ~100 a day), signposts `widget.timeline`, `widget.feed.*`, `widget.reload` triggers per kind; `WidgetReadCache` (one IOKit read per burst) | P2 §8.10, W-4 | indirect | M | FEA-07 | none | 0.7 (MVP) |
 | ENG-17 | Widget reloads delivered and widget energy, measured | Compare `widget.timeline` with `widget.reload` over a day; if < ~90 % arrive, drop percent-step reloads first | P2 §8.10 targets, §8.14 0.7 session | indirect | S | ENG-16 | M5 session | 0.7 |
-| ENG-18 | Unconfirmed runtime facts | `ri_energy_nj` non-zero for the app; shipping libdispatch leeway; memory tools on a hardened ad-hoc build; Low Data Mode per network; WidgetKit developer mode on macOS; the thermal-condition inducer for a Mac target; whether closed `Window` scenes release `@State` (E18) | RES-energy §6 items 4-9; PB §4 | no | S | none | M5 session, Xcode on the Mac | unassigned (some may fall out of ENG-01 to ENG-04; uncertain) |
+| ENG-18 | Unconfirmed runtime facts | `ri_energy_nj` non-zero for the app; shipping libdispatch leeway; memory tools on a hardened ad-hoc build; Low Data Mode per network; WidgetKit developer mode on macOS; the thermal-condition inducer for a Mac target; whether closed `Window` scenes release `@State` (E18) | RES-energy §6 items 4-9; PB §4 | no | S | none | M5 session, Xcode on the Mac [installed] | unassigned (some may fall out of ENG-01 to ENG-04; uncertain) |
 
 ## 4. Security
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| SEC-01 | SEC-08: Enhanced Security entitlements spike | Widget first; memory tagging (soft mode) and the dyld read-only entitlement testable on the M5; platform restrictions need an arm64e slice; checked pointer arithmetic needs M6 or later; ships only if AMFI accepts them on an ad-hoc signature and V-01 and F8 pass | R:527-528; P2 WP-20, §7.1; P1 §6; Q-B8 | no | M | none | M5 session, Apple API (AMFI on ad-hoc unverified), hardware (M6 for one part), maintainer taste (Q-B8, a session step or not) | 0.6.2 (optional P3) |
+| SEC-01 | SEC-08: Enhanced Security entitlements spike | Widget first; memory tagging (soft mode) and the dyld read-only entitlement testable on the M5; platform restrictions need an arm64e slice; checked pointer arithmetic needs M6 or later; ships only if AMFI accepts them on an ad-hoc signature and V-01 and F8 pass | R:527-528; P2 WP-20, §7.1; P1 §6; Q-B8 | no | M | none | M5 session, Apple API (AMFI on ad-hoc unverified), hardware (M6 for one part), maintainer taste (Q-B8, a session step or not) [decided by delegation, 2026-10-22: no] | not planned (Q-B8: no; no Developer ID build to retry it on) |
 | SEC-02 | SEC-18: a self-signed code identity (research) | A stable designated requirement keeps the login item, notification and other grants across updates without a paid account; a second secret in the `release` environment; does **not** unlock an App Group | R:529-530; P2 WP-20; RES-security SEC-18 | indirect | M | none | M5 session (to check grants survive), none for the research | 0.6.2 (research only) |
 | SEC-03 | SEC-10: MobileDevice in a helper process | Isolate the private framework; also enables real XPC peer checks with SEC-02 | R:526; P2 G19, App A; P1 §8 Q1; RES-security SEC-10 | no | M | none | evidence (a recorded hang or crash; none so far) | later (on evidence) |
 | SEC-04 | SEC-15: skip image verification when mounting | `-noverify` or its `diskutil` equivalent, adopted only if it saves ≥ 100 ms; the image is already authenticated by digest and Ed25519 | R:529; P2 WP-16 item 3, Session A step 7 | no | S | PLT-02 | M5 session (timing) | 0.6.2 (gated; default no change) |
@@ -209,16 +229,16 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| DIS-01 | Developer ID signing and notarization | Removes Open Anyway on first launch of every downloaded version; keeps permissions across updates; unlocks App Groups, iCloud and an official package catalog. See "The paid account" below | R:10-12, R:152-153, R:180-181, R:641-643, R:705-706; RM:22-25; UG:35-43 | yes | M (once the account exists) | none | paid account | not planned (until a paid account) |
-| DIS-02 | iOS distribution | Personal installs re-signed every 7 days, or TestFlight and the App Store with the paid account | R:13-14 | yes | S (decision) | none | paid account, the maintainer's stance | not planned |
-| DIS-03 | A package manager | A personal catalog works today but every install still needs Open Anyway; the main catalog needs notarization and some popularity | R:685-687 | yes | S | DIS-01 | paid account | not planned (after notarization) |
+| DIS-01 | Developer ID signing and notarization | Removes Open Anyway on first launch of every downloaded version; keeps permissions across updates; unlocks App Groups, iCloud and an official package catalog. See "The paid account" below | R:10-12, R:152-153, R:180-181, R:641-643, R:705-706; RM:22-25; UG:35-43 | yes | M (once the account exists) | none | paid account [declined, 2026-10-22] | not planned (no paid account: the maintainer's decision of 2026-10-22, not before 1.0) |
+| DIS-02 | iOS distribution | Personal installs re-signed every 7 days, or TestFlight and the App Store with the paid account | R:13-14 | yes | S (decision) | none | paid account [declined, 2026-10-22], the maintainer's stance | not planned |
+| DIS-03 | A package manager | A personal catalog works today but every install still needs Open Anyway; the main catalog needs notarization and some popularity | R:685-687 | yes | S | DIS-01 | paid account [declined, 2026-10-22] | not planned (needs notarization) |
 | DIS-04 | 0.6.1's after-publishing checks (intake A0) | About shows 0.6.1; History shows past days; settings and menu bar unchanged; the widget current; `codesign` `flags=0x10002(adhoc,runtime)`; no quarantine; login item still listed; notification permission kept; first-day widget charge and "Lasts until" against the popover; any failure becomes a P1 item | P2 §5 A0, App A; P1 §4b; R:200-201 | yes | S | 0.6.1 published | M5 session (everyday use) | 0.6.2 (first) |
 | DIS-05 | Install from the app: tick Stage 1.2 | F12 on the RC through the `diskutil` path; tick once 0.6.1's after-publishing check and F12 pass | R:161-201; P2 WP-16 acceptance, WP-22, App A | yes | S | PLT-02, DIS-04 | M5 session | 0.6.2 |
-| DIS-06 | Widgets kept on the desktop across an in-app update | Seen kept and lost across DMG replacements; the in-app swap keeps the path and raises `CFBundleVersion`; whether only a stable Developer ID signature keeps them is open | R:202-208, R:541; UG:425-426; P2 W0-2 control, Session B F8, App A | yes | S | FEA-02 | M5 session, possibly paid account (uncertain) | 0.6.2 (evidence) |
+| DIS-06 | Widgets kept on the desktop across an in-app update | Seen kept and lost across DMG replacements; the in-app swap keeps the path and raises `CFBundleVersion`; whether only a stable Developer ID signature keeps them is open | R:202-208, R:541; UG:425-426; P2 W0-2 control, Session B F8, App A | yes | S | FEA-02 | M5 session, possibly paid account (uncertain) [declined, 2026-10-22: a loss is a documented known limitation at 1.0] | 0.6.2 (evidence) |
 | DIS-07 | Open at login survives an update | Store the choice in a new `openAtLogin` key and re-register once on the first launch of a new version; only if 0.6.1's check shows the login item lost | R:200-201; P2 WP-16 item 5 | yes | S | DIS-04 | evidence | 0.6.2 (conditional P2) |
 | DIS-08 | 0.6.2's freeze, Session B and release (D1-D3) | Benches and golden, storage and settings diffs; RC built as 0.5.99; Session B; release; after-publishing check with `--prerelease` rollback | P2 D1-D3 (P2:893-932), §6 Session B | yes | M | every 0.6.2 package | M5 session, maintainer (release approval) | 0.6.2 |
 | DIS-09 | Ship `bpulse` to users (new) | The guide and the bug template tell users to run `swift run bpulse` (UG:563, UG:579, UG:598-600, UG:660-661), but releases hold only the app (P2 §6, "the DMG holds only the app"); accessory captures have no in-app export (UG:356-358) | UG and bug template as cited; P2 §6 | yes | M | none | none (an extra signed binary in the DMG or the app; quarantine for a CLI unverified) | unassigned (new) |
-| DIS-10 | What 1.0 means (new) | No source defines 1.0's scope or criteria; README still says "Status: early development" (RM:14) | R:689-706 (no 1.0 entry); RM:14 | yes | S (decision) | none | maintainer taste | unassigned (new) |
+| DIS-10 | What 1.0 means (new) | No source defines 1.0's scope or criteria; README still says "Status: early development" (RM:14) | R:689-706 (no 1.0 entry); RM:14 | yes | S (decision) | none | maintainer taste [the roadmap's M-5: awaiting the maintainer, asked again 2026-10-22] | unassigned (new) |
 
 ## 7. Docs
 
@@ -232,7 +252,7 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
 | DOC-07 | Widget docs for 0.7 | Rewrite the guide's Widget section (W-10); it still says a DMG replacement removes placed widgets (UG:425), which R:202-203 contradicts for 0.3.1 → 0.4.0, and calls the widget new (UG:428, RM:84) | P2 W-10 | yes | S | FEA-06 | none | 0.7 |
 | DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7 (with W-5) |
-| DOC-09 | iOS promises in the README (new) | "The iOS app comes later" (RM:14-15), "the planned workaround" (RM:205-206), the iOS 27 badge (RM:5) and the bug template's "or iOS 27" contradict "Not planned: an iOS app" (R:704-706) | as cited | yes | S | DIS-02 | maintainer taste (stance) | unassigned (new) |
+| DOC-09 | iOS promises in the README (new) | "The iOS app comes later" (RM:14-15), "the planned workaround" (RM:205-206), the iOS 27 badge (RM:5) and the bug template's "or iOS 27" contradict "Not planned: an iOS app" (R:704-706) | as cited | yes | S | DIS-02 | maintainer taste (stance) [the roadmap's M-2, decided by delegation 2026-10-22: not in 1.x] | unassigned (new) |
 | DOC-10 | Bug template asks no app version (new) | `.github/ISSUE_TEMPLATE/bug_report.yml` asks device and OS but not the BatteryPulse version | as cited | no | S | none | none | unassigned (new) |
 
 ## 8. Tooling and CI
@@ -243,11 +263,11 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |
-| TCI-05 | SUI-17: previews in a SwiftPM executable target | A 30-minute spike; if they don't work, a UI library target | R:520; P2 WP-18; RES-swiftui SUI-17 | no | S | none | Xcode on the Mac (Q-B7) | 0.6.2 (maintainer-run; else 0.7) |
-| TCI-06 | SUI-18: the SwiftUI Specialist skill as a review checklist | Exported on the Mac; nothing committed | R:520; P2 WP-18 | no | S | none | Xcode on the Mac | 0.6.2 (maintainer-run; else 0.7) |
-| TCI-07 | SUI-19: type-check timing of the slowest bodies | The 5 slowest bodies, ms each | R:520; P2 WP-18 | no | S | none | Xcode on the Mac | 0.6.2 (maintainer-run; else 0.7) |
+| TCI-05 | SUI-17: previews in a SwiftPM executable target | A 30-minute spike; if they don't work, a UI library target | R:520; P2 WP-18; RES-swiftui SUI-17 | no | S | none | Xcode on the Mac (Q-B7) [installed] | 0.6.2 (maintainer-run; else 0.7) |
+| TCI-06 | SUI-18: the SwiftUI Specialist skill as a review checklist | Exported on the Mac; nothing committed | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | 0.6.2 (maintainer-run; else 0.7) |
+| TCI-07 | SUI-19: type-check timing of the slowest bodies | The 5 slowest bodies, ms each | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | 0.6.2 (maintainer-run; else 0.7) |
 | TCI-08 | K-02's CI half | A hung `swift test` past the swift-testing limit ends only at the job timeout | P1 App C A1 (P1:1709); P2 App A | no | S | none | none | not planned |
-| TCI-09 | Unconfirmed toolchain facts | `@diagnose(StrictMemorySafety…)` on 6.4.0; `_logChanges`; a monotone `LinePlot` interpolation; `xcrun agent skills export` arguments; xctrace's SwiftUI template name; per-cell `.help` cost; whether SwiftUI skips a Binding-only change | RES-swift §7; RES-swiftui §6 | no | S | none | Xcode on the Mac | unassigned (part falls out of ENG-11 and TCI-05 to TCI-07) |
+| TCI-09 | Unconfirmed toolchain facts | `@diagnose(StrictMemorySafety…)` on 6.4.0; `_logChanges`; a monotone `LinePlot` interpolation; `xcrun agent skills export` arguments; xctrace's SwiftUI template name; per-cell `.help` cost; whether SwiftUI skips a Binding-only change | RES-swift §7; RES-swiftui §6 | no | S | none | Xcode on the Mac [installed] | unassigned (part falls out of ENG-11 and TCI-05 to TCI-07) |
 | TCI-10 | Widget render previews in CI | `ImageRenderer` PNGs per kind × family × language, a review aid | P2 W-3 | no | S | FEA-06 | none | 0.7 |
 | TCI-11 | Widget guard rules | Flag `TimelineView(.periodic…)`, `.everyMinute`, `Text(…, style: .timer/.relative)` in the widget; file, `dlopen`, network placements; App Intents literal forms in the catalog scan | P2 §8.7, §8.8, §8.11 | no | S | FEA-06, FEA-10 | none | 0.7 (W-10) |
 
@@ -257,9 +277,9 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 |---|---|---|---|---|---|---|---|---|
 | PLT-01 | WP-10: main actor by default for the app | `.defaultIsolation(MainActor.self)` for the app only; 35 annotations removed, 4 kept and pinned; off-main types marked `nonisolated`; V-01 on the M5 twice and after publishing | R:430-431, R:512-514; P2 WP-10, G-10; P1 §6, §8 Q2; RES-swift SW-04, V-01 | no | M | none | M5 session (runtime traps show only there) | 0.6.2 (P1, first) |
 | PLT-02 | Installer on `diskutil` | `diskutil image attach` and `diskutil eject` (with a forced fallback) instead of `hdiutil attach/detach/imageinfo`, deprecated in macOS 27; CI exercises both 0.6.1's and the new path | R:524-525; P2 WP-16 items 1-2, G-16; P1 App C B1 | no | M | none | M5 session (F12; default: back to `hdiutil`) | 0.6.2 (P1) |
-| PLT-03 | SZ-10: the Icon Composer icon | Compiled by `actool`; changes how the icon looks in the Clear and Tinted icon styles | R:520; P2 WP-18; Q-B7; RES-size SZ-10 | yes | S | none | Xcode on the Mac, maintainer taste (Q-B7) | 0.6.2 (maintainer-run; else 0.7) |
+| PLT-03 | SZ-10: the Icon Composer icon | Compiled by `actool`; changes how the icon looks in the Clear and Tinted icon styles | R:520; P2 WP-18; Q-B7; RES-size SZ-10 | yes | S | none | Xcode on the Mac [installed], maintainer taste (Q-B7) [ships only on the maintainer's y to its screenshots] | 0.6.2 (maintainer-run; else 0.7) |
 | PLT-04 | Private-API contingencies | If Apple breaks MobileDevice, the usbmuxd/lockdown protocol behind `IDeviceTransport`; if macOS 27 hides accessory batteries from apps, `pmset -g accps -xml` | R:603-605, R:664-667 | yes (only on breakage) | L | none | Apple API (a future change) | later (on breakage) |
-| PLT-05 | iOS code kept building without an iOS app (new) | `IOSBatteryProvider` (`BatteryProvider.swift:58-59`) and CI's iOS build of BatteryKit (ci.yml:130-131) continue while the iOS app is not planned: keep as cheap insurance, or drop | as cited; R:705 | no | S | DIS-02 | maintainer taste (stance) | unassigned (new) |
+| PLT-05 | iOS code kept building without an iOS app (new) | `IOSBatteryProvider` (`BatteryProvider.swift:58-59`) and CI's iOS build of BatteryKit (ci.yml:130-131) continue while the iOS app is not planned: keep as cheap insurance, or drop | as cited; R:705 | no | S | DIS-02 | maintainer taste (stance) [M-2: kept building until it first costs time] | unassigned (new) |
 
 ## 10. Accessibility
 
@@ -267,7 +287,7 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 |---|---|---|---|---|---|---|---|---|
 | A11Y-01 | Chart descriptors for VoiceOver | Hourly or daily summaries for the History charts; Sources have no `accessibilityChartDescriptor` (grep) | R:573; P2 App A | yes | M | none | none | not planned |
 | A11Y-02 | Stage 1.4 accessibility pass | The Liquid Glass slider at both ends; Reduce Motion; Prefer Cross-Fade Transitions; Reduce Transparency; Increase Contrast; Show Borders | R:298-301; P2 §6 optional | yes | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
-| A11Y-03 | Contrast audit of the window styles | Accessibility Inspector on every style | R:338, R:536-537; P2 WP-13 item 3; Q-B7 | yes | S | none | Xcode on the Mac | 0.6.2 (only with Xcode; else stays open) |
+| A11Y-03 | Contrast audit of the window styles | Accessibility Inspector on every style | R:338, R:536-537; P2 WP-13 item 3; Q-B7 | yes | S | none | Xcode on the Mac [installed, Q-B7] | 0.6.2 (Session B, maintainer-run) |
 | A11Y-04 | Menu bar icons under Increase Contrast and Reduce Transparency, and on a notch display | `scripts/menu-bar-shots.sh` | R:236-239, R:538-539; P2 §6 optional | yes | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
 | A11Y-05 | W0-5: VoiceOver on today's widget; Text size | What VoiceOver says for the bucketed level symbol (63-87 % shows the 75 % symbol); whether Text size reaches desktop widgets | P2 WP-W0 (P2:761), §6 Session A step 4 | yes | S | none | M5 session | 0.6.2 |
 | A11Y-06 | Widget accessibility in 0.7 | One VoiceOver element per block, the level symbol hidden, one summary per chart, colour never the only signal in any rendering mode, text styles with scale limits; today's widget has no accessibility modifiers and a fixed 34 pt number | P2 §8.1, §8.7, §8.15 | yes | M | FEA-06 | M5 session (0.7) | 0.7 (MVP) |
@@ -286,35 +306,40 @@ profiling against the resource targets, the glossary and iPad captures, K-02's C
 
 ## 12. Decisions only the maintainer can make
 
-Each question is the plan's own (P2 §10, P2:1876-1961). "Default" is what happens without an answer.
+Each question is the plan's own (P2 §10, P2:1876-1961). "Default" is what would have happened
+without an answer. On 2026-10-22 the maintainer answered Q-B2, Q-B7 and Q-W1 and delegated the
+rest ("do it by best practices, as you see fit"); each delegated question is decided as its
+recommendation (the roadmap's §5.3 and plan-0.7.0 §14), and the looks are still signed off in the
+sessions.
 
-| ID | Question | Category | Blocks | Default if unanswered |
-|---|---|---|---|---|
-| Q-B2 | Clear's minimize fill: one of three recorded fills, or one that follows the desktop picture | quality | QUA-01, FEA-24 | fill (b), the graphite composite |
-| Q-B4 | What still looks wrong in Translucent and Clear; which must be fixed before graduation; may Translucent graduate first | quality | FEA-22, FEA-25 | both stay beta |
-| Q-B5 | Announce a graduated style in What's New or only in the notes | docs | FEA-22 | `WhatsNew.version` stays 0.6.0 |
-| Q-B6 | Are the two sessions' lengths acceptable; which energy scenarios matter most | energy/perf | ENG-01 to ENG-06 | the plan's sessions as written |
-| Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 |
-| Q-B8 | Is the Enhanced Security spike worth a session step | security | SEC-01 | not run |
-| Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | settled: GitHub's rate limit behind a VPN; Session B checks the remaining requests first |
-| Q-B10 | Should a style costing ≥ 15 % more energy give way to Standard under Low Power Mode | feature | FEA-23 | no fallback; decision stays open |
-| Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 |
-| Q-W1 | Widgets in 0.7, or first a 0.6.3 with large and extra-large sizes of the static widget | feature | FEA-06, FEA-14 | 0.7 |
-| Q-W2 | Which kinds; specific accessories later; the 90-day trend; presets anyway | feature | FEA-09 to FEA-13, FEA-19 | all four kinds as phased, trend offered, no presets |
-| Q-W3 | May the app keep a small copy of recent readings for the widgets | feature | FEA-10 to FEA-12 | no copy: History and iPhone & iPad widgets wait for Developer ID |
-| Q-W4 | Main visual, main values, colour default, large and extra-large details, History chart on placed large widgets | feature | FEA-06, FEA-11 | today's number and symbol; level colours; §8.17's lists; chart replaces the last two rows |
-| Q-W5 | Clock time or time left, and which is the default | feature | FEA-06 | clock time |
-| Q-W6 | "Updated 14:05" only when old, or always as an option | feature | FEA-06 | only when old |
-| Q-W7 | Offer battery power (up to half an hour old) at all | feature | FEA-06 | offered, with the read time |
-| Q-W8 | Does a row open its own page | feature | FEA-18 | one page per widget |
-| Q-W9 | A Refresh button later | feature | FEA-15 | not built |
-| Q-W10 | Extra large as a dashboard or a bigger Battery; the portrait size | feature | FEA-16, FEA-17 | a bigger Battery; no portrait |
-| Q-W11 | Device names on the desktop, or only the model | feature | FEA-12 | the name, `.privacySensitive()` |
-| Q-W12 | °F where the region uses it, app-wide, or keep °C | localization | FEA-06, every temperature in the app | °C |
-| Q-W13 | Attention row on by default | feature | FEA-06 | on |
+| ID | Question | Category | Blocks | Default if unanswered | Decided (2026-10-22) |
+|---|---|---|---|---|---|
+| Q-B2 | Clear's minimize fill: one of three recorded fills, or one that follows the desktop picture | quality | QUA-01, FEA-24 | fill (b), the graphite composite | **The maintainer:** fill (b), the graphite composite. FEA-24 is not built |
+| Q-B4 | What still looks wrong in Translucent and Clear; which must be fixed before graduation; may Translucent graduate first | quality | FEA-22, FEA-25 | both stay beta | By delegation: both stay beta until the maintainer signs one off in Session B |
+| Q-B5 | Announce a graduated style in What's New or only in the notes | docs | FEA-22 | `WhatsNew.version` stays 0.6.0 | By delegation: the release notes only; `WhatsNew.version` stays 0.6.0 |
+| Q-B6 | Are the two sessions' lengths acceptable; which energy scenarios matter most | energy/perf | ENG-01 to ENG-06 | the plan's sessions as written | By delegation: the sessions as written, every scenario as planned |
+| Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 | **The maintainer:** Xcode is already installed. The Xcode-only items run, maintainer-run with Claude's step-by-step list; by delegation, the Icon Composer icon ships only on the maintainer's y to its screenshots |
+| Q-B8 | Is the Enhanced Security spike worth a session step | security | SEC-01 | not run | By delegation: no; SEC-01 is not planned |
+| Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | settled: GitHub's rate limit behind a VPN; Session B checks the remaining requests first | Settled before |
+| Q-B10 | Should a style costing ≥ 15 % more energy give way to Standard under Low Power Mode | feature | FEA-23 | no fallback; decision stays open | By delegation: no fallback; FEA-23 is not planned |
+| Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 | Settled before |
+| Q-W1 | Widgets in 0.7, or first a 0.6.3 with large and extra-large sizes of the static widget | feature | FEA-06, FEA-14 | 0.7 | **The maintainer:** 0.7; no 0.6.3 (FEA-14 not planned) |
+| Q-W2 | Which kinds; specific accessories later; the 90-day trend; presets anyway | feature | FEA-09 to FEA-13, FEA-19 | all four kinds as phased, trend offered, no presets | By delegation: Battery and Accessories in 0.7; History and iPhone & iPad on the feed, with the trend; specific accessories later; no presets unless configuration fails |
+| Q-W3 | May the app keep a small copy of recent readings for the widgets | feature | FEA-10 to FEA-12 | no copy: History and iPhone & iPad widgets wait for Developer ID | By delegation, following the declined paid account: **yes**, if W0-3 passes. If it fails, those two widgets aren't possible without the account |
+| Q-W4 | Main visual, main values, colour default, large and extra-large details, History chart on placed large widgets | feature | FEA-06, FEA-11 | today's number and symbol; level colours; §8.17's lists; chart replaces the last two rows | By delegation: the default, with a ring and a drawn battery offered; charge by default, plus maximum capacity, temperature and battery power; the details as the look check shows |
+| Q-W5 | Clock time or time left, and which is the default | feature | FEA-06 | clock time | By delegation: clock time by default, time left offered if W0-6 passed |
+| Q-W6 | "Updated 14:05" only when old, or always as an option | feature | FEA-06 | only when old | By delegation: only when old, with Always offered |
+| Q-W7 | Offer battery power (up to half an hour old) at all | feature | FEA-06 | offered, with the read time | By delegation: offered, with the read time |
+| Q-W8 | Does a row open its own page | feature | FEA-18 | one page per widget | By delegation: one page per widget |
+| Q-W9 | A Refresh button later | feature | FEA-15 | not built | By delegation: not built |
+| Q-W10 | Extra large as a dashboard or a bigger Battery; the portrait size | feature | FEA-16, FEA-17 | a bigger Battery; no portrait | By delegation: a bigger Battery (two panels, Battery and Power, if the look check approves it, else not in 0.7); no dashboard; no portrait |
+| Q-W11 | Device names on the desktop, or only the model | feature | FEA-12 | the name, `.privacySensitive()` | By delegation: the name, `.privacySensitive()` |
+| Q-W12 | °F where the region uses it, app-wide, or keep °C | localization | FEA-06, every temperature in the app | °C | By delegation: °C |
+| Q-W13 | Attention row on by default | feature | FEA-06 | on | By delegation: on |
 
-Stance questions raised by this inventory (not in P2): the paid account (DIS-01, see below), the
-iOS promises (DOC-09, PLT-05) and what 1.0 means (DIS-10).
+Stance questions raised by this inventory (not in P2), answered in the roadmap's §6 on 2026-10-22:
+the paid account (DIS-01, see below: declined), the iOS promises (DOC-09, PLT-05: not in 1.x, by
+delegation). What 1.0 means (DIS-10) awaits the maintainer.
 
 ---
 
@@ -391,15 +416,39 @@ Reasons are the verifiers'. "Revisit only if" is the one condition a source name
 
 ## The paid account: what it blocks, and the case for revisiting before 1.0
 
-The stance today is "Developer ID signing … not planned until there is a paid developer account"
-(R:705-706). Items blocked wholly or partly by it, from the tables above: DIS-01, DIS-02, DIS-03,
-DIS-06 (uncertain), FEA-10 (an App Group instead of an unverified temporary exception), FEA-28,
-FEA-29 to FEA-34 (iOS distribution beyond 7-day re-signing), REJ-47 and REJ-49 (revisit conditions),
-REJ-57 (push), plus constraints written into the sources: permissions tied to the ad-hoc identity
-are asked again after updates (R:180-181, UG:493-494), and anything beyond IOPS for accessories
-needs Bluetooth permission, which ad-hoc signing loses on every update (R:669-670).
+**Decided 2026-10-22: no.** The maintainer declined the paid Apple Developer Program account: not
+now, and not planned before 1.0. His reasons: a non-commercial hobby project, no budget for the
+account, and about zero users. The usage evidence (GitHub's REST API, 2026-10-22):
+- DMG downloads across all releases: 14 in total (0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1, 0.5.0: 2,
+  0.6.0: 3, 0.6.1: 1, the last being a signature check during the release);
+- signature (`.sig`) downloads: 5. Each in-app install fetches the `.sig`, so this is a
+  privacy-free proxy for in-app updates (a re-check later the same day showed 15 DMG and 6 `.sig`
+  downloads, one more of each for 0.6.1);
+- repository page views: 2, by 1 visitor, in 14 days;
+- no stars, forks or issues from anyone else.
 
-Reasons to revisit before 1.0, each a claim with its source:
+So the users are, in practice, the maintainer alone. From 0.6.2 on, each release's DMG and `.sig`
+download counts are recorded in ROADMAP's Releases table a week after publishing; the app has no
+telemetry.
+
+What follows, in the roadmap: Developer ID signing and notarization stay not planned, revisited only
+if the maintainer changes his mind (DIS-01); Enhanced Security (SEC-01) and the package manager's
+official catalog (DIS-03) stay not planned, since both needed notarization; the History and iPhone
+& iPad widgets can use only the app-written feed (FEA-10, Q-W3 yes), if W0-3 passes, and are not
+possible without the account if it fails; Open Anyway on each DMG install, and permissions or
+placed widgets possibly lost when the DMG replaces the app, are documented known limitations at
+1.0. The analysis below is kept as background.
+
+**Background: what the account would unblock.** The stance before the decision was "Developer ID
+signing … not planned until there is a paid developer account" (R:705-706). Items blocked wholly or
+partly by it, from the tables above: DIS-01, DIS-02, DIS-03, DIS-06 (uncertain), FEA-10 (an App
+Group instead of an unverified temporary exception), FEA-28, FEA-29 to FEA-34 (iOS distribution
+beyond 7-day re-signing), REJ-47 and REJ-49 (revisit conditions), REJ-57 (push), plus constraints
+written into the sources: permissions tied to the ad-hoc identity are asked again after updates
+(R:180-181, UG:493-494), and anything beyond IOPS for accessories needs Bluetooth permission, which
+ad-hoc signing loses on every update (R:669-670).
+
+The reasons that were weighed for revisiting before 1.0, each a claim with its source:
 1. **First impression:** every new user, and every DMG install, goes through Done → Privacy &
    Security → Open Anyway (RM:22-25, UG:35-43). In-app updates avoid it only after the first
    install (R:161-201).
@@ -416,4 +465,4 @@ Unverified here: that notarization accepts an app that loads a private framework
 and resolves a private symbol with `dlsym` (notarization is a malware scan, not an API review, to
 the best of current knowledge; uncertain for this app), and that library validation under a
 Developer ID signature still allows MobileDevice (an Apple-signed framework, so it should). A
-one-evening spike with the account would settle both before any commitment.
+one-evening spike with the account would settle both, if the account is ever bought.

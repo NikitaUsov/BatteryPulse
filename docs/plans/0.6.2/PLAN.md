@@ -373,8 +373,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Standard and Frosted are compared with a Notes window minimized the same way: anything also
     seen there is the system's, not WP-13's.
   - The maintainer's plain answers on each style (§6); the fill itself is decided (Q-B2).
-- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none). **Effort:** S-M, 2-3
-  runs. **Risk:** low.
+- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none).
+  **Effort:** S-M, 2-3 runs. **Risk:** low.
 
 ### WP-14a: Full reads off the main actor (E20) (P1)
 
@@ -1297,8 +1297,9 @@ The design rests on five rules:
   - Numeric and symbol content transitions, with opacity under Reduce Motion.
   - No accessibility modifiers, and a fixed 34 pt hero number.
 - **Data:** the widget reads IOKit itself (`MacBatteryProvider(readsSMC: false)`), because the
-  sandbox can't open the SMC. Ad-hoc signing rules out an App Group (§8.2), so there is no shared
-  container. It has no access to the app's History, devices or settings today.
+  sandbox can't open the SMC. Ad-hoc signing rules out an App Group, and the paid account that
+  would allow one is declined (M-1, 2026-10-22; §8.2), so there is no shared container. It has no
+  access to the app's History, devices or settings today.
 - **Timeline and reloads:**
   - `WidgetTimelinePlan`: a 30-minute refresh, a 15-minute minimum, and a second entry that drops
     an expired estimate.
@@ -1342,9 +1343,9 @@ The design rests on five rules:
 | Smart Stack relevance (`TimelineEntryRelevance`, `relevance()`) | iOS, iPadOS and watchOS only | **not applicable**; skip |
 | `currentConfigurations()` | 15+ | the app can skip reloading kinds no one has placed |
 | Reload budget | "typically 40 to 70 refreshes" a day **for a frequently viewed widget**; entries "at least about 5 minutes apart"; a budget per widget; frequent reloads while the app is in front "might be throttled" (WWDC26 session 277) | a desktop widget usually covered by windows may get fewer (§8.10) |
-| Push updates (`WidgetPushHandler`) | 26+, needs the push capability (the paid account) | not considered |
+| Push updates (`WidgetPushHandler`) | 26+, needs the push capability (the paid account) | not considered (no paid account, M-1) |
 | `privacySensitive(_:)` | 12+ | Apple documents redaction only for the Lock Screen and Always On (iOS, watchOS); no Mac context is documented (§8.8) |
-| App Group containers | Allowed only for a Mac App Store app, a `<TeamID>.` group matching the signature's Team ID, or a `group.` ID in a provisioning profile; notarization is no criterion. macOS 27 denies access to other teams' app data and app group containers by default, without a prompt (release notes 161835690) | still ruled out for an ad-hoc app (no Team ID) |
+| App Group containers | Allowed only for a Mac App Store app, a `<TeamID>.` group matching the signature's Team ID, or a `group.` ID in a provisioning profile; notarization is no criterion. macOS 27 denies access to other teams' app data and app group containers by default, without a prompt (release notes 161835690) | ruled out: an ad-hoc app has no Team ID, and the paid account that gives one is declined (M-1, 2026-10-22) |
 
 ### 8.3 Data sources and the bridge
 
@@ -1406,8 +1407,9 @@ shared-preference exception, if A is denied and A′ isn't.
 - **Candidate B** (`notify(3)` state words) carries only numbers: the 24-hour charge series as
   packed bytes, and up to two device charge levels without names. Anyone can write those words, so
   the widget shows them as "from BatteryPulse" values and never a name.
-- **Candidate C:** the History and iPhone & iPad widgets wait for Developer ID signing (an App
-  Group). 0.7 ships the Battery and Accessories widgets alone.
+- **Candidate C: none.** The History and iPhone & iPad widgets are not possible: the only other
+  route, an App Group, needs the paid account, which the maintainer declined (M-1, 2026-10-22).
+  0.7 ships the Battery and Accessories widgets alone.
 
 **Rejected:** the app writing into the widget's own container, `~/Library/Containers/<widget
 id>/Data`. That is another app's data container, denied by default on macOS 27 for a different or
@@ -1436,21 +1438,22 @@ Not planned:
 Defaults reproduce today's widget, so a placed 0.6.x widget looks the same after the update. A
 parameter's `default:` is one value for every family (Apple's `IntentParameter` initializers), so
 the per-size difference lives in the Layout parameter's "Automatic" meaning. (T) marks a technical
-decision, and (L) a look decision for the maintainer.
+decision, and (L) a look decision, which the maintainer delegated on 2026-10-22 (§10's Q-W
+answers); 0.7's look check shows them on sight.
 
 **Battery** (`BatteryWidgetIntent`):
 
 | Parameter | Type | Default | Notes |
 |---|---|---|---|
 | Layout | enum: Automatic, Custom | Automatic | (T) Automatic is today's widget in small and medium, field for field (`BatteryPulseWidget.swift:80-150` at v0.6.1), and §8.17's layouts in large and extra large. `WidgetLayoutPlan.automatic(size:)` decides it in BatteryCore. A widget placed by 0.6.x gets Automatic |
-| Main value | enum: charge, maximum capacity, temperature, battery power | charge | (L) which values are worth offering (Q-W4) |
+| Main value | enum: charge, maximum capacity, temperature, battery power | charge | (L) all four offered (Q-W4, decided by delegation) |
 | Main visual | enum: number with the level symbol, number with a ring, drawn battery | number with the level symbol (today) | (L) The drawn battery reuses BatteryCore's `BatteryIconLayout`. Its painter (`BatteryIconPainter`, `BatteryIconCanvas`) lives in the app target (`MenuBar/BatteryIconView.swift:9, 215`) and moves (W-3) |
 | Status lines | multi-choice: state, time | both | (L) the lines under the main value, as today; not counted as details |
 | Details | array of `BatteryWidgetField`, shown only when Layout is Custom (`ParameterSummary` `When(\.$layout, .equalTo, .custom)`). Size per family: small 1 (in place of the time line), medium 4, large 8, extra large 12 | empty | (T) An empty Custom list means no details, never the defaults. The planner keeps the user's order and drops duplicates, the main value and unavailable values |
 | Time | enum: clock time, time left | clock time | (L) Clock time: "Lasts until about 16:39", or "… 11:00 tomorrow" when the end falls on a later local day. Time left: `Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute]))`, updated by the system once a minute, never seconds, no reloads. `WidgetTimelinePlan`'s end entry removes the estimate when it ends, so nothing counts up |
 | Colours | enum: level colours, monochrome | level colours | (L) Full colour only; accented and vibrant follow the system. Thresholds stay `BatteryPresentation.levelTier`'s 20 % and 10 % and `healthTier`, shared with the menu bar and the app; configurable thresholds are not planned |
 | Read time | enum: when old, always | when old | (L) "Updated 14:05", the reading's own `snapshot.timestamp` (never `entry.date`), in place of the last status line. "When old" shows it from the stale entry on (§8.6) |
-| History chart | bool, large and up (`When(widgetFamily:)`) | on in large and extra large, from the release that ships the feed (Q-W4 asks whether placed widgets get it) | **ships only with the feed (W-5).** It owns the sparkline and the History chart, which are never part of Automatic, and takes the last two detail rows (§8.17) |
+| History chart | bool, large and up (`When(widgetFamily:)`) | on in large and extra large, from the release that ships the feed; placed large widgets get it too (Q-W4, decided by delegation) | **ships only with the feed (W-5).** It owns the sparkline and the History chart, which are never part of Automatic, and takes the last two detail rows (§8.17) |
 
 **The details field catalogue** (`BatteryWidgetField`, raw values frozen once shipped):
 
@@ -1460,10 +1463,10 @@ decision, and (L) a look decision for the maintainer.
 | Time to full or empty | own | MVP | a status line by default |
 | Maximum capacity, condition | own | MVP | capped at 100 % like System Settings |
 | Cycle count (of rated) | own | MVP | `ratedCycles` fallback as elsewhere. A label plus a number, never a counted phrase |
-| Temperature | own | MVP | pack sensor (the SMC fallback isn't reachable from the sandbox); °C (Q-W12) |
+| Temperature | own | MVP | pack sensor (the SMC fallback isn't reachable from the sandbox); °C (Q-W12: °C kept) |
 | Adapter ("USB-C 70 W") | own | MVP | |
 | Mac power use (W, `systemLoadWatts`) | own | MVP | how hard the Mac is working, on and off power |
-| Battery power in or out (W) | own | MVP | (L) stale between reloads, so shown with the read time (Q-W7) |
+| Battery power in or out (W) | own | MVP | (L) stale between reloads, so shown with the read time (Q-W7: offered) |
 | Adapter input (W, `systemPowerInWatts`) | own | MVP | |
 | Low Power Mode | own | MVP | |
 | Charge in mAh ("3,912 of 4,512 mAh") | own | MVP | remaining of full charge capacity |
@@ -1475,13 +1478,14 @@ decision, and (L) a look decision for the maintainer.
 | Why it isn't charging | own | later | only after the Charge Limit capture decodes `notChargingReason`; until then it adds nothing over State |
 
 **Attention row:** a condition other than Normal, or a thermal state of serious or worse, takes the
-last detail slot in every family and layout, with a symbol and words. (L) on by default, Q-W13.
+last detail slot in every family and layout, with a symbol and words. On (Q-W13, decided by
+delegation).
 
 **History** (`HistoryWidgetIntent`, stretch):
 - period: 24 hours or 7 days;
 - series: charge, battery power, temperature; and, over 90 days whatever the period, capacity
   compared with design and cycle count from `daily`, the trend the app's History page draws
-  (Q-W2);
+  (offered, Q-W2);
 - statistics: average drain, time on battery;
 - charging spans shaded.
 
@@ -1676,8 +1680,9 @@ target maps them one to one.
     It is navigation-only, parsed by `WidgetRoute(url:)` (Linux tests) in one app file
     (`SecurityGuardTests`). A link never acts. Whether a scheme is registered follows W0-4's
     answer, a technical choice (PLAN §8).
-  - Per-row `Link`s (a device row opens that device) come later, if Q-W8 wants them.
-- **Buttons (later than the MVP):**
+  - No per-row `Link`s (a device row opening that device): a click anywhere opens the widget's
+    page (Q-W8, decided by delegation); per-row links are an after-1.0 idea (W-9).
+- **Buttons (after 1.0, Q-W9; none in 0.7):**
   - Refresh appears only on kinds that read for themselves (Battery, Accessories), together with
     the read time.
   - It is an `AppIntent` whose `perform` returns at once and declares `allowedExecutionTargets`
@@ -1835,10 +1840,10 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 | W0-1 (b): entity queries don't run from the ad-hoc extension | iPhone & iPad uses an `AppEnum` (most recent, lowest); no chosen device |
 | W0-1 (c): button performs don't run | No buttons (W-9's Refresh dropped) |
 | W0-2: the control keeps placed widgets, but the configurable kind loses them | Today's kind stays static (today's look, new sizes). The configurable Battery widget ships as a new kind `io.github.nikitausov.BatteryPulse.battery.custom`, and the release notes say how to switch |
-| W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration (ROADMAP Stage 1.2 is still open). Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did |
+| W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration (ROADMAP Stage 1.2 is still open). Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did. With no signed build coming (M-1: no), it stays a documented known limitation |
 | W0-3: A and A′ fail | Candidate B if it works, else C (§8.3) |
 | W0-4: accessories can't be read from the sandbox | Accessories through the feed (stretch); without the feed, no Accessories kind in 0.7 |
-| W0-4: `widgetURL` needs a registered scheme | Register a navigation-only scheme (§8.9); per-row links only if Q-W8 wants them |
+| W0-4: `widgetURL` needs a registered scheme | Register a navigation-only scheme (§8.9); no per-row links (Q-W8) |
 | W0-6: the offset format shows seconds or misbehaves | Time left is dropped from the Time parameter; clock time only |
 
 ### 8.17 Layouts
@@ -1849,9 +1854,11 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 - **Large (Automatic):** the charge block and 8 details in two columns: maximum capacity, cycle
   count, temperature, adapter, Mac power use, battery power, Low Power Mode, charge in mAh.
 - **Extra large (Automatic):** a bigger Battery: the charge block and those 8 details plus voltage
-  and cycle life used (10). Whether extra large becomes a dashboard (Mac, History, devices,
-  accessories) is Q-W10, a later phase.
-- If Q-W7 drops battery power, cell balance takes its slot in both.
+  and cycle life used (10). Q-W10, decided by delegation: extra large ships in 0.7 only if 0.7's
+  look check shows its layout right (`docs/plans/0.7.0/PLAN.md` §14 draws it as two panels,
+  Battery and Power); otherwise it comes later, which never touches placed widgets. The dashboard
+  (Mac, History, devices, accessories) and the portrait size come after 1.0.
+- Q-W7 keeps battery power (offered, with the read time), so cell balance stays a Custom detail.
 - **The sparkline and the History chart are never part of Automatic,** so Automatic's meaning per
   family stays frozen (§8.13) when the feed ships. They belong to the History chart parameter
   (§8.5), which defaults on in large and extra large from the release that ships the feed and
@@ -1887,11 +1894,10 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 6. **0.7 is otherwise light:** CB-02 is one change with a release-notes line, so widgets can be
    0.7's headline, with their own M5 session.
 
-**If the maintainer wants something sooner:** the only low-risk slice is large and extra-large sizes
-of today's static Battery widget, in a 0.6.3 after 0.6.2 has shipped its own widget changes (reason
-3). It needs no configuration, no App Intents and no new file. It adds sizes without changing
-placed widgets, and 0.7 makes them configurable. Even that is a feature in a maintenance release,
-so the default stays 0.7 (Q-W1).
+**Decided (Q-W1, the maintainer, 2026-10-22): 0.7, with no 0.6.3.** The one low-risk slice that
+was considered, large and extra-large sizes of today's static Battery widget in a 0.6.3, is not
+planned. It would have needed no configuration, no App Intents and no new file, but it is still a
+feature in a maintenance release.
 
 ### 9.1 Phases
 
@@ -1899,89 +1905,130 @@ so the default stays 0.7 (Q-W1).
 |---|---|---|
 | 0.6.2 | WP-W0: W0-1 to W0-6 with the SPIKE-C control; K-03 and `-internalize-at-link` for headroom; WP-14a's nonisolated read, which the widget's async provider reuses | none: throwaway builds |
 | 0.7 MVP (never cut) | W-1, W-2, W-3: Battery in S, M, L and XL; Layout Automatic or Custom; status lines; read time; natural-page clicks; empty states; accessibility. Also W-4, W-8 (Accessories, All or Lowest; if W0-4 passes) and W-10 | W0-1, W0-2 (§8.16 otherwise) |
-| 0.7 stretch or 0.7.x | W-5 (feed), W-6 (History; Battery's feed fields and chart), W-7 (iPhone & iPad) | W0-3 and Q-W3 |
-| Later | Refresh, the extra-large dashboard, extra-large portrait, per-row links, specific accessories, "why it isn't charging" after the Charge Limit capture | each its own question |
+| 0.7 stretch or 0.7.x | W-5 (feed), W-6 (History; Battery's feed fields and chart), W-7 (iPhone & iPad) | W0-3 (Q-W3: yes). If W0-3 fails, not possible without the paid account (M-1: no; §8.3 candidate C) |
+| Later | Refresh, the extra-large dashboard, extra-large portrait, per-row links, specific accessories, "why it isn't charging" after the Charge Limit capture | after 1.0 for the widget extras (Q-W2, Q-W8 to Q-W10, decided by delegation); the cause after the capture |
 
 ---
 
-## 10. Questions only the maintainer can answer
+## 10. The maintainer's questions and their answers (2026-10-22)
+
+The maintainer answered on 2026-10-22. Q-B2, Q-B7 and Q-W1 are his own answers, and Q-W3 follows
+from his answer to M-1. He delegated every other question ("do it by best practices, as you see
+fit"), so each is recorded with its recommended answer and marked "decided by delegation". Q-B9 was
+settled before. No question of this plan stays open; what the maintainer still judges on sight in
+the sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
+`docs/plans/1.0/ROADMAP.md` §6, and 0.7's own (Q7-1 to Q7-8) in `docs/plans/0.7.0/PLAN.md` §14.
+
+**M-1, the paid Apple Developer Program account: no,** not now and not planned before 1.0 (the
+maintainer, 2026-10-22). It is a non-commercial hobby project, with no budget for the account and
+about zero users (below). For this plan:
+- Developer ID signing and notarization stay not planned, and nothing in 0.6.2 waits for a signed
+  build.
+- No App Group: the History and iPhone & iPad widgets can only use the feed (W0-3, §8.3), and
+  without it they aren't possible (§8.3 candidate C).
+- No Enhanced Security spike (WP-20, Q-B8).
+- Open Anyway on each DMG install, and grants or placed widgets possibly lost when a DMG replaces
+  the app, stay documented known limitations (§8.16, WP-20's SEC-18).
+
+**Usage evidence** (GitHub's REST API, 2026-10-22):
+- DMG downloads across all releases: 14 in total (0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1, 0.5.0:
+  2, 0.6.0: 3, 0.6.1: 1, the last being a signature check during the release).
+- Signature (`.sig`) downloads: 5. Each in-app install fetches the `.sig`, so its count is a
+  privacy-free proxy for in-app updates.
+- Repository page views: 2, by 1 visitor, in 14 days. No stars, forks or outside issues.
+- A re-check later the same day showed 15 DMG and 6 `.sig` downloads: one more of each for 0.6.1,
+  as one in-app update fetches.
+
+So the users are, in effect, the maintainer alone. 0.6.2's scope stays as planned, because its
+sessions measure the Mac the app runs on. From 0.6.2 on, each release records its DMG and `.sig`
+download counts a week after publishing (D3), with no telemetry in the app.
 
 ### For 0.6.2
 
-- **Q-B2 (Clear's fill):** Session A shows you three fills on video while the window shrinks into
-  the Dock. Pick one, or ask for one that follows your desktop picture's colour. That costs a
-  background image decode when the window appears and when you switch Spaces, with no polling.
-  Either way the fill is opaque, so there is no black frame. Pictures you keep in Desktop,
-  Documents or Downloads get the grey, so BatteryPulse never asks for file access.
-- **Q-B4 (beta styles):** you approved Frosted's and Translucent's sidebar and toolbar
-  (V4-materials).
-  - What still doesn't look right in Translucent and Clear? Candidates: Clear's sidebar and
-    toolbar, contrast over bright or busy wallpapers, thin chart lines, the Raw Data table, the
-    Settings tile (V1b).
-  - Which of these must be fixed before a style leaves beta?
-  - May Translucent graduate before Clear?
-- **Q-B5:** if a style graduates, announce it in What's New, or only in the release notes?
-- **Q-B6 (sessions):**
-  - Session A is about 55 minutes, then 3 unattended hours on battery and charging. You plug the
-    adapter in once, at the 2-hour mark, and type your admin password once, for the Low Power
-    Mode runs.
-  - Session B is about 75 minutes plus about 70 unattended, with your admin password once more.
-  - Is that OK? Which energy scenarios matter most to you: power in the menu bar, the window
-    styles, an iPhone attached, accessories?
-- **Q-B7 (Xcode):**
-  - Is Xcode installed on the M5? Instruments' `xctrace` (WP-17) and every WP-18 item need it.
-  - Will you run the Xcode-only items (previews spike, SwiftUI Specialist checklist, type-check
-    timing, the Icon Composer icon), or should they wait?
-  - Do you want the Icon Composer icon at all? It changes how the icon looks in the Clear and
-    Tinted icon styles.
-- **Q-B8:** is the Enhanced Security spike (SEC-08) worth a session step?
+- **Q-B2 (Clear's fill): (b), the graphite composite** (the maintainer). Asked: pick one of three
+  recorded fills, or a fill that follows the desktop picture. Session A's recordings check (b), and
+  whether Translucent Dark needs it too (§6 step 6). The desktop-picture variant isn't built
+  (WP-13 item 1).
+- **Q-B4 (beta styles), decided by delegation: both stay beta until the maintainer signs one off**
+  in Session B step 3, each style on its own, so Translucent may graduate before Clear. Asked:
+  what still looks wrong in Translucent and Clear, what must be fixed before a style leaves beta,
+  and whether Translucent may go first.
+  - Before a style leaves beta: no black frame in its recorded cases (WP-13 item 1); an identical
+    tile preview (V1b); no confirmed text-contrast failure in the audit; and every shot of its
+    screenshot and graduation sets answered y. Clear's sidebar and toolbar, and contrast over
+    bright or busy wallpapers, are judged in those shots.
+  - The Stage 1.5 leftovers (thicker chart lines, the Raw Data table's treatment) are not done in
+    0.6.2. A shot answered n for them keeps that style beta, and WP-13 item 4 moves to 0.7 with it.
+- **Q-B5, decided by delegation: the release notes only.** Asked: announce a graduated style in
+  What's New, or only in the release notes? `WhatsNew.version` stays 0.6.0, so the window doesn't
+  reopen; What's New feature 3's text is reworded with the graduation (§3).
+- **Q-B6 (sessions), decided by delegation: the sessions as written,** with the Xcode items that
+  Q-B7 adds. Asked: are the lengths OK, and which energy scenarios matter most?
+  - Session A: about 65 minutes, then 3 unattended hours on battery and charging. The maintainer
+    plugs the adapter in once, at the 2-hour mark, and types the admin password once, for the Low
+    Power Mode runs.
+  - Session B: about 95 minutes plus about 70 unattended, with the admin password once more.
+  - Energy scenarios in the order they run: power in the menu bar (S2) first, then the window
+    styles (S4w), then an iPhone attached and accessories (S9, S10) if at hand.
+- **Q-B7 (Xcode): installed on the M5** (the maintainer). `xctrace` (WP-17; Session A step 8,
+  Session B step 5), the contrast audit and Clear's shadows (WP-13 item 3; Session B steps 3 and 5)
+  and every WP-18 item run, maintainer-run from Claude's step-by-step list; no step depends on
+  whether Xcode is there any more. The Icon Composer icon (SZ-10), decided by delegation: prepared
+  in WP-18 and shown in the four icon styles; it ships only on the maintainer's y to those
+  screenshots, otherwise it waits for 0.7.
+- **Q-B8, decided by delegation: no.** Asked: is the Enhanced Security spike (SEC-08) worth a
+  session step? It isn't run in 0.6.2 (WP-20). Enhanced Security on an ad-hoc signature is
+  unverified, an update that AMFI refused would leave an app that doesn't launch, and it stays
+  after 1.0, not planned without notarization (M-1: no).
 - **Q-B9 (F12), settled:** the first try failed on GitHub's limit of 60 unauthenticated API requests an hour per address, used up behind a VPN that shares its address; the app said "GitHub is limiting requests", and the re-run after the limit reset passed. Not a defect; Session B's script
   checks the remaining requests (`api.github.com/rate_limit`) before F12 and asks to turn a VPN
   off, and F12 runs once.
-- **Q-B10 (Low Power Mode):** if Translucent or Clear uses 15 % or more energy than Standard,
-  should it give way to Standard while Low Power Mode is on?
+- **Q-B10 (Low Power Mode), decided by delegation: no fallback.** Asked: if Translucent or Clear
+  uses 15 % or more energy than Standard, should it give way to Standard while Low Power Mode is
+  on? A window style is the user's explicit choice, Reduce Transparency and Increase Contrast
+  already give Standard, and Low Power Mode already slows the polls (`LiveRefreshPolicy`). S4w
+  still measures each style, and ROADMAP's decision line records the numbers (G-13c).
 
 ### For widget customization (0.7)
 
-- **Q-W1 (when):** 0.7 in the phases of §9.1, or first a 0.6.3 with large and extra-large sizes of
-  today's static widget? 0.6.2 itself stays at spikes (§1, §7.3). Default: 0.7.
-- **Q-W2 (kinds):**
-  - Which widgets in the gallery: Battery, Accessories, History, iPhone & iPad?
-  - Is choosing specific accessories worth a later release?
-  - Should the History widget also offer the 90-day trend of capacity and cycle count, like the
-    app's History page?
-  - Battery Health and Power presets are planned only if configuration turns out impossible
-    (§8.16). Do you want them anyway?
-  - Default if unanswered: all four kinds as §9.1 phases them, the trend offered, no presets.
-- **Q-W3 (the bridge):** the History and iPhone & iPad widgets need BatteryPulse to keep a small
-  copy of the last day, week and device readings for the widget, in its own folder. OK? Without
-  it, they wait for Developer ID signing. (The entitlement this needs is a W-5 detail.) Default if
-  unanswered: no copy, so those two widgets wait.
-- **Q-W4 (look):**
-  - The main visual: the big number (today), a number with a ring, or a drawn battery like the
-    menu bar icon styles?
-  - Which main values: charge, maximum capacity, temperature, battery power?
-  - Level colours or monochrome as the default?
-  - Large and extra large (§8.17): are these the right 8 and 10 details? And when the feed ships,
-    should placed large widgets get the History chart in place of their last two rows (the
-    default), or keep their rows until you turn it on?
-- **Q-W5 (time):** clock time ("Lasts until about 16:39", today) or time left ("2 hours, 13
-  minutes"), and which as the default?
-- **Q-W6:** the "Updated 14:05" line: only when the widget is old (default), or always as an
-  option?
-- **Q-W7:** battery power in watts, which can be up to half an hour old in a widget: offer it at
-  all? Default if unanswered: offered, shown with the read time.
-- **Q-W8 (clicks):** should a row in a widget open its own page (a device row opens that device), or
-  does a click anywhere open the widget's page (Overview, History, the device, Accessories)?
-- **Q-W9:** a Refresh button on the Battery and Accessories widgets, in a later release?
-- **Q-W10:** the extra-large widget: one dashboard (Mac, history, devices, accessories) or just a
-  bigger Battery? Is the new portrait extra-large size (macOS 27 only) worth supporting?
-- **Q-W11:** iPhone and iPad names on the desktop: always, or only the model ("iPhone") with the
-  name hidden? Default if unanswered: the device name, with `.privacySensitive()`.
-- **Q-W12:** show °F where the region uses it, everywhere in the app (not only the widget), or keep
-  °C?
-- **Q-W13:** an attention row (condition other than Normal, serious heat) that takes the last
-  detail slot: on by default?
+- **Q-W1 (when): 0.7** (the maintainer), in the phases of §9.1, with no 0.6.3 of large and
+  extra-large sizes of today's static widget. 0.6.2 itself stays at spikes (§1, §7.3).
+- **Q-W2 (kinds), decided by delegation: all four kinds as §9.1 phases them.** Battery and
+  Accessories in 0.7; History and iPhone & iPad with the feed (stretch), the History widget
+  offering the 90-day capacity and cycle-count trend. Choosing specific accessories comes after
+  1.0. No Battery Health and Power presets, unless configuration turns out impossible (§8.16).
+- **Q-W3 (the bridge): yes** (2026-10-22, following M-1: no). BatteryPulse keeps a small copy of
+  the last day, week and device readings for the widgets, in its own folder (the feed, §8.3; its
+  entitlement is a W-5 detail), if W0-3 finds a candidate that works. If W0-3 fails, the History
+  and iPhone & iPad widgets aren't possible without the paid account (§8.3 candidate C).
+- **Q-W4 (look), decided by delegation:**
+  - main visual: the number with the level symbol by default (today's), with a number with a ring
+    and a drawn battery like the menu bar icon styles offered;
+  - main values: charge (the default), maximum capacity, temperature and battery power, all
+    offered;
+  - level colours by default;
+  - large and extra large: §8.17's details, which 0.7's look check shows on sight;
+  - when the feed ships, placed large widgets get the History chart in place of their last two
+    rows (the parameter's default).
+- **Q-W5 (time), decided by delegation:** clock time by default ("Lasts until about 16:39", as
+  today), with time left ("2 hours, 13 minutes") offered if W0-6 passes.
+- **Q-W6, decided by delegation:** "Updated 14:05" only when the widget is old, by default, with
+  "Always" offered.
+- **Q-W7, decided by delegation:** battery power in watts is offered, always shown with the read
+  time.
+- **Q-W8 (clicks), decided by delegation:** a click anywhere opens the widget's page (Overview,
+  History, the device, Accessories; §8.9). Per-row links are an after-1.0 idea.
+- **Q-W9, decided by delegation:** no Refresh button in 0.7; after 1.0 at the earliest, and only if
+  W0-1 (c) shows that performs run.
+- **Q-W10, decided by delegation:** extra large in 0.7 only if 0.7's look check shows its layout
+  right (`docs/plans/0.7.0/PLAN.md` §14: two panels, Battery and Power); otherwise later, which
+  never touches placed widgets. The dashboard and the portrait extra-large size: after 1.0.
+- **Q-W11, decided by delegation:** iPhone and iPad names are shown, with `.privacySensitive()`.
+- **Q-W12, decided by delegation:** °C everywhere, as today. A unit that follows the region would
+  change the app and the widget together, never one alone, and isn't planned.
+- **Q-W13, decided by delegation:** the attention row (a condition other than Normal, serious heat)
+  is on in every family. "Off by default" would need a frozen parameter, so the choice was on or
+  never.
 
 Technical choices are made in the runs by Apple's practices and these rules, as PLAN §8 delegated.
 They include configuration through App Intents, the BatteryCore planner, the feed format, the
@@ -1997,13 +2044,13 @@ comments.
 | Item | Source | 0.6.2 package or status |
 |---|---|---|
 | SW-04 with V-01 (main actor by default) | PLAN §3.1, §6; ROADMAP 1.7 | WP-10 (V-01 in both sessions; the post-update half in D3) |
-| Clear's minimize fill (UR-3) | maintainer's settled report; 0.6.1 D3 (known beta issue) | WP-13 |
+| Clear's minimize fill (UR-3) | maintainer's settled report; 0.6.1 D3 (known beta issue) | WP-13 (fill (b), Q-B2) |
 | Beta styles graduation | 0.6.1 D3 (`1f9937b`) | WP-13 |
-| Low Power Mode fallback for window styles | ROADMAP Decisions ("until the energy is measured") | WP-13 item 5, G-13c, Q-B10 |
+| Low Power Mode fallback for window styles | ROADMAP Decisions ("until the energy is measured") | none (Q-B10); S4w records each style's cost (WP-21, G-13c) |
 | V1b | 0.6.1 session | WP-13 |
 | V1d (menu bar icon, light and dark) | 0.6.1 session (y) | WP-22 ticks Stage 1.3's comparison |
 | Stage 1.3's other open items: the icon styles on the M5, the drawn exact-level battery, Increase Contrast, Reduce Transparency and the notch, the 0.6.0 rework checks (the plug, 100 % on power, Percentage Inside with 1-3 digits) | ROADMAP 1.3 | Session B optional; otherwise they stay open |
-| Stage 1.5's open check (chart lines and Raw Data treatment on the sheet, full screen, contrast audit, inspector and Demo Mode bar, scroll edge, Form fills and stripes, Clear's dark appearance, Frosted next to the widget gallery, Clear's shadows, energy per style) | ROADMAP 1.5 | WP-13 items 3-4 (evidence), WP-21 (S4w); what Session B doesn't reach stays open |
+| Stage 1.5's open check (chart lines and Raw Data treatment on the sheet, full screen, contrast audit, inspector and Demo Mode bar, scroll edge, Form fills and stripes, Clear's dark appearance, Frosted next to the widget gallery, Clear's shadows, energy per style) | ROADMAP 1.5 | WP-13 item 3 (evidence, with the contrast audit and Clear's shadows: Xcode is installed, Q-B7), WP-21 (S4w); the chart lines and Raw Data treatment (item 4) not in 0.6.2 (Q-B4); what Session B doesn't reach stays open |
 | E20 | PLAN §6, G16 | WP-14a |
 | E4b | PLAN §6, G14 | WP-14b (gated on F13) |
 | E3b | PLAN §6, G15 | WP-14b (gated) |
@@ -2017,10 +2064,10 @@ comments.
 | In-app install (Stage 1.2): tick it on F12 and 0.6.1's after-publishing check; re-register the login item after an update | ROADMAP 1.2 | WP-22 ticks it if the login item was kept; else WP-16 item 5 |
 | 0.6.1 after-publishing results (widget, login item, notifications, first-day widget accuracy, `994c09d`) | PLAN §4b | intake A0: any failure becomes a P1 item |
 | SUI-07, SUI-11, SUI-12, E19 | PLAN §6, G17 | WP-17 |
-| SUI-17, SUI-18, SUI-19, SZ-10 | PLAN §6, G21 | WP-18 (maintainer) |
+| SUI-17, SUI-18, SUI-19, SZ-10 | PLAN §6, G21 | WP-18 (maintainer-run from Claude's step-by-step list; Xcode is installed, Q-B7) |
 | SUI-09, SW-21, SW-13 (now BatterySource and BatteryKit), C2 | PLAN §6 | WP-19 |
 | CI pins (checkout v6.1.0, upload-artifact v7) | ROADMAP 1.7; PLAN Appendix C (B6) | WP-19 |
-| SEC-08 | PLAN §6, G20 | WP-20 (optional) |
+| SEC-08 | PLAN §6, G20 | not run (Q-B8: no); Enhanced Security is after 1.0, not planned without notarization (M-1: no) |
 | SEC-18 | PLAN §6 | WP-20 (research) |
 | SEC-10 | PLAN §6, G19, Q1 | not in 0.6.2 (no evidence) |
 | SZ-08 | PLAN §6 | not in 0.6.2 (no glossary work) |
@@ -2034,17 +2081,19 @@ comments.
 | F12's first failure | 0.6.1 session | Q-B9, settled: GitHub's rate limit behind a VPN |
 | Charge Limit capture; spreadsheet exports | ROADMAP 1.1, 6 | Session B optional |
 | Widgets kept across an in-app update | ROADMAP 1.2 | 0.6.1's after-publishing check; W0-2's control; Session B F8 |
-| Widget customization | maintainer's request, 2026-10-22; ROADMAP 0.7 | §8; spikes WP-W0 in 0.6.2; W-1 to W-10 in 0.7 (§9.1) |
+| Widget customization | maintainer's request, 2026-10-22; ROADMAP 0.7 | §8; spikes WP-W0 in 0.6.2; W-1 to W-10 in 0.7 (§9.1; Q-W1: no 0.6.3) |
 | CB-02 (device JSON dates) | PLAN §6, Q3 | 0.7 |
 | CORE-16 | audit-core-verified | stays rejected, unless 0.7's drawn-battery visual changes `BatteryIcon` |
 | Glossary re-check, captures from M1-M4 Macs; Instruments against the resource targets | ROADMAP 1.1 | not planned (WP-21's memory covers the RAM target) |
 | Chart descriptors; App Nap on the minute timer | ROADMAP 3 | not planned |
 | How often the mAh values change | ROADMAP 3 | Session A's ioreg sampler (`BatteryData`'s `RemainingCapacity` every 10 s); WP-22 ticks it |
 | iPad capture, ManufactureDate decoding | ROADMAP 5 | not planned (no iPad at hand) |
-| Apps using energy; charge limiting; package manager | ROADMAP 3, 6 | not planned (a paid account or a spike first) |
+| Apps using energy; charge limiting; package manager | ROADMAP 3, 6 | not planned (the package manager's official catalog needs notarization, and so the paid account the maintainer declined, M-1; the others a spike first) |
 | K-02's CI half | WP-0b report (0.6.1) | not planned |
 | Glass in the tile picker | PLAN §6 | closed: the maintainer chose the outline (PLAN §8) |
 | `package` access, documentation-lint rules | PLAN §6 (SW-R17) | not planned |
+| Developer ID signing, notarization, an App Group | ROADMAP Decisions; M-1 (`docs/plans/1.0/ROADMAP.md` §6) | not planned (M-1: no, 2026-10-22); §8.3 candidate C, §10 |
+| Release download counts | the maintainer's question, 2026-10-22 | §10's usage evidence; D3 records each release's DMG and `.sig` counts a week after publishing |
 
 ## Appendix B: facts verified for this plan
 
@@ -2130,6 +2179,11 @@ comments.
 - `git grep` finds no `perf` lines or `menuBarReady` at v0.6.0 (`6133b4f`), and finds them at
   `claude/baseline-0.6.0` (`076873d`).
 
+**Usage** (GitHub's REST API, 2026-10-22): the release asset counts of §10's usage evidence,
+re-checked by the editor with `gh api repos/{owner}/{repo}/releases` (15 DMG and 6 `.sig`
+downloads at that time, against the 14 and 5 counted earlier the same day). The page views come
+from the traffic API and were not re-checked.
+
 **Not verified here; decided by WP-W0 or the sessions:**
 - the processor step's output under SwiftPM;
 - entity queries and button performs in an ad-hoc-signed extension;
@@ -2146,7 +2200,7 @@ comments.
 - whether a per-extension `AppleLanguages` reaches the widget and its edit sheet;
 - the hdiutil deprecation, which is seen only as runner warnings, not in Apple's release notes;
 - whether opening a desktop picture outside `~/Pictures` and the system folders shows a
-  file-access prompt on macOS 27.
+  file-access prompt on macOS 27 (moot while the desktop-picture fill isn't built, Q-B2).
 
 ## Appendix C: facts 0.6.2 records (filled during the release)
 
@@ -2164,10 +2218,12 @@ comments.
 | V-01: "executor" log lines, new crash reports, the maintainer's answers | Session A (SPIKE-A2); Session B (RC) | G-10, G-14a |
 | `read cached` p50; `registry.missed` per hour of logged runtime | Session B | G-14b |
 | mAh cadence: `RemainingCapacity` changes per hour | Session A's ioreg sampler | ROADMAP Stage 3 (WP-22) |
-| Clear's fill choice, with recordings | Session A | G-13a |
+| Clear's fill (b) and Translucent Dark's today's fill: recordings and answers | Session A step 6 | G-13a |
 | The 8 recorded minimize cases and the plain answers | Session B step 3 | G-13a, G-13b |
 | The 24 screenshots and the 19 graduation shots, answered y or n; V1b's pixel comparison | Session B step 3 | G-13b; WP-13 item 2 |
-| S4w per style against Standard | Session B | G-13c |
+| The contrast audit's reports per beta style, appearance and page | Session B step 3 | G-13b (Q-B4) |
+| Clear's shadows in Instruments | Session B step 5 | G-13b; Stage 1.5 |
+| S4w per style against Standard | Session B | ROADMAP's decision line (G-13c; no fallback, Q-B10) |
 | F8 per family and language (F8-ru: the method, or not checked) | Session B | G-15 |
 | F12: offered, installed, relaunched, per try | Session B | G-16 |
 | `page.switch` count and p50 per page, before and after | Session A step 8; Session B step 5 | G-17 |
@@ -2182,3 +2238,5 @@ comments.
 | C energy, S4w, S5, burst, memory | Session B | WP-21, G-13c |
 | B3 bench rerun; `HistoryLoad.read` profile | WP-17 | WP-17 riders |
 | `-internalize-at-link` build times and sizes | WP-15 | G-15 |
+| SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (the maintainer, from Claude's step-by-step list) | WP-18; SZ-10 ships or waits for 0.7 |
+| SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.7's notes |

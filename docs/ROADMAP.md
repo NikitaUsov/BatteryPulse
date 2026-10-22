@@ -9,7 +9,11 @@ charging state.
   macOS 27 no longer runs on Intel Macs. No Intel code paths.
 - **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
   (and later charge limiting) are possible. A notarized DMG needs a paid Apple Developer
-  account; without one, users have to approve the app in Privacy & Security.
+  account, and there won't be one: on 2026-10-22 the maintainer decided against it, not now and
+  not before 1.0 (a non-commercial hobby project, no budget for it, and about no users). So each
+  install from the DMG needs Open Anyway in Privacy & Security, in-app updates don't, and
+  permissions or placed widgets may need setting up again after a DMG replaces the app; 1.0
+  documents these as known limitations.
 - **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
@@ -569,13 +573,27 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   health summary and explanations of the numbers, a first-run Welcome, Report a Problem (a
   bundle you preview and save; nothing is sent), VoiceOver and the keyboard everywhere, and tests
   that pin what 1.x keeps
-- [ ] 0.9.0, ready for others: the documentation, the written 1.x promise, `bpulse` inside the
-  app, and Developer ID signing if there is a paid developer account; features freeze here, and
-  0.9.x only fixes
+- [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
+  screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
+  since there is no paid developer account; features freeze here, and 0.9.x only fixes
 - [ ] 1.0.0: the last 0.9.x renamed, once its criteria hold: every feature seen working in a
   packaged build on the M5 or listed as a known limitation, seven days of daily use without a
   crash, energy within 15 % of 0.6.2's, in-app updates from 0.4.0 on, VoiceOver everywhere, and
-  settings, stored data, `bpulse`'s machine outputs and placed widgets kept through 1.x
+  settings, stored data, `bpulse`'s machine outputs and placed widgets kept through 1.x. Open
+  Anyway on each DMG install, and permissions or widgets a DMG replacement may lose, are known
+  limitations
+
+Decided on 2026-10-22: no paid developer account, so no Developer ID signing or notarization and
+no App Group (the History and iPhone & iPad widgets can only use a small copy of readings the app
+writes, if 0.6.2's sandbox spike shows the widget can read it); Xcode is on the M5, so the
+Xcode-only checks run; widgets in 0.7, with no 0.6.3; every other open question decided by its
+recommendation, except what 1.0 means, which awaits the maintainer.
+
+Usage so far (GitHub's API, 2026-10-22): 14 DMG downloads across all releases and 5 signature
+downloads (each in-app install fetches one; 15 and 6 at a re-check later that day), 2 repository
+page views by 1 visitor in 14 days, and no stars, forks or outside issues; in practice the
+maintainer is the only user. From 0.6.2 on, each release's DMG and signature download counts
+are added to the Releases table a week after publishing. The app itself counts and sends nothing.
 
 ### Stage 2: iOS MVP
 
@@ -726,7 +744,7 @@ window styles out of beta, the widget's size headroom, the installer on `diskuti
 energy measurements. Then **0.7**: widget customization and the device JSON's dates; **0.8**:
 answers in the app; **0.9**: ready for others; **1.0.0**: the last 0.9.x renamed
 (`docs/plans/1.0/ROADMAP.md`). Not planned: an iOS app, charge limiting, and Developer ID signing
-until there is a paid developer account.
+and notarization (no paid developer account, decided on 2026-10-22: not before 1.0).
 
 ## Development environment
 
