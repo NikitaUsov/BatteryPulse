@@ -125,7 +125,9 @@ struct SpikeDevice: AppEntity {
         SpikeDeviceQuery()
     }
 
-    /// The name as it is, not a catalog key.
+    /// The name as the lookup key and its default value: it shows as it is only while no catalog key
+    /// matches it, so this is not the verbatim title §8.11 asks for. `"\(name)"` (key `%@`) would
+    /// be, once LocalizationCatalogTests accepts that key.
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: LocalizedStringResource(stringLiteral: name))
     }
