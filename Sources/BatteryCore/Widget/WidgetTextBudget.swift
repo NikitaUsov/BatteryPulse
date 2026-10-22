@@ -7,22 +7,22 @@
 ///   one line that shrinks to ``textScaleFactor`` as a whole, then truncates.
 /// - A detail row's label shrinks to ``textScaleFactor``; its value never shrinks or truncates.
 /// - A message (an empty state) wraps over up to three lines.
-public enum WidgetTextBudget {
+enum WidgetTextBudget {
     /// The main value's minimum scale factor (0.6.1's hero number).
-    public static let mainScaleFactor = 0.7
+    static let mainScaleFactor = 0.7
     /// Lines' and labels' minimum scale factor (0.6.1's labels).
-    public static let textScaleFactor = 0.8
+    static let textScaleFactor = 0.8
     /// A symbol beside text takes about two characters.
     static let symbolWidth = 2.0
     /// Between a row's label and its value.
     static let rowGap = 1.0
 
-    public enum Slot: Sendable, CaseIterable {
+    enum Slot: Sendable, CaseIterable {
         case main, line, row, message
     }
 
     /// The slot's width in characters at full size.
-    public static func width(_ slot: Slot, _ size: WidgetSize) -> Double {
+    static func width(_ slot: Slot, _ size: WidgetSize) -> Double {
         switch (slot, size) {
         // The charge block is as wide in every size.
         case (.main, _): 7
@@ -40,7 +40,7 @@ public enum WidgetTextBudget {
 
     /// Whether `text` fits `slot` in `size`: in a row, `text` is the label and `value` the value
     /// beside it; elsewhere `value` is unused. `symbol` adds a symbol beside the text.
-    public static func fits(_ text: String, value: String = "", symbol: Bool = false, in slot: Slot, size: WidgetSize)
+    static func fits(_ text: String, value: String = "", symbol: Bool = false, in slot: Slot, size: WidgetSize)
         -> Bool
     {
         let symbols = symbol ? symbolWidth : 0

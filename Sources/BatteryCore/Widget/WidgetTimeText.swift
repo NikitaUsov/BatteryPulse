@@ -8,16 +8,16 @@ import Foundation
 /// every entry of a timeline shows the same end. Whether it falls today or tomorrow is decided at
 /// the entry's date, in the widget's time zone. An end beyond tomorrow shows nothing: macOS's
 /// estimates run up to 65,534 minutes, and a weekday ("Lasts until about Friday") says little.
-public struct WidgetTimeText: Sendable, Equatable {
+struct WidgetTimeText: Sendable, Equatable {
     /// Which phrase the widget uses.
-    public enum Direction: Sendable, Equatable {
+    enum Direction: Sendable, Equatable {
         /// "Full at %@": while charging.
         case full
         /// "Lasts until about %@": on battery.
         case empty
     }
 
-    public enum Form: Sendable, Equatable {
+    enum Form: Sendable, Equatable {
         /// The end's clock time in the widget's locale, and whether it falls on the next local day
         /// ("Full at %@ tomorrow").
         case clock(String, tomorrow: Bool)
@@ -25,11 +25,11 @@ public struct WidgetTimeText: Sendable, Equatable {
         case timeLeft
     }
 
-    public var direction: Direction
-    public var end: Date
-    public var form: Form
+    var direction: Direction
+    var end: Date
+    var form: Form
 
-    public init(direction: Direction, end: Date, form: Form) {
+    init(direction: Direction, end: Date, form: Form) {
         self.direction = direction
         self.end = end
         self.form = form
@@ -37,7 +37,7 @@ public struct WidgetTimeText: Sendable, Equatable {
 
     /// The time for an entry at `date`; `nil` without an estimate, once it has passed, or when it
     /// ends after tomorrow.
-    public init?(
+    init?(
         snapshot: BatterySnapshot, style: WidgetTimeStyle, at date: Date, locale: Locale, timeZone: TimeZone
     ) {
         guard let minutes = WidgetTimelinePlan.estimateMinutes(snapshot) else { return nil }
