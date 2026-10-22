@@ -30,10 +30,15 @@ struct FrameStats {
     let grey: [UInt8]
 }
 
-let statsWidth = 160
-let sheetColumns = 10
-let sheetCellWidth = 240
-let sheetLimit = 120
+/// Sizes, in an enum so they are plain constants in every language mode.
+enum Layout {
+    /// The width of the grey copy the numbers come from.
+    static let statsWidth = 160
+    static let sheetColumns = 10
+    static let sheetCellWidth = 240
+    /// The most frames on one contact sheet; longer clips are thinned evenly.
+    static let sheetLimit = 120
+}
 
 func writePNG(_ image: CGImage, to url: URL) throws {
     guard
@@ -53,16 +58,16 @@ func readImage(_ url: URL) throws -> CGImage {
 }
 
 func stats(of image: CGImage) throws -> FrameStats {
-    let height = max(1, statsWidth * image.height / max(1, image.width))
+    let height = max(1, Layout.statsWidth * image.height / max(1, image.width))
     guard
         let context = CGContext(
-            data: nil, width: statsWidth, height: height, bitsPerComponent: 8, bytesPerRow: statsWidth,
+            data: nil, width: Layout.statsWidth, height: height, bitsPerComponent: 8, bytesPerRow: Layout.statsWidth,
             space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue)
     else { throw HelperError(description: "can't make a grey bitmap") }
     context.interpolationQuality = .medium
-    context.draw(image, in: CGRect(x: 0, y: 0, width: statsWidth, height: height))
+    context.draw(image, in: CGRect(x: 0, y: 0, width: Layout.statsWidth, height: height))
     guard let data = context.data else { throw HelperError(description: "the grey bitmap has no pixels") }
-    let count = statsWidth * height
+    let count = Layout.statsWidth * height
     let grey = Array(UnsafeBufferPointer(start: data.bindMemory(to: UInt8.self, capacity: count), count: count))
     var sum = 0
     var dark = 0
@@ -86,12 +91,12 @@ func change(_ first: [UInt8], _ other: [UInt8]) -> Double {
 
 func contactSheet(_ frames: [CGImage]) throws -> CGImage? {
     guard let first = frames.first else { return nil }
-    let step = max(1, (frames.count + sheetLimit - 1) / sheetLimit)
+    let step = max(1, (frames.count + Layout.sheetLimit - 1) / Layout.sheetLimit)
     let picked = stride(from: 0, to: frames.count, by: step).map { frames[$0] }
     let gap = 4
-    let cellHeight = max(1, sheetCellWidth * first.height / max(1, first.width))
-    let rows = (picked.count + sheetColumns - 1) / sheetColumns
-    let width = sheetColumns * (sheetCellWidth + gap) + gap
+    let cellHeight = max(1, Layout.sheetCellWidth * first.height / max(1, first.width))
+    let rows = (picked.count + Layout.sheetColumns - 1) / Layout.sheetColumns
+    let width = Layout.sheetColumns * (Layout.sheetCellWidth + gap) + gap
     let height = rows * (cellHeight + gap) + gap
     guard
         let context = CGContext(
@@ -103,12 +108,12 @@ func contactSheet(_ frames: [CGImage]) throws -> CGImage? {
     context.fill(CGRect(x: 0, y: 0, width: width, height: height))
     context.interpolationQuality = .medium
     for (index, frame) in picked.enumerated() {
-        let column = index % sheetColumns
-        let row = index / sheetColumns
+        let column = index % Layout.sheetColumns
+        let row = index / Layout.sheetColumns
         // Core Graphics counts from the bottom; the sheet reads from the top.
-        let x = gap + column * (sheetCellWidth + gap)
+        let x = gap + column * (Layout.sheetCellWidth + gap)
         let y = height - (row + 1) * (cellHeight + gap)
-        context.draw(frame, in: CGRect(x: x, y: y, width: sheetCellWidth, height: cellHeight))
+        context.draw(frame, in: CGRect(x: x, y: y, width: Layout.sheetCellWidth, height: cellHeight))
     }
     return context.makeImage()
 }
@@ -159,7 +164,7 @@ func dump(movie: URL, folder: URL, interval: Double, width: Int) async throws {
     }
 
     print("\(rows.count) frames of \(String(format: "%.1f", duration)) s in \(folder.path)")
-    print("sheet: \(folder.appendingPathComponent("sheet.png").path) (rows of \(sheetColumns), in order)")
+    print("sheet: \(folder.appendingPathComponent("sheet.png").path) (rows of \(Layout.sheetColumns), in order)")
     let darkest = rows.sorted { $0.stats.darkShare > $1.stats.darkShare }.prefix(5)
     print("most dark pixels: " + darkest.map { String(format: "frame-%04ld (%.1f %%)", $0.index, $0.stats.darkShare) }
         .joined(separator: ", "))

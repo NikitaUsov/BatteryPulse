@@ -15,9 +15,8 @@
 #
 # Every install goes the way UpdateInstaller goes: a copy staged on the same volume, one atomic swap
 # (swap.swift: renamex_np with RENAME_SWAP), lsregister -f, a relaunch. A build whose
-# CFBundleVersion is lower than the installed one is refused (WidgetKit caches by it), except the
-# 0.6.1 reinstall, restore, and build A in the unattended window, which runs after every widget
-# question (install_build).
+# CFBundleVersion isn't higher than the installed one is refused (WidgetKit caches by it), except
+# the reinstall of 0.6.1 and restore's reinstall of your own app (install_build).
 #
 # Wording (PLAN.md §3): every y/n question means "y = looks right"; everything else is a numbered
 # choice. A step prints its questions as ASK lines and its hands-on tasks as DO lines; `answer`
@@ -33,23 +32,28 @@ REPO="NikitaUsov/BatteryPulse"
 INTEGRATION_BRANCH="claude/nice-faraday-k08mhb"
 RESULTS_BRANCH="claude/062-session-a"
 
-# The builds (PLAN.md §5 A2 and A2′, WP-W0, WP-21). Every CI build of a push is version 0.0.0 with
-# its run number as CFBundleVersion, so C < I < W < A2 by run number; B is the published 0.6.1
-# (release run 7).
-RUN_C="39800982102" # SPIKE-C, #277: 0.6.1's code
+# The builds (PLAN.md §5 A2 and A2′, WP-W0, WP-21), each a CI artifact pinned to its run. Every CI
+# build of a push has its run number as CFBundleVersion, so C (277) < I (278) < W (282) < A2 (285),
+# and A (158) sits between B and the spikes; B is the published 0.6.1 (release run 7).
+RUN_C="39800982102" # SPIKE-C, #277: 0.6.1's code, the control
 ARTIFACT_C="BatteryPulse-76223738b61a8fc2a442115eb7fc93dba332eb73"
 RUN_I="39801168615" # SPIKE-I, #278: 0.6.1 plus -internalize-at-link on the widget
 ARTIFACT_I="BatteryPulse-dbf4dfa11a2fe4a87a38f2f74c44eaeb7a7fabd3"
-BRANCH_W="claude/062-spike-widget" # SPIKE-W: its latest green run, #282 (a609487) or later
-BRANCH_A2="claude/062-spike-a2"    # SPIKE-A2 and its profiling DMG: its latest green run, #285 or later
-BRANCH_A="claude/baseline-0.6.0"   # A: the instrumented 0.6.0 (076873d), #158
-TAG_B="v0.6.1"                     # B: the published 0.6.1 DMG
+RUN_W="39806441696" # SPIKE-W, #282 (a609487): the configurable kind, the Test kind, the feed, clicks
+ARTIFACT_W="BatteryPulse-a60948765b7e7df33e3a8a5d43a71953d889b411"
+RUN_A2="39808734092" # SPIKE-A2, #285 (cee5033): E20, the minimize fill switch, and a profiling DMG
+ARTIFACT_A2="BatteryPulse-cee5033bae2f9e459332a5b22fa971aff2583765"
+ARTIFACT_A2P="BatteryPulse-profiling-cee5033bae2f9e459332a5b22fa971aff2583765"
+RUN_A="39413159534" # A: claude/baseline-0.6.0, #158 (076873d), the instrumented 0.6.0
+ARTIFACT_A="BatteryPulse-076873d5bf151db628de91e216a8bfabb9356e1a"
+TAG_B="v0.6.1" # B: the published 0.6.1 DMG
 
-# SPIKE-A2's hidden switch (AppSettings.spikeA2MinimizeFillKey on that branch): a
-# WindowLookPolicy.SpikeMinimizeFill raw value. "b" gives Clear fill (b) and leaves Translucent on
-# today's fill; "a" is today's fill everywhere.
+# SPIKE-A2's hidden switch (AppSettings.spikeA2MinimizeFillKey on that branch, never shipped): a
+# WindowLookPolicy.SpikeMinimizeFill raw value, read at launch. "b" gives Clear fill (b) and leaves
+# Translucent on today's fill; "b-and-translucent-dark" gives Translucent Dark fill (b) too.
 FILL_KEY="spikeA2MinimizeFill"
 FILL_VALUE="b"
+FILL_VALUE_TD="b-and-translucent-dark"
 
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 WIDGET_ID="$BUNDLE_ID.Widget"
@@ -205,6 +209,7 @@ question() {
     fill-clear-light | fill-clear-dark | fill-translucent-dark)
       echo "3|judge|${1#fill-}: while the window shrank into the Dock and came back: 1 like the window, or an even graphite grey, 2 a black frame, 3 something else (note)"
       ;;
+    fill-translucent-dark-b) echo "3|judge|translucent-dark with fill (b) extended to it (only after a 2 above): 1 like the window, or an even graphite grey, 2 a black frame, 3 something else (note)" ;;
     energy-setup) echo "2|person|Energy setup for the window: display brightness about half, auto-brightness and True Tone off, other apps quit (Terminal and this session stay), a Focus on: 1 done, 2 not all (note)" ;;
     *) return 1 ;;
   esac
@@ -217,7 +222,7 @@ W0-2-W-small W0-2-W-medium W0-2-W-large W0-2-W-xlarge W0-2-W-edit W0-1-test-edit
 W0-6-format-en W0-6-tick W0-2-W-ru W0-6-format-ru
 W0-2-reinstall W0-5-voiceover W0-5-text-size
 V01-notification V01-notification-front V01-menubar V01-pages V01-lid
-fill-clear-light fill-clear-dark fill-translucent-dark
+fill-clear-light fill-clear-dark fill-translucent-dark fill-translucent-dark-b
 energy-setup"
 
 kind_hint() {
@@ -376,7 +381,7 @@ battery_percent() { pmset -g batt | grep -o -E '[0-9]+%' | head -1 | tr -d % || 
 lowpowermode_of() {
   pmset -g custom | awk -v source="$1" '
     /Power:$/ { section = $1 }
-    section == source && $1 == "lowpowermode" { print $2; exit }'
+    section == source && $1 == "lowpowermode" && !found { print $2; found = 1 }'
 }
 
 appearance() {
@@ -415,7 +420,7 @@ unmount_dmg() {
   rmdir "$MOUNT" 2>/dev/null || true
 }
 
-app_in_mount() { find "$MOUNT" -maxdepth 1 -name '*.app' -type d | head -1; }
+app_in_mount() { find "$MOUNT" -maxdepth 1 -name '*.app' -type d | head -1 || true; }
 
 # describe_build <name> <origin>: its version and build number into builds.tsv.
 describe_build() {
@@ -432,29 +437,17 @@ describe_build() {
   echo "$name: $version ($build), $origin"
 }
 
-build_number_of() { awk -F '\t' -v name="$1" '$1 == name { print $3 }' "$WORK/builds.tsv" 2>/dev/null || true; }
-
-# latest_green_run <branch>: "<run id> <run number> <head sha>" of the branch's newest successful CI run.
-latest_green_run() {
-  gh api "repos/$REPO/actions/runs?branch=$1&status=success&per_page=20" \
-    --jq '[.workflow_runs[] | select(.name == "CI")] | first | if . == null then "" else "\(.id) \(.run_number) \(.head_sha)" end'
-}
-
-# artifact_named <run id> <extended regular expression>: the run's unexpired artifact whose name matches.
-artifact_named() {
-  gh api "repos/$REPO/actions/runs/$1/artifacts?per_page=50" --jq '.artifacts[] | select(.expired | not) | .name' |
-    grep -E "$2" | head -1 || true
-}
-
-# fetch_artifact <name> <run id> <artifact> <dmg file name>: builds/<name>.dmg.
+# fetch_artifact <name> <run id> <artifact> <dmg file name>: builds/<name>.dmg, with
+# `gh run download`. An expired artifact (ci.yml sets no retention: 90 days) comes back from a new
+# CI run of the same commit's branch, with a new run number.
 fetch_artifact() {
   local name="$1" run="$2" artifact="$3" file="$4" dir dmg
-  [ -n "$artifact" ] || fail "run $run has no artifact for $name (expired?); a new CI run of its branch makes one"
   dir="$BUILDS/$name.download"
   rm -rf "$dir"
   mkdir -p "$dir"
-  gh run download "$run" -R "$REPO" -n "$artifact" -D "$dir" || fail "can't download $artifact of run $run"
-  dmg="$(find "$dir" -name "$file" -type f | head -1)"
+  gh run download "$run" -R "$REPO" -n "$artifact" -D "$dir" ||
+    fail "can't download $artifact of run $run (expired? a new CI run of its branch makes a new one)"
+  dmg="$(find "$dir" -name "$file" -type f | head -1 || true)"
   [ -n "$dmg" ] || fail "$artifact of run $run has no $file"
   mv "$dmg" "$BUILDS/$name.dmg"
   rm -rf "$dir"
@@ -462,39 +455,13 @@ fetch_artifact() {
 }
 
 fetch_builds() {
-  local found run number artifact
   mkdir -p "$BUILDS"
-  if [ ! -f "$BUILDS/C.dmg" ]; then fetch_artifact C "$RUN_C" "$ARTIFACT_C" BatteryPulse.dmg; fi
-  if [ ! -f "$BUILDS/I.dmg" ]; then fetch_artifact I "$RUN_I" "$ARTIFACT_I" BatteryPulse.dmg; fi
-  if [ ! -f "$BUILDS/W.dmg" ]; then
-    found="$(latest_green_run "$BRANCH_W")"
-    [ -n "$found" ] || fail "no green CI run on $BRANCH_W"
-    read -r run number _ <<<"$found"
-    [ "$number" -gt 278 ] || fail "SPIKE-W's run #$number isn't after SPIKE-I's #278"
-    fetch_artifact W "$run" "$(artifact_named "$run" '^BatteryPulse-[0-9a-f]{40}$')" BatteryPulse.dmg
-  fi
-  if [ ! -f "$BUILDS/A2.dmg" ] || { [ ! -f "$BUILDS/A2P.dmg" ] && [ ! -f "$BUILDS/A2P.none" ]; }; then
-    found="$(latest_green_run "$BRANCH_A2")"
-    if [ -z "$found" ]; then
-      warn "no green CI run on $BRANCH_A2 yet: steps 5-9 need it; run prepare again once it exists"
-    else
-      read -r run number _ <<<"$found"
-      fetch_artifact A2 "$run" "$(artifact_named "$run" '^BatteryPulse-[0-9a-f]{40}$')" BatteryPulse.dmg
-      artifact="$(artifact_named "$run" '^BatteryPulse-profiling-')"
-      if [ -n "$artifact" ]; then
-        fetch_artifact A2P "$run" "$artifact" BatteryPulse-profiling.dmg
-      else
-        warn "run $run has no profiling DMG: step 8's xctrace half is skipped"
-        touch "$BUILDS/A2P.none"
-      fi
-    fi
-  fi
-  if [ ! -f "$BUILDS/A.dmg" ]; then
-    found="$(latest_green_run "$BRANCH_A")"
-    [ -n "$found" ] || fail "no green CI run on $BRANCH_A; start one with: gh workflow run CI -R $REPO --ref $BRANCH_A"
-    read -r run number _ <<<"$found"
-    fetch_artifact A "$run" "$(artifact_named "$run" '^BatteryPulse-[0-9a-f]{40}$')" BatteryPulse.dmg
-  fi
+  [ -f "$BUILDS/C.dmg" ] || fetch_artifact C "$RUN_C" "$ARTIFACT_C" BatteryPulse.dmg
+  [ -f "$BUILDS/I.dmg" ] || fetch_artifact I "$RUN_I" "$ARTIFACT_I" BatteryPulse.dmg
+  [ -f "$BUILDS/W.dmg" ] || fetch_artifact W "$RUN_W" "$ARTIFACT_W" BatteryPulse.dmg
+  [ -f "$BUILDS/A2.dmg" ] || fetch_artifact A2 "$RUN_A2" "$ARTIFACT_A2" BatteryPulse.dmg
+  [ -f "$BUILDS/A2P.dmg" ] || fetch_artifact A2P "$RUN_A2" "$ARTIFACT_A2P" BatteryPulse-profiling.dmg
+  [ -f "$BUILDS/A.dmg" ] || fetch_artifact A "$RUN_A" "$ARTIFACT_A" BatteryPulse.dmg
   if [ ! -f "$BUILDS/B.dmg" ]; then
     rm -rf "$BUILDS/B.download"
     mkdir -p "$BUILDS/B.download"
@@ -506,17 +473,25 @@ fetch_builds() {
   fi
 }
 
-# install_build <name|backup> [<why a lower build number is fine>] [--no-launch]: the build's app
-# into /Applications the way UpdateInstaller does it: a copy staged on the same volume, its bundle
-# ID and code signature checked, one atomic swap with the installed copy, the old one deleted once
-# it has quit, lsregister -f, a relaunch. A build whose CFBundleVersion is lower than the installed
-# one is refused, unless it is the 0.6.1 reinstall, or the caller names why it is fine. An app
-# whose version equals the last one launched doesn't end the previous widget extension itself
+# install_build <name|backup> [--no-launch]: the build's app into /Applications the way
+# UpdateInstaller does it (WP-W0 "Install"): a copy staged on the same volume, its bundle ID and code
+# signature checked, one atomic swap with the installed copy (swap.swift), the old copy deleted once
+# it has quit, lsregister -f, a relaunch. WidgetKit caches by CFBundleVersion, so a build whose
+# number isn't higher than the installed one is refused, except the reinstall of 0.6.1 (B, or your
+# backed-up 0.6.1) and restore's reinstall of your own app. The order of the steps keeps every other
+# install higher: C < I < W, then 0.6.1, A2, 0.6.1 again before A2's profiling build and before
+# every A of the window, which is higher than 0.6.1. The same build twice is skipped. An app whose
+# version equals the last one launched doesn't end the previous widget extension itself
 # (WidgetRefresher.endPreviousExtension runs on a version change), so the script ends it then.
 install_build() {
-  local name="$1" lower_ok="${2:-}" launch_after=1 staging staged bundle version build installed last_seen
-  if [ "${3:-}" = --no-launch ]; then launch_after=0; fi
+  local name="$1" launch_after=1 staging staged bundle version build installed last_seen why="higher"
+  if [ "${2:-}" = --no-launch ]; then launch_after=0; fi
   mkdir -p "$WORK"
+  if [ "$name" != backup ] && [ "$(cat "$WORK/installed" 2>/dev/null || true)" = "$name $(installed_build)" ]; then
+    echo "$name is installed already: $(app_version)"
+    if [ "$launch_after" = 1 ] && ! app_running; then launch; fi
+    return 0
+  fi
   staging="$(mktemp -d "$WORK/stage.XXXXXX")"
   staged="$staging/BatteryPulse.app"
   if [ "$name" = backup ]; then
@@ -543,25 +518,26 @@ install_build() {
   build="${build%%.*}"
   installed=0
   if [ -f "$APP/Contents/Info.plist" ]; then
-    installed="$(plist_value "$APP/Contents/Info.plist" CFBundleVersion)"
+    installed="$(installed_build)"
     installed="${installed%%.*}"
   fi
-  case "$build$installed" in *[!0-9]*) fail "a build number isn't a number ($build, $installed)" ;; esac
-  if [ "$build" -lt "$installed" ]; then
+  case "$build$installed" in "" | *[!0-9]*) fail "a build number isn't a number ($build, $installed)" ;; esac
+  if [ "$build" -le "$installed" ]; then
     if [ "$version" = 0.6.1 ] && { [ "$name" = B ] || [ "$name" = backup ]; }; then
-      lower_ok="the 0.6.1 reinstall"
-    fi
-    if [ -z "$lower_ok" ]; then
+      why="the 0.6.1 reinstall"
+    elif [ "$name" = backup ]; then
+      why="restore puts your app back"
+    else
       rm -rf "$staging"
-      fail "refusing $name: its build $build is lower than the installed $installed, and WidgetKit caches by it"
+      fail "refusing $name: its build $build isn't higher than the installed $installed, and WidgetKit caches by it; install 0.6.1 first ($SCRIPT install B)"
     fi
-    echo "note: $name's build $build is lower than the installed $installed: $lower_ok"
+    echo "note: $name's build $build isn't higher than the installed $installed: $why"
   fi
   if [ "$(stat -f %d "$staging")" != "$(stat -f %d /Applications)" ]; then
     warn "the staging folder may not be on the volume of /Applications; the swap says if it isn't"
   fi
   if [ -d "$APP" ]; then
-    "$BIN/swap" "$staged" "$APP" || fail "the swap failed"
+    "$BIN/swap" "$staged" "$APP" || fail "the swap failed; $APP is as it was"
   else
     mv "$staged" "$APP"
   fi
@@ -571,10 +547,16 @@ install_build() {
   "$LSREGISTER" -f "$APP" || warn "lsregister -f failed"
   last_seen="$(defaults read "$BUNDLE_ID" lastSeenVersion 2>/dev/null || true)"
   if [ "$last_seen" = "$version" ]; then end_widget_extension; fi
-  printf '%s\t%s\t%s\t%s (%s)\t%s\n' "$(clock)" "$name" "$(app_version)" "$version" "$build" "${lower_ok:-higher}" \
-    >>"$WORK/installs.tsv"
+  echo "$name $build" >"$WORK/installed"
+  printf '%s\t%s\t%s (%s)\t%s\n' "$(clock)" "$name" "$version" "$build" "$why" >>"$WORK/installs.tsv"
   if [ "$launch_after" = 1 ]; then launch; fi
   echo "installed $name: $(app_version)"
+}
+
+step_install() {
+  [ $# -eq 1 ] || fail "usage: $SCRIPT install <C|I|W|B|A2|A2P|A|backup>"
+  case "$1" in C | I | W | B | A2 | A2P | A | backup) ;; *) fail "no build $1" ;; esac
+  install_build "$1"
 }
 
 installed_build() { plist_value "$APP/Contents/Info.plist" CFBundleVersion; }
@@ -593,13 +575,18 @@ build_tools() {
         fail "can't build scripts/$tool.swift; see $BIN/$tool.log"
     fi
   done
-  for tool in swap frames; do
-    if tools_need_build "$tool" "$HERE/$tool.swift"; then
-      echo "building $tool.swift..."
-      xcrun swiftc -O "$HERE/$tool.swift" -o "$BIN/$tool" 2>"$BIN/$tool.log" ||
-        fail "can't build $tool.swift; see $BIN/$tool.log"
+  if tools_need_build swap "$HERE/swap.swift"; then
+    echo "building swap.swift..."
+    xcrun swiftc -O "$HERE/swap.swift" -o "$BIN/swap" 2>"$BIN/swap.log" ||
+      fail "can't build swap.swift, which every install needs; see $BIN/swap.log"
+  fi
+  if tools_need_build frames "$HERE/frames.swift"; then
+    echo "building frames.swift..."
+    if ! xcrun swiftc -O "$HERE/frames.swift" -o "$BIN/frames" 2>"$BIN/frames.log"; then
+      rm -f "$BIN/frames"
+      warn "frames.swift didn't build (see $BIN/frames.log): step 6 then needs the recordings watched in QuickTime Player"
     fi
-  done
+  fi
   if [ ! -x "$BIN/bpulse" ]; then
     echo "building bpulse (release; Package.swift needs Swift tools 6.4)..."
     if (cd "$ROOT" && xcrun swift build -c release --product bpulse) >"$BIN/bpulse.log" 2>&1; then
@@ -816,6 +803,7 @@ step_unattach() {
 
 step_crop() {
   [ $# -eq 6 ] || fail "usage: $SCRIPT crop <image> <x> <y> <width> <height> <name> (pixels from the top left)"
+  [ -x "$BIN/frames" ] || fail "the frame helper isn't built (see $BIN/frames.log)"
   mkdir -p "$SHOTS"
   "$BIN/frames" crop "$1" "$2" "$3" "$4" "$5" "$SHOTS/$6.png"
 }
@@ -903,7 +891,7 @@ step_prepare() {
   case "$(app_version)" in
     "0.6.1 "*) relaunch_with_session_settings ;;
     *)
-      install_build B "" --no-launch
+      install_build B --no-launch
       relaunch_with_session_settings
       ;;
   esac
@@ -948,7 +936,7 @@ step_f5() {
     start)
       begin_section 20-f5 "F5, accessories and devices (0.6.1)"
       clock >"$WORK/f5.time"
-      case "$(app_version)" in "0.6.1 "*) ;; *) install_build B "" --no-launch ;; esac
+      case "$(app_version)" in "0.6.1 "*) ;; *) install_build B --no-launch ;; esac
       quit_app
       session_settings
       set_default readDevices -bool true
@@ -1010,7 +998,7 @@ spike_install() {
   pluginkit -mv -i "$WIDGET_ID" >"$LOGS/pluginkit-before-$name.txt" 2>&1 || true
   out "- before: $(app_version)"
   out_block "$LOGS/pluginkit-before-$name.txt"
-  install_build "$name" "" --no-launch
+  install_build "$name" --no-launch
   quit_app
   session_settings
   launch
@@ -1157,7 +1145,7 @@ spike_logs() {
 
 step_voiceover() {
   begin_section 40-voiceover "VoiceOver and Text size on 0.6.1 (W0-5)"
-  install_build B "" --no-launch
+  install_build B --no-launch
   quit_app
   session_settings
   launch
@@ -1182,7 +1170,7 @@ step_v01() {
   case "${1:-}" in
     start)
       begin_section 50-v01 "V-01 on SPIKE-A2 (WP-10, WP-14a)"
-      install_build A2 "" --no-launch
+      install_build A2 --no-launch
       quit_app
       session_settings
       launch
@@ -1239,65 +1227,112 @@ step_appearance() {
 
 # MARK: - Clear's fill (step 6)
 
+# The cases: Clear Light, Clear Dark and Translucent Dark on fill (b) for Clear (FILL_VALUE), and,
+# only when Translucent Dark shows the frame (a 2), Translucent Dark again with fill (b) extended to
+# it (FILL_VALUE_TD), the check of WP-13 item 1's extension.
+FILL_CASES="clear-light clear-dark translucent-dark translucent-dark-b"
+FILL_SECONDS=6
+
 fill_case() {
   case "${1:-}" in
-    clear-light | clear-dark | translucent-dark) ;;
-    *) fail "the cases are clear-light, clear-dark and translucent-dark" ;;
+    clear-light | clear-dark | translucent-dark | translucent-dark-b) ;;
+    *) fail "the cases are $FILL_CASES" ;;
   esac
 }
 
+fill_look() { echo "${1%%-*}"; }
+
+fill_appearance() {
+  local rest="${1#*-}"
+  echo "${rest%%-*}"
+}
+
+fill_value() { if [ "$1" = translucent-dark-b ]; then echo "$FILL_VALUE_TD"; else echo "$FILL_VALUE"; fi; }
+
+# record_clip <movie> <seconds>: a sound, then the screen for <seconds> (screencapture -v), then a
+# second sound.
+record_clip() {
+  local movie="$1" seconds="$2" pid tries=0 limit
+  rm -f "$movie"
+  afplay /System/Library/Sounds/Glass.aiff &
+  screencapture -v -V "$seconds" -x "$movie" &
+  pid=$!
+  limit=$((seconds * 2 + 10))
+  while kill -0 "$pid" 2>/dev/null && [ "$tries" -lt "$limit" ]; do
+    sleep 0.5
+    tries=$((tries + 1))
+  done
+  kill -INT "$pid" 2>/dev/null || true
+  sleep 1
+  afplay /System/Library/Sounds/Pop.aiff || true
+  [ -s "$movie" ] || fail "no recording: allow Screen Recording for this app (System Settings → Privacy & Security), then record again"
+}
+
+# fill_frames <case>: each clip's frames, contact sheet and numbers, and a line for A.md.
+fill_frames() {
+  local case_name="$1" phase movie folder darkest
+  [ -x "$BIN/frames" ] || fail "the frame helper isn't built (see $BIN/frames.log): open the recordings in QuickTime Player ($REC) instead"
+  use_section 60-fill "Clear's minimize fill on SPIKE-A2 (WP-13, Q-B2)"
+  for phase in minimize restore; do
+    movie="$REC/$case_name-$phase.mov"
+    folder="$REC/$case_name-$phase-frames"
+    [ -s "$movie" ] || fail "record it first: $SCRIPT fill record $case_name"
+    rm -rf "$folder"
+    "$BIN/frames" dump "$movie" "$folder" 0.2 1280
+    darkest="$(tail -n +2 "$folder/frames.tsv" | sort -t "$(printf '\t')" -k4 -n -r | head -1 |
+      awk -F '\t' '{ printf "frame %s at %s s, %s %% dark pixels", $1, $2, $4 }' || true)"
+    out "- $case_name, $phase: $FILL_SECONDS s, $(($(wc -c <"$movie") / 1024)) KB (kept on the Mac); $(($(wc -l <"$folder/frames.tsv") - 1)) frames at 0.2 s; darkest: $darkest"
+    echo "LOOK $folder/sheet.png (then the frames it names, in $folder)"
+  done
+}
+
 step_fill() {
-  local case_name="${2:-}"
+  local case_name="${2:-}" value
   case "${1:-}" in
     ready)
       fill_case "$case_name"
-      [ "$(installed_build)" = "$(build_number_of A2)" ] || install_build A2 "" --no-launch
+      value="$(fill_value "$case_name")"
+      install_build A2 --no-launch
       use_section 60-fill "Clear's minimize fill on SPIKE-A2 (WP-13, Q-B2)"
+      # The switch is read at launch: quit first, write, then launch.
       quit_app
       session_settings
       set_default betaWindowStyles -bool true
-      set_default windowLook -string "${case_name%-*}"
-      set_default "$FILL_KEY" -string "$FILL_VALUE"
-      appearance "${case_name#*-}"
+      set_default windowLook -string "$(fill_look "$case_name")"
+      set_default "$FILL_KEY" -string "$value"
+      appearance "$(fill_appearance "$case_name")"
       launch
-      echo "Fill: $FILL_KEY = $FILL_VALUE (Clear gets fill (b); Translucent keeps today's fill)."
-      echo "DO (person): open BatteryPulse's main window (menu bar item → Open BatteryPulse) in the middle of the screen."
-      echo "  When the sound plays: hold Shift and click the yellow button (the slow minimize); when the window is in the"
-      echo "  Dock, hold Shift and click it there to bring it back. The recording runs 15 s."
+      echo "Fill: $FILL_KEY = $value; window style $(fill_look "$case_name"), $(fill_appearance "$case_name") appearance."
+      echo "DO (person): open BatteryPulse's main window (menu bar item → Open BatteryPulse) in the middle of the"
+      echo "  screen, away from the Dock. Reduce Transparency and Increase Contrast must be off (they give Standard)."
+      echo "  At the first sound: hold Shift and click the yellow button (the slow minimize)."
+      echo "  At the next sound: hold Shift and click the window's icon in the Dock (the slow restore)."
       echo "NEXT: $SCRIPT fill record $case_name"
       ;;
     record)
       fill_case "$case_name"
       mkdir -p "$REC"
-      rm -f "$REC/$case_name.mov"
-      afplay /System/Library/Sounds/Glass.aiff &
-      screencapture -v -V 15 -x "$REC/$case_name.mov" &
-      local pid=$! tries=0
-      while kill -0 "$pid" 2>/dev/null && [ "$tries" -lt 50 ]; do
-        sleep 0.5
-        tries=$((tries + 1))
-      done
-      kill -INT "$pid" 2>/dev/null || true
-      sleep 1
-      afplay /System/Library/Sounds/Pop.aiff || true
-      [ -s "$REC/$case_name.mov" ] || fail "no recording: allow Screen Recording for this app, then record again"
-      echo "recorded $REC/$case_name.mov ($(($(wc -c <"$REC/$case_name.mov") / 1024)) KB)"
-      echo "NEXT: $SCRIPT fill frames $case_name"
-      ;;
-    frames)
-      fill_case "$case_name"
-      [ -s "$REC/$case_name.mov" ] || fail "record it first: $SCRIPT fill record $case_name"
-      rm -rf "$REC/$case_name-frames"
-      "$BIN/frames" dump "$REC/$case_name.mov" "$REC/$case_name-frames" 0.2 1280
-      use_section 60-fill "Clear's minimize fill on SPIKE-A2 (WP-13, Q-B2)"
-      out "- $case_name: recorded 15 s, $(($(wc -c <"$REC/$case_name.mov") / 1024)) KB (kept on the Mac); $(($(wc -l <"$REC/$case_name-frames/frames.tsv") - 1)) frames at 0.2 s; darkest frame $(sort -t $'\t' -k4 -n -r <(tail -n +2 "$REC/$case_name-frames/frames.tsv") | head -1 | awk -F '\t' '{ printf "%s s, %s %% dark pixels", $2, $4 }')"
-      echo "Look at the sheet, then at the frames it names; judge:"
+      echo "minimize: Shift-click the yellow button at the sound ($FILL_SECONDS s)"
+      record_clip "$REC/$case_name-minimize.mov" "$FILL_SECONDS"
+      sleep 2
+      echo "restore: Shift-click the window's Dock icon at the sound ($FILL_SECONDS s)"
+      record_clip "$REC/$case_name-restore.mov" "$FILL_SECONDS"
+      fill_frames "$case_name"
+      echo "Look at each sheet, then at the frames it names, and judge (a clip that missed the animation: record again):"
       ask "fill-$case_name"
       case "$case_name" in
         clear-light) echo "NEXT: $SCRIPT fill ready clear-dark" ;;
         clear-dark) echo "NEXT: $SCRIPT fill ready translucent-dark" ;;
-        translucent-dark) echo "NEXT: $SCRIPT fill done" ;;
+        translucent-dark)
+          echo "NEXT: if fill-translucent-dark is 2, $SCRIPT fill ready translucent-dark-b (fill (b) extended to it);"
+          echo "  otherwise $SCRIPT fill done"
+          ;;
+        translucent-dark-b) echo "NEXT: $SCRIPT fill done" ;;
       esac
+      ;;
+    frames)
+      fill_case "$case_name"
+      fill_frames "$case_name"
       ;;
     done)
       quit_app
@@ -1307,7 +1342,7 @@ step_fill() {
       launch
       echo "NEXT: $SCRIPT attach-timing"
       ;;
-    *) fail "usage: $SCRIPT fill ready|record|frames <case> | fill done" ;;
+    *) fail "usage: $SCRIPT fill ready|record|frames <case> | fill done; cases: $FILL_CASES" ;;
   esac
 }
 
@@ -1420,7 +1455,7 @@ step_pages() {
   local profiling="${1:-}" capture
   case "$profiling" in
     "")
-      [ "$(installed_build)" = "$(build_number_of A2)" ] || install_build A2 ""
+      install_build A2
       begin_section 80-pages "Page switches on SPIKE-A2 (WP-17's before)"
       app_running || launch
       echo "DO (person): open BatteryPulse's main window with the sidebar showing; click each page the Mac names (about 4 minutes)."
@@ -1445,7 +1480,9 @@ step_pages() {
         out "- skipped: SPIKE-A2's run has no profiling DMG"
         return 0
       fi
-      install_build A2P ""
+      # A2P has A2's build number (the same run): 0.6.1 goes between them.
+      install_build B --no-launch
+      install_build A2P
       xcrun xctrace list templates >"$LOGS/xctrace-templates.txt" 2>&1 || true
       local template
       template="$(grep -i -m1 swiftui "$LOGS/xctrace-templates.txt" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+\(.*\)$//' || true)"
@@ -1580,14 +1617,15 @@ sampler() {
 }
 
 # energy_row <cells...>: one row of the energy table; a run that didn't happen says why in the
-# third cell and leaves the rest empty.
+# fifth cell and leaves the rest empty.
+ENERGY_COLUMNS=11
 energy_row() {
   local row="|" cell count=0
   for cell in "$@"; do
     row="$row $cell |"
     count=$((count + 1))
   done
-  while [ "$count" -lt 10 ]; do
+  while [ "$count" -lt "$ENERGY_COLUMNS" ]; do
     row="$row |"
     count=$((count + 1))
   done
@@ -1596,31 +1634,36 @@ energy_row() {
 
 rusage_value() { awk -F= -v key="$2" '$1 == key { print $2 }' "$1"; }
 
+power_source() { if on_battery; then echo battery; else echo "adapter (not valid)"; fi; }
+
 # energy_run <scenario> <build> <seconds>: one run of WP-21: the build installed, the scenario's
-# settings, 1 minute to settle, then rusage over the window with the perf lines captured. S1 shows
-# the icon and the charge, S2 power in the menu bar too, S2-LPM that with Low Power Mode on, S6 S1
-# with the displays asleep. Every window stays closed.
+# settings, Low Power Mode and the power source recorded, 1 minute to settle, then rusage over the
+# window with the perf lines captured. S1 shows the icon and the charge, S2 power in the menu bar
+# too, S2-LPM that with Low Power Mode on, S6 S1 with the displays asleep. Every window stays
+# closed; the display stays on (caffeinate -d) except in S6.
 ENERGY_INDEX=0
 energy_run() {
-  local scenario="$1" build="$2" seconds="$3" capture rusage_file pid measuring assertions lpm reads per_minute
+  local scenario="$1" build="$2" seconds="$3" capture rusage_file pid measuring assertions lpm power reads
+  local per_minute
   ENERGY_INDEX=$((ENERGY_INDEX + 1))
   echo "$(clock) energy run $ENERGY_INDEX: $scenario on $build"
-  install_build "$build" "the energy runs follow every widget question" --no-launch
+  install_build "$build" --no-launch
   quit_app
   session_settings
   case "$scenario" in S2*) set_default menuBarShowsPower -bool true ;; esac
   if [ "$scenario" = S2-LPM ]; then
     if ! sudo_ok || ! set_lowpowermode 1; then
-      energy_row "$scenario" "$build" "not run: no sudo ticket"
+      energy_row "$scenario" "$build" "$(power_source)" "-" "not run: no sudo ticket"
       return 0
     fi
   fi
+  lpm="$(lowpowermode_of Battery)"
+  power="$(power_source)"
   launch
-  if ! on_battery; then warn "not on battery: the run is recorded with the adapter"; fi
   sleep 60
   if [ "$scenario" = S6 ]; then
     let_display_sleep
-    pmset displaysleepnow
+    pmset displaysleepnow || warn "pmset displaysleepnow failed: S6 runs with the display on"
   fi
   capture="$LOGS/energy-$ENERGY_INDEX-$scenario-$build.ndjson"
   rusage_file="$LOGS/energy-$ENERGY_INDEX-$scenario-$build.rusage"
@@ -1628,21 +1671,21 @@ energy_run() {
   pid="$(app_pid)"
   if [ -z "$pid" ]; then
     perf_stop "$STREAM"
-    energy_row "$scenario" "$build" "not run: BatteryPulse wasn't running"
+    energy_row "$scenario" "$build" "$power" "$lpm" "not run: BatteryPulse wasn't running"
   else
     rusage "$pid" "$seconds" >"$rusage_file" 2>&1 &
     measuring=$!
     sleep 5
     assertions="$(pmset -g assertions | grep -c BatteryPulse || true)"
-    lpm="$(lowpowermode_of Battery)"
     wait "$measuring" || true
     perf_stop "$STREAM"
+    if on_battery; then :; else power="adapter (not valid)"; fi
     reads="$(app_reads "$capture")"
     per_minute="$(awk -v n="$reads" -v s="$seconds" 'BEGIN { printf "%.1f", n * 60 / s }')"
-    energy_row "$scenario" "$build" "$(rusage_value "$rusage_file" energy_mj_per_h)" \
+    energy_row "$scenario" "$build" "$power" "$lpm" "$(rusage_value "$rusage_file" energy_mj_per_h)" \
       "$(rusage_value "$rusage_file" idle_wakeups_per_h)" "$(rusage_value "$rusage_file" interrupt_wakeups_per_h)" \
       "$(rusage_value "$rusage_file" cpu_s_per_h)" \
-      "$(awk -F= '$1 == "phys_footprint_bytes" { printf "%.1f", $2 / 1048576 }' "$rusage_file")" "$per_minute" "$lpm" \
+      "$(awk -F= '$1 == "phys_footprint_bytes" { printf "%.1f", $2 / 1048576 }' "$rusage_file")" "$per_minute" \
       "$assertions"
   fi
   if [ "$scenario" = S6 ]; then
@@ -1656,7 +1699,7 @@ energy_run() {
 # reads before it, with power in the menu bar (WP-2a's 2 → 1 reads).
 s7_launches() {
   local build="$1" count="$2" capture number=0 start starts="" waited before
-  install_build "$build" "the energy runs follow every widget question" --no-launch
+  install_build "$build" --no-launch
   quit_app
   session_settings
   set_default menuBarShowsPower -bool true
@@ -1707,7 +1750,7 @@ plug_alert() {
 field_run() {
   local end="$1" plug="$2" capture="$LOGS/field.ndjson" pid_start pid_end plugged=""
   begin_section 91-field "E20's field run on SPIKE-A2"
-  install_build A2 "" --no-launch
+  install_build A2 --no-launch
   quit_app
   session_settings
   set_default menuBarShowsPower -bool true
@@ -1855,22 +1898,24 @@ step_window() {
   fi
 
   started="$(clock) at $(battery_percent) %"
-  printf '| Run | Build | Energy mJ/h | Idle wake-ups/h | Interrupt wake-ups/h | CPU s/h | Footprint MB | App reads/min | Low Power Mode | BatteryPulse assertions |\n|---|---|---|---|---|---|---|---|---|---|\n' \
+  printf '| Run | Build | Power | Low Power Mode | Energy mJ/h | Idle wake-ups/h | Interrupt wake-ups/h | CPU s/h | Footprint MB | App reads/min | BatteryPulse assertions |\n|---|---|---|---|---|---|---|---|---|---|---|\n' \
     >"$LOGS/energy-rows.md"
-  energy_run S1 A 240
+  # WP-21's runs, each pair with B first: A (build 158) is higher than 0.6.1 (build 7), and 0.6.1
+  # may always come back, so no install goes against the CFBundleVersion rule.
   energy_run S1 B 240
-  energy_run S2 A 240
+  energy_run S1 A 240
   energy_run S2 B 240
   energy_run S2 A 240
   energy_run S2 B 240
-  energy_run S2-LPM A 240
+  energy_run S2 A 240
   energy_run S2-LPM B 240
+  energy_run S2-LPM A 240
   begin_section 90-s7 "S7, cold launches to menuBarReady (A against B)"
-  s7_launches A 5
   s7_launches B 5
+  s7_launches A 5
   # The displays sleep last: what follows needs them awake, and waking them may show the lock screen.
-  energy_run S6 A 600
   energy_run S6 B 600
+  energy_run S6 A 600
   begin_section 90-energy "Energy, A against B (WP-21)"
   out "- on battery; each run: the build installed, 1 minute to settle, then rusage over 4 minutes (S6: 10, displays asleep)"
   out "- A: $(awk -F '\t' '$1 == "A" { print $2 " (" $3 ")" }' "$WORK/builds.tsv"), B: $(awk -F '\t' '$1 == "B" { print $2 " (" $3 ")" }' "$WORK/builds.tsv"); started $started; ended $(clock) at $(battery_percent) %"
@@ -1894,7 +1939,7 @@ step_window() {
 restore_all() {
   [ -f "$BACKUP/done" ] || fail "no backup in $BACKUP"
   begin_section 95-restore "Restore"
-  install_build backup restore --no-launch
+  install_build backup --no-launch
   quit_app
   defaults delete "$BUNDLE_ID" 2>/dev/null || true
   defaults import "$BUNDLE_ID" "$BACKUP/defaults.plist"
@@ -2136,8 +2181,8 @@ Session A (PLAN.md §6), in order; SESSION.md is the runbook:
                              the widget spikes (step 3)
   voiceover                  0.6.1 again; VoiceOver and Text size (step 4)
   v01 start | check          V-01 on SPIKE-A2 (step 5)
-  fill ready|record|frames <clear-light|clear-dark|translucent-dark> | fill done
-                             Clear's minimize fill, recorded (step 6)
+  fill ready|record|frames <clear-light|clear-dark|translucent-dark|translucent-dark-b> | fill done
+                             Clear's minimize fill, recorded and dumped to frames (step 6)
   attach-timing              hdiutil against diskutil image attach (step 7)
   pages [profiling]          page switches, then under xctrace (step 8)
   window                     the unattended window, in Terminal (step 9): energy, field run, pslog,
