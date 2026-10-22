@@ -25,6 +25,8 @@ struct BatteryWidget: Widget {
         ) { entry in
             BatteryWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                // SPIKE-W (W0-4): the rendering mode and redaction of each render.
+                .modifier(SpikeRenderLog(kind: "battery"))
         }
         .configurationDisplayName("Battery")
         .description("Charge, time remaining and battery health.")

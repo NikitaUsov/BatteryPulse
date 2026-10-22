@@ -249,7 +249,7 @@ struct SpikeTimelineProvider: AppIntentTimelineProvider {
         let entry = Self.entry(for: configuration)
         let device = entry.deviceName == nil ? "none" : "chosen"
         spikeLog.notice(
-            "spike timeline family=\(Self.name(of: context.family), privacy: .public) main=\(entry.mainValue.rawValue, privacy: .public) details=\(entry.detailCount, privacy: .public) device=\(device, privacy: .public) process=\(SpikeProcess.current.rawValue, privacy: .public)"
+            "spike timeline family=\(SpikeNames.family(context.family), privacy: .public) main=\(entry.mainValue.rawValue, privacy: .public) details=\(entry.detailCount, privacy: .public) device=\(device, privacy: .public) process=\(SpikeProcess.current.rawValue, privacy: .public)"
         )
         return Timeline(entries: [entry], policy: .never)
     }
@@ -258,16 +258,6 @@ struct SpikeTimelineProvider: AppIntentTimelineProvider {
         SpikeEntry(
             date: .now, mainValue: configuration.mainValue, detailCount: configuration.details?.count ?? 0,
             deviceName: configuration.device?.name)
-    }
-
-    private static func name(of family: WidgetFamily) -> String {
-        switch family {
-        case .systemSmall: "small"
-        case .systemMedium: "medium"
-        case .systemLarge: "large"
-        case .systemExtraLarge: "extraLarge"
-        default: "other"
-        }
     }
 }
 
@@ -278,6 +268,7 @@ struct SpikeWidget: Widget {
         ) { entry in
             SpikeWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                .modifier(SpikeRenderLog(kind: "spike"))
         }
         .configurationDisplayName("Test widget")
         .description("Shows the chosen details and device.")
