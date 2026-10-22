@@ -11,6 +11,11 @@ public protocol BatteryProvider: AnyObject {
     /// the values that change slowly. A provider without such values reads in full (the default).
     func read(scope: BatteryReadScope) -> BatteryReading?
 
+    /// What reads this battery off the main actor, for a caller that keeps its reads off it, such
+    /// as ``BatteryMonitor``. `nil`, the default, keeps every read on the main actor, as Demo Mode's
+    /// simulated battery and `UIDevice` need.
+    var nonisolatedReader: (any NonisolatedBatteryReader)? { get }
+
     /// Calls `handler` on the main actor whenever the OS signals a power-related change.
     /// Delivery stops when the returned observation is cancelled or deallocated.
     func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation
@@ -20,6 +25,17 @@ extension BatteryProvider {
     public func read(scope: BatteryReadScope) -> BatteryReading? {
         read()
     }
+
+    public var nonisolatedReader: (any NonisolatedBatteryReader)? {
+        nil
+    }
+}
+
+/// A battery read that may run on any thread, and so off the main actor. A synchronous read
+/// satisfies the requirement, as `MacBatteryProvider`'s does.
+public protocol NonisolatedBatteryReader: Sendable {
+    /// Reads like ``BatteryProvider/read(scope:)``, on the caller's executor.
+    func readNonisolated(scope: BatteryReadScope) async -> BatteryReading?
 }
 
 /// What a battery read fetches again.

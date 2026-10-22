@@ -3,6 +3,7 @@ import Foundation
 import IOKit
 import IOKit.ps
 import BatteryCore
+import Synchronization
 
 /// Reads the internal battery through IOKit.
 ///
@@ -22,10 +23,16 @@ import BatteryCore
 ///
 /// Changes are pushed through notify(3) power-source keys, so no polling is needed unless the UI
 /// shows live current/power values.
-@MainActor
-public final class MacBatteryProvider: BatteryProvider {
+///
+/// A read may run on any thread (``readNonisolated(scope:)``): what the provider keeps between
+/// reads, the SMC's values and its connection, is behind locks, so a caller such as
+/// ``BatteryMonitor`` can read off the main actor. Only ``observeChanges(_:)`` belongs to the main
+/// actor.
+public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedBatteryReader {
     private let smc: SMCClient?
-    private var smcCache = SMCValueCache()
+    /// Held for a read's whole SMC part, so a second read at the same time reuses its values
+    /// (``SMCValueCache/minimumAge``) instead of asking the SMC again.
+    private let smcCache = Mutex(SMCValueCache())
 
     /// - Parameter readsSMC: `false` where the SMC can't be opened anyway, such as in the
     ///   sandboxed widget, so no attempt shows up as a sandbox violation.
@@ -35,11 +42,21 @@ public final class MacBatteryProvider: BatteryProvider {
 
     /// Reads everything, every SMC key included, as `bpulse` and the widget always have. A read
     /// within ``SMCValueCache/minimumAge`` of the last one reuses its SMC values.
-    public func read() -> BatteryReading? {
-        read(scope: .full)
+    public nonisolated func read() -> BatteryReading? {
+        readNonisolated(scope: .full)
     }
 
-    public func read(scope: BatteryReadScope) -> BatteryReading? {
+    public nonisolated func read(scope: BatteryReadScope) -> BatteryReading? {
+        readNonisolated(scope: scope)
+    }
+
+    /// The provider itself: every read may run off the main actor.
+    public nonisolated var nonisolatedReader: (any NonisolatedBatteryReader)? {
+        self
+    }
+
+    /// ``read(scope:)`` from any thread, for callers off the main actor.
+    public nonisolated func readNonisolated(scope: BatteryReadScope) -> BatteryReading? {
         let interval = Diagnostics.begin("read")
         defer { interval.end() }
         let smartBattery = Diagnostics.measure("registry") { Self.smartBatteryProperties() }
@@ -65,13 +82,15 @@ public final class MacBatteryProvider: BatteryProvider {
     /// for a full read, the rest (`smc.other`).
     private func smcValues(readsOtherKeys: Bool) -> PropertyDictionary {
         guard let smc else { return [:] }
-        let now = ContinuousClock.now
-        for group in smcCache.groupsToRead(at: now, readsOtherKeys: readsOtherKeys) {
-            let name: StaticString = group == .live ? "smc.power" : "smc.other"
-            let answers = Diagnostics.measure(name) { smc.read(group.keys) }
-            smcCache.store(answers, for: group, at: now)
+        return smcCache.withLock { cache in
+            let now = ContinuousClock.now
+            for group in cache.groupsToRead(at: now, readsOtherKeys: readsOtherKeys) {
+                let name: StaticString = group == .live ? "smc.power" : "smc.other"
+                let answers = Diagnostics.measure(name) { smc.read(group.keys) }
+                cache.store(answers, for: group, at: now)
+            }
+            return cache.capture
         }
-        return smcCache.capture
     }
 
     /// notify(3) keys from IOPowerSources.h: `kIOPSNotifyAnyPowerSource` and
@@ -81,6 +100,7 @@ public final class MacBatteryProvider: BatteryProvider {
         "com.apple.system.powersources.timeremaining",
     ]
 
+    @MainActor
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
         // Apple: "you must access the thermalState prior to registering for the notification."
         _ = ProcessInfo.processInfo.thermalState
