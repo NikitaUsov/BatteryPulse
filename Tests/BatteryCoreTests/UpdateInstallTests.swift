@@ -109,9 +109,23 @@ import Testing
         #expect(UpdateIntegrity.signature(fromSigFile: Data(repeating: 0x41, count: 4096)) == nil)
     }
 
-    @Test func theReleaseKeyIsARawCurve25519Key() throws {
-        let key = try #require(Data(base64Encoded: ReleaseSigning.publicKey))
-        #expect(key.count == 32)
+    @Test func theReleaseKeysAreRawCurve25519Keys() {
+        #expect(!ReleaseSigning.publicKeys.isEmpty)
+        #expect(ReleaseSigning.rawKeys(ReleaseSigning.publicKeys).count == ReleaseSigning.publicKeys.count)
+        // The key every release since 0.4.0 is signed with stays trusted; dropping it is the last
+        // step of a rotation (scripts/sign-update.swift --help).
+        #expect(ReleaseSigning.publicKeys.contains("R3LDmkmupenX1gnEnR7n+gEllH8oIDbWODJoGJ/m+dg="))
+    }
+
+    @Test func malformedKeyEntriesAreIgnored() {
+        let first = Data(repeating: 1, count: 32)
+        let second = Data(repeating: 2, count: 32)
+        let entries = [
+            "", "not base64", Data(count: 31).base64EncodedString(), Data(count: 33).base64EncodedString(),
+            first.base64EncodedString(), " " + second.base64EncodedString() + " ", first.base64EncodedString(),
+        ]
+        #expect(ReleaseSigning.rawKeys(entries) == [first, second])
+        #expect(ReleaseSigning.rawKeys([]).isEmpty)
     }
 
     @Test func installsOnlyFromAWritableUntranslocatedRelease() throws {
@@ -166,6 +180,28 @@ import Testing
                 == .unexpectedBundle)
     }
 
+    /// An older release never replaces a newer copy, even signed with the release key: it isn't
+    /// offered, Install and Relaunch isn't, and a DMG whose app is older than the one running, or
+    /// than the release it came with, is refused before the swap.
+    @Test func refusesADowngrade() throws {
+        let release = try ReleaseInfo.parse(gitHubJSON: signedJSON)
+        let newer = AppVersion(parts: [0, 5])
+        #expect(!UpdatePolicy.shouldOffer(release, current: newer, skipped: nil, userInitiated: true))
+        #expect(
+            UpdateInstallPolicy.blocker(
+                release: release, current: newer, bundlePath: "/Applications/BatteryPulse.app", canWrite: true)
+                == .notNewer)
+        let id = "io.github.nikitausov.BatteryPulse"
+        func check(_ version: String, release: AppVersion, current: AppVersion) -> UpdateInstallError? {
+            UpdateInstallPolicy.checkStagedBundle(
+                identifier: id, version: version, expectedIdentifier: id, release: release, current: current)
+        }
+        #expect(check("0.4.0", release: Self.v040, current: newer) == .notNewer)
+        #expect(check("0.4.0", release: Self.v040, current: Self.v040) == .notNewer)
+        #expect(check("0.3.1", release: Self.v040, current: Self.v031) == .unexpectedBundle)
+        #expect(check("0.4.0", release: Self.v040, current: Self.v031) == nil)
+    }
+
     @Test func mountsReadOnlyWithoutFinder() {
         let arguments = UpdateInstallPolicy.attachArguments(image: "/tmp/a b/BatteryPulse.dmg", mountPoint: "/tmp/m")
         #expect(arguments.first == "attach")
@@ -196,8 +232,12 @@ import Testing
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         // No process has this ID, so the script doesn't wait.
-        process.arguments = UpdateInstallPolicy.relaunchArguments(
+        var arguments = UpdateInstallPolicy.relaunchArguments(
             appPath: appPath, processID: Int32.max, opener: opener.path)
+        // The app's script gives the old process a second more; the test runs it without that pause.
+        #expect(arguments[1].contains("sleep 1; exec"))
+        arguments[1] = arguments[1].replacingOccurrences(of: "sleep 1;", with: "sleep 0;")
+        process.arguments = arguments
         try process.run()
         process.waitUntilExit()
         #expect(process.terminationStatus == 0)
@@ -230,8 +270,63 @@ import Testing
     @Test func errorsSayWhatComesNext() {
         #expect(UpdateInstallError.downloadFailed.isRetryable)
         #expect(!UpdateInstallError.badSignature.isRetryable)
-        #expect(UpdateInstallError.badSignature.fallsBackToDownload)
-        #expect(!UpdateInstallError.relaunchFailed.fallsBackToDownload)
         #expect(UpdateInstallPolicy.signatureAssetName(for: "BatteryPulse.dmg") == "BatteryPulse.dmg.sig")
+    }
+
+    /// After a failed integrity check, or for a release without a signature, the window offers
+    /// only the release page, never the DMG the app refused.
+    @Test func everyErrorMapsToItsFallback() {
+        let expected: [UpdateInstallError: UpdateFallback] = [
+            .developmentBuild: .downloadDMG,
+            .translocated: .downloadDMG,
+            .folderNotWritable: .downloadDMG,
+            .notSigned: .releasePage,
+            .notNewer: .downloadDMG,
+            .downloadFailed: .downloadDMG,
+            .digestMismatch: .releasePage,
+            .badSignature: .releasePage,
+            .mountFailed: .downloadDMG,
+            .unexpectedBundle: .releasePage,
+            .invalidCodeSignature: .releasePage,
+            .replaceFailed: .downloadDMG,
+            .relaunchFailed: .none,
+        ]
+        #expect(Set(expected.keys) == Set(UpdateInstallError.allCases))
+        for error in UpdateInstallError.allCases {
+            #expect(error.fallback == expected[error], "\(error)")
+            #expect(error.isIntegrityFailure == (expected[error] == .releasePage), "\(error)")
+        }
+        // An integrity failure is never worth another try.
+        #expect(!UpdateInstallError.allCases.contains { $0.isIntegrityFailure && $0.isRetryable })
+    }
+
+    @Test func theBrowserOpensOnlyGitHubPages() throws {
+        func opens(_ string: String) throws -> URL {
+            ReleaseLinks.browserURL(for: try #require(URL(string: string)))
+        }
+        let page = "https://github.com/NikitaUsov/BatteryPulse/releases/tag/v0.4.0"
+        let download = "https://github.com/NikitaUsov/BatteryPulse/releases/download/v0.4.0/BatteryPulse.dmg"
+        #expect(try opens(page).absoluteString == page)
+        #expect(try opens(download).absoluteString == download)
+        #expect(
+            try opens("HTTPS://GitHub.com/NikitaUsov/BatteryPulse").absoluteString.lowercased().hasPrefix(
+                "https://github.com/"))
+        // A repository that moved still opens: no exact prefix is pinned.
+        #expect(try opens("https://github.com/someone/Renamed/releases").absoluteString.hasSuffix("/Renamed/releases"))
+        let relative = try #require(URL(string: "releases/tag/v1", relativeTo: URL(string: "https://github.com/a/b/")))
+        #expect(ReleaseLinks.browserURL(for: relative).absoluteString == "https://github.com/a/b/releases/tag/v1")
+
+        for refused in [
+            "http://github.com/NikitaUsov/BatteryPulse/releases",
+            "file:///Applications/BatteryPulse.app",
+            "someapp://github.com/x",
+            "x-apple.systempreferences:com.apple.Localization-Settings.extension",
+            "https://example.com/BatteryPulse.dmg",
+            "https://github.com.example.com/x",
+            "https://objects.githubusercontent.com/x",
+            "https://github.com@example.com/x",
+        ] {
+            #expect(try opens(refused) == ReleaseChannel.releasesPage, "\(refused)")
+        }
     }
 }

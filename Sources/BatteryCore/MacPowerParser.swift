@@ -9,6 +9,7 @@ extension BatteryReading {
     ///   - powerSource: `IOPSGetPowerSourceDescription` of the internal battery.
     ///   - adapterDetails: `IOPSCopyExternalPowerAdapterDetails`.
     ///   - smc: battery keys read from the SMC (``SMCBattery/capture(_:)``).
+    ///   - timestamp: when the dictionaries were read.
     public init(
         smartBattery: PropertyDictionary,
         powerSource: PropertyDictionary = [:],
@@ -65,7 +66,11 @@ extension BatteryReading {
     /// Opaque gauge blobs that can embed manufacturing identifiers.
     static let redactedKeys: Set<String> = ["ManufacturerData", "MfgData"]
 
-    /// - Parameter extraKeys: further keys to replace at any depth, such as device identifiers.
+    /// - Parameters:
+    ///   - dictionary: a raw capture or one of its dictionaries.
+    ///   - extraKeys: further keys to replace at any depth, such as device identifiers.
+    /// - Returns: `dictionary` with every serial number, gauge blob and `extraKeys` value
+    ///   replaced by ``redactedPlaceholder``, at any depth.
     static func redactingSerialNumbers(
         in dictionary: PropertyDictionary, alsoRedacting extraKeys: Set<String> = []
     ) -> PropertyDictionary {

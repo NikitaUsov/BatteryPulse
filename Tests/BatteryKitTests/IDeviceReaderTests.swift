@@ -1,6 +1,7 @@
 import BatteryCore
 import Dispatch
 import Foundation
+import Synchronization
 import Testing
 
 @testable import BatteryKit
@@ -271,31 +272,31 @@ final class FakeTransport: IDeviceTransport, @unchecked Sendable {
     }
 }
 
-/// A value set on one thread and read on another.
-final class LockedValue<Value: Sendable>: @unchecked Sendable {
-    // `@unchecked`: `value` is guarded by `lock`.
-    private let lock = NSLock()
-    private var value: Value
+/// A value set on one thread and read on another: the test target's one locked box.
+final class LockedValue<Value: Sendable>: Sendable {
+    private let state: Mutex<Value>
 
     init(_ value: Value) {
-        self.value = value
+        state = Mutex(value)
     }
+
+    var value: Value { state.withLock { $0 } }
 
     func set(_ newValue: Value) {
-        lock.lock()
-        defer { lock.unlock() }
-        value = newValue
-    }
-
-    func get() -> Value {
-        lock.lock()
-        defer { lock.unlock() }
-        return value
+        state.withLock { $0 = newValue }
     }
 }
 
-/// `bpulse --devices` and `--device <n>` over ``FakeTransport``. UDIDs are SYNTHETIC.
-@Suite struct IDeviceListingTests {
+extension LockedValue where Value == Int {
+    func increment() {
+        state.withLock { $0 += 1 }
+    }
+}
+
+/// `bpulse --devices` and `--device <n>` over ``FakeTransport``. UDIDs are SYNTHETIC. A
+/// continuation that is never resumed would hang the run: the time limit names the test, and the
+/// CI job's timeout ends it.
+@Suite(.timeLimit(.minutes(1))) struct IDeviceListingTests {
     private static let phoneID = "00008150-001A2B3C4D5E801C"
     private static let padID = "00008030-000A11B22C33D4E5"
     private static let otherID = "00008140-000F00000000ABCD"
@@ -402,7 +403,7 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
         #expect(devices == [IDeviceInfo(id: "A"), IDeviceInfo(id: "B", name: "Named")])
         read.signal()
         try await BlockingWork.run(on: queue, timeout: 15) {}
-        #expect(lateRecord.get() == false, "the caller has its list: stop reading")
+        #expect(lateRecord.value == false, "the caller has its list: stop reading")
     }
 
     @Test func errorsPassOn() async {
@@ -429,7 +430,8 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
     }
 }
 
-@Suite struct BlockingWorkTests {
+/// The time limit names a test whose continuation is never resumed; the CI job's timeout ends it.
+@Suite(.timeLimit(.minutes(1))) struct BlockingWorkTests {
     private let queue = DispatchQueue(label: "BlockingWorkTests")
 
     @Test func returnsTheResult() async throws {
@@ -455,3 +457,20 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
         release.signal()
     }
 }
+
+#if os(macOS)
+/// Runs on CI's macOS, where Xcode installs MobileDevice.
+@Suite struct MobileDeviceLibraryTests {
+    /// The version for the error text and the log comes from the bundle's Info.plist, before and
+    /// without loading the framework.
+    @Test func versionIsRead() {
+        let versions = MobileDeviceLibrary.paths.compactMap(MobileDeviceLibrary.version(ofFrameworkAt:))
+        #expect(versions.contains { !$0.isEmpty })
+    }
+
+    /// Every required function is found through the handle, which searches MobileDevice alone.
+    @Test func loads() {
+        #expect(throws: Never.self) { try MobileDeviceLibrary.shared.get() }
+    }
+}
+#endif

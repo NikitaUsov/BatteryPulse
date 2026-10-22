@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import CoreTransferable
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -12,12 +13,17 @@ struct DeveloperView: View {
     @State private var filter = ""
     /// The source picked in the toolbar; `nil` shows every section.
     @State private var source: RawSectionGroup?
-    @State private var selection: Set<RawRow.ID> = []
+    @State private var selection: Set<RawDisplayRow.ID> = []
     @State private var showsInspector = false
-    /// The table for the current reading. Built off the main actor when the reading changes, not
-    /// on every body evaluation: showing the inspector or typing in the filter re-evaluates the
-    /// body, and the main window reads the battery every 2 s.
-    @State private var allSections: [RawSection] = []
+    /// The table for the current reading, with every cell's text and each row's search text.
+    /// Built off the main actor when the reading changes, not on every body evaluation: showing
+    /// the inspector, selecting or typing in the filter re-evaluates the body, and the main window
+    /// reads the battery every 2 s.
+    @State private var allSections: [RawDisplaySection] = []
+    /// The capture Export Capture hands to the system's Save panel, and why saving it failed.
+    @State private var capture: CaptureFile?
+    @State private var exportsCapture = false
+    @State private var exportFailure: String?
     @Environment(\.motion) private var motion
     @Environment(\.windowLook) private var look
 
@@ -25,7 +31,7 @@ struct DeveloperView: View {
         let groups = RawSectionGroup.groups(in: allSections)
         // A source that this reading lacks (the adapter's details after unplugging) shows all.
         let shownGroup = source.flatMap { groups.contains($0) ? $0 : nil }
-        let sections = filteredSections(in: shownGroup)
+        let sections = Diagnostics.measure("raw.filter") { filteredSections(in: shownGroup) }
         // The Liquid Glass sidebar floats over the detail column, and a scroll view whose edge
         // touches it is stretched underneath. A Table wider than it shows then starts at the
         // window edge with its Key column behind the sidebar. A point of padding keeps it clear of
@@ -58,22 +64,31 @@ struct DeveloperView: View {
             .toolbar {
                 // A switch between the dictionaries. It filters the table to one source rather
                 // than scrolling to it: a Table has no documented way to scroll to a section.
-                // A pop-up menu, not a segmented control: a MacBook reading has six or seven
-                // sources, and eight segments ("All" included) don't fit beside the title, the
-                // search field and the page's buttons at the main window's default width, least
-                // of all in Russian. A menu keeps every action in the toolbar visible, at any
-                // number of sources and in either language.
+                // A menu, not a segmented control: a MacBook reading has six or seven sources,
+                // and eight segments ("All" included) don't fit beside the title, the search
+                // field and the page's buttons at the main window's default width, least of all
+                // in Russian. A menu keeps every action in the toolbar visible, at any number of
+                // sources and in either language. A menu button rather than a pop-up picker: its
+                // label is the shown source, centred in its capsule, and the button takes that
+                // label's width, where a pop-up kept the first label's width and cut the others.
                 if groups.count > 1 {
                     ToolbarItem(placement: .principal) {
-                        Picker("Source", selection: $source) {
-                            Text("All").tag(RawSectionGroup?.none)
-                            ForEach(groups, id: \.self) { group in
-                                Self.title(of: group).tag(RawSectionGroup?.some(group))
+                        Menu {
+                            Picker("Source", selection: $source) {
+                                Text("All").tag(RawSectionGroup?.none)
+                                ForEach(groups, id: \.self) { group in
+                                    Self.title(of: group).tag(RawSectionGroup?.some(group))
+                                }
                             }
+                            .pickerStyle(.inline)
+                            .labelsHidden()
+                        } label: {
+                            shownGroup.map(Self.title(of:)) ?? Text("All")
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
                         .fixedSize()
+                        // The label is the shown source; VoiceOver names the menu too.
+                        .accessibilityLabel(Text("Source"))
+                        .accessibilityValue(shownGroup.map(Self.title(of:)) ?? Text("All"))
                         .help("Show only the values from one source")
                     }
                 }
@@ -105,6 +120,26 @@ struct DeveloperView: View {
             }
             .disabled(monitor.reading == nil)
             .task(id: monitor.reading) { await rebuild() }
+            // On the page rather than in the toolbar item, where presentations are unreliable on
+            // macOS, and after `disabled`, so the alert's button works without a reading.
+            .fileExporter(
+                isPresented: $exportsCapture, item: capture, contentTypes: [.xml],
+                defaultFilename: "BatteryPulse-capture.xml",
+                onCompletion: { result in
+                    if case .failure(let error) = result { exportFailure = error.localizedDescription }
+                    capture = nil
+                },
+                onCancellation: { capture = nil }
+            )
+            .alert(Text("Couldn't Export Capture"), isPresented: exportFailureShown) {
+                Button("OK") {}
+            } message: {
+                Text(verbatim: exportFailure ?? "")
+            }
+    }
+
+    private var exportFailureShown: Binding<Bool> {
+        Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })
     }
 
     /// The title of a source in the switch: short, and the API's own name where it has no other.
@@ -125,9 +160,7 @@ struct DeveloperView: View {
             allSections = []
             return
         }
-        let sections = await Task.detached(priority: .userInitiated) {
-            RawSection.sections(for: reading.redactedRawCapture)
-        }.value
+        let sections = await RawValueText.sections(for: reading)
         // Identical readings leave the table alone. Assigned after an `await`, so outside any
         // animation, Demo Mode's included: hundreds of rows change with every reading and must
         // never animate.
@@ -136,8 +169,8 @@ struct DeveloperView: View {
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
-    private func rawTable(_ sections: [RawSection]) -> some View {
-        Table(of: RawRow.self, selection: $selection) {
+    private func rawTable(_ sections: [RawDisplaySection]) -> some View {
+        Table(of: RawDisplayRow.self, selection: $selection) {
             TableColumn("Key") { row in
                 Text(verbatim: row.path)
                     .font(.callout.monospaced())
@@ -155,7 +188,7 @@ struct DeveloperView: View {
             .width(min: 60, ideal: 90)
             TableColumn("Decoded") { row in
                 if let decoded = row.decoded {
-                    Text(RawValueText.string(for: decoded))
+                    Text(verbatim: decoded)
                         .monospacedDigit()
                         .lineLimit(1)
                         .fontWeight(look.boldNumerals ? .medium : nil)
@@ -163,13 +196,12 @@ struct DeveloperView: View {
             }
             .width(min: 70, ideal: 130)
             TableColumn("Description") { row in
-                if let summary = row.info?.summary {
-                    let text = RawValueText.summary(summary)
-                    Text(text)
+                if let summary = row.summary {
+                    Text(verbatim: summary)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .fontWeight(look.boldNumerals ? .medium : nil)
-                        .help(text)
+                        .help(summary)
                 }
             }
             .width(min: 100, ideal: 260)
@@ -184,7 +216,7 @@ struct DeveloperView: View {
                 }
             }
         }
-        .contextMenu(forSelectionType: RawRow.ID.self) { ids in
+        .contextMenu(forSelectionType: RawDisplayRow.ID.self) { ids in
             Button("Show in Inspector") {
                 selection = ids
                 showsInspector = true
@@ -204,45 +236,25 @@ struct DeveloperView: View {
     }
 
     /// The selected rows with the title of the dictionary each comes from.
-    private var inspectedRows: [(row: RawRow, source: String)] {
+    private var inspectedRows: [(row: RawDisplayRow, source: String)] {
         allSections.flatMap { section in
             section.rows.filter { selection.contains($0.id) }.map { (row: $0, source: section.title) }
         }
     }
 
-    /// The sections of `group` (all for `nil`) with the rows that match the filter.
-    private func filteredSections(in group: RawSectionGroup?) -> [RawSection] {
-        let sections = RawSectionGroup.sections(allSections, in: group)
-        let query = filter.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return sections }
-        return sections.compactMap { section in
-            var section = section
-            section.rows = section.rows.filter { matches($0, query) }
-            return section.rows.isEmpty ? nil : section
-        }
-    }
-
-    private func matches(_ row: RawRow, _ query: String) -> Bool {
-        if row.path.localizedCaseInsensitiveContains(query) || row.value.localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let decoded = row.decoded, RawValueText.string(for: decoded).localizedCaseInsensitiveContains(query) {
-            return true
-        }
-        if let summary = row.info?.summary {
-            return summary.localizedCaseInsensitiveContains(query)
-                || RawValueText.summary(summary).localizedCaseInsensitiveContains(query)
-        }
-        return false
+    /// The sections of `group` (all for `nil`) with the rows that match the filter: one search of
+    /// each row's prepared text, which formats and translates nothing.
+    private func filteredSections(in group: RawSectionGroup?) -> [RawDisplaySection] {
+        RawDisplaySection.filter(RawSectionGroup.sections(allSections, in: group), by: filter)
     }
 
     // MARK: - Copying
 
-    private func rows(_ ids: Set<RawRow.ID>) -> [RawRow] {
+    private func rows(_ ids: Set<RawDisplayRow.ID>) -> [RawDisplayRow] {
         allSections.flatMap(\.rows).filter { ids.contains($0.id) }
     }
 
-    private func copy(_ ids: Set<RawRow.ID>, as text: KeyPath<RawRow, String>) {
+    private func copy(_ ids: Set<RawDisplayRow.ID>, as text: KeyPath<RawDisplayRow, String>) {
         let lines = rows(ids).map { $0[keyPath: text] }
         guard !lines.isEmpty else { return }
         let pasteboard = NSPasteboard.general
@@ -250,41 +262,47 @@ struct DeveloperView: View {
         pasteboard.setString(lines.joined(separator: "\n"), forType: .string)
     }
 
-    private func providers(for ids: Set<RawRow.ID>) -> [NSItemProvider] {
+    private func providers(for ids: Set<RawDisplayRow.ID>) -> [NSItemProvider] {
         let lines = rows(ids).map(\.line)
         guard !lines.isEmpty else { return [] }
         return [NSItemProvider(object: lines.joined(separator: "\n") as NSString)]
     }
 
     private func copyJSON() {
-        guard var snapshot = monitor.snapshot, !monitor.isOverridden else { return }
-        snapshot.serialNumber = nil
-        snapshot.adapter?.serialNumber = nil
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(snapshot) else { return }
+        guard let snapshot = monitor.snapshot, !monitor.isOverridden, let json = try? snapshot.redactedJSON() else {
+            return
+        }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(String(decoding: data, as: UTF8.self), forType: .string)
+        pasteboard.setString(json, forType: .string)
     }
 
+    /// Saves the redacted capture in the fixture format through the system's Save panel; a
+    /// failure to write the file shows an alert.
     private func exportCapture() {
         guard let reading = monitor.reading, !monitor.isOverridden else { return }
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.xml]
-        panel.nameFieldStringValue = "BatteryPulse-capture.xml"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let plist = PropertyValue.dictionary(reading.redactedRawCapture).foundationValue
-        if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
-            try? data.write(to: url, options: .atomic)
+        do {
+            capture = CaptureFile(data: try PropertyValue.xmlPropertyListData(reading.redactedRawCapture))
+            exportsCapture = true
+        } catch {
+            exportFailure = error.localizedDescription
         }
+    }
+}
+
+/// A raw capture for the system's Save panel: the XML property list that `bpulse --raw` writes and
+/// `bpulse --input` reads.
+private struct CaptureFile: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .xml) { file in file.data }
     }
 }
 
 /// The selected raw value in full: key, source, description, value and decoding.
 private struct RawRowInspector: View {
-    let selection: [(row: RawRow, source: String)]
+    let selection: [(row: RawDisplayRow, source: String)]
 
     var body: some View {
         if selection.count == 1, let row = selection.first?.row, let source = selection.first?.source {
@@ -298,8 +316,8 @@ private struct RawRowInspector: View {
                     }
                 }
                 Section("Description") {
-                    if let summary = row.info?.summary {
-                        Text(RawValueText.summary(summary))
+                    if let summary = row.summary {
+                        Text(verbatim: summary)
                             .textSelection(.enabled)
                     } else {
                         Text("No description for this key yet.")
@@ -313,7 +331,7 @@ private struct RawRowInspector: View {
                 }
                 if let decoded = row.decoded {
                     Section("Decoded") {
-                        Text(RawValueText.string(for: decoded))
+                        Text(verbatim: decoded)
                             .textSelection(.enabled)
                     }
                 }
@@ -334,7 +352,7 @@ private struct RawRowInspector: View {
     }
 }
 
-extension RawRow {
+extension RawDisplayRow {
     /// `BatteryData.DesignCapacity = 5760`, for the clipboard.
     fileprivate var line: String { "\(path) = \(value)" }
 }

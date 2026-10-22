@@ -109,6 +109,10 @@ struct BatteryPulseApp: App {
                 .environment(demo)
         }
         .menuBarExtraStyle(.window)
+        // Removing the item may keep its label alive: withdraw the label's polling here too.
+        .onChange(of: showInMenuBar) {
+            if !showInMenuBar { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        }
 
         Window("Welcome to BatteryPulse", id: WindowID.welcome) {
             WelcomeView()
@@ -167,8 +171,8 @@ enum WindowID {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var defaultsObserver: NSObjectProtocol?
+final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
+    private var defaultsObserver: (any NSObjectProtocol)?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Not in applicationWillFinishLaunching: changing the policy that early is unreliable.
@@ -204,7 +208,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await UpdateInstaller.current?.finishBeforeQuitting()
-            try? await AppHistory.store.flush()
+            do {
+                try await AppHistory.store.flush()
+            } catch {
+                HistoryRecorder.logWriteFailure("the day's summaries before quitting", error)
+            }
             await AppDevices.monitor.flushHistory()
             NSApp.reply(toApplicationShouldTerminate: true)
         }

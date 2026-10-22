@@ -146,6 +146,7 @@ public enum IDeviceBatteryParser {
     ///   - entry: the battery's registry entry.
     ///   - pack: the `AppleSmartBatteryPack` entry, where iOS 27 keeps the temperature.
     ///   - lockdown: the `com.apple.mobile.battery` lockdown domain.
+    ///   - source: the registry class of `entry` (``IDeviceBattery/source``).
     /// - Returns: `nil` unless the entry has a positive design, nominal or full-charge capacity,
     ///   so a stray dictionary never becomes a battery.
     public static func battery(
@@ -242,9 +243,9 @@ public enum IDeviceBatteryParser {
     /// One cell, or a few in series; anything else is not a reading.
     static let plausiblePackVoltage = 2_500...20_000
 
-    /// iOS publishes `Temperature` and `VirtualTemperature` in hundredths of a degree Celsius
-    /// (macOS publishes its `Temperature` differently, so this conversion is kept separate).
-    /// 0 means "no reading".
+    /// iOS publishes `Temperature` and `VirtualTemperature` in hundredths of a degree Celsius, the
+    /// unit of the Mac's pack entry too. Unlike the Mac's (``RegistryChildren``, −20…85 °C), 0
+    /// means "no reading" here, and the plausible range is −40…150 °C.
     static func celsius(fromCentidegrees raw: Int) -> Double? {
         guard raw != 0 else { return nil }
         let celsius = Double(raw) / 100

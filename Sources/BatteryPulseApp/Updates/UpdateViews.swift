@@ -118,36 +118,33 @@ struct UpdateView: View {
             }
         case .available(let release):
             let version = release.version.description
+            let installer = updater.installer
+            // Only while idle: a blocker looks at the file system, and during a download this runs
+            // on every progress step.
+            let blocker = installer.phase == .idle ? installer.blocker(for: release) : nil
             Text("A New Version of BatteryPulse Is Available")
                 .font(.title3.weight(.semibold))
             Text("BatteryPulse \(version) is available; you have \(current).")
                 .foregroundStyle(.secondary)
-            ScrollView {
-                Text(notes(release))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-            }
-            .frame(height: 220)
-            .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
+            ReleaseNotesText(notes: release.notes, baseURL: release.pageURL)
             // A new phase fades in where the old one was, which goes at once: the window resizes
             // once per phase and the buttons below move at most once, with it. The download bar
             // inside a phase is never animated, because its fraction changes five times a second.
             ZStack(alignment: .topLeading) {
-                installStatus(release)
+                installStatus(blocker: blocker)
                     .id(phaseKind)
                     .transition(motion.replacement)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            installActions(release)
+            installActions(release, blocker: blocker)
         }
     }
 
-    /// How the update gets installed, the installation's progress, or why it stopped.
+    /// How the update gets installed, the installation's progress, or why it stopped. `blocker`
+    /// is the idle phase's reason why the app can't install the update itself.
     @ViewBuilder
-    private func installStatus(_ release: ReleaseInfo) -> some View {
-        let installer = updater.installer
-        switch installer.phase {
+    private func installStatus(blocker: UpdateInstallError?) -> some View {
+        switch updater.installer.phase {
         case .downloading(let fraction):
             ProgressView(value: fraction) {
                 Text("Downloading…")
@@ -168,44 +165,72 @@ struct UpdateView: View {
             }
             .progressViewStyle(.linear)
         case .failed(let error):
-            VStack(alignment: .leading, spacing: 4) {
-                Label {
-                    Text(error.message)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                        .symbolEffect(.bounce, options: .nonRepeating, value: failures)
-                }
-                if error.fallsBackToDownload {
-                    Text("You can download the update and install it from the DMG instead.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.footnote)
-            .fixedSize(horizontal: false, vertical: true)
+            warning(error)
         case .idle:
-            Group {
-                if let blocker = installer.blocker(for: release) {
-                    if let reason = blocker.reason {
-                        Text(reason)
+            if let blocker, blocker.fallback == .releasePage {
+                warning(blocker)
+            } else {
+                Group {
+                    if let blocker {
+                        if let reason = blocker.reason {
+                            Text(reason)
+                        }
+                        Text(
+                            "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens."
+                        )
+                    } else {
+                        Text(
+                            "BatteryPulse downloads the update, checks its signature, replaces this copy and opens again."
+                        )
                     }
-                    Text(
-                        "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens."
-                    )
-                } else {
-                    Text("BatteryPulse downloads the update, checks its signature, replaces this copy and opens again.")
                 }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// Install and Relaunch when the app can replace itself, otherwise the browser download.
-    /// Two rows, so the longer Russian labels fit the window.
+    /// A warning: why the update wasn't installed, or can't be, and the way forward that
+    /// ``UpdateFallback`` allows.
+    private func warning(_ error: UpdateInstallError) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label {
+                Text(error.message)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: failures)
+            }
+            switch error.fallback {
+            case .downloadDMG:
+                Text("You can download the update and install it from the DMG instead.")
+                    .foregroundStyle(.secondary)
+            case .releasePage:
+                Text(
+                    "BatteryPulse couldn't confirm this update came from its developer. Check the release page before installing anything."
+                )
+                .foregroundStyle(.secondary)
+            case .none:
+                EmptyView()
+            }
+        }
+        .font(.footnote)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// What stops the app from installing the update itself: the failed installation's error, or
+    /// the idle phase's blocker; `nil` when Install and Relaunch can be offered.
+    private func problem(blocker: UpdateInstallError?) -> UpdateInstallError? {
+        if case .failed(let error) = updater.installer.phase { return error }
+        return blocker
+    }
+
+    /// Install and Relaunch when the app can replace itself, otherwise the browser download, or
+    /// only the release page after a failed integrity check. Two rows, so the longer Russian
+    /// labels fit the window.
     @ViewBuilder
-    private func installActions(_ release: ReleaseInfo) -> some View {
+    private func installActions(_ release: ReleaseInfo, blocker: UpdateInstallError?) -> some View {
         let installer = updater.installer
         if installer.isBusy {
             HStack {
@@ -228,41 +253,80 @@ struct UpdateView: View {
             }
             HStack {
                 Spacer()
-                if installer.phase == .failed(.relaunchFailed) {
-                    // The new version is in place; it only has to be opened.
-                    Button("Quit BatteryPulse") { NSApp.terminate(nil) }
-                        .keyboardShortcut(.defaultAction)
-                } else if installer.phase == .idle, installer.blocker(for: release) == nil {
+                if let problem = problem(blocker: blocker) {
+                    switch problem.fallback {
+                    case .none:
+                        // The new version is in place; it only has to be opened.
+                        Button("Quit BatteryPulse") { NSApp.terminate(nil) }
+                            .keyboardShortcut(.defaultAction)
+                    case .releasePage:
+                        // Never the default button: Return doesn't lead past a failed check.
+                        Button("Open Release Page") { openReleasePage(release) }
+                    case .downloadDMG:
+                        if installer.canRetry {
+                            Button("Try Again") { installer.install(release) }
+                        }
+                        Button("Download") { download(release) }
+                            .keyboardShortcut(.defaultAction)
+                    }
+                } else {
                     Button("Download") { download(release) }
                     Button("Install and Relaunch") { installer.install(release) }
-                        .keyboardShortcut(.defaultAction)
-                } else {
-                    if installer.canRetry {
-                        Button("Try Again") { installer.install(release) }
-                    }
-                    Button("Download") { download(release) }
                         .keyboardShortcut(.defaultAction)
                 }
             }
         }
     }
 
-    /// The DMG in the browser: the fallback whenever the app can't install the update itself.
+    /// The DMG in the browser: the fallback when the app can't install the update itself.
     private func download(_ release: ReleaseInfo) {
         updater.download(release)
         close()
     }
 
-    private func notes(_ release: ReleaseInfo) -> AttributedString {
-        let markdown = ReleaseNotes.inlineMarkdown(release.notes)
-        let options = AttributedString.MarkdownParsingOptions(
-            interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
-        return (try? AttributedString(markdown: markdown, options: options, baseURL: release.pageURL))
-            ?? AttributedString(release.notes)
+    /// The release page in the browser, after the DMG failed an integrity check.
+    private func openReleasePage(_ release: ReleaseInfo) {
+        updater.openReleasePage(release)
+        close()
     }
 
     private func close() {
         dismissWindow(id: WindowID.update)
+    }
+}
+
+/// The release notes, scrollable and selectable. Its inputs stay the same while a download
+/// updates the window five times a second, so SwiftUI skips its body instead of parsing the
+/// notes again on every step.
+private struct ReleaseNotesText: View {
+    let notes: String
+    /// The release page, which relative links resolve against.
+    let baseURL: URL
+
+    var body: some View {
+        ScrollView {
+            Text(Self.notes(notes, baseURL: baseURL))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                // A link opens only over https; anything else does nothing.
+                .environment(
+                    \.openURL,
+                    OpenURLAction { url in
+                        ReleaseNotes.isAllowedLink(url) ? .systemAction : .discarded
+                    })
+        }
+        .frame(height: 220)
+        .background(.background.secondary, in: .rect(cornerRadius: 10, style: .continuous))
+    }
+
+    /// GitHub Markdown as attributed text: inline syntax only, with headings as bold lines.
+    static func notes(_ notes: String, baseURL: URL) -> AttributedString {
+        let markdown = ReleaseNotes.inlineMarkdown(notes)
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace, failurePolicy: .returnPartiallyParsedIfPossible)
+        return (try? AttributedString(markdown: markdown, options: options, baseURL: baseURL))
+            ?? AttributedString(notes)
     }
 }
 
@@ -344,7 +408,7 @@ enum WhatsNew {
         Feature(
             id: 3, symbol: "macwindow", title: "Window styles",
             detail:
-                "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through."
+                "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced."
         ),
         Feature(
             id: 4, symbol: "menubar.rectangle", title: "Menu bar icons like macOS 27",

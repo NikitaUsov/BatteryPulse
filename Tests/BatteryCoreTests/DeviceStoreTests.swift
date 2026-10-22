@@ -53,6 +53,18 @@ import Testing
         #expect(Self.files(in: directory).map(\.lastPathComponent) == ["key"], "no temporary file left behind")
     }
 
+    /// The folder the secret creates is 0700; the secret is 0600.
+    @Test func secretFolderIsCreatedWith0700() async throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        _ = try await Self.makeStore(directory).secret()
+        func mode(_ url: URL) throws -> Int? {
+            (try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? NSNumber)?.intValue
+        }
+        #expect(try mode(directory) == 0o700)
+        #expect(try mode(directory.appendingPathComponent("key")) == 0o600)
+    }
+
     @Test func secretReadErrorIsNotReplaced() async throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
@@ -139,6 +151,25 @@ import Testing
         #expect(try await Self.makeStore(directory).load().count == 1)
     }
 
+    /// A registry that doesn't decode and can't be set aside stays as it is. Here a dangling link
+    /// holds the set-aside name: `fileExists` doesn't see it and the move won't replace it.
+    @Test func registryThatCannotBeSetAsideIsNeverOverwritten() async throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("devices.json")
+        let garbage = Data("not a registry".utf8)
+        try garbage.write(to: url)
+        try FileManager.default.createSymbolicLink(
+            atPath: directory.appendingPathComponent("devices.unreadable.json").path,
+            withDestinationPath: directory.appendingPathComponent("missing").path)
+        let store = Self.makeStore(directory)
+        await #expect(throws: (any Error).self) { try await store.load() }
+        #expect(await store.isReadOnly)
+        try await store.save([try Self.device(Self.phone)])
+        #expect(try Data(contentsOf: url) == garbage)
+    }
+
     @Test func historyIsSeparatePerDevice() async throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
@@ -151,8 +182,8 @@ import Testing
             HistorySample(device: battery, at: Self.start.addingTimeInterval(60)))
         try await store.history(for: Self.pad).record(
             HistorySample(device: battery, at: Self.start.addingTimeInterval(120)))
-        #expect(try await phoneHistory.samples(since: .distantPast).count == 1)
-        #expect(try await store.history(for: Self.pad).samples(since: .distantPast).count == 2)
+        #expect(try await phoneHistory.samples(from: .distantPast).count == 1)
+        #expect(try await store.history(for: Self.pad).samples(from: .distantPast).count == 2)
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.phone.rawValue).path))
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.pad.rawValue).path))
     }
@@ -171,7 +202,7 @@ import Testing
         #expect(try await Self.makeStore(directory).load() == [pad])
         #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.phone.rawValue).path))
         #expect(FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.pad.rawValue).path))
-        #expect(try await store.history(for: Self.phone).samples(since: .distantPast).isEmpty)
+        #expect(try await store.history(for: Self.phone).samples(from: .distantPast).isEmpty)
     }
 
     @Test func forgetDoesNotResurrectDays() async throws {

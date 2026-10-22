@@ -45,7 +45,8 @@ public struct BatteryIconState: Sendable, Equatable, Hashable {
             self.init(level: 0)
             return
         }
-        let percent = s.chargePercent.map { Int(min(100, max(0, $0)).rounded()) }
+        // `.toNearestOrEven`, as the formatter rounds the percentage beside the icon.
+        let percent = s.chargePercent.map { Int(min(100, max(0, $0)).rounded(.toNearestOrEven)) }
         let isPluggedIn = s.isExternalPowerConnected ?? (s.chargeState == .charged || s.chargeState == .notCharging)
         let glyph: Glyph =
             if s.chargeState == .charging {

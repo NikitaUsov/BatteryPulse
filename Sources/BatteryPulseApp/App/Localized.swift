@@ -9,19 +9,18 @@ import SwiftUI
 // Strings (so every placeholder is %@), and numbers go through BatteryFormatter.app.
 
 extension BatteryFormatter {
-    /// Formatter for the current locale with localized unit symbols.
-    static var app: BatteryFormatter {
-        BatteryFormatter(locale: .current) { unit in
-            switch unit {
-            case .watts: String(localized: "W", comment: "Unit symbol: watts")
-            case .milliampHours: String(localized: "mAh", comment: "Unit symbol: milliampere-hours")
-            case .volts: String(localized: "V", comment: "Unit symbol: volts")
-            case .millivolts: String(localized: "mV", comment: "Unit symbol: millivolts")
-            case .milliamps: String(localized: "mA", comment: "Unit symbol: milliamperes")
-            case .amps: String(localized: "A", comment: "Unit symbol: amperes")
-            }
-        }
-    }
+    /// The app's formatter, built once: the user's region, which it follows when it changes in
+    /// System Settings, and the catalog's unit symbols, looked up once per launch like the rest of
+    /// the app's language.
+    static let app = BatteryFormatter(
+        locale: .autoupdatingCurrent,
+        symbols: UnitSymbols(
+            watts: String(localized: "W", comment: "Unit symbol: watts"),
+            milliampHours: String(localized: "mAh", comment: "Unit symbol: milliampere-hours"),
+            volts: String(localized: "V", comment: "Unit symbol: volts"),
+            millivolts: String(localized: "mV", comment: "Unit symbol: millivolts"),
+            milliamps: String(localized: "mA", comment: "Unit symbol: milliamperes"),
+            amps: String(localized: "A", comment: "Unit symbol: amperes")))
 }
 
 /// Localized phrases built from battery state.
@@ -79,8 +78,13 @@ enum Phrases {
         case .frameworkUnavailable:
             String(localized: "This Mac can't read iPhones and iPads: Apple's device support isn't available.")
         case .subscriptionFailed, .deviceNotFound, .timedOut:
-            String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
+            deviceListFailed
         }
+    }
+
+    /// Listing devices failed or timed out; trying again may work.
+    static var deviceListFailed: String {
+        String(localized: "BatteryPulse couldn't look for devices. Try again in a moment.")
     }
 
     /// "Charging at 31.3 W" / "Discharging at 7.5 W", or just the state.
@@ -136,9 +140,17 @@ enum Phrases {
     /// the tier means when only the capacity (below 80 %) warns.
     static func healthWarning(_ tier: BatteryPresentation.LevelTier, condition raw: String?) -> String {
         if let raw, raw != "Normal", raw != "Good", let text = condition(raw) { return text }
-        return tier == .critical
-            ? String(localized: "Check Battery", comment: "Battery condition")
-            : String(localized: "Service Recommended", comment: "Battery condition")
+        return condition(for: tier)
+    }
+
+    /// A health tier in the words of a battery condition: an iPhone's or iPad's condition, which
+    /// comes from its capacity alone, and a Mac's warning when only its capacity warns.
+    static func condition(for tier: BatteryPresentation.LevelTier) -> String {
+        switch tier {
+        case .normal: String(localized: "Normal", comment: "Battery condition")
+        case .low: String(localized: "Service Recommended", comment: "Battery condition")
+        case .critical: String(localized: "Check Battery", comment: "Battery condition")
+        }
     }
 
     static func thermal(_ state: ThermalState) -> String {
@@ -221,6 +233,12 @@ extension WindowLook {
         case .translucent: "Translucent"
         case .clear: "Clear"
         }
+    }
+
+    /// The mark on a beta style's tile.
+    var badge: Text? {
+        guard isBeta else { return nil }
+        return Text("Beta")
     }
 }
 

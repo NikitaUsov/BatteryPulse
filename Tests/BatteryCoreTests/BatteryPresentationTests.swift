@@ -4,6 +4,16 @@ import Testing
 @testable import BatteryCore
 
 @Suite struct BatteryPresentationTests {
+    /// A battery that reports no rating, or 0 as a Mac can, gets none: the gauges then measure
+    /// against the fallback and the text rows show the plain count.
+    @Test func ratedCycles() {
+        #expect(BatteryPresentation.ratedCycles(nil) == nil)
+        #expect(BatteryPresentation.ratedCycles(0) == nil)
+        #expect(BatteryPresentation.ratedCycles(-1) == nil)
+        #expect(BatteryPresentation.ratedCycles(1000) == 1000)
+        #expect(BatteryPresentation.fallbackRatedCycles == 1000)
+    }
+
     @Test(
         arguments: [
             (95.0, ChargeState.discharging, "battery.100percent"),
@@ -87,7 +97,7 @@ import Testing
         #expect(entries.count > 300)
         #expect(Set(entries.map(\.path)).count == entries.count)
         #expect(entries.contains(RawEntry(path: "AppleSmartBattery.BatteryData.DesignCapacity", property: .int(5760))))
-        #expect(!entries.contains { $0.path.hasSuffix("SerialString") && $0.value != "REDACTED" })
+        #expect(!entries.contains { $0.path.hasSuffix("SerialString") && $0.property.description != "REDACTED" })
     }
 
     // MARK: iPhone and iPad

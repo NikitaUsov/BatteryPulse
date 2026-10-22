@@ -14,9 +14,13 @@ import Testing
 /// - an animation that doesn't go through `\.motion`: `withAnimation` or `.animation(…)` with an
 ///   animation of its own (or the default one), which would ignore Reduce Motion and hidden
 ///   windows. Only `App/Motion.swift`, where the presets are built, is exempt;
+/// - an animation built outside `App/Motion.swift` (`Animation.…`, `.smooth(…)`, `.linear(…)` and
+///   the other constructors), even one gated by hand: every timing is a preset there;
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
+/// - a material in `Main/` (`Material`, `.regularMaterial`, `.bar`) outside the History chart's
+///   readout: content stays free of glass and materials;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
 ///   outside the tone map's bridge, where it would bypass Clear's monochrome, and there a colour
 ///   read as a property (`tier.color`), which comes from the standard tones, not the window's;
@@ -27,18 +31,19 @@ import Testing
 ///   `preferredColorScheme`, assigning `.appearance`) outside `App/WindowLook.swift`, and any
 ///   animation in that file: the window style's background never animates.
 @Suite struct MotionGuardTests {
-    private static let sources = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        .appendingPathComponent("Sources")
-
     /// Paths relative to `Sources/`.
     static let glassAllowList: Set<String> = [
         // The floating Demo Mode bar.
         "BatteryPulseApp/Main/DemoView.swift",
-        // The glass selection of the preview tile pickers (icon style, window style).
-        "BatteryPulseApp/Settings/SettingsView.swift",
         // The glass sheet of Translucent and Clear: one behind the whole window.
         "BatteryPulseApp/App/WindowLook.swift",
+    ]
+
+    /// Files in `Main/` that may use a material.
+    static let materialAllowList: Set<String> = [
+        // The History chart's hover readout floats over the plot and must read on every window
+        // style; on the glass sheets a card's surface didn't (the 0.6.1 M5 session).
+        "BatteryPulseApp/Main/History/HistoryChartParts.swift"
     ]
 
     static let menuBarLabelFiles: Set<String> = [
@@ -102,12 +107,41 @@ import Testing
         words(#/\.color\b(?!\s*\()/#)
     }
 
+    /// A material by name (`Material.thin`, `.ultraThinMaterial`, `.bar` as a style); a
+    /// `.materialize` transition doesn't count.
+    private static var material: Regex<Substring> {
+        words(
+            #/\bMaterial\b|\b(?:ultraThin|thin|regular|thick|ultraThick)Material\b|\bbackgroundMaterial\b|\(\s*\.bar\s*[,)]/#
+        )
+    }
+
     /// APIs that make a window see-through or change its appearance; `containerBackground(…,
     /// for: .window)` is checked by its arguments, so the widget's own background stays allowed.
     private static var windowBackgroundAPI: Regex<Substring> {
         words(
             #/\bNSVisualEffectView\b|\bNSGlassEffectView\b|\bmaterialActiveAppearance\s*\(|\bpreferredColorScheme\s*\(|\.appearance\s*=(?!=)/#
         )
+    }
+
+    /// An animation built from its parts: `Animation.smooth`, or a constructor such as
+    /// `.smooth(duration:)`. `\bAnimation` needs its word boundary, so `DemoAnimation.allCases`
+    /// doesn't count; `.linear` without a call is a progress view style.
+    private static var animationConstructor: Regex<Substring> {
+        words(
+            #/\bAnimation\s*\.|\.(?:smooth|snappy|bouncy|spring|interactiveSpring|interpolatingSpring|easeIn|easeOut|easeInOut|linear|timingCurve)\s*\(/#
+        )
+    }
+
+    /// Text that every ``animationConstructor`` match holds, so a file without any skips it: a
+    /// `Regex` is slow on Linux.
+    static let animationLiterals = [
+        "Animation", ".smooth", ".snappy", ".bouncy", ".spring", ".interactiveSpring", ".interpolatingSpring",
+        ".easeIn", ".easeOut", ".linear", ".timingCurve",
+    ]
+
+    /// The identifier that ends right before `index`, such as `motion` in `motion.linear(`.
+    private static func identifier(before index: String.Index, in code: String) -> String {
+        String(code[..<index].reversed().prefix { $0.isLetter || $0.isNumber || $0 == "_" }.reversed())
     }
 
     /// Phase and keyframe animators, as views or modifiers; without `trigger:` they loop.
@@ -123,7 +157,11 @@ import Testing
 
     /// Every rule broken in `source`, as "path:line: message".
     static func violations(in source: String, path: String) -> [String] {
-        let code = codeOnly(source)
+        violations(inCode: SourceScanner.codeOnly(source), path: path)
+    }
+
+    /// Every rule broken in `code`, a source already blanked by ``SourceScanner/codeOnly(_:)``.
+    static func violations(inCode code: String, path: String) -> [String] {
         var found: [(String.Index, String)] = []
         func flag(_ index: String.Index, _ message: String) { found.append((index, message)) }
 
@@ -136,10 +174,11 @@ import Testing
         for match in code.matches(of: indefiniteRepeat) {
             flag(match.range.lowerBound, "a symbol effect that repeats indefinitely")
         }
-        for call in calls(named: animator, in: code) where !call.arguments.contains(words(#/\btrigger\s*:/#)) {
+        for call in SourceScanner.calls(named: animator, in: code)
+        where !call.arguments.contains(words(#/\btrigger\s*:/#)) {
             flag(call.start, "\(call.name) without trigger: loops continuously")
         }
-        for call in calls(named: #/\.symbolEffect/#, in: code) where call.isModifier {
+        for call in SourceScanner.calls(named: #/\.symbolEffect/#, in: code) where call.isModifier {
             if call.arguments.contains(words(#/\bisActive\s*:/#)) {
                 flag(call.start, "symbolEffect(_:isActive:) runs until removed; use symbolEffect(_:value:)")
             } else if !call.arguments.contains(words(#/\bvalue\s*:/#)) {
@@ -148,15 +187,21 @@ import Testing
         }
         let buildsPresets = motionPresetFiles.contains(path)
         if !buildsPresets {
-            for call in calls(named: words(#/\bwithAnimation/#), in: code)
+            for call in SourceScanner.calls(named: words(#/\bwithAnimation/#), in: code)
             where !goesThroughMotion(call.firstArgument) {
                 flag(call.start, "withAnimation with an animation of its own; use a \\.motion preset")
             }
             for match in code.matches(of: words(#/\bwithAnimation\s*\{/#)) {
                 flag(match.range.lowerBound, "withAnimation with the default animation; use a \\.motion preset")
             }
+            // `motion.linear(_:)` is the preset, not the constructor.
+            let builds = animationLiterals.contains { code.contains($0) }
+            for match in builds ? code.matches(of: animationConstructor) : []
+            where identifier(before: match.range.lowerBound, in: code) != "motion" {
+                flag(match.range.lowerBound, "an animation built outside Motion.swift; add a preset there")
+            }
         }
-        for call in calls(named: #/\.animation/#, in: code) where call.isModifier {
+        for call in SourceScanner.calls(named: #/\.animation/#, in: code) where call.isModifier {
             if !buildsPresets, !goesThroughMotion(call.firstArgument) {
                 flag(call.start, ".animation with an animation of its own; use a \\.motion preset")
             }
@@ -177,6 +222,14 @@ import Testing
                 flag(match.range.lowerBound, "glassEffect outside the floating controls (see CLAUDE.md)")
             }
         }
+        // Every match holds `Material` or `.bar`; a `Regex` over the other files is slow on Linux.
+        if path.hasPrefix("BatteryPulseApp/Main/"), !Self.materialAllowList.contains(path),
+            code.contains("Material") || code.contains(".bar")
+        {
+            for match in code.matches(of: material) {
+                flag(match.range.lowerBound, "a material in the windows' content; groups use a Card surface")
+            }
+        }
         if path == windowLookFile {
             for match in code.matches(
                 of: words(#/\bglassEffectID\b|\bglassEffectTransition\b|\.interactive\s*\(|\bwithAnimation\b/#))
@@ -187,7 +240,7 @@ import Testing
             for match in code.matches(of: windowBackgroundAPI) {
                 flag(match.range.lowerBound, "a window background or appearance outside App/WindowLook.swift")
             }
-            for call in calls(named: words(#/\bcontainerBackground/#), in: code)
+            for call in SourceScanner.calls(named: words(#/\bcontainerBackground/#), in: code)
             where call.arguments.contains(words(#/\bfor\s*:\s*\.window\b/#)) {
                 flag(call.start, "a window background outside App/WindowLook.swift")
             }
@@ -210,202 +263,26 @@ import Testing
         }
     }
 
-    // MARK: Scanning
-
-    struct Call {
-        var name: String
-        var start: String.Index
-        /// Text between the parentheses.
-        var arguments: Substring
-        /// Applied to a view (`view.symbolEffect(…)`), not an implicit member such as
-        /// `.contentTransition(.symbolEffect(.replace))` or `case .animation(let a):`.
-        var isModifier: Bool
-
-        /// The top-level arguments, trimmed.
-        var topLevelArguments: [String] {
-            var depth = 0
-            var piece = ""
-            var pieces: [String] = []
-            for character in arguments {
-                switch character {
-                case "(", "[", "{": depth += 1
-                case ")", "]", "}": depth -= 1
-                case "," where depth == 0:
-                    pieces.append(piece)
-                    piece = ""
-                    continue
-                default: break
-                }
-                piece.append(character)
-            }
-            pieces.append(piece)
-            return pieces.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        }
-
-        /// The first argument's expression, whatever its label.
-        var firstArgument: String {
-            topLevelArguments.first ?? ""
-        }
-
-        /// The expression of a top-level argument with this label.
-        func argument(labeled label: String) -> String? {
-            for piece in topLevelArguments {
-                guard piece.hasPrefix(label) else { continue }
-                let rest = piece.dropFirst(label.count).drop { $0 == " " }
-                if rest.first == ":" { return rest.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines) }
-            }
-            return nil
-        }
-    }
-
-    /// Calls of `name` followed by `(`, with their balanced argument text.
-    static func calls(named name: Regex<Substring>, in code: String) -> [Call] {
-        var result: [Call] = []
-        for match in code.matches(of: name) {
-            var index = match.range.upperBound
-            while index < code.endIndex, code[index] == " " { index = code.index(after: index) }
-            guard index < code.endIndex, code[index] == "(" else { continue }
-            let open = code.index(after: index)
-            var depth = 1
-            var cursor = open
-            while cursor < code.endIndex, depth > 0 {
-                if code[cursor] == "(" { depth += 1 }
-                if code[cursor] == ")" { depth -= 1 }
-                cursor = code.index(after: cursor)
-            }
-            guard depth == 0 else { continue }
-            let close = code.index(before: cursor)
-            result.append(
-                Call(
-                    name: String(code[match.range]).trimmingCharacters(in: .punctuationCharacters),
-                    start: match.range.lowerBound,
-                    arguments: code[open..<close],
-                    isModifier: isModifier(dotAt: match.range.lowerBound, in: code)))
-        }
-        return result
-    }
-
-    /// Whether the member access at `dot` continues an expression (a modifier) rather than
-    /// starting an implicit member expression.
-    static func isModifier(dotAt dot: String.Index, in code: String) -> Bool {
-        guard code[dot] == "." else { return false }
-        var index = dot
-        var sawSpace = false
-        while index > code.startIndex {
-            index = code.index(before: index)
-            let character = code[index]
-            if character.isWhitespace {
-                sawSpace = true
-                continue
-            }
-            switch character {
-            case ")", "]", "}", "\"": return true
-            // `view?.symbolEffect(…)` against `flag ? .symbolEffect(…) : …`.
-            case "?", "!": return !sawSpace
-            default:
-                guard character.isLetter || character.isNumber || character == "_" else { return false }
-                var start = index
-                while start > code.startIndex {
-                    let previous = code.index(before: start)
-                    let c = code[previous]
-                    guard c.isLetter || c.isNumber || c == "_" else { break }
-                    start = previous
-                }
-                let word = code[start...index]
-                let keywords: Set<Substring> = ["return", "case", "in", "else", "try", "await", "then", "some", "any"]
-                // `Transition.symbolEffect(…)` is a static member of a type, not a modifier.
-                return !keywords.contains(word) && !(word.first?.isUppercase ?? false)
-            }
-        }
-        return false
-    }
-
-    /// `source` with comments and the contents of string literals replaced by spaces; line breaks
-    /// and the quotes themselves stay, so positions and line numbers match the original.
-    static func codeOnly(_ source: String) -> String {
-        let characters = Array(source)
-        var output = characters
-        var index = 0
-        func blank(_ range: Range<Int>) {
-            for i in range where characters[i] != "\n" { output[i] = " " }
-        }
-        func starts(with prefix: String, at i: Int) -> Bool {
-            let p = Array(prefix)
-            return i + p.count <= characters.count && Array(characters[i..<(i + p.count)]) == p
-        }
-        while index < characters.count {
-            if starts(with: "//", at: index) {
-                var end = index
-                while end < characters.count, characters[end] != "\n" { end += 1 }
-                blank(index..<end)
-                index = end
-            } else if starts(with: "/*", at: index) {
-                var depth = 0
-                var end = index
-                repeat {
-                    if starts(with: "/*", at: end) {
-                        depth += 1
-                        end += 2
-                    } else if starts(with: "*/", at: end) {
-                        depth -= 1
-                        end += 2
-                    } else {
-                        end += 1
-                    }
-                } while depth > 0 && end < characters.count
-                blank(index..<min(end, characters.count))
-                index = end
-            } else if characters[index] == "\"" || (characters[index] == "#" && starts(with: "#\"", at: index)) {
-                var hashes = 0
-                var open = index
-                while characters[open] == "#" {
-                    hashes += 1
-                    open += 1
-                }
-                let isMultiline = starts(with: "\"\"\"", at: open)
-                let quote = isMultiline ? "\"\"\"" : "\""
-                let closing = quote + String(repeating: "#", count: hashes)
-                var end = open + quote.count
-                while end < characters.count, !starts(with: closing, at: end) {
-                    if hashes == 0, characters[end] == "\\" { end += 1 }
-                    if !isMultiline, characters[end] == "\n" { break }
-                    end += 1
-                }
-                let contentEnd = min(end, characters.count)
-                blank((open + quote.count)..<contentEnd)
-                index = min(contentEnd + closing.count, characters.count)
-            } else {
-                index += 1
-            }
-        }
-        return String(output)
-    }
-
     // MARK: Tests
 
-    @Test func appAndWidgetFollowTheMotionRules() throws {
-        var violations: [String] = []
-        var scanned = 0
-        for target in ["BatteryPulseApp", "BatteryPulseWidget"] {
-            let directory = Self.sources.appendingPathComponent(target)
-            let enumerator = try #require(
-                FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil))
-            for case let url as URL in enumerator where url.pathExtension == "swift" {
-                let components = url.standardizedFileURL.pathComponents
-                let sourcesIndex = try #require(components.lastIndex(of: "Sources"))
-                let path = components[(sourcesIndex + 1)...].joined(separator: "/")
-                violations += Self.violations(in: try String(contentsOf: url, encoding: .utf8), path: path)
-                scanned += 1
-            }
-        }
-        #expect(scanned > 20)
+    /// One case per file, so a failure names the file and the files are scanned in parallel.
+    @Test(arguments: (try? SourceScanner.files.get()) ?? [])
+    func appAndWidgetFollowTheMotionRules(_ file: SourceScanner.File) {
+        let violations = Self.violations(inCode: file.code, path: file.path)
         #expect(violations.isEmpty, "\(violations.joined(separator: "\n"))")
+    }
+
+    /// The file list behind the cases above: readable, and not empty or cut short.
+    @Test func scansTheAppAndTheWidget() throws {
+        #expect(try SourceScanner.files.get().count > 20)
     }
 
     @Test func allowListedFilesExist() {
         let lists = Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles)
         for path in lists.union([Self.toneMapBridge, Self.windowLookFile]) {
-            #expect(FileManager.default.fileExists(atPath: Self.sources.appendingPathComponent(path).path), "\(path)")
+            #expect(
+                FileManager.default.fileExists(atPath: SourceScanner.sources.appendingPathComponent(path).path),
+                "\(path)")
         }
     }
 
@@ -443,9 +320,18 @@ import Testing
         "Text(\"x\").animation(.smooth) { $0.opacity(on ? 1 : 0) }",
         "Text(\"x\").transition(.opacity.animation(.easeInOut))",
         "HStack { }\n    .animation(.default, value: showsAdapter)",
+        // Animations built outside the presets, even when gated by hand (CH-01).
+        "var drawIn: Animation? { motion.allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil }",
+        "let fade = Animation.easeInOut(duration: 0.2)",
+        "let bounce: Animation = .spring(response: 0.3, dampingFraction: 0.8)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
+        // Skipping a file without the literals could hide a constructor that has none of them.
+        let code = SourceScanner.codeOnly(source)
+        if code.contains(Self.animationConstructor) {
+            #expect(Self.animationLiterals.contains { code.contains($0) }, "\(source)")
+        }
     }
 
     @Test(arguments: [
@@ -478,6 +364,11 @@ import Testing
         "Text(\"\"\"\n  .animation(.smooth, value: snapshot)\n  \"\"\")",
         "Text(#\"a \"quoted\" .animation(.smooth)\"#)",
         "GlassEffectContainer { bar.glassEffectID(\"bar\", in: ns) }",
+        // A type whose name ends in Animation, the preset `motion.linear(_:)`, and a progress
+        // view style (CH-01).
+        "ForEach(DemoAnimation.allCases) { Text($0.title) }",
+        "withAnimation(motion.linear(Self.frame / .seconds(1))) { advance() }",
+        "ProgressView(value: 0.5).progressViewStyle(.linear)",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -487,14 +378,39 @@ import Testing
         let glass = "bar.glassEffect(.regular.interactive(), in: .capsule)"
         #expect(!flags(glass, path: "BatteryPulseApp/Main/DemoView.swift"))
         // Content is never glass: the cards' "Glass Cards" option is gone.
-        #expect(flags(glass, path: "BatteryPulseApp/Main/Components.swift"))
-        #expect(!flags(glass, path: "BatteryPulseApp/Settings/SettingsView.swift"))
+        #expect(flags(glass, path: "BatteryPulseApp/Main/Components/Card.swift"))
+        // The tile pickers mark their choice with an accent outline only.
+        #expect(flags(glass, path: "BatteryPulseApp/Settings/PreviewTilePicker.swift"))
         // The window's glass sheet: allowed, but never interactive (`windowBackgroundNeverAnimates`).
         let sheet = "Rectangle().fill(.clear).glassEffect(Glass.clear.tint(tint), in: .rect)"
         #expect(!flags(sheet, path: "BatteryPulseApp/App/WindowLook.swift"))
         #expect(flags(sheet, path: "BatteryPulseApp/Main/OverviewView.swift"))
         #expect(flags(glass, path: "BatteryPulseApp/Main/CompactView.swift"))
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
+    }
+
+    /// Content has no material of its own; the chart readout is the one exception.
+    @Test(arguments: [
+        "readout.background(.regularMaterial, in: .rect(cornerRadius: 8))",
+        "readout.background(Material.thin)",
+        "readout.background(.ultraThinMaterial)",
+        "toolbar.background(.bar)",
+        "let fill: Material = .thick",
+        "content.environment(\\.backgroundMaterial, .regular)",
+    ])
+    func noMaterialInTheWindowsContent(source: String) {
+        #expect(flags(source, path: "BatteryPulseApp/Main/History/HistoryView.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Main/History/HistoryChartParts.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/MenuBar/PopoverView.swift"), "\(source)")
+    }
+
+    @Test func materialGuardAllows() {
+        let path = "BatteryPulseApp/Main/DemoView.swift"
+        #expect(!flags("bar.glassEffectTransition(motion.level == .full ? .materialize : .identity)", path: path))
+        #expect(!flags("// A plain fill, not a second Material", path: path))
+        #expect(!flags("readout.background(tones.style(.surface), in: .rect(cornerRadius: 8))", path: path))
     }
 
     @Test(arguments: [
@@ -559,7 +475,7 @@ import Testing
             #expect(flags("content.tint( .white.opacity(0.9))", path: path))
         }
         #expect(!flags("content.tint(policy.tones.controlTintColor)", path: "BatteryPulseApp/App/WindowLook.swift"))
-        #expect(!flags("bolt.foregroundStyle(.white)", path: "BatteryPulseApp/Main/Components.swift"))
+        #expect(!flags("bolt.foregroundStyle(.white)", path: "BatteryPulseApp/Main/Components/BatteryGlyph.swift"))
     }
 
     @Test func windowLookGuardAllows() {
@@ -592,7 +508,7 @@ import Testing
     /// wraps.
     @Test func windowRegistrationsStayOutsideTheWindowLook() throws {
         func code(_ path: String) throws -> String {
-            Self.codeOnly(try String(contentsOf: Self.sources.appendingPathComponent(path), encoding: .utf8))
+            try SourceScanner.file(path).code
         }
         let registration = #/\.(?:liveRefresh|trackedWindow)\s*\(/#
         let look = #/\.windowLook\s*\(\s*\)/#
@@ -630,6 +546,9 @@ import Testing
         let modifier = "content.animation(.smooth(duration: 0.25), value: rounded)"
         #expect(!flags(modifier, path: "BatteryPulseApp/App/Motion.swift"))
         #expect(flags(modifier, path: "BatteryPulseApp/App/DemoController.swift"))
+        let drawIn = "var iconDrawIn: Animation? { allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil }"
+        #expect(!flags(drawIn, path: "BatteryPulseApp/App/Motion.swift"))
+        #expect(flags(drawIn, path: "BatteryPulseApp/Welcome/AppIconView.swift"))
         // The presets file still follows the other rules.
         #expect(flags("content.animation(motion.change, value: snapshot)", path: "BatteryPulseApp/App/Motion.swift"))
     }

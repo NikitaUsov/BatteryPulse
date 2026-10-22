@@ -382,6 +382,18 @@
         }
       }
     },
+    "Adds Translucent and Clear to Window Style in General. They are still in beta: harder to read, and they use more energy.": {
+      "extractionState": "manual",
+      "comment": "Footer of the Beta window styles toggle in Settings → Advanced",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавляет «Полупрозрачный» и «Прозрачный» в «Стиль окон» в разделе «Основные». Это бета-стили: с ними текст читается хуже, и они расходуют больше энергии."
+          }
+        }
+      }
+    },
     "Advanced": {
       "extractionState": "manual",
       "localizations": {
@@ -899,6 +911,17 @@
         }
       }
     },
+    "BatteryPulse couldn't confirm this update came from its developer. Check the release page before installing anything.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse не удалось подтвердить, что это обновление выпущено его разработчиком. Прежде чем что-либо устанавливать, проверьте страницу выпуска."
+          }
+        }
+      }
+    },
     "BatteryPulse couldn't look for devices. Try again in a moment.": {
       "extractionState": "manual",
       "localizations": {
@@ -1051,6 +1074,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ниже 20 процентов заряд становится оранжевым."
+          }
+        }
+      }
+    },
+    "Beta": {
+      "extractionState": "manual",
+      "comment": "Mark on a beta window style's tile in Settings → General (Translucent, Clear)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета"
+          }
+        }
+      }
+    },
+    "Beta window styles": {
+      "extractionState": "manual",
+      "comment": "Toggle in Settings → Advanced that adds the beta window styles (Translucent, Clear) to Window Style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета-стили окон"
           }
         }
       }
@@ -1631,13 +1678,13 @@
         }
       }
     },
-    "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through.": {
+    "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите стиль «Стандартный», «Матовый», «Полупрозрачный» или «Прозрачный» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол."
+            "value": "Выберите стиль «Матовый» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол. «Полупрозрачный» и «Прозрачный» — бета-стили: включите «Бета-стили окон» в разделе «Настройки» → «Дополнения»."
           }
         }
       }
@@ -1985,6 +2032,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не удалось проверить обновления"
+          }
+        }
+      }
+    },
+    "Couldn't Export Capture": {
+      "extractionState": "manual",
+      "comment": "Alert title when the raw data capture can't be saved",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось экспортировать снимок"
           }
         }
       }
@@ -5001,6 +5060,17 @@
         }
       }
     },
+    "Open Release Page": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть страницу выпуска"
+          }
+        }
+      }
+    },
     "Open the downloaded DMG and drag BatteryPulse to Applications to replace this copy. macOS asks once in Privacy & Security before the new version opens.": {
       "extractionState": "manual",
       "localizations": {
@@ -6942,13 +7012,13 @@
         }
       }
     },
-    "This release can only be installed from the DMG.": {
+    "This release isn't signed, so BatteryPulse can't install it.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Этот выпуск можно установить только из DMG."
+            "value": "Этот выпуск не подписан, поэтому BatteryPulse не может его установить."
           }
         }
       }

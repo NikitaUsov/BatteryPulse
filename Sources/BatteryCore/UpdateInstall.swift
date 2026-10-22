@@ -1,9 +1,9 @@
 import Foundation
 
 /// Why BatteryPulse can't install an update itself, or why an installation stopped. Every case
-/// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap),
-/// and the user can still download the DMG in the browser.
-public enum UpdateInstallError: Error, Sendable, Equatable {
+/// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap);
+/// ``fallback`` says what the Software Update window offers instead.
+public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
     // Checked before Install and Relaunch is offered.
     /// A build without a version (CI artifacts, `swift run`).
     case developmentBuild
@@ -21,7 +21,7 @@ public enum UpdateInstallError: Error, Sendable, Equatable {
     case downloadFailed
     /// The DMG doesn't match GitHub's digest: a broken or incomplete download.
     case digestMismatch
-    /// The DMG's signature doesn't verify with ``ReleaseSigning/publicKey``.
+    /// The DMG's signature doesn't verify with any of ``ReleaseSigning/publicKeys``.
     case badSignature
     case mountFailed
     /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version.
@@ -37,9 +37,33 @@ public enum UpdateInstallError: Error, Sendable, Equatable {
     /// A network failure is worth another try; the other checks would fail the same way again.
     public var isRetryable: Bool { self == .downloadFailed }
 
-    /// Whether the browser download is still the way forward. After ``relaunchFailed`` the
-    /// update is already installed.
-    public var fallsBackToDownload: Bool { self != .relaunchFailed }
+    /// The DMG failed a check that shows it is the release workflow's, or has no signature to
+    /// check. The app can't tell a broken release from a forged one, so it never offers that DMG.
+    public var isIntegrityFailure: Bool {
+        switch self {
+        case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature: true
+        case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
+            .replaceFailed, .relaunchFailed:
+            false
+        }
+    }
+
+    /// What the window offers when the app doesn't install the update itself.
+    public var fallback: UpdateFallback {
+        if isIntegrityFailure { return .releasePage }
+        return self == .relaunchFailed ? .none : .downloadDMG
+    }
+}
+
+/// The way forward when BatteryPulse doesn't install an update itself.
+public enum UpdateFallback: Sendable, Equatable {
+    /// The DMG in the browser: nothing says it isn't genuine, the app just can't install it here.
+    case downloadDMG
+    /// A warning and the release page, never the DMG: offering the file the app refused would
+    /// steer the user past the check.
+    case releasePage
+    /// Nothing: the update is already installed.
+    case none
 }
 
 /// Checks for the downloaded DMG that need no platform frameworks.
@@ -86,6 +110,24 @@ public enum UpdateIntegrity {
 }
 
 /// When the app may replace itself, and the commands it runs to do so.
+///
+/// The updater's boundaries:
+/// - **Who made the update:** only an Ed25519 signature by one of ``ReleaseSigning/publicKeys``
+///   lets the app install a DMG. GitHub's digest shows only that the download is intact, so the
+///   hosts the DMG and its signature come from aren't filtered: the signature is the authority.
+/// - **After a failed check:** the app never offers the refused DMG, only the release page
+///   (``UpdateFallback/releasePage``), and the browser opens only `https` pages on github.com
+///   (``ReleaseLinks``).
+/// - **Release notes:** anyone who can publish a release can write them, and they stay editable,
+///   so a link in them opens only over `https`, on any host (``ReleaseNotes/isAllowedLink(_:)``).
+/// - **Which version:** the copy taken out of the DMG must be this app at exactly the release's
+///   version, and newer than the running one, so an older signed release can't be installed
+///   over a newer one (``checkStagedBundle(identifier:version:expectedIdentifier:release:current:)``).
+/// - **Not a boundary:** another process of the same user. It could change the DMG between the
+///   check and the mount, or the new copy between the check and the swap, but it can replace the
+///   app anyway, so the updater doesn't try to defend against it.
+/// - **Quarantine:** the app clears it on the new copy, and the Info.plist has no
+///   `LSFileQuarantineEnabled`, so the new version opens without Open Anyway.
 public enum UpdateInstallPolicy {
     /// The version builds without one get: they never install updates.
     public static let unversioned = AppVersion(parts: [0, 0, 0])

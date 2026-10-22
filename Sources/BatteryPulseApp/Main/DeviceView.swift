@@ -91,10 +91,10 @@ struct DeviceView: View {
         }
         // Reads every minute while the page can be seen. Hiding clears only this device: the
         // page switched away from disappears after the new one appeared.
-        .task(id: motion.isVisible) {
+        .onChange(of: motion.isVisible, initial: true) { _, isVisible in
             guard !isDemo else { return }
-            devices.setPageVisible(entry.id, motion.isVisible)
-            if motion.isVisible { devices.listIfStale() }
+            devices.setPageVisible(entry.id, isVisible)
+            if isVisible { devices.listIfStale() }
         }
         .onDisappear {
             if !isDemo { devices.setPageVisible(entry.id, false) }
@@ -205,16 +205,17 @@ struct DeviceView: View {
                     fraction: health / 100,
                     value: formatter.percent(health),
                     number: health,
-                    caption: condition(tier),
+                    caption: Phrases.condition(for: tier),
                     tint: tones.color(.level(tier)),
-                    badge: tones.badge(for: tier) == .inverted ? condition(tier) : nil
+                    badge: tones.badge(for: tier) == .inverted ? Phrases.condition(for: tier) : nil
                 )
             }
             if let cycles = battery.cycleCount {
                 // The gauge's own rating wins over Apple's published one for the model.
                 let rated =
-                    battery.designCycleCount
-                    ?? IDeviceModel.ratedCycles(productType: entry.productType, deviceClass: entry.deviceClass) ?? 1000
+                    BatteryPresentation.ratedCycles(battery.designCycleCount)
+                    ?? IDeviceModel.ratedCycles(productType: entry.productType, deviceClass: entry.deviceClass)
+                    ?? BatteryPresentation.fallbackRatedCycles
                 GaugeTile(
                     title: "Cycle count",
                     fraction: Double(cycles) / Double(rated),
@@ -233,14 +234,6 @@ struct DeviceView: View {
     private func chargeCaption(_ battery: IDeviceBattery) -> String? {
         guard let current = battery.currentCapacityMAh, let full = battery.fullChargeCapacityMAh else { return nil }
         return String(localized: "\(current.formatted()) of \(formatter.milliampHours(full))")
-    }
-
-    private func condition(_ tier: BatteryPresentation.LevelTier) -> String {
-        switch tier {
-        case .normal: String(localized: "Normal", comment: "Battery condition")
-        case .low: String(localized: "Service Recommended", comment: "Battery condition")
-        case .critical: String(localized: "Check Battery", comment: "Battery condition")
-        }
     }
 
     // MARK: - Details
@@ -333,7 +326,7 @@ struct DeviceView: View {
         // looks unplugged, and this is the only way back for it.
         if devices.isStalled {
             guard entry.connection != nil else {
-                return ShownProblem(text: Phrases.deviceUnavailable(.timedOut(seconds: 0)), canRetry: true)
+                return ShownProblem(text: Phrases.deviceListFailed, canRetry: true)
             }
             return ShownProblem(
                 text: Phrases.deviceProblem(.transportFailed(.timedOut), name: name, connection: entry.connection),

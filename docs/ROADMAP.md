@@ -17,10 +17,9 @@ charging state.
   Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
   never hidden from both. Liquid Glass stays in the control layer, per Apple's HIG: the
   system's sidebar, toolbar and controls, plus custom glass only on controls that float over
-  content (the Demo Mode bar, the selection of the tile pickers in Settings). Content uses
-  standard fills and is never glass. Motion is short, plays once on a battery event or a user
-  action, turns into fades under Reduce Motion, and stops in windows that can't be seen and in
-  the menu bar label.
+  content (the Demo Mode bar). Content uses standard fills and is never glass. Motion is short,
+  plays once on a battery event or a user action, turns into fades under Reduce Motion, and
+  stops in windows that can't be seen and in the menu bar label.
 - **Window styles (0.6):** the main and compact windows offer Standard (default), Frosted,
   Translucent and Clear (Settings → General). Standard and Frosted follow the HIG: Frosted is a
   standard material as the app background. Translucent and Clear knowingly go against it (Liquid
@@ -186,16 +185,19 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   one and, always, an Ed25519 signature of the DMG (`BatteryPulse.dmg.sig`, made by
   `scripts/sign-update.swift` in the release workflow from the `UPDATE_SIGNING_KEY` secret of
   the `release` environment, which needs the maintainer's approval for each run,
-  checked against the key in `ReleaseSigning.swift`). It mounts the DMG at a private mount
+  checked against the keys in `ReleaseSigning.publicKeys`). It mounts the DMG at a private mount
   point, copies the app into a temporary folder on the app's volume, clears quarantine, and
   checks the bundle ID, that the version is exactly the release's and newer than the running
   one (so a signed old build can't be installed over a newer one), and a strict code-signature
   validation. Then it swaps the bundles with `renamex_np(RENAME_SWAP)`, registers the new one
   with `LSRegisterURL` and relaunches through `/bin/sh`, which waits for the old process to end
   and runs `open -n`; the old copy is deleted at the next launch. Translocated copies, folders
-  the user can't write, development builds, releases without a signature and any error fall
-  back to Download in the browser. There is one built-in key and no rotation yet: a lost key
-  means one manual DMG install with the new key's build. Follow-ups: re-register the login item
+  the user can't write, development builds and the other errors fall back to Download in the
+  browser; since 0.6.1 a release without a signature, or a download that fails the digest,
+  signature, bundle or code-signature check, gets a warning and the release page instead, never
+  the DMG. The built-in keys are a list, so a new key can ship before it signs (`swift
+  scripts/sign-update.swift --help` is the rotation runbook); a lost key still means one manual
+  DMG install with the new key's build. Follow-ups: re-register the login item
   and reload the widget timelines on the first launch after an update.
 - [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
   kept them on the M5; an in-app update is still to be checked.) Replacing 0.3.0 with 0.3.1 from the DMG
@@ -289,8 +291,8 @@ stays on controls; the glass bubbles come from standard segmented controls.
   second on scenes
 - [x] Compact window and menu bar panel: rolling percent, polling through `liveRefresh`, the Demo
   badge in the toolbar, no animated window resizing; the menu bar label stays unanimated
-- [x] Settings: the menu bar icon style picker gets a flowing glass selection; borders with Show
-  Borders; the Glass Cards toggle
+- [x] Settings: the menu bar icon style picker gets a flowing glass selection (an accent outline
+  since 0.6.1); borders with Show Borders; the Glass Cards toggle
 - [x] Software Update, What's New and Welcome: status and phase crossfades, one staggered entrance,
   the pulse line drawing in once; widget number and symbol transitions and rendering modes
 - [ ] Check on the M5: frame rate (Instruments), energy with the window visible, covered,
@@ -302,7 +304,8 @@ stays on controls; the glass bubbles come from standard segmented controls.
 
 Standard, Frosted, Translucent and Clear for the main and compact windows. Built without the
 planned spike on the M5 (the maintainer checks after release); the open points are in the check
-below.
+below. Since 0.6.1 Translucent and Clear are beta styles, offered only with Settings → Advanced →
+Beta window styles on.
 
 - [x] `WindowLook` and `WindowLookPolicy` in BatteryCore (the code avoids SwiftUI's
   `WindowStyle`): the background, group surface and sheet rules per style, Reduce Transparency
@@ -336,6 +339,221 @@ below.
   up there); screenshots for the user guide
 - [ ] Not done yet: thicker chart lines and wider area fills on the sheet (the charts keep their
   default line width), and the content treatment on the Raw Data table (an AppKit-backed table)
+
+### Stage 1.6: Optimization and foundation (0.6.1)
+
+No new features: readability, speed, energy, security and size, each measured before and after
+against `claude/baseline-0.6.0` (0.6.0 plus the instrumentation, built with the same compiler).
+The release numbers go into the performance baseline at release.
+
+- [x] Measurement: Points of Interest signposts with a `perf` log line each
+  (`scripts/perf-stats.swift` sums them), `scripts/rusage.swift`, a profiling build
+  (`PROFILING=1 scripts/build-app.sh`), Linux benchmarks, and in CI a size report with ceilings,
+  a warning gate, job time limits and a launch smoke test
+- [x] Swift 6.4 manifest: one `strict` settings array for every target (upcoming features and
+  warnings as errors) and strict memory safety for BatteryCore and bpulse
+- [x] The two look bugs users reported: the Window Style and Icon Style tiles mark the choice
+  with an accent outline instead of glass, and Clear dims more (0.65) so its white text stays
+  readable over bright windows. While a Translucent or Clear window minimizes, its sheet is a
+  plain fill of its tint: on the M5 that keeps Translucent from turning black, but Clear still
+  does (a known issue of the beta, for 0.6.2)
+- [x] Before 0.6.1's plan: the widget also refreshes when the estimate arrives after a plug change
+  and when it moves; earbuds are named after the buds, not their case
+- [x] Size: a ULMO DMG, stripped binaries that export only `_main` (debug symbols ship as
+  `BatteryPulse-dSYMs.zip`), `-Osize`, and an empty English string table; the DMG went from about
+  3.7 MB to under 1.5 MB
+- [x] Reads: one read per burst of power notifications, 150 ms after the first; the monitor runs
+  on an injected clock, so its tests are deterministic; polls read the SMC's two live keys and
+  the others at most every 60 s
+- [x] Update integrity: a release without a signature, or a download that fails its digest,
+  signature, bundle or code-signature check, gets a warning and the release page, never the DMG; a
+  list of signing keys with a rotation runbook; the browser opens release pages only on github.com
+  over https; the update traffic goes through ephemeral sessions without a cache, and automatic
+  checks skip Low Data Mode and expensive networks; the installer verifies and replaces off the
+  main actor and holds one activity, ended on every way out
+- [x] Raw Data rows built once per reading off the main actor, filtered as prebuilt rows (about
+  6.4 → 2.7 ms per keystroke on Linux)
+- [x] App services follow the monitor through `Observations` in named tasks; failed history
+  writes and every widget reload are logged
+- [x] History: decoded day files are cached (a warm 7-day load about 85 → 3 ms on Linux), the
+  charts' data is built off the main actor in BatteryCore (`HistoryChartData`), and the page is
+  split into `Main/History/`
+- [x] Devices and accessories: `Mutex` and checked `Sendable` instead of `@unchecked`
+  (9 → 4 in the package), MobileDevice and the accessory symbol loaded with `RTLD_FIRST`, a
+  Devices folder only the user can read, and a device list that can't be read is never
+  overwritten
+- [x] Releases: `build-app.sh` checks the signing posture, the workflows pin every action by
+  commit, and the release notes must open with the version's heading
+- [x] Views: one file per component and per Settings pane
+- [x] Fixes found on the way: a Mac reporting 0 rated cycles no longer breaks the cycle gauges;
+  the menu bar's power value keeps updating after the icon is turned off or Demo Mode ends;
+  Export Capture reports a failed save; Copy Report's tooltip fits pages without a report; the
+  "notifications are off" note updates after a return from System Settings
+- [x] Energy: every periodic wake-up allows macOS at least 10 % of its interval to coalesce it;
+  live values refresh less often in Low Power Mode, under reduced resources or when the Mac runs
+  hot, and the menu bar stops polling while the displays sleep
+- [x] Less code: members no product uses, found with the index store and checked with `git grep`
+  (Swift keeps public library symbols from dead stripping, so the linker's maps can't show them),
+  removed; unused `Codable` conformances dropped and the report's sections folded into its lines
+- [x] Guard tests on Linux for every target, Darwin code included: `SecurityGuardTests` (where
+  `dlopen`, IOKit user clients, `Process` and `kill` may appear; `URLSession.shared`,
+  `Task.detached` and `@unchecked Sendable` as they stand), `EnergyGuardTests` (tolerances,
+  timers, activities, widget reloads) and two new motion rules (animations only from the
+  presets, no material in `Main/` but the chart readout's)
+- [x] The M5 session on the release candidate (2026-10-22): the tile pickers, Clear in a bright
+  window, minimizing, the chart readout in every style, the stripped widget, every page,
+  relaunch, alerts and the login item, and the update window with an install of the real 0.6.0
+  through the new installer all passed, except three findings fixed before release:
+  - Translucent and Clear still don't look right to the maintainer, so they became beta styles:
+    Settings → Advanced → Beta window styles adds them to the picker, marked Beta, and turns
+    itself on for a window that already used one;
+  - the chart readout without a material was unreadable on the glass sheets, so it is back on
+    0.6.0's material, the one material in `Main/`;
+  - Raw Data's source pop-up cut longer names off-centre; it is a menu button sized to its label.
+- [ ] Not measured in the session, for 0.6.2's: energy with power in the menu bar
+  (`scripts/rusage.swift` against the 0.6.0 baseline) and each window style's energy
+
+Decisions that last beyond 0.6.1:
+
+- **Measure first.** Optimizations come with a before and an after: signposts with stable names
+  (CLAUDE.md lists them), a baseline branch built with the same compiler, Linux benchmarks for
+  BatteryCore, and the CI size report, whose ceilings sit about 5 % above the release candidate.
+- **Rules have guard tests.** A rule a reviewer would otherwise have to remember (motion, glass,
+  colours, energy, risky APIs) is a Linux test over every target's sources; an exception goes on
+  the test's list with its reason.
+- **Energy.** Event-driven first; a poll only while a view shows live values, slower while the
+  system saves energy and none while the displays sleep; one read per burst of notifications;
+  every periodic wake-up with a tolerance of at least 10 %; no timers; one activity, around an
+  install.
+- **Concurrency.** Work leaves the main actor through `@concurrent` functions, tasks have names,
+  services observe with `Observations`, and `@unchecked Sendable` is kept only where the
+  compiler can't see (C callbacks and tables, immutable images), each with its reason. Main actor
+  by default waits for 0.6.2, because only a long session on the M5 can show its runtime traps.
+- **Updates.** A release the app can't verify is never offered as a download; the signing keys
+  are a list; update traffic leaves no cache and automatic checks respect Low Data Mode.
+- **Size.** ULMO, stripped binaries with published debug symbols, `-Osize`.
+- **API surface.** `public` stays; no `package` access and no documentation lint on every public
+  declaration.
+- **Frozen outputs.** Within a minor release, `bpulse`'s output and exit codes, the capture
+  format, the storage formats, the settings keys and the update contract don't change; a change
+  waits for a version that announces it (device JSON dates, 0.7).
+- **Looks.** The tile pickers mark the choice with an accent outline; selection glass would
+  return only with a pixel test. Clear dims at 0.65 in both appearances. Translucent and Clear
+  stay beta styles until the maintainer signs them off on the M5; the History chart readout keeps
+  its material, because a readout over a plot has to read on every style.
+
+#### Performance baseline (0.6.0 → 0.6.1)
+
+Before is `claude/baseline-0.6.0` (0.6.0 plus the instrumentation), after the release candidate,
+both built with Xcode 27.1 on the CI runner; the published 0.6.0 DMG was 3,670,713 B.
+
+| Size | 0.6.0 | 0.6.1 | Change |
+|---|---|---|---|
+| DMG | 3,699,952 B (UDZO) | 1,439,093 B (ULMO) | −61 % |
+| Installed app | 11,180 KB | 4,608 KB | −59 % |
+| App binary (`__text`) | 7,618,784 B (2,116,636 B) | 2,856,976 B (1,917,508 B) | −62 % (−9 %) |
+| Widget binary (`__text`) | 3,172,800 B (1,084,028 B) | 1,379,792 B (942,748 B) | −57 % (−13 %) |
+| Exports per binary | 4,195 | 1 (`_main`) | |
+| String tables (`.lproj`) | 410,328 B | 238,124 B | −42 % |
+| Build-machine paths in the binaries | 0 | 0 | |
+
+| Linux benchmark (release, median of three alternated runs) | 0.6.0 | 0.6.1 |
+|---|---|---|
+| History, 7 days, first load | 75 ms | 80 ms (unchanged within noise) |
+| History, 7 days, warm load | 77 ms | 2.5 ms |
+| History, 7 days, after today's file grows | — | 2.4 ms |
+| Raw Data sections | 3.8 ms | 2.6 ms |
+| Raw Data filter per keystroke (0.6.0's five-way match in the view; 0.6.1's prebuilt rows) | 7.6 ms | 2.4 ms |
+| Parse and report (B1, B6) | | no change beyond noise |
+
+| Code | 0.6.0 | 0.6.1 |
+|---|---|---|
+| Lines: BatteryCore / BatteryKit / app / widget / bpulse | 9,336 / 2,731 / 8,562 / 207 / 483 | 9,995 / 3,291 / 9,229 / 215 / 480 |
+| Lines: tests; `@Test` | 9,737; 539 | 12,519; 658 |
+| Compiler warnings; swift-format findings | 0; 0 | 0 (now a CI gate); 0 |
+| `@unchecked Sendable` | 9 | 4 |
+| `withObservationTracking` | 4 | 0 |
+| `Task.detached` | 4 | 1 |
+| `URLSession.shared` | 3 | 0 |
+| `try?` | 67 | 51 |
+| `@MainActor` in the app | 38 | 35 |
+| `Task.sleep` without a tolerance | 10 | 4 (one-shots) |
+
+| MacBook Air M5, release candidate (`scripts/perf-stats.swift` over the session's `perf` lines) | 0.6.1 |
+|---|---|
+| Full read, p50 / p95 | 6.3 ms / 8.8 ms |
+| Registry part of a read, p50 | 4.5 ms |
+| SMC: the two live keys on every poll / the other keys, at most once a minute | 0.48 ms (594 reads) / 2.1 ms (93 reads) |
+| Reads per burst of power notifications | about 1 |
+| Reads before the menu bar item is ready | 1 |
+| History load, p50: 24 hours / 7 days | 51.6 ms / 9.9 ms |
+| Page switch | 30–65 ms |
+| Update check | 269 ms |
+
+Energy and launch weren't measured in the session; they move to the 0.6.2 session, against the
+same baseline.
+
+### Stage 1.7: 0.6.2 (next)
+
+A second maintenance and foundation release with no new features: 0.6.1's deferred backlog, the
+beta window styles' known bug, the energy measurements 0.6.1's session skipped, and the size and
+read-path groundwork that widget customization (0.7) needs. Two sittings on the M5: an early one
+(about 25 minutes plus 3 hours unattended) and one on the release candidate.
+
+- [ ] Clear minimizes without a black frame: an opaque fill that resembles the style while the
+  window minimizes and comes back; the Clear tile's preview looks the same selected or not; the
+  evidence (screenshots in every style, energy) that decides whether Translucent and Clear leave
+  beta
+- [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
+  each window style, a burst of plug changes, memory, devices and accessories
+
+Deferred from 0.6.1, each for the reason given:
+
+- [ ] Main actor by default (WP-10), first: it needs a long session on the M5 (notifications,
+  sleep and wake, an install from a test release, the widget after an update), because what it
+  breaks shows only at runtime
+- [ ] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
+  at p95, 72 % of it the registry. Read the registry only when it changes (E4b), then reads off
+  the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
+  `pmset -g pslog`; SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07,
+  SUI-11, SUI-12, E19)
+- [ ] Xcode on the Mac: SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10)
+- [ ] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
+  on alone; with `-internalize-at-link` on the widget (about −27 % of its `__text` in a test
+  build), the size headroom 0.7's widget work needs
+- [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
+  `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
+- [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
+- [ ] Enhanced Security (SEC-08): its gate, an in-app update from 0.6.0 that launches, is
+  possible only after publishing
+- [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
+  Check Now cancels a waiting automatic check (E10); SEC-18's research
+- [ ] Readability and tooling: SUI-09, the DocC check (SW-21), SW-13 for BatteryKit, SZ-08 with
+  the next glossary work, the SZ-11 and SZ-14 experiments, C2
+- [ ] CI: review `actions/checkout` v6.1.0 (a tag without a changelog entry so far) and
+  `upload-artifact` v7, both pinned by commit
+- [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
+  Charge Limit capture (Stage 1.1); full screen, the contrast audit with Accessibility Inspector
+  and each window style's energy (Stage 1.5); frame rate and energy with motion (Stage 1.4); the
+  menu bar icons with Increase Contrast and on displays with a notch (Stage 1.3); iPhone, iPad and
+  accessory captures in the packaged app, unless the session's optional device step runs
+  (Stages 5 and 6); exported files in spreadsheet apps (Stage 6); widgets kept on the desktop
+  across an in-app update (Stage 1.2, seen after publishing)
+
+### 0.7
+
+- [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, in
+  every size macOS offers, with defaults that keep a placed widget looking as it does today.
+  Widgets for the battery, History, iPhone and iPad, and accessories; the main value and visual,
+  the details per size, clock time or time left, level colours or monochrome; every rendering
+  mode, device names hidden where the widget is redacted, clicks that open the matching page.
+  Which fields fit which size is decided in BatteryCore and tested on Linux. First, in 0.6.2,
+  throwaway builds on the M5 answer what the design depends on: App Intents metadata in a SwiftPM
+  build, a file the app writes that the sandboxed widget can read, accessory reads from the
+  sandbox, and placed widgets surviving the move to a configurable widget
+- [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
+  (`firstUseDate` is a number of seconds since 2001 today), with a line in the release notes,
+  because scripts that read it have to change
 
 ### Stage 2: iOS MVP
 
@@ -478,14 +696,12 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.4.0   | 2026-10-15 | Update check frequency, Install and Relaunch with signed releases, the About window, menu bar content and drawn icon styles, charging shown within seconds from the SMC, Raw Data explanations for the pack, banks, cells and charger, and an iPhone/iPad command-line preview |
 | 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
 | 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
+| 0.6.1   | 2026-10-22 | Optimization and foundation: a 61 % smaller download, one read per power event, a minute's pace for the SMC's other keys, slower polls in Low Power Mode and none while the displays sleep, faster History and Raw Data, updates that are never offered unverified; Translucent and Clear become beta styles; accent-outline tile pickers |
 
-Next: **0.6.1** is an optimization and foundation release with no new features: readability,
-speed, energy, security and size, measured before and after (a signpost baseline and an
-Instruments profile on the M5, a size report in CI), following Apple's current guidance for
-SwiftUI, Swift 6.4 concurrency, energy, platform security and build settings. Its first inputs
-are the checks on the M5 that 0.6.0 leaves open: devices and accessories on real hardware, the
-window styles' look and energy, the menu bar icons next to the system item, a capture at the
-Charge Limit stop point (`bpulse --record`), and the widget across the in-app update. Not
+Next: **0.6.2**, a second maintenance and foundation release (Stage 1.7): main actor by default,
+the read path the M5 numbers call for, Clear's minimize fix and the evidence for taking the beta
+window styles out of beta, the widget's size headroom, the installer on `diskutil`, and the
+energy measurements. Then **0.7**: widget customization and the device JSON's dates. Not
 planned: an iOS app, charge limiting, and Developer ID signing until there is a paid developer
 account.
 
@@ -493,7 +709,7 @@ account.
 
 - **Claude cloud sessions** (Linux, Swift 6.4): `swift build`, `swift test`. Everything builds
   and tests except code under `#if os(macOS)` / `#if os(iOS)`.
-- **CI** (`xcode-27` runner: macOS 27, Xcode 27): builds and tests the Darwin code and builds
-  `BatteryKit` for iOS.
+- **CI** (`xcode-27` runner: macOS 27, Xcode 27.1): builds and tests the Darwin code, builds
+  `BatteryKit` for iOS, packages the app, reports its size and launches it once.
 - **The maintainer's Mac:** running the tools and the UI: `swift run BatteryPulse`,
   `swift run bpulse`, or `scripts/build-app.sh` for the packaged app.

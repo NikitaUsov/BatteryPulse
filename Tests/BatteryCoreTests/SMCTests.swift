@@ -267,5 +267,82 @@ struct SMCTests {
     @Test func appReadsOnlyReadOnlyBatteryKeys() {
         #expect(Set(SMCBattery.keys).count == SMCBattery.keys.count)
         #expect(SMCBattery.keys.allSatisfy { ["B", "T", "S"].contains($0.description.first.map(String.init)) })
+        // Read the key, list the keys, read a key's info: never 6, the write.
+        #expect(SMCParamBlock.Command.allCases.map(\.rawValue) == [5, 8, 9])
+    }
+
+    // MARK: - What a read asks for
+
+    @Test func theTwoGroupsHoldEveryKeyOnce() {
+        #expect(SMCBattery.keys.count == 16)
+        #expect(SMCBattery.liveKeys == ["B0AV", "B0AC"])
+        let groups = SMCValueCache.Group.allCases.map(\.keys)
+        #expect(groups == [SMCBattery.liveKeys, SMCBattery.otherKeys])
+        #expect(groups.joined().sorted() == SMCBattery.keys.sorted())
+    }
+
+    @Test func policyIsOffByDefault() {
+        let policy = SMCReadPolicy()
+        #expect(policy.otherKeysInterval == nil)
+        for age in [nil, Duration.zero, .seconds(1), .seconds(59), .seconds(3600)] {
+            #expect(policy.readsOtherKeys(age: age, isShown: false), "every read asks for every key")
+            #expect(policy.readsOtherKeys(age: age, isShown: true))
+        }
+    }
+
+    @Test func otherKeysAtMostOnceAMinuteUnlessShown() {
+        let policy = SMCReadPolicy.everyMinute
+        #expect(policy.otherKeysInterval == .seconds(60))
+        #expect(policy.readsOtherKeys(age: nil, isShown: false), "the first read asks for them")
+        #expect(!policy.readsOtherKeys(age: .zero, isShown: false))
+        #expect(!policy.readsOtherKeys(age: .milliseconds(59_999), isShown: false))
+        #expect(policy.readsOtherKeys(age: .seconds(60), isShown: false))
+        #expect(policy.readsOtherKeys(age: .seconds(1), isShown: true), "Power or Raw Data is on screen")
+    }
+
+    private static let live = [cell("B0AV", 7_800), cell("B0AC", 1_200)]
+    private static let other = [cell("BNCB", 2), cell("BC1V", 3_900), cell("BC2V", 3_901), cell("B0AT", 3_069)]
+
+    @Test func fullReadsAskForEveryKeyAtMostEveryTwoSeconds() {
+        var cache = SMCValueCache()
+        let start = ContinuousClock.now
+        #expect(cache.groupsToRead(at: start, readsOtherKeys: true) == [.live, .other])
+        cache.store(Self.live, for: .live, at: start)
+        cache.store(Self.other, for: .other, at: start)
+        #expect(SMCBattery.values(in: cache.capture) == (Self.live + Self.other).sorted { $0.key < $1.key })
+
+        #expect(cache.groupsToRead(at: start + .milliseconds(1_999), readsOtherKeys: true).isEmpty)
+        #expect(cache.groupsToRead(at: start + .seconds(2), readsOtherKeys: true) == [.live, .other])
+    }
+
+    @Test func liveReadsMergeIntoTheCachedOtherKeys() {
+        var cache = SMCValueCache()
+        let start = ContinuousClock.now
+        #expect(cache.groupsToRead(at: start, readsOtherKeys: false) == [.live, .other], "nothing cached yet")
+        cache.store(Self.live, for: .live, at: start)
+        cache.store(Self.other, for: .other, at: start)
+
+        let later = start + .seconds(30)
+        #expect(cache.groupsToRead(at: later, readsOtherKeys: false) == [.live])
+        let fresh = [Self.cell("B0AV", 7_700), Self.cell("B0AC", 900)]
+        cache.store(fresh, for: .live, at: later)
+        #expect(SMCBattery.values(in: cache.capture) == (fresh + Self.other).sorted { $0.key < $1.key })
+
+        // The other keys keep their age: a full read asks for them, the live pair waits.
+        #expect(cache.groupsToRead(at: later + .seconds(1), readsOtherKeys: true) == [.other])
+    }
+
+    @Test func aKeyWithoutAnAnswerIsDropped() {
+        var cache = SMCValueCache()
+        let start = ContinuousClock.now
+        cache.store(Self.live, for: .live, at: start)
+        cache.store(Self.other, for: .other, at: start)
+
+        // A fresh read of a group replaces all of it; the other group stays.
+        cache.store([Self.cell("B0AV", 7_700)], for: .live, at: start + .seconds(2))
+        #expect(SMCBattery.values(in: cache.capture).map(\.key) == ["B0AT", "B0AV", "BC1V", "BC2V", "BNCB"])
+        // An answer outside the group isn't taken.
+        cache.store([Self.cell("BC1V", 3_800)] + Self.live, for: .live, at: start + .seconds(4))
+        #expect(SMCBattery.values(in: cache.capture).first { $0.key == "BC1V" } == Self.other[1])
     }
 }

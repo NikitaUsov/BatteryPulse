@@ -9,17 +9,34 @@ import SwiftUI
 struct MenuBarLabel: View {
     let monitor: BatteryMonitor
     @Environment(DemoController.self) private var demo
-    // The defaults of MenuBarContent: the icon and the charge.
-    @AppStorage(AppSettings.menuBarShowsIconKey) private var showsIcon = true
-    @AppStorage(AppSettings.menuBarShowsChargeKey) private var showsCharge = true
-    @AppStorage(AppSettings.menuBarShowsPowerKey) private var showsPower = false
-    @AppStorage(AppSettings.menuBarShowsTemperatureKey) private var showsTemperature = false
-    @AppStorage(AppSettings.menuBarIconStyleKey) private var iconStyle = MenuBarIconStyle.default
+    private var choices = MenuBarChoices()
+    /// Whether the item is in the menu bar. A label that outlives the item's removal stops polling,
+    /// and asks again when the item comes back.
+    @AppStorage(AppSettings.showInMenuBarKey) private var isInserted = true
     @Environment(\.openWindow) private var openWindow
+    // macOS 27. The label isn't inside `.motionPolicy()`, so it reads this itself.
+    @Environment(\.systemPrefersReducedResourceUsage) private var systemPrefersReducedResourceUsage
+    /// How many members of the label are on screen. The `Group`'s modifiers apply to each member,
+    /// so one member going (the icon turned off, Demo Mode ending) must not withdraw the polling
+    /// that the others still show; the last one going does.
+    @State private var shownMembers = 0
 
-    private var content: MenuBarContent {
-        MenuBarContent(
-            showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
+    private var content: MenuBarContent { choices.content }
+
+    /// How often the label asks for fresh readings, or `nil` for never: power changes without OS
+    /// notifications, so it is polled gently while shown, and less often while the system asks
+    /// to save energy (``LiveRefreshPolicy``). Low Power Mode and the thermal state come from
+    /// `ProcessInfo`, never from the snapshot, which Demo Mode simulates.
+    ///
+    /// Nobody sees the label while the displays sleep or the session is switched out, so the
+    /// request goes then; coming back asks again, which reads once. The OS's change
+    /// notifications still update the battery meanwhile, and History keeps recording.
+    private var liveRefreshRequest: Duration? {
+        guard isInserted, ScreenActivity.shared.isActive, let base = content.liveRefreshInterval else { return nil }
+        let power = SystemPowerState.shared
+        return LiveRefreshPolicy.interval(
+            base: base, reducesResources: power.isLowPowerModeEnabled || systemPrefersReducedResourceUsage,
+            thermal: power.thermalState)
     }
 
     var body: some View {
@@ -44,12 +61,18 @@ struct MenuBarLabel: View {
             transaction.animation = nil
             transaction.disablesAnimations = true
         }
-        .onAppear { WindowOpener.openWindow = openWindow }
-        .onChange(of: content.liveRefreshInterval, initial: true) { _, interval in
-            // Power changes without OS notifications, so poll gently while it is shown.
+        .onAppear {
+            shownMembers += 1
+            WindowOpener.openWindow = openWindow
+            Diagnostics.menuBarAppeared()
+        }
+        .onChange(of: liveRefreshRequest, initial: true) { _, interval in
             monitor.setLiveRefreshInterval(interval, for: "menuBar")
         }
-        .onDisappear { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        .onDisappear {
+            shownMembers -= 1
+            if shownMembers == 0 { monitor.setLiveRefreshInterval(nil, for: "menuBar") }
+        }
     }
 
     /// A drawn battery rendered to an image, since the status item doesn't reliably draw shapes;
@@ -63,7 +86,7 @@ struct MenuBarLabel: View {
     private func icon(for snapshot: BatterySnapshot?) -> some View {
         let state = BatteryIconState(snapshot: snapshot)
         let description = Phrases.batteryIcon(snapshot, .app)
-        if let image = MenuBarIconRenderer.image(style: iconStyle, state: state) {
+        if let image = MenuBarIconRenderer.image(style: choices.iconStyle, state: state) {
             Image(nsImage: image)
                 .renderingMode(state.isMonochrome ? .template : .original)
                 .accessibilityLabel(description)
@@ -71,6 +94,26 @@ struct MenuBarLabel: View {
             Image(systemName: BatteryPresentation.symbolName(for: snapshot))
                 .accessibilityLabel(description)
         }
+    }
+}
+
+/// The menu bar choices (Settings → Menu Bar), declared once for the label and the settings, so
+/// the two can't disagree about a default. A key that was never written (a new install, or after
+/// `defaults delete`) reads as ``MenuBarContent/default`` and ``MenuBarIconStyle/default``: the
+/// icon and the percentage. `AppSettings.migrate()` writes the same keys.
+///
+/// A view keeps it as a stored property; `choices.$showsIcon` is the toggle's binding.
+struct MenuBarChoices: DynamicProperty {
+    @AppStorage(AppSettings.menuBarShowsIconKey) var showsIcon = MenuBarContent.default.showsIcon
+    @AppStorage(AppSettings.menuBarShowsChargeKey) var showsCharge = MenuBarContent.default.showsCharge
+    @AppStorage(AppSettings.menuBarShowsPowerKey) var showsPower = MenuBarContent.default.showsPower
+    @AppStorage(AppSettings.menuBarShowsTemperatureKey) var showsTemperature =
+        MenuBarContent.default.showsTemperature
+    @AppStorage(AppSettings.menuBarIconStyleKey) var iconStyle = MenuBarIconStyle.default
+
+    var content: MenuBarContent {
+        MenuBarContent(
+            showsIcon: showsIcon, showsCharge: showsCharge, showsPower: showsPower, showsTemperature: showsTemperature)
     }
 }
 #endif

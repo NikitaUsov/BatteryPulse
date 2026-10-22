@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import BatteryCore
+import BatteryKit
 import Foundation
 import Observation
 
@@ -49,14 +50,13 @@ final class UpdateChecker {
     @ObservationIgnored private var rateLimitedUntil: Date?
 
     /// A build without a real version: CI artifacts and `swift run`.
-    var isUnversioned: Bool { currentVersion == AppVersion(parts: [0, 0, 0]) }
+    var isUnversioned: Bool { currentVersion == UpdateInstallPolicy.unversioned }
 
-    // swift-format-ignore: NeverForceUnwrap
-    static let endpoint = URL(string: "https://api.github.com/repos/NikitaUsov/BatteryPulse/releases/latest")!
+    static let endpoint = ReleaseChannel.latestRelease
 
     init(bundle: Bundle = .main) {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        let current = version.flatMap(AppVersion.init) ?? AppVersion(parts: [0, 0, 0])
+        let current = version.flatMap(AppVersion.init) ?? UpdateInstallPolicy.unversioned
         currentVersion = current
         installer = UpdateInstaller(currentVersion: current, bundle: bundle)
         lastCheck = UserDefaults.standard.object(forKey: AppSettings.lastUpdateCheckKey) as? Date
@@ -65,12 +65,12 @@ final class UpdateChecker {
     /// Starts the automatic checks; each tick checks only when the chosen interval has passed.
     func startAutomaticChecks() {
         guard schedule == nil, !isUnversioned else { return }
-        schedule = Task { [weak self] in
-            // Let launch finish first.
-            try? await Task.sleep(for: .seconds(20))
+        schedule = Task(name: "UpdateChecker.schedule") { [weak self] in
+            // Let launch finish first. The tolerances let macOS coalesce these wake-ups with others.
+            try? await Task.sleep(for: .seconds(20), tolerance: .seconds(5))
             while !Task.isCancelled {
                 await self?.checkIfDue()
-                try? await Task.sleep(for: .seconds(6 * 60 * 60))
+                try? await Task.sleep(for: .seconds(6 * 60 * 60), tolerance: .seconds(36 * 60))
             }
         }
     }
@@ -84,7 +84,7 @@ final class UpdateChecker {
             userIsWaiting = true
             return
         }
-        Task { await check(userInitiated: true) }
+        Task(name: "UpdateChecker.checkNow") { await check(userInitiated: true) }
     }
 
     func skip(_ release: ReleaseInfo) {
@@ -102,7 +102,14 @@ final class UpdateChecker {
     /// Opens the DMG's download in the browser: the way to update when the app can't install
     /// the update itself.
     func download(_ release: ReleaseInfo) {
-        NSWorkspace.shared.open(release.downloadURL ?? release.pageURL)
+        NSWorkspace.shared.open(ReleaseLinks.browserURL(for: release.downloadURL ?? release.pageURL))
+        dismiss()
+    }
+
+    /// Opens the release's page in the browser instead of its DMG, after the DMG failed a check
+    /// that shows who made it (``UpdateFallback/releasePage``).
+    func openReleasePage(_ release: ReleaseInfo) {
+        NSWorkspace.shared.open(ReleaseLinks.browserURL(for: release.pageURL))
         dismiss()
     }
 
@@ -118,12 +125,15 @@ final class UpdateChecker {
     private func check(userInitiated: Bool) async {
         // A check would replace the release being installed in the window.
         guard status != .checking, !installer.isBusy else { return }
+        let interval = Diagnostics.begin("update.check", trigger: userInitiated ? "user" : "automatic")
+        defer { interval.end() }
         installer.reset()
         status = .checking
         userIsWaiting = userIsWaiting || userInitiated
         defer { userIsWaiting = false }
         do {
-            let release = try await Self.fetchLatest(currentVersion: currentVersion)
+            let session = userInitiated ? UpdateNetwork.user : UpdateNetwork.automatic
+            let release = try await Self.fetchLatest(currentVersion: currentVersion, session: session)
             recordCheck()
             let skipped = UserDefaults.standard.string(forKey: AppSettings.skippedVersionKey).flatMap(AppVersion.init)
             if UpdatePolicy.shouldOffer(
@@ -151,14 +161,14 @@ final class UpdateChecker {
         UserDefaults.standard.set(lastCheck, forKey: AppSettings.lastUpdateCheckKey)
     }
 
-    private static func fetchLatest(currentVersion: AppVersion) async throws -> ReleaseInfo {
+    private static func fetchLatest(currentVersion: AppVersion, session: URLSession) async throws -> ReleaseInfo {
         // GitHub lets caches keep this answer for a minute; Check Now right after a release would
         // otherwise still hear about the previous one. Checks are at most daily, so nothing is lost.
         var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         request.setValue("BatteryPulse/\(currentVersion)", forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         switch http.statusCode {
         case 200:
@@ -178,6 +188,29 @@ final class UpdateChecker {
         default:
             throw URLError(.badServerResponse)
         }
+    }
+}
+
+/// The sessions of the update traffic. Both are ephemeral and have no URL cache, so a check or
+/// a download leaves nothing on disk but the files the installer moves into place itself.
+enum UpdateNetwork {
+    /// Check Now, the release's signature and its DMG: the user asked, so any network will do.
+    static let user = URLSession(configuration: configuration(automatic: false))
+    /// The automatic checks: never over Low Data Mode or an expensive network, such as a phone's
+    /// hotspot. Such a check fails at once without counting as done, so the next tick tries again.
+    static let automatic = URLSession(configuration: configuration(automatic: true))
+
+    private static func configuration(automatic: Bool) -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        // Check Now during an automatic check waits for that check's answer, so a check that
+        // waited for connectivity would keep the user waiting too.
+        configuration.waitsForConnectivity = false
+        if automatic {
+            configuration.allowsConstrainedNetworkAccess = false
+            configuration.allowsExpensiveNetworkAccess = false
+        }
+        return configuration
     }
 }
 #endif

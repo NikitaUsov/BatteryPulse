@@ -5,22 +5,48 @@ on:
     branches: [main, "claude/**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        # A test build that the in-app updater treats as older than a real release, so its Install
+        # and Relaunch can be tried. Pushes build 0.0.0.
+        description: Version to build into the app, without the v (for example 0.5.99); empty for 0.0.0
+        required: false
+        default: ""
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+# Every job only reads the repository. Actions are pinned to the full commit SHA of the tag named
+# in their comment, and expressions reach shell scripts only through env:.
+permissions:
+  contents: read
 
 jobs:
   linux:
     name: Linux · core tests
     runs-on: ubuntu-latest
     container: swift:6.4-noble
+    # A hung test would otherwise hold the runner for GitHub's 6-hour default; a run takes 3-5
+    # minutes.
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
+          persist-credentials: false
+      - name: Check the manifest
+        # Fails early, with the manifest's own error, if Package.swift doesn't evaluate.
+        run: swift package dump-package > /dev/null
       - name: Lint
-        run: swift format lint --strict --recursive Sources Tests Package.swift
+        run: swift format lint --strict --recursive Sources Tests Package.swift scripts
       - name: Build
-        run: swift build --build-tests
+        # The warning gate: every compiler warning fails the job, except a deprecation, which stays a
+        # warning (a kept deprecated API is marked with @diagnose). Release builds don't get it, so a
+        # newer Xcode can't fail the release of a commit that passed here.
+        run: >-
+          swift build --build-tests
+          -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
 
@@ -29,34 +55,48 @@ jobs:
     # macOS 27 + Xcode 27 image (preview label): the package targets macOS 27, so its tests
     # can't run on older hosts.
     runs-on: xcode-27
+    # The same for a hung test or smoke run.
+    timeout-minutes: 30
+    env:
+      # The image's default is still Xcode 27.0; 27.1 (27A9275, the release build) is installed
+      # beside it. Use the newest release, never a beta.
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
+          persist-credentials: false
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: Test
-        run: swift test
+        # The warning gate, as in the Linux job.
+        run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Smoke-run bpulse
         # Hosted runners are VMs without a battery, so exit status 2 ("no battery") is expected.
         run: |
+          # Each command's status has its own name and is checked right after the command.
           set +e
           .build/release/bpulse
-          status=$?
-          battery_status=$status
-          echo "bpulse exited with $status"
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          battery_status=$?
+          echo "bpulse exited with $battery_status"
+          [ "$battery_status" -eq 0 ] || [ "$battery_status" -eq 2 ] || exit 1
           # The SMC listing must not crash, with or without an SMC in the VM.
           .build/release/bpulse --smc > smc.txt
-          status=$?
+          smc_status=$?
           head -20 smc.txt
-          echo "bpulse --smc exited with $status ($(wc -l < smc.txt) lines)"
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit 1
+          echo "bpulse --smc exited with $smc_status ($(wc -l < smc.txt) lines)"
+          [ "$smc_status" -eq 0 ] || [ "$smc_status" -eq 2 ] || exit 1
+          # A canary for the private IOPSCopyPowerSourcesByType: --accessories --json exits with 2
+          # only when this macOS no longer has it. The VM has no accessories: an empty list and 0.
+          .build/release/bpulse --accessories --json || exit 1
           # Loading MobileDevice and watching for devices must not crash or hang; the VM has no
           # iPhone, so 2 ("no device") is expected.
           .build/release/bpulse --devices
-          status=$?
-          echo "bpulse --devices exited with $status"
+          devices_status=$?
+          echo "bpulse --devices exited with $devices_status"
+          [ "$devices_status" -eq 0 ] || [ "$devices_status" -eq 2 ] || exit 1
           # --record takes no output format: usage error.
           .build/release/bpulse --record "$RUNNER_TEMP/rec" --json; [ $? -eq 1 ] || exit 1
           # Without a battery it ends with 2 and creates nothing. (With one it would record until
@@ -65,14 +105,46 @@ jobs:
           if [ "$battery_status" -eq 2 ]; then
             .build/release/bpulse --record "$RUNNER_TEMP/rec"; [ $? -eq 2 ] && [ ! -e "$RUNNER_TEMP/rec" ] || exit 1
           fi
-          [ "$status" -eq 0 ] || [ "$status" -eq 2 ]
+      - name: Render the fixtures with the release bpulse
+        # Darwin's Foundation bridges property list values differently from Linux, where the tests
+        # render the captures, so here the release build renders each one in each output form.
+        run: |
+          renders=0
+          for fixture in Tests/BatteryCoreTests/Fixtures/*.plist; do
+            for form in "" --json --raw; do
+              .build/release/bpulse --input "$fixture" ${form:+"$form"} > /dev/null \
+                || { echo "error: bpulse --input $fixture $form exited with $?" >&2; exit 1; }
+              renders=$((renders + 1))
+            done
+          done
+          echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
-        # Neither script is built or run anywhere else; they need a Mac with a display.
-        run: bash -n scripts/menu-bar-shots.sh && swiftc -typecheck scripts/display-metrics.swift
+        # None of them is built or run anywhere else: the first two need a Mac with a display, the
+        # others a running BatteryPulse.
+        run: |
+          bash -n scripts/menu-bar-shots.sh
+          swiftc -typecheck scripts/display-metrics.swift
+          swiftc -typecheck scripts/rusage.swift
+          swiftc -typecheck scripts/perf-stats.swift
+          swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
-        run: BUILD_NUMBER=${{ github.run_number }} scripts/build-app.sh
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: '$VERSION' is not a version like 0.5.99" >&2
+            exit 1
+          fi
+          scripts/build-app.sh
+      - name: Size report
+        # The size table and the bundle hygiene counts go to the step summary and build/size.json.
+        # The token is for the comparison with the latest release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/size-report.sh
       - name: Smoke-test update signing
         # The release signs with a secret this job doesn't get, so sign with a throwaway key:
         # the signature must verify, and a changed DMG must not.
@@ -91,8 +163,108 @@ jobs:
           fi
           rm build/tampered.dmg build/tampered.dmg.sig build/BatteryPulse.dmg.sig
       - name: Upload DMG
-        uses: actions/upload-artifact@v4
+        # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: BatteryPulse-${{ github.sha }}
+          name: BatteryPulse-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse.dmg
           if-no-files-found: error
+      - name: Upload the size report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: size-${{ github.sha }}
+          path: build/size.json
+          if-no-files-found: error
+      - name: Upload the link maps
+        # For size attribution: which object file and symbol each byte of the shipped binaries
+        # comes from.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: link-maps-${{ github.sha }}
+          path: build/maps/
+          if-no-files-found: error
+      - name: Upload the dSYMs
+        # The debug information stripped from the shipped binaries, for symbolicating a crash
+        # report of this build.
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: BatteryPulse-dSYMs-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
+          path: build/BatteryPulse-dSYMs.zip
+          if-no-files-found: error
+      - name: Install the way 0.6.0 does, then launch
+        # The update to this version runs the installed version's installer, so do with this DMG
+        # what 0.6.0's does: attach it with its hdiutil arguments (UpdateInstallPolicy
+        # .attachArguments), copy the app out, check its identifier and version, check its code
+        # signature with the flags of checkCodeSignature (strict, every architecture, nested code),
+        # and detach. These stay 0.6.0's even if this version's installer changes. Then launch the
+        # copy: after 30 s it must still run, have logged menuBarReady (its menu bar item
+        # appeared) and left no crash report, and it must quit when asked.
+        # It takes about a minute; a hung attach, open or quit ends here, not at the job's limit.
+        timeout-minutes: 5
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mount_point="$RUNNER_TEMP/BatteryPulse-update"
+          app="$RUNNER_TEMP/install/BatteryPulse.app"
+          mkdir -p "$mount_point" "$RUNNER_TEMP/install"
+          hdiutil attach build/BatteryPulse.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount_point"
+          ditto "$mount_point/BatteryPulse.app" "$app"
+          identifier="$(plutil -extract CFBundleIdentifier raw -o - "$app/Contents/Info.plist")"
+          version="$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")"
+          built="$(plutil -extract CFBundleShortVersionString raw -o - build/BatteryPulse.app/Contents/Info.plist)"
+          echo "Installed $identifier $version"
+          if [ "$identifier" != io.github.nikitausov.BatteryPulse ] || [ "$version" != "${VERSION:-$built}" ]; then
+            echo "error: the DMG holds $identifier $version, not io.github.nikitausov.BatteryPulse ${VERSION:-$built}" >&2
+            exit 1
+          fi
+          codesign --verify --strict --deep --all-architectures "$app"
+          hdiutil detach "$mount_point"
+
+          log stream --level debug --style compact --predicate 'subsystem == "io.github.nikitausov.BatteryPulse"' > "$RUNNER_TEMP/launch.log" 2>&1 &
+          log_pid=$!
+          disown "$log_pid"
+          touch "$RUNNER_TEMP/launch-marker"
+          sleep 2
+          open "$app"
+          sleep 30
+          status=0
+          if pgrep -x BatteryPulse > /dev/null; then
+            echo "BatteryPulse is running"
+          else
+            echo "error: BatteryPulse isn't running 30 s after launch" >&2
+            status=1
+          fi
+          if grep -F "perf event menuBarReady" "$RUNNER_TEMP/launch.log"; then
+            echo "The menu bar item appeared"
+          else
+            echo "error: no menuBarReady event in the log" >&2
+            status=1
+          fi
+          # Asked only while it runs (a missing process has already failed the step), in the
+          # background, so a consent prompt can't hold the step.
+          quit_pid=
+          if pgrep -x BatteryPulse > /dev/null; then
+            osascript -e 'tell application id "io.github.nikitausov.BatteryPulse" to quit' &
+            quit_pid=$!
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
+              pgrep -x BatteryPulse > /dev/null || break
+              sleep 1
+            done
+            if pgrep -x BatteryPulse > /dev/null; then
+              echo "error: BatteryPulse didn't quit when asked" >&2
+              pkill -x BatteryPulse || true
+              status=1
+            fi
+          fi
+          kill "$log_pid" ${quit_pid:+"$quit_pid"} 2> /dev/null || true
+          # ReportCrash writes a report a moment after the process ends, so a crash while quitting
+          # gets that moment to show up.
+          sleep 5
+          crashes="$(find "$HOME/Library/Logs/DiagnosticReports" /Library/Logs/DiagnosticReports -name 'BatteryPulse*' -newer "$RUNNER_TEMP/launch-marker" 2> /dev/null || true)"
+          if [ -n "$crashes" ]; then
+            echo "error: crash reports: $crashes" >&2
+            status=1
+          fi
+          echo "Last lines of the app's log:"
+          tail -20 "$RUNNER_TEMP/launch.log"
+          exit "$status"

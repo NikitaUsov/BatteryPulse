@@ -70,7 +70,7 @@ public enum SMCParamBlock {
     }
 
     /// The read-only commands sent in `data8`. 6 (write a key) is deliberately absent.
-    public enum Command: UInt8, Sendable {
+    public enum Command: UInt8, Sendable, CaseIterable {
         case readKey = 5
         case getKeyFromIndex = 8
         case getKeyInfo = 9
@@ -288,6 +288,11 @@ public enum SMCBattery {
     public static let keys: [SMCFourCC] =
         [cellCountKey, "B0AV", "B0AC", gaugeTemperatureKey] + cellVoltageKeys + floatCellVoltageKeys
         + temperatureKeys
+    /// The pack voltage and current: the live readings that polls exist for.
+    public static let liveKeys: [SMCFourCC] = ["B0AV", "B0AC"]
+    /// The rest of ``keys``, which change slowly: the cell count, the cell voltages and the
+    /// temperatures. ``SMCReadPolicy`` says how often a read asks for them.
+    public static let otherKeys: [SMCFourCC] = keys.filter { !liveKeys.contains($0) }
 
     /// A key's value for display, in its own unit except for the float cell voltages, which are
     /// shown in mV like the integer ones. The cell voltages and temperatures are decoded in the
@@ -408,5 +413,85 @@ public enum SMCBattery {
             return millivolts
         }
         return nil
+    }
+}
+
+/// How often a battery read asks the SMC for ``SMCBattery/otherKeys``. Off by default:
+/// every read asks for every key, as `bpulse --watch`, `bpulse --record` and the widget do. The
+/// app's battery monitor turns it on, so its polls ask only for ``SMCBattery/liveKeys``.
+public struct SMCReadPolicy: Sendable, Equatable {
+    /// How old the other keys' values may get before a read asks for them again; `nil` asks on
+    /// every read.
+    public var otherKeysInterval: Duration?
+
+    public init(otherKeysInterval: Duration? = nil) {
+        self.otherKeysInterval = otherKeysInterval
+    }
+
+    /// The app's: the other keys at most once a minute, and on every read while a page that shows
+    /// them (Power, Raw Data) is on screen.
+    public static let everyMinute = SMCReadPolicy(otherKeysInterval: .seconds(60))
+
+    /// Whether a read asks for the other keys again. `age` is how long ago a read last asked for
+    /// them, `nil` before the first; `isShown` means a page that shows them is on screen.
+    public func readsOtherKeys(age: Duration?, isShown: Bool) -> Bool {
+        guard let otherKeysInterval, let age, !isShown else { return true }
+        return age >= otherKeysInterval
+    }
+}
+
+/// The SMC values a provider keeps between reads, by the group a read asks for: the live pair
+/// and the other keys. A read merges what it asked for into what earlier reads left, so a reading
+/// carries every key the SMC answered, the other keys from the read that last asked for them.
+public struct SMCValueCache: Sendable {
+    /// Values younger than this are reused by any read, so a burst of reads (a poll, a
+    /// notification and the history's sample in the same second) asks the SMC once.
+    public static let minimumAge: Duration = .seconds(2)
+
+    /// The keys a read asks for together.
+    public enum Group: Sendable, CaseIterable {
+        case live, other
+
+        public var keys: [SMCFourCC] {
+            switch self {
+            case .live: SMCBattery.liveKeys
+            case .other: SMCBattery.otherKeys
+            }
+        }
+    }
+
+    private var values: [SMCFourCC: SMCRawValue] = [:]
+    private var readAt: [Group: ContinuousClock.Instant] = [:]
+
+    public init() {}
+
+    /// The groups a read at `now` asks the SMC for, the live pair first. `readsOtherKeys` is
+    /// `false` for a read that needs only the live pair (``SMCReadPolicy``); the other keys are
+    /// asked for anyway until a read has.
+    public func groupsToRead(at now: ContinuousClock.Instant, readsOtherKeys: Bool) -> [Group] {
+        Group.allCases.filter { group in
+            Self.reads(group, age: readAt[group].map { now - $0 }, readsOtherKeys: readsOtherKeys)
+        }
+    }
+
+    /// Whether a read asks for `group`, whose values a read asked for `age` ago (`nil`: never).
+    static func reads(_ group: Group, age: Duration?, readsOtherKeys: Bool) -> Bool {
+        guard let age else { return true }
+        return (group == .live || readsOtherKeys) && age >= minimumAge
+    }
+
+    /// Takes what the SMC answered at `now` for `group`, in place of the group's cached values. A
+    /// key of the group without an answer is dropped, as from a read that never asked for it; the
+    /// other group's values stay.
+    public mutating func store(_ answers: [SMCRawValue], for group: Group, at now: ContinuousClock.Instant) {
+        let keys = Set(group.keys)
+        values = values.filter { !keys.contains($0.key) }
+        for value in answers where keys.contains(value.key) { values[value.key] = value }
+        readAt[group] = now
+    }
+
+    /// Every cached value, as a reading's `AppleSMC` capture.
+    public var capture: PropertyDictionary {
+        SMCBattery.capture(Array(values.values))
     }
 }

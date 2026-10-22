@@ -6,17 +6,28 @@ import SwiftUI
 ///
 /// Only the main and compact windows follow it; Settings itself never turns see-through, so a
 /// choice that turns out hard to read can always be undone here. The change applies at once,
-/// without animation: a background swap is not a motion event.
+/// without animation: a background swap is not a motion event. Translucent and Clear appear,
+/// marked Beta, only while Settings → Advanced → Beta window styles is on.
 struct WindowLookSettings: View {
     @AppStorage(AppSettings.windowLookKey) private var windowLook = WindowLook.standard
+    @AppStorage(AppSettings.betaWindowStylesKey) private var betaStyles = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
 
+    /// What the windows draw: a beta style left in the defaults counts as Standard here too.
+    private var selection: Binding<WindowLook> {
+        Binding(get: { windowLook.available(betaStyles: betaStyles) }, set: { windowLook = $0 })
+    }
+
     var body: some View {
         let policy = WindowLookPolicy(
-            setting: windowLook, reduceTransparency: reduceTransparency, increaseContrast: contrast == .increased)
+            setting: windowLook.available(betaStyles: betaStyles), reduceTransparency: reduceTransparency,
+            increaseContrast: contrast == .increased)
         Section {
-            PreviewTilePicker(selection: $windowLook, values: WindowLook.allCases, title: \.title) { look in
+            PreviewTilePicker(
+                selection: selection, values: WindowLook.offered(betaStyles: betaStyles), title: \.title,
+                badge: \.badge
+            ) { look in
                 WindowLookPreview(look: look)
             }
         } header: {
@@ -147,15 +158,19 @@ private struct WindowLookPainter: Sendable {
             }
             let frost = isDark ? Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.7) : .white.opacity(0.5)
             context.fill(Path(bounds), with: .color(frost))
-        case .translucent:
-            context.drawLayer { blurred in
-                blurred.addFilter(.blur(radius: 1.5))
-                drawWallpaper(in: &blurred, bounds: bounds)
+        case .translucent, .clear:
+            // The desktop through the glass, a little soft under Translucent and almost sharp
+            // under Clear, with the sheet's own tint on top.
+            if look == .translucent {
+                context.drawLayer { blurred in
+                    blurred.addFilter(.blur(radius: 1.5))
+                    drawWallpaper(in: &blurred, bounds: bounds)
+                }
             }
-            context.fill(Path(bounds), with: .color(isDark ? .black.opacity(0.45) : .white.opacity(0.45)))
-        case .clear:
-            // The desktop almost sharp; only a faint tone of the glass.
-            context.fill(Path(bounds), with: .color(isDark ? Color(white: 0.03).opacity(0.22) : .white.opacity(0.06)))
+            let policy = WindowLookPolicy(setting: look, reduceTransparency: false, increaseContrast: false)
+            if let tint = policy.sheetTint(systemDark: isDark) {
+                context.fill(Path(bounds), with: .color(Color(white: tint.white, opacity: tint.opacity)))
+            }
         }
     }
 

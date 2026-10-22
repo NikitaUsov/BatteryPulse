@@ -1,7 +1,7 @@
 import Foundation
 
 /// The parts the menu bar item can show, in the order they appear.
-public enum MenuBarItem: String, Sendable, CaseIterable, Codable {
+public enum MenuBarItem: String, Sendable, CaseIterable {
     case icon, charge, power, temperature
 }
 
@@ -115,7 +115,7 @@ public struct MenuBarContent: Sendable, Equatable, Hashable {
 
 /// How the battery icon in the menu bar looks. All but ``symbol`` are drawn to the exact level
 /// (``BatteryIconLayout``).
-public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
+public enum MenuBarIconStyle: String, Sendable, CaseIterable {
     /// The SF Symbol in five steps, BatteryPulse's icon before 0.4.
     case symbol
     /// Like the battery item of macOS 27: a rounded battery without an outline, the empty part translucent.
@@ -128,7 +128,4 @@ public enum MenuBarIconStyle: String, Sendable, CaseIterable, Codable {
     case ring
 
     public static let `default` = MenuBarIconStyle.modern
-
-    /// Drawn with shapes rather than an SF Symbol.
-    public var isDrawn: Bool { self != .symbol }
 }

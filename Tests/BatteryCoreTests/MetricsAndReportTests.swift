@@ -10,7 +10,6 @@ import Testing
         let ratio = try #require(s.capacityToDesignPercent)
         #expect(abs(ratio - 6006.0 / 5760.0 * 100) < 0.0001)
         #expect(s.healthPercent == 100)
-        #expect(s.wearPercent == 0)
         #expect(s.cycleLifeUsed == 0.048)
     }
 
@@ -25,7 +24,6 @@ import Testing
         let s = try Fixture.legacyDischarging.snapshot()
         let health = try #require(s.healthPercent)
         #expect(abs(health - 6024.0 / 6249.0 * 100) < 0.0001)
-        #expect(abs(try #require(s.wearPercent) - (100 - health)) < 0.0001)
     }
 
     @Test func healthFallsBackToFullChargeCapacity() throws {
@@ -161,11 +159,12 @@ import Testing
         #expect(value("Adapter loss", in: lossless) == nil)
     }
 
-    @Test func sectionsGroupTheFlatReport() throws {
-        let s = try Fixture.m5Charging.snapshot()
-        let sections = BatteryReport.sections(for: s)
-        #expect(sections.map(\.title) == ["Charge", "Health", "Power", "System"])
-        #expect(sections.flatMap(\.lines) == BatteryReport.lines(for: s))
+    @Test func reportKeepsItsGroupOrder() throws {
+        let labels = BatteryReport.lines(for: try Fixture.m5Charging.snapshot()).map(\.label)
+        // The first line of the charge, health and power groups.
+        let starts = ["Charge", "Health", "Adapter"].compactMap { labels.firstIndex(of: $0) }
+        #expect(starts.count == 3)
+        #expect(starts == starts.sorted())
     }
 
     @Test func notChargingOnAdapter() {

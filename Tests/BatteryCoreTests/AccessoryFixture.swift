@@ -1,5 +1,4 @@
 import BatteryCore
-import Foundation
 import Testing
 
 /// Loads accessory captures from `Fixtures/` (the `bpulse --accessories --raw` format). Not a
@@ -13,10 +12,7 @@ enum AccessoryFixture: String, CaseIterable {
     case synthetic = "synthetic-accessories"
 
     func raw() throws -> PropertyDictionary {
-        let url = try #require(
-            Bundle.module.url(forResource: rawValue, withExtension: "plist", subdirectory: "Fixtures"))
-        let root = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
-        return try #require(PropertyValue.dictionary(fromAny: root))
+        try fixtureDictionary(rawValue)
     }
 
     func reading() throws -> AccessoryReading {

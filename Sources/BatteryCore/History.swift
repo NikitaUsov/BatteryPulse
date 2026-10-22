@@ -164,15 +164,26 @@ public struct HistoryDay: Sendable, Equatable, Codable {
     /// whatever calendar the user has chosen, so stored keys stay comparable for good.
     public static func key(for date: Date, calendar: Calendar = .current) -> String {
         let c = gregorian(in: calendar.timeZone).dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+        let fields = [(c.year ?? 0, 4), (c.month ?? 0, 2), (c.day ?? 0, 2)]
+        return fields.map { zeroPadded($0, width: $1) }.joined(separator: "-")
     }
 
-    /// Noon of the day, for plotting.
+    private static func zeroPadded(_ number: Int, width: Int) -> String {
+        let digits = String(number)
+        return String(repeating: "0", count: max(0, width - digits.count)) + digits
+    }
+
+    /// Noon of the day, for plotting. Builds a calendar for the one day; many days share one
+    /// through ``HistoryDayPoint/points(from:timeZone:)``.
     public func date(calendar: Calendar = .current) -> Date? {
+        date(gregorian: Self.gregorian(in: calendar.timeZone))
+    }
+
+    /// Noon of the day in `gregorian`, a Gregorian calendar.
+    func date(gregorian: Calendar) -> Date? {
         let parts = day.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }
-        return Self.gregorian(in: calendar.timeZone).date(
-            from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        return gregorian.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
     }
 
     static func gregorian(in timeZone: TimeZone) -> Calendar {

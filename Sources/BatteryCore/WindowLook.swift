@@ -1,12 +1,13 @@
 import Foundation
 
-// The window style setting (Settings → General): Standard, Frosted, Translucent or Clear. Only
-// the main and compact windows follow it. The decisions behind each style live here, free of
-// SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps them to backgrounds and
-// modifiers. Code says "window look" because SwiftUI already has a `WindowStyle`.
+// The window style setting (Settings → General): Standard, Frosted, and the beta styles
+// Translucent and Clear. Only the main and compact windows follow it. The decisions behind each
+// style live here, free of SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps
+// them to backgrounds and modifiers. Code says "window look" because SwiftUI already has a
+// `WindowStyle`.
 
-/// The window style setting, from the most opaque to the most transparent. The raw values are
-/// stored in the defaults, so they never change.
+/// The window style setting, from an opaque window to clear glass. The raw values are stored in
+/// the defaults, so they never change.
 public enum WindowLook: String, CaseIterable, Sendable {
     /// An opaque window with cards, as before 0.6.
     case standard
@@ -14,12 +15,37 @@ public enum WindowLook: String, CaseIterable, Sendable {
     case frosted
     /// One sheet of clear Liquid Glass with a dimming layer; colours kept, no cards.
     case translucent
-    /// One sheet of clear Liquid Glass without dimming; all content turns white.
+    /// One sheet of clear Liquid Glass with a dark dimming; all content turns white.
     case clear
+}
 
-    /// Unknown or missing stored values read as ``standard``.
-    public init(stored: String?) {
-        self = stored.flatMap(Self.init(rawValue:)) ?? .standard
+// Translucent and Clear are beta styles: Settings → General offers them only while Settings →
+// Advanced → Beta window styles is on, with a Beta mark on their tiles.
+extension WindowLook {
+    /// Translucent and Clear: the glass sheet's styles, still in beta.
+    public var isBeta: Bool {
+        switch self {
+        case .standard, .frosted: false
+        case .translucent, .clear: true
+        }
+    }
+
+    /// The styles Settings → General offers, from opaque to clear.
+    public static func offered(betaStyles: Bool) -> [WindowLook] {
+        allCases.filter { betaStyles || !$0.isBeta }
+    }
+
+    /// The style the windows follow: this choice, or Standard for a beta style while beta styles
+    /// are off. Turning beta styles off stores this too, so the picker shows what the windows
+    /// draw.
+    public func available(betaStyles: Bool) -> WindowLook {
+        isBeta && !betaStyles ? .standard : self
+    }
+
+    /// Whether Beta window styles starts out on, from the stored window style (a raw value):
+    /// someone who chose Translucent or Clear before they became beta (0.6.0) keeps that choice.
+    public static func betaStylesStartOn(storedLook: String?) -> Bool {
+        storedLook.flatMap(WindowLook.init(rawValue:))?.isBeta ?? false
     }
 }
 
@@ -52,6 +78,15 @@ public struct WindowLookPolicy: Equatable, Sendable {
     /// Why ``effective`` differs from ``setting``.
     public enum Override: Sendable, Equatable {
         case reduceTransparency, increaseContrast
+    }
+
+    /// What the glass sheet's place behind the window draws.
+    public enum SheetSurface: Sendable, Equatable {
+        /// The clear glass with the sheet's tint, over the desktop it samples.
+        case glass(tint: Tint)
+        /// A still, plain fill and no glass, from the moment the window starts to minimize until
+        /// it has been restored.
+        case fill(Tint)
     }
 
     /// A colour-neutral tint: a grey level (0 black, 1 white) at an opacity.
@@ -139,16 +174,6 @@ public struct WindowLookPolicy: Equatable, Sendable {
         usesGlassSheet
     }
 
-    /// Whether text may use the tertiary level; on the glass it is too faint.
-    public var allowsTertiaryText: Bool {
-        !usesGlassSheet
-    }
-
-    /// Groups are told apart by hairlines instead of surfaces.
-    public var dividesGroupsWithHairlines: Bool {
-        groupSurface == .none
-    }
-
     /// Clear puts its window in the dark appearance: content is white in Light and Dark alike.
     public var forcesDarkAppearance: Bool {
         effective == .clear
@@ -164,20 +189,38 @@ public struct WindowLookPolicy: Equatable, Sendable {
         ToneMap(style: toneStyle, onGlassSheet: usesGlassSheet)
     }
 
-    /// Clear puts a soft shadow under each group of white content, its only legibility aid.
+    /// Clear puts a soft shadow under each group of white content, on top of its dimming.
     public var shadowsContent: Bool {
         effective == .clear
     }
 
     /// The glass sheet's tint for the system appearance: Translucent's dimming layer (black 45 %
-    /// in Dark, a white wash of 45 % in Light) or Clear's faint tone (near-black 22 % in Dark,
-    /// white 6 % in Light). `nil` without a sheet.
+    /// in Dark, a white wash of 45 % in Light) or Clear's dark dimming, near-black 65 % in both.
+    /// Clear's content is white in both appearances, so a white wash would leave it unreadable
+    /// over a bright desktop. 65 % is the smallest round value that keeps white text at 4.5:1 and
+    /// secondary text at 3:1 even over a white window behind it; the glass stays colourless and
+    /// the desktop visible. `nil` without a sheet.
     public func sheetTint(systemDark: Bool) -> Tint? {
         switch effective {
         case .standard, .frosted: nil
         case .translucent: Tint(white: systemDark ? 0 : 1, opacity: 0.45)
-        case .clear: systemDark ? Tint(white: 0.03, opacity: 0.22) : Tint(white: 1, opacity: 0.06)
+        case .clear: Tint(white: 0.03, opacity: 0.65)
         }
+    }
+
+    /// What the glass sheet's place draws: the tinted glass, or, while the window minimizes, sits
+    /// in the Dock and is restored, a plain fill of the same tint at the tint's own opacity over
+    /// the still see-through window.
+    ///
+    /// The minimize animation and the Dock show the window's own layers, and the desktop that the
+    /// glass samples behind the window isn't one of them, so the sheet would turn near-black for
+    /// the whole animation. The fill is the sheet without its blur, and never opaque, so the
+    /// desktop still shows through it. The swap is not a motion event and never animates; the
+    /// glass comes back once the window is restored. `nil` without a sheet: Standard and Frosted
+    /// draw as always.
+    public func sheetSurface(systemDark: Bool, isMinimized: Bool) -> SheetSurface? {
+        guard let tint = sheetTint(systemDark: systemDark) else { return nil }
+        return isMinimized ? .fill(tint) : .glass(tint: tint)
     }
 
     /// Clear's treatment under each group of white content, for the system appearance: a tight
@@ -189,8 +232,8 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 }
 
-/// Clear's legibility aid: with no dimming layer, each group of white content (a card, a Form
-/// row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
+/// Clear's second legibility aid, on top of its dimming: each group of white content (a card, a
+/// Form row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
 /// composited pair per group, never per text, and never on the sidebar or the toolbar.
 public struct ContentTreatment: Equatable, Sendable {
     public let shadowOpacity: Double

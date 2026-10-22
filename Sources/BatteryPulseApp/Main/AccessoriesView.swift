@@ -1,5 +1,4 @@
 #if os(macOS)
-import AppKit
 import BatteryCore
 import BatteryKit
 import SwiftUI
@@ -118,52 +117,6 @@ private struct AccessoryPartRow: View {
             ProgressView(value: Double(part.percent), total: 100)
                 .tint(tones.color(part.isOffline ? .text(.secondary) : .level(tier)))
         }
-    }
-}
-
-/// An accessory's SF Symbol, or the generic one where this macOS lacks it.
-struct AccessorySymbol: View {
-    let name: String
-
-    var body: some View {
-        Image(systemName: AccessorySymbols.isAvailable(name) ? name : AccessoryKind.fallbackSymbolName)
-    }
-}
-
-/// Which symbol names this macOS has, each checked once.
-@MainActor
-enum AccessorySymbols {
-    private static var known: [String: Bool] = [:]
-
-    static func isAvailable(_ name: String) -> Bool {
-        if let available = known[name] { return available }
-        let available = NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil
-        known[name] = available
-        return available
-    }
-}
-
-extension View {
-    /// One accessory read each time this view's window becomes visible. The menu bar panel's
-    /// content stays alive between openings, so `onAppear` alone would not repeat; this follows
-    /// `motion.isVisible`, as `liveRefresh` does. It catches anything missed over sleep.
-    func refreshesWhenShown(_ monitor: AccessoryMonitor) -> some View {
-        modifier(RefreshWhenShown(monitor: monitor))
-    }
-}
-
-private struct RefreshWhenShown: ViewModifier {
-    let monitor: AccessoryMonitor
-    @Environment(\.motion) private var motion
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                if motion.isVisible { monitor.refresh() }
-            }
-            .onChange(of: motion.isVisible) { _, isVisible in
-                if isVisible { monitor.refresh() }
-            }
     }
 }
 #endif

@@ -10,7 +10,8 @@ import SwiftUI
 // changes with every 2 s reading), and it goes through `\.motion`, so Reduce Motion turns it into
 // a fade and a hidden window animates nothing. `MotionGuardTests` checks the sources for the
 // rest: no repeating or per-frame animation, no animation that bypasses `\.motion`, nothing in
-// the menu bar label.
+// the menu bar label. The one longer animation is the welcome icon's 0.8 s draw-in, a one-off
+// flourish (`iconDrawIn`).
 //
 // Under Reduce Motion nothing moves. SwiftUI doesn't drop explicit animations for it, and an
 // animation on a container animates every frame in it, so the presets split by what they may
@@ -42,6 +43,7 @@ extension EnvironmentValues {
 /// | ``replacement`` | fades in, goes at once | the same | at once |
 /// | ``symbolSwap`` | symbol Replace | opacity | identity |
 /// | ``boltTransition`` | symbol Draw On | opacity | opacity |
+/// | ``iconDrawIn`` | smooth, 0.8 s after 0.2 s; `nil` while saving energy | `nil` | `nil` |
 extension MotionPolicy {
     /// State changes that move or resize something: plugging in, a new charge state, a row or
     /// section appearing, a ring or a bar growing, a container whose layout changes. `nil` under
@@ -115,6 +117,14 @@ extension MotionPolicy {
         // If Draw On turns out not to suit `bolt.fill`, `.symbolEffect(.appear)` is the fallback.
         level == .full ? AnyTransition(.symbolEffect(.drawOn)) : .opacity
     }
+
+    /// The welcome icon's pulse line drawing in, once per launch: the one animation longer than
+    /// 0.35 s, so it is a flourish (``MotionPolicy/allowsFlourish``), `nil` under Reduce Motion,
+    /// in Low Power Mode and while the system asks to save resources. The short delay lets the
+    /// window finish appearing first.
+    var iconDrawIn: Animation? {
+        allowsFlourish ? .smooth(duration: 0.8).delay(0.2) : nil
+    }
 }
 
 // MARK: - Window root
@@ -137,7 +147,8 @@ extension View {
     }
 
     /// Requests polling at `interval` from `monitor` while this view is on screen, its window is
-    /// visible and `isEnabled` is true; withdraws the request otherwise.
+    /// visible and `isEnabled` is true; withdraws the request otherwise. While the system asks to
+    /// save energy the request is for a longer interval (``LiveRefreshPolicy``).
     func liveRefresh(
         _ monitor: BatteryMonitor, every interval: Duration, client: String, isEnabled: Bool = true
     ) -> some View {
@@ -158,7 +169,7 @@ private struct MotionPolicyModifier: ViewModifier {
             reduceMotion: reduceMotion,
             prefersCrossFade: prefersCrossFade,
             isVisible: isVisible,
-            reducesResources: LowPowerMode.shared.isEnabled || systemPrefersReducedResourceUsage)
+            reducesResources: SystemPowerState.shared.isLowPowerModeEnabled || systemPrefersReducedResourceUsage)
         let isHidden = !isVisible
         content
             .environment(\.motion, policy)
@@ -198,9 +209,13 @@ private struct LiveRefreshModifier: ViewModifier {
     let isEnabled: Bool
     @Environment(\.motion) private var motion
 
-    /// The interval this view asks for right now, or `nil` for none.
+    /// The interval this view asks for right now, or `nil` for none. Low Power Mode and the
+    /// system's request to save resources come with the window's motion policy, and the thermal
+    /// state from `ProcessInfo`: none of them from the snapshot, which Demo Mode simulates.
     private var request: Duration? {
-        isEnabled && motion.isVisible ? interval : nil
+        guard isEnabled, motion.isVisible else { return nil }
+        return LiveRefreshPolicy.interval(
+            base: interval, reducesResources: motion.reducesResources, thermal: SystemPowerState.shared.thermalState)
     }
 
     func body(content: Content) -> some View {
@@ -213,27 +228,97 @@ private struct LiveRefreshModifier: ViewModifier {
 
 // MARK: - Inputs
 
-/// Low Power Mode as macOS reports it. Read from `ProcessInfo` rather than the snapshot, so a
-/// Demo Mode scene that simulates it doesn't change how the app animates.
+/// Low Power Mode and the thermal state as macOS reports them. Read from `ProcessInfo` rather
+/// than the snapshot, so a Demo Mode scene that simulates them changes neither how the app
+/// animates nor how often it reads the battery.
 @MainActor
 @Observable
-final class LowPowerMode {
-    static let shared = LowPowerMode()
+final class SystemPowerState {
+    static let shared = SystemPowerState()
 
-    private(set) var isEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-    @ObservationIgnored private var observer: NSObjectProtocol?
+    private(set) var isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+    // Apple: "you must access the thermalState prior to registering for the notification."
+    private(set) var thermalState = ThermalState(system: ProcessInfo.processInfo.thermalState)
+    @ObservationIgnored private var observers: [any NSObjectProtocol] = []
 
     private init() {
-        // The app keeps one observer for its whole life.
-        observer = NotificationCenter.default.addObserver(
-            forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                let isEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-                if self.isEnabled != isEnabled { self.isEnabled = isEnabled }
+        // The app keeps the observers for its whole life.
+        let center = NotificationCenter.default
+        let names: [Notification.Name] = [
+            .NSProcessInfoPowerStateDidChange, ProcessInfo.thermalStateDidChangeNotification,
+        ]
+        observers = names.map { name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.update() }
             }
         }
+    }
+
+    /// Reads both again. The observable setters skip a value equal to the current one, so views
+    /// that read one aren't updated for the other.
+    private func update() {
+        isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+        thermalState = ThermalState(system: ProcessInfo.processInfo.thermalState)
+    }
+}
+
+extension ThermalState {
+    /// macOS's thermal state; one added in a later macOS counts as nominal.
+    fileprivate init(system state: ProcessInfo.ThermalState) {
+        switch state {
+        case .nominal: self = .nominal
+        case .fair: self = .fair
+        case .serious: self = .serious
+        case .critical: self = .critical
+        @unknown default: self = .nominal
+        }
+    }
+}
+
+/// Whether the user can see the screens: not while the displays sleep, nor while the session is
+/// switched out (fast user switching). Windows learn this from their occlusion state; the menu
+/// bar label, which counts as on screen all the time, learns it here.
+@MainActor
+@Observable
+final class ScreenActivity {
+    static let shared = ScreenActivity()
+
+    /// The displays are awake and this user's session is the one on screen. Assumed at launch:
+    /// an app launched into a switched-out session is told so once it has finished launching.
+    private(set) var isActive = true
+    @ObservationIgnored private var screensAreAsleep = false
+    @ObservationIgnored private var sessionIsSwitchedOut = false
+    @ObservationIgnored private var observers: [any NSObjectProtocol] = []
+
+    private init() {
+        // NSWorkspace posts these to its own center only. The app keeps the observers for its
+        // whole life.
+        let center = NSWorkspace.shared.notificationCenter
+        let names = [
+            NSWorkspace.screensDidSleepNotification, NSWorkspace.screensDidWakeNotification,
+            NSWorkspace.sessionDidResignActiveNotification, NSWorkspace.sessionDidBecomeActiveNotification,
+        ]
+        observers = names.map { name in
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.handle(name) }
+            }
+        }
+    }
+
+    private func handle(_ name: Notification.Name) {
+        switch name {
+        case NSWorkspace.screensDidSleepNotification: screensAreAsleep = true
+        case NSWorkspace.screensDidWakeNotification: screensAreAsleep = false
+        case NSWorkspace.sessionDidResignActiveNotification: sessionIsSwitchedOut = true
+        case NSWorkspace.sessionDidBecomeActiveNotification:
+            // Switching back in happens at a lit screen. A session that was switched out may not
+            // hear that the displays woke for another user, so this ends a sleep it saw begin;
+            // otherwise the label would stay without polling until the next sleep and wake.
+            sessionIsSwitchedOut = false
+            screensAreAsleep = false
+        default: return
+        }
+        isActive = !screensAreAsleep && !sessionIsSwitchedOut
     }
 }
 

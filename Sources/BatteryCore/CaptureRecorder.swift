@@ -253,7 +253,7 @@ public struct CaptureRecorder: Sendable {
         } else {
             due.append((.start, current))
         }
-        // With fewer slots than captures due, the `before` capture goes first.
+        // With fewer slots than captures due, the `before` capture is the one left out.
         due = Array(due.suffix(max(0, maxCaptures - capturesWritten)))
 
         var captures: [Capture] = []
@@ -346,9 +346,9 @@ public struct CaptureRecorder: Sendable {
         return String(repeating: "0", count: max(0, 4 - digits.count)) + digits
     }
 
-    /// A `.` decimal separator whatever the locale: `String(format:)` without one.
+    /// A `.` decimal separator whatever the locale, as C formats it.
     private static func oneDecimal(_ value: Double) -> String {
-        String(format: "%.1f", value)
+        BatteryReport.fixed(value, 1)
     }
 
     /// Tabs and line breaks become spaces, so a value stays in its column and row.

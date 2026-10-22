@@ -167,3 +167,14 @@ import Testing
         return (high + 0.05) / (low + 0.05)
     }
 }
+
+extension Tone {
+    /// Whether the tone carries a hue, which Clear never shows.
+    var hasHue: Bool {
+        switch self {
+        case .system(let color, _): color != .gray
+        case .accent: true
+        case .hierarchical, .fill, .separator, .white, .gray: false
+        }
+    }
+}

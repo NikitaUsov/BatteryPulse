@@ -123,9 +123,13 @@ the Accessories page; `bpulse --accessories --raw` saves what accessories report
 
 Live values refresh every 2 seconds while a window or the menu bar popover is open and can be
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
-or on another Space), and every 10 seconds when the menu bar shows power. Otherwise BatteryPulse updates when macOS reports a
-change, plus one reading a minute for the history while recording is on (the default; turn it
-off in Settings → Advanced), so it uses almost no CPU in the background.
+or on another Space), and every 10 seconds when the menu bar shows power. In Low Power Mode,
+when macOS asks apps to save resources, or when the Mac runs hot, they refresh less often: every
+5 seconds in windows and every 30 seconds in the menu bar. While the displays sleep or the Mac
+is switched to another user, the menu bar stops refreshing power and catches up once you're
+back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
+the history while recording is on (the default; turn it off in Settings → Advanced), so it uses
+almost no CPU in the background.
 
 ### Motion and Liquid Glass
 
@@ -138,21 +142,25 @@ animate. The History switch and the Demo Mode bar use Liquid Glass; the cards st
 ### Window style
 
 **Window Style** in Settings → General chooses how the main window and the compact window look,
-from the most opaque to the most transparent. Each tile in the picker shows a little window in
-that style:
+from an opaque window to clear glass that shows the desktop sharp. Each tile in the picker
+shows a little window in that style. Standard and Frosted are always there; Translucent and
+Clear are beta styles and appear, marked **Beta**, once **Beta window styles** is on in
+Settings → Advanced. Turning it off puts a window in Translucent or Clear back to Standard. If
+you chose Translucent or Clear in 0.6.0, Beta window styles is already on and your choice stays.
 
 | Style | What it looks like |
 |-------|--------------------|
 | **Standard** | An opaque window with cards, as in earlier versions. The default. |
 | **Frosted** | The desktop shows through the window, blurred and frosted, like the widget gallery of macOS. The cards become faint, lighter layers; the Raw Data table stays opaque. The frost stays when the window is in the background. |
-| **Translucent** | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
-| **Clear** | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through almost sharp, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark, while the glass is a little lighter or smokier with the system appearance. |
+| **Translucent** (beta) | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
+| **Clear** (beta) | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark. |
 
 The change applies at once to both windows. Settings, the menu bar popover, the welcome window
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
 The see-through styles redraw when something behind the window changes, so Translucent and
 Clear use more energy than Standard; Clear is also the hardest to read over a bright or busy
-wallpaper, and Translucent is the better choice there.
+wallpaper, and Translucent is the better choice there. A known issue of the beta: a window in
+Clear turns black while it minimizes to the Dock and while it comes back.
 
 With **Reduce transparency** or **Increase contrast** on (System Settings → Accessibility →
 Display), both windows use Standard whatever the choice, and Settings says so under the picker.
@@ -346,7 +354,9 @@ Everything stays on your Mac, in
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Devices`. BatteryPulse keeps
 each device's name (as its label), model, OS version, last values and history under a key made
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
-device data are never written. Demo Mode shows a simulated iPhone in place of your devices.
+device data are never written. Only your account can read the folder, and BatteryPulse's
+messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
+shows a simulated iPhone in place of your devices.
 
 ## Accessories
 
@@ -407,8 +417,10 @@ adds maximum capacity, cycle count and temperature.
 3. Search for **BatteryPulse** and drag the widget where you want it.
 
 The widget reads the battery itself, so it keeps working while BatteryPulse isn't running.
-macOS limits how often widgets refresh, so it may lag a few minutes behind; while BatteryPulse
-runs, it refreshes the widget right away when you plug in or unplug.
+macOS limits how often widgets refresh, so it may lag behind: by up to half an hour while
+BatteryPulse isn't running. While it runs, it refreshes the widget right away when you plug in or
+unplug and once macOS has its first estimate, and at most every quarter of an hour while the
+charge or the estimate moves.
 
 Replacing BatteryPulse with a new version from the DMG removes the widgets you placed; add them
 again from the gallery as above.
@@ -451,13 +463,15 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 | General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
-| Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
+| Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), the beta window styles, a link to this guide |
 
 ### Updates
 
 BatteryPulse checks GitHub for a new version daily, weekly, monthly or never, as you choose in
 Settings → General (daily at first), and **BatteryPulse → Check for Updates…** checks right
-away with any choice. When a new version is out, the first
+away with any choice. Automatic checks skip Low Data Mode and expensive networks, such as a
+Personal Hotspot, and try again later; Check for Updates… checks on any network. When a new
+version is out, the first
 check after BatteryPulse starts opens a window with its release notes and **Download**, **Remind
 Me Later** and **Skip This Version**; later checks don't interrupt you and show **Update
 available** in the menu bar popover instead, which opens the same window.
@@ -469,12 +483,16 @@ when:
 
 - BatteryPulse runs from where it was downloaded instead of from Applications (move it there
   first);
-- your account can't change the folder BatteryPulse is in;
-- the release has no signature.
+- your account can't change the folder BatteryPulse is in.
 
-If anything goes wrong, nothing is replaced and the window offers Download instead. Permissions
-you gave BatteryPulse in Privacy & Security may be asked for again after an update, and widgets
-may need adding again (see [Widget](#widget)).
+If the release has no signature, or the downloaded update fails one of the checks that show it is
+genuine (its signature, GitHub's checksum, the app inside or that app's code signature),
+BatteryPulse installs nothing and doesn't offer the download either: the window says what
+failed and offers **Open Release Page**, so you can look at the release on GitHub before
+installing anything. If anything else goes wrong, such as a download that stops, nothing is
+replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
+Security may be asked for again after an update, and widgets may need adding again (see
+[Widget](#widget)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see
@@ -482,13 +500,15 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 and Relaunch takes over.
 
 The check and the download of an update you chose to install are the only requests
-BatteryPulse sends to the internet: GitHub sees your IP address, the app's version and your
-language, as with any web request, and nothing else about your Mac is sent. The only other
+BatteryPulse sends to the internet, and their answers aren't kept in a network cache: GitHub
+sees your IP address, the app's version and your language, as with any web request, and nothing
+else about your Mac is sent. The only other
 connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks; you don't need it.
+`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
+symbols that turn a crash report into readable function names; you don't need either.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.

@@ -105,15 +105,6 @@ public enum Tone: Equatable, Sendable {
     case white(opacity: Double)
     /// An opaque grey, from 0 (black) to 1 (white).
     case gray(white: Double)
-
-    /// Whether the tone carries a hue, which Clear never shows.
-    public var hasHue: Bool {
-        switch self {
-        case .system(let color, _): color != .gray
-        case .accent: true
-        case .hierarchical, .fill, .separator, .white, .gray: false
-        }
-    }
 }
 
 /// Clear's mark for a warning: a solid white capsule with dark text and a symbol, as the clear

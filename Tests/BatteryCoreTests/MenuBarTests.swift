@@ -37,7 +37,9 @@ import Testing
     }
 
     @Test func titleFollowsLocale() throws {
-        let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU")) { $0 == .watts ? "W-ru" : "?" }
+        var symbols = BatteryFormatter.UnitSymbols.english
+        symbols.watts = "W-ru"
+        let russian = BatteryFormatter(locale: Locale(identifier: "ru_RU"), symbols: symbols)
         let content = MenuBarContent(showsPower: true, showsTemperature: true)
         let title = content.title(for: try Fixture.m5OnBatterySMC.snapshot(), formatter: russian)
         #expect(title.replacingOccurrences(of: "\u{00A0}", with: " ") == "47 % · −8,3 W-ru · 34 °C")
@@ -57,6 +59,14 @@ import Testing
         #expect(!chargeOnly.isOnlyItem(.icon))
         #expect(!MenuBarContent.default.isOnlyItem(.icon))
         #expect(MenuBarContent(showsCharge: false).isOnlyItem(.icon))
+    }
+
+    /// The app's menu bar choices fall back to these for a key never written, so a new install
+    /// (or one after `defaults delete`) shows the icon and the percentage, with the modern icon.
+    @Test func defaultsAreTheIconAndThePercentage() {
+        #expect(MenuBarContent.default.items == [.icon, .charge])
+        #expect(MenuBarContent.default == MenuBarContent(items: [.icon, .charge]))
+        #expect(MenuBarIconStyle.default == .modern)
     }
 
     @Test func itemsRoundTrip() {
@@ -101,7 +111,8 @@ import Testing
 
     @Test func iconStyles() {
         #expect(MenuBarIconStyle.allCases == [.symbol, .modern, .classic, .percentageInside, .ring])
-        #expect(MenuBarIconStyle.allCases.filter { !$0.isDrawn } == [.symbol])
+        // Every style but the SF Symbol is drawn with shapes.
+        #expect(MenuBarIconStyle.allCases.filter { BatteryIconLayout(style: $0, state: .sample) == nil } == [.symbol])
         #expect(MenuBarIconStyle(rawValue: "percentageInside") == .percentageInside)
         // The values of the icon style before 0.4 aren't styles any more.
         #expect(MenuBarIconStyle(rawValue: "standard") == nil)
@@ -109,6 +120,16 @@ import Testing
 }
 
 @Suite struct BatteryIconStateTests {
+    /// The digits in the icon read the same as the percentage the formatter writes, half steps
+    /// included (42.5 is "42%" in both).
+    @Test(arguments: Array(stride(from: 0.0, through: 100.0, by: 0.5)))
+    func digitsRoundLikeTheFormatter(percent: Double) throws {
+        let english = BatteryFormatter(locale: Locale(identifier: "en_US"))
+        let snapshot = BatterySnapshot(timestamp: .now, chargePercent: percent, chargeState: .discharging)
+        let digits = try #require(BatteryIconState(snapshot: snapshot).percent)
+        #expect("\(digits)%" == english.percent(percent))
+    }
+
     @Test func dischargingIsMonochromeWithoutGlyph() throws {
         let state = BatteryIconState(snapshot: try Fixture.m5OnBattery.snapshot())
         #expect(state == BatteryIconState(level: 0.7, percent: 70, glyph: .none, tint: .monochrome))

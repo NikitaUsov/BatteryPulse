@@ -15,9 +15,9 @@ import Foundation
 /// reported (``IDeviceProblem/notTrusted(_:)``) so the person can tap Trust on it.
 public final class MobileDeviceTransport: IDeviceTransport {
     /// The longest wait for attach notifications.
-    static let discoveryWindow: TimeInterval = 3
+    static let discoveryWindow: Duration = .seconds(3)
     /// Discovery ends early once the device list hasn't changed for this long.
-    static let settleTime: TimeInterval = 1
+    static let settleTime: Duration = .seconds(1)
     /// Send and receive timeout on the relay's socket, in seconds.
     static let socketTimeoutSeconds = 5
     public static let listTimeout: TimeInterval = 30
@@ -125,7 +125,12 @@ enum MobileDeviceDiscovery {
     /// Subscribes, waits for the attached devices, runs `body` with them grouped per device
     /// (USB first) while still subscribed, then unsubscribes.
     ///
-    /// - Parameter wanted: a UDID to stop waiting for as soon as it appears.
+    /// - Parameters:
+    ///   - library: the loaded MobileDevice framework.
+    ///   - wanted: a UDID to stop waiting for as soon as it appears.
+    ///   - body: the work to do with the attached devices.
+    /// - Returns: what `body` returns.
+    /// - Throws: ``IDeviceError/subscriptionFailed(_:)``, or what `body` throws.
     static func withAttachedDevices<T>(
         library: MobileDeviceLibrary, waitingFor wanted: String?,
         _ body: ([[IDeviceAttachment<AnyObject>]]) throws -> T
@@ -169,8 +174,12 @@ enum MobileDeviceDiscovery {
 
     /// Runs this thread's run loop in short slices until the device list settles, `wanted`
     /// appears or ``MobileDeviceTransport/discoveryWindow`` passes.
+    ///
+    /// Elapsed time is monotonic: a wall clock set back mid-wait would otherwise hold the
+    /// transport's queue, and every call behind it, for as long as the clock moved.
     private static func waitForDevices(library: MobileDeviceLibrary, sink: MobileDeviceSink, wanted: String?) {
-        let start = Date()
+        let clock = ContinuousClock()
+        let start = clock.now
         var count = 0
         var lastChange = start
         while true {
@@ -178,17 +187,21 @@ enum MobileDeviceDiscovery {
             // No sources on this thread's run loop: the framework delivers elsewhere. Don't spin.
             if result == .finished { Thread.sleep(forTimeInterval: 0.1) }
 
-            let now = Date()
+            let now = clock.now
             let devices = sink.snapshot()
             if devices.count != count {
                 count = devices.count
                 lastChange = now
             }
-            if now.timeIntervalSince(start) >= MobileDeviceTransport.discoveryWindow { return }
-            let quiet = now.timeIntervalSince(lastChange)
+            if start.duration(to: now) >= MobileDeviceTransport.discoveryWindow { return }
+            let quiet = lastChange.duration(to: now)
             if let wanted {
                 // A short grace collects the device's second interface (USB and Wi-Fi).
-                if quiet >= 0.5, devices.contains(where: { identifier(of: $0, library: library) == wanted }) { return }
+                if quiet >= .milliseconds(500),
+                    devices.contains(where: { identifier(of: $0, library: library) == wanted })
+                {
+                    return
+                }
             } else if count > 0, quiet >= MobileDeviceTransport.settleTime {
                 return
             }
