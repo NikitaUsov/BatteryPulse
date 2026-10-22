@@ -2,18 +2,18 @@ import Foundation
 
 /// What a placed Battery widget is set to show: the widget's configuration intent maps to it one
 /// to one. The defaults are 0.6.x's widget, which every widget placed before 0.7 gets.
-public struct BatteryWidgetConfiguration: Sendable, Equatable {
-    public var layout: WidgetLayoutMode
-    public var main: BatteryWidgetMain
-    public var visual: BatteryWidgetVisual
-    public var statusLines: [WidgetStatusLine]
+struct BatteryWidgetConfiguration: Sendable, Equatable {
+    var layout: WidgetLayoutMode
+    var main: BatteryWidgetMain
+    var visual: BatteryWidgetVisual
+    var statusLines: [WidgetStatusLine]
     /// Custom's details, in the chosen order; an empty list means no details.
-    public var details: [BatteryWidgetField]
-    public var time: WidgetTimeStyle
-    public var colors: WidgetColorStyle
-    public var updateTime: WidgetUpdateTimeStyle
+    var details: [BatteryWidgetField]
+    var time: WidgetTimeStyle
+    var colors: WidgetColorStyle
+    var updateTime: WidgetUpdateTimeStyle
 
-    public init(
+    init(
         layout: WidgetLayoutMode = .automatic, main: BatteryWidgetMain = .charge, visual: BatteryWidgetVisual = .symbol,
         statusLines: [WidgetStatusLine] = [.state, .time], details: [BatteryWidgetField] = [],
         time: WidgetTimeStyle = .clockTime, colors: WidgetColorStyle = .levelColors,
@@ -36,12 +36,12 @@ public struct BatteryWidgetConfiguration: Sendable, Equatable {
 /// Automatic's meaning per size is frozen once shipped: small and medium are 0.6.1's widget field
 /// for field, apart from the intended changes (an end tomorrow, the attention row, the reading's
 /// time once it is old, and a symbol beside a tier that isn't normal).
-public enum WidgetLayoutPlan: Sendable, Equatable {
+enum WidgetLayoutPlan: Sendable, Equatable {
     case battery(BatteryWidgetLayout)
     case empty(WidgetEmptyReason)
 
     /// The details Automatic shows in each size, in order.
-    public static func automatic(_ size: WidgetSize) -> [BatteryWidgetField] {
+    static func automatic(_ size: WidgetSize) -> [BatteryWidgetField] {
         switch size {
         case .small: []
         case .medium: [.maximumCapacity, .cycleCount, .temperature]
@@ -61,7 +61,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
 
     /// The most details a size shows, the attention row included. Small has one, which takes the
     /// time line's place.
-    public static func detailSlots(_ size: WidgetSize) -> Int {
+    static func detailSlots(_ size: WidgetSize) -> Int {
         switch size {
         case .small: 1
         case .medium: 4
@@ -71,7 +71,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
     }
 
     /// The most lines under the main value. Small and medium have 0.6.1's two.
-    public static func lineSlots(_ size: WidgetSize) -> Int {
+    static func lineSlots(_ size: WidgetSize) -> Int {
         switch size {
         case .small, .medium: 2
         case .large, .extraLarge, .extraLargePortrait: 3
@@ -80,7 +80,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
 
     /// The plan for `entry` of a timeline made for `snapshot`; `nil` means the widget read no
     /// battery. Clock times are in `formatter`'s locale and `timeZone`.
-    public static func make(
+    static func make(
         size: WidgetSize, configuration c: BatteryWidgetConfiguration, snapshot: BatterySnapshot?,
         entry: WidgetTimelinePlan.Entry, formatter: BatteryFormatter, timeZone: TimeZone
     ) -> WidgetLayoutPlan {
@@ -157,7 +157,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
     }
 
     /// The page a click opens: the one about the main value, or the one that fixes an empty state.
-    public var route: WidgetRoute {
+    var route: WidgetRoute {
         let page: PageID =
             switch self {
             case .empty: .overview
@@ -179,7 +179,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
 
 /// Why the widget shows a message instead of a battery: one line and a symbol, and a click opens
 /// the page that helps.
-public enum WidgetEmptyReason: Sendable, Equatable, CaseIterable {
+enum WidgetEmptyReason: Sendable, Equatable, CaseIterable {
     /// The widget read no battery: a desktop Mac ("This Mac has no internal battery.").
     case noBattery
     /// A battery without a charge level ("No battery information").
@@ -187,50 +187,50 @@ public enum WidgetEmptyReason: Sendable, Equatable, CaseIterable {
 }
 
 /// The Battery widget's content for one entry.
-public struct BatteryWidgetLayout: Sendable, Equatable {
-    public var visual: BatteryWidgetVisual
+struct BatteryWidgetLayout: Sendable, Equatable {
+    var visual: BatteryWidgetVisual
     /// The charge, which the level symbol, the ring and the drawn battery show.
-    public var level: WidgetLevel
-    public var main: WidgetMainValue
+    var level: WidgetLevel
+    var main: WidgetMainValue
     /// Under the main value, in order.
-    public var lines: [WidgetLine]
+    var lines: [WidgetLine]
     /// In order; the attention row, if any, is last. Small has none: its detail and attention row
     /// are lines.
-    public var details: [WidgetDetail]
+    var details: [WidgetDetail]
     /// Level colours on; tiers still carry their ``WidgetCue`` when off.
-    public var tinted: Bool
+    var tinted: Bool
 }
 
 /// The charge, as the level symbol, a ring or the drawn battery shows it.
-public struct WidgetLevel: Sendable, Equatable {
-    public var percent: Double
-    public var isCharging: Bool
+struct WidgetLevel: Sendable, Equatable {
+    var percent: Double
+    var isCharging: Bool
     /// ``BatteryPresentation/symbolName(for:)``.
-    public var symbolName: String
-    public var tier: BatteryPresentation.LevelTier
+    var symbolName: String
+    var tier: BatteryPresentation.LevelTier
 
-    public init(percent: Double, snapshot: BatterySnapshot) {
+    init(percent: Double, snapshot: BatterySnapshot) {
         self.percent = percent
         self.isCharging = snapshot.chargeState == .charging
         self.symbolName = BatteryPresentation.symbolName(for: snapshot)
         self.tier = BatteryPresentation.levelTier(for: snapshot)
     }
 
-    public var cue: WidgetCue? { WidgetCue(tier) }
+    var cue: WidgetCue? { WidgetCue(tier) }
 }
 
 /// The value the widget shows large, pre-formatted.
-public struct WidgetMainValue: Sendable, Equatable {
+struct WidgetMainValue: Sendable, Equatable {
     /// The value shown: the chosen one, or the charge when the reading lacks it.
-    public var kind: BatteryWidgetMain
-    public var text: String
+    var kind: BatteryWidgetMain
+    var text: String
     /// For the numeric content transition.
-    public var number: Double
+    var number: Double
     /// Maximum capacity warns as in the app; the charge's tier is the level's.
-    public var tier: BatteryPresentation.LevelTier
+    var tier: BatteryPresentation.LevelTier
 
     /// The charge's symbol says its tier (``WidgetLevel/cue``); another value carries its own.
-    public var cue: WidgetCue? { kind == .charge ? nil : WidgetCue(tier) }
+    var cue: WidgetCue? { kind == .charge ? nil : WidgetCue(tier) }
 
     init(charge percent: Double, snapshot: BatterySnapshot, formatter: BatteryFormatter) {
         kind = .charge
@@ -271,7 +271,7 @@ extension BatteryWidgetMain {
 }
 
 /// A line under the main value.
-public enum WidgetLine: Sendable, Equatable {
+enum WidgetLine: Sendable, Equatable {
     case state(WidgetStateWord)
     case time(WidgetTimeText)
     /// "Updated %@": the reading's own time.
@@ -283,7 +283,7 @@ public enum WidgetLine: Sendable, Equatable {
 }
 
 /// A row of the details.
-public enum WidgetDetail: Sendable, Equatable {
+enum WidgetDetail: Sendable, Equatable {
     case row(WidgetRow)
     case attention(WidgetAttention)
 }
