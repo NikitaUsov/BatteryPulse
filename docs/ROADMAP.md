@@ -495,17 +495,32 @@ same baseline.
 
 ### Stage 1.7: 0.6.2 (next)
 
+A second maintenance and foundation release with no new features: 0.6.1's deferred backlog, the
+beta window styles' known bug, the energy measurements 0.6.1's session skipped, and the size and
+read-path groundwork that widget customization (0.7) needs. Two sittings on the M5: an early one
+(about 25 minutes plus 3 hours unattended) and one on the release candidate.
+
+- [ ] Clear minimizes without a black frame: an opaque fill that resembles the style while the
+  window minimizes and comes back; the Clear tile's preview looks the same selected or not; the
+  evidence (screenshots in every style, energy) that decides whether Translucent and Clear leave
+  beta
+- [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
+  each window style, a burst of plug changes, memory, devices and accessories
+
 Deferred from 0.6.1, each for the reason given:
 
 - [ ] Main actor by default (WP-10), first: it needs a long session on the M5 (notifications,
   sleep and wake, an install from a test release, the widget after an update), because what it
   breaks shows only at runtime
-- [ ] Measurements on the M5 first: read the registry only when it changes (E4b), fewer notify
-  keys (E3b, after 3 hours of `pmset -g pslog`), reads off the main actor if a full read's p95
-  passes 4 ms (E20); SwiftUI instrument work on the pages (SUI-07, SUI-11, SUI-12, E19)
+- [ ] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
+  at p95, 72 % of it the registry. Read the registry only when it changes (E4b), then reads off
+  the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
+  `pmset -g pslog`; SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07,
+  SUI-11, SUI-12, E19)
 - [ ] Xcode on the Mac: SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10)
 - [ ] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
-  on alone, unless 0.6.1 already split it
+  on alone; with `-internalize-at-link` on the widget (about −27 % of its `__text` in a test
+  build), the size headroom 0.7's widget work needs
 - [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
   `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
@@ -527,6 +542,15 @@ Deferred from 0.6.1, each for the reason given:
 
 ### 0.7
 
+- [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, in
+  every size macOS offers, with defaults that keep a placed widget looking as it does today.
+  Widgets for the battery, History, iPhone and iPad, and accessories; the main value and visual,
+  the details per size, clock time or time left, level colours or monochrome; every rendering
+  mode, device names hidden where the widget is redacted, clicks that open the matching page.
+  Which fields fit which size is decided in BatteryCore and tested on Linux. First, in 0.6.2,
+  throwaway builds on the M5 answer what the design depends on: App Intents metadata in a SwiftPM
+  build, a file the app writes that the sandboxed widget can read, accessory reads from the
+  sandbox, and placed widgets surviving the move to a configurable widget
 - [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
   (`firstUseDate` is a number of seconds since 2001 today), with a line in the release notes,
   because scripts that read it have to change
@@ -674,13 +698,10 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
 | 0.6.1   | 2026-10-22 | Optimization and foundation: a 61 % smaller download, one read per power event, a minute's pace for the SMC's other keys, slower polls in Low Power Mode and none while the displays sleep, faster History and Raw Data, updates that are never offered unverified; Translucent and Clear become beta styles; accent-outline tile pickers |
 
-Next: **0.6.1** is an optimization and foundation release with no new features: readability,
-speed, energy, security and size, measured before and after (a signpost baseline and an
-Instruments profile on the M5, a size report in CI), following Apple's current guidance for
-SwiftUI, Swift 6.4 concurrency, energy, platform security and build settings. Its first inputs
-are the checks on the M5 that 0.6.0 leaves open: devices and accessories on real hardware, the
-window styles' look and energy, the menu bar icons next to the system item, a capture at the
-Charge Limit stop point (`bpulse --record`), and the widget across the in-app update. Not
+Next: **0.6.2**, a second maintenance and foundation release (Stage 1.7): main actor by default,
+the read path the M5 numbers call for, Clear's minimize fix and the evidence for taking the beta
+window styles out of beta, the widget's size headroom, the installer on `diskutil`, and the
+energy measurements. Then **0.7**: widget customization and the device JSON's dates. Not
 planned: an iOS app, charge limiting, and Developer ID signing until there is a paid developer
 account.
 
