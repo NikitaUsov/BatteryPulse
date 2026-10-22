@@ -14,6 +14,8 @@ Inputs:
 - Apple's documentation (fetched 2026-10-22), the macOS 26 and 27 release notes, WWDC26 session
   277, and the Swift Package Manager 6.4 sources.
 - Five independent reviews of the first draft.
+- The maintainer's answers of 2026-10-22 (§10), and the release download counts from GitHub's REST
+  API the same day (§10, "Usage evidence").
 
 CLAUDE.md wins over all of them.
 
@@ -36,7 +38,7 @@ Contents:
 7. Gates and their defaults; cut line; frozen surfaces
 8. Widget customization: the design (phased: 0.7 MVP, then later)
 9. Recommendation: widget customization in 0.7, not 0.6.2; the phases
-10. Questions only the maintainer can answer
+10. The maintainer's questions and their answers (2026-10-22)
 - Appendix A: traceability of every carried item
 - Appendix B: facts verified for this plan
 - Appendix C: facts 0.6.2 records (filled during the release)
@@ -59,9 +61,9 @@ Contents:
       two hours in Session A.
     - The registry is read only when it changes (E4b, WP-14b), but only after Session A has checked
       E4b's premise. Power and Raw Data keep re-reading the registry.
-  - **Clear minimizes without a black frame:** an opaque fill chosen from screen recordings. Also
-    the evidence that decides whether Translucent and Clear leave beta, and whether they give way
-    to Standard under Low Power Mode.
+  - **Clear minimizes without a black frame:** an opaque graphite fill, the maintainer's choice
+    (Q-B2), checked on screen recordings. Also the evidence that decides whether Translucent and
+    Clear leave beta, and each style's energy against Standard (no Low Power Mode fallback, Q-B10).
   - **Widget size:** CryptoKit and the device stack out of the widget (K-03, a `BatterySource`
     target) and `-internalize-at-link` on the widget. Together they free a few hundred KB of the
     widget's `__text`, the headroom 0.7 needs.
@@ -71,17 +73,25 @@ Contents:
     - The 0.6.0 and 0.6.1 runs happen in Session A's unattended window, and the RC's in Session B.
     - They are judged against the playbook's targets.
     - `pmset -g pslog` covers E3b and E4b's premise.
-- **Widget customization:** designed in §8 and phased in §9.1.
+- **Widget customization:** designed in §8 and phased in §9.1; in 0.7, with no 0.6.3 (Q-W1).
   - **0.7 MVP:** a configurable Battery widget in every size, with accessibility, and an
     Accessories widget if the sandbox allows it.
-  - **0.7 stretch:** the data feed, then the History and iPhone & iPad widgets.
+  - **0.7 stretch:** the data feed (Q-W3: yes, if W0-3 finds a way), then the History and
+    iPhone & iPad widgets.
   - **0.6.2:** only throwaway spikes (W0-1 to W0-6, with a control build) and the size headroom.
 - **Maintainer time:** two M5 sittings. Every step has a default for when it doesn't run.
-  - **Session A, early:** about 55 minutes hands-on, then a 3-hour unattended window (plug the
+  - **Session A, early:** about 65 minutes hands-on, then a 3-hour unattended window (plug the
     adapter in once, at the 2-hour mark).
-  - **Session B, on the release candidate:** about 75 minutes hands-on and about 70 minutes
+  - **Session B, on the release candidate:** about 95 minutes hands-on and about 70 minutes
     unattended.
-- **Budget:** about 29-33 implementation and review runs plus 3 for fix-forward; the never-cut set
+  - Both include the Xcode items, now that Xcode is installed on the M5 (Q-B7). WP-18's Xcode
+    work (about an hour) runs whenever Xcode is open, from Claude's step-by-step list.
+- **Decisions (2026-10-22):** no question of §10 stays open. The maintainer answered Q-B2, Q-B7,
+  Q-W1 and, through M-1, Q-W3; he delegated the rest ("by best practices"), and each carries its
+  recommended answer. M-1, the paid Apple Developer Program account, is no: no App Group (§8.3
+  candidate C) and no Enhanced Security spike (WP-20). Usage evidence: 14 DMG downloads across
+  every release, so the users are, in effect, the maintainer (§10).
+- **Budget:** about 29-32 implementation and review runs plus 3 for fix-forward; the never-cut set
   is about 22-26 (§7.2).
 
 ---
@@ -131,7 +141,7 @@ Events:
 | UR-3 | The script asked "Did a black frame appear…? (n: none)". It was the only question where y meant bad. Standard, Light got y; the other 15 cases got n. Most likely a polarity slip. The maintainer's settled report stands: Clear shows a black frame while minimizing and restoring; Translucent doesn't | WP-13 fixes Clear. Session A records the cases on video. From now on, every y/n question means "y = looks right", and look comparisons use numbered choices |
 | V1b | **n**: the Clear tile's sky reads differently selected and unselected | WP-13 (the tile picker promises an identical preview either way) |
 | V1d | **y**: the menu bar icon looks right next to the system's battery item in both appearances | WP-22 ticks Stage 1.3's light and dark comparison; the rest of Stage 1.3 stays open (§6, optional) |
-| V4-materials | **y**: Frosted's and Translucent's sidebar and toolbar are acceptable | Q-B4 asks only about Clear's |
+| V4-materials | **y**: Frosted's and Translucent's sidebar and toolbar are acceptable | Clear's are judged in Session B's shots (Q-B4) |
 | G10 | "didn't understand the question" | Nothing: the maintainer had already chosen the accent outline (PLAN §8). Session questions are now plain choices |
 | V4 readout | not readable on Standard, Translucent and Clear with the card surface | Fixed in 0.6.1 by the material; Session B's screenshots include it |
 | V4 screenshots | 0 of 8 | Session B's set is scripted: the script captures the front window |
@@ -153,8 +163,8 @@ own gates have a hyphen and are named after their packages (§7.1); the last col
 | G17 SUI-07, -11, -12, E19 | `page.switch` 30-65 ms p50 → **P2** with the SwiftUI instrument (WP-17) | G-17 |
 | G18 SEC-15 | Attach timing on the M5 → Session A, with WP-16 | SEC-15 |
 | G19 SEC-10 | No hang or crash seen (Q1) → **stays deferred** | none |
-| G20 SEC-08 | The in-app update is now possible after publishing → optional spike (WP-20) | SEC-08 |
-| G21 SZ-10, -11, -14 | SZ-11 and SZ-14 in WP-15 as CI experiments; SZ-10 needs Xcode on the Mac (WP-18) | G-15 (SZ-11, SZ-14); WP-18 (SZ-10) |
+| G20 SEC-08 | The in-app update is now possible after publishing, but **not run** (Q-B8: no; Enhanced Security is after 1.0 and not planned without notarization, M-1) | SEC-08 (not run) |
+| G21 SZ-10, -11, -14 | SZ-11 and SZ-14 in WP-15 as CI experiments; SZ-10 needs Xcode, which is installed on the M5 (WP-18, maintainer-run; Q-B7) | G-15 (SZ-11, SZ-14); WP-18 (SZ-10) |
 
 ---
 
@@ -214,7 +224,9 @@ Everything in PLAN §3.0 still applies. The short form:
   - Screen recordings and screenshots are the evidence, not memory.
   - The script, not the maintainer, reads logs, counts crash reports and runs Console filters.
 - **The maintainer decides only what he sees or does** (PLAN §8, "Architecture: delegated"): look,
-  behaviour, settings, the sessions and the release.
+  behaviour, settings, the sessions and the release. On 2026-10-22 he delegated this plan's
+  remaining questions too (§10). What he still decides is what he sees in the sessions: the fill on
+  video, each beta style's graduation, the Icon Composer icon, and the release.
 
 ---
 
@@ -293,35 +305,31 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Translucent Dark (black at 45 %, `WindowLook.swift:206`) should then darken too; the
     recordings show whether it does.
 - **Items:**
-  1. **An opaque minimize fill** (P1), chosen from Session A's recordings of three candidates on
-     SPIKE-A2:
+  1. **An opaque minimize fill** (P1): **(b), the graphite composite**, the maintainer's choice
+     (Q-B2, 2026-10-22). The three candidates were:
      - **(a)** today's fill;
      - **(b)** the tint composited over a mid grey: 0.03 × 0.65 + 0.5 × 0.35 = 0.1945, about 19 %
        white in sRGB-encoded values as `Color(white:opacity:)` uses them, with white text at 12.9:1;
      - **(c)** the window background colour.
 
-     In BatteryCore, `WindowLookPolicy.minimizeFill(systemDark:)` returns the chosen opaque colour,
-     and `sheetSurface(systemDark:isMinimized:)` returns `.fill` with it. Extend this to Translucent
+     Session A's recordings on SPIKE-A2 check (b) before WP-13 is written, and show whether
+     Translucent Dark, which keeps today's fill in them, shows the frame too (§6 step 6).
+
+     In BatteryCore, `WindowLookPolicy.minimizeFill(systemDark:)` returns fill (b), and
+     `sheetSurface(systemDark:isMinimized:)` returns `.fill` with it. Extend this to Translucent
      Dark if its recordings show the frame.
-     - Linux tests: Clear's fill is opaque and equals 0.1945 (if (b) wins); white text on it clears
-       4.5:1; Standard and Frosted are unchanged.
+     - Linux tests: Clear's fill is opaque and equals 0.1945; white text on it clears 4.5:1;
+       Standard and Frosted are unchanged.
      - Rewrite `sheetSurface`'s doc comment (`WindowLook.swift:211-220`), which says the fill is
        "never opaque".
      - The swap still never animates and never survives a restore (`MotionGuardTests` already
        forbids animation in `App/WindowLook.swift`).
-     - **Variant, built only on Q-B2:** a fill that follows the desktop picture.
-       - Read `NSWorkspace.desktopImageURL(for:)` on the main actor (Apple: main thread only).
-       - Open only pictures under `/System/Library/Desktop Pictures`, `/Library/Desktop Pictures`
-         or `~/Pictures`. Any other path gets fill (b) without opening the file: a picture in
-         Desktop, Documents, Downloads, iCloud Drive or on a removable or network volume falls
-         under macOS's consent rules for those places, so opening it could show a file-access
-         prompt (unverified on macOS 27).
-       - Decode and average it in a `@concurrent` function when the window appears and on
-         `NSWorkspace.activeSpaceDidChangeNotification`, cached in memory only (never on disk, so
-         no new storage format) by URL and modification date.
-       - Fall back to (b) when the URL isn't a still image.
-       - Never poll and never decode at `willMiniaturize`. No change notification for the desktop
-         picture is known (unverified).
+     - **Not built: a fill that follows the desktop picture.** Q-B2 chose (b), so the variant stays
+       out: an average of the desktop picture (`NSWorkspace.desktopImageURL(for:)`, main thread
+       only), decoded in a `@concurrent` function when the window appears and on Space changes,
+       opened only from the system's Desktop Pictures folders and `~/Pictures` (elsewhere, macOS's
+       consent rules could show a file-access prompt, unverified on macOS 27), cached in memory
+       only, never polled.
   2. **V1b:** find why the Clear tile's preview differs when selected (the outline's inset, the fill
      under the preview, or the selection's highlight) and make the preview identical in both states.
      A `MotionGuardTests` case or a review check confirms that the selection changes only the
