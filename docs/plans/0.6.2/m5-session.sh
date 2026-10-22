@@ -337,8 +337,14 @@ quit_app() {
   fi
 }
 
+# open_app: the installed app without the windows its saved state would reopen. The main window's
+# scene keeps state restoration, so a window left open at a quit (step 8 leaves it open) would
+# come back at every launch and run through the energy runs; the argument holds for this launch
+# only and changes no setting.
+open_app() { open "$APP" --args -ApplePersistenceIgnoreState YES; }
+
 launch() {
-  open "$APP"
+  open_app
   local tries=0
   until app_running || [ "$tries" -ge 40 ]; do
     sleep 0.25
@@ -1729,7 +1735,7 @@ s7_launches() {
     sleep 3
     before="$(ready_count "$capture")"
     start="$(now_ms)"
-    open "$APP"
+    open_app
     waited=0
     until [ "$(ready_count "$capture")" -gt "$before" ] || [ "$waited" -ge 150 ]; do
       sleep 0.1
