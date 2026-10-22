@@ -20,6 +20,25 @@ import Testing
         #/(?:\b(?:Text|Label|Link|Button|Toggle|Picker|Section|LabeledContent|ValueRow|row|figure|Card|confirmationDialog|Tab|TableColumn|Window|ContentUnavailableView|help|accessibilityLabel|configurationDisplayName|description|value)\(|String\(\s*localized:|\btitle:|\bdetail:|\bprompt:)\s*"((?:[^"\\]|\\.)*)"/#
     }
 
+    /// App Intents' literal forms, which are build-time metadata the widget's edit sheet shows:
+    /// `IntentDescription("…")`, a `ParameterSummary`'s `Summary("…")` and
+    /// `TypeDisplayRepresentation(name: "…")`. `@Parameter(title:)` and
+    /// `DisplayRepresentation(title:)` already match ``localizingCall``'s `title:`.
+    private static var intentCall: Regex<(Substring, Substring)> {
+        #/(?:\b(?:IntentDescription|Summary)\(|\bTypeDisplayRepresentation\(\s*name:)\s*"((?:[^"\\]|\\.)*)"/#
+    }
+
+    /// `static let title: LocalizedStringResource = "…"` and the other App Intents metadata a
+    /// string literal initializes.
+    private static var typedStaticLiteral: Regex<(Substring, Substring)> {
+        #/\bstatic\s+(?:let|var)\s+\w+\s*:\s*(?:LocalizedStringResource|IntentDescription|TypeDisplayRepresentation|DisplayRepresentation)\s*=\s*"((?:[^"\\]|\\.)*)"/#
+    }
+
+    /// The `[.x: "…"]` entries of a `caseDisplayRepresentations` dictionary literal.
+    private static var dictionaryLiteral: Regex<(Substring, Substring)> {
+        #/\.\w+:\s*"((?:[^"\\]|\\.)*)"/#
+    }
+
     /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches and
     /// `("Label", value, color)` rows.
     private static var caseLiteral: Regex<(Substring, Substring)> {
@@ -68,17 +87,26 @@ import Testing
     private static func scanSourceKeys() throws -> Set<String> {
         var keys = RawKeyGlossary.summaries
         for file in try SourceScanner.files.get() {
-            let source = file.text
-            var literals = source.matches(of: localizingCall).map { String($0.output.1) }
-            literals += source.matches(of: tupleLiteral).map { String($0.output.1) }
-            for block in source.matches(of: #/var \w+: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
-                literals += block.output.body.matches(of: caseLiteral).map { String($0.output.1) }
-            }
-            for literal in literals where !verbatim.contains(literal) {
+            for literal in localizedLiterals(in: file.text) where !verbatim.contains(literal) {
                 keys.insert(catalogKey(for: literal))
             }
         }
         return keys
+    }
+
+    /// The literals of `source` that are localization keys, in the order of the forms below.
+    static func localizedLiterals(in source: String) -> [String] {
+        var literals = source.matches(of: localizingCall).map { String($0.output.1) }
+        literals += source.matches(of: tupleLiteral).map { String($0.output.1) }
+        for block in source.matches(of: #/var \w+: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
+            literals += block.output.body.matches(of: caseLiteral).map { String($0.output.1) }
+        }
+        literals += source.matches(of: intentCall).map { String($0.output.1) }
+        literals += source.matches(of: typedStaticLiteral).map { String($0.output.1) }
+        for block in source.matches(of: #/\bcaseDisplayRepresentations\b[^=]*=\s*\[(?<body>[\s\S]*?)\]/#) {
+            literals += block.output.body.matches(of: dictionaryLiteral).map { String($0.output.1) }
+        }
+        return literals
     }
 
     /// `"Charging at \(power)"` → `"Charging at %@"`, unescaping `\"`.
@@ -115,6 +143,64 @@ import Testing
         #expect(Self.catalogKey(for: #"Charging at \(power)"#) == "Charging at %@")
         #expect(Self.catalogKey(for: #"\(f.duration(minutes: m)) left"#) == "%@ left")
         #expect(Self.catalogKey(for: #"\(value.formatted()) of \(total.formatted())"#) == "%@ of %@")
+    }
+
+    /// A source fragment and the keys found in it.
+    struct LiteralVector: Sendable, CustomTestStringConvertible {
+        var source: String
+        var keys: [String]
+        var testDescription: String { source }
+
+        init(_ source: String, _ keys: [String]) {
+            self.source = source
+            self.keys = keys
+        }
+    }
+
+    /// One vector per App Intents form, so a key used only in intent metadata counts as used
+    /// before any intent code exists.
+    static let intentVectors: [LiteralVector] = [
+        LiteralVector(
+            #"static let title: LocalizedStringResource = "Choose Battery Details""#, ["Choose Battery Details"]),
+        LiteralVector(
+            #"static var title: LocalizedStringResource = "Choose Battery Details""#, ["Choose Battery Details"]),
+        LiteralVector(#"static let description = IntentDescription("Choose a page.")"#, ["Choose a page."]),
+        LiteralVector(#"static var description = IntentDescription("Choose a page.")"#, ["Choose a page."]),
+        LiteralVector(#"static let description: IntentDescription = "Choose a page.""#, ["Choose a page."]),
+        LiteralVector(#"IntentDescription("Choose a page.", categoryName: nil)"#, ["Choose a page."]),
+        LiteralVector(#"@Parameter(title: "Main value", default: .charge) var main: MainEntity"#, ["Main value"]),
+        LiteralVector(#"Summary("Show \(\.$main)") { \.$visual }"#, [#"Show \(\.$main)"#]),
+        LiteralVector(#"static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Layout")"#, ["Layout"]),
+        LiteralVector(#"static let typeDisplayRepresentation: TypeDisplayRepresentation = "Layout""#, ["Layout"]),
+        LiteralVector(
+            #".automatic: DisplayRepresentation(title: "Automatic", image: .init(systemName: "wand"))"#, ["Automatic"]),
+        LiteralVector(
+            """
+            static let caseDisplayRepresentations: [LayoutEntity: DisplayRepresentation] = [
+                .automatic: "Automatic",
+                .custom: "Custom",
+            ]
+            """, ["Automatic", "Custom"]),
+        LiteralVector(
+            #"static let caseDisplayRepresentations: [Colors: DisplayRepresentation] = [.level: "Level colors"]"#,
+            ["Level colors"]),
+    ]
+
+    @Test(arguments: intentVectors)
+    func appIntentsLiteralsAreKeys(_ vector: LiteralVector) {
+        #expect(Self.localizedLiterals(in: vector.source) == vector.keys)
+    }
+
+    /// The forms above stay narrow: other dictionaries, task names and summaries of our own aren't
+    /// keys.
+    @Test func otherLiteralsAreNotKeys() {
+        let source = """
+            let symbols: [Kind: String] = [.mouse: "computermouse"]
+            Task(name: "WidgetRefresher.observe") {}
+            let text = callSummary("raw")
+            static let kind: String = "io.github.nikitausov.BatteryPulse.battery"
+            """
+        #expect(Self.localizedLiterals(in: source).isEmpty)
     }
 
     @Test func everyUIStringIsTranslated() throws {
