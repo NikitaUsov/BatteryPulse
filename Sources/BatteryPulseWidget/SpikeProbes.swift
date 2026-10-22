@@ -1,12 +1,14 @@
 #if os(macOS)
+import BatteryCore
+import BatteryKit
 import Darwin
 import Foundation
 import os
 
 // SPIKE-W (docs/plans/0.6.2/PLAN.md, WP-W0), spike branch only: what the sandboxed widget can read
-// besides the battery. Once per battery timeline it tries both feed candidates of W0-3. Session A
-// reads the lines; they hold the candidate's name, errno, byte counts and the feed's age and
-// counter, never a path.
+// besides the battery. Once per battery timeline it tries both feed candidates of W0-3 and the
+// accessory read of W0-4 (1). Session A reads the lines; they hold the candidate's name, errno,
+// byte counts and the feed's age and counter, never a path.
 
 /// The feed's payload, as the app's `SpikeWidgetFeed` writes it.
 struct SpikeFeedPayload: Codable {
@@ -35,6 +37,7 @@ enum SpikeProbes {
     static func run() {
         readFileFeed()
         readPreferenceFeed()
+        readAccessories()
     }
 
     /// Candidate A. A denial is silent on macOS 27, so the line has errno: 1 (EPERM) for the
@@ -101,6 +104,19 @@ enum SpikeProbes {
     static func realHome() -> String? {
         guard let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir else { return nil }
         return String(cString: directory)
+    }
+
+    /// W0-4 (1): the one-shot read an Accessories widget would make, never the notify
+    /// registrations. `unavailable` means the private function is missing; zero sources with an
+    /// accessory connected means the sandbox hides them.
+    static func readAccessories() {
+        guard let reading = MacAccessoryProvider().read() else {
+            spikeLog.notice("spike accessories unavailable")
+            return
+        }
+        spikeLog.notice(
+            "spike accessories sources=\(reading.sources.count, privacy: .public) accessories=\(reading.accessories.count, privacy: .public)"
+        )
     }
 }
 #endif
