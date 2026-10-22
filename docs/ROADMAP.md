@@ -10,10 +10,11 @@ charging state.
 - **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
   (and later charge limiting) are possible. A notarized DMG needs a paid Apple Developer
   account, and there won't be one: on 2026-10-22 the maintainer decided against it, not now and
-  not before 1.0 (a non-commercial hobby project, no budget for it, and about no users). So each
-  install from the DMG needs Open Anyway in Privacy & Security, in-app updates don't, and
-  permissions or placed widgets may need setting up again after a DMG replaces the app; 1.0
-  documents these as known limitations.
+  not before 1.0. BatteryPulse is a non-commercial hobby project with about no users, and he
+  won't pay for an Apple developer account for this app; he is willing to spend on help with
+  development, not on the account. So each install from the DMG needs Open Anyway in Privacy &
+  Security, in-app updates don't, and permissions or placed widgets may need setting up again
+  after a DMG replaces the app; 1.0 documents these as known limitations.
 - **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
   (re-signed every 7 days); TestFlight and the App Store need the paid account.
 - **Reference hardware:** MacBook Air M5 running macOS 27.
@@ -37,6 +38,28 @@ charging state.
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
+- **Privacy (0.7): the anonymous version count.** Decided by the maintainer
+  on 2026-10-22, so he can see how many people use which version, and announced honestly.
+  - **What happens:** once per version, at least a day after that version first runs on a Mac,
+    an automatic update check also downloads a small file, `BatteryPulse-count.txt`, from that
+    version's GitHub release. GitHub counts the download, and the file's public download count is
+    the number of Macs that use that version.
+  - **What is sent:** nothing else. No identifier of any kind, nothing about the Mac, its battery
+    or the settings, and from 0.7 the update traffic keeps no cookies. There is no server of our
+    own and no third-party service. GitHub sees the address and the app's version, as it does for
+    the update check.
+  - **When it runs:** it is on by default. It never runs when Check for updates is Never, never
+    from Check Now, and it turns off in Settings → General, which the Welcome window shows. It
+    adds no wake-up of its own: it rides on the scheduled check.
+  - **How it is announced:** What's New and the release notes say it, README and the User Guide
+    gain a Privacy section, and the file itself explains what it is for.
+  - **The contract:** a new settings switch (three settings keys: `anonymousVersionCount`,
+    `lastCountedVersion`, `versionFirstLaunch`) and a new release asset (`BatteryPulse-count.txt`)
+    are frozen-surface changes, so they arrive in a minor release. Through 0.6.x the app counts
+    and sends nothing.
+- **Releases have no dates.** BatteryPulse is a hobby project: a release ships when there is time
+  and desire. The plans keep the order of the versions and estimate their effort, but set no
+  target date (decided on 2026-10-22).
 
 ## Principles
 
@@ -48,6 +71,13 @@ charging state.
   Linux and macOS against real captures (`bpulse --raw`).
 - **Swift 6 with strict concurrency.**
 - **Resource targets (macOS):** about 0 % CPU when idle, under 30 MB RAM, binary under 5 MB.
+- **Privacy.** No account, no analytics service and no server of our own: readings, history,
+  devices and settings stay on the Mac. The app connects to the internet only to reach GitHub.
+  Through 0.6.x that is the update check and a download the user chose; from 0.7 it is also the
+  anonymous version count, on by default and easy to turn off (Decisions). No identifier, nothing
+  about the Mac, its battery or the settings is ever sent, and GitHub's public download counts
+  are the only usage numbers the maintainer gets. Reading an iPhone or iPad over Wi-Fi stays on
+  the local network.
 
 ## What the platforms expose
 
@@ -205,12 +235,17 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   scripts/sign-update.swift --help` is the rotation runbook); a lost key still means one manual
   DMG install with the new key's build. Follow-ups: re-register the login item
   and reload the widget timelines on the first launch after an update.
+
+  Seen on the M5 on 2026-10-22: the maintainer installed 0.6.1 through Install and Relaunch from
+  0.6.0, the desktop widget stayed and showed the current charge, and Open at login kept its
+  state, so the login item needs no re-registering. 0.6.2 ticks this item.
 - [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
-  kept them on the M5; an in-app update is still to be checked.) Replacing 0.3.0 with 0.3.1 from the DMG
+  kept them on the M5, and so did the in-app update from 0.6.0 to 0.6.1 on 2026-10-22, with the
+  widget current; 0.6.2 ticks this item.) Replacing 0.3.0 with 0.3.1 from the DMG
   removed them; the gallery still offered the widget, and it worked once added again. The
   in-place swap above keeps the path, registers the new copy and raises
-  `CFBundleVersion`, then reloads the timelines; check with `pluginkit` on the M5 whether that
-  keeps them; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
+  `CFBundleVersion`, then reloads the timelines; each release's check after publishing looks
+  again; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
   coming, 2026-10-22), and the guide tells the user to add them again
 - [x] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
@@ -514,8 +549,13 @@ hour) whenever Xcode is open.
   whether Translucent and Clear leave beta
 - [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
   each window style, a burst of plug changes, memory, devices and accessories
+- [ ] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
+  table per release of DMG downloads, signature downloads (each in-app install fetches the
+  signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
+  (`BatteryPulse-count.txt`), from GitHub's public API without a login; within GitHub's limit of
+  60 requests an hour it says when to try again instead of retrying
 - [ ] A week after publishing: DMG and signature download columns in the Releases table, filled
-  for 0.2.0-0.6.1 and 0.6.2 (no telemetry)
+  from that script for 0.2.0-0.6.1 and 0.6.2 (the app sends nothing for them)
 
 Deferred from 0.6.1, each for the reason given:
 
@@ -550,11 +590,13 @@ Deferred from 0.6.1, each for the reason given:
   menu bar icons with Increase Contrast and on displays with a notch (Stage 1.3); iPhone, iPad and
   accessory captures in the packaged app, unless the session's optional device step runs
   (Stages 5 and 6); exported files in spreadsheet apps (Stage 6); widgets kept on the desktop
-  across an in-app update (Stage 1.2, seen after publishing)
+  across an in-app update (Stage 1.2: seen kept across 0.6.0 → 0.6.1 on 2026-10-22; 0.6.2 ticks
+  it)
 
 ### 0.7
 
-Widgets you configure. The plan: `docs/plans/0.7.0/PLAN.md`.
+Widgets you configure, plus the device JSON's dates and the anonymous version count. The plan:
+`docs/plans/0.7.0/PLAN.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
   defaults that keep a placed widget looking as it does today. The Battery widget in small,
@@ -570,6 +612,16 @@ Widgets you configure. The plan: `docs/plans/0.7.0/PLAN.md`.
 - [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
   (`firstUseDate` is a number of seconds since 2001 today), and every top-level JSON object gains
   a format version, with a line in the release notes, because scripts that read it have to change
+- [ ] The anonymous version count (Decisions), on by default and announced: once per version, at
+  least a day after it first runs, an automatic update check also downloads
+  `BatteryPulse-count.txt` from that version's release, and its public download count shows how
+  many Macs use each version. A switch in Settings → General (also in the Welcome window),
+  greyed out while Check for updates is Never, when nothing is counted; no cookies on any update
+  traffic; the policy in BatteryCore with Linux tests, and guard tests that keep the request in
+  `UpdateNetwork`'s ephemeral sessions. What's New, the release notes, README's and the User Guide's new Privacy
+  sections and the file's own text say what is sent, what isn't and where to turn it off; the
+  release workflow attaches the file to every release from 0.7.0, and the Releases table gains a
+  Count column
 
 ### 0.8 to 1.0.0
 
@@ -583,25 +635,29 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
 - [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
   screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
   since there is no paid developer account; features freeze here, and 0.9.x only fixes
-- [ ] 1.0.0: the last 0.9.x renamed, once its criteria hold: every feature seen working in a
-  packaged build on the M5 or listed as a known limitation, seven days of daily use without a
-  crash, energy within 15 % of 0.6.2's, in-app updates from 0.4.0 on, VoiceOver everywhere, and
-  settings, stored data, `bpulse`'s machine outputs and placed widgets kept through 1.x. Open
-  Anyway on each DMG install, and permissions or widgets a DMG replacement may lose, are known
-  limitations
+- [ ] 1.0.0: the last 0.9.x renamed, once its five promises hold (approved by the maintainer on
+  2026-10-22): every feature seen working in a packaged build on the M5 or listed as a known
+  limitation; seven days of daily use without a crash; in-app updates from older versions (0.4.0
+  on); nothing that breaks through 1.x (settings, stored data, `bpulse`'s machine outputs, placed
+  widgets and the update path kept); and usable by a non-expert, VoiceOver included. Energy stays
+  within 15 % of 0.6.2's. Open Anyway on each DMG install, and permissions or widgets a DMG
+  replacement may lose, are known limitations. No date: it ships when it is ready
 
-Decided on 2026-10-22: no paid developer account, so no Developer ID signing or notarization and no
-App Group (the History and iPhone & iPad widgets can only use a small copy of readings the app
-writes, if 0.6.2's sandbox spike shows the widget can read it); Xcode is on the M5, so the
-Xcode-only checks run; widgets in 0.7, with no 0.6.3; no iOS app and no charge limiting in 1.x (the
-Decisions section at the top changes in 0.7's docs pass); every other open question decided by its
-recommendation, except what 1.0 means, which awaits the maintainer.
+Decided on 2026-10-22: no paid developer account (the maintainer won't pay for one for this app),
+so no Developer ID signing or notarization and no App Group (the History and iPhone & iPad
+widgets can only use a small copy of readings the app writes, if 0.6.2's sandbox spike shows the
+widget can read it); Xcode is on the M5, so the Xcode-only checks run; widgets in 0.7, with no
+0.6.3; no iOS app and no charge limiting in 1.x (the Decisions section at the top changes in 0.7's
+docs pass); what 1.0 means, approved as written, with no dates for any release; an anonymous
+version count in 0.7 (Decisions); every other open question decided by its recommendation.
 
 Usage so far (GitHub's API, 2026-10-22): 14 DMG downloads across all releases and 5 signature
 downloads (each in-app install fetches one; 15 and 6 at a re-check later that day), 2 repository
 page views by 1 visitor in 14 days, and no stars, forks or outside issues; in practice the
-maintainer is the only user. From 0.6.2 on, each release's DMG and signature download counts
-are added to the Releases table a week after publishing. The app itself counts and sends nothing.
+maintainer is the only user. From 0.6.2 on, `scripts/release-stats.swift` prints each release's
+DMG and signature download counts, and they are added to the Releases table a week after
+publishing. Through 0.6.x the app itself counts and sends nothing; from 0.7 the anonymous version
+count adds one public number per release, how many Macs ran it (Decisions), and nothing else.
 
 ### Stage 2: iOS MVP
 
@@ -751,10 +807,12 @@ the account on 2026-10-22 (not before 1.0), so the items that need it are not pl
 Next: **0.6.2**, a second maintenance and foundation release (Stage 1.7): main actor by default,
 the read path the M5 numbers call for, Clear's minimize fix and the evidence for taking the beta
 window styles out of beta, the widget's size headroom, the installer on `diskutil`, and the
-energy measurements. Then **0.7**: widget customization and the device JSON's dates; **0.8**:
-answers in the app; **0.9**: ready for others; **1.0.0**: the last 0.9.x renamed
-(`docs/plans/1.0/ROADMAP.md`). Not planned: an iOS app, charge limiting, and Developer ID signing
-and notarization (no paid developer account, decided on 2026-10-22: not before 1.0).
+energy measurements, plus a release-statistics script. Then **0.7**: widget customization, the
+device JSON's dates and the anonymous version count; **0.8**: answers in the app; **0.9**: ready
+for others; **1.0.0**: the last 0.9.x renamed (`docs/plans/1.0/ROADMAP.md`). This is the order,
+not a schedule: each release ships when there is time and desire. Not planned: an iOS app, charge
+limiting, and Developer ID signing and notarization (no paid developer account, decided on
+2026-10-22: not before 1.0).
 
 ## Development environment
 

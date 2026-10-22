@@ -1,7 +1,8 @@
 # BatteryPulse 0.6.2: the plan (revised draft for the maintainer)
 
-Revised 2026-10-22 against `9410861` on `claude/nice-faraday-k08mhb`, whose tree equals the v0.6.1
-tag (`7622373` on `main`, a squash merge). The first draft was written at `0215b71`.
+Revised 2026-10-22 against `9410861` (then the tip of `claude/nice-faraday-k08mhb`; now in PR 11's
+history, `refs/pull/11/head`), whose tree equals the v0.6.1 tag (`7622373` on `main`, a squash
+merge). The first draft was written at `0215b71`.
 
 Inputs:
 - `docs/ROADMAP.md` at `9410861`: Stage 1.7, the 0.7 entry and the open checks of every stage.
@@ -14,16 +15,18 @@ Inputs:
 - Apple's documentation (fetched 2026-10-22), the macOS 26 and 27 release notes, WWDC26 session
   277, and the Swift Package Manager 6.4 sources.
 - Five independent reviews of the first draft.
-- The maintainer's answers of 2026-10-22 (§10), and the release download counts from GitHub's REST
-  API the same day (§10, "Usage evidence").
+- The maintainer's answers of 2026-10-22 (§10), his further answers later that day (§10,
+  "Further answers"), and the release download counts from GitHub's REST API the same day (§10,
+  "Usage evidence").
 
 CLAUDE.md wins over all of them.
 
 Hashes cited here that are not on `main` (`0215b71`, `1f9937b`, `11d2ab3`, `647bc74`, `6aaf8ec`,
 `6aec4d2`, `9410861`) are in PR 11's history, which GitHub keeps as `refs/pull/11/head`
 (`git fetch origin pull/11/head`); `claude/nice-faraday-k08mhb` restarted from `main` after the
-merge. The energy baseline build lives on `claude/baseline-0.6.0` (`076873d`), which stays until
-0.6.2's D3; the `claude/061-*` package branches go after the 0.6.1 release, as PLAN §8 says.
+merge, at v0.6.1 (`7622373`), and is 0.6.2's integration branch (§3). The energy baseline build
+lives on `claude/baseline-0.6.0` (`076873d`), which stays until 0.6.2's D3; the `claude/061-*`
+package branches go after the 0.6.1 release, as PLAN §8 says.
 
 This file is English only and names no third-party product, so it can be committed under
 `docs/plans/0.6.2/` as is (`LocalizationCatalogTests.russianTextOnlyInTheCatalog` scans `docs/`).
@@ -69,6 +72,9 @@ Contents:
     widget's `__text`, the headroom 0.7 needs.
   - **The installer** moves to `diskutil image attach` and `diskutil eject`, with the flags the CI
     runner already prints.
+  - **Release statistics** (tooling, no app change): `scripts/release-stats.swift` prints each
+    release's DMG and signature downloads, and from 0.7 on the version count's, for ROADMAP's
+    Releases table a week after each release (WP-19, D3).
   - **Energy against three builds:** the instrumented 0.6.0, 0.6.1 and the RC.
     - The 0.6.0 and 0.6.1 runs happen in Session A's unattended window, and the RC's in Session B.
     - They are judged against the playbook's targets.
@@ -92,7 +98,11 @@ Contents:
   recommended answer. M-1, the paid Apple Developer Program account, is no: no App Group (§8.3
   candidate C) and no Enhanced Security spike (WP-20). Usage evidence: 14 DMG downloads across
   every release, so the users are, in effect, the maintainer (§10).
-- **Budget:** about 29-32 implementation and review runs plus 3 for fix-forward; the never-cut set
+  - Further answers the same day (§10): M-5 is approved as written, with **no dates**: releases
+    come when there is time and desire, so this plan sets none. Round A0 passed. The integration
+    branch is `claude/nice-faraday-k08mhb`. 0.7 gets an anonymous version count, on by default
+    and announced; 0.6.2 changes nothing the app sends and adds only the release-stats script.
+- **Budget:** about 29-33 implementation and review runs plus 3 for fix-forward; the never-cut set
   is about 22-26 (§7.2).
 
 ---
@@ -174,10 +184,13 @@ own gates have a hyphen and are named after their packages (§7.1); the last col
 Everything in PLAN §3.0 still applies. The short form:
 
 - **Branches:**
-  - The integration branch for 0.6.2 is `claude/062-integration`, from v0.6.1 (`7622373` on
-    `main`): a `claude/` name, so CI runs (ci.yml:3-5).
-  - Each package gets its own worktree and branch, `claude/062-<pkg>`, from the integration tip.
-    Spikes go on `claude/062-spike-*` and are never merged.
+  - The integration branch for 0.6.2 is `claude/nice-faraday-k08mhb`, the session's designated
+    branch (the maintainer, 2026-10-22), from v0.6.1 (`7622373` on `main`) with the plans'
+    commits on top: a `claude/` name, so CI runs (ci.yml:3-5).
+  - Each package gets its own worktree and branch, `claude/062-<pkg>` (`claude/062-wp10` for
+    WP-10), from the integration tip.
+  - The widget spikes go on `claude/062-spike-widget` (WP-W0), and SPIKE-A2 on
+    `claude/062-spike-a2` (§5 A2′). Spike branches are never merged.
   - At most two agents, never two on the same file. Builds use `-j 2`, with no shared `.build`.
 - **An implementation run, then a separate review run.** One commit per item where practical.
   - Before each commit, run `swift format format -i -r Sources Tests Package.swift scripts`,
@@ -436,7 +449,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   1.7.
 - **When:** round B1, after Session A has checked the premise. If Session A hasn't run 14 days
   after A2′, B1 starts on the defaults: E4b with the 60-second safety net (G-14b), WP-13 with fill
-  (b) on Clear only (Q-B2, G-13a), and E3b keeps both keys (G-14c).
+  (b) on Clear only (Q-B2, G-13a), and E3b keeps both keys (G-14c). The 14 days only let the
+  packages go on; they are no deadline for the maintainer and no release date (M-5, §10).
 - **Items:**
   1. **E4b's premise (F13), checked first.** powerd posts the public "any" key whenever the
      registry has new data. Session A's ioreg sampler and `pmset -g pslog` test it: every
@@ -628,21 +642,21 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
        observed.
      - It becomes a Linux-testable decision in `UpdatePolicy` if one is needed.
      - The waiting half is moot since SEC-03 set `waitsForConnectivity = false`.
-  5. **Login item after an update (P2, conditional):** only if 0.6.1's after-publishing check shows
-     the login item lost.
+  5. **Login item after an update: not run.** It was conditional on 0.6.1's after-publishing check
+     losing the login item, and round A0 passed: Open at login kept its state across the in-app
+     update 0.6.0 → 0.6.1 (Appendix C). WP-22 ticks ROADMAP Stage 1.2, and no settings key is
+     added. The design, kept as background in case a later update loses it:
      - Nothing stores the choice today: the toggle reads `SMAppService.mainApp.status` and
        registers only from the toggle (`App/AppSettings.swift:277-319`), and no key holds it
        (`AppSettings.swift:11-55`).
-     - So the toggle also stores the choice in a new key, `openAtLogin`. The key follows the status
-       whenever the app reads it (the toggle, launch, becoming active), so a choice made under
-       0.6.1, or changed in System Settings, is learned too.
+     - The toggle would also store the choice in a new key, `openAtLogin`, which follows the
+       status whenever the app reads it (the toggle, launch, becoming active).
      - On the first launch after a version change (`lastSeenVersion`), before that sync: if the key
        is true and the status is neither `.enabled` nor `.requiresApproval`, the app registers once
-       and logs it. A login item already lost by the 0.6.1 → 0.6.2 update can't be recovered.
-     - Otherwise WP-22 ticks ROADMAP Stage 1.2.
+       and logs it.
 - **Files:** `BatteryCore/UpdateInstall.swift`, `Updates/UpdateInstaller.swift`,
-  `Updates/UpdateChecker.swift` (E10), `App/AppSettings.swift` (item 5),
-  `.github/workflows/ci.yml` (the install step), `UpdateInstallTests`.
+  `Updates/UpdateChecker.swift` (E10), `.github/workflows/ci.yml` (the install step),
+  `UpdateInstallTests`.
 - **Acceptance:**
   - Tests; both CI install passes.
   - Session B's F12: the RC built as 0.5.99 installs the real 0.6.1 through the `diskutil` path and
@@ -715,8 +729,38 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 
 ### WP-19: Readability and tooling (P2/P3)
 
-- **Source:** PLAN §6 (SUI-09, SW-21, SW-13, C2, CI pins).
+- **Source:** PLAN §6 (SUI-09, SW-21, SW-13, C2, CI pins); the maintainer's answer of 2026-10-22
+  (§10, "Further answers", item 6: the release statistics).
 - **Items:**
+  - **Release statistics (P2, cut last; no app change):** `scripts/release-stats.swift`, run with
+    `swift scripts/release-stats.swift`, Foundation only. It depends on nothing else, so it may
+    land first in WP-19's slot.
+    - **Output:** a Markdown table, one row per published release, newest first: the tag, the
+      publishing date (UTC), DMG downloads (`BatteryPulse.dmg`), signature downloads
+      (`BatteryPulse.dmg.sig`; each in-app install fetches it, so it counts in-app updates) and the
+      count's asset's downloads (`BatteryPulse-count.txt`, 0.7's, §10), the Count column; a total
+      row last. These are the columns D3 copies into ROADMAP's Releases table.
+    - A release without the asset shows "—", never 0: 0.2.0-0.3.1 have no `.sig`, and no release
+      before 0.7 has the count's asset. Other assets (`BatteryPulse-dSYMs.zip`) and drafts are
+      left out; a pre-release is marked.
+    - The count's asset name is one constant at the top of the script, `BatteryPulse-count.txt`,
+      the name the 0.7 plan's W-13 freezes. No release before v0.7.0 has that asset, so the column
+      reads "—".
+    - **The request:** one unauthenticated `GET
+      https://api.github.com/repos/NikitaUsov/BatteryPulse/releases?per_page=100` (another
+      repository with `--repo <owner>/<name>`), with a User-Agent and `Accept:
+      application/vnd.github+json`. It goes through an ephemeral `URLSession`, never `.shared`, as
+      CLAUDE.md's network rule says for the app (`FoundationNetworking` on Linux). It follows the
+      `Link` header only past 100 releases. It sends no token and reads none.
+    - **The rate limit** (60 unauthenticated requests an hour per address, which a shared VPN
+      address can use up, Q-B9): a run costs one request, and it prints the requests left and the
+      local reset time to stderr. A 403 or 429 with `X-RateLimit-Remaining: 0`, or with
+      `Retry-After`, prints "GitHub is limiting requests until <time>; try again then, or pass a
+      saved response with --input" and exits 2, with no retry and no sleep. Any other HTTP or
+      network error exits 1 with its status.
+    - **`--input <file>`** (`-` for stdin) renders a saved response instead, so the authenticated
+      route works too (`gh api 'repos/{owner}/{repo}/releases?per_page=100' > releases.json`,
+      5,000 requests an hour), and CI checks the table offline.
   - **SW-13 for BatterySource and BatteryKit (P2):** `.strictMemorySafety()` on both targets
     (today only BatteryCore and bpulse have it, `Package.swift:38-45`). Every unsafe IOKit, SMC,
     notify and MobileDevice site is marked `unsafe` with its reason. It runs after WP-15, which
@@ -734,12 +778,29 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 - **Files:** `Package.swift` (`.strictMemorySafety()` on BatterySource and BatteryKit),
   `Sources/BatterySource/*`, `Sources/BatteryKit/{MobileDevice/*, IDeviceTransport,
   DeviceKeys}.swift` and any other file the compiler flags, `.github/workflows/ci.yml` (pins,
-  DocC), `Tests/BatteryCoreTests/SecurityGuardTests.swift` (the escape list); SUI-09 stays in
-  `App/`.
+  DocC, and the release-stats lines in "Check the verification scripts"),
+  `Tests/BatteryCoreTests/SecurityGuardTests.swift` (the escape list); SUI-09 stays in `App/`.
+  The release statistics: `scripts/release-stats.swift`, `scripts/release-stats-sample.json` and
+  `scripts/release-stats-sample.expected`.
 - **Acceptance:** 0 warnings on both jobs; every `unsafe` carries a reason comment;
   `SecurityGuardTests`' escape list is updated; each pin is a SHA, with its changelog link in the
-  commit message.
-- **Effort:** M, 2 runs. **Risk:** low.
+  commit message. For the release statistics:
+  - ci.yml's "Check the verification scripts" step runs `swiftc -typecheck
+    scripts/release-stats.swift`, `swift scripts/release-stats.swift --self-test` and `swift
+    scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u
+    scripts/release-stats-sample.expected -`, and its comment no longer says every script needs a
+    display or a running BatteryPulse.
+  - The sample is the real response for 0.2.0-0.6.1, cut to tags, dates, asset names and counts,
+    plus a draft, a pre-release and an unrelated asset. The expected table shows "—" for
+    0.2.0-0.3.1's signature and every Count cell, leaves out the draft and the dSYMs, and marks
+    the pre-release.
+  - `--self-test` checks the rate-limit decision on canned statuses and headers: a 403 with
+    `X-RateLimit-Remaining: 0` and a 429 with `Retry-After` give the message and exit 2, a 404
+    exits 1, a 200 gives the table.
+  - One live run in a cloud session: its DMG and `.sig` counts equal `gh api`'s for every release,
+    and its output goes in the commit message.
+  - `swift format lint --strict` passes over `scripts/`; the script is English only.
+- **Effort:** M, 2-3 runs (the release statistics may take the third). **Risk:** low.
 
 ### WP-20: Optional security spikes (P3)
 
@@ -794,7 +855,8 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     `UpdateInstaller` does (ROADMAP Stage 1.2): copy it next to the app, swap the two with a
     10-line Swift helper beside the script that calls `renamex_np(…, RENAME_SWAP)`, run
     `lsregister -f` on the new copy, relaunch. A plain copy isn't the path 0.7's users take, and
-    ROADMAP Stage 1.2 records placed widgets surviving one DMG replacement and not another.
+    ROADMAP Stage 1.2 records placed widgets surviving one DMG replacement and not another; round
+    A0 saw them survive the in-app update 0.6.0 → 0.6.1 (Appendix C).
   - **Logs:** spike logs contain only public numbers and case names: the candidate (A, A′, B),
     errno, the byte count read, the userInfo key names and the route's page ID. Never a path, a
     name or a full URL; CLAUDE.md's logging rule holds on a pushed branch too, and a private value
@@ -890,7 +952,8 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     - main actor by default for the app;
     - the `diskutil` installer;
     - WindowLook's opaque minimize fill;
-    - strict memory safety for BatterySource and BatteryKit.
+    - strict memory safety for BatterySource and BatteryKit;
+    - `release-stats.swift` in the `scripts/` list (download counts per release, WP-19).
   - **Guards:** none beyond the packages' own. WP-10 holds the isolation pin, and
     `EnergyGuardTests` stays unchanged because the safety net adds no sleep.
   - **USER_GUIDE:** Clear's known issue removed (if G-13a passes); graduated styles described
@@ -901,7 +964,10 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     Power and Raw Data read them on every refresh.
   - **ROADMAP:**
     - Stage 1.7 ticked, and Stage 1.3's light and dark comparison ticked (V1d).
-    - Stage 1.2 ticked if 0.6.1's after-publishing check kept the login item.
+    - Stage 1.2 ticked: round A0 passed (Appendix C). The in-app update 0.6.0 → 0.6.1 installed
+      and relaunched, and kept the desktop widget, showing the current charge, and Open at login.
+      The widget line keeps its note that one DMG replacement (0.3.0 → 0.3.1) lost placed widgets,
+      which stays documented.
     - The window-style Decisions line updated (G-13c).
     - "Performance baseline (0.6.1 → 0.6.2)".
     - Stage 3's "how often the mAh values change", from Session A's ioreg samples; the App Nap
@@ -920,7 +986,8 @@ As PLAN §3.5.
   - measures (§4a-style Linux benches and code counts against `v0.6.1`);
   - runs the golden, storage and settings diffs. The settings-and-identifiers `git grep` of PLAN
     §5 prints 38 lines at `9410861` (`betaWindowStyles` and an escaped-quote match in
-    `scripts/perf-sample.ndjson` are new), and 39 at the RC if WP-16 item 5 added `openAtLogin`;
+    `scripts/perf-sample.ndjson` are new), and 38 at the RC (no key is added: WP-16 item 5
+    doesn't run, A0);
   - sets the ceilings;
   - drafts the notes (`## What's new in 0.6.2`, checked by CB-06) and opens the draft PR with the
     session checklist. The notes list only user-visible changes, each only if its item landed
@@ -928,7 +995,6 @@ As PLAN §3.5.
     - Clear minimizes without a black frame;
     - each style that graduates, or that both stay beta;
     - Check Now no longer fails while an automatic check runs, if E10 lands;
-    - Open at login survives updates, if WP-16 item 5 runs;
     - the energy line with the S1 and S2 numbers (WP-21);
     - "Updating from 0.6.1: Install and Relaunch."
   - dispatches the RC as 0.5.99 for F12 and a profiling RC built the way SPIKE-A2's is (§5 A2′;
@@ -939,6 +1005,9 @@ As PLAN §3.5.
   - before removing the plan folder, moves §8, §9.1, §10's Q-W block with its answers and
     Appendix C's W0 rows to `docs/plans/0.7.0/widgets.md` (English only: `LocalizationCatalogTests`
     scans `docs/`), and links it from ROADMAP's 0.7 stage, so 0.7's plan cites a file that exists;
+  - before `claude/nice-faraday-k08mhb` and the `claude/062-*` branches are deleted, copies
+    `m5-session.sh`, its swap helper and the whole of Appendix C into `docs/plans/0.7.0/` beside
+    `widgets.md` (plan-0.7.0 D-1, D-11, Q7-8; RD §3.1 item 6);
   - removes `docs/plans/0.6.2/` (and its `bash -n` line in ci.yml) and releases;
   - runs the after-publishing check: PLAN §4b's list at `6aec4d2` with 0.6.2 in place of 0.6.1
     (About shows the new version; History shows the past days; the settings and the menu bar look
@@ -949,12 +1018,13 @@ As PLAN §3.5.
     after the update);
   - in everyday use on the first day, compares the widget's charge and "Lasts until" with the
     popover's (within 2 points and about 15 minutes, `994c09d`);
-  - **a week after publishing,** adds DMG and `.sig` download columns to ROADMAP's Releases
-    table, fills them for 0.2.0-0.6.1 from `gh api repos/{owner}/{repo}/releases` (§10's counts),
-    and records v0.6.2's (`gh api repos/{owner}/{repo}/releases/tags/v0.6.2 --jq '.assets[] |
-    "\(.name) \(.download_count)"'`), in a commit of its own. Each in-app install fetches the
-    `.sig`, so its count is a privacy-free proxy for in-app updates. The app sends nothing: no
-    telemetry is added. Every later release does the same (§10, "Usage evidence").
+  - **a week after publishing,** runs `swift scripts/release-stats.swift` (WP-19) and adds its DMG
+    and `.sig` download columns to ROADMAP's Releases table, for 0.2.0-0.6.2, in a commit of its
+    own. If the script was cut, `gh api 'repos/{owner}/{repo}/releases?per_page=100' --jq '.[] |
+    .tag_name as $t | .assets[] | "\($t) \(.name) \(.download_count)"'` gives the same counts. Each in-app install
+    fetches the `.sig`, so its count is a privacy-free proxy for in-app updates. 0.6.2 changes
+    nothing the app sends. Every later release does the same (§10, "Usage evidence"); from 0.7 on,
+    the table also gains the Count column (§10, "Further answers").
 
 `WhatsNew.version` stays at 0.6.0 even if a style graduates: a graduation goes in the release notes
 only (Q-B5, decided by delegation).
@@ -968,10 +1038,10 @@ At most two agents, and never two packages on one file (mechanical rebase-overs 
 
 | Round | Slot 1 | Slot 2 | Waits for |
 |---|---|---|---|
-| A0 | Intake: 0.6.1's after-publishing results (any failure becomes a P1 item) | | the 0.6.1 release |
+| A0 | Intake: 0.6.1's after-publishing results (any failure would have become a P1 item). **Passed** (the maintainer, 2026-10-22; Appendix C): no P1 item | | the 0.6.1 release (done) |
 | A1 | WP-10 | WP-W0's W0-1 (CI metadata step) | A0 |
 | A2 | WP-14a (E20) | WP-W0's SPIKE-C, SPIKE-I and SPIKE-W (CI builds on the spike branch) | WP-10 merged (WP-14a edits `HistoryRecorder`); W0-1's answer |
-| A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch (today's fill or (b), Q-B2), a normal CI build (throwaway branch); the field run, V-01 and the fill recordings need no profiling. Because Xcode is installed (Q-B7), the branch also adds a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
+| A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch (today's fill or (b), Q-B2), a normal CI build (throwaway branch `claude/062-spike-a2`); the field run, V-01 and the fill recordings need no profiling. Because Xcode is installed (Q-B7), the branch also adds a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
 | **Session A** | maintainer: about 65 min, then the 3-hour window | | A2′ |
 | B1 | WP-14b (E4b, E3b) | WP-13 | Session A (F13, the pslog, the fill recordings), or 14 days after A2′ on the defaults (WP-14b "When") |
 | B2 | WP-15 | WP-16 | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free) |
@@ -1223,7 +1293,8 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   WP-15 item 1 (K-03); WP-16 items 1-2; WP-W0; WP-21; WP-22; D1-D3.
 - **Cut in this order if the budget runs short:** WP-20 (SEC-18; SEC-08 isn't run); WP-19's P3
   items; WP-17; WP-18; WP-15 items 2-3; WP-13 item 5 (item 4 isn't in 0.6.2, Q-B4); WP-16 items
-  3-5; WP-19's SW-13. A cut item moves to 0.7.
+  3-4 (item 5 doesn't run, A0); WP-19's SW-13; WP-19's release statistics, last (D3 then uses
+  the `gh api` line). A cut item moves to 0.7.
 - **Effort, in runs:**
 
   | Package | Runs |
@@ -1236,15 +1307,17 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   | WP-15 | 3 |
   | WP-16 | 2 |
   | WP-17 | 2 |
-  | WP-19 | 2 |
+  | WP-19 | 2-3 |
   | WP-20 (SEC-18 only) | 1 |
   | WP-W0 | 3 |
   | WP-21 | 2 |
   | WP-22 | 2 |
   | D1+D3 | 2-3 |
 
-  That is about 29-32 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8). The
-  never-cut set is about 22-26. WP-18 is maintainer time, outside the runs.
+  That is about 29-33 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8; the release
+  statistics joined WP-19 the same day). The never-cut set is about 22-26. WP-18 is maintainer
+  time, outside the runs. These are effort estimates, not a schedule: no release has a date
+  (M-5, §10).
 
 ### 7.3 Frozen surfaces and intended changes
 
@@ -1265,11 +1338,16 @@ and reload policy."
 - The installer's mount tool. The 0.6.1 → 0.6.2 update itself still uses 0.6.1's `hdiutil`.
 - The widget's target graph and size.
 - The `read` signpost's triggers and the `registry.missed` event in the `perf` output.
-- The settings key `openAtLogin`, only if WP-16 item 5 runs: added, while every existing key keeps
-  its name and meaning (`betaWindowStyles` was added the same way in 0.6.1).
 
 **Unchanged:** the widget kind and look, entitlements (SEC-08 isn't run, Q-B8), storage formats,
-existing settings keys, `bpulse` output and exit codes, the update assets and keys.
+the settings keys (none is added: WP-16 item 5 doesn't run, A0), `bpulse` output and exit codes,
+the update assets and keys, and what the app sends over the network.
+
+**Next, in 0.7:** the anonymous version count (§10, "Further answers") changes the update
+contract and the settings on purpose: three new settings keys (`anonymousVersionCount`,
+`lastCountedVersion`, `versionFirstLaunch`) and a new release asset (`BatteryPulse-count.txt`),
+announced in a minor release. 0.6.2 prepares nothing for it but the release-stats script's Count
+column ("—" until v0.7.0; WP-19).
 
 ---
 
@@ -1843,7 +1921,7 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 | W0-1 (b): entity queries don't run from the ad-hoc extension | iPhone & iPad uses an `AppEnum` (most recent, lowest); no chosen device |
 | W0-1 (c): button performs don't run | No buttons (W-9's Refresh dropped) |
 | W0-2: the control keeps placed widgets, but the configurable kind loses them | Today's kind stays static (today's look, new sizes). The configurable Battery widget ships as a new kind `io.github.nikitausov.BatteryPulse.battery.custom`, and the release notes say how to switch |
-| W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration (ROADMAP Stage 1.2 is still open). Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did. With no signed build coming (M-1: no), it stays a documented known limitation |
+| W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration: A0 saw placed widgets survive the in-app update 0.6.0 → 0.6.1, but ROADMAP Stage 1.2 records a DMG replacement that lost them. Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did. With no signed build coming (M-1: no), it stays a documented known limitation |
 | W0-3: A and A′ fail | No History or iPhone & iPad widgets (§8.3 candidate C); candidate B isn't used |
 | W0-4: accessories can't be read from the sandbox | No Accessories kind in 0.7 (plan-0.7.0 §2.2, G7-8); later through the feed, only if W0-3 passed |
 | W0-4: `widgetURL` needs a registered scheme | Register a navigation-only scheme (§8.9); no per-row links (Q-W8) |
@@ -1918,13 +1996,15 @@ feature in a maintenance release.
 The maintainer answered on 2026-10-22. Q-B2, Q-B7 and Q-W1 are his own answers, and Q-W3 follows
 from his answer to M-1. He delegated every other question ("do it by best practices, as you see
 fit"), so each is recorded with its recommended answer and marked "decided by delegation". Q-B9 and
-Q-B11 were settled before. No question of this plan stays open; what the maintainer still judges on
-sight in the sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
-`docs/plans/1.0/ROADMAP.md` §6, and 0.7's own (Q7-1 to Q7-8) in `docs/plans/0.7.0/PLAN.md` §14.
+Q-B11 were settled before. Later the same day he gave six further answers ("Further answers",
+below). No question of this plan stays open; what the maintainer still judges on sight in the
+sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
+`docs/plans/1.0/ROADMAP.md` §6, and 0.7's own (Q7-1 to Q7-9) in `docs/plans/0.7.0/PLAN.md` §14.
 
 **M-1, the paid Apple Developer Program account: no,** not now and not planned before 1.0 (the
-maintainer, 2026-10-22). It is a non-commercial hobby project, with no budget for the account and
-about zero users (below). For this plan:
+maintainer, 2026-10-22). He won't pay for the account for this app: he is willing to spend on help
+with development, not on the account. It is a non-commercial hobby project with about zero users
+(below). For this plan:
 - Developer ID signing and notarization stay not planned, and nothing in 0.6.2 waits for a signed
   build.
 - No App Group: the History and iPhone & iPad widgets can only use the feed (W0-3, §8.3), and
@@ -1944,7 +2024,52 @@ about zero users (below). For this plan:
 
 So the users are, in effect, the maintainer alone. 0.6.2's scope stays as planned, because its
 sessions measure the Mac the app runs on. From 0.6.2 on, each release records its DMG and `.sig`
-download counts a week after publishing (D3), with no telemetry in the app.
+download counts a week after publishing (D3), printed by `scripts/release-stats.swift` (WP-19).
+0.6.2 changes nothing the app sends; from 0.7 on, the anonymous version count adds a column
+("Further answers" item 5, below).
+
+### Further answers (2026-10-22)
+
+Decided by the maintainer later the same day:
+
+1. **M-5, what 1.0 means: approved as written,** with its five promises: seen working on the M5
+   in a packaged build; a week of daily use without a crash; in-app updates from older versions;
+   nothing breaks through 1.x; usable by a non-expert (`docs/plans/1.0/ROADMAP.md` §2). **No
+   dates:** "this is a hobby project; we release when there is time and desire". The plans keep
+   the order of the versions and the effort estimates, and no target dates; 1.1's macOS 28
+   compatibility follows macOS 28's release, an event, not a date. This plan sets no release date:
+   §5 is an order, §7.2's runs are estimates, and WP-14b's 14 days only let the packages go on
+   with their defaults.
+2. **M-1's reason, in his words:** he won't pay for an Apple developer account for this app; he is
+   willing to spend on help with development, not on the account (M-1 above).
+3. **Round A0 passed:** he installed 0.6.1 through Install and Relaunch from 0.6.0; the desktop
+   widget stayed and shows the current charge; Open at login kept its state (Appendix C). So no
+   P1 item comes from A0, WP-16 item 5 doesn't run, and WP-22 ticks ROADMAP Stage 1.2.
+4. **Branches:** the integration branch is `claude/nice-faraday-k08mhb`, the session's designated
+   branch; packages go on `claude/062-<pkg>`, and the widget spikes on `claude/062-spike-widget`
+   (§3).
+5. **An anonymous version count, in 0.7, on by default and announced honestly.** He wants to
+   know how many people use which version. Its design is 0.7's (`docs/plans/0.7.0/PLAN.md`); the
+   constraints he set:
+   - no server of our own, no third-party service, no identifier of any kind, and no data about
+     the Mac, the battery or the settings. GitHub, which serves the asset, sees the request as it
+     sees every update check, and the announcement says so;
+   - it rides on the existing automatic update check: only when automatic checks are on, never
+     when the frequency is Never, and never once the person turns the count off in Settings. It
+     goes through `UpdateNetwork`'s ephemeral session and adds no wake-up of its own;
+   - What's New for 0.7, README's and USER_GUIDE's new Privacy sections and the release notes say
+     what is sent, what isn't, and where to turn it off. The repository's promise about the only
+     requests to the internet is reworded in 0.7;
+   - three new settings keys (`anonymousVersionCount`, `lastCountedVersion`, `versionFirstLaunch`)
+     and a new release asset (`BatteryPulse-count.txt`) in the update contract: a frozen-surface
+     change, announced in a minor release (§7.3).
+
+   0.6.2 changes nothing the app sends; its only part is the Count column of WP-19's script.
+6. **A release statistics script in 0.6.2** (tooling, no app change): `scripts/release-stats.swift`
+   prints, per release, DMG downloads, `.sig` downloads (in-app updates) and, from 0.7 on, the
+   downloads of the count's asset (`BatteryPulse-count.txt`), from GitHub's public REST API,
+   unauthenticated and within its 60-requests-an-hour limit. WP-19 builds it; D3 copies its numbers
+   into ROADMAP's Releases table a week after each release.
 
 ### For 0.6.2
 
@@ -1994,7 +2119,8 @@ download counts a week after publishing (D3), with no telemetry in the app.
   still measures each style, and ROADMAP's decision line records the numbers (G-13c).
 - **Q-B11 (branches), settled (an engineering call):** `claude/baseline-0.6.0` (`076873d`) stays
   until 0.6.2's D3 for build A; 0.6.1's integration history stays reachable as `refs/pull/11/head`
-  (see the header), so `claude/nice-faraday-k08mhb` needn't be kept.
+  (see the header), so `claude/nice-faraday-k08mhb` could restart from `main`. It is now 0.6.2's
+  integration branch (§3; "Further answers" item 4).
 
 ### For widget customization (0.7)
 
@@ -2068,8 +2194,8 @@ comments.
 | `diskutil` installer | ROADMAP 1.7; PLAN Appendix C (B1); CI run 39751622292's warnings | WP-16 |
 | SEC-15 | PLAN §6, G18 | WP-16 + Session A |
 | E10 (remaining half) | PLAN §6; research `energy.md` E10; SEC-03 | WP-16 (P3) |
-| In-app install (Stage 1.2): tick it on F12 and 0.6.1's after-publishing check; re-register the login item after an update | ROADMAP 1.2 | WP-22 ticks it if the login item was kept; else WP-16 item 5 |
-| 0.6.1 after-publishing results (widget, login item, notifications, first-day widget accuracy, `994c09d`) | PLAN §4b | intake A0: any failure becomes a P1 item |
+| In-app install (Stage 1.2): tick it on F12 and 0.6.1's after-publishing check; re-register the login item after an update | ROADMAP 1.2 | WP-22 ticks it: A0 passed and kept the login item (Appendix C); WP-16 item 5 doesn't run |
+| 0.6.1 after-publishing results (widget, login item, notifications, first-day widget accuracy, `994c09d`) | PLAN §4b | intake A0: passed on 2026-10-22 (Appendix C); no P1 item |
 | SUI-07, SUI-11, SUI-12, E19 | PLAN §6, G17 | WP-17 |
 | SUI-17, SUI-18, SUI-19, SZ-10 | PLAN §6, G21 | WP-18 (maintainer-run from Claude's step-by-step list; Xcode is installed, Q-B7) |
 | SUI-09, SW-21, SW-13 (now BatterySource and BatteryKit), C2 | PLAN §6 | WP-19 |
@@ -2087,7 +2213,7 @@ comments.
 | F11-alert, F11-login | 0.6.1 session | closed (§4, WP-0) |
 | F12's first failure | 0.6.1 session | Q-B9, settled: GitHub's rate limit behind a VPN |
 | Charge Limit capture; spreadsheet exports | ROADMAP 1.1, 6 | Session B optional |
-| Widgets kept across an in-app update | ROADMAP 1.2 | 0.6.1's after-publishing check; W0-2's control; Session B F8 |
+| Widgets kept across an in-app update | ROADMAP 1.2 | A0: kept across 0.6.0 → 0.6.1 (Appendix C), so WP-22 ticks it; W0-2's control; Session B F8 |
 | Widget customization | maintainer's request, 2026-10-22; ROADMAP 0.7 | §8; spikes WP-W0 in 0.6.2; W-1 to W-10 in 0.7 (§9.1; Q-W1: no 0.6.3) |
 | CB-02 (device JSON dates) | PLAN §6, Q3 | 0.7 |
 | CORE-16 | audit-core-verified | stays rejected, unless 0.7's drawn-battery visual changes `BatteryIcon` |
@@ -2100,7 +2226,11 @@ comments.
 | Glass in the tile picker | PLAN §6 | closed: the maintainer chose the outline (PLAN §8) |
 | `package` access, documentation-lint rules | PLAN §6 (SW-R17) | not planned |
 | Developer ID signing, notarization, an App Group | ROADMAP Decisions; M-1 (`docs/plans/1.0/ROADMAP.md` §6) | not planned (M-1: no, 2026-10-22); §8.3 candidate C, §10 |
-| Release download counts | the maintainer's question, 2026-10-22 | §10's usage evidence; D3 records each release's DMG and `.sig` counts a week after publishing |
+| Release download counts | the maintainer's question, 2026-10-22 | §10's usage evidence; D3 records each release's DMG and `.sig` counts a week after publishing, with WP-19's script |
+| Release statistics script (`scripts/release-stats.swift`: DMG, `.sig` and, from 0.7, `BatteryPulse-count.txt` downloads per release) | the maintainer's answer, 2026-10-22 (§10, "Further answers" item 6) | WP-19 (P2, cut last); D3 runs it a week after publishing |
+| Anonymous version count (on by default, announced) | the maintainer's answer, 2026-10-22 (§10, "Further answers" item 5) | 0.7 (`docs/plans/0.7.0/PLAN.md`); 0.6.2 changes nothing the app sends; WP-19's script has its column |
+| What 1.0 means; no release dates | M-5, approved 2026-10-22 (§10, "Further answers" item 1) | this plan sets no release date (§7.2) |
+| Integration and package branches | the maintainer's answer, 2026-10-22 (§10, "Further answers" item 4) | §3: `claude/nice-faraday-k08mhb`, `claude/062-<pkg>`, `claude/062-spike-widget` |
 
 ## Appendix B: facts verified for this plan
 
@@ -2213,6 +2343,7 @@ from the traffic API and were not re-checked.
 
 | Fact | Shown by | Decides |
 |---|---|---|
+| A0, recorded 2026-10-22: **passed.** 0.6.1 installed through Install and Relaunch from 0.6.0; the desktop widget stayed and shows the current charge; Open at login kept its state. The other lines of PLAN §4b's list weren't reported one by one; the maintainer's verdict is a pass | the maintainer (everyday use) | no P1 item; WP-16 item 5 not run; WP-22 ticks ROADMAP Stage 1.2 |
 | W0-1: the processor step's `extract.actionsdata`; the `size:` overload; entity query and button results; extracted `Summary` keys | CI; Session A | W-2, §8.11, §8.16 |
 | W0-2: SPIKE-C and SPIKE-W placed-widget results (`pluginkit`, screenshots); edit sheet in English and Russian | Session A | §8.16, W-3 |
 | W0-3: A, A′, B results (errno and byte count) | Session A | §8.3, Q-W3 |
@@ -2247,3 +2378,5 @@ from the traffic API and were not re-checked.
 | `-internalize-at-link` build times and sizes | WP-15 | G-15 |
 | SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (the maintainer, from Claude's step-by-step list) | WP-18; SZ-10 ships or waits for 0.7 |
 | SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.9.0's SEC-02 decision (`docs/plans/1.0/ROADMAP.md` §3.5) |
+| `release-stats.swift`'s first live table (DMG and `.sig` per release; Count "—") against `gh api`, and the requests left | WP-19 | WP-19 acceptance |
+| The release statistics a week after publishing, 0.2.0-0.6.2 | D3 (`release-stats.swift`) | ROADMAP's Releases columns |

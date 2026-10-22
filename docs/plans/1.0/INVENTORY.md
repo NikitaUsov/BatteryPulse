@@ -3,11 +3,23 @@
 As of 2026-10-22, the day 0.6.1 was released. Repository at `9410861` (tree equal to v0.6.1, `7622373`
 on `main`, plus the roadmap commit). English only; names no third-party product.
 
-**Updated the same day with the maintainer's answers (2026-10-22).** No paid developer account;
-Xcode is already installed on the M5; Clear's minimize fill is (b); widgets in 0.7, no 0.6.3.
-Every other question was delegated ("do it by best practices, as you see fit") and is decided as
-its recommendation, except what 1.0 means, which awaits the maintainer. §12 and "The paid
-account" record them; the rows they settle say so, and the counts include that.
+**Updated the same day with the maintainer's answers (2026-10-22).** He will not pay for an Apple
+developer account for this app; Xcode is already installed on the M5; Clear's minimize fill is
+(b); widgets in 0.7, no 0.6.3. Every other question was delegated ("do it by best practices, as
+you see fit") and is decided as its recommendation. §12 and "The paid account" record them; the
+rows they settle say so, and the counts include that.
+
+**Further answers the same day (2026-10-22):**
+- What 1.0 means is approved as written, with **no dates**: "this is a hobby project; we release
+  when there is time and desire" (DIS-10; the roadmap's M-5).
+- M-1's reason, in his words: he will not pay for an Apple developer account for this app; he is
+  willing to spend on help with development, not on the account.
+- 0.6.2's round A0 passed (DIS-04), so DIS-07 doesn't run.
+- 0.6.2's integration branch is `claude/nice-faraday-k08mhb`; packages go on `claude/062-<pkg>`,
+  the widget spikes on `claude/062-spike-widget` (P2 §3).
+- 0.7 gains an anonymous version count, on by default and announced (DIS-11, a new row).
+- 0.6.2 gains a release-statistics script, `scripts/release-stats.swift` (the roadmap's NEW-23,
+  P2 WP-19; tooling, no app change, so no row of its own).
 
 ## How to read this
 
@@ -23,8 +35,9 @@ account" record them; the rows they settle say so, and the counts include that.
   **rejected**, or **unassigned** when no source assigns one). A row whose version a maintainer
   decision of 2026-10-22 changed names the decision there. The paid-account and Xcode blockers
   keep their category with the answer in brackets ([declined], [installed]), as do the rows whose
-  question changed their route. Every question behind "maintainer taste" is answered in §12
-  except what 1.0 means (DIS-10); the looks themselves are still signed off in the sessions.
+  question changed their route. Every question behind "maintainer taste" is answered in §12, and
+  what 1.0 means (DIS-10) in the roadmap's M-5; the looks themselves are still signed off in the
+  sessions. A row that has since been done (DIS-04) stays, marked, so the counts hold.
 - **Rows marked (new)** are gaps found while sweeping that no plan lists. They cite the files that
   show the gap.
 - **Uncertainty** is marked "unverified" or "uncertain" in the row.
@@ -53,8 +66,9 @@ minimize frame (RN:12-13), row QUA-01.
 
 ## Summary
 
-**130 items left to do or decide** (open, parked or not planned), **22 maintainer questions** and
-**62 rejected ideas** that must not come back. Counts are computed from the tables below.
+**131 items left to do or decide** (open, parked or not planned; 130 from the sweep plus DIS-11,
+added with the maintainer's answer of 2026-10-22), **22 maintainer questions** and **62 rejected
+ideas** that must not come back. Counts are computed from the tables below.
 
 | Category | 0.6.2 | 0.7 | later | not planned | unassigned | Total |
 |---|---|---|---|---|---|---|
@@ -63,19 +77,21 @@ minimize frame (RN:12-13), row QUA-01.
 | Energy and performance | 12 | 2 | 1 | 2 | 1 | 18 |
 | Security | 4 | 1 | 1 | 1 | 1 | 8 |
 | Size | 4 | 2 | 1 | 0 | 0 | 7 |
-| Distribution | 5 | 0 | 0 | 3 | 2 | 10 |
+| Distribution | 5 | 1 | 0 | 3 | 2 | 11 |
 | Docs | 6 | 2 | 0 | 0 | 2 | 10 |
 | Tooling and CI | 7 | 2 | 0 | 1 | 1 | 11 |
 | Platform debt | 3 | 0 | 1 | 0 | 1 | 5 |
 | Accessibility | 4 | 1 | 0 | 1 | 0 | 6 |
 | Localization | 3 | 2 | 0 | 0 | 0 | 5 |
-| **All** | **64** | **23** | **11** | **22** | **10** | **130** |
+| **All** | **64** | **24** | **11** | **22** | **10** | **131** |
 
 - **Unassigned:** 10, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
   DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other two are leftovers (ENG-18, TCI-09).
 - **Settled by the answers of 2026-10-22** (moved to not planned): FEA-14 (Q-W1: 0.7), FEA-23
   (Q-B10: no fallback), FEA-24 (Q-B2: fill (b)), SEC-01 (Q-B8: no, and no Developer ID build);
-  moved to later: FEA-25 (Q-B4: not in 0.6.2, with a beta style's graduation).
+  moved to later: FEA-25 (Q-B4: not in 0.6.2, with a beta style's graduation). Later the same
+  day: DIS-04 passed (round A0), so DIS-07's condition isn't met; DIS-10 is decided (approved as
+  written, no dates); DIS-11 is added in 0.7 (the anonymous version count).
 - **Decisions:** 9 for 0.6.2 (Q-B2 to Q-B11) and 13 for widget customization (Q-W1 to Q-W13), §12.
   All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-W3 following his M-1
   answer, Q-B9 and Q-B11 settled before, the rest by delegation.
@@ -86,7 +102,7 @@ minimize frame (RN:12-13), row QUA-01.
   maintainer-run); the paid account 12 (7 name it, 5 iOS rows inherit it through FEA-29), which the
   maintainer declined, so they stay not planned or take the route without it; hardware not at
   hand 6; evidence still to come 4.
-- **User-visible:** 72 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 38 M,
+- **User-visible:** 73 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 39 M,
   6 L, 3 XL.
 
 **The five largest open themes**
@@ -107,9 +123,9 @@ minimize frame (RN:12-13), row QUA-01.
    memory safety for the system bindings (SEC-05): the groundwork 0.7's widget needs.
 5. **Distribution and the road to 1.0:** Developer ID and notarization (not planned: the
    maintainer declined the paid account on 2026-10-22; 12 rows depend on it), in-app update and
-   login-item/widget survival across updates, `bpulse` not shipped to users, the iOS promises in
-   the README, and a definition of 1.0 that awaits the maintainer (DIS-01 to DIS-10, DOC-09,
-   PLT-05).
+   login-item/widget survival across updates (both seen kept across 0.6.0 → 0.6.1 in round A0),
+   `bpulse` not shipped to users, the iOS promises in the README, the definition of 1.0 (approved,
+   with no dates), and 0.7's anonymous version count (DIS-01 to DIS-11, DOC-09, PLT-05).
 
 Not planned, kept visible: the iOS app and its widget and Live Activity (6 rows), iCloud, charge
 limiting, apps using the most energy, chart descriptors, Developer ID and the package manager, App
@@ -234,13 +250,14 @@ desktop-following fill and the Enhanced Security spike.
 | DIS-01 | Developer ID signing and notarization | Removes Open Anyway on first launch of every downloaded version; keeps permissions across updates; unlocks App Groups, iCloud and an official package catalog. See "The paid account" below | R:10-12, R:152-153, R:180-181, R:641-643, R:705-706; RM:22-25; UG:35-43 | yes | M (once the account exists) | none | paid account [declined, 2026-10-22] | not planned (no paid account: the maintainer's decision of 2026-10-22, not before 1.0) |
 | DIS-02 | iOS distribution | Personal installs re-signed every 7 days, or TestFlight and the App Store with the paid account | R:13-14 | yes | S (decision) | none | paid account [declined, 2026-10-22], the maintainer's stance | not planned |
 | DIS-03 | A package manager | A personal catalog works today but every install still needs Open Anyway; the main catalog needs notarization and some popularity | R:685-687 | yes | S | DIS-01 | paid account [declined, 2026-10-22] | not planned (needs notarization) |
-| DIS-04 | 0.6.1's after-publishing checks (intake A0) | About shows 0.6.1; History shows past days; settings and menu bar unchanged; the widget current; `codesign` `flags=0x10002(adhoc,runtime)`; no quarantine; login item still listed; notification permission kept; first-day widget charge and "Lasts until" against the popover; any failure becomes a P1 item | P2 §5 A0, App A; P1 §4b; R:200-201 | yes | S | 0.6.1 published | M5 session (everyday use) | 0.6.2 (first) |
+| DIS-04 | 0.6.1's after-publishing checks (intake A0) | About shows 0.6.1; History shows past days; settings and menu bar unchanged; the widget current; `codesign` `flags=0x10002(adhoc,runtime)`; no quarantine; login item still listed; notification permission kept; first-day widget charge and "Lasts until" against the popover; any failure becomes a P1 item | P2 §5 A0, App A, Appendix C; P1 §4b; R:200-201 | yes | S | 0.6.1 published | M5 session (everyday use) | 0.6.2 (first; **passed**, 2026-10-22: 0.6.1 installed through Install and Relaunch from 0.6.0, the desktop widget stayed and shows the current charge, Open at login kept its state; no P1 item) |
 | DIS-05 | Install from the app: tick Stage 1.2 | F12 on the RC through the `diskutil` path; tick once 0.6.1's after-publishing check and F12 pass | R:161-201; P2 WP-16 acceptance, WP-22, App A | yes | S | PLT-02, DIS-04 | M5 session | 0.6.2 |
-| DIS-06 | Widgets kept on the desktop across an in-app update | Seen kept and lost across DMG replacements; the in-app swap keeps the path and raises `CFBundleVersion`; whether only a stable Developer ID signature keeps them is open | R:202-208, R:541; UG:425-426; P2 W0-2 control, Session B F8, App A | yes | S | FEA-02 | M5 session, possibly paid account (uncertain) [declined, 2026-10-22: a loss is a documented known limitation at 1.0] | 0.6.2 (evidence) |
-| DIS-07 | Open at login survives an update | Store the choice in a new `openAtLogin` key and re-register once on the first launch of a new version; only if 0.6.1's check shows the login item lost | R:200-201; P2 WP-16 item 5 | yes | S | DIS-04 | evidence | 0.6.2 (conditional P2) |
+| DIS-06 | Widgets kept on the desktop across an in-app update | Seen kept and lost across DMG replacements; the in-app swap keeps the path and raises `CFBundleVersion`; whether only a stable Developer ID signature keeps them is open | R:202-208, R:541; UG:425-426; P2 W0-2 control, Session B F8, App A | yes | S | FEA-02 | M5 session, possibly paid account (uncertain) [declined, 2026-10-22: a loss is a documented known limitation at 1.0] | 0.6.2 (evidence; round A0 saw them kept across the in-app update 0.6.0 → 0.6.1) |
+| DIS-07 | Open at login survives an update | Store the choice in a new `openAtLogin` key and re-register once on the first launch of a new version; only if 0.6.1's check shows the login item lost | R:200-201; P2 WP-16 item 5 | yes | S | DIS-04 | evidence [A0 kept the login item, 2026-10-22] | 0.6.2 (conditional P2; not run: the condition isn't met) |
 | DIS-08 | 0.6.2's freeze, Session B and release (D1-D3) | Benches and golden, storage and settings diffs; RC built as 0.5.99; Session B; release; after-publishing check with `--prerelease` rollback | P2 D1-D3 (P2:893-932), §6 Session B | yes | M | every 0.6.2 package | M5 session, maintainer (release approval) | 0.6.2 |
 | DIS-09 | Ship `bpulse` to users (new) | The guide and the bug template tell users to run `swift run bpulse` (UG:563, UG:579, UG:598-600, UG:660-661), but releases hold only the app (P2 §6, "the DMG holds only the app"); accessory captures have no in-app export (UG:356-358) | UG and bug template as cited; P2 §6 | yes | M | none | none (an extra signed binary in the DMG or the app; quarantine for a CLI unverified) | unassigned (new) |
-| DIS-10 | What 1.0 means (new) | No source defines 1.0's scope or criteria; README still says "Status: early development" (RM:14) | R:689-706 (no 1.0 entry); RM:14 | yes | S (decision) | none | maintainer taste [the roadmap's M-5: awaiting the maintainer, asked again 2026-10-22] | unassigned (new) |
+| DIS-10 | What 1.0 means (new) | No source defines 1.0's scope or criteria; README still says "Status: early development" (RM:14) | R:689-706 (no 1.0 entry); RM:14 | yes | S (decision) | none | maintainer taste [the roadmap's M-5: approved as written, with no dates, 2026-10-22] | unassigned (new; decided in the roadmap's §2) |
+| DIS-11 | Anonymous version count (new: the maintainer's decision of 2026-10-22) | Once per installed version, at least 24 hours after it first ran, an automatic update check that reached GitHub also GETs `BatteryPulse-count.txt` from that version's release and ignores the body; the asset's public `download_count` is the number of Macs that ran the version. On by default (a missing key means on), announced in the release notes, What's New and README's and the guide's new Privacy sections, off in Settings → General (shown in the Welcome window); never from Check Now or while Check for updates is Never. No identifier, nothing about the Mac, its battery or its settings, no server of our own, no third-party service; no cookies on any update traffic. Three new settings keys and a new release asset: frozen surfaces, so a minor release | the maintainer's answer (2026-10-22); the roadmap's NEW-24 and C14 item 8; the 0.7 plan's W-13 and Appendix B; RM:120-125 and UG:502-509 (the privacy promise it rewords) | yes | M | the automatic update check (`UpdateChecker`), `release.yml`, the release-statistics script (the roadmap's NEW-23) | none (decided; seen in 0.7's own session, QUA-16, and its after-publishing check) | 0.7 (W-13; never cut) |
 
 ## 7. Docs
 
@@ -324,7 +341,7 @@ still signed off in the sessions.
 | Q-B8 | Is the Enhanced Security spike worth a session step | security | SEC-01 | not run | By delegation: no; SEC-01 is not planned |
 | Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | settled: GitHub's rate limit behind a VPN; Session B checks the remaining requests first | Settled before |
 | Q-B10 | Should a style costing ≥ 15 % more energy give way to Standard under Low Power Mode | feature | FEA-23 | no fallback; decision stays open | By delegation: no fallback; FEA-23 is not planned |
-| Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 | Settled before |
+| Q-B11 | Keep `claude/baseline-0.6.0` and `claude/nice-faraday-k08mhb` until 0.6.2 ships (answer before 0.6.1's branch cleanup) | tooling/CI | ENG-01 (build A), citations in P2 | kept until 0.6.2's D3 | Settled before; `claude/nice-faraday-k08mhb` is also 0.6.2's integration branch (the maintainer, 2026-10-22; P2 §3) |
 | Q-W1 | Widgets in 0.7, or first a 0.6.3 with large and extra-large sizes of the static widget | feature | FEA-06, FEA-14 | 0.7 | **The maintainer:** 0.7; no 0.6.3 (FEA-14 not planned) |
 | Q-W2 | Which kinds; specific accessories later; the 90-day trend; presets anyway | feature | FEA-09 to FEA-13, FEA-19 | all four kinds as phased, trend offered, no presets | By delegation: Battery and Accessories in 0.7; History and iPhone & iPad on the feed, with the trend; specific accessories later; no presets unless configuration fails |
 | Q-W3 | May the app keep a small copy of recent readings for the widgets | feature | FEA-10 to FEA-12 | no copy: History and iPhone & iPad widgets wait for Developer ID | Following the maintainer's M-1 answer (the declined paid account): **yes**, if W0-3 passes. If it fails, those two widgets aren't possible without the account |
@@ -341,7 +358,9 @@ still signed off in the sessions.
 
 Stance questions raised by this inventory (not in P2), answered in the roadmap's §6 on 2026-10-22:
 the paid account (DIS-01, see below: declined), the iOS promises (DOC-09, PLT-05: not in 1.x, by
-delegation). What 1.0 means (DIS-10) awaits the maintainer.
+delegation), and what 1.0 means (DIS-10: approved as written by the maintainer, with no dates).
+One more decision of the maintainer's own, not a question of P2: the anonymous version count in
+0.7, on by default and announced (DIS-11; the 0.7 plan's Q7-9).
 
 ---
 
@@ -419,8 +438,9 @@ Reasons are the verifiers'. "Revisit only if" is the one condition a source name
 ## The paid account: declined (2026-10-22), and what it would unblock
 
 **Decided 2026-10-22: no.** The maintainer declined the paid Apple Developer Program account: not
-now, and not planned before 1.0. His reasons: a non-commercial hobby project, no budget for the
-account, and about zero users. The usage evidence (GitHub's REST API, 2026-10-22):
+now, and not planned before 1.0. His reasons: a non-commercial hobby project; he will not pay for
+an Apple developer account for this app (he is willing to spend on help with development, not on
+the account); and about zero users. The usage evidence (GitHub's REST API, 2026-10-22):
 - DMG downloads across all releases: 14 in total (0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1, 0.5.0: 2,
   0.6.0: 3, 0.6.1: 1, the last being a signature check during the release);
 - signature (`.sig`) downloads: 5. Each in-app install fetches the `.sig`, so this is a
@@ -430,8 +450,9 @@ account, and about zero users. The usage evidence (GitHub's REST API, 2026-10-22
 - no stars, forks or issues from anyone else.
 
 So the users are, in practice, the maintainer alone. From 0.6.2 on, each release's DMG and `.sig`
-download counts are recorded in ROADMAP's Releases table a week after publishing; the app has no
-telemetry.
+download counts, printed by `scripts/release-stats.swift`, are recorded in ROADMAP's Releases table
+a week after publishing. Through 0.6.x the app sends nothing for them; from 0.7.0 the anonymous
+version count adds one column, the number of Macs that ran each version (DIS-11).
 
 What follows, in the roadmap: Developer ID signing and notarization stay not planned, revisited only
 if the maintainer changes his mind (DIS-01); Enhanced Security (SEC-01) and the package manager's

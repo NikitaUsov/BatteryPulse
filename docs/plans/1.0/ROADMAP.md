@@ -4,10 +4,27 @@ Written 2026-10-22, the day 0.6.1 was released. It answers the maintainer's requ
 0.6.2, a plan for 0.7, and everything that is left until 1.0.0. English only; it names no
 third-party product. Working notes it cites that aren't in the repository are marked so.
 
-**Updated the same day with the maintainer's answers (2026-10-22).** No paid developer account
-(M-1); Xcode is already on the M5 (Q-B7); Clear's minimize fill is (b) (Q-B2); widgets in 0.7, no
-0.6.3 (Q-W1). Every other question was delegated ("do it by best practices, as you see fit") and
-is decided as its recommendation. Only M-5, what 1.0 means, awaits the maintainer (§5.3, §6).
+**Updated the same day with the maintainer's answers (2026-10-22).** He will not pay for an Apple
+developer account for this app (M-1); Xcode is already on the M5 (Q-B7); Clear's minimize fill is
+(b) (Q-B2); widgets in 0.7, no 0.6.3 (Q-W1). Every other question was delegated ("do it by best
+practices, as you see fit") and is decided as its recommendation.
+
+**Further answers the same day (2026-10-22), recorded as decided:**
+1. **M-5 is approved as written:** 1.0's five promises (§2). **No dates:** "this is a hobby
+   project; we release when there is time and desire". The calendar and the WWDC 2027 bound are
+   gone; the order of the versions and the effort estimates stay (§3).
+2. **M-1's reason, in his words:** he will not pay for an Apple developer account for this app; he
+   is willing to spend on help with development, not on the account.
+3. **0.6.2's round A0 passed** (DIS-04): 0.6.1 installed through Install and Relaunch from 0.6.0,
+   the desktop widget stayed and shows the current charge, and Open at login kept its state.
+4. **0.6.2's branches:** the integration branch is `claude/nice-faraday-k08mhb`, the session's
+   designated branch; packages go on `claude/062-<pkg>` and the widget spikes on
+   `claude/062-spike-widget` (P2 §3).
+5. **0.7 gains an anonymous version count, on by default and announced honestly** (NEW-24,
+   plan-0.7.0 W-13), so the maintainer can see how many people use which version.
+6. **0.6.2 gains a release-statistics script** (tooling, no app change):
+   `scripts/release-stats.swift` prints each release's download counts for ROADMAP's Releases
+   table (NEW-23, P2 WP-19).
 
 **Sources and how they are cited**
 
@@ -31,9 +48,9 @@ and traffic counts, come from `gh api` (GitHub's REST API) on 2026-10-22.
 conflicting; [estimate] is a planning number, not a measurement; [assumed] is a date or fact
 taken from Apple's usual pattern, not from a source.
 
-**IDs:** inventory rows keep their IDs. Items this roadmap adds are `NEW-01` to `NEW-23` (§5.2).
+**IDs:** inventory rows keep their IDs. Items this roadmap adds are `NEW-01` to `NEW-24` (§5.2).
 Maintainer decisions are `M-1` to `M-14` (§6; M-6 is informational, an engineering decision); all
-are decided as of 2026-10-22 except M-5. 1.0's criteria are `C1` to `C17` (§2).
+are decided as of 2026-10-22. 1.0's criteria are `C1` to `C17` (§2).
 
 Contents:
 1. Where we are
@@ -79,18 +96,21 @@ Contents:
   - **Repository traffic:** 2 page views by 1 visitor in 14 days.
   - **Community:** 0 stars, 0 forks and 0 watchers, and no issue from anyone else.
 
-  So the users are, in practice, the maintainer alone (D). The app counts nothing and sends
-  nothing (C14 item 8); from 0.6.2 on, each release's download counts are recorded a week after
-  publishing (§1.2 item 6, NEW-23).
-- **What is open:** 130 items, 22 maintainer questions and 62 rejected ideas (INV Summary). The
-  questions, and M-1 to M-14, are decided as of 2026-10-22, except M-5 (§5.3, §6).
+  So the users are, in practice, the maintainer alone (D). Through 0.6.x the app counts nothing
+  and sends nothing beyond the update traffic (C14 item 8). From 0.6.2 on, each release's
+  download counts are printed by `scripts/release-stats.swift` and recorded a week after
+  publishing (§1.2 item 6, NEW-23). From 0.7, an anonymous version count, on by default and
+  announced, adds one public number per release: how many Macs ran that version (NEW-24).
+- **What is open:** 131 items, 22 maintainer questions and 62 rejected ideas (INV Summary). The
+  questions, and M-1 to M-14, are all decided as of 2026-10-22 (§5.3, §6).
   - 54 of the items need the MacBook Air M5, 42 of them in 0.6.2 (FEA-23 and SEC-01 left it with
-    the answers).
-  - 12 depend on the paid developer account, which the maintainer declined (M-1).
+    the answers). One of those, 0.6.2's intake A0 (DIS-04), has since passed.
+  - 12 depend on the paid developer account, which the maintainer will not pay for (M-1).
   - 11 need Xcode on the Mac, which is installed on the M5 (Q-B7).
 - **What is next (already planned):**
-  - 0.6.2: maintenance and foundation (P2).
-  - 0.7: widget customization and the device JSON dates (R:543-556; P2 §8, §9).
+  - 0.6.2: maintenance and foundation, plus the release-statistics script (P2).
+  - 0.7: widget customization, the device JSON dates and the anonymous version count
+    (R:543-556; P2 §8, §9; NEW-24).
 - **What is not planned:** an iOS app, charge limiting (R:704-706), and Developer ID signing and
   notarization: on 2026-10-22 the maintainer decided against the paid account, not now and not
   before 1.0 (M-1).
@@ -124,9 +144,11 @@ Contents:
    - After publishing comes a check: About shows the new version; History, settings and the login
      item are kept; the widget is current. If anything fails, the release becomes a pre-release
      (`--prerelease`) (P2 D1-D3).
-   - A week after publishing, the release's DMG and `.sig` download counts are read from the
-     releases API and recorded in ROADMAP's Releases table (NEW-23, from 0.6.2's D3 on). That is
-     the only usage measure: the app has no telemetry (C14 item 8).
+   - A week after publishing, `swift scripts/release-stats.swift` (P2 WP-19) reads the release's
+     DMG and `.sig` download counts from the releases API, and from 0.7.0 the version count's
+     (`BatteryPulse-count.txt`, NEW-24); they go into ROADMAP's Releases table (NEW-23, from
+     0.6.2's D3 on). GitHub's public download counts are the only usage measure: the app sends
+     nothing else (C14 item 8).
 7. **Sessions.**
    - Scripted; "y = looks right"; comparisons as numbered choices; recordings and screenshots as
      evidence.
@@ -134,8 +156,8 @@ Contents:
 8. **Division of labour.** The maintainer decides only what he sees or does: look, behaviour,
    settings, the sessions and the release. Technical choices are delegated (P1 §8,
    "Architecture: delegated"). On 2026-10-22 he also delegated every open roadmap question but
-   M-5 ("do it by best practices, as you see fit"); the looks themselves are still his to sign
-   off in the sittings.
+   M-5 ("do it by best practices, as you see fit"), and approved M-5 the same day; the looks
+   themselves are still his to sign off in the sittings.
 9. **Facts are recorded.** Each plan keeps an Appendix C of facts. At release, its design moves
    forward and the plan folder is removed (P2 D3).
 10. **Updates are never offered unverified.**
@@ -150,18 +172,26 @@ Contents:
 
 ## 2. What 1.0.0 means
 
-**Definition.** 1.0.0 is the first release meant for people other than the maintainer. It
-promises three things:
+**Definition (approved by the maintainer as written, 2026-10-22, M-5).** 1.0.0 is the first
+release meant for people other than the maintainer. It makes five promises:
 
-1. **Seen working.** What the User Guide says works was seen working in the shipped build on the
-   reference Mac.
-2. **Nothing breaks through 1.x.** Scripts, settings, stored data, placed widgets and the update
-   path keep working.
-3. **Usable by a non-expert.** Someone who isn't an expert can install BatteryPulse, understand
-   what it shows, and report a problem without developer tools.
+1. **Seen working.** What the User Guide says works was seen working on the M5, the reference
+   Mac, in a packaged build (C2).
+2. **A week without a crash.** The final 0.9.x runs in daily use for seven days without a crash
+   (C4).
+3. **In-app updates from older versions.** Install and Relaunch reaches 1.0 from older versions,
+   with data and settings kept (C7, C8).
+4. **Nothing breaks through 1.x.** Scripts, settings, stored data, placed widgets and the update
+   path keep working (C14).
+5. **Usable by a non-expert.** Someone who isn't an expert can install BatteryPulse, understand
+   what it shows, and report a problem without developer tools (C1, C10, C16, C17).
 
 It is a promise, not a feature count: **1.0.0 is the last 0.9.x renamed, with no new code** (V,
 Q and D agree).
+
+**No dates (M-5).** "This is a hobby project; we release when there is time and desire." No
+version has a target date, and no criterion waits for one. The plan keeps the order of the
+versions and estimates their effort (§3).
 
 Each criterion below can be checked: by a Linux or CI test, a scripted M5 step, or a document
 that exists.
@@ -182,7 +212,8 @@ that exists.
 - **C2 Every feature seen in a packaged build.** A verification matrix (NEW-18) maps each
   USER_GUIDE feature to the session and the evidence (screenshot or log) from a DMG build. Every
   open "Check on the M5" line in ROADMAP is ticked, or listed under Known limitations in the guide
-  and in 1.0's release notes. The 54 M5 rows open today are the starting list (INV Summary).
+  and in 1.0's release notes. The 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22)
+  are the starting list (INV Summary).
 - **C3 No known issue in anything on by default.**
   - The guide's known issues may list only beta styles, Developer options, and what C7 allows: a
     permission or a placed widget that must be set up again after an update, with the steps to do
@@ -302,7 +333,9 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 
 1. **Settings keys** of the `io.github.nikitausov.BatteryPulse` domain: names, types and defaults,
    and the legacy migrations. That is PB §3.4's list, plus `betaWindowStyles`, plus `openAtLogin`
-   if 0.6.2 adds it.
+   if 0.6.2 adds it (round A0 passed, so it doesn't), plus 0.7's `anonymousVersionCount`,
+   `lastCountedVersion` and `versionFirstLaunch` (NEW-24). The count's default may still turn
+   off in a 1.x release (item 8).
 2. **Storage** under Application Support: `History/` and `Devices/`.
    - Files only gain fields, and readers ignore unknown ones.
    - The widget feed, if it ships, is an internal file between an app and a widget of the same
@@ -327,6 +360,8 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 6. **The update contract:**
    - `BatteryPulse.dmg` and `BatteryPulse.dmg.sig` on GitHub Releases, read through
      `releases/latest`;
+   - from 0.7.0, `BatteryPulse-count.txt` on every release, never removed from a published one
+     (NEW-24);
    - the Ed25519 key list: keys are only added. A compromised key is removed in a release whose
      notes say why;
    - the bundle IDs and the log subsystem;
@@ -334,8 +369,19 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 7. **Platform:** macOS 27 or later on Apple silicon throughout 1.x. The floor rises only in 2.0
    (D). [uncertain: once no macOS 27 machine or runner remains, 27 is only built for, not run;
    the notes would then say so]
-8. **Privacy:** the update check and a download the user chose are the only internet requests
-   (UG:502-507). Nothing else is sent, and there is no telemetry.
+8. **Privacy:** the app reaches the internet only to talk to GitHub, through `UpdateNetwork`'s
+   ephemeral sessions, which from 0.7 keep no cookies:
+   - the update check (UG:502-507);
+   - a download the user chose;
+   - from 0.7, the anonymous version count (NEW-24). Once per version, at least a day after that
+     version first ran, an automatic update check also downloads `BatteryPulse-count.txt` from
+     that version's release. It is on by default and announced, off in Settings → General, and
+     never runs when Check for updates is Never or from Check Now.
+
+   No identifier, nothing about the Mac, its battery or its settings is ever sent. There is no
+   server of our own and no third-party service; the maintainer sees only GitHub's public download
+   totals. GitHub sees the address and the app's version, as for any update check. Within 1.x
+   nothing is added to what is sent: the count may only be turned off by default or removed.
 
 **Not promised:**
 - readings macOS stops providing (a private source may become "Unavailable", UG:376-378);
@@ -372,7 +418,8 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
   - **The guide gains:**
     - the Compatibility section (C14);
     - Uninstall and Troubleshooting;
-    - every file BatteryPulse writes and every network request it makes.
+    - every file BatteryPulse writes and every network request it makes, beside the Privacy
+      section 0.7 adds with the version count (NEW-24).
   - **Help** opens the guide at the release's tag. Today it opens `blob/main`
     (AppSettings.swift:171, Updates.swift:163-166).
   - **Reporting:**
@@ -402,8 +449,8 @@ Each is placed in §4 or §5.
 
 | Version | Theme | Headline | Maintainer M5 time | Runs |
 |---|---|---|---|---|
-| **0.6.2** | Foundation II (P2, unchanged) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-32, plus 3 in reserve (P2 §7.2) |
-| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates | The look check (about 15 min at the desk, no M5, plus a 3-min second look), Session R (about 80 min), a logged day and its 10-min end, the after-publishing check (about 10 min); plus a 35-min spike sitting if 0.6.2's W0 never ran (plan-0.7.0 §6, §2.3) | 26-29 plus 3 in reserve; never-cut 21-24; stretch +8-9 [estimate, plan-0.7.0 §7.2] |
+| **0.6.2** | Foundation II (P2; plus a release-statistics script) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds; `scripts/release-stats.swift` (tooling, no app change) | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-33, plus 3 in reserve (P2 §7.2) |
+| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates; the anonymous version count (on by default, announced) | The look check (about 15 min at the desk, no M5, plus a 3-min second look), Session R (about 83 min), a logged day and its 10-min end, the after-publishing check (about 10 min, plus about 3 min and a passive 10-min wait for the version count); plus a 35-min spike sitting if 0.6.2's W0 never ran (plan-0.7.0 §6, §2.3) | 28-31 plus 3 in reserve; never-cut 23-26; stretch +8-9 [estimate, plan-0.7.0 §7.2] |
 | **0.8** | Answers in the app | Why it isn't charging, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 85 min, the contrast audit included [estimate] | 29-36 [estimate] |
 | **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, the ad-hoc first install documented (C16; no Developer ID, §3.4), `bpulse` in the app | About 50 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 8-11, plus whatever 0.8's cut line moves [estimate] |
 | **0.9.x** | Release candidates (fixes only) | Soak, energy budgets, the upgrade matrix | About 40 min, plus 70 min unattended and a passive 7-day soak [estimate] | 1-3 each |
@@ -416,24 +463,16 @@ Each is placed in §4 or §5.
   and the check, 10), 0.7's sittings (about 120 min, plus 35 if W-0S runs), 0.8's (about 135),
   0.9.0's (about 60-120), the 0.9.x sittings (about 50 each, two assumed) and 1.0's check (about
   10). Xcode adds about 90 minutes to 0.6.2 and 10 to 0.8; the Developer ID evening (S-ID) and
-  the 30 minutes of secrets (G-ID) are gone with M-1's no;
-- about 100-125 implementation and review runs, plus 8-9 if 0.7's stretch runs.
+  the 30 minutes of secrets (G-ID) are gone with M-1's no. 0.7's version count adds about 3
+  minutes to Session R and about 3 to its after-publishing check;
+- about 103-128 implementation and review runs, plus 8-9 if 0.7's stretch runs (0.6.2's
+  release-statistics script and 0.7's version count add about 3).
 
-**Calendar [estimate].** It assumes about one maintainer sitting a week, and **these dates are not
-gates**. WP-18's Xcode sitting floats (P2 §5), so 0.6.2's date holds; 0.9.0 is about a week
-earlier without the Developer ID work:
-
-| Release | Estimated date |
-|---|---|
-| 0.6.2 | mid-November 2026 |
-| 0.7 | mid-December 2026 |
-| 0.8 | late January 2027 |
-| 0.9.0 | mid-February 2027 |
-| 1.0.0 | March 2027 |
-| 1.1 (macOS 28) | about two weeks after macOS 28 ships, likely September 2027 [assumed] |
-
-The outer bound for 1.0.0 is WWDC 2027, likely early June [assumed]. After that, 1.0 would be
-checked against a macOS beta that keeps changing (D).
+**No dates (M-5, the maintainer, 2026-10-22).** "This is a hobby project; we release when there
+is time and desire." The table above is the order of the versions and their effort, not a
+schedule: no version has a target date, and nothing waits for one. The only event the plan
+names is macOS 28's release, which 1.1's compatibility work follows (§3.8). If 1.0 isn't out when
+macOS 28's betas arrive, it still ships on macOS 27, checked there; no beta goes on the M5 (§7).
 
 **Why five releases, not fewer or more** (V, Q and D agree on this skeleton):
 - **0.8 and 0.9 stay apart.** Merging them would put new UI into the release that has to prove
@@ -443,16 +482,17 @@ checked against a macOS beta that keeps changing (D).
   the app installs only `releases/latest` and rejects pre-releases (Updates.swift:125, 158) (V).
 - **More releases would add M5 sittings without new evidence** (Q).
 
-### 3.1 0.6.2: Foundation II (as P2 plans it; this roadmap changes only where some cut items go)
+### 3.1 0.6.2: Foundation II (as P2 plans it, plus the release-statistics script)
 
-This roadmap changes nothing in 0.6.2's scope. The maintainer's answers of 2026-10-22 pick P2's
-own branches: Clear's fill (b) (Q-B2, so FEA-24 is not built), no Low Power Mode fallback (Q-B10,
-so FEA-23 is not built), no Enhanced Security spike (Q-B8), and Xcode on the M5 (Q-B7, so WP-18
-and the contrast audit run, maintainer-run with Claude's step-by-step list). The roadmap changes
-only where some cut items go: FEA-25 goes after 1.0, and SEC-01 is not planned (Q-B8 and M-1 are
-no), instead of P2 §7.2's "a cut item moves to 0.7". A cut WP-18 moves to 0.7 as P2 says, still
-maintainer-run. The rest of a cut follows plan-0.7.0's C-1: Linux-only items ride 0.7's
-engineering lane, and items that need the M5 join Session R's optional steps.
+This roadmap changes nothing in 0.6.2's scope but one tooling item the maintainer added on
+2026-10-22: the release-statistics script (WP-19, below; NEW-23). His answers of 2026-10-22
+pick P2's own branches: Clear's fill (b) (Q-B2, so FEA-24 is not built), no Low Power Mode
+fallback (Q-B10, so FEA-23 is not built), no Enhanced Security spike (Q-B8), and Xcode on the M5
+(Q-B7, so WP-18 and the contrast audit run, maintainer-run with Claude's step-by-step list). The
+roadmap changes only where some cut items go: FEA-25 goes after 1.0, and SEC-01 is not planned
+(Q-B8 and M-1 are no), instead of P2 §7.2's "a cut item moves to 0.7". A cut WP-18 moves to 0.7
+as P2 says, still maintainer-run. The rest of a cut follows plan-0.7.0's C-1: Linux-only items
+ride 0.7's engineering lane, and items that need the M5 join Session R's optional steps.
 
 - **Theme:** the second maintenance and foundation release, with no new features (P2 §1). It
   carries 0.6.1's deferred backlog, fixes the beta styles' last known bug, runs the energy
@@ -466,10 +506,10 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   | WP-14a | ENG-08 |
   | WP-14b | ENG-09, ENG-10 (both gated) |
   | WP-15 | SIZ-01, SIZ-02 (gated), SIZ-03, SIZ-04 |
-  | WP-16 | PLT-02, SEC-04 (gated), QUA-12, DIS-07 (conditional) |
+  | WP-16 | PLT-02, SEC-04 (gated), QUA-12; DIS-07 not run (A0 kept the login item) |
   | WP-17 | ENG-11, ENG-12 |
   | WP-18 (maintainer-run with Claude's step-by-step list; Xcode is installed, Q-B7) | TCI-05, TCI-06, TCI-07, PLT-03 |
-  | WP-19 | SEC-05, QUA-13, TCI-02, TCI-03, TCI-04 |
+  | WP-19 | SEC-05, QUA-13, TCI-02, TCI-03, TCI-04; NEW-23's release-statistics script (`scripts/release-stats.swift`, P2, cut last) |
   | WP-20 (optional) | SEC-02; SEC-01 not run (Q-B8) |
   | WP-W0 | FEA-01 to FEA-05, A11Y-05, L10N-03 |
   | WP-21 | ENG-01 to ENG-06, ENG-13, TCI-01 |
@@ -477,7 +517,10 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   | D1-D3 | DIS-08, DOC-04, DOC-05, DOC-06 (evidence), SEC-06 |
 
   The intake and the sessions:
-  - Intake A0: DIS-04.
+  - Intake A0: DIS-04. **Passed** (the maintainer, 2026-10-22; P2 Appendix C): 0.6.1 installed
+    through Install and Relaunch from 0.6.0, the desktop widget stayed and shows the current
+    charge, and Open at login kept its state. No P1 item; DIS-07 doesn't run; P2's WP-22 ticks
+    ROADMAP Stage 1.2.
   - Session A: QUA-09 (if an iPhone is at hand) and QUA-10.
   - Session B and after publishing: L10N-01, DIS-05, DIS-06.
   - Optional checks: QUA-04, QUA-05, QUA-11, A11Y-02, A11Y-04.
@@ -491,7 +534,17 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   - The notes are as P2 D1 lists them, and D3's after-publishing check passes.
 - **M5 sessions:** A, B, the optional steps, WP-18's Xcode sitting and the after-publishing check
   (P2 §6, D3).
-- **Size:** 29-32 runs, plus 3 for fixing forward; the never-cut set is 22-26 (P2 §7.2).
+- **Size:** 29-33 runs, the release-statistics script included, plus 3 for fixing forward; the
+  never-cut set is 22-26 (P2 §7.2; the script is cut last, not never-cut).
+- **The release-statistics script (WP-19; the maintainer, 2026-10-22).** `swift
+  scripts/release-stats.swift` prints one row per published release: DMG downloads, `.sig`
+  downloads (each in-app install fetches the `.sig`, so this counts in-app updates) and the
+  version count's downloads (`BatteryPulse-count.txt`, "—" before v0.7.0), plus a total. It uses
+  GitHub's public REST API without a login, one request per run, prints the requests left, and on
+  the 60-requests-an-hour limit says when to try again (or takes a saved response with `--input`)
+  instead of retrying. Acceptance (P2 WP-19): CI type-checks it, runs its `--self-test` and diffs
+  its table for a committed sample response; one live run matches `gh api` for every release. Its
+  numbers go into the Releases table a week after each release (item 7).
 - **What the roadmap asks alongside 0.6.2 (answers and optional steps; no change in scope):**
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
@@ -518,34 +571,39 @@ engineering lane, and items that need the M5 join Session R's optional steps.
      - Sessions A and B run their `xctrace` page switches, and Session B the contrast audit with
        Accessibility Inspector (A11Y-03): about 65 and 95 minutes in all (P2 §6). C10 repeats the
        audit in 0.8.
-  5. **Branches (settled, an engineering call):** `claude/baseline-0.6.0` stays until 0.6.2's D3;
-     the 0.6.1 integration history stays reachable as `refs/pull/11/head`, which GitHub keeps.
+  5. **Branches (settled; the integration branch by the maintainer, 2026-10-22):** 0.6.2's
+     integration branch is `claude/nice-faraday-k08mhb`, the session's designated branch; each
+     package goes on `claude/062-<pkg>` and the widget spikes on `claude/062-spike-widget` (P2
+     §3). `claude/baseline-0.6.0` stays until 0.6.2's D3; the 0.6.1 integration history stays
+     reachable as `refs/pull/11/head`, which GitHub keeps.
   6. **A step of 0.6.2's D3:** `main` gets only squash merges, so `docs/plans/` never enters its
-     history. Before `claude/062-*` is deleted, D3 copies `m5-session.sh`, its swap helper and the
+     history. Before the package branches (`claude/062-*`) and the integration branch
+     `claude/nice-faraday-k08mhb` are deleted, D3 copies `m5-session.sh`, its swap helper and the
      whole of Appendix C into `docs/plans/0.7.0/`, beside `widgets.md`; the release PR's
      `refs/pull/<n>/head` keeps them reachable either way (plan-0.7.0 D-1).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
-     read the release's DMG and `.sig` download counts from the releases API (`gh api
-     repos/NikitaUsov/BatteryPulse/releases --jq '.[] | {tag_name, assets: [.assets[] | {name,
-     download_count}]}'`) and record them in ROADMAP's Releases table. 0.6.2's D3 adds the two
-     columns (DMG, `.sig`) and fills them for the earlier releases from the same call. The counts
-     include the maintainer's own downloads and the release's signature check, so they are an upper
-     bound on anyone else. Nothing in the app counts or sends anything (C14 item 8).
+     run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
+     0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from
+     the same run; 0.7.0's adds the Count column (NEW-24). If GitHub's limit is in the way, `gh api
+     'repos/NikitaUsov/BatteryPulse/releases?per_page=100' > releases.json` and `--input
+     releases.json` give the same table. The counts include the maintainer's own downloads and the
+     release's signature check, so they are an upper bound on anyone else. Through 0.6.x nothing
+     in the app counts or sends anything; 0.7's version count is the one addition (C14 item 8).
 
 ### 3.2 0.7: Widgets you configure (P2 §8, §9.1)
 
 - **Theme:** one headline, the configurable widget. "Within a minor release … the storage
   formats, the settings keys and the update contract don't change" (R:437-439). So 0.7 is also
   where the device JSON dates change, together with the JSON version field: scripts change once
-  (Q).
+  (Q). It is also where the anonymous version count adds its settings keys and its release asset
+  (NEW-24), announced as a frozen-surface change.
 - **Before code:**
-  - Q-W1 to Q-W13 and Q7-1 to Q7-7 are decided (2026-10-22: Q-W1 by the maintainer, the rest by
-    delegation, §5.3).
+  - Q-W1 to Q-W13, Q7-1 to Q7-7 and Q7-9 are decided (2026-10-22: Q-W1 and Q7-9, the version
+    count, by the maintainer, the rest by delegation, §5.3).
   - 0.6.2's W0 results (P2 Appendix C) pick the rows of §8.16 that apply.
-  - §2 of this roadmap (M-5) awaits the maintainer; it was asked again in plain words on
-    2026-10-22. Once approved, or with its recommended answer if still unanswered when 0.7
-    starts (§6), it is condensed into ROADMAP as a "Road to 1.0" section in 0.7's docs pass, so
-    0.6.2's scope stays as planned.
+  - §2 of this roadmap (M-5) is approved as written, with no dates (2026-10-22). It is condensed
+    into ROADMAP as a "Road to 1.0" section in 0.7's docs pass, so 0.6.2's scope stays as
+    planned.
 - **Contents:**
   - **MVP, never cut** (P2 §9.1):
     - FEA-07 (W-1, with P2 §8.13's frozen-value pin test);
@@ -556,6 +614,38 @@ engineering lane, and items that need the M5 join Session R's optional steps.
     - A11Y-06;
     - L10N-04, TCI-11 and DOC-07 (W-10);
     - L10N-05, SIZ-06, TCI-10, ENG-17, QUA-16.
+  - **The anonymous version count, never cut** (NEW-24, INV DIS-11, plan-0.7.0 W-13; decided by
+    the maintainer on 2026-10-22, plan-0.7.0 §14 Q7-9). It is cut whole, to 0.8, only if review
+    finds a promise it can't keep.
+    - **What it does:** once per installed version, at least 24 hours after that version first
+      ran on the Mac, an automatic update check that reached GitHub also GETs
+      `https://github.com/NikitaUsov/BatteryPulse/releases/download/v<version>/BatteryPulse-count.txt`
+      and ignores the body. Each release's public download count of that file is the number of
+      Macs that ran the version with the count on, the maintainer's included.
+    - **What it never does:** no server of our own, no third-party service, no identifier of any
+      kind, nothing about the Mac, its battery or its settings; no cookies on any update traffic
+      (from 0.7); a constant `Accept-Language`, so not even the language goes out. It never runs
+      from Check Now, while Check for updates is Never, or once the person turns it off.
+    - **How it is announced:** on by default (a missing key means on, and only the toggle writes
+      it); a toggle in Settings → General, which the Welcome window shows to fresh installs; a
+      What's New row for anyone coming from before 0.7; the release notes; a Privacy section in
+      README and USER_GUIDE; and the file's own text. The day's grace puts the off switch before
+      the first count.
+    - **Engineering:** the policy (`VersionCounterPolicy`) lives in BatteryCore with Linux tests;
+      the request rides in the automatic check's task on `UpdateNetwork.automatic`, so it adds no
+      wake-up, task, sleep or signpost name and inherits the refusal of Low Data Mode and
+      expensive networks. `SecurityGuardTests` keeps new sessions in `UpdateNetwork` and the
+      count's URL in `UpdateChecker`, and checks the no-cookie settings; log lines carry only the
+      outcome's case name and an HTTP or `URLError` code as public.
+    - **Frozen surfaces, announced in a minor release:** three settings keys
+      (`anonymousVersionCount`, `lastCountedVersion`, `versionFirstLaunch`) and a new release
+      asset, attached by `release.yml` to every release from v0.7.0 and never removed (C14 items 1,
+      6 and 8).
+    - **The legal position (not legal advice):** the EDPB's Guidelines 2/2023 read Art. 5(3) of
+      the ePrivacy Directive broadly, so in the EU a request like this may fall within its scope.
+      The design meets the conditions under which anonymous audience measurement is commonly
+      exempt from consent: users informed, an easy objection, aggregate numbers for the publisher
+      only (plan-0.7.0 Appendix B VC-8, §11). Turning the default off needs no key change.
   - **Fallback:** FEA-13, the preset kinds, only if W0-1 failed (P2 §8.16).
   - **For scripts:** QUA-14 (CB-02: ISO 8601 dates) and NEW-11 (`formatVersion` in every top-level
     JSON object `bpulse` prints). One line in the notes covers both.
@@ -572,6 +662,14 @@ engineering lane, and items that need the M5 join Session R's optional steps.
       recorded there already, 2026-10-22). The 0.7 entry (R:543-556), which promises "every size
       macOS offers" and History, iPhone and iPad widgets, is rewritten to what shipped, and the
       rest moves to a new 1.1 entry (plan-0.7.0 §12).
+    - The version count's docs (NEW-24): README's "The only requests to the internet are…"
+      (RM:120-125) and the guide's update paragraph (UG:502-509) are reworded, and both gain a
+      Privacy section that says what is sent, what isn't and where to turn it off; the devices'
+      "Privacy" (UG:351-359) links to it. ROADMAP's privacy principle, its Decisions and its
+      usage paragraph already say it (reworded on 2026-10-22); the docs pass checks them against
+      what shipped, and the Releases table gains a Count column from 0.7.0. CLAUDE.md's
+      "Network" gains the count and "no cookies". A `git grep` finds no remaining "counts and sends nothing", "only internet
+      request" or "no telemetry" claim that is now false.
     - DOC-10: the bug template asks for the app version and how BatteryPulse was installed.
     - PLT-05 follows M-2: BatteryKit keeps building for iOS until that first costs time.
     - NEW-18: `docs/VERIFICATION.md` starts with 0.6.2's evidence (plan-0.7.0 R-1 item 5).
@@ -599,9 +697,10 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   - `WidgetChartSummary` is built with W-6 (stretch). If W-6 doesn't ship, 0.8's A11Y-01 builds it
     in BatteryCore (plan-0.7.0 §2.5).
 - **Exit criteria:**
-  - **Seen before release:** Session R ran. Without it 0.7 waits and the dates move (plan-0.7.0
-    §3, G7-2). This is stricter than §1.2 item 3's "a short session still ships", because the
-    headline can't ship unseen (C2).
+  - **Seen before release:** Session R ran. Without it 0.7 waits (plan-0.7.0 §3, G7-2). This is
+    stricter than §1.2 item 3's "a short session still ships", because the headline can't ship
+    unseen (C2). Session R also screenshots the version count's toggle in English and Russian, on
+    and greyed under Never.
   - **Session checks (P2 §8.14):**
     - a 0.6.x widget after the in-app update (or the §8.16 row that applies, documented);
     - every kind, family and rendering mode, in English and Russian, at 12- and 24-hour time;
@@ -616,21 +715,25 @@ engineering lane, and items that need the M5 join Session R's optional steps.
       reloads first (plan-0.7.0 G7-11).
   - **Size (P2 §8.12):** the widget's `__text` stays within its ceiling, or the ceiling rises in a
     commit of its own that says why. The `widget_appintents_bytes` row exists.
-  - **Release:** the notes carry the CB-02 line, the after-publishing check (0.6.2's D3 list)
-    passes, and a week later the download counts are recorded (NEW-23).
+  - **Release:** the notes carry the CB-02 line and the version count's paragraph; the
+    after-publishing check (0.6.2's D3 list) passes, and so does the count's: What's New lists it,
+    an `update` log line says `counted` after the grace day is backdated, and about 10 minutes
+    later `release-stats.swift` shows v0.7.0's count at 1 or more (plan-0.7.0 §6.4). A week
+    later the download counts, the new Count column included, are recorded (NEW-23, NEW-24).
 - **M5 sessions [estimate]** (plan-0.7.0 §6):
   - the look check at the desk (about 15 minutes, no M5) and a 3-minute second look;
-  - Session R, about 80 minutes, with the screenshot matrix scripted;
+  - Session R, about 83 minutes, with the screenshot matrix scripted;
   - a day of normal use with the `perf` stream on, for reloads delivered and the widget's energy,
     and about 10 minutes at its end (F12);
-  - the after-publishing check;
+  - the after-publishing check, with the version count's step (about 3 minutes and a passive
+    10-minute wait);
   - QUA-05, if 0.6.2 missed it: the session script's `charge-limit` step (§3.1 item 2);
   - QUA-06: the `hold-watch` step before bed, with the adapter in and the lid open. It records
     overnight under `caffeinate -i` and says in the morning whether a hold was seen. Nobody can
     know in advance which night macOS holds the charge [uncertain: whether macOS holds it while
     the Mac is kept awake].
-- **Size [estimate]:** 26-29 runs plus 3 for fixing forward; never-cut 21-24; stretch +8-9
-  (plan-0.7.0 §7.2, which also counts D1-D3, the riders and W-3's split).
+- **Size [estimate]:** 28-31 runs plus 3 for fixing forward; never-cut 23-26; stretch +8-9
+  (plan-0.7.0 §7.2, which also counts D1-D3, the riders, W-3's split and W-13's 2 runs).
 
 ### 3.3 0.8: Answers in the app
 
@@ -708,7 +811,7 @@ engineering lane, and items that need the M5 join Session R's optional steps.
   - NEW-08: the frozen-surface tests, and golden outputs committed for every fixture. The goldens
     land after 0.7's CB-02, so they pin the 1.x shapes.
   - NEW-09: storage tests. NEW-10: perturbation and degradation tests. NEW-12: the log-privacy
-    guard (23 `.public` sites today, checked by hand).
+    guard (23 `.public` sites today, checked by hand, plus 0.7's version-count lines).
   - **QUA-15:** remove the legacy `samples.jsonl` migration before 1.x freezes the storage list,
     with one line in the notes. No release ever wrote the file (AUD-cli-build CB-01). PB DC-5
     kept migrations for 0.6.1's "no loss of functionality". Removing this one in a minor release
@@ -733,7 +836,7 @@ engineering lane, and items that need the M5 join Session R's optional steps.
 - **Size [estimate]:** 29-36 runs (about 18 packages: NEW-01 to NEW-07, A11Y-01 to A11Y-04,
   NEW-14, NEW-16 with SEC-07, NEW-08 to NEW-10, NEW-12, QUA-15 and D1-D3; app-wide °F left with
   Q-W12's answer). For scale: 0.6.1's 19 packages took 40-46 runs (P1, "At a glance"), and 0.7's
-  16 take 26-29 (plan-0.7.0 §7.2).
+  packages take 28-31 (plan-0.7.0 §7.2, W-13 included).
 - **Cut line.**
   - **Never cut:** NEW-01, NEW-02, NEW-03, NEW-05, NEW-07, A11Y-01, NEW-16 with SEC-07, NEW-08 to
     NEW-10, D1-D3.
@@ -871,21 +974,20 @@ below runs unless M-1 is asked again.
 ### 3.8 After 1.0: 1.1 and the cadence
 
 - **1.1:**
-  - **macOS 28 compatibility (NEW-21),** within about two weeks of macOS 28's release
-    [assumed: September 2027]:
+  - **macOS 28 compatibility (NEW-21),** after macOS 28 ships (an event, not a date; M-5):
     - the Xcode 28 runner (CI pins Xcode 27.1 today, ci.yml:63);
     - a sweep of deprecations, as `hdiutil` was in macOS 27 (R:524-525);
     - captures on the new macOS.
   - The widgets that waited: FEA-10 to FEA-12, SEC-08 and DOC-08, on the feed if W0-3 passed
     (there is no App Group: M-1 is no); also FEA-20.
-- **Cadence (M-12, decided by delegation):**
-  - at most a minor release every 6-8 weeks, with one M5 sitting;
+- **Cadence (M-12, decided by delegation; no dates, M-5):**
+  - no schedule: a minor release ships when there is time and desire, and something worth
+    shipping, with one M5 sitting;
   - patches only for regressions;
-  - one compatibility release per macOS major version (D).
+  - one compatibility release per macOS major version, after it ships (D).
 
-  With about no outside users (§1.1), 6-8 weeks is an upper pace, not a commitment: a minor
-  release ships when there is something worth shipping, and the recorded download counts
-  (NEW-23) show whether that changes.
+  The recorded download counts (NEW-23) and, from 0.7, the version count (NEW-24) show whether
+  outside users appear, and with them whether the support terms (M-13) need to change.
 
 ---
 
@@ -908,7 +1010,7 @@ below runs unless M-1 is asked again.
 
 | Item | Stance | Reasons |
 |---|---|---|
-| **Developer ID signing and notarization** (DIS-01) | **Not planned: the maintainer declined the paid account on 2026-10-22 (M-1).** Revisited only if he changes his mind (§3.4 keeps the gate as background) | His reasons: a non-commercial hobby project, no budget for the account, and about zero users (§1.1). The case that was weighed, kept on record: every new user and every DMG install meets Open Anyway (RM:22-25, UG:33-43); Apple keeps tightening this path, and macOS 15 removed the Control-click override (https://developer.apple.com/news/?id=saqachfa); an App Group is the documented route for the History and device widgets (P2 §8.2); grants survive updates under a Team-pinned designated requirement (TN3127, https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements; PKG B12); it costs 99 USD a year (R:642). At 1.0, Open Anyway and the grants or widgets a DMG replacement may lose are documented known limitations (C3, C7, C16). |
+| **Developer ID signing and notarization** (DIS-01) | **Not planned: the maintainer declined the paid account on 2026-10-22 (M-1).** Revisited only if he changes his mind (§3.4 keeps the gate as background) | His reasons: a non-commercial hobby project; he will not pay for an Apple developer account for this app (he is willing to spend on help with development, not on the account); and about zero users (§1.1). The case that was weighed, kept on record: every new user and every DMG install meets Open Anyway (RM:22-25, UG:33-43); Apple keeps tightening this path, and macOS 15 removed the Control-click override (https://developer.apple.com/news/?id=saqachfa); an App Group is the documented route for the History and device widgets (P2 §8.2); grants survive updates under a Team-pinned designated requirement (TN3127, https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements; PKG B12); it costs 99 USD a year (R:642). At 1.0, Open Anyway and the grants or widgets a DMG replacement may lose are documented known limitations (C3, C7, C16). |
 | **Enhanced Security** (SEC-01) | Not planned (Q-B8 no, M-1 no) | It was to be tried on a Developer ID build, which won't exist. On ad-hoc signing it is unverified, and a refusal after the swap leaves an app that doesn't launch (RES-security SEC-08). |
 | **The main macOS package manager's official catalog** (DIS-03) | Not planned (M-1 no) | It needs notarization, and a notability bar of 75 stars, 30 forks and 30 watchers and a repository at least 30 days old (PKG B7); all three are 0 today (`gh api`) |
 | **The History and iPhone & iPad widgets, if W0-3 fails** (FEA-10 to FEA-12) | Not possible without the paid account | If neither candidate A nor A′ works, the app's copy of the readings has no route into the sandboxed widget, and the App Group needs a Team ID (P2 §8.2, §8.3 candidate C) |
@@ -940,7 +1042,7 @@ come true on the way to 1.0. Each is re-judged here:
 | REJ-49 | A shared framework: Developer ID, if duplication stays large | M-1 is no, so the condition isn't met. Still rejected. |
 | REJ-52 | Selection glass only with a pixel test | Unchanged; the accent outline stays |
 | REJ-53 | The app writing into the widget's container | M-1 is no, so there is no Team ID, and macOS 27 denies another or an absent Team ID's access by default (NOTES27 161835690; INV REJ-53). Still rejected. |
-| REJ-57 | Widget push needs the paid account | M-1 is no, so push stays impossible. Still rejected anyway: no network in the widget, and the read-only local promise (C14 item 8) |
+| REJ-57 | Widget push needs the paid account | M-1 is no, so push stays impossible. Still rejected anyway: no network in the widget (C14 item 8 lists the app's only requests, all to GitHub) |
 
 Every other REJ row is unchanged (§5.4 lists them all).
 
@@ -949,7 +1051,7 @@ Every other REJ row is unchanged (§5.4 lists them all).
 | Idea | Reason |
 |---|---|
 | The Mac App Store | Guideline 2.4.5(i) requires the sandbox and 2.5.1 public APIs only (https://developer.apple.com/app-store/review/guidelines/). Both break the SMC reads, MobileDevice and Install and Relaunch (RES-security §5). |
-| Telemetry, uploaded crash reports, analytics | The guide promises that the update check is the only internet request (UG:502-507). NEW-05 saves locally and sends nothing. |
+| Telemetry beyond the version count: usage events, uploaded crash reports, an analytics service or SDK, any identifier | The maintainer's terms for the one count he decided (NEW-24): no server of our own, no third-party service, no identifier, nothing about the Mac, its battery or its settings. Within 1.x nothing is added to what is sent (C14 item 8). NEW-05 saves locally and sends nothing. |
 | A personal package catalog | Every install and every upgrade would still need Open Anyway (PKG B12-B13) |
 | A separate website or domain | README is the landing page (D) |
 | Charge control below 80 %, forced discharge, the charging LED | They need a root helper and SMC writes, and CLAUDE.md keeps the SMC read-only (CLR:99-103; R:682-683) |
@@ -964,7 +1066,7 @@ Every other REJ row is unchanged (§5.4 lists them all).
 "0.6.2" means as P2 places it. The other versions are this roadmap's. Each row's note gives the
 condition or the reason.
 
-### 5.1 The 130 inventory rows
+### 5.1 The 131 inventory rows
 
 | ID | Item (short) | Placed | Note |
 |---|---|---|---|
@@ -1054,13 +1156,14 @@ condition or the reason.
 | DIS-01 | Developer ID and notarization | Not planned | M-1 is no (2026-10-22); G-ID and S-ID are off the path (§3.4, kept as background) |
 | DIS-02 | iOS distribution | Not planned | M-2 |
 | DIS-03 | A package manager | Not planned | Needs notarization (M-1 is no) and the notability bar (§4.2) |
-| DIS-04 | 0.6.1 after-publishing checks | 0.6.2 | Intake A0 |
+| DIS-04 | 0.6.1 after-publishing checks | 0.6.2 | Intake A0: **passed** (2026-10-22): 0.6.1 installed in-app from 0.6.0, the widget stayed and current, Open at login kept |
 | DIS-05 | Tick install from the app | 0.6.2 | |
-| DIS-06 | Widgets kept across in-app update | 0.6.2 (evidence) | Re-checked in 0.7 and C7; a loss is a documented known limitation at 1.0 (C3) |
-| DIS-07 | Open at login survives update | 0.6.2 (conditional) | |
+| DIS-06 | Widgets kept across in-app update | 0.6.2 (evidence) | A0 saw them kept across the in-app update 0.6.0 → 0.6.1; re-checked in 0.7 and C7; a loss is a documented known limitation at 1.0 (C3) |
+| DIS-07 | Open at login survives update | 0.6.2 (conditional) | Not run: A0 kept the login item, so no `openAtLogin` key is added |
 | DIS-08 | 0.6.2 freeze, Session B, release | 0.6.2 | |
 | DIS-09 | Ship `bpulse` to users | 0.8 + 0.9.0 | Captures in Report a Problem (0.8); `bpulse` in the app (0.9.0, M-7) |
-| DIS-10 | What 1.0 means | This roadmap | M-5 awaits the maintainer (re-asked 2026-10-22); README's status in 0.9.0 |
+| DIS-10 | What 1.0 means | This roadmap | M-5 approved as written, with no dates (the maintainer, 2026-10-22); README's status in 0.9.0 |
+| DIS-11 | Anonymous version count | 0.7 | Never cut; NEW-24, plan-0.7.0 W-13 (the maintainer's decision, 2026-10-22) |
 | DOC-01 | CLAUDE.md for 0.6.2 | 0.6.2 | |
 | DOC-02 | User Guide for 0.6.2 | 0.6.2 | |
 | DOC-03 | Roadmap for 0.6.2 | 0.6.2 | |
@@ -1125,7 +1228,8 @@ condition or the reason.
 | NEW-20 | Russian screenshot sign-off; optional double-length pseudolanguage pass [unverified: the launch argument on macOS 27] | Q | 0.9.0 |
 | NEW-21 | macOS 28 compatibility | D | 1.1 |
 | NEW-22 | A quick check after each macOS 27.x update: Devices, Accessories, Raw Data, widget (about 5 minutes) | V | Ongoing from 0.7 |
-| NEW-23 | Each release's DMG and `.sig` download counts from the releases API, recorded in ROADMAP's Releases table a week after publishing; no telemetry in the app | the maintainer's question about downloads (2026-10-22) | From 0.6.2's D3, then every release |
+| NEW-23 | Each release's download counts, recorded in ROADMAP's Releases table a week after publishing: DMG and `.sig` (in-app installs), and from 0.7.0 the version count's asset (NEW-24). `scripts/release-stats.swift` prints them from GitHub's public REST API without a login, handling the 60-requests-an-hour limit; the app sends nothing for it | the maintainer's question about downloads, and his answer adding the script (2026-10-22) | The script in 0.6.2 (P2 WP-19); the counts from 0.6.2's D3, then every release |
+| NEW-24 | Anonymous version count: once per version, at least 24 hours after it first ran, an automatic update check also downloads `BatteryPulse-count.txt` from that version's release; GitHub's public count of that file is the number of Macs that ran it. On by default and announced (release notes, What's New, Welcome, README and guide Privacy sections, the file's own text); off in Settings → General; never under Never or from Check Now; no identifier, no cookies, no server of our own, no third-party service, nothing about the Mac, battery or settings | the maintainer's decision (2026-10-22): to see how many people use which version | 0.7 (plan-0.7.0 W-13, never cut; INV DIS-11) |
 
 ### 5.3 The 22 maintainer questions of P2 §10
 
@@ -1154,11 +1258,13 @@ signed off in its sitting.
 | Q-W12 | by delegation | °C everywhere (0.7's recommendation); no app-wide °F (§3.3) |
 
 plan-0.7.0 §14's own questions are decided the same way, by delegation, as recommended: Q7-1 the
-gallery names as written; Q7-2 What's New once after updating to 0.7; Q7-3 the sittings as
-planned; Q7-4 the evidence decides what happens if placed widgets don't survive; Q7-5 "Hide fully
-charged" offered, off by default (FEA-21); Q7-6 a click opens the main window at the widget's page;
-Q7-7 in small, Custom's one detail takes the time line's place. Q7-8 was settled (an engineering
-call).
+gallery names as written; Q7-2 What's New once after updating to 0.7, with 2-3 entries plus the
+version count; Q7-3 the sittings as planned; Q7-4 the evidence decides what happens if placed
+widgets don't survive; Q7-5 "Hide fully charged" offered, off by default (FEA-21); Q7-6 a click
+opens the main window at the widget's page; Q7-7 in small, Custom's one detail takes the time
+line's place. Q7-8 was settled (an engineering call). Q7-9, the anonymous version count, was
+decided by the maintainer on 2026-10-22: on by default, announced honestly (NEW-24, plan-0.7.0
+W-13).
 
 ### 5.4 The 62 rejected ideas of INV §13
 
@@ -1177,16 +1283,19 @@ Each decision has a recommended answer and what changes with a different one. "N
 latest point that keeps the plan intact. Without an answer by "Needed by", the recommended answer
 applies. P2 §10's 22 questions are recorded in §5.3.
 
-**Status on 2026-10-22.** The maintainer answered M-1 (no) and delegated M-2 to M-4 and M-6 to
-M-14 ("do it by best practices, as you see fit"), so each of those is decided as its recommended
-answer. Only M-5 is open: it was asked again in plain words and awaits the maintainer.
+**Status on 2026-10-22: every decision is settled.** The maintainer answered M-1 (no) and M-5
+(approved as written, with no dates), and delegated M-2 to M-4 and M-6 to M-14 ("do it by best
+practices, as you see fit"), so each of those is decided as its recommended answer; M-12's
+cadence follows M-5's "no dates". The same day he also decided a feature of his own, the
+anonymous version count in 0.7 (NEW-24; plan-0.7.0 §14 Q7-9).
 
 ### M-1. Buy the paid Apple Developer Program account?
 
 - **Decided 2026-10-22: no.** Not now, and not planned before 1.0. The maintainer's reasons: a
-  non-commercial hobby project, no budget for the account, and about zero users (§1.1: 14 DMG
-  downloads across all releases, 5 signature downloads, 2 repository views by 1 visitor in 14
-  days, no stars, forks or outside issues).
+  non-commercial hobby project; he will not pay for an Apple developer account for this app (he
+  is willing to spend on help with development, not on the account); and about zero users
+  (§1.1: 14 DMG downloads across all releases, 5 signature downloads, 2 repository views by 1
+  visitor in 14 days, no stars, forks or outside issues).
 - **What follows:**
   - Developer ID signing and notarization are not planned (§4.2). Gate G-ID, spike S-ID and the
     `docs/DEVELOPER_ID.md` runbook leave the path to 1.0; 0.9.0 has no Developer ID item (§3.4).
@@ -1253,7 +1362,8 @@ answer. Only M-5 is open: it was asked again in plain words and awaits the maint
 - **Needed by:** 0.9.0.
 - **Decided by delegation (2026-10-22), as recommended: no.** The 0.9.x releases are normal
   releases. There are about no outside users (§1.1), so a second track would have nobody to test
-  it; the question returns only if the recorded download counts (NEW-23) show outside users.
+  it; the question returns only if the recorded download counts (NEW-23) or, from 0.7, the version
+  count (NEW-24) show outside users.
 - **If it were yes:**
   - The update contract changes, because pre-releases are rejected today (Updates.swift:125).
   - The beta needs an opt-in setting.
@@ -1261,18 +1371,19 @@ answer. Only M-5 is open: it was asked again in plain words and awaits the maint
 
 ### M-5. What 1.0 means
 
-- **Status: awaiting the maintainer.** Asked again in plain words on 2026-10-22: "Should 1.0 mean
-  'ready for people other than you', checked by the list in §2 (every feature seen working, a
-  week of daily use without a crash, updates that keep your data, VoiceOver everywhere, and
-  nothing that breaks through 1.x), with no fixed date and WWDC 2027 as the latest?"
-- **Needed by:** before 0.7.
-- **Recommended (unchanged):**
-  - Approve §2 as written: yes.
-  - WWDC 2027 [assumed early June] is the outer bound. There is no fixed date.
-  - The usage evidence (§1.1) doesn't change the recommendation: 1.0's "ready for others" scope
-    stays as planned, while cadence, support and the beta channel are sized for about no outside
-    users (M-4, M-12, M-13).
-- **If changed:**
+- **Decided by the maintainer, 2026-10-22: approved as written.** 1.0 means "ready for people
+  other than the maintainer", with §2's five promises: seen working on the M5 in a packaged
+  build; a week of daily use without a crash; in-app updates from older versions; nothing breaks
+  through 1.x; usable by a non-expert. §2's criteria C1-C17 check them.
+- **No dates,** in his words: "this is a hobby project; we release when there is time and
+  desire".
+  - The calendar table, the target dates and "WWDC 2027 as the outer bound" are removed as
+    commitments (§3).
+  - The order of the versions and the effort estimates stay.
+  - 1.1's macOS 28 compatibility follows macOS 28's release, an event, not a date (§3.8).
+- **What it confirms:** 1.0's "ready for others" scope stays as planned, while cadence, support
+  and the beta channel are sized for about no outside users (M-4, M-12, M-13).
+- **If changed later:**
   - A dropped criterion becomes a known limitation in 1.0's notes.
   - An added one moves to the version whose theme fits it.
 
@@ -1341,7 +1452,9 @@ answer. Only M-5 is open: it was asked again in plain words and awaits the maint
   - NEW-05's contents, previewed before saving.
   - Nothing is sent.
   - Crash-report contents go in only on a second choice.
-- **If it should send automatically:** that is telemetry, which is rejected (UG:502-507).
+- **If it should send automatically:** that would upload diagnostics, which stays rejected
+  (§4.3). Beyond the update traffic, the only thing the app sends is 0.7's anonymous version
+  count, which carries nothing about the Mac (NEW-24, C14 item 8).
 
 ### M-12. Sessions and cadence
 
@@ -1350,8 +1463,8 @@ answer. Only M-5 is open: it was asked again in plain words and awaits the maint
   - about two sittings per release (§3's table);
   - Xcode on the M5: already installed (Q-B7);
   - a 7-day soak, one VoiceOver and keyboard sitting, and one Russian screenshot review;
-  - after 1.0, at most a minor release every 6-8 weeks, with one sitting each. With about no
-    outside users (§1.1), that is an upper pace, not a commitment (§3.8).
+  - after 1.0, no schedule (M-5: no dates): a minor release when there is time and desire, with
+    one sitting each (§3.8).
 - **If you have fewer sittings:** features that weren't checked become known limitations, and C2
   shrinks to "listed".
 
@@ -1384,8 +1497,9 @@ answer. Only M-5 is open: it was asked again in plain words and awaits the maint
 Each year brings betas at WWDC in June and the release in September [assumed], plus deprecations:
 `hdiutil` in 27 is the precedent (R:524-525). CI pins Xcode 27.1 (ci.yml:63).
 
-- 1.0 aims to ship before WWDC 2027.
-- 1.1 is a compatibility release about two weeks after macOS 28.
+- No date ties 1.0 to WWDC (M-5). If 1.0 isn't out when macOS 28's betas arrive, it still ships
+  on macOS 27 and is checked there.
+- 1.1 is a compatibility release after macOS 28 ships.
 - No beta macOS goes on the M5, the only Mac and the reference. Use a CI beta runner if one is
   offered. [uncertain]
 - The platform floor stays at 27 throughout 1.x (C14).
@@ -1411,7 +1525,8 @@ which already moved once in 27 (R:63-75).
 - Sessions are scripted, with unattended windows. The soak is passive.
 - The verification matrix is built up from 0.7 on.
 - Whatever isn't checked becomes a known limitation, not a blocker.
-- Dates are estimates, not gates.
+- There are no dates (M-5): a release ships when there is time and desire, so a slow month delays
+  nothing that was promised.
 - Implementation never waits on him; only looks, behaviour, the sessions and releases do.
 
 ### The M5 is the only hardware
@@ -1475,10 +1590,26 @@ A wrong cause, or a misleading health line, does harm (V).
 
 The usage evidence (§1.1) says the maintainer is, in practice, the only user.
 
-- 1.0's "ready for others" scope stays as planned (M-5 awaits the maintainer).
+- 1.0's "ready for others" scope stays as planned (M-5, approved).
 - The cadence (M-12), the support promise (M-13) and the absence of a beta channel (M-4) are
   sized for that.
-- Each release's download counts are recorded (NEW-23), with no telemetry (§4.3).
+- Each release's download counts are recorded (NEW-23), and from 0.7 the anonymous version count
+  shows how many Macs run each version (NEW-24). Nothing else is collected (§4.3).
+
+### The version count reads as telemetry
+
+On by default can look like tracking, and in the EU a regulator may want opt-in (plan-0.7.0
+Appendix B VC-8).
+
+- It sends no identifier and nothing about the Mac, keeps no cookie, and goes only to GitHub,
+  which already sees the same address and version from the update check in the same tick.
+- It is announced before it counts: the release notes in the Software Update window, What's New
+  for anyone coming from before 0.7, the toggle in the Welcome window for fresh installs, the
+  Privacy sections in README and the guide, and the file's own text. A day's grace puts the off
+  switch before the first count.
+- A 0.7.x can turn the default off, or remove the request, with no key change (plan-0.7.0 W-13
+  rollback).
+- GitHub may change how it counts downloads; then the numbers drift, and the app is unaffected.
 
 ### Scope creep
 
@@ -1503,7 +1634,7 @@ The usage evidence (§1.1) says the maintainer is, in practice, the only user.
 
 ### Verification debt grows faster than sittings close it
 
-There are 54 M5 rows today.
+There are 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22).
 
 - Each release's session closes its own new checks.
 - 0.9.0 closes the rest or lists them.
@@ -1540,15 +1671,15 @@ There are 54 M5 rows today.
 | A log-privacy guard; a backup key; a crash-loop sentinel; `SECURITY.md` | Q | **Taken** | NEW-12, NEW-13, NEW-14, NEW-15 |
 | `bpulse` stays source-only | Q | **Not taken** (recommendation) | The guide and the Contributing section send users to it (UG:561-663, RM:243-250), and `--record` has no in-app equivalent. M-7 decides. |
 | 0.8 as "contracts and accessibility" | Q | **Split** | Accessibility joins 0.8's user-facing review; the contracts run in parallel as a Linux-only lane. Neither needs a release of its own. |
-| Reconsider the paid account now; enroll early | D | **Weighed; declined by the maintainer** | M-1 is no (2026-10-22): a non-commercial hobby project, no budget for the account, about zero users. The case stays as background (§3.4, §4.2). |
+| Reconsider the paid account now; enroll early | D | **Weighed; declined by the maintainer** | M-1 is no (2026-10-22): a non-commercial hobby project; he will not pay for an Apple developer account for this app (he is willing to spend on help with development, not on the account); about zero users. The case stays as background (§3.4, §4.2). |
 | Developer ID in 0.8 | D | **Moot** (was: modified to 0.9.0) | M-1 is no, so there is no switch. The reasoning stays as background: the running app's installer performs every update, so a switch must be installed by a version with NEW-16 (§3.4 step 3, C8). |
 | Refuse an update whose `LSMinimumSystemVersion` is too high; a relaunch fallback | D | **Taken** | C8, NEW-16. A dead app is the worst failure of an in-app updater. |
 | The upgrade matrix from 0.4.0 | D | **Taken** (with Q's 0.6.1, 0.7.x and 0.8.x) | C7 |
 | The platform floor stays at macOS 27 throughout 1.x | D | **Taken, with uncertainty marked** | C14 item 7 |
 | An honest hardware claim | D | **Taken** | C17 |
-| Before WWDC 2027; 1.1 for macOS 28 | D | **Taken** | §3, §3.8 |
+| Before WWDC 2027; 1.1 for macOS 28 | D | **Modified by the maintainer** (M-5, 2026-10-22) | No dates: the order of the versions stays, WWDC is no bound, and 1.1 follows macOS 28's release, an event, not a date (§3, §3.8) |
 | Q-B8 no | D | **Taken** (= P2's default; decided by delegation) | §3.1 |
 | A 14-day daily-use period | D | **Not taken** | C4's 7 counted days instead (see above) |
-| Mac App Store never; no personal package catalog; no telemetry; no separate website | D, Q | **Taken** | §4.3 |
-| Cadence after 1.0; keep GPLv3 | D | **Taken** (decided by delegation; the cadence as an upper pace, given the usage evidence) | M-12, M-14 |
+| Mac App Store never; no personal package catalog; no telemetry; no separate website | D, Q | **Taken; telemetry narrowed by the maintainer** | §4.3. He added one anonymous version count in 0.7 (NEW-24): no identifier, nothing about the Mac, only GitHub's public download totals; every other kind of telemetry stays rejected |
+| Cadence after 1.0; keep GPLv3 | D | **Modified** (decided by delegation; M-5 removed the 6-8-week pace: no schedule, a minor release when there is time and desire) | M-12, M-14 |
 | Charge limit: read it and explain it (V) / never in 1.x (Q) | V vs Q | **Resolved: explain from the readings only; no setter and no private limit read in 1.x** | M-3. The read-only promise, plus no new private-API surface. |
