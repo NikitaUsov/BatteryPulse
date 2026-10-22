@@ -1,5 +1,7 @@
 #if os(macOS)
 import AppIntents
+import BatteryCore
+import BatteryKit
 import Foundation
 import SwiftUI
 import WidgetKit
@@ -232,6 +234,34 @@ struct SpikeEntry: TimelineEntry {
     let mainValue: SpikeField
     let detailCount: Int
     let deviceName: String?
+    var estimate = SpikeEstimate.fixed(from: .now)
+}
+
+/// W0-6: the end of the battery's estimate, or 2 hours 13 minutes after the read when there is
+/// none, so the time lines always show.
+struct SpikeEstimate {
+    let end: Date
+    let charging: Bool
+    /// "battery" or "fixed", for the widget's own line.
+    let source: String
+
+    static func fixed(from date: Date) -> SpikeEstimate {
+        SpikeEstimate(end: date.addingTimeInterval(2 * 3600 + 13 * 60), charging: false, source: "fixed")
+    }
+
+    @MainActor static func read(at date: Date) -> SpikeEstimate {
+        guard let snapshot = MacBatteryProvider(readsSMC: false).read()?.snapshot else { return fixed(from: date) }
+        switch snapshot.chargeState {
+        case .charging:
+            guard let minutes = snapshot.estimatedTimeToFullMinutes else { return fixed(from: date) }
+            return SpikeEstimate(end: date.addingTimeInterval(Double(minutes) * 60), charging: true, source: "battery")
+        case .discharging:
+            guard let minutes = snapshot.estimatedTimeToEmptyMinutes else { return fixed(from: date) }
+            return SpikeEstimate(end: date.addingTimeInterval(Double(minutes) * 60), charging: false, source: "battery")
+        case .charged, .notCharging, .unknown:
+            return fixed(from: date)
+        }
+    }
 }
 
 /// One entry and no reload of its own, so each `timeline` line follows a configuration change or
@@ -242,11 +272,15 @@ struct SpikeTimelineProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: SpikeWidgetIntent, in context: Context) async -> SpikeEntry {
-        Self.entry(for: configuration)
+        var entry = Self.entry(for: configuration)
+        entry.estimate = await SpikeEstimate.read(at: entry.date)
+        return entry
     }
 
+    /// The time left of W0-6 counts down in this one entry: the policy never reloads.
     func timeline(for configuration: SpikeWidgetIntent, in context: Context) async -> Timeline<SpikeEntry> {
-        let entry = Self.entry(for: configuration)
+        var entry = Self.entry(for: configuration)
+        entry.estimate = await SpikeEstimate.read(at: entry.date)
         let device = entry.deviceName == nil ? "none" : "chosen"
         spikeLog.notice(
             "spike timeline family=\(SpikeNames.family(context.family), privacy: .public) main=\(entry.mainValue.rawValue, privacy: .public) details=\(entry.detailCount, privacy: .public) device=\(device, privacy: .public) process=\(SpikeProcess.current.rawValue, privacy: .public)"
@@ -288,12 +322,38 @@ struct SpikeWidgetView: View {
             Text(entry.date, style: .time)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            timeLines
             Spacer(minLength: 0)
             Button(intent: SpikeRefreshIntent()) {
                 Text("Refresh")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// W0-6: the clock-time line, then the time left as §8.5 writes it (a) and with `sign: .never`
+    /// (b), since an offset to a later date is negative. The system updates both; nothing reloads.
+    @ViewBuilder private var timeLines: some View {
+        let estimate = entry.estimate
+        let time = estimate.end.formatted(date: .omitted, time: .shortened)
+        Group {
+            Text(verbatim: "W0-6 · \(estimate.source)")
+            if estimate.charging {
+                Text(String(localized: "Full at \(time)"))
+            } else {
+                Text(String(localized: "Lasts until about \(time)"))
+            }
+            HStack(spacing: 4) {
+                Text(verbatim: "a")
+                Text(.currentDate, format: .offset(to: estimate.end, allowedFields: [.hour, .minute]))
+            }
+            HStack(spacing: 4) {
+                Text(verbatim: "b")
+                Text(.currentDate, format: .offset(to: estimate.end, allowedFields: [.hour, .minute], sign: .never))
+            }
+        }
+        .font(.caption2)
+        .lineLimit(1)
     }
 }
 #endif
