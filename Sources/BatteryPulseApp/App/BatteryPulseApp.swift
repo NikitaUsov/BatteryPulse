@@ -3,6 +3,7 @@ import AppKit
 import BatteryCore
 import BatteryKit
 import SwiftUI
+import os
 
 @main
 struct BatteryPulseApp: App {
@@ -232,6 +233,82 @@ final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
 
     @objc private func openMainWindow() {
         WindowOpener.showMainWindow()
+    }
+
+    // MARK: SPIKE-W's click logger (W0-4 (4) and (5)), spike branch only
+
+    /// A widget click without a `widgetURL` (the small battery widget, the test kind) arrives as a
+    /// user activity, if it arrives here at all. Returns false, so the click otherwise does what it
+    /// did in 0.6.1.
+    func application(
+        _ application: NSApplication, continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        SpikeClicks.log(userActivity)
+        return false
+    }
+
+    /// A widget click with a `widgetURL` (the medium battery widget), if a URL of a scheme that no
+    /// app registers reaches the app.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        SpikeClicks.log(urls)
+    }
+}
+
+/// SPIKE-W (docs/plans/0.6.2/PLAN.md, WP-W0, W0-4), spike branch only: what a widget click
+/// delivers, with no window open and with the main window open. The lines hold case names, key
+/// names and counts, never a URL or an activity's values.
+@MainActor
+enum SpikeClicks {
+    /// The widget target's `SpikeWidgetKind.spike`.
+    static let spikeKind = "io.github.nikitausov.BatteryPulse.spike"
+    /// An unknown activity type's raw string goes to this key of the app's defaults, for Session
+    /// A's script, never to the log.
+    static let otherActivityTypeKey = "spikeOtherActivityType"
+    /// The widget's `SpikeRoute`: `batterypulse://page/<id>`.
+    static let scheme = "batterypulse"
+    static let pages: Set<String> = ["overview", "health", "power"]
+
+    static func log(_ activity: NSUserActivity) {
+        let type: String
+        switch activity.activityType {
+        case BatteryWidgetKind.battery: type = "batteryKind"
+        case spikeKind: type = "spikeKind"
+        case NSUserActivityTypeBrowsingWeb: type = "browsingWeb"
+        default:
+            type = "other"
+            UserDefaults.standard.set(activity.activityType, forKey: otherActivityTypeKey)
+        }
+        let keys = (activity.userInfo?.keys.map { ($0.base as? String) ?? "nonString" } ?? []).sorted()
+            .joined(separator: ",")
+        let hasWebpageURL = activity.webpageURL != nil
+        let windows = openWindows
+        let active = NSApp.isActive
+        Diagnostics.widget.notice(
+            "spike click activity type=\(type, privacy: .public) keys=\(keys, privacy: .public) webpageURL=\(hasWebpageURL, privacy: .public) windows=\(windows, privacy: .public) active=\(active, privacy: .public)"
+        )
+    }
+
+    static func log(_ urls: [URL]) {
+        for url in urls {
+            let ours = url.scheme == scheme
+            var page = "unknown"
+            if ours, url.host() == "page", let id = url.pathComponents.dropFirst().first, pages.contains(id) {
+                page = id
+            }
+            let kind = ours ? "batterypulse" : "other"
+            let windows = openWindows
+            let active = NSApp.isActive
+            Diagnostics.widget.notice(
+                "spike click url scheme=\(kind, privacy: .public) page=\(page, privacy: .public) windows=\(windows, privacy: .public) active=\(active, privacy: .public)"
+            )
+        }
+    }
+
+    /// Windows a user sees as windows: the main, compact and other windows, not the menu bar
+    /// item's.
+    static var openWindows: Int {
+        NSApp.windows.filter { $0.isVisible && $0.canBecomeMain }.count
     }
 }
 #else

@@ -89,7 +89,14 @@ struct BatteryWidgetView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let formatter = BatteryFormatter()
 
+    /// SPIKE-W (W0-4 (4) and (5)): the medium widget opens a URL of a scheme no app registers,
+    /// the small one has no URL, so a click on each shows what reaches the app.
     var body: some View {
+        content
+            .widgetURL(family == .systemMedium ? SpikeRoute.url(for: entry.options) : nil)
+    }
+
+    @ViewBuilder private var content: some View {
         if let snapshot = entry.snapshot, let percent = snapshot.chargePercent {
             switch family {
             case .systemMedium:

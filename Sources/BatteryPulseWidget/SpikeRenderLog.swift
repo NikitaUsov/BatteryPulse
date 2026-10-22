@@ -1,4 +1,5 @@
 #if os(macOS)
+import Foundation
 import SwiftUI
 import WidgetKit
 import os
@@ -24,10 +25,31 @@ struct SpikeRenderLog: ViewModifier {
     }
 
     private func log() {
+        let kindName = kind
+        let familyName = SpikeNames.family(family)
+        let mode = SpikeNames.renderingMode(renderingMode)
+        let background = showsBackground
+        let redaction = SpikeNames.redaction(redactionReasons)
         let scheme = colorScheme == .dark ? "dark" : "light"
         spikeLog.notice(
-            "spike render kind=\(kind, privacy: .public) family=\(SpikeNames.family(family), privacy: .public) mode=\(SpikeNames.renderingMode(renderingMode), privacy: .public) background=\(showsBackground, privacy: .public) redaction=\(SpikeNames.redaction(redactionReasons), privacy: .public) scheme=\(scheme, privacy: .public)"
+            "spike render kind=\(kindName, privacy: .public) family=\(familyName, privacy: .public) mode=\(mode, privacy: .public) background=\(background, privacy: .public) redaction=\(redaction, privacy: .public) scheme=\(scheme, privacy: .public)"
         )
+    }
+}
+
+/// The page a click on the medium battery widget asks for: §8.9's natural page per main value, as
+/// `batterypulse://page/<id>`. No app registers the scheme (W0-4 (5)).
+enum SpikeRoute {
+    static let scheme = "batterypulse"
+
+    static func url(for options: BatteryWidgetOptions) -> URL? {
+        let page =
+            switch options.mainValue {
+            case .charge: "overview"
+            case .maximumCapacity: "health"
+            case .temperature, .batteryPower: "power"
+            }
+        return URL(string: "\(scheme)://page/\(page)")
     }
 }
 
