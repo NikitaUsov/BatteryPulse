@@ -76,7 +76,12 @@ final class HistoryRecorder {
         guard AppSettings.recordsHistory, !monitor.isOverridden else { return }
         // Values like power change without a system notification, so the timer reads them fresh,
         // unless a read just did. The first tick reuses the monitor's read at launch.
-        if refreshing, !monitor.hasRead(within: Self.freshReadAge) { monitor.refresh(trigger: .history) }
+        if refreshing, !monitor.hasRead(within: Self.freshReadAge) {
+            await monitor.refreshAndWait(trigger: .history)
+            // The read ran off the main actor: Demo Mode may have started meanwhile, or recording
+            // stopped, and a demo snapshot must never reach the history.
+            guard AppSettings.recordsHistory, !monitor.isOverridden else { return }
+        }
         guard let snapshot = monitor.snapshot else { return }
         let interval = Diagnostics.begin("history.record")
         defer { interval.end() }
