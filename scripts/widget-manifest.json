@@ -1,0 +1,11 @@
+{
+  "kinds" : [
+    {
+      "families" : [
+        "small",
+        "medium"
+      ],
+      "kind" : "io.github.nikitausov.BatteryPulse.battery"
+    }
+  ]
+}
