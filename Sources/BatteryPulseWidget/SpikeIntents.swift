@@ -23,8 +23,9 @@ enum SpikeWidgetKind {
     static let spike = "io.github.nikitausov.BatteryPulse.spike"
 }
 
-/// The spike's lines in the `widget` category: static text, numbers and case names only.
-private let spikeLog = Logger(subsystem: "io.github.nikitausov.BatteryPulse", category: "widget")
+/// The spike's lines in the `widget` category: static text, numbers and case names only. Every
+/// spike file of the widget logs through it.
+let spikeLog = Logger(subsystem: "io.github.nikitausov.BatteryPulse", category: "widget")
 
 /// The process that runs a perform or a query, as a case name for the log.
 enum SpikeProcess: String {
@@ -42,12 +43,26 @@ enum SpikeProcess: String {
 }
 
 /// (d): the main value's choices, with one display representation per case; the details of (a)
-/// show them too.
+/// show them too. They are §8.5's details catalogue with the charge in front: 15 cases, more than
+/// the 12 details of the largest family, so every size can be filled exactly. Each title is a
+/// `DisplayRepresentation(title:)`, as Apple's samples write them, which also lets
+/// `LocalizationCatalogTests` see the key.
 enum SpikeField: String, AppEnum {
     case charge
+    case state
+    case time
     case maximumCapacity
-    case temperature
     case cycleCount
+    case temperature
+    case adapter
+    case macPowerUse
+    case batteryPower
+    case adapterInput
+    case lowPowerMode
+    case chargeMAh
+    case cycleLifeUsed
+    case cellBalance
+    case voltage
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(name: "Details")
@@ -55,11 +70,27 @@ enum SpikeField: String, AppEnum {
 
     static var caseDisplayRepresentations: [SpikeField: DisplayRepresentation] {
         [
-            .charge: "Charge",
-            .maximumCapacity: "Maximum capacity",
-            .temperature: "Temperature",
-            .cycleCount: "Cycle count",
+            .charge: DisplayRepresentation(title: "Charge"),
+            .state: DisplayRepresentation(title: "State"),
+            .time: DisplayRepresentation(title: "Time to full or empty"),
+            .maximumCapacity: DisplayRepresentation(title: "Maximum capacity"),
+            .cycleCount: DisplayRepresentation(title: "Cycle count"),
+            .temperature: DisplayRepresentation(title: "Temperature"),
+            .adapter: DisplayRepresentation(title: "Adapter"),
+            .macPowerUse: DisplayRepresentation(title: "Mac power use"),
+            .batteryPower: DisplayRepresentation(title: "Battery power"),
+            .adapterInput: DisplayRepresentation(title: "Adapter input"),
+            .lowPowerMode: DisplayRepresentation(title: "Low Power Mode"),
+            .chargeMAh: DisplayRepresentation(title: "Charge in mAh"),
+            .cycleLifeUsed: DisplayRepresentation(title: "Cycle life used"),
+            .cellBalance: DisplayRepresentation(title: "Cell balance"),
+            .voltage: DisplayRepresentation(title: "Voltage"),
         ]
+    }
+
+    /// The title the edit sheet shows, for the widget's own rows.
+    var title: LocalizedStringResource {
+        Self.caseDisplayRepresentations[self]?.title ?? LocalizedStringResource(stringLiteral: rawValue)
     }
 }
 
@@ -80,8 +111,7 @@ struct SpikeDetail: AppEntity {
     }
 
     var displayRepresentation: DisplayRepresentation {
-        SpikeField.caseDisplayRepresentations[field]
-            ?? DisplayRepresentation(title: LocalizedStringResource(stringLiteral: field.rawValue))
+        DisplayRepresentation(title: field.title)
     }
 }
 

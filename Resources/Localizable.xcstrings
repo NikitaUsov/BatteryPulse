@@ -312,6 +312,17 @@
         }
       }
     },
+    "Adapter input": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощность от адаптера"
+          }
+        }
+      }
+    },
     "Adapter loss": {
       "extractionState": "manual",
       "localizations": {
@@ -1310,6 +1321,17 @@
         }
       }
     },
+    "Cell balance": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс ячеек"
+          }
+        }
+      }
+    },
     "Cell impedance at depth-of-discharge grid points 0-9, in units of 1/1024 ohm.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1399,6 +1421,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Зарядка с нуля"
+          }
+        }
+      }
+    },
+    "Charge in mAh": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд в мА·ч"
           }
         }
       }
@@ -2197,6 +2230,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расчётное число циклов перезарядки аккумулятора (регистр контроллера 0x9C)."
+          }
+        }
+      }
+    },
+    "Cycle life used": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Израсходованный ресурс циклов"
           }
         }
       }
@@ -3962,6 +4006,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mac"
+          }
+        }
+      }
+    },
+    "Mac power use": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Потребление Mac"
           }
         }
       }
@@ -7119,6 +7174,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшееся время"
+          }
+        }
+      }
+    },
+    "Time to full or empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время до полной зарядки или разрядки"
           }
         }
       }
