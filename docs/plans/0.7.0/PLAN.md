@@ -2704,6 +2704,18 @@ build step and the size sequencing.
 | D-1, D-11: where the W0 answers, the whole Appendix C and the session script are (the copy in `docs/plans/0.7.0/`, or the kept branch, Q7-8) | 0.6.2 D3 | W-0, W-12 |
 | D-2, D-3: K-03 and internalize shipped; the widget's `__text` and binary at v0.6.2 | 0.6.2 CI | G7-10; W-0K |
 | D-4: WP-14a's shape (a nonisolated protocol, or `readNonisolated(scope:)`) | 0.6.2 code | W-3a |
+| D-4, answered 2026-10-22: shape B. `MacBatteryProvider.readNonisolated(scope:)` through `BatteryProvider.nonisolatedReader`; the protocol stays `@MainActor` (0.6.2 plan Appendix C, WP-14a) | 0.6.2 WP-14a | W-3a |
+
+**W-1, done early** (2026-10-22, on `claude/070-w1` at `d59c7e6`, CI green, 624 Linux tests; rebased onto v0.6.2 when 0.7 starts):
+
+| Fact | Shown by | Decides |
+|---|---|---|
+| BatteryCore's public code is not dead-stripped from either binary on 0.6.1's base: with the widget model public, about 85 KB of `__text` landed in both the app and the widget, and every size ceiling but the export counts failed. Internal declarations nothing uses drop out of a release build. So the model stays `internal` (tests use `@testable import`) until its first client makes each part public: W-3a (layout, rows, time text, options, configuration, `ReadCoalescer`), W-3c (`PageID`, `WidgetRoute`), W-8 (the accessories kind, mode and plan). `-internalize-at-link` is widget-only, so the app still carries every public widget type: W-3a makes public only what the widget reads | CI size reports, runs 39829456560 (public) and 39831829438 (internal) | W-3a, W-3c, W-8; G7-10 |
+| `make(size:configuration:snapshot:entry:formatter:timeZone:)` takes a `BatteryWidgetConfiguration` that mirrors the intent one to one | `WidgetLayoutPlan.swift` | W-3a |
+| Frozen strings chosen: route URLs `io.github.nikitausov.batterypulse://page/<page>` and `…://page/device/<key>`; field raw values `state`, `time`, `maximumCapacity`, `condition`, `cycleCount`, `temperature`, `adapter`, `systemLoad`, `batteryPower`, `adapterInput`, `lowPowerMode`, `remainingCapacity`, `cycleLifeUsed`, `cellBalance`, `voltage`; visuals `symbol`, `ring`, `drawnBattery`. Pinned by `WidgetSurfaceTests` | `WidgetOptions.swift`, `WidgetRoute.swift` | §8 frozen surfaces |
+| Text budget: no reused key is over budget, so no widget-only short key yet. "Lasts until about %@ tomorrow" with "12:59 PM" is 35 characters, over a line's 30; the tests expect "Lasts until %@ tomorrow" (29). Keys pending their catalog entry (English checked, Russian when W-3a adds them): "Full at %@ tomorrow", "Lasts until %@ tomorrow", "Cycle life used", "Cell balance" | `WidgetTextBudgetTests` | W-3a, W-10 |
+| Linux ICU prints en_GB's short time without a leading zero ("2:13"), Darwin "02:13"; the time tests avoid single-digit hours | Linux tests | W-1 tests |
+| Open for W-3a (review minors): the shipped 0.6.x view still computes the end as `entry.date + minutes`, so it must switch to `WidgetTimeText` in the same commit that adds the stale entry; with serious heat and an abnormal condition at once, the condition shows nowhere; "tomorrow" is decided at each entry's date, so it can say "tomorrow" up to 30-45 minutes past midnight (an entry at local midnight fixes it); the cue symbol on Automatic small and medium at 20 % or less on battery or below 80 % health is an intended difference §7.3 should list | review of `claude/070-w1` | W-3a; §7.3 |
 | D-6: WP-10 kept or reverted | 0.6.2 | W-3c, W-4 style |
 | D-7: the widget ceilings after 0.6.2's D1 | `size-budget.json` | §9 |
 | D-8: the Russian method for the widget | 0.6.2 Session A step 3.3 | Session R step 4.3 |
