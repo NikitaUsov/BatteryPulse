@@ -141,12 +141,16 @@ jobs:
           scripts/build-app.sh
       - name: Check the App Intents metadata (W0-1, spike branch only)
         # build-app.sh runs the metadata processor by hand, and the processor can exit with 0
-        # without writing anything: the widget's extract.actionsdata must name the spike's intents.
-        # The script also prints the file, with the keys the system reads.
+        # without writing anything: the widget's extract.actionsdata must name the spike's intents,
+        # the battery widget's configuration (SPIKE-W) among them. The script also prints the file,
+        # with the keys the system reads. A build without the metadata step, such as the control
+        # builds of v0.6.1's code, has no script and skips the check.
+        if: hashFiles('scripts/appintents-metadata.swift') != ''
         run: |
           metadata=build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex/Contents/Resources/Metadata.appintents
           ls -l "$metadata"
-          swift scripts/appintents-metadata.swift "$metadata/extract.actionsdata" SpikeWidgetIntent SpikeRefreshIntent
+          swift scripts/appintents-metadata.swift "$metadata/extract.actionsdata" \
+            SpikeWidgetIntent SpikeRefreshIntent BatteryWidgetIntent
       - name: Size report
         # The size table and the bundle hygiene counts go to the step summary and build/size.json.
         # The token is for the comparison with the latest release.

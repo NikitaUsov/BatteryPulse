@@ -487,6 +487,17 @@
         }
       }
     },
+    "Automatic": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически"
+          }
+        }
+      }
+    },
     "Available in the installed app. Build it with scripts/build-app.sh.": {
       "extractionState": "manual",
       "localizations": {
@@ -1778,6 +1789,17 @@
         }
       }
     },
+    "Clock time": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время на часах"
+          }
+        }
+      }
+    },
     "Close": {
       "extractionState": "manual",
       "localizations": {
@@ -2183,6 +2205,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ограничение тока согласованного контракта, равное MaxCurrent активного профиля."
+          }
+        }
+      }
+    },
+    "Custom": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настраиваемый"
           }
         }
       }
@@ -3866,6 +3899,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
+    "Layout": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Макет"
           }
         }
       }
@@ -7163,6 +7207,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Время, в течение которого зарядка ограничивалась из-за температуры."
+          }
+        }
+      }
+    },
+    "Time left": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшееся время"
           }
         }
       }
