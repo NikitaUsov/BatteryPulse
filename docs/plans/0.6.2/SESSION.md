@@ -69,8 +69,11 @@ read what it prints, look at the pictures, judge, and record. About 65 minutes h
    ```
 
    If `~/bp-062/repo` exists already, update it instead: `git -C ~/bp-062/repo checkout --detach
-   origin/claude/nice-faraday-k08mhb`. Then use `S="bash ~/bp-062/repo/docs/plans/0.6.2/m5-session.sh"` in your commands
-   (the script prints its own commands this way too). `$S help` lists every command.
+   origin/claude/nice-faraday-k08mhb`.
+
+   Below, `$S` stands for `bash ~/bp-062/repo/docs/plans/0.6.2/m5-session.sh`. Write it out in
+   full in every command, since a shell variable may not survive from one command to the next;
+   the script prints its own commands the same way. `$S help` lists every command.
 3. **Screen Recording first.** Run `screencapture -x /tmp/bp-check.png` and look at the picture.
    If it shows only the wallpaper and the menu bar, without windows, the app that runs you can't
    record the screen. Ask the maintainer to allow it in System Settings → Privacy & Security →
@@ -265,7 +268,7 @@ answer. If a variant failed every time, its error is in the section; `note` it.
    Low Power Mode runs and for putting Low Power Mode back). It refuses to start on the adapter or
    under 50 %.
 3. Tell him the timetable, with the times of day:
-   - 0:00-1:10, the A/B energy runs, with the display kept on;
+   - 0:00-1:10, the A/B energy runs, with the display kept on except in two 10-minute runs;
    - 1:10-3:00, the field run on SPIKE-A2;
    - **at 2:00, a sound and an alert ask him to plug the adapter in** (1 minute);
    - at 3:00 the script runs restore and `send`, and leaves the list of what to put back by hand
@@ -284,7 +287,11 @@ answer. If a variant failed every time, its error is in the section; `note` it.
    - the pslog section has lines for both phases.
    - If you `attach` or `note` anything more, run `$S send` again; it adds a commit to the same
      branch.
-3. Check the branch: `gh api repos/NikitaUsov/BatteryPulse/contents/docs/plans/0.6.2/sessions/A.md?ref=claude/062-session-a --jq .size`.
+3. Check that the file arrived:
+
+   ```
+   gh api "repos/NikitaUsov/BatteryPulse/contents/docs/plans/0.6.2/sessions/A.md?ref=claude/062-session-a" --jq .size
+   ```
 4. Go through restore's "PUT BACK" list with him, item by item, in Russian:
    - VoiceOver off;
    - Text size;
