@@ -64,21 +64,27 @@ struct DeveloperView: View {
             .toolbar {
                 // A switch between the dictionaries. It filters the table to one source rather
                 // than scrolling to it: a Table has no documented way to scroll to a section.
-                // A pop-up menu, not a segmented control: a MacBook reading has six or seven
-                // sources, and eight segments ("All" included) don't fit beside the title, the
-                // search field and the page's buttons at the main window's default width, least
-                // of all in Russian. A menu keeps every action in the toolbar visible, at any
-                // number of sources and in either language.
+                // A menu, not a segmented control: a MacBook reading has six or seven sources,
+                // and eight segments ("All" included) don't fit beside the title, the search
+                // field and the page's buttons at the main window's default width, least of all
+                // in Russian. A menu keeps every action in the toolbar visible, at any number of
+                // sources and in either language. A menu button rather than a pop-up picker: its
+                // label is the shown source, centred in its capsule, and the button takes that
+                // label's width, where a pop-up kept the first label's width and cut the others.
                 if groups.count > 1 {
                     ToolbarItem(placement: .principal) {
-                        Picker("Source", selection: $source) {
-                            Text("All").tag(RawSectionGroup?.none)
-                            ForEach(groups, id: \.self) { group in
-                                Self.title(of: group).tag(RawSectionGroup?.some(group))
+                        Menu {
+                            Picker("Source", selection: $source) {
+                                Text("All").tag(RawSectionGroup?.none)
+                                ForEach(groups, id: \.self) { group in
+                                    Self.title(of: group).tag(RawSectionGroup?.some(group))
+                                }
                             }
+                            .pickerStyle(.inline)
+                            .labelsHidden()
+                        } label: {
+                            shownGroup.map(Self.title(of:)) ?? Text("All")
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
                         .fixedSize()
                         .help("Show only the values from one source")
                     }
