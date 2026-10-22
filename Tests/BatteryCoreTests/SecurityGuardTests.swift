@@ -204,7 +204,7 @@ import Testing
     /// SEC-03: no request goes through the shared session.
     @Test func noSharedURLSession() {
         #expect(flags("let (data, response) = try await URLSession.shared.data(for: request)"))
-        #expect(flags("let session = URLSession .shared", path: "BatteryPulseApp/Updates/UpdateChecker.swift"))
+        #expect(flags("let session = URLSession .shared", path: Self.updateChecker))
         #expect(!flags("let (data, _) = try await UpdateNetwork.user.data(for: request)"))
         #expect(!flags("let session = URLSession(configuration: .ephemeral)", path: Self.updateChecker))
     }
