@@ -304,7 +304,8 @@ stays on controls; the glass bubbles come from standard segmented controls.
 
 Standard, Frosted, Translucent and Clear for the main and compact windows. Built without the
 planned spike on the M5 (the maintainer checks after release); the open points are in the check
-below.
+below. Since 0.6.1 Translucent and Clear are beta styles, offered only with Settings → Advanced →
+Beta window styles on.
 
 - [x] `WindowLook` and `WindowLookPolicy` in BatteryCore (the code avoids SwiftUI's
   `WindowStyle`): the background, group surface and sheet rules per style, Reduce Transparency
@@ -354,7 +355,8 @@ The release numbers go into the performance baseline at release.
 - [x] The two look bugs users reported: the Window Style and Icon Style tiles mark the choice
   with an accent outline instead of glass, and Clear dims more (0.65) so its white text stays
   readable over bright windows. While a Translucent or Clear window minimizes, its sheet is a
-  plain fill of its tint, so no black frame shows (to confirm on the M5)
+  plain fill of its tint: on the M5 that keeps Translucent from turning black, but Clear still
+  does (a known issue of the beta, for 0.6.2)
 - [x] Before 0.6.1's plan: the widget also refreshes when the estimate arrives after a plug change
   and when it moves; earbuds are named after the buds, not their case
 - [x] Size: a ULMO DMG, stripped binaries that export only `_main` (debug symbols ship as
@@ -397,10 +399,19 @@ The release numbers go into the performance baseline at release.
   `dlopen`, IOKit user clients, `Process` and `kill` may appear; `URLSession.shared`,
   `Task.detached` and `@unchecked Sendable` as they stand), `EnergyGuardTests` (tolerances,
   timers, activities, widget reloads) and two new motion rules (animations only from the
-  presets, no material in `Main/`)
-- [ ] The M5 session on the release candidate: the tile pickers, Clear in a bright window,
-  minimizing, the chart readout in every style, the widget, every page, relaunch, alerts and the
-  login item, and the update window with an install of the real 0.6.0
+  presets, no material in `Main/` but the chart readout's)
+- [x] The M5 session on the release candidate (2026-10-22): the tile pickers, Clear in a bright
+  window, minimizing, the chart readout in every style, the stripped widget, every page,
+  relaunch, alerts and the login item, and the update window with an install of the real 0.6.0
+  through the new installer all passed, except three findings fixed before release:
+  - Translucent and Clear still don't look right to the maintainer, so they became beta styles:
+    Settings → Advanced → Beta window styles adds them to the picker, marked Beta, and turns
+    itself on for a window that already used one;
+  - the chart readout without a material was unreadable on the glass sheets, so it is back on
+    0.6.0's material, the one material in `Main/`;
+  - Raw Data's source pop-up cut longer names off-centre; it is a menu button sized to its label.
+- [ ] Not measured in the session, for 0.6.2's: energy with power in the menu bar
+  (`scripts/rusage.swift` against the 0.6.0 baseline) and each window style's energy
 
 Decisions that last beyond 0.6.1:
 
@@ -427,7 +438,9 @@ Decisions that last beyond 0.6.1:
   format, the storage formats, the settings keys and the update contract don't change; a change
   waits for a version that announces it (device JSON dates, 0.7).
 - **Looks.** The tile pickers mark the choice with an accent outline; selection glass would
-  return only with a pixel test. Clear dims at 0.65 in both appearances.
+  return only with a pixel test. Clear dims at 0.65 in both appearances. Translucent and Clear
+  stay beta styles until the maintainer signs them off on the M5; the History chart readout keeps
+  its material, because a readout over a plot has to read on every style.
 
 #### Performance baseline (0.6.0 → 0.6.1)
 
@@ -466,8 +479,19 @@ both built with Xcode 27.1 on the CI runner; the published 0.6.0 DMG was 3,670,7
 | `@MainActor` in the app | 38 | 35 |
 | `Task.sleep` without a tolerance | 10 | 4 (one-shots) |
 
-Energy, the read path and launch on the MacBook Air M5 come from the release candidate's session
-and are added at release; what isn't measured there moves to the 0.6.2 session.
+| MacBook Air M5, release candidate (`scripts/perf-stats.swift` over the session's `perf` lines) | 0.6.1 |
+|---|---|
+| Full read, p50 / p95 | 6.3 ms / 8.8 ms |
+| Registry part of a read, p50 | 4.5 ms |
+| SMC: the two live keys on every poll / the other keys, at most once a minute | 0.48 ms (594 reads) / 2.1 ms (93 reads) |
+| Reads per burst of power notifications | about 1 |
+| Reads before the menu bar item is ready | 1 |
+| History load, p50: 24 hours / 7 days | 51.6 ms / 9.9 ms |
+| Page switch | 30–65 ms |
+| Update check | 269 ms |
+
+Energy and launch weren't measured in the session; they move to the 0.6.2 session, against the
+same baseline.
 
 ### Stage 1.7: 0.6.2 (next)
 
@@ -648,6 +672,7 @@ remove Open Anyway, keep permissions across updates and unlock iCloud.
 | 0.4.0   | 2026-10-15 | Update check frequency, Install and Relaunch with signed releases, the About window, menu bar content and drawn icon styles, charging shown within seconds from the SMC, Raw Data explanations for the pack, banks, cells and charger, and an iPhone/iPad command-line preview |
 | 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
 | 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
+| 0.6.1   | 2026-10-22 | Optimization and foundation: a 61 % smaller download, one read per power event, a minute's pace for the SMC's other keys, slower polls in Low Power Mode and none while the displays sleep, faster History and Raw Data, updates that are never offered unverified; Translucent and Clear become beta styles; accent-outline tile pickers |
 
 Next: **0.6.1** is an optimization and foundation release with no new features: readability,
 speed, energy, security and size, measured before and after (a signpost baseline and an

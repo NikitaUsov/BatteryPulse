@@ -2,14 +2,18 @@
 
 - **Smaller and lighter:** the download shrinks from 3.7 MB to 1.4 MB (−61 %), and the
   installed app takes 4.7 MB instead of about 11 MB. Each battery update macOS announces, such
-  as plugging in or unplugging, is now read once instead of twice. With battery power in the
-  menu bar, an hour of BatteryPulse takes TBD (M5) less energy, TBD (M5) less CPU time and
-  TBD (M5) fewer idle wake-ups.
+  as plugging in or unplugging, is now read once instead of twice, and the battery values that
+  only Raw Data shows are read at most once a minute. History builds its charts in the
+  background, so switching periods no longer holds up the window.
+- **Beta window styles:** Translucent and Clear are now in beta. Turn on **Beta window styles**
+  in Settings → Advanced to choose them in Settings → General, where they are marked Beta. If
+  your windows use one of them, 0.6.1 turns the setting on for you, so nothing changes. Clear
+  dims the desktop more, so its white text stays readable even over a bright window behind it,
+  and minimizing a Translucent window no longer turns it black on its way to the Dock. Known
+  issue: a Clear window still turns black while it minimizes and comes back.
 - **Tile pickers:** Window Style and Icon Style in Settings mark your choice with an accent
   outline. The flowing glass selection that 0.5 brought is gone, so the tiles show each style
   as it is.
-- **Clear** dims the desktop more, so its white text stays readable even over a bright window
-  behind it, and minimizing a Clear window no longer turns it black before it goes to the Dock.
 - **Widget:** it refreshes once the estimate arrives after you plug in or unplug, and again when
   the charge or the estimate moves, so its "Full at" or "Lasts until" time keeps up with the
   app's.
@@ -24,9 +28,9 @@
   when you're back.
 - **Fixes:** the power value in the menu bar no longer stops updating when the icon is turned off
   or Demo Mode ends; a Mac that reports 0 rated cycles no longer breaks the cycle gauge; Export
-  Capture tells you when it can't save the file; the "notifications are off" note updates when
-  you come back from System Settings; and Copy Report's tooltip is right on pages without a
-  report.
+  Capture tells you when it can't save the file; Raw Data's source menu shows the chosen source
+  in full; the "notifications are off" note updates when you come back from System Settings;
+  and Copy Report's tooltip is right on pages without a report.
 
 Updating from 0.6.0: **Install and Relaunch** in the update window installs 0.6.1 from inside
 the app.
