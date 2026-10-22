@@ -96,8 +96,12 @@ struct WidgetLayoutPlanTests {
         // Automatic medium has room for it after its three details.
         let automatic = try Self.layout(.medium, BatteryWidgetConfiguration(), s)
         #expect(automatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .temperature, nil])
+        // Heat comes first; the abnormal condition waits for the attention row rather than show
+        // as a row.
         s.thermalState = .critical
-        #expect(try Self.layout(.large, Self.custom(Self.everyField), s).details.last == .attention(.heat(.critical)))
+        let hot = try Self.layout(.large, Self.custom(Self.everyField), s)
+        #expect(hot.details.last == .attention(.heat(.critical)))
+        #expect(!hot.details.contains { $0.field == .condition })
     }
 
     /// Small has no detail slot: the attention row takes the time line's place, in Automatic too.
