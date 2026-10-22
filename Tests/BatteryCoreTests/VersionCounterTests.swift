@@ -45,6 +45,8 @@ import Testing
         #expect(!counts(lastCounted: AppVersion("0.7")), "0.7 is 0.7.0")
         #expect(counts(current: AppVersion(parts: [0, 7, 1]), lastCounted: v070))
         #expect(counts(current: AppVersion(parts: [1, 0, 0]), lastCounted: v070))
+        #expect(counts(lastCounted: AppVersion(parts: [0, 7, 1])), "back to an earlier version")
+        #expect(counts(lastCounted: AppVersion(parts: [0, 8, 0])), "after a local build numbered higher")
     }
 
     @Test func waitsADayAfterTheVersionFirstRan() {
