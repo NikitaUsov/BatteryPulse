@@ -4,11 +4,16 @@ Written 2026-10-22, the day 0.6.1 was released. It answers the maintainer's requ
 0.6.2, a plan for 0.7, and everything that is left until 1.0.0. English only; it names no
 third-party product. Working notes it cites that aren't in the repository are marked so.
 
+**Updated the same day with the maintainer's answers (2026-10-22).** No paid developer account
+(M-1); Xcode is already on the M5 (Q-B7); Clear's minimize fill is (b) (Q-B2); widgets in 0.7, no
+0.6.3 (Q-W1). Every other question was delegated ("do it by best practices, as you see fit") and
+is decided as its recommendation. Only M-5, what 1.0 means, awaits the maintainer (§5.3, §6).
+
 **Sources and how they are cited**
 
 | Short | Source |
 |---|---|
-| R:n | `docs/ROADMAP.md`, line n |
+| R:n | `docs/ROADMAP.md` as v0.6.1 shipped it (unchanged at `eebf748`), line n |
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus `docs/plans/0.6.2/PLAN.md`, so these lines are v0.6.1's |
@@ -19,16 +24,16 @@ third-party product. Working notes it cites that aren't in the repository are ma
 | CLR, PKG, ICL | checked research on charge limiting (CLR, so it isn't confused with the 0.7 plan's CL for `CLAUDE.md`), package managers (PKG) and iCloud (ICL); working notes, not in the repository |
 | NOTES27 | the macOS 27 release notes, saved at https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes |
 
-Apple URLs below were fetched on 2026-10-22 unless marked. GitHub numbers come from `gh api` on
-2026-10-22.
+Apple URLs below were fetched on 2026-10-22 unless marked. GitHub numbers, including download
+and traffic counts, come from `gh api` (GitHub's REST API) on 2026-10-22.
 
 **Marks:** [unverified] means nobody has checked it; [uncertain] means the evidence is partial or
 conflicting; [estimate] is a planning number, not a measurement; [assumed] is a date or fact
 taken from Apple's usual pattern, not from a source.
 
-**IDs:** inventory rows keep their IDs. Items this roadmap adds are `NEW-01` to `NEW-22` (§5.2).
-Maintainer decisions are `M-1` to `M-14` (§6; M-6 is informational, an engineering decision).
-1.0's criteria are `C1` to `C17` (§2).
+**IDs:** inventory rows keep their IDs. Items this roadmap adds are `NEW-01` to `NEW-23` (§5.2).
+Maintainer decisions are `M-1` to `M-14` (§6; M-6 is informational, an engineering decision); all
+are decided as of 2026-10-22 except M-5. 1.0's criteria are `C1` to `C17` (§2).
 
 Contents:
 1. Where we are
@@ -63,18 +68,29 @@ Contents:
 - **Size and speed at 0.6.1:**
   - DMG 1,439,093 B; installed app 4,608 KB; app binary 2,856,976 B (R:452-455).
   - A full read takes 6.3 ms at p50 and 8.8 ms at p95; page switches take 30-65 ms (R:482-491).
-- **Users:** the repository was created on 2026-10-14. It has 0 stars, 0 forks and 0 watchers,
-  and each release's DMG was downloaded 1-4 times (`gh api`, 2026-10-22). In practice the
-  maintainer is the only user so far (D).
-- **What is open:** 130 items, 22 maintainer questions and 62 rejected ideas (INV Summary).
+- **Users:** the repository was created on 2026-10-14. The usage evidence (`gh api`,
+  2026-10-22):
+  - **DMG downloads:** 14 across all releases. 0.2.0: 1, 0.3.0: 2, 0.3.1: 4, 0.4.0: 1, 0.5.0: 2,
+    0.6.0: 3, 0.6.1: 1, and that one was a signature check during the release.
+  - **Signature (`.sig`) downloads:** 5. Each in-app install fetches the `.sig`, so this count is
+    a privacy-free proxy for in-app updates.
+  - **Repository traffic:** 2 page views by 1 visitor in 14 days.
+  - **Community:** 0 stars, 0 forks and 0 watchers, and no issue from anyone else.
+
+  So the users are, in practice, the maintainer alone (D). The app counts nothing and sends
+  nothing (C14 item 8); from 0.6.2 on, each release's download counts are recorded a week after
+  publishing (§1.2 item 6, NEW-23).
+- **What is open:** 130 items, 22 maintainer questions and 62 rejected ideas (INV Summary). The
+  questions, and M-1 to M-14, are decided as of 2026-10-22, except M-5 (§5.3, §6).
   - 54 of the items need the MacBook Air M5, 44 of them in 0.6.2.
-  - 12 depend on the paid developer account.
-  - 11 need Xcode on the Mac.
+  - 12 depend on the paid developer account, which the maintainer declined (M-1).
+  - 11 need Xcode on the Mac, which is installed on the M5 (Q-B7).
 - **What is next (already planned):**
   - 0.6.2: maintenance and foundation (P2).
   - 0.7: widget customization and the device JSON dates (R:543-556; P2 §8, §9).
-- **What is not planned:** an iOS app, charge limiting, and Developer ID signing while there is no
-  paid account (R:704-706).
+- **What is not planned:** an iOS app, charge limiting (R:704-706), and Developer ID signing and
+  notarization: on 2026-10-22 the maintainer decided against the paid account, not now and not
+  before 1.0 (M-1).
 
 ### 1.2 The practices 0.6.1 established (they hold to 1.0 and after)
 
@@ -105,13 +121,18 @@ Contents:
    - After publishing comes a check: About shows the new version; History, settings and the login
      item are kept; the widget is current. If anything fails, the release becomes a pre-release
      (`--prerelease`) (P2 D1-D3).
+   - A week after publishing, the release's DMG and `.sig` download counts are read from the
+     releases API and recorded in ROADMAP's Releases table (NEW-23, from 0.6.2's D3 on). That is
+     the only usage measure: the app has no telemetry (C14 item 8).
 7. **Sessions.**
    - Scripted; "y = looks right"; comparisons as numbered choices; recordings and screenshots as
      evidence.
    - The script, not the maintainer, reads the logs (P2 §3, "Session wording").
 8. **Division of labour.** The maintainer decides only what he sees or does: look, behaviour,
    settings, the sessions and the release. Technical choices are delegated (P1 §8,
-   "Architecture: delegated").
+   "Architecture: delegated"). On 2026-10-22 he also delegated every open roadmap question but
+   M-5 ("do it by best practices, as you see fit"); the looks themselves are still his to sign
+   off in the sittings.
 9. **Facts are recorded.** Each plan keeps an Appendix C of facts. At release, its design moves
    forward and the plan folder is removed (P2 D3).
 10. **Updates are never offered unverified.**
@@ -162,8 +183,13 @@ that exists.
 - **C3 No known issue in anything on by default.**
   - The guide's known issues may list only beta styles, Developer options, and what C7 allows: a
     permission or a placed widget that must be set up again after an update, with the steps to do
-    it. Without the paid account that loss may have no fix (INV DIS-06), so C3 doesn't block 1.0
-    on it.
+    it. The maintainer declined the paid account (M-1, 2026-10-22), so that loss may have no fix
+    (INV DIS-06), and C3 doesn't block 1.0 on it.
+  - Two consequences of the ad-hoc signature are documented known limitations at 1.0, in the
+    guide and in 1.0's notes, and nothing waits for a signed build:
+    - Open Anyway on every install from the DMG (C16);
+    - a permission or placed widget that may need setting up again after the DMG replaces the app
+      (C7).
   - A feature not yet seen on the M5 is a known limitation (C2), not a known issue.
   - Today it lists Clear's black minimize frame (UG:162-163), which 0.6.2 fixes, and widgets lost
     on a DMG replacement (UG:425-426), which 0.6.2 and 0.7 re-test (DIS-06).
@@ -212,6 +238,10 @@ that exists.
   - the login item, notification permission and placed widgets, or the guide says which one must
     be set up again (R:180-181, R:202-208; UG:493-495).
 
+  The DMG leg meets Open Anyway, and a grant or widget it loses is recorded as the known
+  limitation C3 allows, with the steps to set it up again: with an ad-hoc signature through 1.x
+  (M-1), no leg waits for a signed build.
+
   If 0.4.0 or 0.5.0 fails, the notes say "from 0.4 or 0.5, download the DMG once" (D, Q).
 
   C7 runs on the maintainer's only Mac, over his real data, so every leg is backed up and restored
@@ -242,9 +272,10 @@ that exists.
     descriptor (R:573).
   - **Keyboard:** the sidebar, toolbar, tile pickers, Raw Data and the update window can be used
     without a pointer.
-  - **Contrast:** with Xcode on the M5 (M-12), Accessibility Inspector finds no failures in
-    Standard and Frosted, light and dark, and with Increase Contrast. Without Xcode the audit is
-    listed as a known limitation. Beta styles are exempt and marked.
+  - **Contrast:** Xcode is on the M5 (Q-B7), so the maintainer runs Accessibility Inspector from
+    Claude's step-by-step list in 0.8's release-candidate sitting. It finds no failures in
+    Standard and Frosted, light and dark, and with Increase Contrast. Beta styles are exempt and
+    marked.
   - **Stage 1.4's checks pass** (R:298-301).
 - **C11 Russian.**
   - The maintainer signs off a scripted screenshot set of every screen, alert, notification and
@@ -272,9 +303,8 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 2. **Storage** under Application Support: `History/` and `Devices/`.
    - Files only gain fields, and readers ignore unknown ones.
    - The widget feed, if it ships, is an internal file between an app and a widget of the same
-     version. Its location may move (for example into an App Group container after a switch to
-     Developer ID) in a minor release with a line in the notes, and its schema only gains
-     fields.
+     version. Its location may move in a minor release with a line in the notes, and its schema
+     only gains fields.
    - A newer `devices.json` makes the store read-only, never lossy (DeviceStore.swift:90-95).
 3. **The capture format** (`--raw` and Export Capture), which test fixtures and bug reports use.
 4. **`bpulse` machine outputs:**
@@ -321,15 +351,16 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 
 - **C15 Releases and keys.**
   - Releases stay a DMG, its `.sig` and the dSYMs on GitHub Releases, with in-app updates.
-  - `ReleaseSigning.publicKeys` lists two keys, today's and an offline backup (M-9 yes), or ROADMAP
-    records M-9's no as an accepted risk. Today it lists one (ReleaseSigning.swift:15-17).
+  - `ReleaseSigning.publicKeys` lists two keys, today's and an offline backup (M-9: yes, decided
+    by delegation). If the maintainer never generates the backup, ROADMAP records that as an
+    accepted risk. Today it lists one (ReleaseSigning.swift:15-17).
   - The `release` environment's required reviewer is confirmed (release.yml:6-9).
-- **C16 First install.**
-  - **With the paid account (M-1):** `release.yml` notarizes and staples the app and the DMG and
-    runs `syspolicy_check distribution`. On a fresh macOS user account the downloaded app opens
-    without Open Anyway (PKG B25).
-  - **Without it:** README and the guide show Done → Privacy & Security → Open Anyway with
-    screenshots re-taken on the current macOS 27.x (RM:22-25, UG:33-43).
+- **C16 First install, ad-hoc (M-1: no paid account, 2026-10-22).**
+  - README and the guide show Done → Privacy & Security → Open Anyway with screenshots re-taken
+    on the current macOS 27.x (RM:22-25, UG:33-43).
+  - The guide's Known limitations and 1.0's notes say that every install from the DMG meets Open
+    Anyway, and that in-app updates don't (R:161-201).
+  - A notarized first launch (PKG B25) is not planned (§4.2).
 - **C17 The documentation matches the product.**
   - **README:** no iOS promises (the badge RM:5, RM:14-15, and the iOS column and footnote of
     "What each platform exposes", RM:192-206), no "Status: early development" (RM:14),
@@ -353,7 +384,7 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 None of these blocks 1.0:
 - the History and iPhone & iPad widgets;
 - the extra-large Battery widget, if the look check leaves it out (Q-W10);
-- Developer ID signing (M-1 decides; C16 has both branches);
+- Developer ID signing and notarization (not planned: M-1 is no; C16 is the ad-hoc path);
 - graduating Translucent or Clear;
 - fixtures from other Macs;
 - an iPad capture;
@@ -368,30 +399,32 @@ Each is placed in §4 or §5.
 
 | Version | Theme | Headline | Maintainer M5 time | Runs |
 |---|---|---|---|---|
-| **0.6.2** | Foundation II (P2, unchanged) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds | Session A about 55 min, then 3 h unattended; Session B about 75 min, plus about 70 min unattended (P2 §6) | 29-33, plus 3 in reserve (P2 §7.2) |
+| **0.6.2** | Foundation II (P2, unchanged) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds | Session A about 55 min, then 3 h unattended; Session B about 75 min, plus about 70 min unattended (P2 §6). Xcode is installed (Q-B7), so add about 10 min of `xctrace` page switches to each session, about 15 min for Session B's contrast audit, and about 60 min for WP-18's maintainer-run items, in a sitting of their own [estimate] | 29-33, plus 3 in reserve (P2 §7.2) |
 | **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates | The look check (about 15 min at the desk, no M5, plus a 3-min second look), Session R (about 80 min), a logged day and its 10-min end, the after-publishing check (about 10 min); plus a 35-min spike sitting if 0.6.2's W0 never ran (plan-0.7.0 §6, §2.3) | 26-29 plus 3 in reserve; never-cut 21-24; stretch +8-9 [estimate, plan-0.7.0 §7.2] |
-| **0.8** | Answers in the app | Why it isn't charging, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 75 min [estimate] | 30-38 [estimate] |
-| **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, Developer ID if G-ID passed (only here, §3.4), `bpulse` in the app | About 60 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 10-14, plus whatever 0.8's cut line moves [estimate] |
+| **0.8** | Answers in the app | Why it isn't charging, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 90 min, the contrast audit included [estimate] | 29-36 [estimate] |
+| **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, the ad-hoc first install documented (C16; no Developer ID, §3.4), `bpulse` in the app | About 50 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 8-11, plus whatever 0.8's cut line moves [estimate] |
 | **0.9.x** | Release candidates (fixes only) | Soak, energy budgets, the upgrade matrix | About 40 min, plus 70 min unattended and a passive 7-day soak [estimate] | 1-3 each |
 | **1.0.0** | The promise | The last 0.9.x, renamed | The after-publishing check, about 10 min | 1-2 |
 
-**Totals [estimate]:**
-- about 9-11 hours of hands-on time, plus one evening for S-ID and about 30 minutes for G-ID's
-  secrets if M-1 is yes, the 5-minute NEW-22 check after each macOS 27.x update, unattended
-  windows and a passive soak week. The parts: 0.6.2's sessions and check (about 140 min), 0.7's
-  sittings (about 120 min, plus 35 if W-0S runs), 0.8's (about 125), 0.9.0's (about 70-130), the
-  0.9.x sittings (about 50 each) and 1.0's check (about 10);
-- about 105-130 implementation and review runs, plus 8-9 if 0.7's stretch runs.
+**Totals [estimate]** (recomputed on 2026-10-22 for the maintainer's answers):
+- about 11-13 hours of hands-on time, plus the 5-minute NEW-22 check after each macOS 27.x
+  update, unattended windows and a passive soak week. The parts: 0.6.2's sessions, Xcode items
+  and check (about 235 min: 140 as P2 plans them, plus about 95 now that Xcode is installed),
+  0.7's sittings (about 120 min, plus 35 if W-0S runs), 0.8's (about 140), 0.9.0's (about
+  60-120), the 0.9.x sittings (about 50 each, two assumed) and 1.0's check (about 10). The
+  Developer ID evening (S-ID) and the 30 minutes of secrets (G-ID) are gone with M-1's no;
+- about 100-125 implementation and review runs, plus 8-9 if 0.7's stretch runs.
 
 **Calendar [estimate].** It assumes about one maintainer sitting a week, and **these dates are not
-gates**:
+gates**. WP-18's Xcode sitting floats (P2 §5), so 0.6.2's date holds; 0.9.0 is about a week
+earlier without the Developer ID work:
 
 | Release | Estimated date |
 |---|---|
 | 0.6.2 | mid-November 2026 |
 | 0.7 | mid-December 2026 |
 | 0.8 | late January 2027 |
-| 0.9.0 | late February 2027 |
+| 0.9.0 | mid-February 2027 |
 | 1.0.0 | March 2027 |
 | 1.1 (macOS 28) | about two weeks after macOS 28 ships, likely September 2027 [assumed] |
 
@@ -408,10 +441,14 @@ checked against a macOS beta that keeps changing (D).
 
 ### 3.1 0.6.2: Foundation II (as P2 plans it; this roadmap changes only where some cut items go)
 
-This roadmap changes nothing in 0.6.2's scope. It changes only where some cut items go: FEA-25 and
-SEC-01 go after 1.0, and TCI-05 to TCI-07 and PLT-03 become not planned without Xcode, instead of
-P2 §7.2's "a cut item moves to 0.7". The rest of a cut follows plan-0.7.0's C-1: Linux-only items
-ride 0.7's engineering lane, and items that need the M5 join Session R's optional steps.
+This roadmap changes nothing in 0.6.2's scope. The maintainer's answers of 2026-10-22 pick P2's
+own branches: Clear's fill (b) (Q-B2, so FEA-24 is not built), no Low Power Mode fallback (Q-B10,
+so FEA-23 is not built), no Enhanced Security spike (Q-B8), and Xcode on the M5 (Q-B7, so WP-18
+and the contrast audit run, maintainer-run with Claude's step-by-step list). The roadmap changes
+only where some cut items go: FEA-25 goes after 1.0, and SEC-01 is not planned (Q-B8 and M-1 are
+no), instead of P2 §7.2's "a cut item moves to 0.7". A cut WP-18 moves to 0.7 as P2 says, still
+maintainer-run. The rest of a cut follows plan-0.7.0's C-1: Linux-only items ride 0.7's
+engineering lane, and items that need the M5 join Session R's optional steps.
 
 - **Theme:** the second maintenance and foundation release, with no new features (P2 §1). It
   carries 0.6.1's deferred backlog, fixes the beta styles' last known bug, runs the energy
@@ -421,15 +458,15 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   | Package | Inventory rows |
   |---|---|
   | WP-10, first | PLT-01 |
-  | WP-13 | QUA-01, QUA-02, QUA-03, FEA-22 (gated), FEA-23 (gated), FEA-24 (only on Q-B2), FEA-25 (optional), L10N-02 |
+  | WP-13 | QUA-01 (fill (b), Q-B2), QUA-02, QUA-03, FEA-22 (gated), FEA-25 (optional), L10N-02; not built: FEA-23 (Q-B10), FEA-24 (Q-B2) |
   | WP-14a | ENG-08 |
   | WP-14b | ENG-09, ENG-10 (both gated) |
   | WP-15 | SIZ-01, SIZ-02 (gated), SIZ-03, SIZ-04 |
   | WP-16 | PLT-02, SEC-04 (gated), QUA-12, DIS-07 (conditional) |
   | WP-17 | ENG-11, ENG-12 |
-  | WP-18 (maintainer-run with Xcode, or moved to 0.7) | TCI-05, TCI-06, TCI-07, PLT-03 |
+  | WP-18 (maintainer-run with Claude's step-by-step list; Xcode is installed, Q-B7) | TCI-05, TCI-06, TCI-07, PLT-03 |
   | WP-19 | SEC-05, QUA-13, TCI-02, TCI-03, TCI-04 |
-  | WP-20 (optional) | SEC-01, SEC-02 |
+  | WP-20 (optional) | SEC-02; SEC-01 not run (Q-B8) |
   | WP-W0 | FEA-01 to FEA-05, A11Y-05, L10N-03 |
   | WP-21 | ENG-01 to ENG-06, ENG-13, TCI-01 |
   | WP-22 | DOC-01, DOC-02, DOC-03 |
@@ -439,7 +476,8 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   - Intake A0: DIS-04.
   - Session A: QUA-09 (if an iPhone is at hand) and QUA-10.
   - Session B and after publishing: L10N-01, DIS-05, DIS-06.
-  - Optional checks: QUA-04, QUA-05, QUA-11, A11Y-02, A11Y-04, and A11Y-03 with Xcode.
+  - Optional checks: QUA-04, QUA-05, QUA-11, A11Y-02, A11Y-04.
+  - Session B's contrast audit with Accessibility Inspector: A11Y-03 (Xcode is installed).
   - ENG-18 and TCI-09 are settled as they fall out of the runs.
 - **Exit criteria:** P2's own.
   - Every gate of P2 §7.1 is measured or takes its default.
@@ -447,11 +485,12 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   - D1's golden, storage and settings diffs are empty except §7.3's intended changes.
   - Session B's F12 passes, or G-16 reverts to `hdiutil`.
   - The notes are as P2 D1 lists them, and D3's after-publishing check passes.
-- **M5 sessions:** A, B, the optional steps and the after-publishing check (P2 §6, D3).
+- **M5 sessions:** A, B, the optional steps, WP-18's Xcode sitting and the after-publishing check
+  (P2 §6, D3).
 - **Size:** 29-33 runs, plus 3 for fixing forward; the never-cut set is 22-26 (P2 §7.2).
 - **What the roadmap asks alongside 0.6.2 (answers and optional steps; no change in scope):**
-  1. **Answer M-1 (the paid account) before 0.7 starts.** Enrollment checks your identity and
-     takes time [unverified: how long] (D; https://developer.apple.com/programs/enroll/).
+  1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
+     0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
   2. **Run the optional Charge Limit capture (QUA-05)** with the session script's `charge-limit`
      step (0.6.2's script, or 0.7's W-12). The script asks for the limit set in System Settings →
      Battery [exact menu path unverified on macOS 27] and checks that the charge is at least 5
@@ -462,11 +501,18 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
      an earlier recording) and beeps when charging stops at the limit. Keep the adapter in and the
      lid open: about 2 minutes of setup, then unattended. 0.8's NEW-01 wants it; without it, the
      Charge Limit cause doesn't ship (§3.3). If 0.6.2 misses it, 0.7's Session R offers it (V).
-  3. **Q-B8: no** (P2's default). Enhanced Security on an ad-hoc signature is unverified, and if
-     AMFI refused the new version after the swap, users would be left with an app that doesn't
-     launch (RES-security SEC-08 row; D). It is retried on a Developer ID build after 1.0 (§4.1).
-  4. **Q-B7: install Xcode on the M5 if you can.** 11 inventory rows need it, and C10's contrast
-     audit uses Accessibility Inspector (INV Summary).
+  3. **Q-B8: no** (P2's default; decided by delegation, 2026-10-22). Enhanced Security on an
+     ad-hoc signature is unverified, and if AMFI refused the new version after the swap, users
+     would be left with an app that doesn't launch (RES-security SEC-08 row; D). It was to be
+     retried on a Developer ID build, which M-1's no rules out, so it is not planned (§4.2).
+  4. **Q-B7: Xcode is already installed on the M5** (2026-10-22). The 11 inventory rows that need
+     it are no longer blocked (INV Summary). In 0.6.2 that means:
+     - WP-18 runs, maintainer-run from Claude's step-by-step list: the previews spike (SUI-17),
+       the SwiftUI Specialist checklist (SUI-18), type-check timing (SUI-19) and the Icon
+       Composer icon (SZ-10). The icon ships only on your y to its screenshots in the four icon
+       styles (P2 WP-18's acceptance; decided by delegation).
+     - Sessions A and B add their `xctrace` page switches (about 10 minutes each), and Session B
+       the contrast audit with Accessibility Inspector (A11Y-03). C10 repeats the audit in 0.8.
   5. **Branches (settled, an engineering call):** `claude/baseline-0.6.0` stays until 0.6.2's D3;
      the 0.6.1 integration history stays reachable as `refs/pull/11/head`, which GitHub keeps.
   6. **A step of 0.6.2's D3:** `main` gets only squash merges, so `docs/plans/` never enters its

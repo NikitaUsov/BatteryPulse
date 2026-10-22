@@ -335,20 +335,22 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
      A `MotionGuardTests` case or a review check confirms that the selection changes only the
      outline.
   3. **Graduation evidence** (no code unless the maintainer asks for a change). Session B step 3's
-     scripted shots (§6) cover the look items below; the contrast audit and Clear's shadows in
-     Instruments need Xcode (Q-B7), and the energy comes from S4w:
+     scripted shots (§6) cover the look items below. The contrast audit (step 3) and Clear's
+     shadows in Instruments (step 5) use Xcode, which is installed on the M5 (Q-B7), and the
+     energy comes from S4w:
      - The contrast audit with Accessibility Inspector (it ships with Xcode); full screen; the
        graphite tint on the sidebar selection.
      - The inspector and the Demo Mode bar on the sheet; the scroll edge under the title; Form
        section fills and table stripes.
      - Clear's dark appearance staying in its window (Settings stays light).
      - Frosted next to the widget gallery.
-     - Clear's shadows in the Instruments energy run, if Xcode is there (Q-B7).
+     - Clear's shadows in an Instruments recording of the profiling RC (Session B step 5).
      - Each style's energy (S4w, WP-21).
 
      What Session B doesn't reach stays open in Stage 1.5.
-  4. **Stage 1.5 leftovers**, each only if the maintainer wants it (Q-B4): thicker chart lines and
-     wider area fills on the sheet; the content treatment on the Raw Data table.
+  4. **Stage 1.5 leftovers: not in 0.6.2** (Q-B4, decided by delegation): thicker chart lines and
+     wider area fills on the sheet; the content treatment on the Raw Data table. A Session B shot
+     answered n for either keeps that style beta, and the item moves to 0.7 with it.
   5. **Graduation mechanics**, only on the maintainer's answer (Session B, per style):
      - `isBeta` turns false for that style and its Beta mark goes.
      - The strings change as §3 says, and the toggle hides itself once no beta style is left
@@ -356,10 +358,9 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
      - `WindowLookTests.swift:38`'s `isBeta == usesGlassSheet` expectation changes with it.
      - `betaWindowStyles` stays a frozen key, and a user with the toggle off keeps their stored
        choice.
-     - **Low Power Mode decision (G-13c):** S4w compares each style with Standard. If Translucent
-       or Clear costs 15 % or more and the maintainer agrees (Q-B10), it gives way to Standard under
-       Low Power Mode through `WindowLookPolicy`, Linux-tested like the Reduce Transparency rule.
-       Otherwise ROADMAP's decision line becomes "none needed (measured in 0.6.2)".
+     - **Low Power Mode (G-13c): no fallback** (Q-B10, decided by delegation, 2026-10-22). S4w
+       still compares each style with Standard, and ROADMAP's decision line becomes "none (Q-B10),
+       measured in 0.6.2", with the numbers.
 - **Files:** `BatteryCore/WindowLook.swift`, `App/WindowLook.swift`, `WindowLookTests`,
   `Settings/PreviewTilePicker.swift` and `Settings/WindowLookSettings.swift` (V1b),
   `Settings/AdvancedSettings.swift`, `Updates/UpdateViews.swift`, `App/Localized.swift`,
@@ -371,8 +372,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
     main and compact window), each recorded.
   - Standard and Frosted are compared with a Notes window minimized the same way: anything also
     seen there is the system's, not WP-13's.
-  - The maintainer's plain answers on the fill and on each style (§6).
-- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode). **Effort:** S-M, 2-3
+  - The maintainer's plain answers on each style (§6); the fill itself is decided (Q-B2).
+- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none). **Effort:** S-M, 2-3
   runs. **Risk:** low.
 
 ### WP-14a: Full reads off the main actor (E20) (P1)
@@ -421,7 +422,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Linux tests; the golden `bpulse` diff empty; the macOS job.
   - Session A: SPIKE-A2 runs about two hours on the M5 with the `perf` stream on. No executor trap,
     no crash report, and the `read` lines come off the main thread (the `perf` line's thread, or
-    the Swift executors track if Xcode and SPIKE-A2's profiling DMG are there).
+    the Swift executors track in an `xctrace` recording of SPIKE-A2's profiling DMG; Xcode is
+    installed, Q-B7).
   - Session B repeats V-01 on the RC.
 - **Gate:** G-14a. **Effort:** M, 2 runs. **Risk:** medium (concurrency in Darwin-only code, which
   only CI compiles).
@@ -432,7 +434,7 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   1.7.
 - **When:** round B1, after Session A has checked the premise. If Session A hasn't run 14 days
   after A2′, B1 starts on the defaults: E4b with the 60-second safety net (G-14b), WP-13 with fill
-  (b) (G-13a), and E3b keeps both keys (G-14c).
+  (b) on Clear only (Q-B2, G-13a), and E3b keeps both keys (G-14c).
 - **Items:**
   1. **E4b's premise (F13), checked first.** powerd posts the public "any" key whenever the
      registry has new data. Session A's ioreg sampler and `pmset -g pslog` test it: every
@@ -670,14 +672,14 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - **Always:** `page.switch` from the `perf` stream, which needs no Xcode. The script names each
     page, the maintainer clicks it, 10 times each (Session A step 8 on SPIKE-A2: before; Session B
     step 5 on the RC: after).
-  - **Only with Xcode (Q-B7):** the same switches again under Instruments' SwiftUI template through
-    `xctrace`. It attaches to the process, which needs a profiling build with `get-task-allow`
-    (`build-app.sh:204-219`): SPIKE-A2's and the RC's profiling DMGs (§5 A2′, D1).
+  - **With Xcode (installed on the M5, Q-B7):** the same switches again under Instruments' SwiftUI
+    template through `xctrace`. It attaches to the process, which needs a profiling build with
+    `get-task-allow` (`build-app.sh:204-219`): SPIKE-A2's and the RC's profiling DMGs (§5 A2′, D1).
     - The script runs `xcrun xctrace record --template SwiftUI --attach BatteryPulse --time-limit
       90s --output <path>` after `xcrun xctrace list templates`, because template names in
       Instruments 27 are unconfirmed.
     - It skips with a note if `xcrun -f xctrace` fails.
-  - Without the instrument, the package does only SUI-11's readability change and the History
+  - If the instrument fails, the package does only SUI-11's readability change and the History
     bench.
 - **Files:** `Main/{OverviewView, HealthView, PowerView, DeveloperView}.swift`, `Main/History/*`,
   `BatteryCore/{HistoryChartData, HistoryStore}.swift`, `Tests/BatteryCoreTests/Benchmarks.swift`.
@@ -686,9 +688,9 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   instrument.
 - **Gate:** G-17 (§7.1). **Effort:** M, 2 runs. **Risk:** low.
 
-### WP-18: Work that needs Xcode on the Mac (P2, maintainer-run or skipped)
+### WP-18: Work that needs Xcode on the Mac (P2, maintainer-run)
 
-- **Source:** PLAN §6 (SUI-17, SUI-18, SUI-19, SZ-10; G21).
+- **Source:** PLAN §6 (SUI-17, SUI-18, SUI-19, SZ-10; G21); Q-B7 (Xcode is installed on the M5).
 - **Items:**
   - **SUI-17:** a 30-minute previews spike. Do previews work in a SwiftPM executable target in
     Xcode 27?
@@ -696,11 +698,14 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
     committed.
   - **SUI-19:** type-check timing of the slowest bodies.
   - **SZ-10:** the Icon Composer icon through `actool`. It changes how the app icon looks in every
-    icon style, so it needs the maintainer's sign-off (Q-B7).
-- **Who:** these need Xcode on the Mac, which cloud sessions don't have. The maintainer runs the
-  commands the package prepares, or the package moves to 0.7.
+    icon style. Decided by delegation (Q-B7): it is prepared and shown in the four icon styles,
+    and ships only on the maintainer's y to those screenshots; otherwise it waits for 0.7.
+- **Who:** these need Xcode, which is installed on the M5 (Q-B7, 2026-10-22) and which cloud
+  sessions don't have. For each item the package prepares a step-by-step list: the commands to
+  paste, what to look at, and what to post back on the PR. The maintainer runs it whenever Xcode
+  is open; nothing waits for it.
 - **Files:** nothing committed, except SZ-10's icon source and an `actool` line in `build-app.sh`,
-  only if Q-B7 approves the icon.
+  only on the maintainer's y to the icon's screenshots.
 - **Acceptance:** one Appendix C line per item: previews work, y or n (SUI-17); the type-check ms
   of the 5 slowest bodies (SUI-19); the icon's screenshots in the four icon styles with the
   maintainer's y (SZ-10). SUI-18 leaves only the review checklist.
@@ -736,7 +741,10 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 
 ### WP-20: Optional security spikes (P3)
 
-- **SEC-08:** the Enhanced Security entitlements on a throwaway build, widget first.
+- **SEC-08: not run in 0.6.2** (Q-B8, decided by delegation: no). Enhanced Security stays after
+  1.0, and is not planned without Developer ID signing and notarization, which need the paid
+  account the maintainer declined (M-1, 2026-10-22). The spike's analysis, kept as background: the
+  Enhanced Security entitlements on a throwaway build, widget first.
   - Its gate, an in-app update from the published 0.6.1 to a candidate that launches, is possible
     now.
   - On the M5, only memory tagging (checked allocations, soft mode first) and the dyld read-only
@@ -744,16 +752,20 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Platform restrictions need an arm64e slice (a separate `--triple arm64e-apple-macosx27.0`
     experiment).
   - Checked pointer arithmetic (arm64e.x1) needs M6 or later.
-  - It ships only if AMFI accepts the entitlements on an ad-hoc signature, the app and widget
-    launch, and V-01 and F8 pass on the build. Q-B8 decides only whether it gets a session step.
+  - It would ship only if AMFI accepted the entitlements on an ad-hoc signature, the app and widget
+    launched, and V-01 and F8 passed on the build.
 - **SEC-18 (research only):** a self-signed code identity for a stable designated requirement
-  across updates (login item and notification grants).
+  across updates (login item and notification grants). Without the paid account (M-1: no), it is
+  the one route left to grants that survive a DMG replacement; until then, a lost grant is a
+  documented known limitation.
   - A note for 0.7: it does **not** unlock an App Group. That needs an Apple-issued Team ID in the
     signature or a provisioning profile, and a self-signed identity has neither.
-- **Files:** first on a throwaway branch: a new `Resources/BatteryPulse.entitlements` (the app is
-  signed without one today, `build-app.sh:218`) and `build-app.sh`'s posture check.
-- **Acceptance:** one Appendix C row per SEC item.
-- **When:** any free slot after B1. **Effort:** S each. **Default:** not run.
+- **Files:** SEC-08's, not used: a new `Resources/BatteryPulse.entitlements` on a throwaway branch
+  (the app is signed without one today, `build-app.sh:218`) and `build-app.sh`'s posture check.
+  SEC-18 commits nothing.
+- **Acceptance:** SEC-18's Appendix C row.
+- **When:** SEC-18 in any free slot after B1. **Effort:** S. **Default:** SEC-18 not run; SEC-08
+  not run (Q-B8).
 
 ### WP-W0: Widget customization spikes (P1 for 0.7's sake; no shipped code)
 
@@ -912,13 +924,12 @@ As PLAN §3.5.
     (as PLAN §7 item 2 did):
     - Clear minimizes without a black frame;
     - each style that graduates, or that both stay beta;
-    - the Low Power Mode fallback, if G-13c adds one;
     - Check Now no longer fails while an automatic check runs, if E10 lands;
     - Open at login survives updates, if WP-16 item 5 runs;
     - the energy line with the S1 and S2 numbers (WP-21);
     - "Updating from 0.6.1: Install and Relaunch."
-  - dispatches the RC as 0.5.99 for F12 and, only if Q-B7 is yes, a profiling RC built the way
-    SPIKE-A2's is (§5 A2′); finalizes the session script.
+  - dispatches the RC as 0.5.99 for F12 and a profiling RC built the way SPIKE-A2's is (§5 A2′;
+    Xcode is installed, Q-B7); finalizes the session script.
 - **D2** is Session B.
 - **D3:**
   - applies the answers or the defaults and records the numbers;
@@ -934,10 +945,16 @@ As PLAN §3.5.
     `gh release edit v0.6.2 --prerelease`), plus V-01's post-update half (the widget reloaded
     after the update);
   - in everyday use on the first day, compares the widget's charge and "Lasts until" with the
-    popover's (within 2 points and about 15 minutes, `994c09d`).
+    popover's (within 2 points and about 15 minutes, `994c09d`);
+  - **a week after publishing,** records v0.6.2's DMG and `.sig` download counts from the
+    releases API in ROADMAP's Releases table, in a commit of its own (`gh api
+    repos/{owner}/{repo}/releases/tags/v0.6.2 --jq '.assets[] | "\(.name) \(.download_count)"'`).
+    Each in-app install fetches the `.sig`, so its count is a privacy-free proxy for in-app
+    updates. The app sends nothing: no telemetry is added. Every later release does the same
+    (§10, "Usage evidence").
 
-`WhatsNew.version` stays at 0.6.0 unless a style graduates and the maintainer wants it announced
-(Q-B5).
+`WhatsNew.version` stays at 0.6.0 even if a style graduates: a graduation goes in the release notes
+only (Q-B5, decided by delegation).
 
 ---
 
@@ -951,20 +968,20 @@ At most two agents, and never two packages on one file (mechanical rebase-overs 
 | A0 | Intake: 0.6.1's after-publishing results (any failure becomes a P1 item) | | the 0.6.1 release |
 | A1 | WP-10 | WP-W0's W0-1 (CI metadata step) | A0 |
 | A2 | WP-14a (E20) | WP-W0's SPIKE-C, SPIKE-I and SPIKE-W (CI builds on the spike branch) | WP-10 merged (WP-14a edits `HistoryRecorder`); W0-1's answer |
-| A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch, a normal CI build (throwaway branch); the field run, V-01 and the fill recordings need no profiling. Only if Q-B7 is yes does the branch add a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
-| **Session A** | maintainer: about 55 min, then the 3-hour window | | A2′ |
+| A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch (today's fill or (b), Q-B2), a normal CI build (throwaway branch); the field run, V-01 and the fill recordings need no profiling. Because Xcode is installed (Q-B7), the branch also adds a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
+| **Session A** | maintainer: about 65 min, then the 3-hour window | | A2′ |
 | B1 | WP-14b (E4b, E3b) | WP-13 | Session A (F13, the pslog, the fill recordings), or 14 days after A2′ on the defaults (WP-14b "When") |
 | B2 | WP-15 | WP-16 | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free) |
 | B3 | WP-19 (SW-13 on BatterySource's moved files) | WP-17 (with the History riders) | WP-15 merged |
 | C1 | WP-21 (script) | WP-22 (merges last) | Phase B |
 | D1 | freeze the RC | | C1 |
-| **Session B** | maintainer: about 75 min plus about 70 min unattended | | D1 |
+| **Session B** | maintainer: about 95 min plus about 70 min unattended | | D1 |
 | D3 | release | | Session B or its defaults |
 
 - **File ownership:** WP-19's SUI-09 stays in `App/`, and WP-17 in `Main/` and BatteryCore's
   History files.
-- **Floating work:** WP-20 takes any free slot after B1. WP-18 runs whenever the maintainer has
-  Xcode open, and blocks nothing.
+- **Floating work:** WP-20 (SEC-18 only) takes any free slot after B1. WP-18 runs whenever the
+  maintainer has Xcode open, from Claude's step-by-step list, and blocks nothing.
 
 ---
 
@@ -1006,7 +1023,7 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
     prepare>", and the same for Dim widgets on desktop; "If Open at login was on before the
     session, turn it on again in Settings → General".
 
-### Session A (after A2′; about 55 minutes hands-on, then a 3-hour unattended window)
+### Session A (after A2′; about 65 minutes hands-on, then a 3-hour unattended window)
 
 1. **prepare** (3 min):
    - The script takes Session A's backup into `~/bp-062/A`, records the values above and builds
@@ -1062,18 +1079,20 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
    - The script counts the matches of `log show --start "<prepare time>" --predicate 'process
      BEGINSWITH "BatteryPulse" AND eventMessage CONTAINS[c] "executor"'` and the files under
      `~/Library/Logs/DiagnosticReports/BatteryPulse*` newer than prepare.
-6. **Clear's fill** (5 min; WP-13):
-   - On SPIKE-A2, the script switches a hidden defaults key (spike-only, never shipped) between the
-     three candidate fills.
+6. **Clear's fill** (4 min; WP-13; the fill is decided, Q-B2):
+   - On SPIKE-A2, the script sets a hidden defaults key (spike-only, never shipped) to fill (b) for
+     Clear, and to today's fill for Translucent Dark.
    - It records each Shift-minimize and restore of Clear Light, Clear Dark and Translucent Dark
-     (`screencapture -v`, 6 s).
-   - "Which looked best while shrinking into the Dock: 1, 2, 3, or none (note)?"
+     (`screencapture -v`, 6 s), and plays each recording back.
+   - For each: "While it shrank into the Dock and came back: 1 like the window, or an even graphite
+     grey, 2 a black frame, 3 something else (note)?" A 2 for Translucent Dark extends fill (b) to
+     it (WP-13 item 1).
 7. **Attach timing** (3 min, unattended): `hdiutil attach` against `diskutil image attach`, with
    and without verification skipping, 5 runs each on the real 0.6.1 DMG. The script also saves
    `diskutil image attach` and `diskutil eject` usage text (SEC-15, WP-16).
-8. **Page switches** (4 min, always; WP-17's before): on SPIKE-A2 with the `perf` stream on, the
-   script names each page, you click it, 10 times each. Then, only with Xcode (Q-B7) and
-   SPIKE-A2's profiling DMG, the same again under `xctrace` (about 10 more minutes).
+8. **Page switches** (14 min; WP-17's before): on SPIKE-A2 with the `perf` stream on, the script
+   names each page, you click it, 10 times each. Then, with SPIKE-A2's profiling DMG, the same
+   again under `xctrace` (about 10 more minutes; Xcode is installed, Q-B7).
 9. **Start the window** (1 min):
    - "Unplug the adapter now and leave the Mac with the lid open."
    - The script asks once for the admin password (the Low Power Mode runs) and once for the
@@ -1094,15 +1113,16 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 - **At 3:00:** the script runs restore (above) and `send`, and leaves restore's prompts on screen
   for your return. If a widget is blank afterwards, remove it and add it again.
 
-### Session B (release candidate; about 75 minutes hands-on, about 70 minutes unattended)
+### Session B (release candidate; about 95 minutes hands-on, about 70 minutes unattended)
 
 1. **prepare** (2 min): a fresh backup into `~/bp-062/B` (above), `bpulse`, then the RC, built as
    0.5.99.
 2. **V-01 on the RC** (10 min; WP-10, WP-14a): as Session A's step 5, script-checked.
-3. **Beta styles** (25 min; WP-13):
+3. **Beta styles** (35 min; WP-13):
    - The 8 glass-sheet minimize and restore cases (Translucent and Clear × Light and Dark × main
      and compact), each recorded. Standard and Frosted once each next to a minimized Notes window.
-     "1 like the window, 2 a black or dark grey rectangle, 3 something else (note)".
+     "1 like the window, or an even graphite grey (the chosen fill), 2 a black frame or rectangle,
+     3 something else (note)".
    - The screenshot set: 2 wallpapers (bright, busy) × Light and Dark × 3 pages (Overview, History
      with the readout under the pointer, Settings) × Translucent and Clear = 24. The script
      switches wallpaper, appearance and style, and captures the front window (`screencapture -o -l
@@ -1113,14 +1133,13 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
      from the script would need Accessibility access for Terminal) = 16. Plus Settings → General
      beside a Clear window in Light, to show the dark appearance stays in its window, and the
      widget gallery behind a Frosted window in Light and Dark: 19 in all, about 5 minutes.
-   - The contrast audit with Accessibility Inspector, only if Q-B7 says Xcode is installed;
-     otherwise it stays open in Stage 1.5.
+   - The contrast audit with Accessibility Inspector (about 10 minutes; Xcode is installed, Q-B7):
+     the script names each beta style, appearance and page (Overview, History, Settings), and you
+     run the audit from Claude's step-by-step list and save its report for the script.
    - V1b (scripted): the script opens Settings → General and captures the window (`screencapture
      -o -l <id>`) with Clear unselected and then selected. It compares the tile preview's pixels
      inside the outline; identical pixels pass. You only click the tiles it names.
-   - Three plain questions:
-     - "Should Clear keep this dark grey while it shrinks into the Dock? y = keep it, n = no (say
-       what you'd like)."
+   - Two plain questions (Q-B2 already chose the fill; Q-B4 says what a style needs first):
      - "From 0.6.2 on, offer Translucent without the Beta window styles setting? y/n."
      - "And Clear? y/n."
 4. **F6, F8, F9, F11** (15 min; F11's wait overlaps F6-F9):
@@ -1145,9 +1164,11 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
    - A relaunch adds one history sample.
    - Login item, in plain words: "Turn Open at login off in Settings → General. Is BatteryPulse gone
      from System Settings → General → Login Items? 1 gone, 2 still listed."
-5. **Page switches** (4 min; WP-17's after): on the RC with the `perf` stream on, the script names
-   each page, you click it, 10 times each. Then, only with Xcode and the profiling RC (D1), the
-   same again under `xctrace`.
+5. **Page switches** (16 min; WP-17's after; WP-13 item 3): on the RC with the `perf` stream on,
+   the script names each page, you click it, 10 times each. Then, with the profiling RC (D1), the
+   same again under `xctrace` (about 10 minutes; Xcode is installed, Q-B7), followed by 2 minutes
+   of the main window in Clear for Clear's shadows, recorded with the template the script picks
+   from `xcrun xctrace list templates`.
 6. **F12** (5 min; the script first checks GitHub's remaining API requests and asks to turn a VPN off, Q-B9): Check for Updates, then Install and
    Relaunch. The RC's `diskutil` installer installs the real 0.6.1, which relaunches (G-16).
 7. **Burst and memory** (10 min, hands-on): 3 unplug and plug cycles, 1 minute apart; History →
@@ -1181,24 +1202,25 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 | Gate | Decides | Measured by | If no measurement comes |
 |---|---|---|---|
 | G-10 WP-10 | keep the package | V-01 in Session A (SPIKE-A2) and Session B (RC); the CI launch smoke | Fix forward: mark the type or closure the trap names `nonisolated` (or `@Sendable`), in one commit with the macOS job. Revert the merge (`git revert -m 1`) only before B1 starts, because later packages add code that relies on default isolation |
-| G-13a Clear's fill | which opaque fill ships | Session A's recordings and choice; Session B's 8 cases | Ship the graphite composite (b): strictly better than black |
-| G-13b graduation | Translucent and Clear, each | WP-13 item 3's evidence (Session B step 3's shots) and Session B's plain answers. Graduation needs those screenshots answered y | Stay beta |
-| G-13c Low Power Mode | the beta styles' fallback | S4w against Standard; Q-B10 | No data: no fallback, and the decision stays open in ROADMAP |
+| G-13a Clear's fill | the fill is decided: (b), the graphite composite (Q-B2). The gate decides whether it removes the frame, and whether Translucent Dark takes it too | Session A's recordings and answers; Session B's 8 cases | Ship (b) on Clear; Translucent Dark keeps today's fill |
+| G-13b graduation | Translucent and Clear, each | WP-13 item 3's evidence (Session B step 3's shots and contrast audit) and Session B's plain answers. Graduation needs those screenshots answered y and what Q-B4 lists | Stay beta |
+| G-13c Low Power Mode | decided: no fallback (Q-B10). The gate only records each style's cost | S4w against Standard | No data: ROADMAP's line reads "none (Q-B10); not measured" |
 | G-14a E20 (WP-14a) | reads off the main actor | Session A's field run and V-01 (SPIKE-A2); Session B's V-01 | No M5 run of a build containing E20: before B2, revert E20's commits. After B2 (WP-15 has moved the files, and E4b's caches sit behind E20's `Mutex`), fix forward with one commit that makes the monitor call the synchronous `read(scope:)` for every trigger; a revert then goes in this order: WP-19's SW-13 commits on BatterySource, then E4b's, then E20's. A trap: fix forward as G-10 |
 | G-14b E4b (WP-14b) | cached registry on polls | Session A: F13 (pslog against the ioreg samples). Session B: `read cached` p50 < 2 ms, F6 right, plug within 0.4's window, at most 1 `registry.missed` per hour of logged runtime | F13 fails: a 60-s safety net, or no E4b. F13 not measured (Session A, its pslog or its sampler didn't run): E4b ships with a 60-s safety net instead of 5 minutes, and Session B decides by the two Session B criteria, else no E4b. No M5 run of a build containing E4b: no E4b. "No E4b" is one commit that sets `RegistryReadPolicy.cachesOnPolls` to `false` |
 | G-14c E3b (WP-14b) | drop `timeremaining` | Session A's pslog, 2 hours on battery and 1 hour charging: every `timeremaining` followed by "any" within ~10 ms | Keep both keys, also when the charging hour didn't run |
 | G-15 widget size | K-03 and internalize | SPIKE-I decides whether WP-15 tries internalize; only the RC's own F8 (every family) decides whether it ships | K-03 ships if Session B ran F8 and V-01 on the RC. Without Session B, it ships only as a move with only access and import changes, an empty golden diff and a passing CI smoke (§3's one exception). Internalize ships only with the RC's F8. A blank F8: drop internalize first (one `build-app.sh` line); still blank: revert K-03 with WP-19's SW-13 commits on its files |
 | G-16 installer | `diskutil` path | Session B's F12 | Revert to 0.6.1's `hdiutil` code |
 | SEC-15 | skip verification on attach | Session A timing: ≥ 100 ms saved | No change |
-| SEC-08 | Enhanced Security | WP-20's gate | Not shipped |
-| G-17 | WP-17's changes | `page.switch` from the `perf` stream before and after, ≥ 10 switches per page; the SwiftUI instrument only with Xcode | Only SUI-11's readability change |
+| SEC-08 | Enhanced Security | not run (Q-B8: no; after 1.0, not planned without notarization, M-1) | Not shipped |
+| G-17 | WP-17's changes | `page.switch` from the `perf` stream before and after, ≥ 10 switches per page; the SwiftUI instrument (Xcode is installed, Q-B7) | Only SUI-11's readability change |
 
 ### 7.2 Cut line
 
 - **Never cut:** WP-10; SPIKE-A2; WP-13 item 1; WP-14a; WP-14b (unless G-14b's premise fails);
   WP-15 item 1 (K-03); WP-16 items 1-2; WP-W0; WP-21; WP-22; D1-D3.
-- **Cut in this order if the budget runs short:** WP-20; WP-19's P3 items; WP-17; WP-18; WP-15
-  items 2-3; WP-13 items 4-5; WP-16 items 3-5; WP-19's SW-13. A cut item moves to 0.7.
+- **Cut in this order if the budget runs short:** WP-20 (SEC-18; SEC-08 isn't run); WP-19's P3
+  items; WP-17; WP-18; WP-15 items 2-3; WP-13 item 5 (item 4 isn't in 0.6.2, Q-B4); WP-16 items
+  3-5; WP-19's SW-13. A cut item moves to 0.7.
 - **Effort, in runs:**
 
   | Package | Runs |
@@ -1206,19 +1228,20 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   | WP-10 | 3 |
   | WP-13 | 2-3 |
   | WP-14a | 2 |
-  | SPIKE-A2 (three-fill switch) | 1 |
+  | SPIKE-A2 (the fill switch) | 1 |
   | WP-14b | 2-3 |
   | WP-15 | 3 |
   | WP-16 | 2 |
   | WP-17 | 2 |
   | WP-19 | 2 |
-  | WP-20 | 1-2 |
+  | WP-20 (SEC-18 only) | 1 |
   | WP-W0 | 3 |
   | WP-21 | 2 |
   | WP-22 | 2 |
   | D1+D3 | 2-3 |
 
-  That is about 29-33 runs plus 3 in reserve. The never-cut set is about 22-26.
+  That is about 29-32 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8). The
+  never-cut set is about 22-26. WP-18 is maintainer time, outside the runs.
 
 ### 7.3 Frozen surfaces and intended changes
 
@@ -1226,9 +1249,9 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 and reload policy."
 
 **Intended, user-visible changes:**
-- Clear's minimize fill (and Translucent Dark's, if its recordings show the frame).
-- Any style the maintainer graduates, with the Advanced footer and What's New text reworded.
-- A Low Power Mode fallback, if G-13c decides one.
+- Clear's minimize fill, (b) (and Translucent Dark's, if its recordings show the frame).
+- Any style the maintainer graduates, with the Advanced footer and What's New text reworded
+  (`WhatsNew.version` stays 0.6.0, Q-B5). No Low Power Mode fallback comes with it (Q-B10).
 - E4b's freshness:
   - If F13 holds, registry values are as fresh as today.
   - If it doesn't, the Power page is unaffected, because it keeps re-reading.
@@ -1242,7 +1265,7 @@ and reload policy."
 - The settings key `openAtLogin`, only if WP-16 item 5 runs: added, while every existing key keeps
   its name and meaning (`betaWindowStyles` was added the same way in 0.6.1).
 
-**Unchanged:** the widget kind and look, entitlements (unless SEC-08 passes), storage formats,
+**Unchanged:** the widget kind and look, entitlements (SEC-08 isn't run, Q-B8), storage formats,
 existing settings keys, `bpulse` output and exit codes, the update assets and keys.
 
 ---
