@@ -11,6 +11,8 @@ import WidgetKit
 struct BatteryPulseWidgets: WidgetBundle {
     var body: some Widget {
         BatteryWidget()
+        // W0-1's test kind (spike branch only).
+        SpikeWidget()
     }
 }
 

@@ -2394,6 +2394,17 @@
         }
       }
     },
+    "Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство"
+          }
+        }
+      }
+    },
     "Devices": {
       "extractionState": "manual",
       "localizations": {
@@ -4020,6 +4031,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "мА·ч"
+          }
+        }
+      }
+    },
+    "Main value": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основное значение"
           }
         }
       }
@@ -6608,6 +6630,17 @@
         }
       }
     },
+    "Shows the chosen details and device.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывает выбранные подробности и устройство."
+          }
+        }
+      }
+    },
     "Shows the desktop through BatteryPulse windows.": {
       "extractionState": "manual",
       "comment": "Settings → General: footer for the Frosted window style",
@@ -6810,6 +6843,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Температура"
+          }
+        }
+      }
+    },
+    "Test widget": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тестовый виджет"
           }
         }
       }
