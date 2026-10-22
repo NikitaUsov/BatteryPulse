@@ -1,7 +1,7 @@
 import Foundation
 
-// The window style setting (Settings → General): Standard, Frosted, Translucent or Clear. Only
-// the main and compact windows follow it. The decisions behind each style live here, free of
+// The window style setting (Settings → General): Standard, Frosted, and the beta styles
+// Translucent and Clear. Only the main and compact windows follow it. The decisions behind each style live here, free of
 // SwiftUI, so they are tested on Linux; `App/WindowLook.swift` maps them to backgrounds and
 // modifiers. Code says "window look" because SwiftUI already has a `WindowStyle`.
 
@@ -16,6 +16,36 @@ public enum WindowLook: String, CaseIterable, Sendable {
     case translucent
     /// One sheet of clear Liquid Glass with a dark dimming; all content turns white.
     case clear
+}
+
+// Translucent and Clear are beta styles: Settings → General offers them only while Settings →
+// Advanced → Beta window styles is on, with a Beta mark on their tiles.
+extension WindowLook {
+    /// Translucent and Clear: the glass sheet's styles, still in beta.
+    public var isBeta: Bool {
+        switch self {
+        case .standard, .frosted: false
+        case .translucent, .clear: true
+        }
+    }
+
+    /// The styles Settings → General offers, from opaque to clear.
+    public static func offered(betaStyles: Bool) -> [WindowLook] {
+        allCases.filter { betaStyles || !$0.isBeta }
+    }
+
+    /// The style the windows follow: this choice, or Standard for a beta style while beta styles
+    /// are off. Turning beta styles off stores this too, so the picker shows what the windows
+    /// draw.
+    public func available(betaStyles: Bool) -> WindowLook {
+        isBeta && !betaStyles ? .standard : self
+    }
+
+    /// Whether Beta window styles starts out on, from the stored window style (a raw value):
+    /// someone who chose Translucent or Clear before they became beta (0.6.0) keeps that choice.
+    public static func betaStylesStartOn(storedLook: String?) -> Bool {
+        storedLook.flatMap(WindowLook.init(rawValue:))?.isBeta ?? false
+    }
 }
 
 /// What a window actually draws, from the stored setting and the accessibility settings.

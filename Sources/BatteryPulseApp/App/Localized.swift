@@ -234,6 +234,12 @@ extension WindowLook {
         case .clear: "Clear"
         }
     }
+
+    /// The mark on a beta style's tile.
+    var badge: Text? {
+        guard isBeta else { return nil }
+        return Text("Beta")
+    }
 }
 
 extension MenuBarIconStyle {

@@ -1642,13 +1642,13 @@
         }
       }
     },
-    "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through.": {
+    "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced.": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите стиль «Стандартный», «Матовый», «Полупрозрачный» или «Прозрачный» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол."
+            "value": "Выберите стиль «Матовый» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол. «Полупрозрачный» и «Прозрачный» — бета-стили: включите «Бета-стили окон» в разделе «Настройки» → «Дополнения»."
           }
         }
       }
@@ -8052,6 +8052,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Стиль окон"
+          }
+        }
+      }
+    },
+    "Beta": {
+      "extractionState": "manual",
+      "comment": "Mark on a beta window style's tile in Settings → General (Translucent, Clear)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета"
+          }
+        }
+      }
+    },
+    "Beta window styles": {
+      "extractionState": "manual",
+      "comment": "Toggle in Settings → Advanced that adds the beta window styles (Translucent, Clear) to Window Style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бета-стили окон"
+          }
+        }
+      }
+    },
+    "Adds Translucent and Clear to Window Style in General. They are still in beta: harder to read, and they use more energy.": {
+      "extractionState": "manual",
+      "comment": "Footer of the Beta window styles toggle in Settings → Advanced",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавляет стили «Полупрозрачный» и «Прозрачный» в раздел «Стиль окон» основных настроек. Это бета-версии: они хуже читаются и расходуют больше энергии."
           }
         }
       }

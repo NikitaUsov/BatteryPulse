@@ -28,6 +28,35 @@ import Testing
         #expect(WindowLook.allCases == [.standard, .frosted, .translucent, .clear])
     }
 
+    /// Translucent and Clear are beta: offered only with Beta window styles on, in the same
+    /// order.
+    @Test func betaStylesAreTheGlassSheets() {
+        #expect(WindowLook.allCases.filter(\.isBeta) == [.translucent, .clear])
+        #expect(WindowLook.offered(betaStyles: false) == [.standard, .frosted])
+        #expect(WindowLook.offered(betaStyles: true) == WindowLook.allCases)
+        for look in WindowLook.allCases {
+            #expect(look.isBeta == policy(look).usesGlassSheet)
+        }
+    }
+
+    /// A beta style left in the defaults draws Standard while beta styles are off; the others
+    /// never change.
+    @Test(arguments: WindowLook.allCases)
+    func availableStyle(look: WindowLook) {
+        #expect(look.available(betaStyles: true) == look)
+        #expect(look.available(betaStyles: false) == (look.isBeta ? .standard : look))
+    }
+
+    /// A choice of Translucent or Clear from 0.6.0 turns beta styles on, so it keeps working.
+    @Test func betaStylesStartOnForAnEarlierBetaChoice() {
+        #expect(WindowLook.betaStylesStartOn(storedLook: "translucent"))
+        #expect(WindowLook.betaStylesStartOn(storedLook: "clear"))
+        #expect(!WindowLook.betaStylesStartOn(storedLook: "standard"))
+        #expect(!WindowLook.betaStylesStartOn(storedLook: "frosted"))
+        #expect(!WindowLook.betaStylesStartOn(storedLook: nil))
+        #expect(!WindowLook.betaStylesStartOn(storedLook: "bogus"))
+    }
+
     @Test(arguments: WindowLook.allCases)
     func effectiveFollowsSettingWithoutAccessibilityFlags(look: WindowLook) {
         let policy = policy(look)

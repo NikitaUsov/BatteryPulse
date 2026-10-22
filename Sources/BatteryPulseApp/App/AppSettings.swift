@@ -38,6 +38,9 @@ enum AppSettings {
     /// How the main and compact windows look (Settings → General): a `WindowLook` raw value,
     /// Standard when missing or unknown.
     static let windowLookKey = "windowLook"
+    /// Settings → Advanced → Beta window styles: Translucent and Clear appear in the window style
+    /// picker. Off by default; ``migrate()`` turns it on for a beta style chosen in 0.6.0.
+    static let betaWindowStylesKey = "betaWindowStyles"
     static let alertChargeLimitKey = "alertChargeLimit"
     static let alertLowBatteryKey = "alertLowBattery"
     static let alertServiceKey = "alertService"
@@ -122,6 +125,12 @@ enum AppSettings {
         // Not mapped to a window style: it was an experiment with opaque windows, and turning it
         // into a see-through window would choose for the user.
         defaults.removeObject(forKey: legacyGlassCardsKey)
+        // Translucent and Clear became beta styles in 0.6.1; a window that used one keeps it.
+        if defaults.object(forKey: betaWindowStylesKey) == nil,
+            WindowLook.betaStylesStartOn(storedLook: defaults.string(forKey: windowLookKey))
+        {
+            defaults.set(true, forKey: betaWindowStylesKey)
+        }
     }
 
     /// The welcome window always appears on first launch, later only if the user asked for it.

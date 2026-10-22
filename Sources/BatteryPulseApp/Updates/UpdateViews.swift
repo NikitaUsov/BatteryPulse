@@ -408,7 +408,7 @@ enum WhatsNew {
         Feature(
             id: 3, symbol: "macwindow", title: "Window styles",
             detail:
-                "Choose Standard, Frosted, Translucent or Clear in Settings → General to let the desktop show through."
+                "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced."
         ),
         Feature(
             id: 4, symbol: "menubar.rectangle", title: "Menu bar icons like macOS 27",

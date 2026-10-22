@@ -143,20 +143,24 @@ animate. The History switch and the Demo Mode bar use Liquid Glass; the cards st
 
 **Window Style** in Settings → General chooses how the main window and the compact window look,
 from an opaque window to clear glass that shows the desktop sharp. Each tile in the picker
-shows a little window in that style:
+shows a little window in that style. Standard and Frosted are always there; Translucent and
+Clear are beta styles and appear, marked **Beta**, once **Beta window styles** is on in
+Settings → Advanced. Turning it off puts a window in Translucent or Clear back to Standard. If
+you chose Translucent or Clear in 0.6.0, Beta window styles is already on and your choice stays.
 
 | Style | What it looks like |
 |-------|--------------------|
 | **Standard** | An opaque window with cards, as in earlier versions. The default. |
 | **Frosted** | The desktop shows through the window, blurred and frosted, like the widget gallery of macOS. The cards become faint, lighter layers; the Raw Data table stays opaque. The frost stays when the window is in the background. |
-| **Translucent** | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
-| **Clear** | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark. |
+| **Translucent** (beta) | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
+| **Clear** (beta) | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark. |
 
 The change applies at once to both windows. Settings, the menu bar popover, the welcome window
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
 The see-through styles redraw when something behind the window changes, so Translucent and
 Clear use more energy than Standard; Clear is also the hardest to read over a bright or busy
-wallpaper, and Translucent is the better choice there.
+wallpaper, and Translucent is the better choice there. A known issue of the beta: a window in
+Clear turns black while it minimizes to the Dock and while it comes back.
 
 With **Reduce transparency** or **Increase contrast** on (System Settings → Accessibility →
 Display), both windows use Standard whatever the choice, and Settings says so under the picker.
@@ -459,7 +463,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 | General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
-| Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), a link to this guide |
+| Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), the beta window styles, a link to this guide |
 
 ### Updates
 

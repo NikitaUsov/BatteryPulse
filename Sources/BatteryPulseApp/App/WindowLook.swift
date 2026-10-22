@@ -3,9 +3,10 @@ import AppKit
 import BatteryCore
 import SwiftUI
 
-// The window style (Settings → General) of the main and compact windows: Standard, Frosted,
-// Translucent or Clear. `WindowLookPolicy` (BatteryCore) decides what each draws; this file is
-// the only place that changes a window's background, and `MotionGuardTests` keeps it that way.
+// The window style (Settings → General) of the main and compact windows: Standard, Frosted, and
+// the beta styles Translucent and Clear. `WindowLookPolicy` (BatteryCore) decides what each
+// draws; this file is the only place that changes a window's background, and `MotionGuardTests`
+// keeps it that way.
 //
 // Only the background differs in view structure between the styles. Switching it rebuilds the
 // window's content, which happens only when the person changes the setting or an accessibility
@@ -38,6 +39,7 @@ extension View {
 
 private struct WindowLookModifier: ViewModifier {
     @AppStorage(AppSettings.windowLookKey) private var stored = WindowLook.standard
+    @AppStorage(AppSettings.betaWindowStylesKey) private var betaStyles = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     /// From the moment the window starts to minimize until it has been restored.
@@ -45,7 +47,8 @@ private struct WindowLookModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let policy = WindowLookPolicy(
-            setting: stored, reduceTransparency: reduceTransparency, increaseContrast: contrast == .increased)
+            setting: stored.available(betaStyles: betaStyles), reduceTransparency: reduceTransparency,
+            increaseContrast: contrast == .increased)
         // Only the glass sheet's tint and Clear's treatment depend on the system appearance; the
         // other styles never start observing it.
         let systemDark = policy.usesGlassSheet && SystemAppearance.shared.isDark

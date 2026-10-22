@@ -5,9 +5,11 @@ import BatteryKit
 import SwiftUI
 import os
 
-/// History, the Developer section and help.
+/// History, the Developer section, the beta window styles and help.
 struct AdvancedSettings: View {
     @AppStorage(AppSettings.showDeveloperKey) private var showsDeveloper = false
+    @AppStorage(AppSettings.betaWindowStylesKey) private var betaWindowStyles = false
+    @AppStorage(AppSettings.windowLookKey) private var windowLook = WindowLook.standard
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
     @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
     @Environment(IDeviceMonitor.self) private var devices
@@ -46,6 +48,18 @@ struct AdvancedSettings: View {
         } footer: {
             Text(
                 "Adds Raw Data (every value macOS reports, decoded and explained) and Demo Mode to the main window."
+            )
+        }
+
+        Section {
+            Toggle("Beta window styles", isOn: $betaWindowStyles)
+                // Off, a beta style goes back to Standard, so the picker shows what the windows draw.
+                .onChange(of: betaWindowStyles) {
+                    windowLook = windowLook.available(betaStyles: betaWindowStyles)
+                }
+        } footer: {
+            Text(
+                "Adds Translucent and Clear to Window Style in General. They are still in beta: harder to read, and they use more energy."
             )
         }
 

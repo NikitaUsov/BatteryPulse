@@ -173,6 +173,8 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   glass. Only the main and compact windows; Reduce Transparency or Increase Contrast gives
   Standard. Content stays free of glass and materials: no material in `Main/` but the History
   chart's hover readout, which must read on every style; groups use `Card`/`CardGroup`/`LookForm`.
+  Translucent and Clear are beta styles: offered only with Settings → Advanced → Beta window
+  styles on (`WindowLook.isBeta`, `available(betaStyles:)`).
   Only the window background may depend on the style's structure; everything else takes the style
   as a value. `MotionGuardTests` enforces the lists.
 - Motion: through `\.motion` (`App/Motion.swift`), keyed on `BatteryMotionKey` or UI state, never

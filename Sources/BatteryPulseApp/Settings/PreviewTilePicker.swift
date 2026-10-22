@@ -9,14 +9,29 @@ import SwiftUI
 /// thumbnails: every tile keeps the same standard fill, so a preview looks the same selected or
 /// not, and nothing is glass. The outline crossfades to the new tile. The choice itself is set
 /// without animation: only the tiles animate, never what the choice changes.
+///
+/// A tile can carry a badge (the window styles' Beta) in its preview's top corner, so every tile
+/// keeps the same height.
 struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: View where Value.RawValue == String {
     @Binding var selection: Value
     let values: [Value]
     let title: (Value) -> LocalizedStringKey
-    @ViewBuilder let preview: (Value) -> Preview
+    let badge: (Value) -> Text?
+    let preview: (Value) -> Preview
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.motion) private var motion
     @Environment(\.accessibilityShowBorders) private var showsBorders
+
+    init(
+        selection: Binding<Value>, values: [Value], title: @escaping (Value) -> LocalizedStringKey,
+        badge: @escaping (Value) -> Text? = { _ in nil }, @ViewBuilder preview: @escaping (Value) -> Preview
+    ) {
+        _selection = selection
+        self.values = values
+        self.title = title
+        self.badge = badge
+        self.preview = preview
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -38,6 +53,11 @@ struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: Vie
             VStack(spacing: 8) {
                 preview(value)
                     .frame(height: PreviewTile.previewHeight)
+                    .overlay(alignment: .topTrailing) {
+                        if let badge = badge(value) {
+                            TileBadge(text: badge)
+                        }
+                    }
                 Text(title(value))
                     .font(.caption)
                     .multilineTextAlignment(.center)
@@ -61,7 +81,25 @@ struct PreviewTilePicker<Value: RawRepresentable & Hashable, Preview: View>: Vie
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(title(value)))
+        .accessibilityValue(badge(value) ?? Text(verbatim: ""))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// A small mark in a tile's corner, such as Beta: plain text on the window's background with a
+/// hairline, readable over any preview drawing.
+private struct TileBadge: View {
+    let text: Text
+
+    var body: some View {
+        text
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(.background, in: .capsule)
+            .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
+            .padding(4)
     }
 }
 
