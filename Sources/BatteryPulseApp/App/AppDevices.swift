@@ -10,7 +10,7 @@ enum AppDevices {
     static let store = DeviceStore(
         directory: DeviceStore.defaultDirectory(bundleIdentifier: Bundle.main.bundleIdentifier))
 
-    @MainActor static let monitor = IDeviceMonitor(
+    static let monitor = IDeviceMonitor(
         transport: SystemDevices.makeTransport(),
         store: store,
         makeKeys: { HMACDeviceKeyDeriver(secret: $0) },
@@ -18,20 +18,20 @@ enum AppDevices {
         recordsHistory: { AppSettings.recordsHistory })
 
     /// The only way to turn reading on or off: Settings and the Devices page's Turn On.
-    @MainActor static func setReading(_ on: Bool) {
+    static func setReading(_ on: Bool) {
         UserDefaults.standard.set(on, forKey: AppSettings.readDevicesKey)
         monitor.setEnabled(on)
     }
 
     /// The iPhones and iPads the Devices section shows: in Demo Mode only the simulated one, so
     /// screenshots never show a real owner's device name. Real reads go on in the background.
-    @MainActor static func shownEntries(_ devices: IDeviceMonitor, demo: DemoController) -> [IDeviceEntry] {
+    static func shownEntries(_ devices: IDeviceMonitor, demo: DemoController) -> [IDeviceEntry] {
         demo.isActive ? [DemoDevice.entry] : devices.entries
     }
 
     /// Loads the remembered devices and, with the setting on, starts watching USB. With the
     /// setting off nothing else runs: no USB watch, no framework, no file.
-    @MainActor static func start() {
+    static func start() {
         Task { await monitor.start(enabled: AppSettings.readsDevices) }
     }
 }
@@ -40,9 +40,9 @@ enum AppDevices {
 /// system, from the type it declares for its device model codes. `nil` when the system doesn't
 /// know the model; callers show the product type then.
 enum IDeviceModelName {
-    @MainActor private static var cache: [String: String?] = [:]
+    private static var cache: [String: String?] = [:]
 
-    @MainActor static func name(productType: String?) -> String? {
+    static func name(productType: String?) -> String? {
         guard let productType, !productType.isEmpty else { return nil }
         if let cached = cache[productType] { return cached }
         let usable = lookUp(productType)
@@ -61,7 +61,6 @@ enum IDeviceModelName {
 }
 
 /// How a device is named on screen. Names and models are data, never catalog keys.
-@MainActor
 enum DeviceText {
     /// The owner's name, then the model's name, then "iPhone" or "iPad", then "Unknown Device".
     static func displayName(_ entry: IDeviceEntry) -> Text {

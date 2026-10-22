@@ -8,7 +8,6 @@ import UserNotifications
 /// Posts the battery notifications the user turned on in Settings → Notifications. It reacts to
 /// every new reading of the Mac's battery and every change of the accessories, so it needs no
 /// polling of its own, and stays quiet during Demo Mode.
-@MainActor
 final class BatteryNotifier: NSObject {
     /// UserNotifications raises an exception outside an app bundle, e.g. under
     /// `swift run BatteryPulse`, so every entry point checks this first.

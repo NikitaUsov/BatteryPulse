@@ -11,7 +11,6 @@ import Observation
 /// the user chose to install (``UpdateInstaller``). It asks GitHub for the latest release and
 /// sends nothing about the Mac beyond a User-Agent with the app's version (URLSession adds the
 /// language). Builds without a version (CI, `swift run`) never check on their own.
-@MainActor
 @Observable
 final class UpdateChecker {
     enum Status: Equatable {

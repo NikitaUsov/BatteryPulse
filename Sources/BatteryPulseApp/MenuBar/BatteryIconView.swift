@@ -262,7 +262,6 @@ struct MenuBarIconPreview: View {
 
 /// Turns a drawn icon into an image for the status item, whose label shows images and text but
 /// doesn't reliably draw shapes.
-@MainActor
 enum MenuBarIconRenderer {
     private struct Key: Equatable {
         var style: MenuBarIconStyle

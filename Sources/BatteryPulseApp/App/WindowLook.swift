@@ -239,7 +239,6 @@ extension Color {
 /// The system's appearance, Light or Dark, read from the app rather than from a window: a Clear
 /// window is in the dark appearance whatever the system's, while its glass tone follows the
 /// system's (Light, Dark or Auto, as the system's own Clear style).
-@MainActor
 @Observable
 final class SystemAppearance {
     static let shared = SystemAppearance()
@@ -249,7 +248,9 @@ final class SystemAppearance {
 
     private init() {
         isDark = Self.readIsDark()
-        // The app keeps one observation for its whole life.
+        // The app keeps one observation for its whole life. The task names the main actor: the
+        // change handler is a `@Sendable` closure, and a task started in one doesn't inherit the
+        // app's default isolation.
         observation = NSApp.observe(\.effectiveAppearance) { _, _ in
             Task { @MainActor in SystemAppearance.shared.update() }
         }

@@ -9,7 +9,6 @@ import SwiftUI
 /// Demo Mode: simulated battery states shown everywhere in the app (main window, menu bar and
 /// popover), picked by hand or played as a tour that also switches pages. Fixed demo accessories
 /// replace the connected ones meanwhile, so screenshots never show a person's accessory names.
-@MainActor
 @Observable
 final class DemoController {
     enum Step: Hashable {

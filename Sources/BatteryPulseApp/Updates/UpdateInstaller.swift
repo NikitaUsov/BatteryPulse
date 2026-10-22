@@ -21,7 +21,6 @@ import os
 ///
 /// Every failure leaves the installed app untouched. The window then offers the browser download,
 /// or only the release page after a failed integrity check (``UpdateFallback``).
-@MainActor
 @Observable
 final class UpdateInstaller {
     enum Phase: Equatable {
