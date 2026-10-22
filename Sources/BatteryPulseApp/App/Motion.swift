@@ -359,7 +359,7 @@ private struct WindowVisibilityReader: NSViewRepresentable {
             observedWindow = window
             guard let window else { return }
             // Selector-based, so the observer goes away with the view. AppKit posts window
-            // notifications on the main thread.
+            // notifications on the main thread, so the handler stays on the main actor.
             center.addObserver(
                 self, selector: #selector(occlusionStateDidChange(_:)),
                 name: NSWindow.didChangeOcclusionStateNotification, object: window)

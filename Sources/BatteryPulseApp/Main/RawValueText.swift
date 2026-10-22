@@ -3,7 +3,8 @@ import BatteryCore
 import Foundation
 
 /// Localized text for decoded raw values and glossary summaries in the Developer section.
-enum RawValueText {
+/// Nonisolated: the table is built off the main actor (``sections(for:)``).
+nonisolated enum RawValueText {
     /// The Developer table for `reading`'s redacted capture with every cell's text, built off the
     /// caller's actor (`raw.rebuild`).
     @concurrent

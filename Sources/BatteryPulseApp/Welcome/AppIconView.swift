@@ -14,7 +14,7 @@ struct AppIconView: View {
     /// How much of the pulse line shows, from its start; `nil` until the view has appeared.
     @State private var pulseEnd: CGFloat?
     /// The draw-in plays once per launch, not every time the window opens.
-    @MainActor private static var hasDrawnIn = false
+    private static var hasDrawnIn = false
 
     /// - Parameter drawsIn: Draw the pulse line in from left to right when the view first appears
     ///   (the welcome window). It is a one-off extra: not under Reduce Motion or Low Power Mode,
@@ -99,8 +99,9 @@ private struct Pulse: View {
 }
 
 /// The pulse line's path, from the 1024-point space of `Resources/AppIcon.svg` scaled to the
-/// view as the `Canvas` scales the rest of the icon.
-private struct PulseLine: Shape {
+/// view as the `Canvas` scales the rest of the icon. Nonisolated, as `Shape` requires: SwiftUI
+/// may ask for the path off the main actor.
+private nonisolated struct PulseLine: Shape {
     func path(in rect: CGRect) -> Path {
         let scale = min(rect.width, rect.height) / 1024
         let points = [

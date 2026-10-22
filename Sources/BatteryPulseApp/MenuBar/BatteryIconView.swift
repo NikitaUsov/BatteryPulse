@@ -320,8 +320,9 @@ enum MenuBarIconRenderer {
 }
 
 /// The two renderings of a coloured icon: dark parts for light menu bars, light parts for dark
-/// ones. Immutable after creation.
-private final class AppearanceVariants: @unchecked Sendable {
+/// ones. Immutable after creation. Nonisolated: it draws in the image's drawing handler, which
+/// AppKit calls whenever it draws the image.
+private nonisolated final class AppearanceVariants: @unchecked Sendable {
     private let onLight: CGImage
     private let onDark: CGImage
 

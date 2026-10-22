@@ -155,7 +155,7 @@ private struct WindowMinimizeReader: NSViewRepresentable {
             observedWindow = window
             guard let window else { return }
             // Selector-based, so the observers go away with the view. AppKit posts window
-            // notifications on the main thread.
+            // notifications on the main thread, so the handlers stay on the main actor.
             center.addObserver(
                 self, selector: #selector(windowWillMinimize(_:)),
                 name: NSWindow.willMiniaturizeNotification, object: window)

@@ -225,6 +225,8 @@ final class BatteryNotifier: NSObject {
     }
 }
 
+// Nonisolated, unlike the rest of the app: UserNotifications calls its delegate on a queue of its
+// own.
 extension BatteryNotifier: nonisolated UNUserNotificationCenterDelegate {
     /// Show alerts even while BatteryPulse is the active app, which it is whenever Settings or
     /// the popover is open, and keep them in Notification Center.

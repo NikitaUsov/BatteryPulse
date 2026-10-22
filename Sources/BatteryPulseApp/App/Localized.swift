@@ -11,8 +11,8 @@ import SwiftUI
 extension BatteryFormatter {
     /// The app's formatter, built once: the user's region, which it follows when it changes in
     /// System Settings, and the catalog's unit symbols, looked up once per launch like the rest of
-    /// the app's language.
-    static let app = BatteryFormatter(
+    /// the app's language. Nonisolated: the Raw Data table formats off the main actor.
+    nonisolated static let app = BatteryFormatter(
         locale: .autoupdatingCurrent,
         symbols: UnitSymbols(
             watts: String(localized: "W", comment: "Unit symbol: watts"),

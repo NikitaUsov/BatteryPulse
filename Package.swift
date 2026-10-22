@@ -44,7 +44,14 @@ let package = Package(
             dependencies: ["BatteryCore", "BatteryKit"],
             swiftSettings: strict + [.strictMemorySafety()]
         ),
-        .executableTarget(name: "BatteryPulseApp", dependencies: ["BatteryCore", "BatteryKit"], swiftSettings: strict),
+        // The app runs on the main actor unless its code says otherwise (`nonisolated`,
+        // `@concurrent`). The other targets stay nonisolated, the widget too: WidgetKit calls its
+        // timeline provider on threads of its own.
+        .executableTarget(
+            name: "BatteryPulseApp",
+            dependencies: ["BatteryCore", "BatteryKit"],
+            swiftSettings: strict + [.defaultIsolation(MainActor.self)]
+        ),
         .executableTarget(
             name: "BatteryPulseWidget",
             dependencies: ["BatteryCore", "BatteryKit"],
