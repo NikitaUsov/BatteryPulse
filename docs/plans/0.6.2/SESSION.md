@@ -266,7 +266,8 @@ answer. If a variant failed every time, its error is in the section; `note` it.
      `bash ~/bp-062/repo/docs/plans/0.6.2/m5-session.sh window`.
 2. `window` asks him once for the energy setup (1 or 2) and once for his password (`sudo`, for the
    Low Power Mode runs and for putting Low Power Mode back). It refuses to start on the adapter or
-   under 50 %.
+   under 50 %. If Terminal asks to control System Events and then BatteryPulse, he clicks OK; ask
+   him to wait until Terminal prints `installed B` before he leaves, so no prompt waits for him.
 3. Tell him the timetable, with the times of day:
    - 0:00-1:10, the A/B energy runs, with the display kept on except in two 10-minute runs;
    - 1:10-3:00, the field run on SPIKE-A2;

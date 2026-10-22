@@ -1921,6 +1921,11 @@ step_window() {
   percent="$(battery_percent)"
   case "$percent" in "" | *[!0-9]*) fail "can't read the charge from pmset -g batt" ;; esac
   [ "$percent" -ge 50 ] || fail "the battery is at $percent %; the window needs at least 50 %"
+  # Terminal may not control System Events yet: its prompt would first come up at 3:00, when
+  # restore puts the appearance and the wallpaper back and nobody is here. Ask now. BatteryPulse's
+  # own prompt comes with the first install's quit, a few seconds after the password.
+  echo "If Terminal asks to control System Events, and then BatteryPulse, click OK each time."
+  is_dark >/dev/null
   echo "sudo asks for your password once (Low Power Mode for one run, and putting it back)."
   if sudo -v; then
     (while kill -0 $$ 2>/dev/null; do
