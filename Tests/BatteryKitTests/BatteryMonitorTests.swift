@@ -54,6 +54,78 @@ private final class FullReadProvider: BatteryProvider {
     }
 }
 
+/// Reads off the main actor that wait until the test ends them, oldest first. It records what each
+/// asked for, how many waited at once, and whether any ran on the main actor.
+final class SuspendingReader: NonisolatedBatteryReader {
+    private struct State {
+        var waiting: [CheckedContinuation<BatteryReading?, Never>] = []
+        var scopes: [BatteryReadScope] = []
+        var mostAtOnce = 0
+        var ranOnMainActor = false
+    }
+
+    private let state = Mutex(State())
+
+    func readNonisolated(scope: BatteryReadScope) async -> BatteryReading? {
+        // The caller's isolation: the monitor's `@concurrent` helper has none.
+        let isolation = #isolation
+        let onMainActor = isolation != nil || Thread.isMainThread
+        return await withCheckedContinuation { continuation in
+            state.withLock { state in
+                state.scopes.append(scope)
+                state.waiting.append(continuation)
+                state.mostAtOnce = max(state.mostAtOnce, state.waiting.count)
+                if onMainActor { state.ranOnMainActor = true }
+            }
+        }
+    }
+
+    /// How many reads began.
+    var started: Int { state.withLock { $0.scopes.count } }
+    /// What every read asked for, oldest first.
+    var scopes: [BatteryReadScope] { state.withLock { $0.scopes } }
+    /// The reads that wait for ``finish(with:)``.
+    var inFlight: Int { state.withLock { $0.waiting.count } }
+    var mostAtOnce: Int { state.withLock { $0.mostAtOnce } }
+    var ranOnMainActor: Bool { state.withLock { $0.ranOnMainActor } }
+
+    /// Ends the oldest read in flight with `reading`.
+    func finish(with reading: BatteryReading?) {
+        let continuation = state.withLock { $0.waiting.isEmpty ? nil : $0.waiting.removeFirst() }
+        continuation?.resume(returning: reading)
+    }
+}
+
+/// A device's provider whose reads off the main actor wait for the test (``SuspendingReader``),
+/// while its reads on the main actor return ``next`` at once.
+@MainActor
+final class SuspendingProvider: BatteryProvider {
+    let reader = SuspendingReader()
+    var next: BatteryReading?
+    private(set) var mainActorReads = 0
+    private var handler: (@MainActor @Sendable () -> Void)?
+
+    init(next: BatteryReading?) {
+        self.next = next
+    }
+
+    func read() -> BatteryReading? {
+        mainActorReads += 1
+        return next
+    }
+
+    var nonisolatedReader: (any NonisolatedBatteryReader)? { reader }
+
+    func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
+        self.handler = handler
+        return BatteryObservation {}
+    }
+
+    func simulateSystemChange() {
+        handler?()
+    }
+}
+
 /// A clock that stands still until a test advances it, so each of the monitor's sleeps (the
 /// polls, the follow-ups, the coalescing window) ends exactly when the test says, however busy
 /// the machine is. It records what every sleep asked for.
@@ -539,5 +611,227 @@ private func reading(connected: Bool) -> BatteryReading {
         let provider = FullReadProvider()
         #expect(provider.read(scope: .live) == nil)
         #expect(provider.readCount == 1)
+    }
+
+    // MARK: - Reads off the main actor
+
+    private func makeMonitor(_ provider: SuspendingProvider) -> BatteryMonitor {
+        BatteryMonitor(provider: provider, clock: clock)
+    }
+
+    /// The launch read (the one before `menuBarReady`), a manual one (Copy Report reads the snapshot
+    /// right after) and Demo Mode's (animated with DemoController's own changes) are done when the
+    /// call returns.
+    @Test func launchManualAndDemoReadsStayOnTheMainActor() {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+        #expect(device.mainActorReads == 1)
+        #expect(monitor.snapshot?.chargePercent == 80)
+
+        device.next = reading(percent: 79, at: 2)
+        monitor.refresh()
+        #expect(monitor.snapshot?.chargePercent == 79)
+        monitor.setOverride(DemoBatteryProvider(battery: DemoScenario.lowBattery.battery))
+        #expect(monitor.snapshot?.chargePercent == 17)
+        monitor.setOverride(nil)
+        #expect(monitor.snapshot?.chargePercent == 79, "the device's values come back at once")
+        #expect(device.mainActorReads == 3)
+        #expect(device.reader.started == 0)
+        #expect(!monitor.isReadingOffMainActor)
+    }
+
+    @Test(arguments: [RefreshTrigger.notify, .poll, .followUp, .history])
+    func otherReadsRunOffTheMainActor(_ trigger: RefreshTrigger) async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        clock.advance(by: .seconds(5))
+        monitor.refresh(trigger: trigger)
+        #expect(monitor.isReadingOffMainActor)
+        await settle { device.reader.inFlight == 1 }
+        #expect(monitor.snapshot?.chargePercent == 80, "nothing changes until the read lands")
+        #expect(!device.reader.ranOnMainActor)
+        #expect(device.reader.scopes == [.live])
+
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 79)
+        #expect(monitor.reading?.snapshot.chargePercent == 79)
+        #expect(monitor.lastReadAt == clock.now)
+        #expect(device.mainActorReads == 1, "only the launch read")
+    }
+
+    /// Two reads never run at once: what arrives during a read waits for it, and any number of
+    /// requests make one follow-on read.
+    @Test func requestsDuringAReadMakeOneFollowOnRead() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .followUp)
+        monitor.refresh(trigger: .poll)
+        monitor.refresh(trigger: .history)
+        #expect(monitor.requestedTrigger == .followUp, "the follow-on read is labelled with the first request")
+        #expect(device.reader.started == 1)
+
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { device.reader.started == 2 }
+        #expect(monitor.snapshot?.chargePercent == 79, "the first read is shown before the next begins")
+        device.reader.finish(with: reading(percent: 78, at: 3))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 78)
+        #expect(device.reader.started == 2)
+        #expect(device.reader.mostAtOnce == 1)
+    }
+
+    /// A burst of notifications during a read is still one read, after it.
+    @Test func notificationsDuringAReadJoinTheFollowOnRead() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        for _ in 0..<3 { device.simulateSystemChange() }
+        await settle { clock.sleeperCount == 1 }
+        clock.advance(by: BatteryMonitor.coalescingWindow)
+        await settle { monitor.requestedTrigger == .notify }
+        #expect(device.reader.started == 1)
+
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { device.reader.started == 2 }
+        device.reader.finish(with: reading(percent: 78, at: 3))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 78)
+        #expect(device.reader.started == 2)
+        #expect(clock.sleeperCount == 0)
+    }
+
+    @Test func aReadThatLandsInDemoModeIsDropped() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .history)
+        monitor.setOverride(DemoBatteryProvider(battery: DemoScenario.lowBattery.battery))
+        #expect(monitor.snapshot?.chargePercent == 17)
+        let demoReadAt = monitor.lastReadAt
+
+        clock.advance(by: .seconds(1))
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 17, "the device's late read doesn't replace the demo")
+        #expect(monitor.lastReadAt == demoReadAt)
+        #expect(device.reader.started == 1, "nor does the request that waited for it read the device")
+
+        monitor.setOverride(nil)
+        #expect(monitor.snapshot?.chargePercent == 80)
+    }
+
+    @Test func aReadThatLandsAfterStopIsDropped() async {
+        let device = SuspendingProvider(next: reading(connected: false))
+        let monitor = makeMonitor(device)
+        monitor.start()
+        let launchReadAt = monitor.lastReadAt
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .poll)
+        monitor.stop()
+        clock.advance(by: .seconds(1))
+        device.reader.finish(with: reading(connected: true))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.isExternalPowerConnected == false)
+        #expect(monitor.lastReadAt == launchReadAt)
+        #expect(device.reader.started == 1)
+        #expect(clock.sleeperCount == 0, "no extra reads for a change the stopped monitor never showed")
+    }
+
+    /// A read on the main actor during one off it is the newer: the older result is dropped, and the
+    /// request that waited for a follow-on read is served.
+    @Test func aManualReadSupersedesOneInFlight() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .poll)
+        device.next = reading(percent: 70, at: 3)
+        monitor.refresh()
+        #expect(monitor.snapshot?.chargePercent == 70)
+
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 70, "the older read doesn't overwrite the newer one")
+        #expect(device.reader.started == 1)
+    }
+
+    /// Stopping and starting again during a read keeps one read at a time.
+    @Test func aRestartDuringAReadWaitsForIt() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.stop()
+        monitor.start()
+        #expect(device.mainActorReads == 2, "the launch read")
+        monitor.refresh(trigger: .poll)
+        #expect(device.reader.started == 1, "the new read waits for the stale one")
+
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { device.reader.started == 2 }
+        #expect(monitor.snapshot?.chargePercent == 80, "the stale read is dropped")
+        device.reader.finish(with: reading(percent: 78, at: 3))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(monitor.snapshot?.chargePercent == 78)
+        #expect(device.reader.mostAtOnce == 1)
+    }
+
+    /// The history recorder's read: it returns once the snapshot holds what the read found.
+    @Test func waitingForAReadReturnsWithItsResult() async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device)
+        monitor.start()
+
+        let first = Task(name: "BatteryMonitorTests.first") {
+            await monitor.refreshAndWait(trigger: .history)
+            return monitor.snapshot?.chargePercent
+        }
+        await settle { device.reader.inFlight == 1 }
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        #expect(await first.value == 79)
+
+        // A request during a read waits for the follow-on read, which begins after it.
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        let second = Task(name: "BatteryMonitorTests.second") {
+            await monitor.refreshAndWait(trigger: .history)
+            return monitor.snapshot?.chargePercent
+        }
+        await settle { monitor.requestedTrigger == .history }
+        device.reader.finish(with: reading(percent: 78, at: 3))
+        await settle { device.reader.started == 3 }
+        device.reader.finish(with: reading(percent: 77, at: 4))
+        #expect(await second.value == 77)
+    }
+
+    @Test func waitingWithAMainActorProviderReadsAtOnce() async {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        provider.next = reading(percent: 79, at: 2)
+        await monitor.refreshAndWait(trigger: .history)
+        #expect(monitor.snapshot?.chargePercent == 79)
+        #expect(provider.readCount == 2)
     }
 }
