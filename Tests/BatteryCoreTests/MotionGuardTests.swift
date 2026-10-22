@@ -19,8 +19,8 @@ import Testing
 /// - any animation in the menu bar label, which is always on screen and renders an image per
 ///   frame;
 /// - `glassEffect(` outside the few files that float controls over content;
-/// - a material in `Main/` (`Material`, `.regularMaterial`, `.bar`): content stays free of glass
-///   and materials, and the window style's background is the only material;
+/// - a material in `Main/` (`Material`, `.regularMaterial`, `.bar`) outside the History chart's
+///   readout: content stays free of glass and materials;
 /// - a system colour name in the windows' content (`Main/`, the level and Demo Mode tints)
 ///   outside the tone map's bridge, where it would bypass Clear's monochrome, and there a colour
 ///   read as a property (`tier.color`), which comes from the standard tones, not the window's;
@@ -37,6 +37,13 @@ import Testing
         "BatteryPulseApp/Main/DemoView.swift",
         // The glass sheet of Translucent and Clear: one behind the whole window.
         "BatteryPulseApp/App/WindowLook.swift",
+    ]
+
+    /// Files in `Main/` that may use a material.
+    static let materialAllowList: Set<String> = [
+        // The History chart's hover readout floats over the plot and must read on every window
+        // style; on the glass sheets a card's surface didn't (the 0.6.1 M5 session).
+        "BatteryPulseApp/Main/History/HistoryChartParts.swift"
     ]
 
     static let menuBarLabelFiles: Set<String> = [
@@ -216,7 +223,9 @@ import Testing
             }
         }
         // Every match holds `Material` or `.bar`; a `Regex` over the other files is slow on Linux.
-        if path.hasPrefix("BatteryPulseApp/Main/"), code.contains("Material") || code.contains(".bar") {
+        if path.hasPrefix("BatteryPulseApp/Main/"), !Self.materialAllowList.contains(path),
+            code.contains("Material") || code.contains(".bar")
+        {
             for match in code.matches(of: material) {
                 flag(match.range.lowerBound, "a material in the windows' content; groups use a Card surface")
             }
@@ -380,7 +389,7 @@ import Testing
         #expect(flags(glass, path: "BatteryPulseWidget/BatteryPulseWidget.swift"))
     }
 
-    /// AV-08: the chart readout, like all content, has no material of its own.
+    /// Content has no material of its own; the chart readout is the one exception.
     @Test(arguments: [
         "readout.background(.regularMaterial, in: .rect(cornerRadius: 8))",
         "readout.background(Material.thin)",
@@ -390,8 +399,9 @@ import Testing
         "content.environment(\\.backgroundMaterial, .regular)",
     ])
     func noMaterialInTheWindowsContent(source: String) {
-        #expect(flags(source, path: "BatteryPulseApp/Main/History/HistoryChartParts.swift"), "\(source)")
+        #expect(flags(source, path: "BatteryPulseApp/Main/History/HistoryView.swift"), "\(source)")
         #expect(flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Main/History/HistoryChartParts.swift"), "\(source)")
         #expect(!flags(source, path: "BatteryPulseApp/Settings/SettingsView.swift"), "\(source)")
         #expect(!flags(source, path: "BatteryPulseApp/MenuBar/PopoverView.swift"), "\(source)")
     }

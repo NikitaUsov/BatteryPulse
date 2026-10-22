@@ -171,8 +171,8 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   the tone map (`\.tones`, `App/ToneStyle.swift`; no system colour names in `Main/`,
   `App/Localized.swift` or `App/DemoController.swift`). The sheet is the only glass under other
   glass. Only the main and compact windows; Reduce Transparency or Increase Contrast gives
-  Standard. Content stays free of glass and materials, the History chart readout included: no
-  material in `Main/`; groups use `Card`/`CardGroup`/`LookForm`.
+  Standard. Content stays free of glass and materials: no material in `Main/` but the History
+  chart's hover readout, which must read on every style; groups use `Card`/`CardGroup`/`LookForm`.
   Only the window background may depend on the style's structure; everything else takes the style
   as a value. `MotionGuardTests` enforces the lists.
 - Motion: through `\.motion` (`App/Motion.swift`), keyed on `BatteryMotionKey` or UI state, never

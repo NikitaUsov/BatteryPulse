@@ -64,8 +64,9 @@ struct SelectionOverlay: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        // A card's own surface with the window style's hairline: content, so no material (CLAUDE.md).
-        .background(.background.secondary, in: .rect(cornerRadius: 6, style: .continuous))
+        // The one material in the windows' content: the readout floats over the plot and must
+        // read on every window style, the glass sheet's included, where a card's surface didn't.
+        .background(.regularMaterial, in: .rect(cornerRadius: 6, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(tones.style(.hairline), lineWidth: 0.5))
     }
