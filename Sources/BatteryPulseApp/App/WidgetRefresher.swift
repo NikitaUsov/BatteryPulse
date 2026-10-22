@@ -9,7 +9,6 @@ import os
 /// Asks WidgetKit to reload the battery widget when the battery changes enough to matter
 /// (``WidgetReloadPolicy``). The widget reads the battery itself; this only says when. Demo
 /// Mode never reaches the widget.
-@MainActor
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private var policy = WidgetReloadPolicy()
@@ -58,7 +57,7 @@ final class WidgetRefresher {
         }
         guard ended else { return }
         Diagnostics.widget.notice("Ended the previous version's widget extension")
-        // Main actor already: the class is.
+        // On the main actor, like the rest of the app.
         Task {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()

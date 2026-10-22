@@ -73,7 +73,6 @@ struct SelectionOverlay: View {
 }
 
 /// The time axis of the period charts.
-@MainActor
 enum HistoryTimeAxis {
     /// Few ticks on whole hours or days: tick generation is expensive, and labels on odd times
     /// read badly.

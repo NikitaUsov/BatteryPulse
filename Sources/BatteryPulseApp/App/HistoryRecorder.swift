@@ -16,7 +16,6 @@ enum AppHistory {
 /// battery changes state, and the day's battery condition. The first sample after launch and
 /// after the Mac wakes carries that event, so the chart can tell sleep from the app not
 /// running. Skipped while recording is off or Demo Mode shows simulated data.
-@MainActor
 final class HistoryRecorder {
     private let monitor: BatteryMonitor
     private let store: HistoryStore

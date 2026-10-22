@@ -108,7 +108,7 @@ private struct UpdateAvailableRow: View {
     @Environment(\.motion) private var motion
     @State private var bounces = 0
     /// The version whose arrival has been marked, for the life of the app.
-    @MainActor private static var markedVersion: AppVersion?
+    private static var markedVersion: AppVersion?
 
     var body: some View {
         Button {

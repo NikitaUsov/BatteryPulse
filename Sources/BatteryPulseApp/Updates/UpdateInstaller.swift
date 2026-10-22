@@ -21,7 +21,6 @@ import os
 ///
 /// Every failure leaves the installed app untouched. The window then offers the browser download,
 /// or only the release page after a failed integrity check (``UpdateFallback``).
-@MainActor
 @Observable
 final class UpdateInstaller {
     enum Phase: Equatable {
@@ -314,8 +313,8 @@ extension UpdateInstallError {
 }
 
 /// Hands the progress of a download made with `URLSession.download(for:delegate:)` to the main
-/// actor, which polls it.
-private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
+/// actor, which polls it. Nonisolated: URLSession calls it on its delegate queue.
+private nonisolated final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
     private let task = Mutex<URLSessionTask?>(nil)
 
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
@@ -335,8 +334,9 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable 
 /// The installation steps that touch the disk. `verify`, `replace` and `removeLeftovers` run off
 /// the main actor; preparing and emptying the downloads folder is quick and runs on the caller's.
 /// The steps that can fail throw only an ``UpdateInstallError``; cancellation is checked between
-/// them, in the installer's `run`.
-enum UpdateInstallSteps {
+/// them, in the installer's `run`. Nonisolated, unlike the rest of the app, so no step (mounting,
+/// the code signature check, the tools' termination handlers) drifts onto the main actor.
+nonisolated enum UpdateInstallSteps {
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
     static func prepareDownloadFolder(bundleIdentifier: String) throws(UpdateInstallError) -> URL {
         do {

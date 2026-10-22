@@ -188,7 +188,6 @@ enum AppLinks {
 /// The app is never unreachable: without the menu bar item the Dock icon always shows. With it,
 /// the Dock icon is optional but appears while one of the app's windows is open, so the window
 /// can be found with ⌘-Tab and macOS brings it to the front reliably.
-@MainActor
 enum DockIconPolicy {
     private static var openWindows: Set<String> = []
 
@@ -220,7 +219,6 @@ enum DockIconPolicy {
 }
 
 /// Opens app windows from places that have no SwiftUI environment (the Dock and its menu).
-@MainActor
 enum WindowOpener {
     /// Captured from any view that appears; `OpenWindowAction` works from any scene.
     static var openWindow: OpenWindowAction?
@@ -272,7 +270,6 @@ extension View {
 /// One observable login-item state shared by every settings view, so the Welcome and Settings
 /// windows can't disagree. Re-read whenever the app becomes active, since the user can also
 /// change it in System Settings → General → Login Items.
-@MainActor
 @Observable
 final class LaunchAtLoginModel {
     /// One read, so ``isEnabled`` and ``requiresApproval`` always describe the same moment.
