@@ -1971,7 +1971,8 @@ restore_all() {
   defaults import "$BUNDLE_ID" "$BACKUP/defaults.plist"
   rm -rf "$SUPPORT"
   if [ -d "$BACKUP/support" ]; then ditto "$BACKUP/support" "$SUPPORT"; fi
-  if [ ! -d "$BACKUP/support/Widget" ]; then rm -rf "$SUPPORT/Widget"; fi
+  # SPIKE-W's feed (candidate A); 0.6.1 has none.
+  rm -rf "$SUPPORT/Widget"
   defaults delete "$FEED_DOMAIN" 2>/dev/null || true
   rm -f "$HOME/Library/Preferences/$FEED_DOMAIN.plist"
   defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
@@ -2060,11 +2061,11 @@ appendix_rows() {
 | W0-4: accessory count; rendering mode per style and place; redactionReasons; click deliveries; scheme need | SPIKE-W's log lines, per mark |
 | W0-5: VoiceOver text; Text size | W0-5-* answers |
 | W0-6: the offset format's text and cadence | W0-6-* answers |
-| F13: UpdateTime changes against "any" lines | pslog and the ioreg sampler |
-| E3b: timeremaining followed by "any" (battery and charging) | pslog and the ioreg sampler |
+| F13: UpdateTime changes against "any" lines | pslog, notifyutil and the ioreg sampler |
+| E3b: timeremaining followed by "any" (battery and charging) | pslog, notifyutil and the ioreg sampler |
 | E20 field run: traps, crash reports, read threads; memory over 2 hours | E20's field run |
 | V-01: "executor" log lines, new crash reports, the answers | V-01; V01-* answers |
-| mAh cadence: RemainingCapacity changes per hour | pslog and the ioreg sampler |
+| mAh cadence: RemainingCapacity changes per hour | pslog, notifyutil and the ioreg sampler |
 | Clear's fill (b) and Translucent Dark's today's fill | Clear's minimize fill; fill-* answers |
 | page.switch count and p50 per page (before) | Page switches |
 | F5: accessory and device captures (bpulse built or not) | F5 |
@@ -2223,6 +2224,8 @@ Any time:
   attach <image> <caption>   publish a small copy of an image in A.md (look at it first)
   unattach <file>            take one back out
   appearance light|dark|back
+  install <C|I|W|B|A2|A2P|A|backup>
+                             one build, the way every step installs it (after a refusal: install B)
   status                     answers so far, the installed build, the battery
   restore                    your app, settings, data and system settings back, then what to do by hand
   send [--dry-run]           A.md to docs/plans/0.6.2/sessions/ on $RESULTS_BRANCH
@@ -2250,6 +2253,7 @@ case "$COMMAND" in
   attach) step_attach "$@" ;;
   unattach) step_unattach "$@" ;;
   appearance) step_appearance "$@" ;;
+  install) step_install "$@" ;;
   status) step_status ;;
   restore) step_restore ;;
   send) step_send "$@" ;;
