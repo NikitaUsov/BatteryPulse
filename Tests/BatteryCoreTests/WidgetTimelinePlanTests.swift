@@ -21,14 +21,22 @@ struct WidgetTimelinePlanTests {
 
     @Test func withoutAnEstimateOneEntryAndTheRegularReload() {
         let plan = Self.plan(.charged)
-        #expect(plan.entries == [.init(date: Self.start, showsEstimate: true)])
+        #expect(
+            plan.entries == [
+                .init(date: Self.start, showsEstimate: true),
+                .init(date: Self.minutes(45), showsEstimate: false, isStale: true),
+            ])
         #expect(plan.nextReload == Self.minutes(30))
         #expect(WidgetTimelinePlan(snapshot: nil, at: Self.start).nextReload == Self.minutes(30))
     }
 
     @Test func aLongEstimateOutlastsTheTimeline() {
         let plan = Self.plan(.discharging, timeToEmptyMinutes: 600)
-        #expect(plan.entries == [.init(date: Self.start, showsEstimate: true)])
+        #expect(
+            plan.entries == [
+                .init(date: Self.start, showsEstimate: true),
+                .init(date: Self.minutes(45), showsEstimate: true, isStale: true),
+            ])
         #expect(plan.nextReload == Self.minutes(30))
     }
 
@@ -38,19 +46,24 @@ struct WidgetTimelinePlanTests {
         #expect(
             plan.entries == [
                 .init(date: Self.start, showsEstimate: true), .init(date: Self.minutes(20), showsEstimate: false),
+                .init(date: Self.minutes(45), showsEstimate: false, isStale: true),
             ])
         #expect(plan.nextReload == Self.minutes(20))
     }
 
     @Test func aShortEstimateStillWaitsTheMinimumBeforeReloading() {
         let plan = Self.plan(.charging, timeToFullMinutes: 2)
-        #expect(plan.entries.last == .init(date: Self.minutes(2), showsEstimate: false))
+        #expect(plan.entries.dropLast().last == .init(date: Self.minutes(2), showsEstimate: false))
         #expect(plan.nextReload == Self.minutes(15))
     }
 
     @Test func anEstimateThatHasRunOutIsNotShown() {
         let plan = Self.plan(.charging, timeToFullMinutes: 0)
-        #expect(plan.entries == [.init(date: Self.start, showsEstimate: false)])
+        #expect(
+            plan.entries == [
+                .init(date: Self.start, showsEstimate: false),
+                .init(date: Self.minutes(45), showsEstimate: false, isStale: true),
+            ])
         #expect(plan.nextReload == Self.minutes(15))
     }
 
@@ -74,7 +87,7 @@ struct WidgetTimelinePlanTests {
     /// doesn't shorten the timeline.
     @Test func theEstimateFollowsTheChargeState() {
         let plan = Self.plan(.discharging, timeToFullMinutes: 3, timeToEmptyMinutes: 300)
-        #expect(plan.entries.count == 1)
+        #expect(plan.entries.count == 2)
         #expect(plan.nextReload == Self.minutes(30))
     }
 }
