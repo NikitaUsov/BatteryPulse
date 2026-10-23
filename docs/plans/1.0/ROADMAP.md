@@ -26,6 +26,15 @@ practices, as you see fit") and is decided as its recommendation.
    `scripts/release-stats.swift` prints each release's download counts for ROADMAP's Releases
    table (NEW-23, P2 WP-19).
 
+**Added 2026-10-23, after 0.6.2's first M5 session (Session A):** the maintainer asked to see
+macOS's Charge Limit in the app, the menu bar and the widget. Showing it, read-only, is a new
+inventory row, FEA-35, distinct from FEA-27 (setting a limit, not in 1.x: M-3). 0.7 shows the "at
+limit" state (plan-0.7.0 W-14, §3.2), and 0.8 the configured number if one of its candidate
+sources passes its check (§3.3: the SMC's `CHLT`, `pmset -g battlimit` and, since Session A's
+evening reads, powerd's charging plist read as a file and System Settings' weaker prior limit).
+M-3 still rules out the private PowerUI client unless the maintainer reopens it. The counts below
+include FEA-35.
+
 **Sources and how they are cited**
 
 | Short | Source |
@@ -101,17 +110,20 @@ Contents:
   download counts are printed by `scripts/release-stats.swift` and recorded a week after
   publishing (§1.2 item 6, NEW-23). From 0.7, an anonymous version count, on by default and
   announced, adds one public number per release: how many Macs ran that version (NEW-24).
-- **What is open:** 131 items, 22 maintainer questions and 62 rejected ideas (INV Summary). The
+- **What is open:** 132 items, 22 maintainer questions and 62 rejected ideas (INV Summary). The
   questions, and M-1 to M-14, are all decided as of 2026-10-22 (§5.3, §6).
-  - 54 of the items need the MacBook Air M5, 42 of them in 0.6.2 (FEA-23 and SEC-01 left it with
-    the answers). One of those, 0.6.2's intake A0 (DIS-04), has since passed.
+  - 55 of the items need the MacBook Air M5, 42 of them in 0.6.2 (FEA-23 and SEC-01 left it with the
+    answers; FEA-35 joined on 2026-10-23). One of those, 0.6.2's intake A0 (DIS-04), has since
+    passed.
   - 12 depend on the paid developer account, which the maintainer will not pay for (M-1).
   - 11 need Xcode on the Mac, which is installed on the M5 (Q-B7).
 - **What is next (already planned):**
   - 0.6.2: maintenance and foundation, plus the release-statistics script (P2).
-  - 0.7: widget customization, the device JSON dates and the anonymous version count
-    (R:543-556; P2 §8, §9; NEW-24).
-- **What is not planned:** an iOS app, charge limiting (R:704-706), and Developer ID signing and
+  - 0.7: widget customization, the device JSON dates, the anonymous version count and the
+    Charge Limit's paused state (R:543-556; P2 §8, §9; NEW-24; FEA-35).
+  - 0.8: among its answers, the configured Charge Limit, if a source passes its check (FEA-35).
+- **What is not planned:** an iOS app, charge limiting (setting a limit, R:704-706; showing
+  macOS's own is FEA-35), and Developer ID signing and
   notarization: on 2026-10-22 the maintainer decided against the paid account, not now and not
   before 1.0 (M-1).
 
@@ -202,8 +214,11 @@ that exists.
   - Everything 0.6.1 ships (USER_GUIDE).
   - 0.7's widget MVP: the configurable Battery widget in small, medium and large, and in extra
     large if the maintainer approves its layout in 0.7's look check (Q-W10; a family can be added
-    later without touching placed widgets, P2 §8.13), plus the Accessories widget if W0-4 passes
-    (P2 §9.1; plan-0.7.0 §2.5).
+    later without touching placed widgets, P2 §8.13), plus the Accessories widget, since W0-4 (1)
+    passed in 0.6.2's Session A (2026-10-23; P2 §9.1; plan-0.7.0 §2.5).
+  - macOS's Charge Limit, read-only (FEA-35, the maintainer's request of 2026-10-23): the paused
+    state from 0.7, and the configured number from 0.8 if a candidate source passes its check
+    (§3.3); otherwise the number is a known limitation.
   - 0.8's answers (§3.3): why the battery isn't charging (causes confirmed by captures only), a
     health summary, in-app explanations of the numbers, a first-run Welcome, and Report a
     Problem. An item 0.8's cut line moves lands in 0.9.0 instead, still before 1.0.
@@ -212,8 +227,8 @@ that exists.
 - **C2 Every feature seen in a packaged build.** A verification matrix (NEW-18) maps each
   USER_GUIDE feature to the session and the evidence (screenshot or log) from a DMG build. Every
   open "Check on the M5" line in ROADMAP is ticked, or listed under Known limitations in the guide
-  and in 1.0's release notes. The 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22)
-  are the starting list (INV Summary).
+  and in 1.0's release notes. The 55 M5 rows (54 open: DIS-04, round A0, passed on 2026-10-22;
+  FEA-35 joined on 2026-10-23) are the starting list (INV Summary).
 - **C3 No known issue in anything on by default.**
   - The guide's known issues may list only beta styles, Developer options, and what C7 allows: a
     permission or a placed widget that must be set up again after an update, with the steps to do
@@ -438,7 +453,8 @@ None of these blocks 1.0:
 - graduating Translucent or Clear;
 - fixtures from other Macs;
 - an iPad capture;
-- charge limiting;
+- charge limiting (setting a limit, FEA-27);
+- the configured Charge Limit's number, if no candidate source passes (FEA-35);
 - per-app energy.
 
 Each is placed in §4 or §5.
@@ -450,8 +466,8 @@ Each is placed in §4 or §5.
 | Version | Theme | Headline | Maintainer M5 time | Runs |
 |---|---|---|---|---|
 | **0.6.2** | Foundation II (P2; plus a release-statistics script) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds; `scripts/release-stats.swift` (tooling, no app change) | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-33, plus 3 in reserve (P2 §7.2) |
-| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates; the anonymous version count (on by default, announced) | The look check (about 15 min at the desk, no M5, plus a 3-min second look), Session R (about 83 min), a logged day and its 10-min end, the after-publishing check (about 10 min, plus about 3 min and a passive 10-min wait for the version count); plus a 35-min spike sitting if 0.6.2's W0 never ran (plan-0.7.0 §6, §2.3) | 28-31 plus 3 in reserve; never-cut 23-26; stretch +8-9 [estimate, plan-0.7.0 §7.2] |
-| **0.8** | Answers in the app | Why it isn't charging, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 85 min, the contrast audit included [estimate] | 29-36 [estimate] |
+| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates; the anonymous version count (on by default, announced); the Charge Limit's paused state (FEA-35) | The look check (about 15 min at the desk, no M5, plus a 4-min second look), Session R (about 83 min), a logged day and its 10-min end, the after-publishing check (about 10 min, plus about 3 min and a passive 10-min wait for the version count); no spike sitting, since 0.6.2's Session A ran the widget spikes (plan-0.7.0 §6, §2.3) | 28-31 plus 3 in reserve, and about 2 for W-14 (FEA-35); never-cut 27-29 (W-8 and W-14 now never cut); stretch +8-9 [estimate, plan-0.7.0 §7.2] |
+| **0.8** | Answers in the app | Why it isn't charging, the configured Charge Limit (FEA-35), a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 85 min, the contrast audit included [estimate] | 30-38, FEA-35's number included [estimate] |
 | **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, the ad-hoc first install documented (C16; no Developer ID, §3.4), `bpulse` in the app | About 50 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 8-11, plus whatever 0.8's cut line moves [estimate] |
 | **0.9.x** | Release candidates (fixes only) | Soak, energy budgets, the upgrade matrix | About 40 min, plus 70 min unattended and a passive 7-day soak [estimate] | 1-3 each |
 | **1.0.0** | The promise | The last 0.9.x, renamed | The after-publishing check, about 10 min | 1-2 |
@@ -460,13 +476,15 @@ Each is placed in §4 or §5.
 - about 11-13 hours of hands-on time, plus the 5-minute NEW-22 check after each macOS 27.x
   update, unattended windows and a passive soak week. The parts: 0.6.2's sessions, Xcode items
   and check (about 230 min: Sessions A and B with their Xcode steps, 160, WP-18's sitting, 60,
-  and the check, 10), 0.7's sittings (about 120 min, plus 35 if W-0S runs), 0.8's (about 135),
-  0.9.0's (about 60-120), the 0.9.x sittings (about 50 each, two assumed) and 1.0's check (about
-  10). Xcode adds about 90 minutes to 0.6.2 and 10 to 0.8; the Developer ID evening (S-ID) and
-  the 30 minutes of secrets (G-ID) are gone with M-1's no. 0.7's version count adds about 3
-  minutes to Session R and about 3 to its after-publishing check;
-- about 103-128 implementation and review runs, plus 8-9 if 0.7's stretch runs (0.6.2's
-  release-statistics script and 0.7's version count add about 3).
+  and the check, 10), 0.7's sittings (about 125 min; no W-0S, since Session A ran the spikes),
+  0.8's (about 135), 0.9.0's (about 60-120), the 0.9.x sittings (about 50 each, two assumed) and
+  1.0's check (about 10). Xcode adds about 90 minutes to 0.6.2 and 10 to 0.8; the Developer ID
+  evening (S-ID) and the 30 minutes of secrets (G-ID) are gone with M-1's no. 0.7's version count
+  adds about 3 minutes to Session R and about 3 to its after-publishing check;
+- about 106-132 implementation and review runs, plus 8-9 if 0.7's stretch runs (0.6.2's
+  release-statistics script and 0.7's version count add about 3; FEA-35 adds about 3-4 (2 in 0.7,
+  W-14, and 1-2 in 0.8, net of NEW-01's Charge Limit cause, which moved to 0.7), recomputed on
+  2026-10-23).
 
 **No dates (M-5, the maintainer, 2026-10-22).** "This is a hobby project; we release when there
 is time and desire." The table above is the order of the versions and their effort, not a
@@ -523,7 +541,8 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
     ROADMAP Stage 1.2.
   - Session A: QUA-09 (if an iPhone is at hand) and QUA-10.
   - Session B and after publishing: L10N-01, DIS-05, DIS-06.
-  - Optional checks: QUA-04, QUA-05, QUA-11, A11Y-02, A11Y-04.
+  - Optional checks: QUA-04, QUA-05 (captured in Session A, 2026-10-23; item 2), QUA-11, A11Y-02,
+    A11Y-04.
   - Session B's contrast audit with Accessibility Inspector: A11Y-03 (Xcode is installed).
   - ENG-18 and TCI-09 are settled as they fall out of the runs.
 - **Exit criteria:** P2's own.
@@ -548,16 +567,26 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
 - **What the roadmap asks alongside 0.6.2 (answers and optional steps; no change in scope):**
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
-  2. **Run the optional Charge Limit capture (QUA-05)** with the session script's `charge-limit`
-     step (0.6.2's script, or 0.7's W-12). The script asks for the limit set in System Settings →
-     Battery [exact menu path unverified on macOS 27] and checks that the charge is at least 5
-     points below it, because a capture that starts at or above the limit records nothing. It then
-     starts `caffeinate -i bpulse --record` into a new, empty folder under the session's backup
-     folder (`~/bp-062/` or `~/bp-070/`; UG:579-583:
-     without `caffeinate -i` the recording stops when the Mac sleeps, and the folder must not hold
-     an earlier recording) and beeps when charging stops at the limit. Keep the adapter in and the
-     lid open: about 2 minutes of setup, then unattended. 0.8's NEW-01 wants it; without it, the
-     Charge Limit cause doesn't ship (§3.3). If 0.6.2 misses it, 0.7's Session R offers it (V).
+  2. **The optional Charge Limit capture (QUA-05): run in Session A** (2026-10-23, the limit at
+     80 %; P2 Appendix C). The pause set bit 24 (0x01000000) of `NotChargingReason`; no registry
+     key holds the configured 80. The redacted fixture comes with Session A's final notes, only on
+     the maintainer's yes. The local session also checked the number's candidates, read-only, on
+     AC at the 80 % limit (2026-10-23 evening; interim, exact values with its final notes):
+     `pmset -g battlimit` shows the 80 %; `bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS` (it
+     prints no `CH*` values; reading one waits for a reviewed change, §3.3); and it found two more,
+     powerd's charging plist, readable without root, and System Settings' prior limit (§3.3). The
+     same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging are pending. If no fixture is
+     committed, the step runs again with the session script's `charge-limit` step (0.7's W-12).
+     The script asks for the limit set in System Settings → Battery [exact menu path unverified on
+     macOS 27] and checks that the charge is at least 5 points below it, because a capture that
+     starts at or above the limit records nothing. It then starts `caffeinate -i bpulse --record`
+     into a new, empty folder under the session's backup folder (`~/bp-062/` or `~/bp-070/`;
+     UG:579-583: without `caffeinate -i` the recording stops when the Mac sleeps, and the folder
+     must not hold an earlier recording) and beeps when charging stops at the limit. Keep the
+     adapter in and the lid open: about 2 minutes of setup, then unattended. FEA-35 needs the
+     fixture: without one by plan-0.7.0's C1, W-14 moves whole to 0.8 (plan-0.7.0 G7-18), so 0.7
+     runs the step between W-12's merge and C1, and its Session R offers it only if it never ran
+     (V).
   3. **Q-B8: no** (P2's default; decided by delegation, 2026-10-22). Enhanced Security on an
      ad-hoc signature is unverified, and if AMFI refused the new version after the swap, users
      would be left with an app that doesn't launch (RES-security SEC-08 row; D). It was to be
@@ -596,7 +625,8 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   formats, the settings keys and the update contract don't change" (R:437-439). So 0.7 is also
   where the device JSON dates change, together with the JSON version field: scripts change once
   (Q). It is also where the anonymous version count adds its settings keys and its release asset
-  (NEW-24), announced as a frozen-surface change.
+  (NEW-24), announced as a frozen-surface change. And, at the maintainer's request after Session A
+  (2026-10-23), it shows when macOS's Charge Limit holds the charge (FEA-35).
 - **Before code:**
   - Q-W1 to Q-W13, Q7-1 to Q7-7 and Q7-9 are decided (2026-10-22: Q-W1 and Q7-9, the version
     count, by the maintainer, the rest by delegation, §5.3).
@@ -610,7 +640,7 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
     - FEA-08 (W-2);
     - FEA-06 (W-3; extra large only on an explicit yes in the look check, plan-0.7.0 §2.5);
     - ENG-16 (W-4);
-    - FEA-09 (W-8, if W0-4 passed);
+    - FEA-09 (W-8; W0-4 (1) passed in 0.6.2's Session A);
     - A11Y-06;
     - L10N-04, TCI-11 and DOC-07 (W-10);
     - L10N-05, SIZ-06, TCI-10, ENG-17, QUA-16.
@@ -646,6 +676,35 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
       The design meets the conditions under which anonymous audience measurement is commonly
       exempt from consent: users informed, an easy objection, aggregate numbers for the publisher
       only (plan-0.7.0 Appendix B VC-8, §11). Turning the default off needs no key change.
+  - **The Charge Limit's paused state, P1** (FEA-35, plan-0.7.0 W-14; the maintainer's request of
+    2026-10-23, plan-0.7.0 Q7-10). Read-only; BatteryPulse never sets the limit (M-3).
+    - **The decision:** BatteryCore's new file gives `BatterySnapshot` a computed property, true
+      for bit 24 (0x01000000) of `NotChargingReason` with external power, `chargeState ==
+      .notCharging` and no optimized hold flag, which wins (Session A's capture, QUA-05). No new
+      `ChargeState` case: it is `Codable` in History and `--json`, both frozen. The type and its
+      `systemChargeLimit` names never meet `AlertSettings.chargeLimit`, the app's own "When
+      charged to" alert. A change of the property reloads the widget at once (plan-0.7.0 W-4's
+      planner), since the pause can begin without a `chargeState` change.
+    - **Where it shows:** Apple's "Charged to limit"-style state text on Overview, pointing to
+      System Settings → Battery; a Power row "Charge limit: Reached"; the menu bar popover and the
+      compact window through the shared state phrase; the widget's state line and its
+      `systemChargeLimit` field ("Reached" in 0.7); Raw Data decodes bit 24 as the Charge Limit's
+      hold.
+    - **Not in 0.7:** the number (no key holds it; §3.3), a marker on the ring or the drawn
+      battery (without the number the tick would sit at the end of the fill), a menu bar icon
+      change, and any `bpulse` change.
+    - **Words:** the English keys follow Apple's wording; the Russian follows Apple's Russian
+      Charge Limit article (https://support.apple.com/ru-ru/102338, which also gives the battery
+      menu's "Charged to [%] Limit" and Charge to Full Now) and System Settings' own string,
+      verified in W-10. The catalog's translation of "Charging on hold" (Optimized Charging's
+      hold) is not reused. The app's "When charged to 90 %" alert never fires under an 80 %
+      limit; the guide says so.
+    - **Tests:** the redacted fixture `m5-macos27-charge-limit.plist` is paused, every other
+      fixture is not, each condition alone ends the pause, bit 24 among other bits still counts,
+      and the Demo scene is paused; `WidgetTextBudget` in both languages; the catalog tests.
+    - **Gate (plan-0.7.0 G7-18):** it merges only with that fixture, made from Session A's
+      `charge-limit-80.plist` on the maintainer's yes. Without one by plan-0.7.0's C1 it moves
+      whole to 0.8, beside NEW-01.
   - **Fallback:** FEA-13, the preset kinds, only if W0-1 failed (P2 §8.16).
   - **For scripts:** QUA-14 (CB-02: ISO 8601 dates) and NEW-11 (`formatVersion` in every top-level
     JSON object `bpulse` prints). One line in the notes covers both.
@@ -721,19 +780,25 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
     later `release-stats.swift` shows v0.7.0's count at 1 or more (plan-0.7.0 §6.4). A week
     later the download counts, the new Count column included, are recorded (NEW-23, NEW-24).
 - **M5 sessions [estimate]** (plan-0.7.0 §6):
-  - the look check at the desk (about 15 minutes, no M5) and a 3-minute second look;
+  - the look check at the desk (about 15 minutes, no M5) and a 4-minute second look (W-8's and
+    W-14's PNGs);
   - Session R, about 83 minutes, with the screenshot matrix scripted;
   - a day of normal use with the `perf` stream on, for reloads delivered and the widget's energy,
     and about 10 minutes at its end (F12);
   - the after-publishing check, with the version count's step (about 3 minutes and a passive
     10-minute wait);
-  - QUA-05, if 0.6.2 missed it: the session script's `charge-limit` step (§3.1 item 2);
+  - QUA-05, if Session A's capture isn't committed as a fixture: the session script's
+    `charge-limit` step (§3.1 item 2), plus the diff at 100 % if Session A's 80 → 100 → 80
+    recording doesn't already hold it, any time between W-12's merge and C1, since W-14 needs
+    both by then (plan-0.7.0 G7-18);
   - QUA-06: the `hold-watch` step before bed, with the adapter in and the lid open. It records
-    overnight under `caffeinate -i` and says in the morning whether a hold was seen. Nobody can
-    know in advance which night macOS holds the charge [uncertain: whether macOS holds it while
+    overnight under `caffeinate -i` and says in the morning whether a hold was seen, and with it
+    whether the optimized hold also sets bit 24, which FEA-35 would show as the Charge Limit. Nobody
+    can know in advance which night macOS holds the charge [uncertain: whether macOS holds it while
     the Mac is kept awake].
-- **Size [estimate]:** 28-31 runs plus 3 for fixing forward; never-cut 23-26; stretch +8-9
-  (plan-0.7.0 §7.2, which also counts D1-D3, the riders, W-3's split and W-13's 2 runs).
+- **Size [estimate]:** 28-31 runs plus 3 for fixing forward; stretch +8-9 (plan-0.7.0 §7.2,
+  which also counts D1-D3, the riders, W-3's split and W-13's 2 runs). W-14 (FEA-35) adds about 2
+  runs. Never-cut 27-29, W-14 included (W-8 and W-14 now never cut).
 
 ### 3.3 0.8: Answers in the app
 
@@ -750,17 +815,60 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   - **NEW-01 Why it isn't charging,** shown on Overview and in the menu bar popover.
     - BatteryCore decodes the causes and tests them on Linux:
       - `NotChargingReason`, which is parsed today (MacPowerParser.swift:211) but printed only as
-        hex in the text report (BatteryReport.swift:78-79). Bits 12 and 24 are candidates for the
-        Charge Limit [unverified, CLR:96];
+        hex in the text report (BatteryReport.swift:78-79). Bit 24 is the Charge Limit's hold
+        (Session A, 2026-10-23), which FEA-35 shows from 0.7; NEW-01 builds on its type. Bit 12
+        is reported as a drain toward a limit below the charge [unverified, CLR:96];
       - IOPS's optimized-charging hold (R:76-77);
       - the thermal state;
       - an adapter too weak for the load. [uncertain: a heuristic]
-    - **A cause shows only when a real fixture proves it.** QUA-05 proves the Charge Limit and
-      QUA-06 the optimized hold. Until then, today's state is shown.
+    - **A cause shows only when a real fixture proves it.** QUA-05's fixture proves the Charge Limit
+      (FEA-35, already in 0.7 unless plan-0.7.0 G7-18 moved it here) and QUA-06 the optimized hold.
+      Until then, today's state is shown.
     - Each cause gets a Demo Mode scene, so its look can be reviewed without waiting for the real
       state (CLAUDE.md: `DemoBattery` scenes expand into M5-style raw dictionaries).
     - For the Charge Limit and the optimized hold, the line points to System Settings → Battery
       (M-3).
+  - **FEA-35's second half: the configured Charge Limit** (the "80"). No IOKit or IOPS key holds
+    it (Session A: `bpulse --raw`, three `ioreg` dumps and `pmset`). The candidates, best first
+    as known today, each shipped only after its check; Session A's pending reads (plan-0.7.0
+    Appendix C finding 9) decide where the third goes, and it may become the first:
+    1. **The SMC's `CHLT`:** inside the read-only SMC rule (CLAUDE.md), so no new exception. Seen
+       once, on another Mac: the active limit only, 00 on battery. Present on the M5
+       (`bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS`; 2026-10-23 evening), its value still
+       unread. A reviewed `bpulse --smc` value read of `CHLT` and `CHNC` comes first.
+    2. **`pmset -g battlimit` through `Process`:** a `SecurityGuardTests` exception with its
+       reason (today only the update installer starts a process). It runs only on a bit-24
+       change or a plug-in, never per poll, answers only on AC (it clears about 300 s after
+       unplugging), and prints undocumented text, parsed in BatteryCore and tested on Linux with
+       verbatim samples. On the M5 it shows the 80 % limit, powerd's active policy.
+    3. **powerd's charging plist, read as a file** (new, 2026-10-23 evening):
+       `/Library/Preferences/com.apple.powerd.charging.plist`, readable by the user without root.
+       The unsandboxed app reads the file: no `Process`, no private framework, no SMC. It is an
+       `NSKeyedArchiver` archive whose `policies` value is an embedded binary plist of
+       `ChargeCtrlPolicy` objects, with `battlimit`'s fields (`Soc`, `Reason`, `Drain` and
+       others). BatteryCore parses it on Linux as a plain property list, walking the archive's
+       `$objects` and `$top` generically and never instantiating the private class, tested with a
+       redacted sample. The widget's sandbox can't read it. The format is private and
+       undocumented, so a macOS 27.x update may change it. The pending reads (100 % or off, back at
+       80 %, on battery more than 5 minutes after unplugging, and the file's modification time)
+       show whether it holds the configured setting in every power state or only the active
+       policy, like `battlimit`.
+    4. **System Settings' prior limit, weaker:** the user defaults domain
+       `com.apple.batteryui.charging.mac` holds a prior limit of 80. It is System Settings' own
+       record, so it may be stale after a change made elsewhere, and "prior" may mean the value
+       from before the limit was turned off.
+    5. **The private PowerUI client:** it answers in any power state, but M-3 rules it out. Not
+       taken unless the maintainer reopens M-3.
+    - **Model:** a stored `systemChargeLimitPercent: Int?` (80-100; `nil` is unknown), so `--json`
+      gains the key only when it is known (NEW-11's format version notes it). It never infers
+      "off": at 100 % and on battery the sources look alike, and a missing plist policy is
+      unknown.
+    - **Where:** Power's row gains the number ("80 %", and "reached" while paused). The sandboxed
+      widget can read none of the sources, so it gets the number only through the feed (FEA-10);
+      without the feed it keeps 0.7's "Reached".
+    - **If no candidate passes:** the number stays unknown, a known limitation (§2.5). [uncertain
+      until the diff at 100 %: whether bit 24 clears when the limit is raised, which other keys
+      flip, and what "off" looks like]
   - **NEW-02 Health summary,** at the top of Health.
     - Facts only: the condition, maximum capacity, and cycles out of the rated count. No grade of
       our own (V, D4).
@@ -818,6 +926,8 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
     that announces it loses no user data. [uncertain: only pre-0.3 development folders had it]
 - **Exit criteria:**
   - Each cause shown is pinned by a Linux test against a real fixture; no fixture, no cause.
+  - FEA-35's number comes only from a source whose check passed on the M5, with verbatim samples
+    (a redacted one for powerd's plist) as Linux fixtures; otherwise it stays unknown.
   - The new guard suites are green.
   - The look review gets a y on every new screen in both languages, from scripted screenshots and
     the Demo Mode scenes.
@@ -829,20 +939,23 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   - The after-publishing check passes.
 - **M5 sessions [estimate]:**
   - a look sitting of about 40 minutes on a CI build: Demo Mode scenes, the Welcome window, the
-    Report a Problem preview;
+    Report a Problem preview, and FEA-35's check (the session script's `charge-limit` step reads
+    the candidate at the limit, on AC and then on battery: about 2 minutes of setup, then
+    unattended);
   - a release-candidate sitting of about 85 minutes: 45 minutes of VoiceOver and keyboard, about
     10 of the contrast audit (C10), plus F12 and the Russian pages;
   - the after-publishing check.
-- **Size [estimate]:** 29-36 runs (about 18 packages: NEW-01 to NEW-07, A11Y-01 to A11Y-04,
-  NEW-14, NEW-16 with SEC-07, NEW-08 to NEW-10, NEW-12, QUA-15 and D1-D3; app-wide °F left with
-  Q-W12's answer). For scale: 0.6.1's 19 packages took 40-46 runs (P1, "At a glance"), and 0.7's
-  packages take 28-31 (plan-0.7.0 §7.2, W-13 included).
+- **Size [estimate]:** 30-38 runs (about 19 packages: NEW-01 to NEW-07, A11Y-01 to A11Y-04, NEW-14,
+  NEW-16 with SEC-07, NEW-08 to NEW-10, NEW-12, QUA-15, FEA-35's number and D1-D3; app-wide °F left
+  with Q-W12's answer). FEA-35's number adds about 1-2, net of NEW-01's Charge Limit cause, which
+  moved to 0.7. For scale: 0.6.1's 19 packages took 40-46 runs (P1, "At a glance"), and 0.7's
+  packages take 30-33 (plan-0.7.0 §7.2, W-13 and W-14 included).
 - **Cut line.**
   - **Never cut:** NEW-01, NEW-02, NEW-03, NEW-05, NEW-07, A11Y-01, NEW-16 with SEC-07, NEW-08 to
     NEW-10, D1-D3.
-  - **Cut in this order if the budget runs short:** NEW-06 (→ 0.9.0); NEW-04 (→ 0.9.0, whose
-    theme is a newcomer's first minutes); NEW-12 and QUA-15 (→ 0.9.0's engineering lane); NEW-14
-    (→ 0.9.0).
+  - **Cut in this order if the budget runs short:** FEA-35's number (→ 0.9.0; 0.7's "Reached"
+    stays); NEW-06 (→ 0.9.0); NEW-04 (→ 0.9.0, whose theme is a newcomer's first minutes); NEW-12
+    and QUA-15 (→ 0.9.0's engineering lane); NEW-14 (→ 0.9.0).
   - An item cut to 0.9.0 lands before its freeze, and one with a look joins 0.9.0's screenshot
     sitting. Each is still in 1.0 (C1, C12, C17).
 
@@ -998,7 +1111,7 @@ below runs unless M-1 is asked again.
 | Item | When and on what condition | Why not before 1.0 |
 |---|---|---|
 | History and iPhone & iPad widgets (FEA-10, FEA-11, FEA-12, SEC-08, DOC-08), if they miss 0.7.0 | 1.1, on the feed, only if W0-3 passed (Q-W3 is yes). If W0-3 failed, they are not possible without the paid account (§4.2) | They rest on an unverified temporary exception (W0-3). M-1 is no, so there is no App Group, the documented route (P2 §8.2, §8.3) |
-| "Why it isn't charging" as a widget field (FEA-20) | 1.1, once NEW-01's causes are proven | Keeps 0.8 off the widget |
+| "Why it isn't charging" as a widget field (FEA-20) | 1.1, once NEW-01's causes are proven; the Charge Limit's part ships in 0.7 with FEA-35 | Keeps 0.8 off the widget |
 | Widget extras: Refresh (FEA-15), extra-large portrait (FEA-16), the dashboard (FEA-17), per-row links (FEA-18), specific accessories (FEA-19) | Specific accessories later (Q-W2). The others only if the maintainer asks: the delegated answers to Q-W8 to Q-W10 (2026-10-22) build none of them | P2 §9.1 "Later"; scope (V, Q) |
 | Apps using the most energy (FEA-26) | a one-day spike on the M5 first | The private coalition calls are unproven without root on macOS 27 (R:576-584) |
 | MobileDevice in a helper process (SEC-03) | on evidence of a hang or crash | None seen so far (P1 §8 Q1); NEW-14 covers 1.0 |
@@ -1016,7 +1129,7 @@ below runs unless M-1 is asked again.
 | **The History and iPhone & iPad widgets, if W0-3 fails** (FEA-10 to FEA-12) | Not possible without the paid account | If neither candidate A nor A′ works, the app's copy of the readings has no route into the sandboxed widget, and the App Group needs a Team ID (P2 §8.2, §8.3 candidate C) |
 | **An iOS app** (FEA-29 to FEA-34, DIS-02) | Not in 1.x (M-2, decided by delegation) | Public iOS APIs give only the level and the state; the analytics file's format is unchecked (R:79-81). Free-team installs expire after 7 days and work on at most 3 devices (ICL #6). The Mac already reads iPhone health (R:594-637). |
 | **iCloud: the Mac's battery on the iPhone** (FEA-28) | Not planned (M-1 and M-2 are no) | Needs the paid account and an iOS app (R:645-651), and M-1 and M-2 are both no |
-| **Charge limiting** (FEA-27) | Not in 1.x (M-3, decided by delegation) | 1.x's promise is read-only (CLAUDE.md: the SMC is read-only; P2 §8.4: "the app changes nothing on the system"). The 80-100 % setter is a private client (R:677-684). macOS already offers the setting. The paid account wouldn't change this (CLR:105-109). |
+| **Charge limiting** (FEA-27) | Not in 1.x (M-3, decided by delegation) | 1.x's promise is read-only (CLAUDE.md: the SMC is read-only; P2 §8.4: "the app changes nothing on the system"). The 80-100 % setter is a private client (R:677-684). macOS already offers the setting. The paid account wouldn't change this (CLR:105-109). Showing macOS's own limit, read-only, is FEA-35 (0.7 and 0.8), not this row. |
 | Options the 2026-10-22 answers didn't take: a 0.6.3 with static large sizes (FEA-14), Clear's desktop-following fill (FEA-24), a Low Power Mode fallback for the beta styles (FEA-23), app-wide °F | Not taken | Q-W1: 0.7 and Q-B2: fill (b), both the maintainer's; Q-B10: no fallback and Q-W12: °C, both by delegation (§5.3) |
 | App Nap's effect (ENG-14); Instruments profiling (ENG-15's Instruments half) | Close as not planned at 0.9.0 | C6 measures the targets without Instruments. ENG-13 covers how often the mAh values change. |
 | iPad capture (QUA-08) | Known limitation | No iPad at hand (R:620-621) |
@@ -1033,7 +1146,7 @@ come true on the way to 1.0. Each is re-judged here:
 | REJ-01 | Parsing above 1 ms on the M5 | It is 0.153 ms (P2 §2.1). Still rejected. |
 | REJ-04 | A release redesigns the icon | 0.7's W-3 moves the drawn-battery painter but keeps `BatteryIconLayout`, with a Linux test on the layout (P2 §8.5, §8.14). That is a move, not a redesign. Still rejected, unless W-3's move needs it (a technical choice). |
 | REJ-06 | The file is next changed substantively | 0.7's W-1 changes `BatteryPresentation.swift`. **The condition is met:** W-1 moves the widget types out unchanged, in a commit of their own before its new code (plan-0.7.0 W-1 item 1). |
-| REJ-17 | The next real parser change | NEW-01 decodes `NotChargingReason` in BatteryCore and doesn't touch `--smc`. Still rejected. |
+| REJ-17 | The next real parser change | FEA-35 (0.7) and NEW-01 decode `NotChargingReason` in BatteryCore and don't touch `--smc`. FEA-35's 0.8 check adds the values of `CHLT` and `CHNC` to what `--smc` prints, not a new output format, and its plist candidate is a new BatteryCore reader that doesn't touch `--smc`. Still rejected. |
 | REJ-26 | The SDK gains `MainActorMessage` types | Checked again in 1.1's SDK sweep |
 | REJ-34 | Only for the periodic part | Unchanged |
 | REJ-36 | MetricKit as an off-by-default local option | NEW-05 covers diagnostics without it. Still rejected. |
@@ -1066,7 +1179,7 @@ Every other REJ row is unchanged (§5.4 lists them all).
 "0.6.2" means as P2 places it. The other versions are this roadmap's. Each row's note gives the
 condition or the reason.
 
-### 5.1 The 131 inventory rows
+### 5.1 The 132 inventory rows
 
 | ID | Item (short) | Placed | Note |
 |---|---|---|---|
@@ -1089,14 +1202,14 @@ condition or the reason.
 | FEA-17 | Extra-large dashboard | After 1.0 | Only if asked: Q-W10 makes extra large a bigger Battery (delegation) |
 | FEA-18 | Per-row widget links | After 1.0 | Only if asked: Q-W8 opens the widget's page (delegation) |
 | FEA-19 | Choose specific accessories | After 1.0 | Q-W2: later (delegation) |
-| FEA-20 | "Why it isn't charging" widget field | After 1.0 (1.1) | The app shows it in 0.8 (NEW-01) |
+| FEA-20 | "Why it isn't charging" widget field | After 1.0 (1.1) | The app shows it in 0.8 (NEW-01); the Charge Limit's part ships in 0.7 with FEA-35 |
 | FEA-21 | Hide fully charged accessories | 0.7 | Nice-to-have |
 | FEA-22 | Graduate Translucent/Clear | 0.6.2 (gated) | Final stance at 0.9.0 (M-8) |
 | FEA-23 | Low Power Mode fallback for beta styles | Not planned | Q-B10: no fallback (delegation, 2026-10-22) |
 | FEA-24 | Clear's desktop-following fill | Not planned | Q-B2 chose fill (b) (the maintainer, 2026-10-22) |
 | FEA-25 | Glass-sheet chart lines, Raw Data treatment | After 1.0 | Not in 0.6.2 (Q-B4, by delegation); with a beta style's graduation |
 | FEA-26 | Apps using the most energy | After 1.0 | A spike first (§4.1) |
-| FEA-27 | Charge limiting | Not planned | Not in 1.x (M-3) |
+| FEA-27 | Charge limiting | Not planned | Not in 1.x (M-3); showing the limit is FEA-35 |
 | FEA-28 | Mac battery on iPhone via iCloud | Not planned | Paid account plus an iOS app |
 | FEA-29 | iOS app target | Not planned | M-2 |
 | FEA-30 | iOS charge/state screen | Not planned | M-2 |
@@ -1104,12 +1217,13 @@ condition or the reason.
 | FEA-32 | iOS analytics import | Not planned | M-2 |
 | FEA-33 | iOS widget | Not planned | M-2 |
 | FEA-34 | iOS Live Activity | Not planned | M-2 |
+| FEA-35 | Show macOS's Charge Limit, read-only | 0.7 (the state) and 0.8 (the number) | The maintainer's request (2026-10-23). The state is plan-0.7.0 W-14, P1, whole to 0.8 without a redacted fixture by plan-0.7.0's C1 (G7-18); the number only from a source that passes its check (§3.3): the SMC's `CHLT` (present on the M5, its value unread), `pmset -g battlimit`, powerd's charging plist read as a file (new, 2026-10-23 evening; its place, possibly first, waits for Session A's pending reads) or, weaker, System Settings' prior limit; never PowerUI (M-3) |
 | QUA-01 | Clear black minimize frame | 0.6.2 | P1; fill (b), the graphite composite (Q-B2) |
 | QUA-02 | Clear tile preview selected/unselected | 0.6.2 | P1 |
 | QUA-03 | Beta styles graduation evidence | 0.6.2 | What it misses: 0.9.0 matrix, or a known limitation (beta) |
 | QUA-04 | Menu bar icon styles signed off | 0.6.2 (optional) | Else the 0.9.0 matrix |
-| QUA-05 | Charge Limit stop-point capture | 0.6.2 (optional) | Wanted before 0.8's freeze. Without it, NEW-01 ships without the Charge Limit cause (no fixture, no cause, §3.3). 0.7's Session R offers it as an optional step |
-| QUA-06 | Optimized charging hold capture | 0.7-0.8 (opportunistic) | Gates NEW-01's optimized-hold cause; without it, that cause waits until after 1.0 |
+| QUA-05 | Charge Limit stop-point capture | 0.6.2 (optional; captured in Session A, 2026-10-23) | The pause is bit 24 (§3.1 item 2). The redacted fixture, on the maintainer's yes, gates FEA-35 in 0.7 (no fixture, no cause; else 0.8, G7-18). If no fixture is committed or the diff at 100 % is still open, 0.7 runs the step between W-12's merge and C1; its Session R offers it only if it never ran |
+| QUA-06 | Optimized charging hold capture | 0.7-0.8 (opportunistic) | Gates NEW-01's optimized-hold cause; without it, that cause waits until after 1.0. It also shows whether the hold sets bit 24, which FEA-35 would show as the Charge Limit [unverified] |
 | QUA-07 | Glossary keys, M1-M4 captures | After 1.0 | Ongoing; not a gate (C17's honest claim) |
 | QUA-08 | iPad capture, `ManufactureDate` | Not planned | Hardware; listed as a known limitation |
 | QUA-09 | iPhone/iPad in packaged app | 0.6.2 (if at hand) | Else the 0.9.0 matrix |
@@ -1347,7 +1461,19 @@ anonymous version count in 0.7 (NEW-24; plan-0.7.0 §14 Q7-9).
 - **Decided by delegation (2026-10-22), as recommended:** not in 1.x.
   - 0.8 says why the battery isn't charging, from the readings, and points to System Settings →
     Battery.
-  - Neither a setter nor a private reading of the limit.
+  - Neither a setter nor a reading of the limit through a private framework (the PowerUI
+    client), unless the maintainer reopens M-3.
+  - **Clarified 2026-10-23 (by delegation):** the earlier wording "no private reading of the
+    limit" meant no private framework loaded into BatteryPulse. A read-only, undocumented source
+    that loads no private code (a registry key, a read-only SMC key, a preferences file readable
+    without root, a system command's output) is allowed for the display, each with its guard
+    exception if one is needed and its caveats recorded.
+  - **Showing the limit is not charge limiting** (FEA-35, the maintainer's request of
+    2026-10-23): 0.7 shows the paused state from a key the parser already reads (bit 24 of
+    `NotChargingReason`), and 0.8 the configured number from the SMC's `CHLT` (inside the
+    read-only SMC rule), `pmset -g battlimit` (a `SecurityGuardTests` exception), powerd's
+    charging plist read as a file, or, weaker, System Settings' prior limit, if a check proves
+    one (§3.3). None loads a private framework into BatteryPulse.
 - **Why:** 1.x's trust promise is read-only, and macOS already has the setting (R:677-684).
 - **If it were yes, for 80-100 %:**
   - a spike of the private client opened with `dlopen` (CLR:98 cites two outside measurements;
@@ -1507,13 +1633,17 @@ Each year brings betas at WWDC in June and the release in September [assumed], p
 ### A macOS 27.x update breaks a private source
 
 The private sources are MobileDevice, `IOPSCopyPowerSourcesByType(4)` and the registry layout,
-which already moved once in 27 (R:63-75).
+which already moved once in 27 (R:63-75). FEA-35 adds two undocumented ones: bit 24 of
+`NotChargingReason` (one M5 capture plus outside reports) and, from 0.8, the number's source:
+`CHLT`, `pmset -g battlimit`'s text, powerd's charging plist (a private archive format) or System Settings' `com.apple.batteryui.charging.mac` record.
 
 - CI's canary (ci.yml:91-93).
 - The "Unavailable" states (UG:376-378).
 - NEW-10's degradation tests and NEW-14's sentinel.
 - NEW-22's 5-minute check after each update.
 - PLT-04's contingencies.
+- Raw Data shows bit 24 decoded, so a move is visible; FEA-35's number stays unknown rather than
+  guessed when its source fails.
 - C14 doesn't promise readings that macOS withdraws.
 
 ### The single maintainer's time
@@ -1634,7 +1764,8 @@ Appendix B VC-8).
 
 ### Verification debt grows faster than sittings close it
 
-There are 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22).
+There are 55 M5 rows (54 open: DIS-04, round A0, passed on 2026-10-22; FEA-35 joined on
+2026-10-23).
 
 - Each release's session closes its own new checks.
 - 0.9.0 closes the rest or lists them.
@@ -1658,7 +1789,7 @@ There are 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22).
 | A cause shows only after captures confirm it | V | **Taken** | NEW-01's rule and test |
 | A verification matrix from the packaged build | V | **Taken** | C2, NEW-18. It turns 54 open M5 rows into one closable list. |
 | 0.9 must be published to test the update into 1.0 | V | **Taken; decisive** | §3.6. The checker reads only `releases/latest` and rejects pre-releases (Updates.swift:125, 158). |
-| Make F5's iPhone step and the Charge Limit capture never-cut in 0.6.2 | V | **Modified** | 0.6.2 must match P2. The capture is instead wanted before 0.8's freeze, and without it the Charge Limit cause doesn't ship (QUA-05); the iPhone step goes to the matrix. |
+| Make F5's iPhone step and the Charge Limit capture never-cut in 0.6.2 | V | **Modified** | 0.6.2 must match P2. The capture is instead wanted before 0.8's freeze, and without it the Charge Limit cause doesn't ship (QUA-05); the iPhone step goes to the matrix. Since then: captured in Session A (2026-10-23), and its redacted fixture gates FEA-35 in 0.7 (plan-0.7.0 G7-18). |
 | A Settings row with `ln -s` for `bpulse` | V | **Modified** | Docs only; no new UI in the freeze release (M-7) |
 | An iPad capture as a 1.0 gate | V | **Not taken** | No hardware; a known limitation |
 | Help opens the guide at the release's tag | V | **Taken** | NEW-06 |
@@ -1682,4 +1813,4 @@ There are 54 M5 rows (53 open: DIS-04, round A0, passed on 2026-10-22).
 | A 14-day daily-use period | D | **Not taken** | C4's 7 counted days instead (see above) |
 | Mac App Store never; no personal package catalog; no telemetry; no separate website | D, Q | **Taken; telemetry narrowed by the maintainer** | §4.3. He added one anonymous version count in 0.7 (NEW-24): no identifier, nothing about the Mac, only GitHub's public download totals; every other kind of telemetry stays rejected |
 | Cadence after 1.0; keep GPLv3 | D | **Modified** (decided by delegation; M-5 removed the 6-8-week pace: no schedule, a minor release when there is time and desire) | M-12, M-14 |
-| Charge limit: read it and explain it (V) / never in 1.x (Q) | V vs Q | **Resolved: explain from the readings only; no setter and no private limit read in 1.x** | M-3. The read-only promise, plus no new private-API surface. |
+| Charge limit: read it and explain it (V) / never in 1.x (Q) | V vs Q | **Resolved: explain from the readings only; no setter and no private-framework limit read in 1.x** | M-3. The read-only promise, plus no new private-API surface. The maintainer's request of 2026-10-23 adds the read-only display (FEA-35): the registry's bit 24 in 0.7, and in 0.8 the SMC's `CHLT`, `pmset -g battlimit`, powerd's charging plist read as a file, or, weaker, System Settings' prior limit, whichever passes its check, never PowerUI. |

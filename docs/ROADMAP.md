@@ -85,6 +85,7 @@ charging state.
 |----------------------------------------------|:--------:|:---------------------:|
 | Charge level, charging state                 | ✅       | ✅ `UIDevice`          |
 | Optimized charging hold                      | ✅*      | —                     |
+| Charge Limit reached                         | ✅‡      | —                     |
 | Time to empty / full                         | ✅       | estimated by the app  |
 | Capacity in mAh (remaining / full / design)  | ✅       | analytics import      |
 | Health (Maximum Capacity), cycle count       | ✅       | analytics import      |
@@ -108,7 +109,16 @@ pack at 33.69 °C). Its battery-area sensors `TB*T` stay in Raw Data: on the M5 
 `TB1T` read like the pack and `TB2T` 1.1 °C lower, and on other Macs they were further off.
 
 \* Read from IOPS `Optimized Battery Charging Engaged`, which macOS only publishes while the
-charge is on hold; not yet seen in a macOS 27 capture.
+charge is on hold; not yet seen in a macOS 27 capture for the Mac's battery (the M5 Air showed
+the key only in the AirPods' entries, 2026-10-23).
+
+‡ macOS's Charge Limit (System Settings → Battery) pauses charging with bit 24 (0x01000000) of
+`ChargerData.NotChargingReason`, seen in `AppleSmartBattery` and its child `AppleChargerData` with
+the limit at 80 % on the M5 Air (2026-10-23); shown from 0.7. The configured value is in no
+registry or IOPS key. The candidates for it (0.8) are the SMC's `CHLT` (present on the M5 Air,
+its value unread), `pmset -g battlimit` (80 % at the hold), powerd's charging preferences file
+(`/Library/Preferences/com.apple.powerd.charging.plist`, readable without root, read as a file)
+and, weaker, System Settings' own record of a prior limit.
 
 On iOS the public API only provides level and state. The rest can come from the analytics file
 iOS lets users export (Settings → Privacy & Security → Analytics & Improvements → Analytics
@@ -177,7 +187,17 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
 - [ ] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
-  (0.6.0) keeps captures just before and after every charging change, with a timeline
+  (0.6.0) keeps captures just before and after every charging change, with a timeline. Partly
+  settled in 0.6.2's first session (2026-10-23, the limit at 80 %): the paused state is bit 24
+  (0x01000000) of `ChargerData.NotChargingReason`, in `AppleSmartBattery` and its child
+  `AppleChargerData`, with no charge current; the configured value is in no registry key. Its
+  candidates for 0.8, after that session's evening reads on AC at the 80 % limit: the SMC's
+  `CHLT`, which `bpulse --smc` lists (it prints no `CH*` values; a value read waits for a reviewed
+  change); `pmset -g battlimit`, which shows the 80 %; powerd's charging preferences file
+  (`/Library/Preferences/com.apple.powerd.charging.plist`, readable without root); and, weaker,
+  System Settings' own record of a prior limit. Whether the file holds the setting in every
+  power state waits for the same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging. Open
+  until a capture is committed as a fixture
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -585,18 +605,18 @@ Deferred from 0.6.1, each for the reason given:
 - [ ] CI: review `actions/checkout` v6.1.0 (a tag without a changelog entry so far) and
   `upload-artifact` v7, both pinned by commit
 - [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
-  Charge Limit capture (Stage 1.1); full screen, the contrast audit with Accessibility Inspector
-  and each window style's energy (Stage 1.5); frame rate and energy with motion (Stage 1.4); the
-  menu bar icons with Increase Contrast and on displays with a notch (Stage 1.3); iPhone, iPad and
-  accessory captures in the packaged app, unless the session's optional device step runs
-  (Stages 5 and 6); exported files in spreadsheet apps (Stage 6); widgets kept on the desktop
-  across an in-app update (Stage 1.2: seen kept across 0.6.0 → 0.6.1 on 2026-10-22; 0.6.2 ticks
-  it)
+  Charge Limit capture (Stage 1.1; captured in the first session, its fixture still to come); full
+  screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
+  1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
+  on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,
+  unless the session's optional device step runs (Stages 5 and 6); exported files in spreadsheet
+  apps (Stage 6); widgets kept on the desktop across an in-app update (Stage 1.2: seen kept across
+  0.6.0 → 0.6.1 on 2026-10-22; 0.6.2 ticks it)
 
 ### 0.7
 
-Widgets you configure, plus the device JSON's dates and the anonymous version count. The plan:
-`docs/plans/0.7.0/PLAN.md`.
+Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's
+Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
   defaults that keep a placed widget looking as it does today. The Battery widget in small,
@@ -622,16 +642,27 @@ Widgets you configure, plus the device JSON's dates and the anonymous version co
   sections and the file's own text say what is sent, what isn't and where to turn it off; the
   release workflow attaches the file to every release from 0.7.0, and the Releases table gains a
   Count column
+- [ ] macOS's Charge Limit shown, read-only (the maintainer's request, 2026-10-23): while the
+  limit holds the charge, Overview's state says so in Apple's wording, with a pointer to System
+  Settings → Battery; Power gains a "Charge limit: Reached" row; the menu bar popover, the compact
+  window and the widget's state line say the same, and the widget offers a Charge limit field;
+  Raw Data decodes the bit. From bit 24 of `NotChargingReason`, and only with a committed
+  fixture of the real state (else it moves to 0.8). Not the limit's number (0.8), no marker on
+  the ring or the battery, no menu bar icon change, and `bpulse` unchanged. The app's own "When
+  charged to" alert never fires under a lower limit, which the guide says.
+  BatteryPulse never sets the limit
 
 ### 0.8 to 1.0.0
 
 The path to 1.0.0 is in `docs/plans/1.0/ROADMAP.md`, and everything still open, each item placed
 in a version, in `docs/plans/1.0/INVENTORY.md`.
 
-- [ ] 0.8, answers in the app: why the battery isn't charging (only causes proven by captures), a
-  health summary and explanations of the numbers, a first-run Welcome, Report a Problem (a
-  bundle you preview and save; nothing is sent), VoiceOver and the keyboard everywhere, and tests
-  that pin what 1.x keeps
+- [ ] 0.8, answers in the app: why the battery isn't charging (only causes proven by captures), the
+  configured Charge Limit (80–100 %) if a candidate proves a source (the SMC's `CHLT`, `pmset -g
+  battlimit`, powerd's charging preferences file or, weaker, System Settings' own record; no
+  registry key holds it), a health summary and explanations of the numbers, a first-run Welcome,
+  Report a Problem (a bundle you preview and save; nothing is sent), VoiceOver and the keyboard
+  everywhere, and tests that pin what 1.x keeps
 - [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
   screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
   since there is no paid developer account; features freeze here, and 0.9.x only fixes
@@ -643,13 +674,15 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   within 15 % of 0.6.2's. Open Anyway on each DMG install, and permissions or widgets a DMG
   replacement may lose, are known limitations. No date: it ships when it is ready
 
-Decided on 2026-10-22: no paid developer account (the maintainer won't pay for one for this app),
-so no Developer ID signing or notarization and no App Group (the History and iPhone & iPad
-widgets can only use a small copy of readings the app writes, if 0.6.2's sandbox spike shows the
-widget can read it); Xcode is on the M5, so the Xcode-only checks run; widgets in 0.7, with no
-0.6.3; no iOS app and no charge limiting in 1.x (the Decisions section at the top changes in 0.7's
-docs pass); what 1.0 means, approved as written, with no dates for any release; an anonymous
-version count in 0.7 (Decisions); every other open question decided by its recommendation.
+Decided on 2026-10-22: no paid developer account (the maintainer won't pay for one for this app), so
+no Developer ID signing or notarization and no App Group (the History and iPhone & iPad widgets can
+only use a small copy of readings the app writes, if 0.6.2's sandbox spike shows the widget can read
+it); Xcode is on the M5, so the Xcode-only checks run; widgets in 0.7, with no 0.6.3; no iOS app and
+no charge limiting (setting a limit) in 1.x (the Decisions section at the top changes in 0.7's docs
+pass); what 1.0 means, approved as written, with no dates for any release; an anonymous version
+count in 0.7 (Decisions); every other open question decided by its recommendation. Added on
+2026-10-23, at the maintainer's request: macOS's Charge Limit is shown, read-only (0.7 the paused
+state, 0.8 the number); BatteryPulse still never sets it.
 
 Usage so far (GitHub's API, 2026-10-22): 14 DMG downloads across all releases and 5 signature
 downloads (each in-app install fetches one; 15 and 6 at a re-check later that day), 2 repository
@@ -786,7 +819,8 @@ the account on 2026-10-22 (not before 1.0), so the items that need it are not pl
   BatteryPulse could offer that limit in its own UI plus a read-only report of what the firmware
   allows. Below 80 %, forced discharge and the MagSafe LED need a root helper and are disputed
   on macOS 27: not now. Macs on the same firmware with macOS 15.8 have no built-in limit, so no
-  charge control at all there.
+  charge control at all there. Not in 1.x; showing macOS's own limit without setting it is
+  planned instead (0.7 and 0.8).
 - [ ] **A package manager.** The main macOS package manager's official catalog needs
   notarization and some popularity. A personal catalog of our own works today, but every install
   and upgrade still needs Open Anyway. Not planned: the official catalog needs notarization, and
@@ -808,11 +842,11 @@ Next: **0.6.2**, a second maintenance and foundation release (Stage 1.7): main a
 the read path the M5 numbers call for, Clear's minimize fix and the evidence for taking the beta
 window styles out of beta, the widget's size headroom, the installer on `diskutil`, and the
 energy measurements, plus a release-statistics script. Then **0.7**: widget customization, the
-device JSON's dates and the anonymous version count; **0.8**: answers in the app; **0.9**: ready
-for others; **1.0.0**: the last 0.9.x renamed (`docs/plans/1.0/ROADMAP.md`). This is the order,
-not a schedule: each release ships when there is time and desire. Not planned: an iOS app, charge
-limiting, and Developer ID signing and notarization (no paid developer account, decided on
-2026-10-22: not before 1.0).
+device JSON's dates, the anonymous version count and the Charge Limit shown; **0.8**: answers in
+the app; **0.9**: ready for others; **1.0.0**: the last 0.9.x renamed
+(`docs/plans/1.0/ROADMAP.md`). This is the order, not a schedule: each release ships when there
+is time and desire. Not planned: an iOS app, charge limiting (setting a limit), and Developer ID
+signing and notarization (no paid developer account, decided on 2026-10-22: not before 1.0).
 
 ## Development environment
 

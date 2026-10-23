@@ -21,6 +21,14 @@ rows they settle say so, and the counts include that.
 - 0.6.2 gains a release-statistics script, `scripts/release-stats.swift` (the roadmap's NEW-23,
   P2 WP-19; tooling, no app change, so no row of its own).
 
+**Added 2026-10-23, after 0.6.2's first M5 session (Session A):** the maintainer asked to see
+macOS's Charge Limit in the app, the menu bar and the widget. Showing it, read-only, is a new row,
+FEA-35, distinct from FEA-27 (setting a limit: not in 1.x, the roadmap's M-3). 0.7 shows the "at
+limit" state, which the session captured as bit 24 of `NotChargingReason` (QUA-05); 0.8 shows the
+configured number, which no registry or IOPS key holds, if one of its candidates passes its
+check: the SMC's `CHLT`, `pmset -g battlimit`, or, found in the session's evening reads, powerd's charging plist read as a file or, weaker, System Settings' prior limit. The counts include
+FEA-35.
+
 ## How to read this
 
 - **One row per item**, deduplicated across every source. When several sources describe the same
@@ -66,13 +74,14 @@ minimize frame (RN:12-13), row QUA-01.
 
 ## Summary
 
-**131 items left to do or decide** (open, parked or not planned; 130 from the sweep plus DIS-11,
-added with the maintainer's answer of 2026-10-22), **22 maintainer questions** and **62 rejected
+**132 items left to do or decide** (open, parked or not planned; 130 from the sweep plus DIS-11,
+added with the maintainer's answer of 2026-10-22, and FEA-35, added with his Charge Limit request
+of 2026-10-23), **22 maintainer questions** and **62 rejected
 ideas** that must not come back. Counts are computed from the tables below.
 
 | Category | 0.6.2 | 0.7 | later | not planned | unassigned | Total |
 |---|---|---|---|---|---|---|
-| Feature | 6 | 9 | 7 | 12 | 0 | 34 |
+| Feature | 6 | 10 | 7 | 12 | 0 | 35 |
 | Quality | 10 | 2 | 0 | 2 | 2 | 16 |
 | Energy and performance | 12 | 2 | 1 | 2 | 1 | 18 |
 | Security | 4 | 1 | 1 | 1 | 1 | 8 |
@@ -83,7 +92,7 @@ ideas** that must not come back. Counts are computed from the tables below.
 | Platform debt | 3 | 0 | 1 | 0 | 1 | 5 |
 | Accessibility | 4 | 1 | 0 | 1 | 0 | 6 |
 | Localization | 3 | 2 | 0 | 0 | 0 | 5 |
-| **All** | **64** | **24** | **11** | **22** | **10** | **131** |
+| **All** | **64** | **25** | **11** | **22** | **10** | **132** |
 
 - **Unassigned:** 10, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
   DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other two are leftovers (ENG-18, TCI-09).
@@ -95,14 +104,14 @@ ideas** that must not come back. Counts are computed from the tables below.
 - **Decisions:** 9 for 0.6.2 (Q-B2 to Q-B11) and 13 for widget customization (Q-W1 to Q-W13), §12.
   All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-W3 following his M-1
   answer, Q-B9 and Q-B11 settled before, the rest by delegation.
-- **What blocks them** (a row can have several): an M5 session 54 rows (42 of them in 0.6.2, since
-  FEA-23 and SEC-01 left it);
+- **What blocks them** (a row can have several): an M5 session 55 rows (42 of them in 0.6.2, since
+  FEA-23 and SEC-01 left it; FEA-35 joined on 2026-10-23);
   maintainer taste 25 (the questions are now answered; the looks are still signed off in the
-  sessions); Apple API behaviour 12; Xcode on the Mac 11 (installed on the M5, so these run,
+  sessions); Apple API behaviour 13; Xcode on the Mac 11 (installed on the M5, so these run,
   maintainer-run); the paid account 12 (7 name it, 5 iOS rows inherit it through FEA-29), which the
   maintainer declined, so they stay not planned or take the route without it; hardware not at
   hand 6; evidence still to come 4.
-- **User-visible:** 73 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 39 M,
+- **User-visible:** 74 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 40 M,
   6 L, 3 XL.
 
 **The five largest open themes**
@@ -111,11 +120,13 @@ ideas** that must not come back. Counts are computed from the tables below.
    SIZ-07, L10N-03 to L10N-05, A11Y-05, A11Y-06, TCI-10, TCI-11, DOC-07, DOC-08, QUA-16) plus the 13
    Q-W questions. Six spikes in 0.6.2 (W0-1 to W0-6) decide the design; the MVP is the configurable
    Battery widget in small, medium and large (extra large on the look check's yes, Q-W10); the
-   feed-backed History and iPhone & iPad widgets hang on an unverified sandbox exception (W0-3),
-   since an App Group needs the paid account the maintainer declined.
-2. **M5 verification debt:** 54 rows need the MacBook Air M5, many of them checks left open since
+   feed-backed History and iPhone & iPad widgets hang on a read-only sandbox exception, which W0-3
+   showed working in 0.6.2's Session A (2026-10-23), since an App Group needs the paid account the
+   maintainer declined.
+2. **M5 verification debt:** 55 rows need the MacBook Air M5, many of them checks left open since
    0.4-0.6 (Stages 1.1-1.5, 5, 6): icon styles, the beta styles' evidence, accessibility passes,
-   devices and accessories, the Charge Limit capture, spreadsheets, widgets across updates.
+   devices and accessories, the Charge Limit capture (made in Session A; its fixture still to
+   come), spreadsheets, widgets across updates.
 3. **Energy and the read path (0.6.2):** E20 off the main actor, E4b registry caching, E3b, the
    page and History speed work, and every energy number 0.6.1's session skipped (ENG-01 to ENG-12).
 4. **Swift 6 and size foundation (0.6.2):** main actor by default (PLT-01), the `diskutil`
@@ -128,10 +139,11 @@ ideas** that must not come back. Counts are computed from the tables below.
    with no dates), and 0.7's anonymous version count (DIS-01 to DIS-11, DOC-09, PLT-05).
 
 Not planned, kept visible: the iOS app and its widget and Live Activity (6 rows), iCloud, charge
-limiting, apps using the most energy, chart descriptors, Developer ID and the package manager, App
-Nap, Instruments profiling against the resource targets, the glossary and iPad captures, K-02's CI
-half; and, since the answers of 2026-10-22, the 0.6.3 option, the Low Power Mode fallback, Clear's
-desktop-following fill and the Enhanced Security spike.
+limiting (setting a limit; showing macOS's own is FEA-35), apps using the most energy, chart
+descriptors, Developer ID and the package manager, App Nap, Instruments profiling against the
+resource targets, the glossary and iPad captures, K-02's CI half; and, since the answers of
+2026-10-22, the 0.6.3 option, the Low Power Mode fallback, Clear's desktop-following fill and the
+Enhanced Security spike.
 
 ---
 
@@ -158,14 +170,14 @@ desktop-following fill and the Enhanced Security spike.
 | FEA-17 | Extra-large dashboard | Mac, History, devices and accessories in one widget | P2 §8.17, W-9; Q-W10 | yes | M | FEA-09 to FEA-12 | maintainer taste (Q-W10) | later |
 | FEA-18 | Per-row widget links | A device row opens that device's page | P2 §8.9, W-9; Q-W8 | yes | S | FEA-06, FEA-12 | maintainer taste (Q-W8) | later |
 | FEA-19 | Choose specific accessories in the widget | Entity id `AccessoryWidgetID` ("acw-" plus FNV-1a of kind and visible name), never `AccessoryBattery.id` | P2 §8.5 Accessories, §8.13, W-9 | yes | M | FEA-09 | maintainer taste (Q-W2) | later |
-| FEA-20 | "Why it isn't charging" widget field | Only after the Charge Limit capture decodes `notChargingReason` (`BatterySnapshot.swift:63`) | P2 §8.5 catalogue, §9.1 Later | yes | S | QUA-05 | M5 session | later |
+| FEA-20 | "Why it isn't charging" widget field | The widget's own cause field, once captures prove the causes in `notChargingReason` (`BatterySnapshot.swift:63`). The Charge Limit's part ships early with FEA-35 (0.7: the widget's state line and its `systemChargeLimit` field), since Session A's capture showed bit 24 (QUA-05); the other causes wait | P2 §8.5 catalogue, §9.1 Later; plan-0.7.0 W-14 | yes | S | QUA-05, QUA-06, FEA-35 | M5 session | later |
 | FEA-21 | Hide fully charged accessories | A nice-to-have option of the Accessories widget | P2 §8.5 Accessories | yes | S | FEA-09 | maintainer taste | 0.7 (nice-to-have) |
 | FEA-22 | Graduate Translucent and/or Clear from beta | `isBeta` false per style; Beta mark and, once none is left, the Beta window styles toggle go; `betaWindowStyles` stays frozen; What's New only on Q-B5 | P2 WP-13 items 3 and 5, G-13b; R:307-308, R:441-443, R:503-506 | yes | S | QUA-03, ENG-03 | maintainer taste, M5 session (default: stay beta) | 0.6.2 (gated) |
 | FEA-23 | Low Power Mode fallback for the beta styles | If Translucent or Clear costs ≥ 15 % more than Standard and the maintainer agrees, it gives way to Standard under Low Power Mode, decided in `WindowLookPolicy` | P2 WP-13 item 5, G-13c; Q-B10; R:31-32 | yes | S | ENG-03 | M5 session, maintainer taste (Q-B10) [decided by delegation, 2026-10-22: no fallback] | not planned (Q-B10: no fallback) |
 | FEA-24 | Clear's minimize fill that follows the desktop picture | Average of the desktop picture, decoded off the main actor when the window appears and on Space changes; only system folders and `~/Pictures`, else the grey fill; file-access prompt elsewhere unverified on macOS 27 | P2 WP-13 item 1 variant; Q-B2 | yes | M | QUA-01 | maintainer taste (Q-B2) [answered 2026-10-22: fill (b)] | not planned (Q-B2: fill (b)) |
 | FEA-25 | Glass-sheet chart lines and Raw Data treatment | Thicker chart lines and wider area fills on the sheet; the content treatment on the Raw Data table (AppKit-backed) | R:340-341; P2 WP-13 item 4; Q-B4 | yes | S | none | maintainer taste (Q-B4) [decided by delegation, 2026-10-22: not in 0.6.2] | later (Q-B4: with a graduation) |
 | FEA-26 | Apps using the most energy | Per-app watts over the last hour or day from per-coalition energy counters, with an unattributed remainder; a one-day spike first | R:576-584; P2 App A | yes | L | a spike on the M5 | Apple API (private calls, unproven without root on macOS 27), M5 session | not planned |
-| FEA-27 | Charge limiting through the system's Charge Limit | Offer macOS's own 80-100 % limit through a private client, plus a read-only report of what the firmware allows; the SMC route is closed on macOS 27 | R:677-684, R:705 | yes | L | none | Apple API (private), the maintainer's stance | not planned |
+| FEA-27 | Charge limiting through the system's Charge Limit | Offer macOS's own 80-100 % limit through a private client, plus a read-only report of what the firmware allows; the SMC route is closed on macOS 27. Showing the limit without setting it is FEA-35, not this row | R:677-684, R:705 | yes | L | none | Apple API (private), the maintainer's stance | not planned |
 | FEA-28 | Mac battery on the iPhone through iCloud | CloudKit private database, silent pushes, an iPhone widget, `CKQuerySubscription` alerts | R:645-651 | yes | XL | FEA-29 | paid account (CloudKit and push need it) [declined, 2026-10-22], the iOS app | not planned |
 | FEA-29 | iOS app: target sharing SwiftUI components | Stage 2's first item | R:558-560; RM:14-15 | yes | XL | DIS-02 | paid account (beyond 7-day personal installs, R:13-14) [declined, 2026-10-22], the maintainer's stance | not planned |
 | FEA-30 | iOS: charge, state, Low Power Mode, thermal state screen | Stage 2 | R:561 | yes | M | FEA-29 | as FEA-29 | not planned |
@@ -173,6 +185,7 @@ desktop-following fill and the Enhanced Security spike.
 | FEA-32 | iOS: analytics file import | Cycles, health, capacity, temperature from the exportable analytics file; its format is still unchecked against a real file | R:79-81, R:563; RM:205-206 | yes | L | FEA-29 | as FEA-29; a real analytics file | not planned |
 | FEA-33 | WidgetKit widget on iOS | Stage 4 | R:589 | yes | M | FEA-29 | as FEA-29 | not planned |
 | FEA-34 | iOS Live Activity while charging | Stage 4 | R:590 | yes | M | FEA-29 | as FEA-29 | not planned |
+| FEA-35 | Show macOS's Charge Limit, read-only (new: the maintainer's request of 2026-10-23) | **0.7, the "at limit" state** (plan-0.7.0 W-14): a computed `BatterySnapshot` property in a new BatteryCore file, true for bit 24 (0x01000000) of `NotChargingReason` with external power, `chargeState == .notCharging` and no optimized hold flag (which wins); no new `ChargeState` case (`Codable` in History and `--json`, frozen); its type is named so it never meets `AlertSettings.chargeLimit` (the app's own "When charged to" alert, which never fires under a lower limit: the guide says so). Apple's "Charged to limit"-style state text on Overview, a Power row "Charge limit: Reached", the popover and the compact window through the shared state phrase, the widget's state line and `systemChargeLimit` field ("Reached"); Raw Data decodes bit 24 as the Charge Limit's hold; no ring or battery marker (the number is unknown, so a tick would sit at the end of the fill), no menu bar icon change, `bpulse` unchanged. **0.8, the configured number:** no IOKit or IOPS key holds it; candidates, best first as known today (Session A's pending reads at 100 % or off, back at 80 % and on battery more than 5 minutes after unplugging decide where the third goes; it may become the first): the SMC's `CHLT` (inside the read-only SMC rule; seen once on another Mac, the active limit only, 00 on battery; present on the M5, `bpulse --smc` listing `CHLT` and `CHNC` but not `CHLS`, its value unread; a reviewed `bpulse --smc` value read of `CHLT` and `CHNC` first), else `pmset -g battlimit` through `Process` (a `SecurityGuardTests` exception; only on a bit-24 change or a plug-in; AC only, clearing about 300 s after unplugging; undocumented text; 80 % on the M5 at the hold), else powerd's charging plist (`/Library/Preferences/com.apple.powerd.charging.plist`, new, 2026-10-23 evening: readable without root, read as a file by the unsandboxed app, so no `Process`, private framework or SMC; an `NSKeyedArchiver` archive of `ChargeCtrlPolicy` objects with `battlimit`'s fields, parsed in BatteryCore on Linux by walking `$objects` and `$top` generically, never instantiating the private class, tested with a redacted sample; not readable in the widget's sandbox; private and undocumented, so a macOS 27.x update may change it; whether it holds the configured setting in every power state or only the active policy is pending), else, weaker, System Settings' prior limit in the user defaults domain `com.apple.batteryui.charging.mac` (80 on the M5; may be stale after a change made elsewhere, and "prior" may mean the value from before "off"). The private PowerUI client stays out (M-3). The widget gets the number only through the feed. Never infers "off": 100 % and on battery look alike | the maintainer, 2026-10-23; P2 Appendix C (Session A's Charge Limit row); plan-0.7.0 W-14, Q7-10, G7-18, Appendix C finding 9 (the evening reads) | yes | M | QUA-05 (the redacted fixture), FEA-07 (the state word), FEA-06 (the field); the number in the widget: FEA-10 | M5 session (the fixture, on the maintainer's yes; the diff at 100 %; the `CHLT` value read, and the `battlimit`, plist and System Settings reads at 100 % or off, back at 80 % and on battery), Apple API (bit 24 and every number source are undocumented) | 0.7 (the state, P1; whole to 0.8 if no redacted fixture by plan-0.7.0's C1, G7-18); the number later (the roadmap's 0.8) |
 
 ## 2. Quality (bugs, look and behaviour checks, code health)
 
@@ -182,8 +195,8 @@ desktop-following fill and the Enhanced Security spike.
 | QUA-02 | Clear's tile preview reads differently selected and unselected (V1b) | Make the preview identical in both states; the selection changes only the outline; Session B compares pixels | P2 §2.2 V1b, WP-13 item 2; R:504-505 | yes | S | none | M5 session (scripted) | 0.6.2 (P1) |
 | QUA-03 | Beta styles: the graduation evidence | Glass sheet sampling the desktop; sidebar, toolbar, inspector and Demo Mode bar on it; graphite tint on the sidebar selection; Clear's dark appearance staying in its window; Form fills and table stripes; scroll edge under the title; full screen; Frosted beside the widget gallery; Clear's shadows in Instruments; 24 + 19 scripted screenshots | R:333-339, R:536-537; P2 WP-13 item 3, §6 Session B step 3 | yes | M | QUA-01 | M5 session, maintainer taste; Xcode on the Mac [installed] (Clear's shadows) | 0.6.2 (what Session B misses stays open in Stage 1.5) |
 | QUA-04 | Menu bar icon styles signed off on the M5 | Symbol, Modern, Classic, Percentage Inside and Ring; the exact-level drawing with every state (bolt, plug, low, Low Power Mode); the 0.6.0 rework checks (the plug, 100 % on power, Percentage Inside with 1-3 digits). The light and dark comparison passed (V1d) | R:225-235, R:240-248; P2 §2.2 V1d, §6 optional | yes | S | none | M5 session (optional), maintainer taste | 0.6.2 (optional; else stays open) |
-| QUA-05 | Charge Limit stop-point capture | `bpulse --record` while charging to the limit; a fixture, and it decides `notChargingReason` | R:145-146, R:536; P2 §6 optional, §8.3 | indirect | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
-| QUA-06 | Optimized charging hold not yet seen in a macOS 27 capture | IOPS `Optimized Battery Charging Engaged` appears only while the charge is on hold | R:53, R:76-77 | yes | S | none | M5 session (needs the hold to happen), evidence | unassigned (new; implied by R:76-77) |
+| QUA-05 | Charge Limit stop-point capture | `bpulse --record` while charging to the limit; a fixture, and it decides `notChargingReason`. **Captured in Session A** (2026-10-23, the limit at 80 %, P2 Appendix C): the pause sets bit 24 (0x01000000) in AppleSmartBattery and its child AppleChargerData, with no charge current; the configured value is in no key. Still open: the redacted fixture `m5-macos27-charge-limit.plist` (from the session's `charge-limit-80.plist`, only on the maintainer's yes), which gates FEA-35, and a diff at 100 % (whether bit 24 clears when the limit is raised, which other keys flip, what "off" looks like; the session's 80 → 100 → 80 recording may already hold it) | R:145-146, R:536; P2 §6 optional, §8.3, Appendix C | indirect | S | none | M5 session (optional) [captured, 2026-10-23; the fixture needs the maintainer's yes] | 0.6.2 (optional; captured; the fixture with Session A's final notes or Session B, else 0.7's Session R) |
+| QUA-06 | Optimized charging hold not yet seen in a macOS 27 capture | IOPS `Optimized Battery Charging Engaged` appears only while the charge is on hold. Session A (2026-10-23) saw the key only in the AirPods' entries, never for the Mac's battery, so on the M5 IOPS can't yet tell the optimized hold from the Charge Limit; whether the hold also sets bit 24 is unverified, and if it does, FEA-35 would call it the Charge Limit | R:53, R:76-77 | yes | S | none | M5 session (needs the hold to happen), evidence | unassigned (new; implied by R:76-77) |
 | QUA-07 | Glossary: uncertain keys, and captures from M1-M4 Macs | About 20 keys still unexplained on the M5 (`RawKeyGlossaryTests`); other Macs' captures as fixtures | R:147-150; RM Contributing; P2 App A | yes (Raw Data) | M | contributors' captures | hardware | not planned |
 | QUA-08 | iPad capture and `ManufactureDate` decoding | iPad (9th generation); the pack's date doesn't decode like the Mac's | R:620-621; P2 App A | yes | S | none | hardware (no iPad at hand) | not planned |
 | QUA-09 | iPhone and iPad in the packaged app (F5) | Library validation, the Local Network prompt, attach and detach timing, the product ID range, sleep, page switching, Russian layout | R:634-635, R:539-540; P2 §6 Session A step 2 | yes | S | none | M5 session, hardware (an iPhone at hand) | 0.6.2 (Session A, if at hand) |
