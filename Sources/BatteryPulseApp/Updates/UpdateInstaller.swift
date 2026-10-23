@@ -445,34 +445,51 @@ nonisolated enum UpdateInstallSteps {
             throw UpdateInstallError.mountFailed
         }
         let arguments = UpdateInstallPolicy.attachArguments(image: image.path, mountPoint: mountPoint.path)
-        let status = try? await run(hdiutil, arguments)
+        let status = try? await run(UpdateInstallPolicy.diskutil, arguments)
+        // The image's own disk, for a forced eject; `nil` when no disk image is mounted there.
+        let disk = await imageDisk(mountedAt: mountPoint)
         guard status == 0 else {
             // In case it mounted anyway.
-            await detach(mountPoint)
+            if disk != nil { await detach(mountPoint, disk: disk) } else { _ = rmdir(mountPoint.path) }
             throw UpdateInstallError.mountFailed
+        }
+        if disk == nil {
+            Diagnostics.update.error("The update's disk image isn't in diskutil info; it can't be ejected by force")
         }
         do {
             try body(mountPoint)
         } catch {
-            await detach(mountPoint)
+            await detach(mountPoint, disk: disk)
             throw error
         }
-        await detach(mountPoint)
+        await detach(mountPoint, disk: disk)
     }
 
-    /// macOS 27 marks `hdiutil attach` and `detach` deprecated in favour of `diskutil image attach`
-    /// and `diskutil eject`. They still work, and 0.6.0's installer and the CI install-path step use
-    /// them, so they stay; the move to `diskutil image` is 0.6.2 work, with its own test.
-    private static let hdiutil = "/usr/bin/hdiutil"
-
-    private static func detach(_ mountPoint: URL) async {
+    /// Ejects the image at `mountPoint`. When that fails, because a file on the volume is still
+    /// open, its volumes are unmounted by force and `disk`, the image's own disk, is ejected.
+    private static func detach(_ mountPoint: URL, disk: String?) async {
         let path = mountPoint.path
-        let status = try? await run(hdiutil, UpdateInstallPolicy.detachArguments(mountPoint: path, force: false))
+        let tool = UpdateInstallPolicy.diskutil
+        var status = try? await run(tool, UpdateInstallPolicy.detachArguments(mountPoint: path))
+        if status != 0, let disk {
+            for arguments in UpdateInstallPolicy.forcedDetachArguments(disk: disk) {
+                status = try? await run(tool, arguments)
+            }
+        }
         if status != 0 {
-            _ = try? await run(hdiutil, UpdateInstallPolicy.detachArguments(mountPoint: path, force: true))
+            // -1: diskutil didn't start.
+            Diagnostics.update.error("Ejecting the update's disk image failed: \(status ?? -1, privacy: .public)")
         }
         // Only an empty folder: never anything still mounted there.
         _ = rmdir(path)
+    }
+
+    /// The image's own disk (``UpdateInstallPolicy/imageDisk(info:mountPoint:)``), or `nil` when
+    /// no disk image is mounted at `mountPoint`.
+    private static func imageDisk(mountedAt mountPoint: URL) async -> String? {
+        let arguments = UpdateInstallPolicy.infoArguments(mountPoint: mountPoint.path)
+        guard let info = await output(of: UpdateInstallPolicy.diskutil, arguments) else { return nil }
+        return UpdateInstallPolicy.imageDisk(info: info, mountPoint: mountPoint.path)
     }
 
     /// Runs a tool without input or output and returns its exit status.
@@ -494,6 +511,34 @@ nonisolated enum UpdateInstallSteps {
                 continuation.resume(throwing: error)
             }
         }
+    }
+
+    /// Runs a tool without input and returns what it wrote to standard output, or `nil` when it
+    /// couldn't start or exited with an error.
+    private static func output(of tool: String, _ arguments: [String]) async -> Data? {
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        let (exits, exited) = AsyncStream.makeStream(of: Int32.self)
+        process.terminationHandler = { finished in
+            exited.yield(finished.terminationStatus)
+            exited.finish()
+        }
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        // Read while the tool runs, so a full pipe can't stall it; the read ends when it exits,
+        // since launching closed this process's end of the pipe for writing.
+        let data = try? pipe.fileHandleForReading.readToEnd()
+        var status: Int32?
+        for await code in exits { status = code }
+        return status == 0 ? data ?? Data() : nil
     }
 
     /// Disk images can mount with quarantine applied to what they contain; the copy must open

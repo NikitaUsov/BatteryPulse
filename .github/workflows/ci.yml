@@ -238,7 +238,7 @@ jobs:
           echo "::endgroup::"
           for pass in plain forced; do
             mkdir -p "$mount_point"
-            /usr/sbin/diskutil image attach --mountOptions nobrowse --readOnly --mountPoint "$mount_point" build/BatteryPulse.dmg
+            /usr/sbin/diskutil image attach --readOnly --mountPoint "$mount_point" --mountOptions nobrowse build/BatteryPulse.dmg
             /usr/sbin/diskutil info -plist "$mount_point" > "$RUNNER_TEMP/info.plist"
             if [ "$pass" = plain ]; then
               echo "::group::diskutil info -plist of the mounted image"

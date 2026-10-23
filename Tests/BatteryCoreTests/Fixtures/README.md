@@ -11,6 +11,7 @@ Raw captures in the `bpulse --raw` format (serial numbers redacted).
 | `m5-macos27-unplugged.plist` | Real: same Mac just after unplugging; the registry still shows +250 mA, the SMC −562 mA |
 | `iphone17promax-ios27.0.1-usb.plist` | Real: iPhone 17 Pro Max (iPhone18,2), iOS 27.0.1, over USB while charging from a 15 W adapter (`bpulse --device 1 --raw`); its Settings showed Maximum Capacity 95 %, 278 cycles, first use October 2025. The pack's `UUID` was redacted by hand |
 | `synthetic-legacy-*.plist` | Hand-written pre-macOS 27 Apple Silicon layout; covers fallback keys |
+| `diskutil/info-apfs-macos27.plist` | Real: `diskutil info -plist` of the DMG mounted by CI's install step (macOS 27 runner, run 40039004378): its APFS volume on the synthesized container `disk18`, whose physical store `disk17s1` is on the image's own disk. Not a battery capture, so it sits in a folder of its own, out of the fixture loop that renders every capture |
 | `synthetic-accessories.plist` | Hand-written accessory capture (`bpulse --accessories --raw` format, `AccessoryFixture.swift`): the power source keys macOS publishes for accessories, made-up names and identifiers; covers grouping, parts, kinds and the sources that are dropped |
 
 To add a capture: `swift run bpulse --raw > Tests/BatteryCoreTests/Fixtures/<model>-<os>-<state>.plist`,
