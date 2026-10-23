@@ -382,9 +382,10 @@ nonisolated enum UpdateInstallSteps {
     }
 
     /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
-    /// volume), checks the copy and swaps it with `target` in one rename. Returns where the
-    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
-    /// code signature check are synchronous work that must not hold the caller's actor.
+    /// volume), checks the copy, ends the widget extension and swaps the copy with `target` in one
+    /// rename. Returns where the previous version is now. `@concurrent`: the copy, the quarantine
+    /// clearing and the strict code signature check are synchronous work that must not hold the
+    /// caller's actor.
     @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
     ) async throws(UpdateInstallError) -> URL {
@@ -419,6 +420,10 @@ nonisolated enum UpdateInstallSteps {
         try checkBundle(staged, identifier: identifier, release: release, current: current)
         try checkCodeSignature(staged)
 
+        // At the version change WidgetKit asks the widget extension for its descriptors again, so
+        // the previous version's extension must be gone by then; an update that failed a check
+        // leaves it running.
+        await WidgetRefresher.endExtensionBeforeSwap()
         guard renamex_np(staged.path, target.path, UInt32(RENAME_SWAP)) == 0 else {
             let reason = String(cString: strerror(errno))
             Diagnostics.update.error("Swapping the app failed: \(reason, privacy: .public)")

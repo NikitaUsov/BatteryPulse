@@ -49,6 +49,20 @@ import Testing
             declaration: "private nonisolated final class DownloadWatcher",
             reason: "URLSession calls it on its delegate queue"),
         OffMain(
+            path: "BatteryPulseApp/App/WidgetRefresher.swift",
+            declaration: "nonisolated static func endExtensionBeforeSwap()",
+            reason:
+                "the installer's @concurrent swap awaits it; on the main actor the swap would wait behind the UI's work"
+        ),
+        OffMain(
+            path: "BatteryPulseApp/App/WidgetRefresher.swift",
+            declaration: "private nonisolated static func extensionProcesses()",
+            reason: "the process scan that endExtensionBeforeSwap runs off the main actor"),
+        OffMain(
+            path: "BatteryPulseApp/App/WidgetRefresher.swift",
+            declaration: "private nonisolated static let extensionExecutable",
+            reason: "the scan reads it off the main actor, and a static of a main-actor type is main-actor"),
+        OffMain(
             path: "BatteryPulseApp/MenuBar/BatteryIconView.swift",
             declaration: "private nonisolated final class AppearanceVariants",
             reason: "it draws in an NSImage drawing handler, which AppKit calls whenever it draws"),

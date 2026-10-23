@@ -216,6 +216,25 @@ import Testing
             UpdateInstallPolicy.detachArguments(mountPoint: "/tmp/m", force: true) == ["detach", "/tmp/m", "-force"])
     }
 
+    /// The installer ends the widget extension once the copy has passed every check, right before
+    /// the swap: an update that fails a check leaves the extension alone, and the previous
+    /// version's extension can't answer WidgetKit's descriptor fetch at the version change.
+    @Test func endsTheWidgetExtensionRightBeforeTheSwap() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/Updates/UpdateInstaller.swift").code
+        let replace = try #require(code.range(of: "static func replace("))
+        let next = code.range(of: "static func ", range: replace.upperBound..<code.endIndex)?.lowerBound
+        let body = code[replace.upperBound..<(next ?? code.endIndex)]
+        let call = "await WidgetRefresher.endExtensionBeforeSwap()"
+        #expect(code.ranges(of: "endExtensionBeforeSwap").count == 1)
+        let check = try #require(body.range(of: "try checkCodeSignature(staged)"))
+        let end = try #require(body.range(of: call))
+        let swap = try #require(body.range(of: "renamex_np("))
+        #expect(check.upperBound <= end.lowerBound)
+        // Nothing but the swap's own `guard` comes between the two.
+        let between = body[end.upperBound..<swap.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+        #expect(between == "guard")
+    }
+
     /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a
     /// path that would break any quoting.
     @Test func relaunchPassesThePathUntouched() throws {
