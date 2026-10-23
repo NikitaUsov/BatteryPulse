@@ -965,8 +965,40 @@ step_widgets_ref() {
 
 # MARK: - F5 (step 2)
 
-# plist_count <file>: the number of elements of a property list or JSON array at its root.
-plist_count() {
+# plist_split <file> <folder>: the XML property lists in <file>, which may hold several back to back
+# (pmset -g accps -xml writes one per source, and plutil reads only the first), each from its XML
+# header (or <plist>) to its </plist>, as <folder>/1.plist, 2.plist, ...; prints how many. Text
+# outside them is dropped; a file with none (JSON, a binary plist) gives 0 and an empty folder.
+plist_split() {
+  rm -rf "$2"
+  mkdir -p "$2"
+  awk -v dir="$2" '
+    {
+      # One header or </plist> per line, even when a plist starts on the line the last one ends.
+      gsub(/<\?xml/, "\n&")
+      gsub(/<\/plist>/, "&\n")
+      count = split($0, parts, "\n")
+      for (i = 1; i <= count; i++) {
+        line = parts[i]
+        if (line ~ /<\?xml/ || (!inside && line ~ /<plist/)) {
+          if (inside) close(file)
+          n++
+          file = dir "/" n ".plist"
+          inside = 1
+        }
+        if (inside) print line >file
+        if (inside && line ~ /<\/plist>/) {
+          close(file)
+          inside = 0
+        }
+      }
+    }
+    END { print n + 0 }' "$1"
+}
+
+# plist_entries <file>: the entries at the root of one property list or JSON file: an array's
+# elements, 1 for a dictionary (pmset's plist for one source, even an empty one); otherwise why not.
+plist_entries() {
   local root index=0
   # The XML form's fourth line is the root element.
   root="$(plutil -convert xml1 -o - "$1" 2>/dev/null | sed -n 4p)"
@@ -976,9 +1008,45 @@ plist_count() {
       while plutil -extract "$index" xml1 -o /dev/null "$1" >/dev/null 2>&1; do index=$((index + 1)); done
       echo "$index"
       ;;
+    "<dict>" | "<dict/>") echo 1 ;;
     "") echo "unreadable" ;;
     *) echo "not a list" ;;
   esac
+}
+
+# plist_count <file>: the entries of every property list in <file> (plist_entries of each piece
+# plist_split finds, kept beside it in <its name without the extension>-parts), or of the whole
+# file when it holds no XML property list (bpulse's JSON array). A piece that doesn't read is named
+# after the sum.
+plist_count() {
+  local name="${1##*/}" parts pieces index=1 entries total=0 bad=""
+  # From the file's name only, so a dot in a folder's name can't move the folder rm -rf empties.
+  parts="$(dirname "$1")/${name%.*}-parts"
+  if [ ! -s "$1" ]; then
+    echo "no output"
+    return 0
+  fi
+  pieces="$(plist_split "$1" "$parts")" || pieces=""
+  case "$pieces" in
+    "" | *[!0-9]*)
+      echo "unreadable (not split)"
+      return 0
+      ;;
+    0)
+      rm -rf "$parts"
+      plist_entries "$1"
+      return 0
+      ;;
+  esac
+  while [ "$index" -le "$pieces" ]; do
+    entries="$(plist_entries "$parts/$index.plist")"
+    case "$entries" in
+      "" | *[!0-9]*) bad="${bad:+$bad, }plist $index $entries" ;;
+      *) total=$((total + entries)) ;;
+    esac
+    index=$((index + 1))
+  done
+  if [ -n "$bad" ]; then echo "$total ($bad)"; else echo "$total"; fi
 }
 
 step_f5() {
@@ -1007,7 +1075,8 @@ step_f5() {
       local state="${2:-}"
       case "$state" in "" | *[!a-z0-9-]*) fail "usage: $SCRIPT f5 capture <state> (lowercase, digits, dashes)" ;; esac
       use_section 20-f5 "F5, accessories and devices (0.6.1)"
-      pmset -g accps -xml >"$LOGS/f5-$state-pmset.xml" 2>&1 || true
+      # Only standard output goes to the XML file, so a warning can't land between its plists.
+      pmset -g accps -xml >"$LOGS/f5-$state-pmset.xml" 2>"$LOGS/f5-$state-pmset.err" || true
       local bpulse_count="not built"
       if [ -x "$BIN/bpulse" ]; then
         "$BIN/bpulse" --accessories --raw >"$LOGS/f5-$state-bpulse-raw.plist" 2>"$LOGS/f5-$state-bpulse.err" || true
@@ -1015,7 +1084,8 @@ step_f5() {
         bpulse_count="$(plist_count "$LOGS/f5-$state-bpulse.json")"
       fi
       out "| $state | $(plist_count "$LOGS/f5-$state-pmset.xml") | $bpulse_count |"
-      echo "The captures are in $LOGS (f5-$state-*); they name your devices, so they stay on this Mac."
+      echo "The captures are in $LOGS (f5-$state-*; pmset's plists one per file in f5-$state-pmset-parts);"
+      echo "  they name your devices, so they stay on this Mac."
       ;;
     end)
       use_section 20-f5 "F5, accessories and devices (0.6.1)"
@@ -1302,22 +1372,38 @@ fill_appearance() {
 fill_value() { if [ "$1" = translucent-dark-b ]; then echo "$FILL_VALUE_TD"; else echo "$FILL_VALUE"; fi; }
 
 # record_clip <movie> <seconds>: a sound, then the screen for <seconds> (screencapture -v), then a
-# second sound.
+# second sound. This is the script's only screen recording. screencapture -v keeps the movie only
+# when it stops by itself at -V: SIGINT, a typed character or the end of its standard input stops
+# it too, and loses the movie (Session A). So it always runs with -V, its standard input is a FIFO
+# this shell holds open, with nothing written, until it has exited (a background job's would be
+# /dev/null, whose end of input comes at once), and it is waited for, never interrupted.
 record_clip() {
-  local movie="$1" seconds="$2" pid tries=0 limit
-  rm -f "$movie"
+  local movie="$1" seconds="$2" fifo="$REC/record.fifo" pid tries=0 limit
+  case "$seconds" in "" | 0* | *[!0-9]*) fail "record_clip: -V takes a whole number of seconds above 0, not '$seconds'" ;; esac
+  rm -f "$movie" "$fifo"
+  mkfifo "$fifo"
   afplay /System/Library/Sounds/Glass.aiff &
-  # Interactively, a typed character stops the recording; a background job's standard input would
-  # be /dev/null, whose end of input could stop it at once. A pipe that stays open outlasts -V.
-  screencapture -v -V "$seconds" -x "$movie" < <(sleep $((seconds + 10))) &
+  screencapture -v -V "$seconds" -x "$movie" <"$fifo" &
   pid=$!
-  limit=$((seconds * 2 + 10))
+  # Opening the writing end lets screencapture's redirection finish; fd 3 stays open until it exits.
+  exec 3>"$fifo"
+  # The movie is written after the -V seconds: give the start and the write a minute.
+  limit=$(((seconds + 60) * 2))
   while kill -0 "$pid" 2>/dev/null && [ "$tries" -lt "$limit" ]; do
     sleep 0.5
     tries=$((tries + 1))
   done
-  kill -INT "$pid" 2>/dev/null || true
-  sleep 1
+  if kill -0 "$pid" 2>/dev/null; then
+    # A hung recorder only: -V passed a minute ago, and the movie is lost either way. SIGKILL
+    # after SIGTERM, so the wait below can't hang.
+    warn "screencapture didn't stop by itself $((seconds + 60)) s after it started; ending it"
+    kill -TERM "$pid" 2>/dev/null || true
+    sleep 2
+    kill -KILL "$pid" 2>/dev/null || true
+  fi
+  wait "$pid" 2>/dev/null || true
+  exec 3>&-
+  rm -f "$fifo"
   afplay /System/Library/Sounds/Pop.aiff || true
   [ -s "$movie" ] || fail "no recording: allow Screen Recording for this app (System Settings → Privacy & Security), then record again"
 }
@@ -2082,6 +2168,10 @@ restore_prompts() {
     2) ;;
     *) echo "- If Open at login was on before the session, check that it still is in BatteryPulse Settings → General." ;;
   esac
+  # Reminders only: the Charge Limit is the person's own setting, and the script never changes a
+  # privacy permission (macOS grants them; only the person turns them off).
+  echo "- If you changed the Charge Limit during the session, set it back to what it was (System Settings → Battery)."
+  echo "- If macOS asked for Accessibility for Terminal during the session and you allowed it, turn Terminal off (or remove it) in System Settings → Privacy & Security → Accessibility, unless it was on before."
   echo "- Remove the widgets the session added (large, extra large, Test, Notification Center) if you don't want them."
   echo "- If a BatteryPulse widget is blank, remove it and add it again."
   echo "The backup stays in $BACKUP."
