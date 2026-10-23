@@ -950,6 +950,32 @@ struct MonitorHarness {
         #expect(entry.connection == .wifi)
     }
 
+    @Test func readByCableAfterAnotherUnplugKeepsLaterFallbackReadsOnUSB() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await padOnCableAndWiFi(h)
+        // The phone's cable leaves; the iPad stays on its cable.
+        await h.transport.detachAll()
+        await h.transport.attach(Self.pad, [.usb, .wifi])
+        await h.send(.terminated)
+        #expect(h.monitor.entries.first { $0.id == Self.phoneKey }?.connection == nil)
+        // The 5-minute read goes by cable, so the termination wasn't the iPad's.
+        await h.advance(by: IDeviceReadPolicy.backgroundInterval)
+        #expect(await h.count("capture") == 3)
+        // A later read falls back to Wi-Fi (the cable attempt failed): the cable still counts.
+        await h.transport.script(
+            Self.pad, [.success(TestCaptures.ok(Self.pad, name: "Tablet", percent: 68, connection: .wifi))])
+        await h.advance(by: IDeviceReadPolicy.backgroundInterval)
+        let pad = try #require(h.monitor.entries.first { $0.id == Self.padKey })
+        #expect(pad.battery?.chargePercent == 68)
+        #expect(pad.connection == .usb)
+        await h.advance(by: IDeviceReadPolicy.backgroundInterval)
+        #expect(await h.count("capture") == 5, "still read by itself")
+        await h.advance(by: IDeviceReadPolicy.wifiPresenceLifetime)
+        #expect(h.monitor.entries.first { $0.id == Self.padKey }?.connection == .usb)
+    }
+
     @Test func frameworkUnavailableIsReportedNotRetried() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }

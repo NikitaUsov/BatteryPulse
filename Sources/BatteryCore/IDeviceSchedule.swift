@@ -16,7 +16,8 @@ public struct IDeviceSession: Sendable, Equatable {
     /// The interface that read went over (the capture's `Connection`).
     public var readConnection: IDeviceConnection?
     /// The latest USB termination of an iPhone or iPad that no arrival followed within the debounce.
-    /// IOKit doesn't say which device left, so every session gets it.
+    /// IOKit doesn't say which device left, so every session gets it; a read over USB after it
+    /// clears it (the monitor does), because then the cable that left wasn't this device's.
     public var usbTerminatedAt: Date?
     /// The latest read attempt, successful or not.
     public var lastAttempt: Date?

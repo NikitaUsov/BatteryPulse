@@ -562,7 +562,11 @@ public final class IDeviceMonitor {
                 session.battery = battery
                 session.readAt = now
                 session.readConnection = capture.connection
-                if let read = capture.connection, read != .usb, session.connections.contains(.usb),
+                if capture.connection == .usb {
+                    // By cable after the termination: it wasn't this device's, so a later read that
+                    // falls back to Wi-Fi (the cable attempt failed) doesn't say the cable left.
+                    session.usbTerminatedAt = nil
+                } else if let read = capture.connection, session.connections.contains(.usb),
                     !IDeviceRoster.isOnUSB(session)
                 {
                     // Over another interface after a USB termination: this device's cable left. A
