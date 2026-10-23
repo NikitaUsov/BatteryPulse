@@ -106,6 +106,9 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var terminationPending = false
     /// Attached over USB but missing from one list that followed no termination.
     @ObservationIgnored private var unconfirmedMisses: Set<DeviceKey> = []
+    /// USB dropped by a read over another interface, with no list since: the latest list still
+    /// has it.
+    @ObservationIgnored private var usbLeftByRead: Set<DeviceKey> = []
     @ObservationIgnored private var attachTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     @ObservationIgnored private var debounceSawArrival = false
@@ -193,6 +196,7 @@ public final class IDeviceMonitor {
             userReads = []
             terminationPending = false
             unconfirmedMisses = []
+            usbLeftByRead = []
             sessions = [:]
             udids = [:]
             captures = [:]
@@ -257,6 +261,8 @@ public final class IDeviceMonitor {
             hidden.insert(id)
             var cleared = IDeviceSession()
             cleared.connections = session.connections
+            // Forgotten while the list has USB: a list that has it again is no reconnect.
+            if usbLeftByRead.remove(id) != nil { cleared.connections.insert(.usb, at: 0) }
             cleared.listedAt = session.listedAt
             sessions[id] = cleared
         } else {
@@ -485,6 +491,7 @@ public final class IDeviceMonitor {
             session.listedAt = now
             sessions[key] = session
             unconfirmedMisses.remove(key)
+            usbLeftByRead.remove(key)
         }
 
         var needsConfirmation = request.afterArrival && newlyOnUSB.isEmpty
@@ -573,6 +580,7 @@ public final class IDeviceMonitor {
                     // list that has USB again is then a new attachment, read at once.
                     session.connections.removeAll { $0 == .usb }
                     if !session.connections.contains(read) { session.connections.append(read) }
+                    usbLeftByRead.insert(key)
                 }
                 session.problem = nil
                 session.consecutiveFailures = 0
@@ -637,6 +645,7 @@ public final class IDeviceMonitor {
         captures[key] = nil
         hidden.remove(key)
         unconfirmedMisses.remove(key)
+        usbLeftByRead.remove(key)
         pendingReads.removeAll { $0 == key }
         userReads.remove(key)
         if let index = remembered.firstIndex(where: { $0.id == key }) {

@@ -909,6 +909,28 @@ struct MonitorHarness {
         #expect(h.monitor.entries.first?.battery?.chargePercent == 75)
     }
 
+    @Test func forgottenAfterReadOverWiFiStaysHiddenWhileTheListStillSaysUSB() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await padOnCableAndWiFi(h)
+        await padLeavesCable(h, listed: [.usb, .wifi])
+        await h.send(.terminated)
+        h.monitor.read(Self.padKey)
+        await h.settle()
+        #expect(h.monitor.entries.first?.connection == .wifi)
+        await h.monitor.forget(Self.padKey)
+        #expect(h.monitor.entries.isEmpty)
+        // A Devices page appears a minute later, and usbmuxd still lists the cable that left: that
+        // is no reconnect.
+        await h.advance(by: IDeviceReadPolicy.listMaxAge + 1)
+        h.monitor.listIfStale()
+        await h.settle()
+        #expect(await h.count("list") == 4)
+        #expect(await h.count("capture") == 2)
+        #expect(h.monitor.entries.isEmpty)
+        #expect(try await h.registry().isEmpty)
+    }
+
     @Test func unplugListedOnWiFiOnlyShowsWiFiAndKeepsOtherCables() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }
