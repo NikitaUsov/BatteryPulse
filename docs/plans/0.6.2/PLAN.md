@@ -71,7 +71,9 @@ Contents:
     target) and `-internalize-at-link` on the widget. Together they free a few hundred KB of the
     widget's `__text`, the headroom 0.7 needs.
   - **The installer** moves to `diskutil image attach` and `diskutil eject`, with the flags the CI
-    runner already prints.
+    runner already prints. It also ends the widget extension before the swap, so the update to
+    0.7's configurable widget keeps placed widgets drawing (WP-16 item 6; Session A found that
+    WidgetKit otherwise caches the new version with the old extension's descriptor).
   - **Release statistics** (tooling, no app change): `scripts/release-stats.swift` prints each
     release's DMG and signature downloads, and from 0.7 on the version count's, for ROADMAP's
     Releases table a week after each release (WP-19, D3).
@@ -102,8 +104,8 @@ Contents:
     come when there is time and desire, so this plan sets none. Round A0 passed. The integration
     branch is `claude/nice-faraday-k08mhb`. 0.7 gets an anonymous version count, on by default
     and announced; 0.6.2 changes nothing the app sends and adds only the release-stats script.
-- **Budget:** about 29-33 implementation and review runs plus 3 for fix-forward; the never-cut set
-  is about 22-26 (§7.2).
+- **Budget:** about 31-36 implementation and review runs plus 3 for fix-forward; the never-cut set
+  is about 22-27 (§7.2).
 
 ---
 
@@ -586,14 +588,15 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 - **Gate:** G-15 (§7.1). **Effort:** M, 3 runs. **Risk:** medium (a widget that doesn't render;
   references only the runtime reaches).
 
-### WP-16: Installer on `diskutil`, attach timing, Check Now (P1/P3)
+### WP-16: Installer on `diskutil`, the widget extension before the swap, attach timing, Check Now (P1/P3)
 
 - **Source:**
   - ROADMAP Stage 1.7;
   - PLAN Appendix C B1, where the hdiutil deprecation warnings were seen on the runner;
   - PLAN §6 (SEC-15, E10);
   - research `security.md` SEC-15 and `energy.md` E10;
-  - ROADMAP Stage 1.2 (login item after an update).
+  - ROADMAP Stage 1.2 (login item after an update);
+  - Session A's W0-2, 2026-10-23 (item 6; Appendix C).
 - **Items:**
   1. **`UpdateInstallPolicy.attachArguments` and `detachArguments`** (BatteryCore). They start from
      the runner's own mapping, printed by CI run 39751622292's step "Install the way 0.6.0 does,
@@ -654,15 +657,63 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
      - On the first launch after a version change (`lastSeenVersion`), before that sync: if the key
        is true and the status is neither `.enabled` nor `.requiresApproval`, the app registers once
        and logs it.
+  6. **End the widget extension before the swap (P1, never cut).**
+     - **Why (Session A, W0-2; Appendix C):** the first SPIKE-W install (282) greyed the placed
+       widgets. At the version change, chronod fetched the widget descriptors again within about
+       2 ms, from the old `BatteryPulseWidget` process that was still running, and cached version
+       282 with the previous build's static descriptor. Every reload then failed with
+       `CHSErrorDomain` 1103 and "Connection to extension process was invalidated". After the
+       session ended the old extension and installed 0.6.1, then SPIKE-W again, the same placed
+       widgets (small and medium placed under 0.6.1, medium under SPIKE-I) redrew in today's look
+       with fresh values: a widget placed by 0.6.1 survives its kind becoming an
+       `AppIntentConfiguration` (Automatic default) when the fetch reaches the new extension.
+       `WidgetRefresher.endPreviousExtension()` (`App/WidgetRefresher.swift:43-67`) runs only at
+       the new app's launch, after chronod has fetched. The session script already ends the
+       extension before each swap (`56702f9`).
+     - **Why 0.6.2:** 0.6.2 → 0.7 runs 0.6.2's installer, and 0.7 changes the descriptor. 0.6.1 →
+       0.6.2 runs 0.6.1's installer, which is harmless because 0.6.2 keeps the static kind (§7.3),
+       so a descriptor cached from the old process is still right.
+     - **The call:** in `UpdateInstallSteps.replace` (`Updates/UpdateInstaller.swift:388-429`),
+       after `checkBundle` and `checkCodeSignature(staged)` and right before `renamex_np`:
+       `await WidgetRefresher.endExtensionBeforeSwap()`. An update that fails a check leaves the
+       extension alone.
+     - **The function:** `nonisolated static func endExtensionBeforeSwap() async` in
+       `App/WidgetRefresher.swift`, which `replace` reaches from its `@concurrent` context without a
+       main-actor hop. It sends SIGTERM to every `BatteryPulseWidget` process, polls every 50 ms
+       (`sleep(for:tolerance:)` with at least 10 % tolerance, so `EnergyGuardTests`' four one-shots
+       stay four), sends SIGKILL to any process still there 0.5 s after its SIGTERM (a process
+       started meanwhile is found by the next scan and gets its own SIGTERM), and gives up at
+       1.5 s. The swap goes ahead either way: the function never throws and never fails an install.
+     - **The pid scan** (`proc_listallpids` and `proc_name`, matched against
+       `extensionExecutable`) moves into one `nonisolated` helper that both
+       `endExtensionBeforeSwap()` and `endPreviousExtension()` use. The launch-time
+       `endPreviousExtension()` stays for a copy from the DMG; after an in-app install it usually
+       finds nothing, or the new extension chronod started, which it ends and reloads as today.
+     - **The log:** one `Diagnostics.update` notice with counts and milliseconds only (found, ended
+       by SIGTERM, ended by SIGKILL, still running, elapsed ms), all `.public`. A failed scan logs
+       an error, as today. No pid, path or name is logged.
+     - **Guards:** `IsolationGuardTests.offMain` lists the new `nonisolated` declarations (the
+       function and the shared scan, and the executable-name constant if the compiler needs it
+       `nonisolated`), each with its reason. `SecurityGuardTests`' `kill` allow-list
+       (`WidgetRefresher.swift` only) is unchanged: the installer calls the function and never
+       `kill` itself. A Linux source-order test (beside `UpdateInstallTests`, over
+       `SourceScanner`'s blanked copy of `Updates/UpdateInstaller.swift`) pins the call inside
+       `replace`, after `checkCodeSignature(staged)` and before `renamex_np`.
 - **Files:** `BatteryCore/UpdateInstall.swift`, `Updates/UpdateInstaller.swift`,
-  `Updates/UpdateChecker.swift` (E10), `.github/workflows/ci.yml` (the install step),
-  `UpdateInstallTests`.
+  `Updates/UpdateChecker.swift` (E10), `App/WidgetRefresher.swift` (item 6),
+  `.github/workflows/ci.yml` (the install step), `UpdateInstallTests`, `IsolationGuardTests`
+  (item 6).
 - **Acceptance:**
   - Tests; both CI install passes.
   - Session B's F12: the RC built as 0.5.99 installs the real 0.6.1 through the `diskutil` path and
     relaunches. F12 runs once, after the script checks GitHub's remaining API requests (Q-B9).
-- **Gate:** G-16 (§7.1; default: back to `hdiutil`). **Effort:** S-M, 2 runs. **Risk:** medium (the
-  installer first runs for real in 0.6.2 → 0.6.3).
+  - Item 6, in the same F12: the script reads the `update` log and finds the pre-swap line (every
+    process found was ended, elapsed ≤ 1,500 ms, with at least one found when the script saw a
+    `BatteryPulseWidget` process before Install), no `BatteryPulseWidget` process started before
+    the swap is left, and the placed widgets redraw.
+- **Gate:** G-16 (§7.1; default: back to `hdiutil`; item 6 ships either way). **Effort:** M, 2-3
+  runs. **Risk:** medium (the installer first runs for real in 0.6.2 → 0.7; there is no 0.6.3,
+  Q-W1).
 
 ### WP-17: SwiftUI responsiveness on the pages, and the History riders (P2)
 
@@ -830,6 +881,48 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
 - **When:** SEC-18 in any free slot after B1. **Effort:** S. **Default:** SEC-18 not run; SEC-08
   not run (Q-B8).
 
+### WP-23: The iPhone and iPad connection label follows the transport (P2)
+
+- **Source:** Session A's F5, 2026-10-23 (Appendix C). With an iPad on the cable and on Wi-Fi:
+  after the cable was detached, a "didn't answer" banner sat over stale "Connected by cable"
+  values, and a fresh read over Wi-Fi was still labelled "Connected by cable".
+- **Where the label comes from today:** `DeviceView.connectionPhrase`
+  (`Main/DeviceView.swift:168-174`, used by the subtitle and the Connection row at :251) switches
+  on `entry.connection`. `IDeviceRoster.connection(of:now:)`
+  (`BatteryCore/IDeviceSchedule.swift:126-133`) derives it from the session's listed
+  `connections`, USB first, and `IDeviceMonitor.apply` (`BatteryKit/IDeviceMonitor.swift:460-500`)
+  replaces those only from a list. The transport a read actually used, the capture's `Connection`
+  key (`IDeviceCapture.swift:47, 225`), never reaches the label, and the problem text picks its
+  cable or Wi-Fi wording from the same stale value (`App/Localized.swift:59-67`).
+- **Items:**
+  1. **Reproduce on Linux first,** in `IDeviceMonitorTests` with the fake transport and clock: a
+     device listed on USB and Wi-Fi, a USB termination, then a list that still reports USB (the
+     likeliest cause), a list that reports Wi-Fi only, and a stalled monitor (a timed-out call
+     drops every automatic list, USB events included, `IDeviceMonitor.swift:337-342, 655-661`).
+     The test that fails names the cause; the fix follows it.
+  2. **A pure decision in BatteryCore:** `IDeviceSession` and `IDeviceEntry` gain the transport
+     of the latest successful read (from the capture's `Connection` key), and `IDeviceRoster`
+     decides the shown connection from it, the listed interfaces, `listedAt` and the latest USB
+     termination: a read over Wi-Fi after the cable left shows Wi-Fi, and a USB interface listed
+     before the latest termination doesn't count. Linux tests in `IDeviceScheduleTests` cover each
+     case of item 1.
+  3. **`IDeviceMonitor`** records the read's transport in `finishRead` and drops `.usb` from the
+     session on a confirmed termination; **`DeviceView`** and the problem text use the decided
+     connection. No new string: the three phrases exist (§3: only WP-13 item 5 touches the
+     catalog).
+- **Files:** `Sources/BatteryPulseApp/Main/DeviceView.swift`, `App/Localized.swift` (only the
+  connection it is passed), `Sources/BatteryKit/IDeviceMonitor.swift`,
+  `Sources/BatteryCore/IDeviceSchedule.swift`, `Tests/BatteryCoreTests/IDeviceScheduleTests.swift`,
+  `Tests/BatteryKitTests/IDeviceMonitorTests.swift`.
+- **When:** a free slot from B1 on (§5, floating work), never beside WP-15 (it adds
+  `import BatterySource` to `IDeviceMonitor.swift`), WP-17 (`Main/`) or WP-19's SW-13 (which may
+  mark `IDeviceMonitor.swift`'s unsafe sites); a later rebase over it is mechanical.
+- **Acceptance:** the Linux tests; a green macOS job; on the M5, if an iPhone or iPad is at hand
+  (Session B, optional): cable, unplug, Refresh over Wi-Fi reads "Connected over Wi-Fi", and "Not
+  connected" once the Wi-Fi sighting expires.
+- **Effort:** S, 2 runs. **Risk:** low. **Default:** not run; the label stays as 0.6.1's, a known
+  issue.
+
 ### WP-W0: Widget customization spikes (P1 for 0.7's sake; no shipped code)
 
 The unknowns that decide 0.7's design (§8). Every spike lives on `claude/062-spike-widget`, is
@@ -972,6 +1065,10 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     - "Performance baseline (0.6.1 → 0.6.2)".
     - Stage 3's "how often the mAh values change", from Session A's ioreg samples; the App Nap
       half stays open.
+    - Stage 1.1's Charge Limit line gains what Session A found (Appendix C): paused at the limit,
+      `ChargerData.NotChargingReason` is bit 24 (0x01000000), and the configured value is in no
+      registry key. The box stays open until a capture is committed as a fixture (QUA-05,
+      `docs/plans/1.0/ROADMAP.md`).
     - The 0.7 stage with §9.1's phases and CB-02 (D3 adds the link to
       `docs/plans/0.7.0/widgets.md`).
 - **Files:** `CLAUDE.md`, `docs/USER_GUIDE.md`, `docs/ROADMAP.md`.
@@ -995,10 +1092,14 @@ As PLAN §3.5.
     - Clear minimizes without a black frame;
     - each style that graduates, or that both stay beta;
     - Check Now no longer fails while an automatic check runs, if E10 lands;
+    - the iPhone and iPad page names the connection its values came over, if WP-23 lands;
     - the energy line with the S1 and S2 numbers (WP-21);
     - "Updating from 0.6.1: Install and Relaunch."
   - dispatches the RC as 0.5.99 for F12 and a profiling RC built the way SPIKE-A2's is (§5 A2′;
-    Xcode is installed, Q-B7); finalizes the session script.
+    Xcode is installed, Q-B7); finalizes the session script, with Session A's fixes (Appendix C):
+    `plist_count` splits `pmset -g accps -xml`'s back-to-back plists, every recording ends by
+    `screencapture -v -V <seconds>` alone, window IDs come without the `osascript` window query,
+    and F12 checks the pre-swap extension end (WP-16 item 6).
 - **D2** is Session B.
 - **D3:**
   - applies the answers or the defaults and records the numbers;
@@ -1052,9 +1153,12 @@ At most two agents, and never two packages on one file (mechanical rebase-overs 
 | D3 | release | | Session B or its defaults |
 
 - **File ownership:** WP-19's SUI-09 stays in `App/`, and WP-17 in `Main/` and BatteryCore's
-  History files.
-- **Floating work:** WP-20 (SEC-18 only) takes any free slot after B1. WP-18 runs whenever the
-  maintainer has Xcode open, from Claude's step-by-step list, and blocks nothing.
+  History files. WP-16's item 6 edits `App/WidgetRefresher.swift` and `IsolationGuardTests` in
+  B2, which no other B2 package touches.
+- **Floating work:** WP-20 (SEC-18 only) takes any free slot after B1. WP-23 (the device
+  connection label) takes a free slot from B1 on, never beside WP-15, WP-17 or WP-19's SW-13
+  (WP-23 "When"). WP-18 runs whenever the maintainer has Xcode open, from Claude's step-by-step
+  list, and blocks nothing.
 
 ---
 
@@ -1074,8 +1178,10 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 - Prepare records, and prints: the installed app; the `io.github.nikitausov.BatteryPulse` defaults
   domain; `~/Library/Application Support/io.github.nikitausov.BatteryPulse`; the appearance and the
   wallpaper; `lowpowermode`; and, asked once because the script can't read them reliably, the Icon
-  & widget style, Dim widgets on desktop, and whether Open at login is on (it is `SMAppService`
-  state, not a defaults key: `App/AppSettings.swift:307-319`).
+  & widget style, Dim widgets on desktop, whether Open at login is on (it is `SMAppService`
+  state, not a defaults key: `App/AppSettings.swift:307-319`), the Charge Limit in System
+  Settings → Battery (no registry key holds it, Appendix C), and whether Terminal is already
+  listed under System Settings → Privacy & Security → Accessibility.
 - Prepare also builds `bpulse` with `xcrun swift build -c release --product bpulse` (`Package.swift`
   needs tools 6.4), next to `perf-stats` and `rusage`. CI uploads only the DMG, the size report,
   the link maps and the dSYMs (ci.yml:165-192), the DMG holds only the app, and the 0.6.1 script
@@ -1094,7 +1200,14 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   - then prompts for what only a hand can reset: "Turn VoiceOver off (Command-F5)"; "Set Text size
     back"; "Set System Settings → Appearance → Icon & widget style back to <value printed at
     prepare>", and the same for Dim widgets on desktop; "If Open at login was on before the
-    session, turn it on again in Settings → General".
+    session, turn it on again in Settings → General"; "Set the Charge Limit in System Settings →
+    Battery back to <value printed at prepare>"; and, if Terminal wasn't listed at prepare, "Turn
+    Terminal off (or remove it) in System Settings → Privacy & Security → Accessibility".
+  - Session A's restore covers neither, so the maintainer puts both back by hand: he changed the
+    Charge Limit (80, 100, 80) for the capture, and allowed Accessibility for Terminal when a
+    window query through `osascript` asked for it (Appendix C). D1's script finds window IDs
+    without an `osascript` window query, so Session B asks for no Accessibility, as its step 3
+    already avoids a scripted keystroke.
 
 ### Session A (after A2′; about 65 minutes hands-on, then a 3-hour unattended window)
 
@@ -1193,7 +1306,8 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 2. **V-01 on the RC** (10 min; WP-10, WP-14a): as Session A's step 5, script-checked.
 3. **Beta styles** (35 min; WP-13):
    - The 8 glass-sheet minimize and restore cases (Translucent and Clear × Light and Dark × main
-     and compact), each recorded. Standard and Frosted once each next to a minimized Notes window.
+     and compact), each recorded with `screencapture -v -V <seconds>` (Session A: SIGINT or the
+     end of stdin loses the movie). Standard and Frosted once each next to a minimized Notes window.
      "1 like the window, or an even graphite grey (the chosen fill), 2 a black frame or rectangle,
      3 something else (note)".
    - The screenshot set: 2 wallpapers (bright, busy) × Light and Dark × 3 pages (Overview, History
@@ -1244,6 +1358,14 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
    from `xcrun xctrace list templates`.
 6. **F12** (5 min; the script first checks GitHub's remaining API requests and asks to turn a VPN off, Q-B9): Check for Updates, then Install and
    Relaunch. The RC's `diskutil` installer installs the real 0.6.1, which relaunches (G-16).
+   - Before Install: "Click an empty spot of the desktop so the widget draws." The script then
+     notes the `BatteryPulseWidget` processes (`pgrep -x`).
+   - After the relaunch, the script checks that the installer ended the extension before the swap
+     (WP-16 item 6): the `update` log's pre-swap line, with every process it found ended (by
+     SIGTERM or SIGKILL) within 1,500 ms; no `BatteryPulseWidget` process started before the swap
+     (`ps -o lstart`); and "Compare the placed widgets with before: 1 same, 2 blank or grey,
+     3 gone, 4 different (note)". With no extension running before Install, item 6 is recorded as
+     not exercised.
 7. **Burst and memory** (10 min, hands-on): 3 unplug and plug cycles, 1 minute apart; History →
    7 d three times.
 8. **Energy** (about 70 minutes unattended; WP-21): "Unplug the adapter now." The script asks once
@@ -1256,7 +1378,11 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 
 **Optional, any time** (0.6.0 open checks that stay in their stages):
 - the Charge Limit capture, with `bpulse --record` (built by prepare) while charging to the limit
-  (Stage 1.1; it also decides §8.5's "why not charging" field);
+  (Stage 1.1, QUA-05). Session A already saw the paused state (`NotChargingReason` bit 24,
+  Appendix C) in read-only captures it kept local; this run adds the redacted before-and-after
+  captures as a committed fixture, only on the maintainer's yes to committing them;
+- the device connection label (WP-23), if an iPhone or iPad is at hand: cable, unplug, Refresh
+  over Wi-Fi; "Does the page say Connected over Wi-Fi? y/n";
 - sleep hygiene, the night before step 10's restore: with the RC installed and the lid closed
   overnight, the script's `pmset -g log` check (WP-21) finds no wake attributed to BatteryPulse;
 - Stage 1.3 (3 min): `scripts/menu-bar-shots.sh` with Increase Contrast and with Reduce
@@ -1282,7 +1408,7 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 | G-14b E4b (WP-14b) | cached registry on polls | Session A: F13 (pslog against the ioreg samples). Session B: `read cached` p50 < 2 ms, F6 right, plug within 0.4's window, at most 1 `registry.missed` per hour of logged runtime | F13 fails: a 60-s safety net, or no E4b. F13 not measured (Session A, its pslog or its sampler didn't run): E4b ships with a 60-s safety net instead of 5 minutes, and Session B decides by the two Session B criteria, else no E4b. No M5 run of a build containing E4b: no E4b. "No E4b" is one commit that sets `RegistryReadPolicy.cachesOnPolls` to `false` |
 | G-14c E3b (WP-14b) | drop `timeremaining` | Session A's pslog, 2 hours on battery and 1 hour charging: every `timeremaining` followed by "any" within ~10 ms | Keep both keys, also when the charging hour didn't run |
 | G-15 widget size | K-03 and internalize | SPIKE-I decides whether WP-15 tries internalize; only the RC's own F8 (every family) decides whether it ships | K-03 ships if Session B ran F8 and V-01 on the RC. Without Session B, it ships only as a move with only access and import changes, an empty golden diff and a passing CI smoke (§3's one exception). Internalize ships only with the RC's F8. A blank F8: drop internalize first (one `build-app.sh` line); still blank: revert K-03 with WP-19's SW-13 commits on its files |
-| G-16 installer | `diskutil` path | Session B's F12 | Revert to 0.6.1's `hdiutil` code |
+| G-16 installer | `diskutil` path; the pre-swap extension end (WP-16 item 6) | Session B's F12 and its `update` log | Revert to 0.6.1's `hdiutil` code. Item 6 ships either way: it never fails an install, and without it 0.6.2 → 0.7 greys the placed widgets (Appendix C, W0-2) |
 | SEC-15 | skip verification on attach | Session A timing: ≥ 100 ms saved | No change |
 | SEC-08 | Enhanced Security | not run (Q-B8: no; after 1.0, not planned without notarization, M-1) | Not shipped |
 | G-17 | WP-17's changes | `page.switch` from the `perf` stream before and after, ≥ 10 switches per page; the SwiftUI instrument (Xcode is installed, Q-B7) | Only SUI-11's readability change |
@@ -1290,11 +1416,11 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 ### 7.2 Cut line
 
 - **Never cut:** WP-10; SPIKE-A2; WP-13 item 1; WP-14a; WP-14b (unless G-14b's premise fails);
-  WP-15 item 1 (K-03); WP-16 items 1-2; WP-W0; WP-21; WP-22; D1-D3.
+  WP-15 item 1 (K-03); WP-16 items 1-2 and 6; WP-W0; WP-21; WP-22; D1-D3.
 - **Cut in this order if the budget runs short:** WP-20 (SEC-18; SEC-08 isn't run); WP-19's P3
   items; WP-17; WP-18; WP-15 items 2-3; WP-13 item 5 (item 4 isn't in 0.6.2, Q-B4); WP-16 items
-  3-4 (item 5 doesn't run, A0); WP-19's SW-13; WP-19's release statistics, last (D3 then uses
-  the `gh api` line). A cut item moves to 0.7.
+  3-4 (item 5 doesn't run, A0); WP-19's SW-13; WP-23; WP-19's release statistics, last (D3 then
+  uses the `gh api` line). A cut item moves to 0.7.
 - **Effort, in runs:**
 
   | Package | Runs |
@@ -1305,19 +1431,20 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   | SPIKE-A2 (the fill switch) | 1 |
   | WP-14b | 2-3 |
   | WP-15 | 3 |
-  | WP-16 | 2 |
+  | WP-16 | 2-3 |
   | WP-17 | 2 |
   | WP-19 | 2-3 |
   | WP-20 (SEC-18 only) | 1 |
+  | WP-23 | 2 |
   | WP-W0 | 3 |
   | WP-21 | 2 |
   | WP-22 | 2 |
   | D1+D3 | 2-3 |
 
-  That is about 29-33 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8; the release
-  statistics joined WP-19 the same day). The never-cut set is about 22-26. WP-18 is maintainer
-  time, outside the runs. These are effort estimates, not a schedule: no release has a date
-  (M-5, §10).
+  That is about 31-36 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8; the release
+  statistics joined WP-19 the same day; WP-16's item 6 and WP-23 came from Session A on
+  2026-10-23). The never-cut set is about 22-27. WP-18 is maintainer time, outside the runs.
+  These are effort estimates, not a schedule: no release has a date (M-5, §10).
 
 ### 7.3 Frozen surfaces and intended changes
 
@@ -1333,9 +1460,13 @@ and reload policy."
   - If it doesn't, the Power page is unaffected, because it keeps re-reading.
   - Elsewhere, the registry fields (capacities, cycles, temperature, cells, adapter telemetry), and
     a history sample taken right after a cached poll, may be up to the safety-net age old.
+- The iPhone and iPad page's connection label follows the transport its values came over (WP-23,
+  if it lands; no new string).
 
 **Internal and contract changes:**
 - The installer's mount tool. The 0.6.1 → 0.6.2 update itself still uses 0.6.1's `hdiutil`.
+- The installer ends the widget extension before the swap (WP-16 item 6); the 0.6.1 → 0.6.2
+  update still runs 0.6.1's installer, which doesn't.
 - The widget's target graph and size.
 - The `read` signpost's triggers and the `registry.missed` event in the `perf` output.
 
@@ -1438,7 +1569,7 @@ The design rests on five rules:
 | History (series, statistics, time on battery) | the app's store | **needs the bridge (W0-3)** |
 | iPhone and iPad (last reading) | the app's `devices.json` | **needs the bridge (W0-3)**; MobileDevice never runs in the widget |
 | SMC live values (current and voltage within seconds) | the SMC | no (sandbox); not needed at widget cadence |
-| Charge limit reached | no source yet (the Charge Limit capture is still open, ROADMAP Stage 1.1) | no |
+| Charge limit reached | `ChargerData.NotChargingReason` bit 24 (0x01000000) while paused at the limit, seen once in Session A's read-only capture (Appendix C); the configured percentage is in no registry key, so the widget can say "paused at the limit" but not which limit | not yet: 0.8's NEW-01 shows a cause only once a committed fixture proves it (QUA-05) |
 
 **The bridge, if W0-3's candidate A works.** The app writes one small file,
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/feed.json`. The widget's
@@ -1556,7 +1687,7 @@ answers); 0.7's look check shows them on sight.
 | Voltage | own | MVP | |
 | Average drain over the last hour | feed | stretch | only in the release that ships the feed |
 | Time on battery since unplugged | feed | stretch | only in the release that ships the feed |
-| Why it isn't charging | own | later | only after the Charge Limit capture decodes `notChargingReason`; until then it adds nothing over State |
+| Why it isn't charging | own | later | only after a committed Charge Limit fixture proves the cause (Session A saw bit 24 at the limit, Appendix C); until then it adds nothing over State |
 
 **Attention row:** a condition other than Normal, or a thermal state of serious or worse, takes the
 last detail slot in every family and layout, with a symbol and words. On (Q-W13, decided by
@@ -1921,6 +2052,7 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 | W0-1 (b): entity queries don't run from the ad-hoc extension | iPhone & iPad uses an `AppEnum` (most recent, lowest); no chosen device |
 | W0-1 (c): button performs don't run | No buttons (W-9's Refresh dropped) |
 | W0-2: the control keeps placed widgets, but the configurable kind loses them | Today's kind stays static (today's look, new sizes). The configurable Battery widget ships as a new kind `io.github.nikitausov.BatteryPulse.battery.custom`, and the release notes say how to switch |
+| W0-2: placed widgets grey because the old extension answered the descriptor fetch (Session A, `CHSErrorDomain` 1103) | Not a configuration failure: a placed widget survives the change once the fetch reaches the new extension. 0.6.2's installer ends the extension before the swap (WP-16 item 6), so 0.6.2 → 0.7 is clean; a copy from the DMG over a running extension stays a risk. Its recovery is unverified (Session A recovered by ending the old extension, then installing 0.6.1 and SPIKE-W again), so 0.7's session checks one before the release notes describe it |
 | W0-2: the control loses placed widgets too | The loss comes from updating an ad-hoc app, not from configuration: A0 saw placed widgets survive the in-app update 0.6.0 → 0.6.1, but ROADMAP Stage 1.2 records a DMG replacement that lost them. Proceed as designed; the release notes say "add the widget again if it's gone", as 0.4's did. With no signed build coming (M-1: no), it stays a documented known limitation |
 | W0-3: A and A′ fail | No History or iPhone & iPad widgets (§8.3 candidate C); candidate B isn't used |
 | W0-4: accessories can't be read from the sandbox | No Accessories kind in 0.7 (plan-0.7.0 §2.2, G7-8); later through the feed, only if W0-3 passed |
@@ -2208,11 +2340,15 @@ comments.
 | S3 (popover), the minimized and other-Space runs, frame rate (Instruments) | ROADMAP 1.4 | stays open in Stage 1.4 |
 | Sleep hygiene (playbook §2.3 items 1 and 7) | playbook §2.3 | WP-21 (assertions in every run; the overnight check is Session B optional) |
 | Stage 1.4 legibility and accessibility pass | ROADMAP 1.4 | Session B optional; otherwise stays open |
-| F5 (iPhone page, accessories, earbuds) and accessory captures | 0.6.1 session (not run); ROADMAP 5, 6 | Session A step 2 |
+| F5 (iPhone page, accessories, earbuds) and accessory captures | 0.6.1 session (not run); ROADMAP 5, 6 | Session A step 2: run on 2026-10-23 with earbuds and an iPad, no keyboard (Appendix C) |
+| The widget extension ended before the swap | Session A's W0-2, 2026-10-23 | WP-16 item 6 (never cut); Session B's F12 checks it |
+| The device connection label after unplugging | Session A's F5, 2026-10-23 | WP-23 (P2) |
 | F9 (Russian) | 0.6.1 session (not run) | Session B step 4 |
 | F11-alert, F11-login | 0.6.1 session | closed (§4, WP-0) |
 | F12's first failure | 0.6.1 session | Q-B9, settled: GitHub's rate limit behind a VPN |
-| Charge Limit capture; spreadsheet exports | ROADMAP 1.1, 6 | Session B optional |
+| Charge Limit capture | ROADMAP 1.1; QUA-05 (`docs/plans/1.0/ROADMAP.md`) | partly settled in Session A (Appendix C: bit 24 while paused, the configured value in no key); the committed fixture is Session B optional; WP-22 writes the partial result into Stage 1.1 |
+| Spreadsheet exports | ROADMAP 6 | Session B optional |
+| The Charge Limit shown in the app, the menu bar and the widget | the maintainer, 2026-10-23 (Session A) | an input to 0.7 and 0.8 (0.8's NEW-01; the widget field is 1.1's FEA-20), not 0.6.2 (no new features): "paused at the limit" has a source, the configured value has none in the registry (Appendix C) |
 | Widgets kept across an in-app update | ROADMAP 1.2 | A0: kept across 0.6.0 → 0.6.1 (Appendix C), so WP-22 ticks it; W0-2's control; Session B F8 |
 | Widget customization | maintainer's request, 2026-10-22; ROADMAP 0.7 | §8; spikes WP-W0 in 0.6.2; W-1 to W-10 in 0.7 (§9.1; Q-W1: no 0.6.3) |
 | CB-02 (device JSON dates) | PLAN §6, Q3 | 0.7 |
@@ -2220,7 +2356,7 @@ comments.
 | Glossary re-check, captures from M1-M4 Macs; Instruments against the resource targets | ROADMAP 1.1 | not planned (WP-21's memory covers the RAM target) |
 | Chart descriptors; App Nap on the minute timer | ROADMAP 3 | not planned |
 | How often the mAh values change | ROADMAP 3 | Session A's ioreg sampler (`BatteryData`'s `RemainingCapacity` every 10 s); WP-22 ticks it |
-| iPad capture, ManufactureDate decoding | ROADMAP 5 | not planned (no iPad at hand) |
+| iPad capture, ManufactureDate decoding | ROADMAP 5 | not planned (Session A's F5 had an iPad at hand, but no capture was asked for) |
 | Apps using energy; charge limiting; package manager | ROADMAP 3, 6 | not planned (the package manager's official catalog needs notarization, and so the paid account the maintainer declined, M-1; the others a spike first) |
 | K-02's CI half | WP-0b report (0.6.1) | not planned |
 | Glass in the tile picker | PLAN §6 | closed: the maintainer chose the outline (PLAN §8) |
@@ -2339,21 +2475,32 @@ from the traffic API and were not re-checked.
 - whether opening a desktop picture outside `~/Pictures` and the system folders shows a
   file-access prompt on macOS 27 (moot while the desktop-picture fill isn't built, Q-B2).
 
+Session A's interim report (2026-10-23) answered several of these: button performs, both
+exceptions, `IOPSCopyPowerSourcesByType(4)` from the sandbox, the scheme, the placed widget's
+survival and the offset format's English text (Appendix C's W0 rows). The rest stays with the
+sessions.
+
 ## Appendix C: facts 0.6.2 records (filled during the release)
+
+Rows marked "interim" come from Session A's interim report of 2026-10-23 (the local Claude
+session on the M5); its final `A.md`, on `claude/062-session-a`, replaces them. **Still for
+Session A** marks what that report leaves open.
 
 | Fact | Shown by | Decides |
 |---|---|---|
 | A0, recorded 2026-10-22: **passed.** 0.6.1 installed through Install and Relaunch from 0.6.0; the desktop widget stayed and shows the current charge; Open at login kept its state. The other lines of PLAN §4b's list weren't reported one by one; the maintainer's verdict is a pass | the maintainer (everyday use) | no P1 item; WP-16 item 5 not run; WP-22 ticks ROADMAP Stage 1.2 |
 | W0-1 (CI half), 2026-10-22: **the metadata reaches the bundle.** On `claude/062-spike-widget`, `build-app.sh` collects the widget's Swift sources and release `.swiftconstvalues` and runs `xcrun appintentsmetadataprocessor` (Xcode 27.1, generator xcode-tools 27A9275) with the `AppIntentsMetadata.xcspec` options on the unstripped binary; the appex gets `Contents/Resources/Metadata.appintents/` (`extract.actionsdata` 7,700 B, `version.json`) and then strips, signs, passes the posture check and launches (runs 39794535282, 39806441696). The actions, the `AppEnum`, the entities and their queries, the `ParameterSummary` and its `When` clause are all extracted. **No `[AppEnum]` per-family `size:` overload compiles** with Xcode 27.1 at any deployment target (26.0-27.2); an array of an `AppEntity` does, and an integer literal per family is an exact size (min = max), so "up to N" needs `IntentCollectionSize(min:max:)`, untested. `Summary` strings aren't seen by `LocalizationCatalogTests` yet. Entity query and button behaviour at run time: Session A | CI; Session A | W-2, §8.11, §8.16 |
+| W0-1 (run time), 2026-10-23 (interim): **the edit sheets show the parameters.** Battery: Layout, Main value, Time; Custom adds Details, with 4 slots on medium. The test widget: Main value, Details (4 on medium, more on extra large), Device. (c): the Refresh button's `perform` ran in the widget extension (`process=widgetExtension`). (d): the `ParameterSummary` line ("Show Charge") is not visible (W0-1-test-edit n, for the summary only). (b): no entity-query line, because the Device chooser was never opened. **Still for Session A:** (b), with the Device chooser opened | Session A | W-2; §8.11 (no summary text shows); §8.16 (W0-1 and (c) pass; (b) open) |
 | WP-10, 2026-10-22: `.defaultIsolation(MainActor.self)` on the app only; `@MainActor` in the app 35 → 4; off-main types marked `nonisolated` (the plan's list plus `RawValueText`, `HistorySource`, `HistoryLoad`, `Diagnostics`, `SidebarItem.signpostName`, `BatteryFormatter.app`, `CardGroupSpace`, `PulseLine`), pinned by the new `IsolationGuardTests`. The macOS job's only isolation error was `PulseLine: Shape` (Shape inherits View, so SE-0466's exception didn't apply). 0 warnings; launch smoke green; app binary +176 B, `__text` +3,300 B | CI runs 39792414043 (the error), 39795540512, 39798511959 | G-10's compile half; V-01 is Session A's |
 | WP-14a, 2026-10-22: shape B. `MacBatteryProvider` is `nonisolated` and `Sendable` with `readNonisolated(scope:)` reached through `BatteryProvider.nonisolatedReader` (nil by default), its SMC cache and the SMC client's state behind `Mutex`es, no new `@unchecked Sendable`; the widget, bpulse and the other providers unchanged. The monitor reads `.launch`, `.manual` and `.demo` on the main actor (Demo Mode's exit stays inside its animation) and the other triggers through a `@concurrent` helper, one at a time, coalesced, with generations. The CI smoke's one launch read is on the main thread before `menuBarReady` (2.5 ms; the VM has no battery, so no off-main read ran there). The `refresh` interval of an off-main trigger now spans the hop: compare with 0.6.1 by `read`. Swift 6.4.1 on Linux crashes in IRGen on `#isolation != nil \|\| Thread.isMainThread` inside a nonisolated(nonsending) async function (bind `#isolation` first); `TaskGroup.reduce(into:)` is rejected from a main-actor context | CI run 39803776795 | G-14a's compile half; the field run is Session A's |
 | Spike builds for Session A, 2026-10-22: SPIKE-C = v0.6.1 (`claude/062-spike-c`, run 39800982102, #277); SPIKE-I = 0.6.1 plus `-internalize-at-link` on the widget (`claude/062-spike-i`, run 39801168615, #278): widget binary 1,379,808 → 1,059,616 B (−23.2 %), `__text` 943,096 → 684,136 B (−27.5 %), DMG −7.4 %, the app untouched; SPIKE-W = the configurable battery kind plus the test kind, the feed writer and reader (A, A′), the click logger and the render logging, with `-internalize-at-link` (`claude/062-spike-widget`, run 39806441696, #282). All CI builds are version 0.0.0, so their automatic update check stays off (`isUnversioned`) | CI | G-15's size input; Session A's install order |
 | SPIKE-A2, 2026-10-22: `claude/062-spike-a2` at `cee5033` on the A2 tip `3a02643` (WP-10 + WP-14a), CI run 39808734092 (#285, 0.0.0): the normal DMG and a profiling DMG (unstripped, `get-task-allow` on the app only, same UUIDs). The spike-only key `spikeA2MinimizeFill` (`b` = fill (b), white 0.1945 opaque, on Clear; `b-and-translucent-dark` adds Translucent Dark; missing or `a` = today's fill) switches the minimize fill for step 6. The Session A script (`m5-session.sh`, `swap.swift`, `frames.swift`) and the local-session runbook (`SESSION.md`) merged at `677f8c8`; CI type-checks the helpers | CI | Session A |
-| W0-2: SPIKE-C and SPIKE-W placed-widget results (`pluginkit`, screenshots); edit sheet in English and Russian | Session A | §8.16, W-3 |
-| W0-3: A, A′, B results (errno and byte count) | Session A | §8.3, Q-W3 |
-| W0-4: accessory count; rendering mode per style and place; `redactionReasons`; click deliveries; scheme need | Session A | W-8, §8.7, §8.9 |
-| W0-5: VoiceOver text; Text size | Session A | §8.15 |
-| W0-6: the offset format's text and cadence | Session A | Time parameter |
+| W2, 2026-10-23: SPIKE-W's code (`a609487`) built again by `workflow_dispatch` (run 40002896511, #307), so W0-2 can be retested under a build number chronod hasn't cached (`56702f9`) | CI | Session A's W0-2 retest |
+| W0-2, 2026-10-23 (interim): **a widget placed by 0.6.1 survives its kind becoming an `AppIntentConfiguration` (Automatic default) when the descriptor fetch reaches the new extension.** The first SPIKE-W install (282) greyed the placed widgets: at the version change, chronod fetched the descriptors again within about 2 ms from the old `BatteryPulseWidget` process, still running, and cached 282 with the previous build's static descriptor; every reload then failed with `CHSErrorDomain` 1103 and "Connection to extension process was invalidated". `WidgetRefresher.endPreviousExtension()` runs only at the new app's launch, after that fetch. After the session ended the old extension and installed 0.6.1, then SPIKE-W again, the widgets placed under 0.6.1 (small, medium) and under SPIKE-I (medium) redrew in today's look with fresh values. Edit Widget shows the parameters (W0-1, run time). The script now ends the extension before each swap (`56702f9`). **Still for Session A:** SPIKE-C's and SPIKE-I's 1-4 answers with `pluginkit` before and after, the clean retest on W2, and the edit sheet in Russian | Session A | WP-16 item 6; §8.16 (the row on the old extension answering), W-3 |
+| W0-3, 2026-10-23 (interim): **A and A′ both work** under ad-hoc signing on macOS 27, "feed ok" with 55 bytes read each. **Still for Session A:** B (`notify(3)` state words), and a read of data the app wrote while the widget wasn't running | Session A | §8.3, Q-W3 (its condition holds: W-5's feed stays 0.7's stretch) |
+| W0-4, 2026-10-23 (interim): (1) **the sandboxed widget reads accessory batteries itself** ("spike accessories sources=2 accessories=1"). (2)-(3) the four Icon & widget styles ran on the desktop, focused and not, and in Notification Center, with screenshots, and the widgets redraw per style; but no process logged a "spike render" line, so the rendering mode, `showsWidgetContainerBackground` and `redactionReasons` have no log data. (4) a click delivers the URL to `application(_:open:)` with no window open and with the main window open ("spike click url scheme=batterypulse page=overview windows=1 active=true"); no `NSUserActivity` arrives. (5) the `widgetURL` reaches the app with no registered scheme (SPIKE-W registers none). **Still for Session A:** why the render lines are missing; until they come, the screenshots are §8.7's only evidence | Session A | W-8 (passes); §8.7; §8.9 (the URL route, no scheme registered; §8.16's scheme row doesn't apply) |
+| W0-5: VoiceOver text; Text size. **Still for Session A** (not in the interim report) | Session A | §8.15 |
+| W0-6, 2026-10-23 (interim), English only: the offset format prints "-2 hours, 0 minutes" without `sign: .never` (the offset runs to a later date) and "2 hours, 0 minutes" with it, and the minutes go down without a reload. **Still for Session A:** the Russian text | Session A | Time parameter (time left stays, with `sign: .never`; §8.16's W0-6 row doesn't apply) |
 | F13: `UpdateTime` changes against "any" lines | Session A's pslog and ioreg | G-14b |
 | E3b: `timeremaining` followed by "any" (battery and charging) | Session A's pslog | G-14c |
 | E20 field run: traps, crash reports, `read` threads; memory over 2 hours | Session A (SPIKE-A2) | G-14a |
@@ -2367,9 +2514,13 @@ from the traffic API and were not re-checked.
 | Clear's shadows in Instruments | Session B step 5 | G-13b; Stage 1.5 |
 | S4w per style against Standard | Session B | ROADMAP's decision line (G-13c; no fallback, Q-B10) |
 | F8 per family and language (F8-ru: the method, or not checked) | Session B | G-15 |
-| F12: offered, installed, relaunched, per try | Session B | G-16 |
+| F12: offered, installed, relaunched, per try; the pre-swap extension end (the `update` log line's counts and milliseconds, the `BatteryPulseWidget` processes before Install and after the swap, the placed widgets' 1-4 answer) | Session B | G-16; WP-16 item 6 |
 | `page.switch` count and p50 per page, before and after | Session A step 8; Session B step 5 | G-17 |
-| F5: accessory and device captures (`bpulse` built or not) | Session A step 2 | W0-4; ROADMAP Stages 5 and 6 |
+| F5 accessories, 2026-10-23 (interim): `bpulse --accessories` lists the 2 unnamed sources that `pmset -g accps` shows (AirPods), in 3 states. So macOS 27 doesn't hide the accessory list from apps (Stage 6's question). The F5 table's "not a list" for `pmset -g accps -xml` is the script's `plist_count`, which reads only the first of its back-to-back plists. **Still for Session A:** a keyboard on Bluetooth and on its cable (none was at hand; otherwise recorded as not run) | Session A step 2 | W0-4; ROADMAP Stage 6; D1's script |
+| F5 iPad, 2026-10-23 (interim): no Local Network prompt and no library-validation message; the device log shows only "MobileDevice 1860.2.5.100.2 loaded". After the cable was detached, a "didn't answer" banner sat over stale "Connected by cable" values, and a fresh read over Wi-Fi was still labelled "Connected by cable": the label doesn't follow the transport | Session A step 2 | WP-23; ROADMAP Stage 5 |
+| Charge Limit, 2026-10-23 (Session A; the maintainer set 80 % in System Settings; read-only captures, kept on the Mac): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset`). When the limit engaged at 80 % (21:37): `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" = false exists only in the AirPods' `accps` entries. `bpulse --smc` lists 43 `CH*` keys (names only, so whether one holds the limit is unknown). The maintainer wants the Charge Limit shown in the app, the menu bar and the widget | Session A (optional capture) | ROADMAP Stage 1.1, partly (WP-22); 0.8's NEW-01 (of its candidate bits 12 and 24, bit 24 is the one seen; a committed fixture still has to prove it, QUA-05, Session B optional); §8.3, §8.5; the display request is an input to 0.7 and 0.8 (Appendix A) |
+| Session A's script, 2026-10-23: `log_since` counted ndjson's closing summary line (fixed in `9a32e57`); `pmset -g accps -xml` writes one plist per source back to back, and `plist_count` reads only the first; `screencapture -v` stops only at `-V` (SIGINT or the end of stdin loses the movie); the installs end the widget extension before each swap (`56702f9`) | Session A | D1's script; Session B step 3 |
+| Session A's deviations, 2026-10-23: the session ran `killall chronod` once, for diagnosis; macOS asked for Accessibility for Terminal because of an `osascript` window query, and the maintainer allowed it, to revert after the session; the maintainer changed the Charge Limit himself (80, 100, 80), which restore doesn't cover | Session A | §6 (prepare asks for both, restore prompts for both); D1's script |
 | F9: Russian pages | Session B | D3 (a failure becomes a fix) |
 | F11: the alert step and the banner, or not run; the login item gone from Login Items | Session B | D3; ROADMAP Stage 1.2 |
 | `diskutil info -plist` fixture; both CI install passes | CI | WP-16 |
