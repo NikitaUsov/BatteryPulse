@@ -151,6 +151,85 @@ private func session(
         #expect(IDeviceRoster.connection(of: session([.wifi, .usb]), now: now) == .usb)
     }
 
+    // MARK: Unplugging a device that is also on Wi-Fi (Session A's F5)
+
+    /// Listed `listedAgo` seconds ago, a USB termination `terminatedAgo` seconds ago, and a
+    /// successful read over `read` `readAgo` seconds ago.
+    private func unplugged(
+        _ connections: [IDeviceConnection] = [.usb, .wifi], listedAgo: TimeInterval = 300,
+        terminatedAgo: TimeInterval? = 200, read: IDeviceConnection? = nil, readAgo: TimeInterval = 0
+    ) -> IDeviceSession {
+        var unplugged = session(connections, listedAt: now - listedAgo)
+        unplugged.usbTerminatedAt = terminatedAgo.map { now - $0 }
+        if let read {
+            unplugged.readConnection = read
+            unplugged.readAt = now - readAgo
+        }
+        return unplugged
+    }
+
+    private func shown(_ session: IDeviceSession, at date: Date = now) -> IDeviceConnection? {
+        IDeviceRoster.connection(of: session, now: date)
+    }
+
+    @Test func listAfterTerminationStillCountsUSB() {
+        // IOKit doesn't say which device left: the list after the termination decides.
+        #expect(shown(unplugged(listedAgo: 100, terminatedAgo: 200)) == .usb)
+        #expect(shown(unplugged(listedAgo: 3600, terminatedAgo: nil)) == .usb, "no termination, no expiry")
+    }
+
+    @Test func readOverWiFiAfterTerminationShowsWiFi() {
+        // The list after the termination still says USB; the read went over Wi-Fi.
+        let read = unplugged(listedAgo: 100, terminatedAgo: 200, read: .wifi, readAgo: 50)
+        #expect(shown(read) == .wifi)
+        #expect(!IDeviceRoster.isOnUSB(read))
+        #expect(IDeviceReadPolicy.nextRead(read, isVisible: true, recordsHistory: true, now: now) == nil)
+        #expect(IDeviceRoster.sightingExpiry(of: read, now: now) == now + 550, "the read is the latest sighting")
+        #expect(shown(read, at: now + 549) == .wifi)
+        #expect(shown(read, at: now + 551) == nil)
+        #expect(
+            shown(unplugged(listedAgo: 100, terminatedAgo: 200, read: .wifi, readAgo: 100)) == .wifi,
+            "in the same instant, the read came after the list")
+        // A list after the read says USB again: the cable is back, or usbmuxd still lists it.
+        #expect(shown(unplugged(listedAgo: 10, terminatedAgo: 200, read: .wifi, readAgo: 50)) == .usb)
+        // Without a termination one read over Wi-Fi doesn't mean the cable left.
+        #expect(shown(unplugged(listedAgo: 100, terminatedAgo: nil, read: .wifi, readAgo: 50)) == .usb)
+        // Listed on USB only: the read is the Wi-Fi sighting.
+        #expect(shown(unplugged([.usb], listedAgo: 100, terminatedAgo: 200, read: .wifi, readAgo: 50)) == .wifi)
+    }
+
+    @Test func readOverUSBAfterTerminationCountsLikeAList() {
+        #expect(shown(unplugged(listedAgo: 300, terminatedAgo: 200, read: .usb, readAgo: 100)) == .usb)
+        #expect(
+            shown(unplugged(listedAgo: 300, terminatedAgo: 200, read: .usb, readAgo: 250)) == .wifi,
+            "a read before the termination proves nothing")
+    }
+
+    @Test func listOnWiFiOnlyShowsWiFi() {
+        #expect(shown(unplugged([.wifi], listedAgo: 100, terminatedAgo: 200)) == .wifi)
+        #expect(shown(unplugged([.wifi], listedAgo: 100, terminatedAgo: 200, read: .wifi, readAgo: 50)) == .wifi)
+        #expect(shown(unplugged([], listedAgo: 100, terminatedAgo: 200, read: .wifi, readAgo: 50)) == nil)
+    }
+
+    @Test func terminationWithoutListDropsUSB() {
+        // A stalled monitor: no list follows the termination.
+        let stalled = unplugged(listedAgo: 300, terminatedAgo: 200)
+        #expect(shown(stalled) == .wifi, "the latest list's Wi-Fi sighting")
+        #expect(IDeviceReadPolicy.nextRead(stalled, isVisible: true, recordsHistory: true, now: now) == nil)
+        #expect(IDeviceRoster.sightingExpiry(of: stalled, now: now) == now + 300)
+        #expect(
+            IDeviceReadPolicy.nextWake([padKey: stalled], visible: padKey, recordsHistory: true, now: now)
+                == now + 300)
+        #expect(shown(unplugged(listedAgo: 700, terminatedAgo: 200)) == nil, "the sighting expired")
+        #expect(shown(unplugged([.usb], listedAgo: 300, terminatedAgo: 200)) == nil, "never seen on Wi-Fi")
+        #expect(
+            shown(unplugged(listedAgo: 200, terminatedAgo: 200)) == .wifi,
+            "in the same instant, the termination came after the list")
+        #expect(
+            shown(unplugged([.usb], listedAgo: 300, terminatedAgo: 200, read: .wifi, readAgo: 400)) == nil,
+            "a read before the latest list is no sighting")
+    }
+
     @Test func unrememberedDeviceAppearsOnlyAfterAnAttempt() {
         let listed = session([.wifi])
         #expect(IDeviceRoster.entries(remembered: [], sessions: [padKey: listed], hidden: [], now: now).isEmpty)
