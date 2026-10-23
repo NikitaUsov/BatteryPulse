@@ -854,6 +854,102 @@ struct MonitorHarness {
         #expect(!h.monitor.isStalled)
     }
 
+    // MARK: Unplugging a device that is also on Wi-Fi (Session A's F5)
+
+    /// The iPad on its cable and on Wi-Fi, read once by cable.
+    private func padOnCableAndWiFi(_ h: MonitorHarness) async {
+        await h.transport.attach(Self.pad, [.usb, .wifi], capture: TestCaptures.ok(Self.pad, name: "Tablet"))
+        await h.startWithInitialScan()
+        #expect(h.monitor.entries.first { $0.id == Self.padKey }?.connection == .usb)
+    }
+
+    /// From now on the iPad answers over Wi-Fi only; `listed` is what usbmuxd still lists.
+    private func padLeavesCable(_ h: MonitorHarness, listed: [IDeviceConnection]) async {
+        await h.transport.attach(
+            Self.pad, listed, capture: TestCaptures.ok(Self.pad, name: "Tablet", percent: 70, connection: .wifi))
+    }
+
+    @Test func readOverWiFiAfterUnplugShowsWiFiThoughTheListStillSaysUSB() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await padOnCableAndWiFi(h)
+        await padLeavesCable(h, listed: [.usb, .wifi])
+        await h.send(.terminated)
+        #expect(await h.count("list") == 2)
+        // The list came after the termination, and IOKit doesn't say which device left.
+        #expect(h.monitor.entries.first?.connection == .usb)
+        h.monitor.read(Self.padKey)
+        await h.settle()
+        let entry = try #require(h.monitor.entries.first)
+        #expect(entry.battery?.chargePercent == 70)
+        #expect(entry.connection == .wifi, "the read went over Wi-Fi after the cable left")
+        // Wi-Fi is never read by itself, and the sighting expires.
+        h.monitor.setPageVisible(Self.padKey, true)
+        await h.advance(by: 120)
+        #expect(await h.count("capture") == 2)
+        await h.advance(by: IDeviceReadPolicy.wifiPresenceLifetime)
+        #expect(h.monitor.entries.first?.connection == nil)
+        #expect(try await h.registry().first?.lastConnection == .wifi)
+    }
+
+    @Test func replugAfterReadOverWiFiReadsAtOnce() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await padOnCableAndWiFi(h)
+        await padLeavesCable(h, listed: [.usb, .wifi])
+        await h.send(.terminated)
+        h.monitor.read(Self.padKey)
+        await h.settle()
+        #expect(h.monitor.entries.first?.connection == .wifi)
+        await h.transport.attach(
+            Self.pad, [.usb, .wifi], capture: TestCaptures.ok(Self.pad, name: "Tablet", percent: 75))
+        await h.send(.arrived)
+        #expect(await h.count("capture") == 3)
+        #expect(h.monitor.entries.first?.connection == .usb)
+        #expect(h.monitor.entries.first?.battery?.chargePercent == 75)
+    }
+
+    @Test func unplugListedOnWiFiOnlyShowsWiFiAndKeepsOtherCables() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await phoneAttached(h)
+        await padOnCableAndWiFi(h)
+        await padLeavesCable(h, listed: [.wifi])
+        await h.send(.terminated)
+        let pad = try #require(h.monitor.entries.first { $0.id == Self.padKey })
+        #expect(pad.connection == .wifi)
+        #expect(pad.problem == nil)
+        #expect(h.monitor.entries.first { $0.id == Self.phoneKey }?.connection == .usb, "still on its cable")
+        h.monitor.read(Self.padKey)
+        await h.settle()
+        #expect(h.monitor.entries.first { $0.id == Self.padKey }?.connection == .wifi)
+        #expect(h.monitor.entries.first { $0.id == Self.padKey }?.battery?.chargePercent == 70)
+    }
+
+    @Test func unplugWhileStalledDropsUSBAndTryAgainReadsOverWiFi() async throws {
+        let h = MonitorHarness()
+        defer { h.cleanUp() }
+        await padOnCableAndWiFi(h)
+        // The 5-minute read times out as the cable leaves: the stall drops the termination's list.
+        await h.transport.script(Self.pad, [.failure(.timedOut(seconds: 60))])
+        await h.advance(by: IDeviceReadPolicy.backgroundInterval)
+        #expect(h.monitor.isStalled)
+        await padLeavesCable(h, listed: [.usb, .wifi])
+        await h.send(.terminated)
+        #expect(await h.count("list") == 1)
+        let stalled = try #require(h.monitor.entries.first)
+        #expect(stalled.problem == .transportFailed(.timedOut))
+        #expect(stalled.connection == .wifi, "the cable left after the last list")
+        // Try Again lists (usbmuxd still says USB) and reads over Wi-Fi.
+        h.monitor.read(Self.padKey)
+        await h.settle()
+        let entry = try #require(h.monitor.entries.first)
+        #expect(!h.monitor.isStalled)
+        #expect(entry.problem == nil)
+        #expect(entry.battery?.chargePercent == 70)
+        #expect(entry.connection == .wifi)
+    }
+
     @Test func frameworkUnavailableIsReportedNotRetried() async throws {
         let h = MonitorHarness()
         defer { h.cleanUp() }

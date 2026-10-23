@@ -2,7 +2,8 @@ import Foundation
 
 /// What the app knows about one iPhone or iPad in this session: memory only, never written.
 public struct IDeviceSession: Sendable, Equatable {
-    /// The interfaces of the last list that found the device; `[]` means not attached.
+    /// The interfaces of the last list that found the device, less USB once a read showed that
+    /// the cable left (the monitor drops it); `[]` means not attached.
     public var connections: [IDeviceConnection] = []
     /// When a list last found the device.
     public var listedAt: Date?
