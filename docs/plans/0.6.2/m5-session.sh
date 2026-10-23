@@ -41,6 +41,11 @@ RUN_I="39801168615" # SPIKE-I, #278: 0.6.1 plus -internalize-at-link on the widg
 ARTIFACT_I="BatteryPulse-dbf4dfa11a2fe4a87a38f2f74c44eaeb7a7fabd3"
 RUN_W="39806441696" # SPIKE-W, #282 (a609487): the configurable kind, the Test kind, the feed, clicks
 ARTIFACT_W="BatteryPulse-a60948765b7e7df33e3a8a5d43a71953d889b411"
+# W2 is the same code as W, built again by workflow_dispatch so its build number (307) is new: chronod
+# caches a widget's descriptors by CFBundleVersion, and Session A's first W install cached 282 with
+# the previous build's descriptor (see install_build). W2 retests W0-2 after `install B`.
+RUN_W2="40002896511" # SPIKE-W again, #307 (a609487), the same artifact name as W
+ARTIFACT_W2="$ARTIFACT_W"
 RUN_A2="39808734092" # SPIKE-A2, #285 (cee5033): E20, the minimize fill switch, and a profiling DMG
 ARTIFACT_A2="BatteryPulse-cee5033bae2f9e459332a5b22fa971aff2583765"
 ARTIFACT_A2P="BatteryPulse-profiling-cee5033bae2f9e459332a5b22fa971aff2583765"
@@ -416,6 +421,27 @@ wallpapers() {
 
 end_widget_extension() { pkill -TERM -x BatteryPulseWidget 2>/dev/null || true; }
 
+# end_widget_extension_and_wait: ends every BatteryPulseWidget process before a swap and waits for
+# it: SIGTERM first, SIGKILL after 0.5 s, giving up after 1.5 s. Session A found that chronod
+# refetches a widget's descriptors at the version change from whatever extension still runs, and
+# caches them under the new CFBundleVersion: the previous build's static descriptor then made every
+# reload of a configurable kind fail (CHSErrorDomain 1103). Prints the milliseconds it took.
+end_widget_extension_and_wait() {
+  local ticks=0 signal=TERM
+  # 20 ms ticks, counted rather than timed: macOS's bash 3.2 has no clock below a second.
+  while pgrep -x BatteryPulseWidget >/dev/null 2>&1; do
+    if [ "$ticks" -ge 75 ]; then
+      warn "a BatteryPulseWidget process still runs after about 1.5 s"
+      break
+    fi
+    if [ "$ticks" -ge 25 ]; then signal=KILL; fi
+    pkill "-$signal" -x BatteryPulseWidget 2>/dev/null || true
+    sleep 0.02
+    ticks=$((ticks + 1))
+  done
+  echo "widget extension ended before the swap: about $((ticks * 20)) ms, last signal $signal"
+}
+
 # MARK: - Builds
 
 MOUNT=""
@@ -468,6 +494,7 @@ fetch_builds() {
   [ -f "$BUILDS/C.dmg" ] || fetch_artifact C "$RUN_C" "$ARTIFACT_C" BatteryPulse.dmg
   [ -f "$BUILDS/I.dmg" ] || fetch_artifact I "$RUN_I" "$ARTIFACT_I" BatteryPulse.dmg
   [ -f "$BUILDS/W.dmg" ] || fetch_artifact W "$RUN_W" "$ARTIFACT_W" BatteryPulse.dmg
+  [ -f "$BUILDS/W2.dmg" ] || fetch_artifact W2 "$RUN_W2" "$ARTIFACT_W2" BatteryPulse.dmg
   [ -f "$BUILDS/A2.dmg" ] || fetch_artifact A2 "$RUN_A2" "$ARTIFACT_A2" BatteryPulse.dmg
   [ -f "$BUILDS/A2P.dmg" ] || fetch_artifact A2P "$RUN_A2" "$ARTIFACT_A2P" BatteryPulse-profiling.dmg
   [ -f "$BUILDS/A.dmg" ] || fetch_artifact A "$RUN_A" "$ARTIFACT_A" BatteryPulse.dmg
@@ -552,6 +579,8 @@ install_build() {
   if [ "$(stat -f %d "$staging")" != "$(stat -f %d /Applications)" ]; then
     warn "the staging folder may not be on the volume of /Applications; the swap says if it isn't"
   fi
+  # Before the swap, so chronod asks the new extension for the descriptors (see above).
+  end_widget_extension_and_wait
   if [ -d "$APP" ]; then
     "$BIN/swap" "$staged" "$APP" || fail "the swap failed; $APP is as it was"
   else
@@ -570,8 +599,8 @@ install_build() {
 }
 
 step_install() {
-  [ $# -eq 1 ] || fail "usage: $SCRIPT install <C|I|W|B|A2|A2P|A|backup>"
-  case "$1" in C | I | W | B | A2 | A2P | A | backup) ;; *) fail "no build $1" ;; esac
+  [ $# -eq 1 ] || fail "usage: $SCRIPT install <C|I|W|W2|B|A2|A2P|A|backup>"
+  case "$1" in C | I | W | W2 | B | A2 | A2P | A | backup) ;; *) fail "no build $1" ;; esac
   install_build "$1"
 }
 
@@ -2259,8 +2288,9 @@ Any time:
   attach <image> <caption>   publish a small copy of an image in A.md (look at it first)
   unattach <file>            take one back out
   appearance light|dark|back
-  install <C|I|W|B|A2|A2P|A|backup>
-                             one build, the way every step installs it (after a refusal: install B)
+  install <C|I|W|W2|B|A2|A2P|A|backup>
+                             one build, the way every step installs it (after a refusal: install B);
+                             W2 is W rebuilt as #307, for W0-2's retest after install B
   status                     answers so far, the installed build, the battery
   restore                    your app, settings, data and system settings back, then what to do by hand
   send [--dry-run]           A.md to docs/plans/0.6.2/sessions/ on $RESULTS_BRANCH
