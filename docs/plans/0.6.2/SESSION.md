@@ -274,8 +274,8 @@ answer. If a variant failed every time, its error is in the section; `note` it.
    - 0:00-1:10, the A/B energy runs, with the display kept on except in two 10-minute runs;
    - 1:10-3:00, the field run on SPIKE-A2;
    - **at 2:00, a sound and an alert ask him to plug the adapter in** (1 minute);
-   - at 3:00 the script runs restore and `send`, and leaves the list of what to put back by hand
-     on the screen.
+   - at 3:00 the script runs restore and leaves the list of what to put back by hand on the
+     screen. Nothing is sent yet: the results wait for his yes (below).
    - If he can't plug in at 2:00, the run records battery only; that is fine.
 4. Then stay idle: no commands, no polling. Your own work would show up in the energy runs. Wait
    until he writes to you again.
@@ -283,19 +283,25 @@ answer. If a variant failed every time, its error is in the section; `note` it.
 ## After the window
 
 1. `$S status`: every answer recorded, the window done (or stopped early: then run `$S restore`
-   and `$S send` yourself).
+   yourself).
 2. Read `~/bp-062/A/A.md`. Check:
    - no Russian, no device names, no paths outside `~`;
    - the energy table has a row per run;
    - the pslog section has lines for both phases.
-   - If you `attach` or `note` anything more, run `$S send` again; it adds a commit to the same
-     branch.
-3. Check that the file arrived:
+3. **The repository is public, so he decides what leaves the Mac.** Tell him in Russian, in a
+   few lines, what `send` will publish: the kinds of content (answers, counts, timings, energy
+   numbers, log lines with private values shown as `<private>`), the attached images one by one
+   (open each so he sees it), and that recordings, traces, raw captures, screenshots that aren't
+   attached, and the backup stay in `~/bp-062/A`. Remove anything he doesn't want with
+   `$S unattach <file>` or by not attaching it. Run `$S send` only after his yes. If you `attach`
+   or `note` anything more later, show it to him and run `$S send` again; it adds a commit to the
+   same branch.
+4. Check that the file arrived:
 
    ```
    gh api "repos/NikitaUsov/BatteryPulse/contents/docs/plans/0.6.2/sessions/A.md?ref=claude/062-session-a" --jq .size
    ```
-4. Go through restore's "PUT BACK" list with him, item by item, in Russian:
+5. Go through restore's "PUT BACK" list with him, item by item, in Russian:
    - VoiceOver off;
    - Text size;
    - Icon & widget style and Dim widgets on desktop, to the values prepare recorded;
@@ -305,7 +311,7 @@ answer. If a variant failed every time, its error is in the section; `note` it.
    - a blank widget, removed and added again.
    - If the window printed a `PUT BACK (person, in Terminal): sudo pmset ...` line, he runs it
      himself.
-5. Report to him, in Russian, in a few lines:
+6. Report to him, in Russian, in a few lines:
    - what was answered and what wasn't, and why;
    - anything that looked wrong: crash reports, "executor" lines, a widget that went blank, a
      black frame;
@@ -317,8 +323,8 @@ answer. If a variant failed every time, its error is in the section; `note` it.
 
 - Always run `$S restore` before leaving: it reinstalls his app and puts back the settings, the
   data, Low Power Mode, the wallpaper and the appearance. Then go through its list with him.
-- Then `$S send`. A partial A.md is worth sending, because the answers left blank show as "not
-  answered".
+- Then, after he has seen what it holds and said yes (as in "After the window", step 3), `$S send`.
+  A partial A.md is worth sending, because the answers left blank show as "not answered".
 - To go on later, run the next step: the answers so far stay in `~/bp-062/A/answers.tsv`. A second
   `prepare` keeps the first backup (`prepare --fresh-backup` would replace it with the session's
   state: never use it mid-session).

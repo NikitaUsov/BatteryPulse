@@ -1981,7 +1981,9 @@ step_window() {
   pslog_analysis
   # Each in a subshell, so a failure there still leaves the prompts on screen.
   (restore_all) || warn "restore stopped early; run $SCRIPT restore"
-  (step_send) || warn "send failed; run $SCRIPT send again"
+  # No send here: the repository is public, so the maintainer sees what A.md holds and says yes
+  # first (SESSION.md, "After the window").
+  out "- results ready in $WORK/A.md; not sent yet (send runs after the maintainer has seen them)"
   touch "$WORK/window.done"
   osascript -e 'display alert "BatteryPulse Session A" message "The window is done. Terminal lists what to put back by hand." giving up after 36000' \
     >/dev/null 2>&1 &
