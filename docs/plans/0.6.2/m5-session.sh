@@ -722,10 +722,15 @@ read_threads() {
 }
 
 # log_since <start> <predicate> <file>: `log show` as ndjson; prints the number of entries.
+# ndjson ends with a summary object ({"count":…,"finished":1}) even when nothing matched, so it is
+# left out of the count, and the full path avoids zsh's `log` builtin if this ever runs there.
 log_since() {
-  log show --start "$1" --info --debug --style ndjson --predicate "$2" >"$3" 2>/dev/null || true
-  grep -c '^{' "$3" || true
+  /usr/bin/log show --start "$1" --info --debug --style ndjson --predicate "$2" >"$3" 2>/dev/null || true
+  entry_count "$3"
 }
+
+# entry_count <ndjson>: the entries of `log show --style ndjson`, without its summary object.
+entry_count() { grep '^{' "$1" | grep -c -v '"finished"' || true; }
 
 # entries <ndjson>: "<timestamp>\t<process>\t<message>" per entry of `log show --style ndjson`.
 entries() {
@@ -744,7 +749,7 @@ entries() {
       }
       return out
     }
-    /^\{/ {
+    /^\{/ && !/"finished"/ {
       path = text($0, "processImagePath"); sub(/.*\//, "", path)
       print text($0, "timestamp") "\t" path "\t" text($0, "eventMessage")
     }' "$1"
