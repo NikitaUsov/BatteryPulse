@@ -127,6 +127,13 @@ import Testing
         #expect(UpdatePolicy.shouldOffer(release, current: v010, skipped: AppVersion("0.1.5"), userInitiated: false))
     }
 
+    /// Check Now never waits for an automatic check, whose session may refuse the network at once.
+    @Test func checkNowTakesOverAnAutomaticCheck() {
+        #expect(UpdatePolicy.checkNow(during: nil) == .start)
+        #expect(UpdatePolicy.checkNow(during: .automatic) == .takeOver)
+        #expect(UpdatePolicy.checkNow(during: .user) == .wait)
+    }
+
     @Test func headingsBecomeBoldLines() {
         let notes = "## Install\n\nRequires macOS 27.\n### First launch\n#hashtag stays"
         #expect(
