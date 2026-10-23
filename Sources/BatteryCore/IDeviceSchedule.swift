@@ -2,7 +2,8 @@ import Foundation
 
 /// What the app knows about one iPhone or iPad in this session: memory only, never written.
 public struct IDeviceSession: Sendable, Equatable {
-    /// The interfaces of the last list that found the device; `[]` means not attached.
+    /// The interfaces of the last list that found the device, less USB once a read showed that
+    /// the cable left (the monitor drops it); `[]` means not attached.
     public var connections: [IDeviceConnection] = []
     /// When a list last found the device.
     public var listedAt: Date?
@@ -12,6 +13,12 @@ public struct IDeviceSession: Sendable, Equatable {
     /// This session's latest successful read.
     public var battery: IDeviceBattery?
     public var readAt: Date?
+    /// The interface that read went over (the capture's `Connection`).
+    public var readConnection: IDeviceConnection?
+    /// The latest USB termination of an iPhone or iPad that no arrival followed within the debounce.
+    /// IOKit doesn't say which device left, so every session gets it; a read over USB after it
+    /// clears it (the monitor does), because then the cable that left wasn't this device's.
+    public var usbTerminatedAt: Date?
     /// The latest read attempt, successful or not.
     public var lastAttempt: Date?
     /// Why the latest attempt failed; `nil` after a success.
@@ -89,10 +96,7 @@ public enum IDeviceReadPolicy {
         }
         for (key, session) in sessions {
             consider(nextRead(session, isVisible: key == visible, recordsHistory: recordsHistory, now: now))
-            if !session.connections.isEmpty, !session.connections.contains(.usb), let listedAt = session.listedAt {
-                let expiry = listedAt.addingTimeInterval(wifiPresenceLifetime)
-                if expiry > now { consider(expiry) }
-            }
+            consider(IDeviceRoster.sightingExpiry(of: session, now: now))
         }
         return wake
     }
@@ -122,14 +126,71 @@ public struct IDeviceEntry: Sendable, Equatable, Identifiable {
 
 /// Which devices the Devices section shows, and how.
 public enum IDeviceRoster {
-    /// USB beats Wi-Fi; a Wi-Fi sighting older than wifiPresenceLifetime doesn't count.
+    /// The connection a device's row and page show, from the newest evidence: USB while
+    /// ``isOnUSB(_:)``, else Wi-Fi, then an unknown interface, seen by the latest list or a read
+    /// after it less than ``IDeviceReadPolicy/wifiPresenceLifetime`` ago (Wi-Fi has no detach
+    /// event). A device the latest list didn't find isn't connected.
     public static func connection(of session: IDeviceSession, now: Date) -> IDeviceConnection? {
-        if session.connections.contains(.usb) { return .usb }
-        guard let listedAt = session.listedAt,
-            now.timeIntervalSince(listedAt) < IDeviceReadPolicy.wifiPresenceLifetime
-        else { return nil }
-        if session.connections.contains(.wifi) { return .wifi }
-        return session.connections.isEmpty ? nil : .unknown
+        guard !session.connections.isEmpty else { return nil }
+        if isOnUSB(session) { return .usb }
+        let sightings = latestSightings(of: session)
+        if let wifi = sightings.wifi, isFresh(wifi, now: now) { return .wifi }
+        if let unknown = sightings.unknown, isFresh(unknown, now: now) { return .unknown }
+        return nil
+    }
+
+    /// Whether the cable counts: the latest list has USB, and nothing after that list says the
+    /// cable left. A USB termination says so; IOKit doesn't say which device left, so a list after
+    /// the termination counts again. A successful read over another interface after the
+    /// termination says so too, and one over USB after it counts like a list. On a tie the
+    /// termination or the read came last: both follow a list.
+    public static func isOnUSB(_ session: IDeviceSession) -> Bool {
+        guard session.connections.contains(.usb) else { return false }
+        guard let terminatedAt = session.usbTerminatedAt else { return true }
+        var seen = session.listedAt ?? .distantPast
+        var left = terminatedAt
+        if let readAt = session.readAt, let read = session.readConnection, readAt >= terminatedAt {
+            if read == .usb { seen = max(seen, readAt) } else { left = max(left, readAt) }
+        }
+        return seen > left
+    }
+
+    /// When the connection shown from a Wi-Fi or unknown sighting next changes because a sighting
+    /// expires; `nil` on USB, when not connected, or when every sighting has expired.
+    public static func sightingExpiry(of session: IDeviceSession, now: Date) -> Date? {
+        guard !session.connections.isEmpty, !isOnUSB(session) else { return nil }
+        let sightings = latestSightings(of: session)
+        return [sightings.wifi, sightings.unknown]
+            .compactMap { $0?.addingTimeInterval(IDeviceReadPolicy.wifiPresenceLifetime) }
+            .filter { $0 > now }
+            .min()
+    }
+
+    /// The newest Wi-Fi and unknown-interface sightings: the latest list's interfaces, and the
+    /// interface of a successful read that came after that list.
+    private static func latestSightings(of session: IDeviceSession) -> (wifi: Date?, unknown: Date?) {
+        var wifi: Date?
+        var unknown: Date?
+        func saw(_ connection: IDeviceConnection, at date: Date) {
+            switch connection {
+            case .usb: break
+            case .wifi: wifi = max(wifi ?? date, date)
+            case .unknown: unknown = max(unknown ?? date, date)
+            }
+        }
+        if let listedAt = session.listedAt {
+            for connection in session.connections { saw(connection, at: listedAt) }
+        }
+        if let read = session.readConnection, let readAt = session.readAt,
+            session.listedAt.map({ readAt >= $0 }) ?? true
+        {
+            saw(read, at: readAt)
+        }
+        return (wifi, unknown)
+    }
+
+    private static func isFresh(_ sighting: Date, now: Date) -> Bool {
+        now.timeIntervalSince(sighting) < IDeviceReadPolicy.wifiPresenceLifetime
     }
 
     /// Remembered devices, plus devices that aren't remembered but have a read attempt this
