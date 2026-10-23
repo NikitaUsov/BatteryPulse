@@ -203,10 +203,13 @@ jobs:
         # (strict, every architecture, nested code), and detach. These stay 0.6.1's although this
         # version's installer mounts with diskutil.
         # Then a second pass mounts the way this version's installer does (UpdateInstallPolicy; a
-        # Linux test compares these diskutil lines with it): attach, read the image's disk from
-        # diskutil info, eject the mount point; then again with a file held open on the volume, so
-        # the eject fails and the forced path runs (unmountDisk force, then eject of the disk).
-        # After each, the image's disk and its volume must be gone from diskutil list.
+        # Linux test compares these diskutil lines with it), at a mount point in the user's
+        # temporary folder under /var/folders, as the app's: attach, check that diskutil info shows
+        # the disk image mounted exactly there (as UpdateInstallPolicy.imageDisk requires, /var and
+        # /private/var counting as one), read the image's disk from it, eject the mount point; then
+        # again with a file held open on the volume, so the eject fails and the forced path runs
+        # (unmountDisk force, then eject of the disk). After each, the image's disk and its volume
+        # must be gone from diskutil list.
         # Then launch the copy: after 30 s it must still run, have logged menuBarReady (its menu
         # bar item appeared) and left no crash report, and it must quit when asked.
         # It takes about a minute; a hung attach, open or quit ends here, not at the job's limit.
@@ -236,6 +239,10 @@ jobs:
           /usr/sbin/diskutil eject 2>&1 || true
           /usr/sbin/diskutil unmountDisk 2>&1 || true
           echo "::endgroup::"
+          # Where the app mounts: FileManager's temporary directory, the user's folder under
+          # /var/folders, which the system reports resolved, under /private/var.
+          mount_point="$(getconf DARWIN_USER_TEMP_DIR)BatteryPulse-update"
+          echo "The diskutil passes mount at $mount_point"
           for pass in plain forced; do
             mkdir -p "$mount_point"
             /usr/sbin/diskutil image attach --readOnly --mountPoint "$mount_point" --mountOptions nobrowse build/BatteryPulse.dmg
@@ -245,6 +252,13 @@ jobs:
               cat "$RUNNER_TEMP/info.plist"
               echo "::endgroup::"
               /usr/sbin/diskutil list
+            fi
+            mounted="$(plutil -extract MountPoint raw -o - "$RUNNER_TEMP/info.plist")"
+            bus="$(plutil -extract BusProtocol raw -o - "$RUNNER_TEMP/info.plist")"
+            echo "Pass $pass: diskutil info shows $bus at $mounted"
+            if [ "${mounted#/private}" != "${mount_point#/private}" ] || [ "$bus" != "Disk Image" ]; then
+              echo "error: diskutil info doesn't show the disk image mounted at $mount_point" >&2
+              exit 1
             fi
             # The image's own disk: an APFS volume sits on a synthesized container whose physical
             # store is a partition of the image's disk.
