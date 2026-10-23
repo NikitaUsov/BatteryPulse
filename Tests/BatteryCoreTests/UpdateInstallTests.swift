@@ -203,17 +203,128 @@ import Testing
     }
 
     @Test func mountsReadOnlyWithoutFinder() {
-        let arguments = UpdateInstallPolicy.attachArguments(image: "/tmp/a b/BatteryPulse.dmg", mountPoint: "/tmp/m")
-        #expect(arguments.first == "attach")
-        #expect(arguments[1] == "/tmp/a b/BatteryPulse.dmg")
-        for flag in ["-nobrowse", "-readonly", "-noautoopen"] {
-            #expect(arguments.contains(flag))
-        }
-        let mountPoint = arguments.firstIndex(of: "-mountpoint")
-        #expect(mountPoint.map { arguments[$0 + 1] } == "/tmp/m")
-        #expect(UpdateInstallPolicy.detachArguments(mountPoint: "/tmp/m", force: false) == ["detach", "/tmp/m"])
+        #expect(UpdateInstallPolicy.diskutil == "/usr/sbin/diskutil")
         #expect(
-            UpdateInstallPolicy.detachArguments(mountPoint: "/tmp/m", force: true) == ["detach", "/tmp/m", "-force"])
+            UpdateInstallPolicy.attachArguments(image: "/tmp/a b/BatteryPulse.dmg", mountPoint: "/tmp/m")
+                == [
+                    "image", "attach", "--readOnly", "--mountPoint", "/tmp/m", "--mountOptions", "nobrowse",
+                    "/tmp/a b/BatteryPulse.dmg",
+                ])
+        #expect(UpdateInstallPolicy.infoArguments(mountPoint: "/tmp/m") == ["info", "-plist", "/tmp/m"])
+        #expect(UpdateInstallPolicy.detachArguments(mountPoint: "/tmp/m") == ["eject", "/tmp/m"])
+        #expect(
+            UpdateInstallPolicy.forcedDetachArguments(disk: "disk17")
+                == [["unmountDisk", "force", "disk17"], ["eject", "disk17"]])
+    }
+
+    /// `diskutil info -plist` of the DMG mounted in CI's install step (macOS 27): an APFS volume
+    /// on the synthesized container disk18, whose physical store disk17s1 is on the image's disk.
+    private static func diskInfo() throws -> [String: Any] {
+        let url = try #require(
+            Bundle.module.url(
+                forResource: "info-apfs-macos27", withExtension: "plist", subdirectory: "Fixtures/diskutil"))
+        let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
+        return try #require(plist as? [String: Any])
+    }
+
+    private static func imageDisk(_ info: [String: Any], mountPoint: String) throws -> String? {
+        let data = try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+        return UpdateInstallPolicy.imageDisk(info: data, mountPoint: mountPoint)
+    }
+
+    @Test func readsTheImagesDiskFromDiskutilInfo() throws {
+        let info = try Self.diskInfo()
+        let mountPoint = "/Users/runner/work/_temp/BatteryPulse-update"
+        #expect(try Self.imageDisk(info, mountPoint: mountPoint) == "disk17")
+        // A volume that is a partition of the image's disk.
+        var hfs = info
+        hfs["APFSPhysicalStores"] = nil
+        hfs["ParentWholeDisk"] = "disk4"
+        #expect(try Self.imageDisk(hfs, mountPoint: mountPoint) == "disk4")
+        // The app's mount point is under /var/folders, which the kernel reports resolved.
+        var resolved = info
+        resolved["MountPoint"] = "/private/var/folders/xy/T/BatteryPulse-update-1"
+        #expect(try Self.imageDisk(resolved, mountPoint: "/var/folders/xy/T/BatteryPulse-update-1") == "disk17")
+        #expect(try Self.imageDisk(resolved, mountPoint: "/private/var/folders/xy/T/BatteryPulse-update-1") == "disk17")
+    }
+
+    /// Only a disk image mounted exactly there: `diskutil info` of a folder that isn't a mount
+    /// point must never lead to ejecting the volume around it.
+    @Test func ejectsByForceOnlyADiskImageMountedThere() throws {
+        let info = try Self.diskInfo()
+        let mountPoint = "/Users/runner/work/_temp/BatteryPulse-update"
+        func disk(_ change: (inout [String: Any]) -> Void, at path: String = mountPoint) throws -> String? {
+            var changed = info
+            change(&changed)
+            return try Self.imageDisk(changed, mountPoint: path)
+        }
+        #expect(try disk({ _ in }, at: mountPoint + "/BatteryPulse.app") == nil)
+        #expect(try disk({ _ in }, at: "/Users/runner/work/_temp") == nil)
+        #expect(try disk({ _ in }, at: "") == nil)
+        #expect(try disk({ $0["MountPoint"] = "/System/Volumes/Data" }) == nil)
+        #expect(try disk({ $0["MountPoint"] = nil }) == nil)
+        #expect(try disk({ $0["BusProtocol"] = "Apple Fabric" }) == nil)
+        #expect(try disk({ $0["BusProtocol"] = nil }) == nil)
+        #expect(try disk({ $0["APFSPhysicalStores"] = [] as [Any] }) == nil)
+        #expect(
+            try disk({
+                $0["APFSPhysicalStores"] = [["APFSPhysicalStore": "disk17s1"], ["APFSPhysicalStore": "disk19s1"]]
+            }) == nil)
+        for identifier in [
+            "disk17s1s2", "disk", "disks1", "disk17s", "disk17 s1", "/dev/disk17s1", "disk1٧s1", "rdisk17s1",
+        ] {
+            #expect(
+                try disk({ $0["APFSPhysicalStores"] = [["APFSPhysicalStore": identifier]] }) == nil, "\(identifier)")
+        }
+        #expect(try disk({ $0["APFSPhysicalStores"] = [["APFSPhysicalStore": 17]] }) == nil)
+        #expect(UpdateInstallPolicy.imageDisk(info: Data("not a property list".utf8), mountPoint: mountPoint) == nil)
+    }
+
+    /// CI's install step mounts with the installer's own commands, so the YAML can't drift from
+    /// the code; and it keeps 0.6.1's `hdiutil` commands, which the update to this version runs.
+    @Test func ciMountsTheWayTheInstallerDoes() throws {
+        let workflow = SourceScanner.sources.deletingLastPathComponent()
+            .appendingPathComponent(".github/workflows/ci.yml")
+        let text = try String(contentsOf: workflow, encoding: .utf8)
+        func line(_ arguments: [String]) -> String {
+            ([UpdateInstallPolicy.diskutil] + arguments).joined(separator: " ")
+        }
+        let mountPoint = #""$mount_point""#
+        let disk = #""$disk""#
+        let commands =
+            [
+                line(UpdateInstallPolicy.attachArguments(image: "build/BatteryPulse.dmg", mountPoint: mountPoint)),
+                line(UpdateInstallPolicy.infoArguments(mountPoint: mountPoint)),
+                line(UpdateInstallPolicy.detachArguments(mountPoint: mountPoint)),
+            ] + UpdateInstallPolicy.forcedDetachArguments(disk: disk).map(line)
+        for command in commands {
+            #expect(text.contains(command), "\(command)")
+        }
+        // No other attach.
+        #expect(text.ranges(of: "diskutil image attach --").count == 1)
+        #expect(
+            text.contains(
+                #"hdiutil attach build/BatteryPulse.dmg -nobrowse -readonly -noautoopen -mountpoint "$mount_point""#))
+        #expect(text.contains(#"hdiutil detach "$mount_point""#))
+    }
+
+    /// The installer ends the widget extension once the copy has passed every check, right before
+    /// the swap: an update that fails a check leaves the extension alone, and the previous
+    /// version's extension can't answer WidgetKit's descriptor fetch at the version change.
+    @Test func endsTheWidgetExtensionRightBeforeTheSwap() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/Updates/UpdateInstaller.swift").code
+        let replace = try #require(code.range(of: "static func replace("))
+        let next = code.range(of: "static func ", range: replace.upperBound..<code.endIndex)?.lowerBound
+        let body = code[replace.upperBound..<(next ?? code.endIndex)]
+        let call = "await WidgetRefresher.endExtensionBeforeSwap()"
+        #expect(code.ranges(of: "endExtensionBeforeSwap").count == 1)
+        let check = try #require(body.range(of: "try checkCodeSignature(staged)"))
+        let end = try #require(body.range(of: call))
+        let swap = try #require(body.range(of: "renamex_np("))
+        #expect(check.upperBound <= end.lowerBound)
+        // Nothing but the swap's own `guard` comes between the two.
+        let between = body[end.upperBound..<swap.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+        #expect(between == "guard")
     }
 
     /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a

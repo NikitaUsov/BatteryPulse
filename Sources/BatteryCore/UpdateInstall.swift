@@ -169,14 +169,97 @@ public enum UpdateInstallPolicy {
         return release > current ? nil : .notNewer
     }
 
-    /// `hdiutil` arguments that mount the DMG read-only at a private mount point, without a
-    /// Finder window, a sidebar entry or opening anything.
+    /// The tool the installer attaches, inspects and ejects the DMG with. Since macOS 26 it
+    /// attaches disk images itself (`diskutil image`), and macOS 27 marks `hdiutil attach` and
+    /// `detach` deprecated in its favour. Updaters up to 0.6.1 used `hdiutil`.
+    public static let diskutil = "/usr/sbin/diskutil"
+
+    /// `diskutil` arguments that attach the DMG read-only at a private mount point, without a
+    /// Finder window or a sidebar entry, in the order of `diskutil image attach`'s usage. The
+    /// options are the ones macOS 27's deprecation warning maps `hdiutil attach -nobrowse
+    /// -readonly -mountpoint` to. `diskutil image attach` has no counterpart of `hdiutil`'s
+    /// `-noautoopen`, and the DMG isn't marked to open a window. It has none of `-noverify`
+    /// either, and needs none: the DMG's digest and signature were checked before it is attached.
     public static func attachArguments(image: String, mountPoint: String) -> [String] {
-        ["attach", image, "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mountPoint]
+        ["image", "attach", "--readOnly", "--mountPoint", mountPoint, "--mountOptions", "nobrowse", image]
     }
 
-    public static func detachArguments(mountPoint: String, force: Bool) -> [String] {
-        ["detach", mountPoint] + (force ? ["-force"] : [])
+    /// `diskutil` arguments that print what is mounted at `mountPoint` as a property list, for
+    /// ``imageDisk(info:mountPoint:)``.
+    public static func infoArguments(mountPoint: String) -> [String] {
+        ["info", "-plist", mountPoint]
+    }
+
+    /// Ejects the image mounted at `mountPoint`. That also detaches the image's own disk, below
+    /// the APFS container its volume sits on (CI's install step checks it).
+    public static func detachArguments(mountPoint: String) -> [String] {
+        ["eject", mountPoint]
+    }
+
+    /// The commands, in order, that detach the image when ``detachArguments(mountPoint:)`` failed
+    /// because a file on the volume is still open: unmount every volume of `disk`, the image's
+    /// own disk, by force, then eject it. Older `diskutil` versions take `force` only for
+    /// `unmount` and `unmountDisk`, not for `eject`.
+    public static func forcedDetachArguments(disk: String) -> [[String]] {
+        [["unmountDisk", "force", disk], ["eject", disk]]
+    }
+
+    /// The disk image's own whole disk (`disk4`) from the property list that
+    /// ``infoArguments(mountPoint:)`` prints, for ``forcedDetachArguments(disk:)``. `nil` unless
+    /// a volume of a disk image is mounted at exactly `mountPoint`; `/private/var` and `/var`
+    /// count as the same. An APFS volume sits on a synthesized container whose one physical
+    /// store is a partition of the image's disk; any other volume is a partition of it.
+    public static func imageDisk(info: Data, mountPoint: String) -> String? {
+        guard mountPoint.hasPrefix("/"), let disk = try? PropertyListDecoder().decode(DiskInfo.self, from: info),
+            let mounted = disk.mountPoint, withoutPrivate(mounted) == withoutPrivate(mountPoint),
+            disk.busProtocol == "Disk Image"
+        else { return nil }
+        let partition: String?
+        if let stores = disk.physicalStores {
+            guard stores.count == 1 else { return nil }
+            partition = stores[0].identifier
+        } else {
+            partition = disk.parentWholeDisk
+        }
+        return partition.flatMap(wholeDisk(of:))
+    }
+
+    /// The keys of `diskutil info -plist` that ``imageDisk(info:mountPoint:)`` reads.
+    private struct DiskInfo: Decodable {
+        struct PhysicalStore: Decodable {
+            var identifier: String?
+
+            enum CodingKeys: String, CodingKey {
+                case identifier = "APFSPhysicalStore"
+            }
+        }
+
+        var mountPoint: String?
+        var busProtocol: String?
+        var physicalStores: [PhysicalStore]?
+        var parentWholeDisk: String?
+
+        enum CodingKeys: String, CodingKey {
+            case mountPoint = "MountPoint"
+            case busProtocol = "BusProtocol"
+            case physicalStores = "APFSPhysicalStores"
+            case parentWholeDisk = "ParentWholeDisk"
+        }
+    }
+
+    /// `disk4` for `disk4` or `disk4s1`, and `nil` for anything else.
+    private static func wholeDisk(of identifier: String) -> String? {
+        guard identifier.hasPrefix("disk") else { return nil }
+        let numbers = identifier.dropFirst(4).split(separator: "s", omittingEmptySubsequences: false)
+        guard (1...2).contains(numbers.count),
+            numbers.allSatisfy({ !$0.isEmpty && $0.allSatisfy { ("0"..."9").contains($0) } })
+        else { return nil }
+        return "disk" + numbers[0]
+    }
+
+    /// `/var`, `/tmp` and `/etc` are links into `/private`, and a mount point is reported resolved.
+    private static func withoutPrivate(_ path: String) -> String {
+        path.hasPrefix("/private/") ? String(path.dropFirst("/private".count)) : path
     }
 
     /// `/bin/sh` arguments that open the updated app once this process has quit: wait up to

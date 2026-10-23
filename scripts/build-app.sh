@@ -315,8 +315,9 @@ fi
 echo "Signing posture: hardened runtime, the expected entitlements, no quarantine or ATS keys"
 
 # Drag-to-install DMG: the app next to a link to /Applications. It is ULMO (LZMA), the smallest
-# compressed format hdiutil makes, which macOS 10.15 and later attach; every BatteryPulse updater
-# attaches it with /usr/bin/hdiutil, and the signature covers the file's bytes whatever the format.
+# compressed format hdiutil makes, which macOS 10.15 and later attach; BatteryPulse's updaters
+# attach it with /usr/bin/hdiutil up to 0.6.1 and with diskutil image attach from 0.6.2 on, and the
+# signature covers the file's bytes whatever the format.
 # It is made the space-optimal way hdiutil(1) documents: a read/write image of the folder, then a
 # conversion, so the compressed image holds no unused space.
 STAGING="$BUILD_DIR/dmg"
