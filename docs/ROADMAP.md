@@ -127,11 +127,13 @@ Data), without private APIs. The format still has to be checked against a real f
 ## Architecture
 
 ```
-BatteryCore  (Linux + Apple)   models, parsing, metrics, text report, history, SMC wire format
+BatteryCore    (Linux + Apple)   models, parsing, metrics, text report, history, SMC wire format
      ▲
-BatteryKit   (Apple)           IOKit (macOS) / UIDevice (iOS), BatteryMonitor (@Observable)
+BatterySource  (Apple)           IOKit and the SMC (macOS) / UIDevice (iOS)  ◀── Widgets
      ▲
-bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
+BatteryKit     (Apple)           BatteryMonitor (@Observable), iPhone and iPad, CryptoKit
+     ▲
+bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
 ```
 
 ## Stages
@@ -590,9 +592,11 @@ Deferred from 0.6.1, each for the reason given:
 - [ ] Xcode on the Mac (installed on the M5; maintainer-run from Claude's step-by-step list):
   SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
   to its screenshots
-- [ ] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
-  on alone; with `-internalize-at-link` on the widget (about −27 % of its `__text` in a test
-  build), the size headroom 0.7's widget work needs
+- [x] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
+  on alone, besides BatteryCore; with `-internalize-at-link` on the widget's and the app's link
+  lines, the size headroom 0.7's widget work needs. In CI, against the build before: the widget
+  binary −45 % (778,640 B, its `__text` −50 %), the app −3 %, the DMG −15 %. The flag ships only
+  if the release candidate's widget, in both sizes and languages, and pages look right on the M5
 - [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
   `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash

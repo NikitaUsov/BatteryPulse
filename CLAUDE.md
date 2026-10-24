@@ -30,15 +30,21 @@ through the App Store. Reference hardware: MacBook Air M5.
   `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`), `LiveRefreshPolicy`
   (slower polls in Low Power Mode, under reduced resources or heat), `WindowLook`
   (`WindowLookPolicy`) and `ToneMap` (window styles). Must stay free of Apple-only frameworks.
-- `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
-  children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
-  `BatteryMonitor` (@Observable, event-driven + optional polling, one read per notification burst,
-  on an injected `MonitorClock`; `setOverride` swaps in the demo), `Diagnostics` (its loggers and
-  `Signposts`), `UpdateSignatureVerifier` (CryptoKit), `IDeviceTransport` and `MobileDevice/` (the
-  private MobileDevice framework through `dlopen`, never linked; no pairing calls),
-  `IDeviceMonitor` (opt-in, USB-triggered device reads; `USBDeviceWatcher`, `DeviceKeys` HMAC),
-  `AccessoryMonitor` and `MacAccessoryProvider` (the private `IOPSCopyPowerSourcesByType(4)`
-  through `dlsym`, refreshed on the `com.apple.system.accpowersources.*` notifications).
+- `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
+  widget links besides BatteryCore (no CryptoKit, no MobileDevice). `BatteryProvider` protocol,
+  `MacBatteryProvider` (IOKit, registry children, SMC via `SMCClient`), `IOSBatteryProvider`
+  (UIDevice), `AccessoryProvider` and `MacAccessoryProvider` (the private
+  `IOPSCopyPowerSourcesByType(4)` through `dlsym`, refreshed on the
+  `com.apple.system.accpowersources.*` notifications), `SystemNotifications` (the
+  `NotificationCenter` and notify(3) subscriptions, Low Power Mode and the thermal state) and
+  `Diagnostics` (the loggers and `Signposts` of BatterySource and BatteryKit, `RefreshTrigger`).
+  Tested by `BatterySourceTests`.
+- `Sources/BatteryKit` — on top of BatterySource: `DemoBatteryProvider`, `BatteryMonitor`
+  (@Observable, event-driven + optional polling, one read per notification burst, on an injected
+  `MonitorClock`; `setOverride` swaps in the demo), `UpdateSignatureVerifier` (CryptoKit),
+  `IDeviceTransport` and `MobileDevice/` (the private MobileDevice framework through `dlopen`,
+  never linked; no pairing calls), `IDeviceMonitor` (opt-in, USB-triggered device reads;
+  `USBDeviceWatcher`, `DeviceKeys` HMAC), `AccessoryMonitor` and `DemoAccessoryProvider`.
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings keys,
   Dock icon policy, localized phrases, `DemoController`, `Diagnostics` (loggers and signposts),
   `Motion` with the `\.motion` environment value and its presets, plus `SystemPowerState` and
@@ -133,7 +139,7 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `\.windowLook`, `\.contentTreatment`), and its objects are `@Observable` services that views
   read property by property; never `snapshot`, `reading`, dates, timers or geometry as a value,
   which would re-render every view that reads it.
-- Logging: `Diagnostics` (an app and a BatteryKit twin), one `Logger` per category of the
+- Logging: `Diagnostics` (an app and a BatterySource twin), one `Logger` per category of the
   `io.github.nikitausov.BatteryPulse` subsystem: `monitor`, `smc`, `iokit`, `history`, `device`,
   `accessory`, `update`, `widget`, `perf`. A failure that loses data or a feature is logged, not
   dropped with `try?`. Only static text, numbers and case names log as `.public`; error
@@ -150,7 +156,8 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (motion, glass, window style, tone map), `EnergyGuardTests` (the energy rules above),
   `SecurityGuardTests` (where `dlopen`/`dlsym`, IOKit user clients, `Process` and `kill` may
   appear, the SMC's one selector, and the escapes from the compiler's checks) and
-  `LocalizationCatalogTests`. An exception goes on the suite's list with its reason.
+  `LocalizationCatalogTests`. An exception goes on the suite's list with its reason. A new target
+  joins `SourceScanner`'s lists in the same commit (`everySourceFolderIsAListedTarget`).
 - Localization: UI literals are `LocalizedStringKey`/`String(localized:)` keyed by the English
   text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a
   ternary of literals to `Text` (it becomes a plain String). Add every new key with its Russian
