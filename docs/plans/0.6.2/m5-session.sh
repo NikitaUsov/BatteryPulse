@@ -474,7 +474,12 @@ wallpapers() {
   end tell' 2>/dev/null || true
 }
 
-end_widget_extension() { pkill -TERM -x BatteryPulseWidget 2>/dev/null || true; }
+# The widget extension's processes, by their executable's path: pgrep -x and pkill -x match macOS's
+# p_comm, cut to 16 characters, which "BatteryPulseWidget" (18) never equals.
+WIDGET_EXEC='BatteryPulseWidget\.appex/Contents/MacOS/BatteryPulseWidget'
+widget_pids() { pgrep -f "$WIDGET_EXEC" 2>/dev/null || true; }
+
+end_widget_extension() { pkill -TERM -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
 # end_widget_extension_and_wait: ends every BatteryPulseWidget process before a swap and waits for
 # it: SIGTERM first, SIGKILL after 0.5 s, giving up after 1.5 s. Session A found that chronod
@@ -484,13 +489,13 @@ end_widget_extension() { pkill -TERM -x BatteryPulseWidget 2>/dev/null || true; 
 end_widget_extension_and_wait() {
   local ticks=0 signal=TERM
   # 20 ms ticks, counted rather than timed: macOS's bash 3.2 has no clock below a second.
-  while pgrep -x BatteryPulseWidget >/dev/null 2>&1; do
+  while [ -n "$(widget_pids)" ]; do
     if [ "$ticks" -ge 75 ]; then
       warn "a BatteryPulseWidget process still runs after about 1.5 s"
       break
     fi
     if [ "$ticks" -ge 25 ]; then signal=KILL; fi
-    pkill "-$signal" -x BatteryPulseWidget 2>/dev/null || true
+    pkill "-$signal" -f "$WIDGET_EXEC" 2>/dev/null || true
     sleep 0.02
     ticks=$((ticks + 1))
   done
@@ -3660,6 +3665,7 @@ step_preflight() {
   if clip "$movie" 2; then fps="$("$BIN/frames" fps "$movie" 2>/dev/null || echo unknown)"; fi
   out "- screencapture -v: ${fps:-no movie}"
   out "- DevToolsSecurity: $(DevToolsSecurity -status 2>&1 | head -1 || true)"
+  out "- the widget extension's processes: pgrep -x BatteryPulseWidget finds $(pgrep -x BatteryPulseWidget 2>/dev/null | grep -c . || true), its path $(widget_pids | grep -c . || true) (the script goes by the path)"
   proof_p7
   proof_p8
   proof_p9
@@ -4292,7 +4298,7 @@ step_f12() {
       sleep 2
       rect_shot "$SHOTS/f12/before-small.png" "$(widget_rect small)" >/dev/null 2>&1 || true
       rect_shot "$SHOTS/f12/before-medium.png" "$(widget_rect medium)" >/dev/null 2>&1 || true
-      if pgrep -x BatteryPulseWidget >/dev/null; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
+      if [ -n "$(widget_pids)" ]; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
       out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension")"
       # Finder's on-screen windows every half second until `f12 after` (at most 10 minutes), so a
       # window the install opens and closes again is seen too (CGWindowList only).
@@ -4338,7 +4344,7 @@ step_f12() {
       swap_at="$(entries "$LOGS/f12-update.ndjson" | awk -F '\t' 'index($3, "Widget extension before the swap") { print substr($1, 1, 19); exit }')"
       swap_epoch="$(date -j -f '%Y-%m-%d %H:%M:%S' "$swap_at" +%s 2>/dev/null || true)"
       started=""
-      for pid in $(pgrep -x BatteryPulseWidget 2>/dev/null || true); do
+      for pid in $(widget_pids); do
         lstart="$(ps -o lstart= -p "$pid" 2>/dev/null || true)"
         [ -n "$lstart" ] || continue
         started="$started ${lstart# }"
@@ -5306,10 +5312,12 @@ queue_g14b() {
 
 # The rows of Session A's energy table (~/bp-062/A/logs/energy-rows.md) as "scenario build energy
 # idle interrupt cpu reads", for the cross-session check and the chain C ÷ B × B ÷ A.
+# Session A's S6 B run is not valid (Appendix C: he woke the display and unlocked about a minute
+# in), though its row doesn't say so: it never counts, so S6's cross-session columns stay "-".
 session_a_rows() {
   local file="$HOME/bp-062/A/logs/energy-rows.md"
   [ -f "$file" ] || return 0
-  awk -F '|' 'NR > 2 && $4 !~ /not/ { gsub(/ /, ""); if ($6 + 0 > 0) print $2, $3, $6, $7, $8, $9, $11 }' "$file"
+  awk -F '|' 'NR > 2 && $4 !~ /not/ { gsub(/ /, ""); if ($2 == "S6" && $3 == "B") next; if ($6 + 0 > 0) print $2, $3, $6, $7, $8, $9, $11 }' "$file"
 }
 
 queue_medians() {
@@ -5741,7 +5749,7 @@ step_morning() {
   local since pid lines gaps
   since="$(cat "$WORK/queue.done" 2>/dev/null || cat "$WORK/prepare.time")"
   pmset -g log 2>/dev/null | awk -v from="$since" 'substr($0, 1, 19) >= from' >"$LOGS/night-pmset.txt" || true
-  out "- since $since: DarkWake or Wake from lines naming BatteryPulse: $(grep -i -E 'DarkWake|Wake from' "$LOGS/night-pmset.txt" | grep -c -i batterypulse || true) (must be 0); sleeps $(awk '$4 == "Sleep"' "$LOGS/night-pmset.txt" | grep -c . || true), wakes $(awk '$4 == "Wake" || $4 == "DarkWake"' "$LOGS/night-pmset.txt" | grep -c . || true)"
+  out "- since $since: DarkWake or Wake from lines naming BatteryPulse: $(grep -i -E 'DarkWake|Wake from' "$LOGS/night-pmset.txt" | grep -c -i batterypulse || true) (must be 0); sleeps $(awk '$4 == "Sleep" && $5 != "Service"' "$LOGS/night-pmset.txt" | grep -c . || true), wakes $(awk '($4 == "Wake" && $5 != "Requests") || $4 == "DarkWake"' "$LOGS/night-pmset.txt" | grep -c . || true)"
   pid="$(cat "$WORK/night-stream.pid" 2>/dev/null || true)"
   if [ -n "$pid" ]; then
     out "- the overnight log stream: $(if kill -0 "$pid" 2>/dev/null; then echo "still running"; else echo "ended"; fi)"
