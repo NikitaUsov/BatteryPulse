@@ -1750,18 +1750,27 @@ set_lowpowermode() {
   sudo -n pmset -b lowpowermode "$1" >/dev/null 2>&1 && [ "$(lowpowermode_of Battery)" = "$1" ]
 }
 
-# Low Power Mode as prepare found it, per power source; the window's EXIT trap calls it.
+# Low Power Mode as prepare found it, per power source; the window's EXIT trap calls it. Fails
+# (after its PUT BACK line) when it couldn't put it back, so nothing marks it restored then.
 restore_lowpowermode() {
   local battery adapter
   battery="$(cat "$BACKUP/lowpowermode-battery" 2>/dev/null || true)"
   adapter="$(cat "$BACKUP/lowpowermode-ac" 2>/dev/null || true)"
   [ -n "$battery" ] && [ -n "$adapter" ] || return 0
-  if [ "$(lowpowermode_of Battery)" = "$battery" ] && [ "$(lowpowermode_of AC)" = "$adapter" ]; then return 0; fi
-  if sudo -n pmset -b lowpowermode "$battery" >/dev/null 2>&1 && sudo -n pmset -c lowpowermode "$adapter" >/dev/null 2>&1; then
+  if lowpowermode_as_backup; then return 0; fi
+  if sudo -n pmset -b lowpowermode "$battery" >/dev/null 2>&1 && sudo -n pmset -c lowpowermode "$adapter" >/dev/null 2>&1 &&
+    lowpowermode_as_backup; then
     echo "Low Power Mode is back as it was (battery $battery, adapter $adapter)."
   else
     echo "PUT BACK (person, in Terminal): sudo pmset -b lowpowermode $battery; sudo pmset -c lowpowermode $adapter"
+    return 1
   fi
+}
+
+# Low Power Mode for both sources is what prepare's backup holds.
+lowpowermode_as_backup() {
+  [ "$(lowpowermode_of Battery)" = "$(cat "$BACKUP/lowpowermode-battery" 2>/dev/null || echo unknown)" ] &&
+    [ "$(lowpowermode_of AC)" = "$(cat "$BACKUP/lowpowermode-ac" 2>/dev/null || echo unknown)" ]
 }
 
 window_exit() {
@@ -2187,12 +2196,16 @@ restore_all() {
   rm -rf "$SUPPORT/Widget"
   defaults delete "$FEED_DOMAIN" 2>/dev/null || true
   rm -f "$HOME/Library/Preferences/$FEED_DOMAIN.plist"
-  defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
-  if [ -f "$BACKUP/widget-languages" ]; then
-    warn "the widget extension had its own AppleLanguages before: $(tr -s ' \n' ' ' <"$BACKUP/widget-languages"); set it again by hand if you need it"
+  if [ "$SESSION" = B ]; then
+    put_widget_languages_back || warn "the widget extension's AppleLanguages isn't as prepare found it"
+  else
+    defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
+    if [ -f "$BACKUP/widget-languages" ]; then
+      warn "the widget extension had its own AppleLanguages before: $(tr -s ' \n' ' ' <"$BACKUP/widget-languages"); set it again by hand if you need it"
+    fi
   fi
   end_widget_extension
-  restore_lowpowermode
+  restore_lowpowermode || true
   if [ -s "$BACKUP/wallpapers" ] && [ "$(wallpapers)" != "$(cat "$BACKUP/wallpapers")" ]; then
     local index=1 path
     while IFS= read -r path; do
@@ -2746,6 +2759,28 @@ is_restored() {
 }
 
 mark_restored() { printf '%s\t%s\t%s\n' "$1" "$(clock)" "$2" >>"$RESTORED"; }
+
+# The extension's AppleLanguages as one language per line ("" when it has none).
+widget_languages_of() { tr -d '(),"' <"$1" | tr -s ' \n\t' '\n' | grep . || true; }
+
+# put_widget_languages_back: the widget extension's AppleLanguages as prepare found it: his own
+# list from the backup again (never just deleted), else none. Succeeds only when a read confirms it.
+put_widget_languages_back() {
+  local items now="$WORK/widget-languages-now"
+  if [ -f "$BACKUP/widget-languages" ]; then
+    items="$(widget_languages_of "$BACKUP/widget-languages")"
+    [ -n "$items" ] || return 1
+    # One argument per language: a language code has no spaces.
+    # shellcheck disable=SC2086
+    defaults write "$WIDGET_PREFS" AppleLanguages -array $items || return 1
+    defaults read "$WIDGET_PREFS" AppleLanguages >"$now" 2>/dev/null || return 1
+    [ "$(widget_languages_of "$now")" = "$items" ] || return 1
+  else
+    defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
+    if defaults read "$WIDGET_PREFS" AppleLanguages >/dev/null 2>&1; then return 1; fi
+  fi
+  end_widget_extension
+}
 
 # A step that couldn't run: "not checked" or "not run" with its reason, and the session goes on.
 not_checked() {
@@ -4176,10 +4211,12 @@ step_f8() {
         return 0
         ;;
       off)
-        defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
-        end_widget_extension
-        mark_restored widget-languages "deleted"
-        echo "the widget extension is back in the system language"
+        if put_widget_languages_back; then
+          mark_restored widget-languages "as prepare found it, read back"
+          echo "the widget extension's languages are as prepare found them"
+        else
+          warn "the widget extension's AppleLanguages isn't as prepare found it: restore gui tries again"
+        fi
         return 0
         ;;
       "") lang=ru ;;
@@ -4549,6 +4586,13 @@ q_install() { install_build "$1" --no-launch; }
 q_sample() { ui_run sample 2>/dev/null || echo "hid_idle_s=unknown locked=unknown lid=unknown thermal=unknown lowpower=unknown"; }
 q_sudo_ok() { sudo_ok; }
 q_set_lpm() { set_lowpowermode "$1"; }
+# q_lpm <0|1>: Low Power Mode for battery, its original (prepare's backup) in changes.tsv before
+# the queue's first change, so B.md's "Not put back" names it until a read confirms it.
+q_lpm() {
+  [ -n "$(original_of lowpowermode-battery)" ] ||
+    record_change lowpowermode-battery "$(cat "$BACKUP/lowpowermode-battery" 2>/dev/null || echo unknown)" "set by the queue"
+  q_set_lpm "$1"
+}
 q_rusage() { rusage "$1" "$2" >"$3" 2>&1; }
 q_perf_start() { perf_capture "$1"; }
 q_perf_stop() { perf_stop "$STREAM"; }
@@ -4971,12 +5015,12 @@ q_run() {
   fi
   q_settings "$scenario"
   if [ "$want" = 1 ] && [ "$(sample_field lowpower "$(q_sample)")" != 1 ]; then
-    if ! q_sudo_ok || ! q_set_lpm 1; then
+    if ! q_sudo_ok || ! q_lpm 1; then
       q_not_run "$kind" "$scenario" "$build" "$pair" "no sudo ticket"
       return 0
     fi
   fi
-  if [ "$want" = 0 ] && [ "$(lowpowermode_of Battery)" = 1 ] && q_sudo_ok; then q_set_lpm 0 || true; fi
+  if [ "$want" = 0 ] && [ "$(lowpowermode_of Battery)" = 1 ] && q_sudo_ok; then q_lpm 0 || true; fi
   q_wait_for nominal 600 || echo "the thermal state isn't nominal after 10 minutes: the run goes on, its row says so"
   q_wait_for idle 600 || echo "HIDIdleTime stays under 60 s: the run goes on, the touch detector decides"
   q_launch
@@ -5023,7 +5067,7 @@ q_run() {
   c1="$(q_claude)"
   why="$(q_confirm "$scenario")"
   q_teardown "$scenario"
-  if [ "$scenario" = S2-LPM ]; then q_set_lpm 0 || warn "Low Power Mode is still on"; fi
+  if [ "$scenario" = S2-LPM ]; then q_lpm 0 || warn "Low Power Mode is still on"; fi
   reads="$(q_reads "$capture")"
   detect="$(q_detect "$start" "$end" "$scenario" "$s0" "$s1" "$c0" "$c1" "$file" "$want" "$first_s6" "$s_dark")"
   status="${detect##*"$TAB"}"
@@ -5119,7 +5163,7 @@ queue_run() {
     q_sampler &
     BACKGROUND="$BACKGROUND $!"
     if [ "$(lowpowermode_of Battery)" = 1 ]; then
-      if q_sudo_ok && q_set_lpm 0; then out "- Low Power Mode was set for battery: off for the runs (the EXIT trap puts it back)"; else
+      if q_sudo_ok && q_lpm 0; then out "- Low Power Mode was set for battery: off for the runs (the EXIT trap puts it back)"; else
         out "- Low Power Mode is set for battery and there is no sudo ticket: every run but S2-LPM is LPM (not valid)"
       fi
     fi
@@ -5242,6 +5286,7 @@ ARM_GUI_CAFFEINATE=""
 ARM_QUEUE_CAFFEINATE=""
 ARM_READY_WAITER=""
 ARM_POWER_WAITER=""
+ARM_KEEPALIVE=""
 
 # arm open: writes ~/bp-062/B/arm.command and opens it in a new Terminal window (open -a
 # Terminal: no Automation needed). The window runs the frozen worktree's script.
@@ -5313,7 +5358,9 @@ arm_queue_caffeinate() {
 }
 
 # arm_return: his Return at bedtime: the password once (sudo -v), a ticket bound to this terminal,
-# and a keep-alive capped at 3 hours.
+# and a keep-alive until the queue's end (B5 kills it), so Low Power Mode can still go back after
+# the last run: capped at the unplug plus 3 hours 45 minutes (the last start plus S6 and B5), or 4
+# hours from his Return while no unplug has come.
 arm_return() {
   if [ ! -f "$READY_FILE" ]; then
     arm_say "The session is still working ($(arm_state)). Just unplug the adapter and leave the lid open: no password tonight, so the Low Power Mode run won't run."
@@ -5336,13 +5383,17 @@ arm_return() {
     ARM_SUDO=1
     echo "bound" >"$WORK/sudo.state"
     (
-      end=$(($(date +%s) + 3 * 3600))
-      while kill -0 "$ARM_PID" 2>/dev/null && [ "$(date +%s)" -lt "$end" ]; do
+      started=$(date +%s)
+      while kill -0 "$ARM_PID" 2>/dev/null && [ ! -f "$WORK/queue.done" ]; do
+        end=$((started + 4 * 3600))
+        if [ -f "$WORK/unplug.epoch" ]; then end=$(($(cat "$WORK/unplug.epoch") + 3 * 3600 + 45 * 60)); fi
+        [ "$(date +%s)" -lt "$end" ] || break
         sudo -n -v >/dev/null 2>&1 || true
         sleep 60
       done
     ) &
-    BACKGROUND="$BACKGROUND $!"
+    ARM_KEEPALIVE=$!
+    BACKGROUND="$BACKGROUND $ARM_KEEPALIVE"
     arm_say "Thank you. Now unplug the adapter and leave the lid open."
   else
     echo "none" >"$WORK/sudo.state"
@@ -5388,7 +5439,9 @@ arm_cooldown() {
 # arm_after_queue (B5): Low Power Mode back, the sampler and the pslog stopped, restore night,
 # queue.started removed, the overnight log stream, sudo -k, caffeinate released. It draws nothing.
 arm_after_queue() {
-  restore_lowpowermode >>"$LOGS/arm.log" 2>&1 || true
+  # Right after the last run, while the keep-alive still holds the ticket; restore night marks it
+  # restored only once a read confirms it.
+  restore_lowpowermode >>"$LOGS/arm.log" 2>&1 || arm_say "Low Power Mode isn't as prepare found it: the morning report says so"
   stop_pslog
   (pslog_analysis) >/dev/null 2>&1 || true
   (restore_night) >>"$LOGS/arm.log" 2>&1 || arm_say "restore night stopped early"
@@ -5398,6 +5451,7 @@ arm_after_queue() {
     >"$LOGS/night-stream.ndjson" 2>"$LOGS/night-stream.err" </dev/null &
   echo $! >"$WORK/night-stream.pid"
   clock >"$WORK/queue.done"
+  if [ -n "$ARM_KEEPALIVE" ]; then kill "$ARM_KEEPALIVE" 2>/dev/null || true; fi
   sudo -k 2>/dev/null || true
   let_display_sleep
   if [ -n "$ARM_QUEUE_CAFFEINATE" ]; then kill "$ARM_QUEUE_CAFFEINATE" 2>/dev/null || true; fi
@@ -5414,6 +5468,7 @@ arm_no_unplug() {
   out "- not run: no bedtime unplug by $at (3 hours after his bedtime), so a morning unplug never starts it"
   echo "not run: no unplug by $at ($(clock))" >"$WORK/queue.done"
   rm -f "$FENCE"
+  if [ -n "$ARM_KEEPALIVE" ]; then kill "$ARM_KEEPALIVE" 2>/dev/null || true; fi
   sudo -k 2>/dev/null || true
   let_display_sleep
   if [ -n "$ARM_QUEUE_CAFFEINATE" ]; then kill "$ARM_QUEUE_CAFFEINATE" 2>/dev/null || true; fi
@@ -5652,9 +5707,7 @@ restore_gui_scriptable() {
   esac
   [ -z "$original" ] || mark_restored appearance "script"
   if [ -n "$(original_of widget-languages)" ] && ! is_restored widget-languages; then
-    defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
-    end_widget_extension
-    mark_restored widget-languages "script"
+    if put_widget_languages_back; then mark_restored widget-languages "script, read back"; fi
   fi
   quit_app
   session_settings
@@ -5677,14 +5730,15 @@ restore_gui_items() {
 # restore_night (B5, from arm): Low Power Mode as prepare found it, the RC running with the session's
 # settings for the sleep-hygiene night.
 restore_night() {
-  restore_lowpowermode
+  if restore_lowpowermode; then
+    [ -z "$(original_of lowpowermode-battery)" ] || mark_restored lowpowermode-battery "script (night), read back"
+  fi
   install_build C --no-launch
   quit_app
   session_settings
   launch
   # The sleep-hygiene night's RC process: its executor lines count in the morning.
   note_rc_pid
-  mark_restored lowpowermode-battery "script (night)"
 }
 
 # restore_morning (B7): his app, the defaults domain, Application Support, the widget's data and
@@ -5698,7 +5752,11 @@ restore_morning() {
   mark_restored bp-settings "script"
   mark_restored bp-support "script"
   mark_restored widget-data "script"
-  mark_restored lowpowermode-battery "script"
+  # Restored only as pmset reads it now (the morning has no sudo ticket: restore_all prints the
+  # PUT BACK line otherwise, and B.md heads its list with it).
+  if [ -n "$(original_of lowpowermode-battery)" ] && lowpowermode_as_backup; then
+    mark_restored lowpowermode-battery "pmset -g custom"
+  fi
   mark_restored appearance "script"
   mark_restored wallpaper "script"
   limit="$(answer_of prep-charge-limit)"
@@ -5744,6 +5802,9 @@ restore_prompts_b() {
   echo "- Turn the Focus off (Control Center)."
   if [ "$(answer_of B-keep-ax)" != y ]; then
     echo "- Turn Terminal off in System Settings → Privacy & Security → Accessibility (10 s)."
+  fi
+  if [ -n "$(original_of lowpowermode-battery)" ] && ! is_restored lowpowermode-battery; then
+    echo "- Low Power Mode, in Terminal: sudo pmset -b lowpowermode $(cat "$BACKUP/lowpowermode-battery"); sudo pmset -c lowpowermode $(cat "$BACKUP/lowpowermode-ac")"
   fi
   echo "The backup stays in $BACKUP."
 }
