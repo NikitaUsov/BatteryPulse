@@ -1,15 +1,23 @@
 intervals (ms)
 name          trigger  count  p50     p95
 history.load  -        1      48.250  48.250
-read          -        6      1.100   2.000
+read          -        3      1.500   2.000
+read          cached   1      0.900   0.900
+read          full     1      1.800   1.800
+read          live     1      1.100   1.100
+read          (all)    6      1.100   2.000
 refresh       launch   2      2.100   2.500
 refresh       notify   4      1.200   1.800
 refresh       poll     1      1.000   1.000
+refresh       (all)    7      1.400   2.500
 
 events
-name           trigger  count
-menuBarReady   -        2
-widget.reload  -        1
+name             trigger  count
+menuBarReady     -        2
+registry.missed  history  1
+registry.missed  poll     1
+registry.missed  (all)    2
+widget.reload    -        1
 
 processes
 pid  image         reads  reads before menuBarReady  widget reloads  reads per notify burst
