@@ -6045,23 +6045,30 @@ step_ready() {
   echo "READY: end the turn now. A message that reaches the session after this gets a text-only answer (results in the morning), with no tool call."
 }
 
-# back_since <epoch>: pmset -g log shows him back after that time: the display turned on, or a
-# wake by the lid or by his hand (the morning's lid close and login, V-01's lid step).
+# back_since <epoch>: pmset -g log shows the lid after that time: a wake because it opened, or a
+# sleep because it closed (the morning's lid close, V-01's lid step). Software can't move the lid,
+# but it can turn the display on and make user activity (a posted move, caffeinate -u: proof P6),
+# so neither "Display is turned on" nor a UserActivity wake counts.
 back_since() {
   pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" '
-    substr($0, 1, 19) > from && (/Display is turned on/ || ($4 == "Wake" && /LidOpen|Lid Open|UserActivity|User Activity/)) { found = 1 }
+    substr($0, 1, 19) > from && (($4 == "Wake" && /LidOpen|Lid Open/) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
     END { exit !found }'
 }
 
+# proof_detail <id>: what a proof recorded (proofs.tsv's third field).
+proof_detail() { awk -F '\t' -v id="$1" '$1 == id { detail = $3 } END { print detail }' "$PROOFS" 2>/dev/null || true; }
+
 # continue (B7): his morning word, which opens the fence. Only after the night: the queue's end
 # (queue.done), or an arm window that is gone with ready up (it stopped early). Only with him at
-# the Mac: HIDIdleTime readable and at most 15 minutes, and pmset -g log showing him back after
-# the queue's last sign of life (the display turned on, or a lid or user wake). So a session that
-# wakes up at night, or a continue during B0-B2, can't open the fence itself; ui and every command
-# take a continue only when it is newer than ready.
+# the Mac, by what software can't make: the screen unlocked at the console with the lid open (his
+# login), the input idle at most 15 minutes (HIDIdleTime, or the HID event state where proof P6
+# found it blind to posted events), and pmset -g log showing the lid closed or opened after the
+# queue's last sign of life. So a session that wakes up at night, or a continue during B0-B2,
+# can't open the fence itself; ui and every command take a continue only when it is newer than
+# ready.
 step_continue() {
   b_only continue
-  local pid start alive="" idle since file at
+  local pid start alive="" idle since file at state source
   if [ ! -f "$READY_FILE" ]; then
     echo "continue isn't needed: ready isn't up, so nothing is fenced"
     return 0
@@ -6084,12 +6091,25 @@ step_continue() {
     fi
     fail "the arm window is finishing the queue's end: continue again in a minute"
   fi
-  idle="$(idle_seconds)"
+  # Software can't unlock the screen: his password or Touch ID did.
+  state="$(ui_run locked 2>/dev/null || true)"
+  if [ "$state" != "locked=no lid=open console=yes" ]; then
+    fail "the screen isn't unlocked at the console with the lid open (${state:-ui locked unread}): continue comes after he has logged in; nothing was opened"
+  fi
+  # A posted move or caffeinate -u resets HIDIdleTime (proof P6); the HID event state, where P6
+  # found that it ignores posted events, only counts his hands.
+  if proof_detail P6 | grep -q -F 'ignores posted events: yes'; then
+    idle="$(state_seconds)"
+    source="the HID event state"
+  else
+    idle="$(idle_seconds)"
+    source="HIDIdleTime"
+  fi
   case "$idle" in
-    "" | *[!0-9.]*) fail "HIDIdleTime can't be read, and continue needs it (at most 900 s): nothing was opened" ;;
+    "" | *[!0-9.]*) fail "$source can't be read, and continue needs it (at most 900 s): nothing was opened" ;;
   esac
   if ! awk -v i="$idle" 'BEGIN { exit !(i + 0 <= 900) }'; then
-    fail "HIDIdleTime is $idle s: continue comes after he is at the Mac (the lid close and his login)"
+    fail "$source says $idle s since the last input: continue comes after he is at the Mac (the lid close and his login)"
   fi
   # The queue's last sign of life: its end, its fence, its log or ready, whichever is newest.
   since=0
@@ -6099,7 +6119,7 @@ step_continue() {
     if [ "$at" -gt "$since" ]; then since="$at"; fi
   done
   if ! back_since "$since"; then
-    fail "pmset -g log shows nothing of him since $(epoch_stamp "$since") (no display turned on, no lid or user wake): he closes the lid for a minute, opens it and logs in, then continue"
+    fail "pmset -g log shows no lid close or open since $(epoch_stamp "$since"): he closes the lid for a minute, opens it and logs in, then continue"
   fi
   if [ -f "$FENCE" ]; then
     rm -f "$FENCE"
