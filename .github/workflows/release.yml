@@ -128,8 +128,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/size-report.sh
       - name: Upload the size report
-        # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        # Pinned to the commit of the v7.0.2 tag; v4 and v5 run on the deprecated Node.js 20.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: size-${{ github.sha }}
           path: build/size.json
