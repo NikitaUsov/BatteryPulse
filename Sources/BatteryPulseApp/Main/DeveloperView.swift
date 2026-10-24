@@ -118,8 +118,8 @@ struct DeveloperView: View {
                 // The switch then shows All selected, as the table does.
                 if let source, !groups.contains(source) { self.source = nil }
             }
-            .disabled(monitor.reading == nil)
-            .task(id: monitor.reading) { await rebuild() }
+            // Disables the page without a reading and builds the table for each new one.
+            .modifier(RawTableUpdates(monitor: monitor, table: $table))
             // On the page rather than in the toolbar item, where presentations are unreliable on
             // macOS, and after `disabled`, so the alert's button works without a reading.
             .fileExporter(
@@ -158,19 +158,6 @@ struct DeveloperView: View {
     /// Every section of the table, in order.
     private var allSections: [RawDisplaySection] {
         table.sections
-    }
-
-    private func rebuild() async {
-        guard let reading = monitor.reading else {
-            table = RawDisplayTable()
-            return
-        }
-        let (updated, changed) = await RawValueText.table(updating: table, for: reading)
-        // A reading that changes no text leaves the table alone. Assigned after an `await`, so
-        // outside any animation, Demo Mode's included: hundreds of rows change with every reading
-        // and must never animate.
-        guard !Task.isCancelled, changed else { return }
-        table = updated
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
@@ -291,6 +278,33 @@ struct DeveloperView: View {
         } catch {
             exportFailure = error.localizedDescription
         }
+    }
+}
+
+/// Keeps the Raw Data table on the monitor's reading, and disables the page without one. The page's
+/// own body never reads the reading: a new reading re-evaluates only this modifier, and the page
+/// once its table's text changed, rather than once for the reading and again for the table.
+private struct RawTableUpdates: ViewModifier {
+    let monitor: BatteryMonitor
+    @Binding var table: RawDisplayTable
+
+    func body(content: Content) -> some View {
+        content
+            .disabled(monitor.reading == nil)
+            .task(id: monitor.reading, name: "RawTableUpdates.rebuild") { await rebuild() }
+    }
+
+    private func rebuild() async {
+        guard let reading = monitor.reading else {
+            table = RawDisplayTable()
+            return
+        }
+        let (updated, changed) = await RawValueText.table(updating: table, for: reading)
+        // A reading that changes no text leaves the table alone. Assigned after an `await`, so
+        // outside any animation, Demo Mode's included: hundreds of rows change with every reading
+        // and must never animate.
+        guard !Task.isCancelled, changed else { return }
+        table = updated
     }
 }
 
