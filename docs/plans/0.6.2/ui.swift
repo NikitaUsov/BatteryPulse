@@ -172,7 +172,7 @@ enum Rules {
     static let targetBundles: Set<String> = [
         batteryPulse, settings, "com.apple.TextEdit", "com.apple.AccessibilityInspector", "com.apple.dt.Xcode",
     ]
-    /// The widget hosts known before proof P1; P1 may add a WidgetKit host (BP_UI_HOSTS).
+    /// The widget hosts known before proof P1; P1 may add a WidgetKit host (ui-hosts).
     static let builtInHosts: Set<String> = [notificationCenter, "com.apple.chronod"]
     /// Control Center's one approved element: the clock, which opens Notification Center (P2).
     static let clockIdentifier = "com.apple.menuextra.clock"
@@ -244,11 +244,10 @@ enum Rules {
         builtInHosts.contains(bundle) || bundle.lowercased().hasPrefix("com.apple.widgetkit.")
     }
 
-    /// The widget hosts: the known ones, and BP_UI_HOSTS' entries (split on any whitespace) that are
-    /// widget hosts; any other entry is ignored.
+    /// The widget hosts: the known ones, and ui-hosts' entries (proof P1's, split on any
+    /// whitespace) that are widget hosts; any other entry is ignored.
     static func widgetHosts() -> Set<String> {
-        let listed = (ProcessInfo.processInfo.environment["BP_UI_HOSTS"] ?? "")
-            .split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        let listed = Files.text("ui-hosts").split(whereSeparator: { $0.isWhitespace }).map(String.init)
         return builtInHosts.union(listed.filter(isWidgetHostCandidate))
     }
 
@@ -257,11 +256,23 @@ enum Rules {
         targetBundles.contains(bundle) || bundle == controlCenter || widgetHosts().contains(bundle)
     }
 
-    /// The widget frames the script recorded (BP_UI_WIDGETS, one "x y w h" per line), in points.
+    /// The largest frame of each family's widget, in points, with room to spare (the script's
+    /// `widget` checks the same): a frame in pixels is twice as large.
+    static let widgetLimits: [String: CGSize] = [
+        "small": CGSize(width: 220, height: 220), "medium": CGSize(width: 440, height: 220),
+        "large": CGSize(width: 440, height: 460), "xlarge": CGSize(width: 880, height: 460),
+    ]
+
+    /// The widget frames the script recorded (widgets.tsv: "<family>\t<x> <y> <w> <h>" per line), in
+    /// points; a frame larger than its family's widget is ignored.
     static func widgetFrames() -> [CGRect] {
-        (ProcessInfo.processInfo.environment["BP_UI_WIDGETS"] ?? "").split(separator: "\n").compactMap { line in
-            let numbers = line.split(whereSeparator: { $0.isWhitespace }).compactMap { Double(String($0)) }
-            guard numbers.count == 4 else { return nil }
+        Files.text("widgets.tsv").split(separator: "\n").compactMap { line in
+            let fields = line.split(separator: "\t").map(String.init)
+            guard fields.count == 2, let limit = widgetLimits[fields[0]] else { return nil }
+            let numbers = fields[1].split(whereSeparator: { $0.isWhitespace }).compactMap { Double(String($0)) }
+            guard numbers.count == 4, numbers[2] >= 20, numbers[3] >= 20, numbers[2] <= limit.width,
+                numbers[3] <= limit.height
+            else { return nil }
             return CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
         }
     }
@@ -276,6 +287,27 @@ enum Rules {
             abs($0.minX - rect.minX) <= 2 && abs($0.minY - rect.minY) <= 2 && abs($0.width - rect.width) <= 2
                 && abs($0.height - rect.height) <= 2
         }
+    }
+}
+
+// MARK: - The account and the script's files
+
+/// The account ui runs as.
+enum Account {
+    /// Its home folder, from the user database: never HOME or CFFIXED_USER_HOME, which the caller
+    /// sets (NSHomeDirectory and CFPreferences follow the latter, so `run` refuses it).
+    static let home: String? = {
+        guard let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir else { return nil }
+        let path = String(cString: directory)
+        return path.hasPrefix("/") ? path : nil
+    }()
+}
+
+/// What the script recorded in ~/bp-062/B: ui-hosts, ui-panes, widgets.tsv, ui-tap and
+/// launched.tsv. A missing file reads as empty.
+enum Files {
+    static func text(_ name: String) -> String {
+        (try? String(contentsOfFile: Safety.home + "/" + name, encoding: .utf8)) ?? ""
     }
 }
 
@@ -333,12 +365,17 @@ enum Processes {
         throw NotFound(description: "\(query) isn't running")
     }
 
-    static func parent(_ pid: pid_t) -> pid_t? {
+    static func info(_ pid: pid_t) -> proc_bsdinfo? {
         var info = proc_bsdinfo()
         let size = Int32(MemoryLayout<proc_bsdinfo>.stride)
         guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
-        return pid_t(info.pbi_ppid)
+        return info
     }
+
+    static func parent(_ pid: pid_t) -> pid_t? { info(pid).map { pid_t($0.pbi_ppid) } }
+
+    /// When the process started, in seconds since 1970 (what `ps -o lstart` shows).
+    static func startTime(_ pid: pid_t) -> Int? { info(pid).map { Int($0.pbi_start_tvsec) } }
 
     static func ancestors() -> [pid_t] {
         var chain: [pid_t] = []
@@ -578,11 +615,12 @@ enum Panes {
         return (expected[name] ?? []).contains { lowered.contains($0) } && !isRefused(title)
     }
 
-    /// Proof P8's confirmed panes (BP_UI_PANES: "<name>\t<sidebar>\t<title>" per line).
+    /// Proof P8's confirmed panes (ui-panes: "<name>\t<sidebar>\t<title>" per line): only P8's own
+    /// panes, each with that pane's title; any other line is ignored.
     static func allowed() -> [(name: String, sidebar: String, title: String)] {
-        (ProcessInfo.processInfo.environment["BP_UI_PANES"] ?? "").split(separator: "\n").compactMap { line in
+        Files.text("ui-panes").split(separator: "\n").compactMap { line in
             let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard fields.count == 3 else { return nil }
+            guard fields.count == 3, matches(fields[0], title: fields[2]), !isRefused(fields[1]) else { return nil }
             return (name: fields[0], sidebar: fields[1], title: fields[2])
         }
     }
@@ -823,35 +861,38 @@ struct WindowHit {
 }
 
 enum Safety {
-    static let home = NSHomeDirectory() + "/bp-062/B"
+    /// ~/bp-062/B of the account's own home (`run` refuses when it can't be read).
+    static let home = (Account.home ?? "/var/empty") + "/bp-062/B"
 
     static func modified(_ path: String) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
     }
 
-    static func firstPid(in path: String) -> pid_t? {
+    /// The arm window's process as arm.pid or queue.started records it: its pid and its start time,
+    /// the first two fields, so a later process that got the same pid isn't taken for it.
+    static func armProcess(in path: String) -> (pid: pid_t, start: Int)? {
         let text = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
-        return text.split(whereSeparator: { $0.isWhitespace }).first.flatMap { pid_t(String($0)) }
+        let fields = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        guard fields.count >= 2, let pid = pid_t(fields[0]), let start = Int(fields[1]) else { return nil }
+        return (pid, start)
     }
 
-    /// The arm window's process (arm.pid, or the first field of queue.started) is an ancestor.
+    /// That process is one of this call's ancestors, started when the file says.
+    static func isAncestor(_ arm: (pid: pid_t, start: Int)) -> Bool {
+        Processes.ancestors().contains(arm.pid) && Processes.startTime(arm.pid) == arm.start
+    }
+
+    /// The arm window's process (arm.pid, or queue.started) is an ancestor.
     static func callerIsArm() -> Bool {
-        let ancestors = Processes.ancestors()
-        return [home + "/arm.pid", home + "/queue.started"].compactMap(firstPid).contains { ancestors.contains($0) }
-    }
-
-    static func fenceFiles() -> [String] {
-        var files = [home + "/queue.started"]
-        if let extra = ProcessInfo.processInfo.environment["BP_FENCE"], !extra.isEmpty { files.append(extra) }
-        return files
+        [home + "/arm.pid", home + "/queue.started"].compactMap(armProcess).contains(where: isAncestor)
     }
 
     /// Refuses while the queue runs, and from `ready` until a newer `continue`, unless the arm
     /// window's own process is an ancestor.
     static func checkFence() throws {
-        for file in fenceFiles() where FileManager.default.fileExists(atPath: file) {
-            if let owner = firstPid(in: file), Processes.ancestors().contains(owner) { continue }
-            throw Refusal(description: "the energy queue runs (\(file) exists): nothing may act until the morning")
+        let fence = home + "/queue.started"
+        if FileManager.default.fileExists(atPath: fence), !(armProcess(in: fence).map(isAncestor) ?? false) {
+            throw Refusal(description: "the energy queue runs (\(fence) exists): nothing may act until the morning")
         }
         if let readyAt = modified(home + "/ready") {
             let continued = modified(home + "/continued").map { $0 > readyAt } ?? false
@@ -1171,7 +1212,10 @@ enum Signals {
 enum Events {
     static func tap(_ options: Options) -> CGEventTapLocation { options.value("--tap").map(location) ?? defaultTap() }
 
-    static func defaultTap() -> CGEventTapLocation { location(ProcessInfo.processInfo.environment["BP_UI_TAP"] ?? "hid") }
+    /// Proof P6's tap (ui-tap), else the HID tap.
+    static func defaultTap() -> CGEventTapLocation {
+        location(Files.text("ui-tap").trimmingCharacters(in: .whitespacesAndNewlines))
+    }
 
     static func location(_ name: String) -> CGEventTapLocation { name == "session" ? .cgSessionEventTap : .cghidEventTap }
 
@@ -1968,6 +2012,13 @@ enum Command {
     }
 
     static func run(_ arguments: [String]) throws {
+        // The fences and the script's lists live in the account's own home; a caller that moves the
+        // home (CFFIXED_USER_HOME, which NSHomeDirectory and CFPreferences follow: the hot corners)
+        // gets nothing.
+        if ProcessInfo.processInfo.environment["CFFIXED_USER_HOME"] != nil {
+            throw Refusal(description: "CFFIXED_USER_HOME is set: ui reads its fences only from the account's own home")
+        }
+        guard Account.home != nil else { throw Refusal(description: "the account's home folder can't be read") }
         let options = try Options(Array(arguments.dropFirst()))
         guard let command = options.words.first else { throw UsageError(description: usage) }
         switch command {
