@@ -1,5 +1,6 @@
 #if os(macOS)
 import BatteryCore
+import BatterySource
 import Foundation
 import os
 

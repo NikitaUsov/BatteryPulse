@@ -1,4 +1,5 @@
 import BatteryCore
+import BatterySource
 import Foundation
 
 /// Readings from a ``DemoBattery`` instead of the hardware, for Demo Mode.

@@ -13,7 +13,7 @@ public protocol BatteryProvider: AnyObject {
     func read(scope: BatteryReadScope) -> BatteryReading?
 
     /// What reads this battery off the main actor, for a caller that keeps its reads off it, such
-    /// as ``BatteryMonitor``. `nil`, the default, keeps every read on the main actor, as Demo Mode's
+    /// as `BatteryMonitor`. `nil`, the default, keeps every read on the main actor, as Demo Mode's
     /// simulated battery and `UIDevice` need.
     var nonisolatedReader: (any NonisolatedBatteryReader)? { get }
 

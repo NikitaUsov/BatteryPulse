@@ -169,6 +169,17 @@ if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null
   echo "error: the WidgetBundle is missing from the widget binary" >&2
   exit 1
 fi
+# The widget depends on BatterySource and BatteryCore alone, so CryptoKit, which only BatteryKit's
+# device keys and update signatures use, stays out of it: a dependency on BatteryKit fails here.
+LINKED="$(otool -L "$BIN_PATH/BatteryPulseWidget")"
+if grep -F "CryptoKit" <<<"$LINKED" >/dev/null; then
+  echo "error: the widget links CryptoKit; it must not depend on BatteryKit" >&2
+  exit 1
+fi
+# For the record only: whether dead stripping left the widget dlopen and dlsym, which it never
+# calls (MacAccessoryProvider does).
+DL_IMPORTS="$(nm -u "$BIN_PATH/BatteryPulseWidget" | grep -E '^_dl(open|sym|close|error)$' | tr '\n' ' ' || true)"
+echo "The widget's dl imports: ${DL_IMPORTS:-none}"
 
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep

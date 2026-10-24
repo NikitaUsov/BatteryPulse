@@ -33,7 +33,7 @@ enum SourceScanner {
     static let targets = ["BatteryPulseApp", "BatteryPulseWidget"]
 
     /// The other targets: Linux compiles them, but their `#if os(macOS)` blocks only CI does.
-    static let otherTargets = ["BatteryCore", "BatteryKit", "bpulse"]
+    static let otherTargets = ["BatteryCore", "BatterySource", "BatteryKit", "bpulse"]
 
     /// Every Swift file of ``targets``, ordered by path. A `static let`, so it is built once, on
     /// first use, whichever test gets there first.

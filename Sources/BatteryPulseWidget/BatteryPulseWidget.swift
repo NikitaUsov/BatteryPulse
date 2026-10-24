@@ -1,6 +1,6 @@
 #if os(macOS)
 import BatteryCore
-import BatteryKit
+import BatterySource
 import SwiftUI
 import WidgetKit
 

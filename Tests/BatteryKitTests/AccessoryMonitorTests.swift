@@ -1,4 +1,5 @@
 import BatteryCore
+import BatterySource
 import Foundation
 import Observation
 import Testing
