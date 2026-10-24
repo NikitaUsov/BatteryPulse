@@ -1963,7 +1963,10 @@ Numbers, and whatever else B2 moved there.
       morning report's first line says so.
     - The redacted before-and-after captures become a committed fixture only on his yes at `send`.
   - Exported CSV in Numbers, in a Russian and an English region (Stage 6; the Russian region
-    through `-AppleLocale` [unverified], else "Russian not checked").
+    through `-AppleLocale` [unverified], else "Russian not checked"). Session B doesn't run it:
+    the frozen script opens no Numbers (`open-app` takes TextEdit, Accessibility Inspector and
+    Xcode), `-AppleLocale` needs a launch argument, and the save and open panels would need typing
+    or file browsing, so `SESSION-B.md` notes it "not run" and leaves Numbers out of P10's batch.
 - **The device connection label** (WP-23), if an iPhone or iPad is at hand at the start: he plugs
   its cable in at B0 and pulls it at a beep in B0b, before `mark away` (1 minute more). The session
   refreshes over Wi-Fi and reads whether the page says "Connected over Wi-Fi". Then, still before
