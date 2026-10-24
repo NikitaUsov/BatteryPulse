@@ -161,8 +161,9 @@ The change applies at once to both windows. Settings, the menu bar popover, the 
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
 The see-through styles redraw when something behind the window changes, so Translucent and
 Clear use more energy than Standard; Clear is also the hardest to read over a bright or busy
-wallpaper, and Translucent is the better choice there. A known issue of the beta: a window in
-Clear turns black while it minimizes to the Dock and while it comes back.
+wallpaper, and Translucent is the better choice there. While a window in Clear, or in
+Translucent in Dark Mode, minimizes to the Dock and comes back, its glass gives way to an even
+graphite grey instead of turning black; in Light Mode a Translucent window keeps its white wash.
 
 With **Reduce transparency** or **Increase contrast** on (System Settings → Accessibility →
 Display), both windows use Standard whatever the choice, and Settings says so under the picker.

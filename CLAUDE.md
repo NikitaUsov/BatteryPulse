@@ -195,7 +195,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   behind the whole window, Translucent with a dimming tint, Clear with a dark dimming, the
   window in the dark appearance, a graphite control tint (never white) and every colour through
   the tone map (`\.tones`, `App/ToneStyle.swift`; no system colour names in `Main/`,
-  `App/Localized.swift` or `App/DemoController.swift`). The sheet is the only glass under other
+  `App/Localized.swift` or `App/DemoController.swift`). While the window minimizes, sits in the
+  Dock and is restored, the sheet's place is a still fill, never animated
+  (`sheetSurface(systemDark:isMinimized:)`): the opaque `graphiteMinimizeFill` for Clear and for
+  Translucent in Dark, Translucent Light's own white wash. The sheet is the only glass under other
   glass. Only the main and compact windows; Reduce Transparency or Increase Contrast gives
   Standard. Content stays free of glass and materials: no material in `Main/` but the History
   chart's hover readout, which must read on every style; groups use `Card`/`CardGroup`/`LookForm`.
