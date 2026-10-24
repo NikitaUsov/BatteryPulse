@@ -191,8 +191,9 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (motion, glass, window style, tone map), `EnergyGuardTests` (the energy rules above),
   `SecurityGuardTests` (where `dlopen`/`dlsym`, IOKit user clients, `Process` and `kill` may
   appear, the SMC's one selector, and the escapes from the compiler's checks),
-  `IsolationGuardTests` (the app's isolation, above) and `LocalizationCatalogTests`. An exception goes on the suite's list with its reason. A new target
-  joins `SourceScanner`'s lists in the same commit (`everySourceFolderIsAListedTarget`).
+  `IsolationGuardTests` (the app's isolation, above) and `LocalizationCatalogTests`. An exception
+  goes on the suite's list with its reason. A new target joins `SourceScanner`'s lists in the
+  same commit (`everySourceFolderIsAListedTarget`).
 - Localization: UI literals are `LocalizedStringKey`/`String(localized:)` keyed by the English
   text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a
   ternary of literals to `Text` (it becomes a plain String). Add every new key with its Russian
