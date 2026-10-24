@@ -1135,54 +1135,27 @@ public struct RawSection: Sendable, Identifiable, Equatable {
     /// Sections for a raw capture, in a fixed order, skipping empty dictionaries:
     /// `AppleSmartBattery`, one section per child entry below it, IOPS, the adapter and the SMC.
     public static func sections(for capture: PropertyDictionary) -> [RawSection] {
-        var sections: [RawSection] = []
-        if var smartBattery = capture[BatteryReading.CaptureKey.smartBattery]?.dictionaryValue {
-            let children = RegistryChildren.entries(in: smartBattery)
-            smartBattery[RegistryChildren.childrenKey] = nil
-            sections += section(smartBattery, id: BatteryReading.CaptureKey.smartBattery, title: "AppleSmartBattery")
-            let counts = Dictionary(children.map { ($0.className, 1) }, uniquingKeysWith: +)
-            var seen: [String: Int] = [:]
-            for child in children {
-                seen[child.className, default: 0] += 1
-                // Banks repeat once per cell, so number them in registry order.
-                let ordinal = seen[child.className] ?? 1
-                let title = (counts[child.className] ?? 0) > 1 ? "\(child.className) \(ordinal)" : child.className
-                let id =
-                    BatteryReading.CaptureKey.smartBattery + "/" + child.path.joined(separator: "/") + "#\(ordinal)"
-                sections += section(child.properties, id: id, title: title, glossaryPrefix: child.className)
-            }
-        }
-        let sources = [
-            (BatteryReading.CaptureKey.powerSource, "IOPowerSources"),
-            (BatteryReading.CaptureKey.adapterDetails, "IOPSCopyExternalPowerAdapterDetails"),
-        ]
-        for (captureKey, title) in sources {
-            sections += section(capture[captureKey]?.dictionaryValue ?? [:], id: captureKey, title: title)
-        }
-        if let smc = capture[BatteryReading.CaptureKey.smc]?.dictionaryValue {
-            sections += smcSection(smc)
-        }
-        return sections
+        RawSectionSource.sources(for: capture).compactMap { $0.section() }
     }
 
     /// `glossaryPrefix` is the class of a child entry: its keys are looked up as
     /// `AppleSmartBatteryPack.BatteryData.Amperage` first and then as the same path on
     /// `AppleSmartBattery`.
-    private static func section(
+    fileprivate static func section(
         _ dictionary: PropertyDictionary, id: String, title: String, glossaryPrefix: String? = nil
-    ) -> [RawSection] {
-        guard !dictionary.isEmpty else { return [] }
+    ) -> RawSection? {
+        guard !dictionary.isEmpty else { return nil }
         let rows = RawEntry.flatten(dictionary).map { entry in
             let plainKey = RawKeyGlossary.canonicalKey(captureKey: glossaryPrefix == nil ? id : "", path: entry.path)
             let prefixedKey = glossaryPrefix.map { $0 + "." + plainKey }
             let info = prefixedKey.flatMap(RawKeyGlossary.info(for:)) ?? RawKeyGlossary.info(for: plainKey)
             return row(id: id, path: entry.path, key: prefixedKey ?? plainKey, property: entry.property, info: info)
         }
-        return [RawSection(id: id, title: title, rows: rows)]
+        return RawSection(id: id, title: title, rows: rows)
     }
 
     /// One row per SMC key, valued as a number in the key's own unit.
-    private static func smcSection(_ smc: PropertyDictionary) -> [RawSection] {
+    fileprivate static func smcSection(_ smc: PropertyDictionary) -> RawSection? {
         let rows = SMCBattery.values(in: smc).map { value in
             let name = value.key.description
             let key = "SMC." + name
@@ -1194,8 +1167,8 @@ public struct RawSection: Sendable, Identifiable, Equatable {
                 id: BatteryReading.CaptureKey.smc, path: name, key: key, property: property,
                 info: RawKeyGlossary.info(for: key))
         }
-        guard !rows.isEmpty else { return [] }
-        return [RawSection(id: BatteryReading.CaptureKey.smc, title: "AppleSMC", rows: rows)]
+        guard !rows.isEmpty else { return nil }
+        return RawSection(id: BatteryReading.CaptureKey.smc, title: "AppleSMC", rows: rows)
     }
 
     private static func row(
@@ -1209,6 +1182,78 @@ public struct RawSection: Sendable, Identifiable, Equatable {
             info: info,
             decoded: info.flatMap { RawValueDecoder.decode(property, as: $0.kind, sentinels: $0.sentinels) }
         )
+    }
+}
+
+/// One dictionary of a raw capture before its rows are built: the source of one section of the
+/// Developer table. ``RawDisplayTable`` compares sources to build again only the sections whose
+/// dictionary changed.
+struct RawSectionSource: Sendable, Equatable {
+    /// How the dictionary's keys are looked up in the glossary.
+    enum Kind: Sendable, Equatable {
+        /// A dictionary of the capture itself: its keys under its capture key.
+        case capture
+        /// An entry below `AppleSmartBattery`: its keys under its class first.
+        case child(className: String)
+        /// The SMC's battery keys, one row per key.
+        case smc
+    }
+
+    /// The ``RawSection/id`` of the section it becomes.
+    var id: String
+    /// The ``RawSection/title``, which numbers entries of a class that repeats.
+    var title: String
+    var dictionary: PropertyDictionary
+    var kind: Kind
+
+    /// The sources of ``RawSection/sections(for:)``, in its order, without the empty dictionaries.
+    static func sources(for capture: PropertyDictionary) -> [RawSectionSource] {
+        var sources: [RawSectionSource] = []
+        if var smartBattery = capture[BatteryReading.CaptureKey.smartBattery]?.dictionaryValue {
+            let children = RegistryChildren.entries(in: smartBattery)
+            smartBattery[RegistryChildren.childrenKey] = nil
+            sources.append(
+                RawSectionSource(
+                    id: BatteryReading.CaptureKey.smartBattery, title: "AppleSmartBattery", dictionary: smartBattery,
+                    kind: .capture))
+            let counts = Dictionary(children.map { ($0.className, 1) }, uniquingKeysWith: +)
+            var seen: [String: Int] = [:]
+            for child in children {
+                seen[child.className, default: 0] += 1
+                // Banks repeat once per cell, so number them in registry order.
+                let ordinal = seen[child.className] ?? 1
+                let title = (counts[child.className] ?? 0) > 1 ? "\(child.className) \(ordinal)" : child.className
+                let id =
+                    BatteryReading.CaptureKey.smartBattery + "/" + child.path.joined(separator: "/") + "#\(ordinal)"
+                sources.append(
+                    RawSectionSource(
+                        id: id, title: title, dictionary: child.properties, kind: .child(className: child.className)))
+            }
+        }
+        let captureSources = [
+            (BatteryReading.CaptureKey.powerSource, "IOPowerSources"),
+            (BatteryReading.CaptureKey.adapterDetails, "IOPSCopyExternalPowerAdapterDetails"),
+        ]
+        for (captureKey, title) in captureSources {
+            sources.append(
+                RawSectionSource(
+                    id: captureKey, title: title, dictionary: capture[captureKey]?.dictionaryValue ?? [:],
+                    kind: .capture))
+        }
+        if let smc = capture[BatteryReading.CaptureKey.smc]?.dictionaryValue {
+            sources.append(
+                RawSectionSource(id: BatteryReading.CaptureKey.smc, title: "AppleSMC", dictionary: smc, kind: .smc))
+        }
+        return sources.filter { !$0.dictionary.isEmpty }
+    }
+
+    /// The section with the dictionary's rows; `nil` when it has none.
+    func section() -> RawSection? {
+        switch kind {
+        case .capture: RawSection.section(dictionary, id: id, title: title)
+        case .child(let className): RawSection.section(dictionary, id: id, title: title, glossaryPrefix: className)
+        case .smc: RawSection.smcSection(dictionary)
+        }
     }
 }
 
@@ -1287,5 +1332,63 @@ public struct RawDisplaySection: Sendable, Identifiable, Equatable {
             section.rows = section.rows.filter { $0.matches(query) }
             return section.rows.isEmpty ? nil : section
         }
+    }
+}
+
+/// The Developer table kept from one reading to the next, so that a reading builds again only the
+/// sections whose dictionary changed (E19). A poll changes the live values of the registry and
+/// the SMC; the adapter's and IOPS's dictionaries rarely change, and an unchanged section keeps
+/// its rows, which also makes comparing it with the table on screen cheap. Built off the main
+/// actor, like the sections it holds.
+public struct RawDisplayTable: Sendable {
+    /// A built section and the source it was built from.
+    private struct Entry: Sendable {
+        var source: RawSectionSource
+        /// `nil` for a source without rows.
+        var section: RawDisplaySection?
+    }
+
+    /// The table, as ``RawDisplaySection/sections(for:decoded:summary:)`` builds it for the
+    /// capture of the last ``update(for:wording:decoded:summary:)``.
+    public private(set) var sections: [RawDisplaySection] = []
+    /// What the last update built or kept, by section id.
+    private var entries: [String: Entry] = [:]
+    /// The wording of the last update.
+    private var wording: String?
+
+    /// An empty table.
+    public init() {}
+
+    /// The table for `capture`. A section whose id, title and dictionary are what the last update
+    /// saw keeps its rows; the others are built again with `decoded` and `summary`. `wording`
+    /// names what else the rows' text depends on, such as the locale and the time zone: when it
+    /// changes, every section is built again. Returns how many sections were built.
+    @discardableResult
+    public mutating func update(
+        for capture: PropertyDictionary, wording: String, decoded: (DecodedRawValue) -> String,
+        summary: (String) -> String
+    ) -> Int {
+        if wording != self.wording {
+            entries = [:]
+            self.wording = wording
+        }
+        var built = 0
+        var kept: [String: Entry] = [:]
+        var sections: [RawDisplaySection] = []
+        for source in RawSectionSource.sources(for: capture) {
+            let entry: Entry
+            if let previous = entries[source.id], previous.source == source {
+                entry = previous
+            } else {
+                let section = source.section().map { RawDisplaySection($0, decoded: decoded, summary: summary) }
+                entry = Entry(source: source, section: section)
+                built += 1
+            }
+            kept[source.id] = entry
+            if let section = entry.section { sections.append(section) }
+        }
+        entries = kept
+        self.sections = sections
+        return built
     }
 }

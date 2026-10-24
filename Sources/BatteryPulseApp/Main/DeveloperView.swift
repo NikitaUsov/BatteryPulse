@@ -18,8 +18,8 @@ struct DeveloperView: View {
     /// The table for the current reading, with every cell's text and each row's search text.
     /// Built off the main actor when the reading changes, not on every body evaluation: showing
     /// the inspector, selecting or typing in the filter re-evaluates the body, and the main window
-    /// reads the battery every 2 s.
-    @State private var allSections: [RawDisplaySection] = []
+    /// reads the battery every 2 s. A reading builds only the sections whose dictionary changed.
+    @State private var table = RawDisplayTable()
     /// The capture Export Capture hands to the system's Save panel, and why saving it failed.
     @State private var capture: CaptureFile?
     @State private var exportsCapture = false
@@ -155,17 +155,22 @@ struct DeveloperView: View {
         }
     }
 
+    /// Every section of the table, in order.
+    private var allSections: [RawDisplaySection] {
+        table.sections
+    }
+
     private func rebuild() async {
         guard let reading = monitor.reading else {
-            allSections = []
+            table = RawDisplayTable()
             return
         }
-        let sections = await RawValueText.sections(for: reading)
-        // Identical readings leave the table alone. Assigned after an `await`, so outside any
-        // animation, Demo Mode's included: hundreds of rows change with every reading and must
-        // never animate.
-        guard !Task.isCancelled, sections != allSections else { return }
-        allSections = sections
+        let (updated, changed) = await RawValueText.table(updating: table, for: reading)
+        // A reading that changes no text leaves the table alone. Assigned after an `await`, so
+        // outside any animation, Demo Mode's included: hundreds of rows change with every reading
+        // and must never animate.
+        guard !Task.isCancelled, changed else { return }
+        table = updated
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.

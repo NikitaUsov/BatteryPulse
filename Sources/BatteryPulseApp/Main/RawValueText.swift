@@ -3,16 +3,28 @@ import BatteryCore
 import Foundation
 
 /// Localized text for decoded raw values and glossary summaries in the Developer section.
-/// Nonisolated: the table is built off the main actor (``sections(for:)``).
+/// Nonisolated: the table is built off the main actor (``table(updating:for:)``).
 nonisolated enum RawValueText {
     /// The Developer table for `reading`'s redacted capture with every cell's text, built off the
-    /// caller's actor (`raw.rebuild`).
+    /// caller's actor (`raw.rebuild`). `previous` lends the sections whose dictionary didn't
+    /// change (E19); `changed` says whether the table's text differs from `previous`'s.
     @concurrent
-    static func sections(for reading: BatteryReading) async -> [RawDisplaySection] {
+    static func table(updating previous: RawDisplayTable, for reading: BatteryReading) async -> (
+        table: RawDisplayTable, changed: Bool
+    ) {
         Diagnostics.measure("raw.rebuild") {
-            RawDisplaySection.sections(
-                for: reading.redactedRawCapture, decoded: { string(for: $0) }, summary: summary)
+            var table = previous
+            table.update(
+                for: reading.redactedRawCapture, wording: wording, decoded: { string(for: $0) }, summary: summary)
+            return (table, table.sections != previous.sections)
         }
+    }
+
+    /// What the cells' text depends on besides the reading: the region, which the numbers follow
+    /// as `BatteryFormatter.app` does, and the time zone of the dates. The language and the unit
+    /// symbols are fixed per launch.
+    private static var wording: String {
+        Locale.autoupdatingCurrent.identifier + " " + TimeZone.current.identifier
     }
 
     static func string(for decoded: DecodedRawValue, _ f: BatteryFormatter = .app) -> String {

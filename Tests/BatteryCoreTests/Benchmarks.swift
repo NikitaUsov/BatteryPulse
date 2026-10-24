@@ -104,7 +104,8 @@ struct Benchmarks {
     /// with the text each row shows that BatteryCore builds (`raw.sections`, the 0.6.0 workload),
     /// and the display rows the page builds once per reading, off the main actor: every cell's
     /// text, the decoded values formatted and the summaries looked up, plus the search text
-    /// (`raw.display`).
+    /// (`raw.display`), and since WP-17 the kept table's update for an unchanged reading and for a
+    /// poll's (`raw.table.same`, `raw.table.poll`).
     @Test func b4RawSections() throws {
         let reading = try Self.largestRawCapture()
         let timing = Self.time {
@@ -119,6 +120,32 @@ struct Benchmarks {
                 summary: RawDisplayTests.localizedSummary)
         }
         Self.report("B4", "raw.display", display.median)
+        // Since WP-17 (E19) the page keeps its table between readings: a reading that changes
+        // nothing builds nothing (`raw.table.same`), and a poll that changes one of the
+        // registry's live values builds `AppleSmartBattery`'s section alone (`raw.table.poll`).
+        let capture = reading.redactedRawCapture
+        var polled = capture
+        var smartBattery = try #require(polled[BatteryReading.CaptureKey.smartBattery]?.dictionaryValue)
+        smartBattery["Voltage"] = .int(Int64(smartBattery["Voltage"]?.intValue ?? 0) + 1)
+        polled[BatteryReading.CaptureKey.smartBattery] = .dictionary(smartBattery)
+        var table = RawDisplayTable()
+        func update(_ capture: PropertyDictionary) -> Int {
+            table.update(
+                for: capture, wording: "en_US", decoded: RawDisplayTests.decodedText,
+                summary: RawDisplayTests.localizedSummary)
+        }
+        _ = update(capture)
+        let same = Self.time { update(capture) }
+        #expect(same.last == 0)
+        // Each update alternates between the two, so each builds one section.
+        var round = 0
+        let poll = Self.time {
+            round += 1
+            return update(round.isMultiple(of: 2) ? capture : polled)
+        }
+        #expect(poll.last == 1)
+        Self.report("B4", "raw.table.same", same.median)
+        Self.report("B4", "raw.table.poll", poll.median)
     }
 
     /// B5: Raw Data's filter, a six-letter query over every row of that fixture: the five-way OR
