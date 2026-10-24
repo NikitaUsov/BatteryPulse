@@ -4995,6 +4995,23 @@ queue_report() {
   out "Medians of the valid runs per scenario and build (the spread is the lowest and highest run):"
   out ""
   queue_medians | tee -a "$SECTION"
+  queue_g14b
+}
+
+# queue_g14b: G-14b's Session B half (PLAN.md §7.1, Appendix C): `read cached` p50 and
+# `registry.missed` per hour of logged runtime, over the perf lines of every C run of the queue.
+queue_g14b() {
+  local all="$LOGS/queue-C-perf.ndjson" summary minutes cached missed rate
+  [ -z "$DRY_RUN" ] || return 0
+  cat "$LOGS"/queue-*-C.ndjson >"$all" 2>/dev/null || true
+  minutes="$(awk -F '\t' 'NR > 1 && $4 == "C" && $7 != "" { s += $7 - $6 } END { printf "%.0f", s / 60 }' "$QUEUE_RUNS")"
+  summary="$(perf_stats "$all" 2>/dev/null || true)"
+  cached="$(awk '$1 == "read" && $2 == "cached" { print $4 " ms over " $3 " reads" }' <<<"$summary")"
+  missed="$(awk '$1 == "registry.missed" && $2 != "(all)" { n += $3 } END { print n + 0 }' <<<"$summary")"
+  rate="$(awk -v n="$missed" -v m="${minutes:-0}" 'BEGIN { if (m > 0) printf "%.1f an hour", n * 60 / m; else print "no runtime logged" }')"
+  out ""
+  out "- G-14b over the C runs' perf lines (${minutes:-0} minutes measured): read cached p50 ${cached:-none}; registry.missed $missed, $rate (the criteria: p50 under 2 ms, at most 1 an hour)"
+  summarize "$all" '^(intervals|name|read|events|registry\.missed)'
 }
 
 # The rows of Session A's energy table (~/bp-062/A/logs/energy-rows.md) as "scenario build energy
