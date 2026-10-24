@@ -100,10 +100,10 @@ public struct WindowLookPolicy: Equatable, Sendable {
         }
     }
 
-    /// The minimize fill of Clear, the graphite composite (fill (b), the maintainer's choice):
-    /// Clear's tint (white 0.03 at 65 %) over a mid grey (0.5), opaque. 0.03 × 0.65 + 0.5 × 0.35
-    /// = 0.1945, about 19 % white in the sRGB-encoded values `Color(white:opacity:)` takes; white
-    /// text on it has a contrast of about 12.9:1.
+    /// The graphite composite (fill (b), the maintainer's choice), the opaque minimize fill of the
+    /// sheets ``minimizeFill(systemDark:)`` gives it to: Clear's tint (white 0.03 at 65 %) over a
+    /// mid grey (0.5). 0.03 × 0.65 + 0.5 × 0.35 = 0.1945, about 19 % white in the sRGB-encoded
+    /// values `Color(white:opacity:)` takes; white text on it has a contrast of about 12.9:1.
     public static let graphiteMinimizeFill = Tint(white: 0.1945, opacity: 1)
 
     /// The stored choice.
