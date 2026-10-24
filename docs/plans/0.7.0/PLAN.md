@@ -30,13 +30,14 @@ a week after publishing (§13 step 8, NEW-23).
   0.7.0, `BatteryPulse-count.txt` downloads. §13 step 8 records its numbers.
 
 **Updated 2026-10-23 with 0.6.2's Session A** (the local Claude session on the MacBook Air M5, its
-interim report; Session A is still running, and its final `A.md` comes on `claude/062-session-a`;
-0.6.2's Appendix C at `0a4580e` records the report's first part, without the W2 retest's result
-and the VoiceOver photos, and with W0-6's minutes as 0 where this plan has 6: two readings of the
-same countdown at different moments, Appendix C row 5; this plan's findings are in Appendix C):
+interim report, written while Session A was still running; its final `A.md` came on 2026-10-24,
+below; 0.6.2's Appendix C at `0a4580e` records the report's first part, without the W2 retest's
+result and the VoiceOver photos, and with W0-6's minutes as 0 where this plan had 6: two readings
+of the same countdown at different moments, Appendix C row 5; this plan's findings are in
+Appendix C):
 - **Every widget spike ran,** so W-0S isn't needed (§2.3). §2.2 now holds each answer and what 0.7
   ships; the fallbacks the answers made unnecessary are gone (the new-kind branch, the presets, the
-  activity handler, the registered URL scheme).
+  registered URL scheme; the activity handler came back with the final report, below).
 - **Placed widgets survive** today's kind becoming configurable, with Automatic as their default,
   once the old widget extension is ended before the swap: chronod caches the descriptors by
   `CFBundleVersion`, from whatever extension answers at the version change. 0.6.2's installer ends
@@ -45,9 +46,10 @@ same countdown at different moments, Appendix C row 5; this plan's findings are 
 - **The edit sheet works at run time** (W0-1), but macOS 27 shows no `ParameterSummary` line, so
   nothing relies on it (W-2, W-3a). **The feed uses candidate A** (W0-3: A and A′ both read the
   app's 55 bytes), **the Accessories widget is in the MVP** (W0-4 (1)), **clicks arrive as a
-  `widgetURL`** with the `batterypulse` scheme through `application(_:open:)`, unregistered and with
-  no `NSUserActivity` (W0-4 (4), (5)), and **time left ships** with `sign: .never` (W0-6). No
-  rendering mode reached the log, so screenshots are the only evidence for it (W0-4 (2)).
+  `widgetURL`** with the `batterypulse` scheme through `application(_:open:)`, unregistered (W0-4
+  (4), (5); the final report adds a second route, below), and **time left ships** with `sign:
+  .never` (W0-6). No rendering mode reached the log, so screenshots are the only evidence for it
+  (W0-4 (2)).
 - **VoiceOver** (W0-5, from the maintainer's photos) walks today's widget as 9 items and reads the
   level symbol's own name instead of the charge. W-3b item 5 turns that into requirements, checked
   by a Linux-tested label builder and a read of the accessibility tree, never by asking the
@@ -62,6 +64,36 @@ same countdown at different moments, Appendix C row 5; this plan's findings are 
   computer use, does every hands-on step with 0.6.2's helpers (W-12), and judges the pictures
   itself. His part of Session R, its day's end and the after-publishing check drops from about
   106 minutes to about 12-15 (§6.2-§6.4).
+
+**Updated 2026-10-24 with Session A's final report** (`docs/plans/0.6.2/sessions/A.md`, merged
+into the integration branch at `5849d01` with the redacted Charge Limit capture). §2.2 and
+Appendix C now hold its final answers, and Appendix C notes each place where it differs from the
+interim report:
+- **Clicks take two routes** (W0-4 (4)): a `widgetURL` still arrives as a URL, but two clicks on
+  the body of SPIKE-W's Test widget, which sets no `widgetURL`, arrived as an `NSUserActivity`
+  whose type is the intent's type name (`SpikeWidgetIntent`), with `WGWidgetUserInfoKeyFamily`
+  and `WGWidgetUserInfoKeyKind` in its user info and no `webpageURL`. W-3c handles both routes
+  (G7-9), through W-1's `WidgetRoute`.
+- **The edit sheet stayed English** with the extension's `AppleLanguages` set to Russian, while
+  the widgets turned Russian (D-8). The system draws the sheet from the hand-extracted metadata,
+  so W-2 item 5 checks that the metadata carries the sheet's strings as catalog keys the widget
+  bundle translates, and names the fix; W-10 reviews them, and Session R step 4.3 tries the sheet
+  again (G7-13).
+- **Text size had no effect** on the widgets at 17 pt (W0-5). Decided: nothing in 0.7 depends on
+  it, and Session R step 7 keeps one shot as a record.
+- **The accessibility tree is readable and flat:** a System Events read found VoiceOver's 9 items
+  as 9 sibling elements (an unlabelled image and 8 separate texts), so W-3b item 5's requirements
+  stand and Session R step 7's read has a known route.
+- **W0-1 (b) stays unanswered** (the Device chooser was never opened, and A.md doesn't say whether Details' was: its slots stayed "Choose"), so W-3a's review makes the Details
+  choice before its merge (§2.2). W0-2's SPIKE-C and SPIKE-I passed, and W0-6 passed in Russian.
+- **The Charge Limit** (W-14, G7-18): the redacted capture arrived, and the 80 → 100 → 80 reads
+  are the 100 % diff: at 100 % bit 24 clears and charging resumes, and back at 80 % it returns.
+  So W-14 has its fixture and its proof before C1; only the Russian screenshot didn't come
+  (D-13). powerd's charging plist and `pmset -g battlimit` hold the limit's policy only on AC
+  (cleared about 5 minutes after unplugging, back at plug-in), while System Settings'
+  `prior.limit` stayed 80 on battery, so W-14's 0.8 candidates are reordered. Right after a
+  plug-in `NotChargingReason` read 128 (bit 7), not bit 24, which appears at the hold (W-14 item
+  6).
 
 **Sources and how they are cited**
 
@@ -206,11 +238,9 @@ Contents:
     a passive 10-minute wait for W-13's count, which the session waits out (§6.4).
   - **The backup key** (M-9): about 5 minutes in Terminal, any time before C1 (§14). It stays his
     alone.
-  - **W-12's `charge-limit` step,** only if the final `A.md` brings no redacted Charge Limit
-    fixture or no 100 % diff: about 2 minutes for a short local session (its start, his yes to the
-    slider set by computer use, and his yes before `send`; +1 if the slider asks for a password),
-    otherwise unattended, any time between W-12's merge (A3) and C1, because W-14 needs both by C1
-    (G7-18; §6.2 step 11).
+  - **W-12's `charge-limit` step: not needed.** The final `A.md` brought the redacted Charge Limit
+    fixture and the 100 % diff (D-13), so the short session it would have taken (about 2 minutes of
+    his time) doesn't run for W-14 (G7-18; §6.2 step 11).
   - No spike sitting: 0.6.2's Session A ran the widget spikes (2026-10-23, §2.3).
   - If 0.6.2 left any of WP-18's Xcode items, Session R's GUI phase runs them, as 0.6.2's Session B
     does (C-1; Xcode is installed on the M5, Q-B7).
@@ -229,19 +259,19 @@ Contents:
 
 | # | 0.6.2 item (P2) | What 0.7 needs from it | If it failed, was cut or never ran |
 |---|---|---|---|
-| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **File missing:** main receives only squash merges, so `docs/plans/` never enters main's history (`git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So 0.6.2's D3 is asked, as a request from this plan, to copy into `docs/plans/0.7.0/` before 0.6.2's branches are deleted (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper, the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`) and the whole of P2 Appendix C (not only the W0 rows). Either way the release PR's `refs/pull/<n>/head` keeps them reachable (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its interim answers are in §2.2 and Appendix C, and its final `A.md` comes on `claude/062-session-a` |
+| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **File missing:** main receives only squash merges, so `docs/plans/` never enters main's history (`git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So 0.6.2's D3 is asked, as a request from this plan, to copy into `docs/plans/0.7.0/` before 0.6.2's branches are deleted (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper, the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`), the whole of P2 Appendix C (not only the W0 rows) and Session A's report (`sessions/A.md` with its files). Either way the release PR's `refs/pull/<n>/head` keeps them reachable (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its final answers (`docs/plans/0.6.2/sessions/A.md`, 2026-10-24) are in §2.2 and Appendix C |
 | D-2 | K-03, the `BatterySource` target (WP-15 item 1, G-15) | CryptoKit and the device stack out of the widget (about 187 KB, P2 §2.3). `MacAccessoryProvider` sits in the lower target, so W-8 needs no second split (P2 WP-15) | **Nothing blocks.** `MacAccessoryProvider` is in BatteryKit today (`BatteryKit/MacAccessoryProvider.swift`), and the widget can log through its own `Signposts(subsystem:log:)`, which is public (`BatteryKit/Diagnostics.swift`, `public struct Signposts`). **Only size suffers:** G7-10 decides, and if the widget would cross 0.6.1's ceilings, K-03 runs as written in P2 WP-15 before W-3a ("W-0K") |
 | D-3 | `-internalize-at-link` on the widget (WP-15 item 2) | About −27 % of the widget's `__text` (P2 WP-15, measured in a native build) | **Less headroom.** G7-10's cut order applies: `Path` instead of Swift Charts, SIZ-07, W-11 cut first |
 | D-4 | WP-14a, the nonisolated read (E20) | The widget's async provider reads without the `Task { @MainActor in … }` hops of today (`BatteryPulseWidget.swift:50, 56`; P2 §8.10). WP-14a covers the battery read only: `MacAccessoryProvider` stays `@MainActor` (`BatteryKit/MacAccessoryProvider.swift:14-15`), so W-8's read hops once (W-8 item 4) | **Reverted:** the provider keeps one hop around the synchronous `read()`. `WidgetReadCache` still makes it one read per burst. No blocker |
 | D-5 | WP-14b, the registry only when it changes (E4b) | Nothing. The widget makes a new provider for each read (`BatteryPulseWidget.swift:68-70`), so it never takes a cached-registry path | **Either way:** W-3a pins with a source test that the widget never passes a cached-registry scope |
 | D-6 | WP-10, main actor by default for the app | 0.7's edits to `WidgetRefresher` and `AppDelegate` are written in the default-isolation style. The widget stays nonisolated (REJ-30; P2 WP-10) | **Reverted:** 0.7's app edits keep explicit `@MainActor`, as v0.6.1 does |
 | D-7 | SIZ-04: widget ceilings lowered to the RC plus about 5 % (WP-15 item 4) | 0.7's growth shows in CI, and every raise is a commit of its own (`size-budget.json` "about") | **Not lowered:** 0.6.1's ceilings stand (`scripts/size-budget.json`), with the same rule |
-| D-8 | L10N-03: a way to show the widget in Russian (Session A step 3.3) | Session R checks the Russian edit sheet and widgets (§6) | **No method found:** the Russian half is recorded "not checked", never "n". `WidgetTextBudget` (W-1) checks lengths on Linux |
+| D-8 | L10N-03: a way to show the widget in Russian (Session A step 3.3) | Session R checks the Russian edit sheet and widgets (§6). **Answered by the final `A.md`** (W0-2-W-ru: 2, only the widgets; Appendix C row 10): with `AppleLanguages` (ru) in the extension's container preferences and the extension ended, the widgets turned Russian once they redrew (a widget not yet redrawn kept its English, its live minutes too), while the edit sheet stayed English. So the method shows the widgets in Russian, not the sheet: W-2 item 5 checks the sheet's strings, and Session R step 4.3 tries the sheet again (G7-13) | **No method found:** the Russian half is recorded "not checked", never "n". `WidgetTextBudget` (W-1) checks lengths on Linux |
 | D-9 | DIS-06: did the 0.6.1 → 0.6.2 in-app update keep placed widgets? (D3's after-publishing check) | The baseline for "placed widgets survive" (G7-2). 0.6.2's A0 already saw one in-app update keep them: 0.6.0 → 0.6.1 through Install and Relaunch kept the desktop widget, which shows the current charge (2026-10-22, Appendix C). Session A suggests why a static-to-static update keeps them: a descriptor fetched from the old extension is the same static one [inference]; the change to a configurable kind is what needs the old extension ended before the swap (D-17) | **Lost in 0.6.2 too:** the loss comes from the update, not from configuration. The notes then say "add it again if it's gone" |
 | D-10 | WP-21's energy numbers (S1, S2, S6, S7) | The baseline for 0.7's widget runs (§10) | **Missing:** 0.7 measures the widget's reads and reloads alone, and the comparison waits for the final 0.9.x energy run (RD C5) |
 | D-11 | The 0.6.2 session script: prepare, backup, restore, the swap helper, `send` (P2 §6, WP-21), and its hands-free mode (`ui.swift`, `frames.swift`, `preflight`, `arm`, the split `restore`, the detectors, `SESSION-B.md`; 2026-10-23) | W-12 builds 0.7's script from it, with Session A's fixes: the log count without ndjson's summary line (`9a32e57`) and the widget extension ended before each swap (`56702f9`); W-12 item 1 lists the issues Session A left open. Session R runs hands-free on the same helpers (§6.2) | **Removed with the plan folder in D3:** the copy D-1 asks for in `docs/plans/0.7.0/`, or 0.6.2's integration branch, `claude/nice-faraday-k08mhb`, if it was kept. If neither exists, W-12 rebuilds the script from 0.6.1's (`6aec4d2:docs/plans/0.6.1/m5-session.sh`) and P2 §6's text (+1 run), and the hands-free helpers from P2 WP-21's text (+1 run); without them, Session R's steps need his hands again (about 83 minutes, as before the hands-free mode) |
 | D-12 | WP-16, the `diskutil` installer (G-16) | F12 (at the logged day's end, §6.3) tests whichever installer the RC carries | **Reverted to `hdiutil`:** F12 runs as in 0.6.1 |
-| D-13 | QUA-05, the Charge Limit capture (optional in 0.6.2) | **Done in Session A** (2026-10-23, Appendix C finding 7): with the limit at 80 %, `NotChargingReason` gained bit 24 (0x01000000), and the configured 80 is in no key. The captures stay on the Mac. **This plan asks the final `A.md` (or Session B) for:** the redacted `bpulse --raw` capture `charge-limit-80.plist`, if the maintainer says yes (it becomes W-14's fixture); the timeline rows of the session's 80 → 100 → 80 recording around each change (the 100 % diff, W-14 "Still open"); and a screenshot of System Settings → Battery's Charge Limit in Russian, for W-10's terminology pass | **No redacted capture or no 100 % diff:** W-12's `charge-limit` step, run with `bpulse --record` built from v0.6.2 or later, any time after W-12 merges (A3) and before C1 (§6.2 step 11). **No redacted capture by C1:** W-14 moves whole to 0.8 (FEA-35, beside NEW-01; G7-18). **No Russian screenshot:** W-10 follows Apple's Russian article, and Session R step 9b confirms |
+| D-13 | QUA-05, the Charge Limit capture (optional in 0.6.2) | **Done in Session A** (2026-10-23, Appendix C finding 7): with the limit at 80 %, `NotChargingReason` gained bit 24 (0x01000000), and the configured 80 is in no key. **The final `A.md` brought** the redacted `bpulse --raw` capture of the hold (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, on the maintainer's approval; W-14's fixture) and the 80 → 100 → 80 reads, a minute after each change: the 100 % diff (bit 24 clears at 100 % and returns at 80 %; Appendix C finding 9; W-14). They are reads rather than the timeline rows this plan asked for, and they settle the same questions. **Not brought:** a screenshot of System Settings → Battery's Charge Limit in Russian, for W-10's terminology pass. The other captures stay on the Mac | **Both came,** so W-12's `charge-limit` step doesn't run for W-14 (§6.2 step 11), and W-14 moves to 0.8 only if its review rejects the capture (G7-18). **No Russian screenshot:** W-10 follows Apple's Russian article, and Session R step 9b confirms |
 | D-14 | 0.6.2's cut list (P2 §7.2: "a cut item moves to 0.7") | — | **Without M5 time:** C-1, the Linux-only lane. **With M5 time:** Session R's optional steps, or the verification matrix (RD §3.2) |
 | D-15 | P2 §7.3's frozen list ("Widget. Same kind, look and reload policy.") | 0.7 changes the kind's configuration, its families and the reload policy on purpose (§7.3) | — |
 | D-16 | NEW-23: 0.6.2's D3 adds download columns to ROADMAP's Releases table and, a week after publishing, records v0.6.2's DMG and `.sig` counts, printed by 0.6.2's new `scripts/release-stats.swift` (P2 D3; RD §1.2 item 6) | The columns 0.7.0's counts go into (§13 step 8), and the script that prints them. It already looks for `BatteryPulse-count.txt` and prints "—" before v0.7.0 | **Columns missing:** §13 step 8 adds them and fills the earlier releases from the same releases API call (RD §3.1 item 7). **Script missing:** step 8's `gh api` call, once per release |
@@ -250,34 +280,38 @@ Contents:
 
 ### 2.2 The spike answers and what 0.7 ships for each
 
-0.6.2's Session A ran every spike on 2026-10-23 (its interim report; Appendix C). P2 §8.16 held a
-fallback for each failed spike; the answers made those fallbacks unnecessary, so this table keeps
-only what 0.7 ships and what is still open. If the final `A.md` contradicts a row, W-0 reopens that
-row of P2 §8.16 before the package it feeds.
+0.6.2's Session A ran every spike on 2026-10-23, and its final report
+(`docs/plans/0.6.2/sessions/A.md`, 2026-10-24) gives the answers below; Appendix C notes where it
+differs from the interim report this table first held. P2 §8.16 held a fallback for each failed
+spike; the answers made those fallbacks unnecessary, so this table keeps only what 0.7 ships and
+what is still open. The final report reversed one finding, that no `NSUserActivity` arrives (W0-4
+(4)), which brings back P2 §8.9's handler for a click without a URL (W-3c item 2), and it added the
+edit sheet's English under the extension's Russian (D-8), the accessibility tree and Text size
+(W0-5) and the Russian time left (W0-6).
 
-| Spike (P2 WP-W0) | Session A's answer (2026-10-23) | 0.7 ships | Still open |
+| Spike (P2 WP-W0) | Session A's answer (final, 2026-10-24) | 0.7 ships | Still open |
 |---|---|---|---|
-| **W0-1:** App Intents metadata through a manual `appintentsmetadataprocessor` step | **Passed** (CI 2026-10-22; run time in Session A). The edit sheets show the parameters: Battery has Layout, Main value and Time, and Custom adds Details, with 4 slots on medium; the test kind has Main value, Details (4 on medium, more on extra large) and Device (SPIKE-W, #282). The `ParameterSummary` line ("Show Charge") is not visible on macOS 27 | W-2, then the configurable kind (G7-1). `ParameterSummary` stays for its `When` clauses (Details appears only with Custom), but nothing relies on its sentence: the look check and Session R don't ask about it, and its `Summary` keys are kept plain (§8) | — |
+| **W0-1:** App Intents metadata through a manual `appintentsmetadataprocessor` step | **Passed** (CI 2026-10-22; run time in Session A). The edit sheets show the parameters: Battery's (headed "Battery", "BatteryPulse" and the gallery description) has Layout, Main value and Time at 0.6.1's defaults (Automatic, Charge, Clock time), and Custom adds Details, with 4 slots on medium; the test kind's has Main value, Details (4 on medium, more on extra large) and Device (SPIKE-W, #282). Neither sheet shows the `ParameterSummary` line ("Show Charge" appears nowhere) | W-2, then the configurable kind (G7-1). `ParameterSummary` stays for its `When` clauses (Details appears only with Custom), but nothing relies on its sentence: the look check and Session R don't ask about it, and its `Summary` keys are kept plain (§8) | — |
 | **W0-1 (a):** the per-family `size:` overload compiles against macOS 27.0 | **Only for entities** (CI, 2026-10-22): no `[AppEnum]` per-family `size:` overload compiles with Xcode 27.1, while an array of an `AppEntity` does; an integer literal per family is recorded as an exact size (min = max). The spike's Details is such an entity array, and its sheet shows 4 slots on medium | Details is an array of an `AppEntity` whose `id` is `BatteryWidgetField`'s frozen raw value and whose `EntityQuery` lists the fields (W-3a item 2), sized `IntentCollectionSize(min: 0, max: N)` with N = 1, 4, 8 and 12 (W-3a item 1) | Whether `init(min:max:)` compiles per family for an entity array: W-3a's first CI build. If it doesn't, the literals stay and W-3a's review decides how an empty Custom list behaves |
-| **W0-1 (b):** entity queries run in the ad-hoc extension | **Not answered:** no query line was logged, because the Device chooser was never opened | **Matters for the MVP now,** not only W-7: Details' chooser lists the fields through its `EntityQuery` (W0-1 (a)). W-7 uses an `AppEnum` (most recent, lowest) unless queries run | W-0 asks the final `A.md` to open the Details and Device choosers once. If queries don't run, W-3a's Details become per-slot optional `AppEnum` parameters, a frozen-name choice W-3a's review makes before its merge |
+| **W0-1 (b):** entity queries run in the ad-hoc extension | **Not answered, final:** no `spike query` line in any segment, because the Device chooser was never opened, and A.md doesn't say whether Details' was (its slots stayed "Choose"; if it was opened, the missing query line counts against the inference below). The Refresh button's perform did run in the extension (W0-1 (c)), so the ad-hoc extension serves App Intents requests, which suggests queries run too [inference] | **Matters for the MVP,** not only W-7: Details' chooser lists the fields through its `EntityQuery` (W0-1 (a)). W-7 uses an `AppEnum` (most recent, lowest), since queries aren't shown to run | W-3a's review chooses before its merge, with nothing more to wait for: G7-1's default, per-slot optional `AppEnum` parameters, or the entity on the inference above, with Session R step 4.1's chooser as its check (a chooser that lists nothing is then a fix before release, by a re-freeze: new RC-U and RC-F, then Session R steps 2-4 again) |
 | **W0-1 (c):** button performs run | **Ran, in the widget extension** (`process=widgetExtension`), not in the app | Nothing in 0.7: the buttons are W-9, after 1.0, which now knows where its performs run | — |
-| **W0-1 (d):** the extracted `Summary` keys | Not in the interim report | The placeholder rule as it stands, or one reasoned exception limited to the widget's intent files (P2 §8.11) | W-2's CI dumps the keys, and the exception is decided then |
-| **W0-2:** placed widgets survive SPIKE-C, then SPIKE-W | **Passed, once the old extension is ended before the swap.** The first SPIKE-W install (#282) greyed the placed widgets: at the version change chronod refetched the descriptors within about 2 ms from the old `BatteryPulseWidget` process still running, cached version 282 with the previous static descriptor, and every reload then failed (CHSErrorDomain 1103, "Connection to extension process was invalidated"). With the old extension ended and SPIKE-W installed again (W2, run #307, a build number chronod hadn't cached), the retest passed: the widgets placed under 0.6.1 (small, medium) and under SPIKE-I (medium) redrew in today's look with fresh values. So a widget placed by 0.6.1 survives its kind becoming an `AppIntentConfiguration`, with the Automatic default, when the descriptor fetch reaches the new extension | Configuration on today's kind, with Automatic as a placed widget's default (G7-2). 0.6.2's installer ends the extension before the swap (WP-16 item 6; D-17), so 0.6.2 → 0.7 is clean; 0.7's first launch keeps `endPreviousExtension()`; D1's growing build number stays, because chronod caches descriptors by `CFBundleVersion` (W-3a item 10). No new kind and no fallback branch | The final `A.md`'s SPIKE-C and SPIKE-I answers with `pluginkit`. Session R step 2 and §6.4 confirm; a copy from the DMG over a running extension stays a risk (§6.5) |
-| **W0-3:** a file or preference domain the widget can read (A, A′; B as a last resort) | **Passed with both:** A (the home-relative-path read-only exception) and A′ (the shared-preference read-only exception) each read the app's 55 bytes, under ad-hoc signing on macOS 27 | The stretch may run (G7-5), **on candidate A**: `/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/` (home-relative). Why A, not A′: P2 §8.3's feed is designed as a file, written atomically, 0700 and 0600 like `Devices/`, at most 8-12 KB, rewritten at once on Clear History or Forget, and counted in D1's storage round trip; the exception names one folder, so the widget can read nothing else of ours. A′ would keep that history in a preference domain, cached by cfprefsd in its own files, outside the folders Clear History and Forget manage. A′ stays the fallback behind W-5's one reader type, if a macOS 27.x update denies A (NOTES27 178668601) | A read of data the app wrote while the widget wasn't running (the final `A.md`). If the budget runs out: 1.1 on A |
+| **W0-1 (d):** the extracted `Summary` keys | Not in the final `A.md` either: no step dumped them | The placeholder rule as it stands, or one reasoned exception limited to the widget's intent files (P2 §8.11) | W-2's CI dumps the keys, and the exception is decided then |
+| **W0-2:** placed widgets survive SPIKE-C, then SPIKE-W | **Passed, once the old extension is ended before the swap.** SPIKE-C over 0.6.1 and SPIKE-I over SPIKE-C kept the placed small and medium widgets as they were (answers 1; `pluginkit` lists the widget, 0.0.0, from `/Applications`); large and extra large weren't asked, since only small and medium are declared. The first SPIKE-W install (#282, over SPIKE-I) failed: at the version change chronod fetched the descriptors in 2 ms, before SPIKE-W's extension started, from SPIKE-I's still running, and cached version 282 with its one static descriptor. The placed widgets lost Edit Widget, the gallery offered no Test widget, and every reload failed (CHSErrorDomain 1103, "Intent configuration is required but was not provided"); they turned grey only when a chronod restart dropped the cached snapshots. Installed again with the old extension ended (by hand, then W2, run #307, by the script, the extension ended about 20 ms before the swap), chronod fetched both descriptors from the new extension, and the widgets placed under 0.6.1 (small, medium) and under SPIKE-I (medium) redrew in today's look with fresh values, Automatic by default (answers 1). So a widget placed by 0.6.1 survives its kind becoming an `AppIntentConfiguration` when the descriptor fetch reaches the new extension. The reverse race repaired itself (chronod refetches descriptors with unresolved default intents), but a static descriptor cached for a configurable version never qualifies, so it stays until the next version change. Reinstalling 0.6.1 over W2 kept every Battery widget (answer 1); the Test widgets, a kind 0.6.1 lacks, kept W2's last picture | Configuration on today's kind, with Automatic as a placed widget's default (G7-2). 0.6.2's installer ends the extension before the swap (WP-16 item 6; D-17), so 0.6.2 → 0.7 is clean; 0.7's first launch keeps `endPreviousExtension()`; D1's growing build number stays, because chronod caches descriptors by `CFBundleVersion` (W-3a item 10). No new kind and no fallback branch | Session R step 2 and §6.4 confirm; a copy from the DMG over a running extension stays a risk, and doesn't repair itself (§6.5) |
+| **W0-3:** a file or preference domain the widget can read (A, A′; B as a last resort) | **Passed with both:** A (the home-relative-path read-only exception) and A′ (the shared-preference read-only exception) each read the app's 55 bytes, under ad-hoc signing on macOS 27 | The stretch may run (G7-5), **on candidate A**: `/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/` (home-relative). Why A, not A′: P2 §8.3's feed is designed as a file, written atomically, 0700 and 0600 like `Devices/`, at most 8-12 KB, rewritten at once on Clear History or Forget, and counted in D1's storage round trip; the exception names one folder, so the widget can read nothing else of ours. A′ would keep that history in a preference domain, cached by cfprefsd in its own files, outside the folders Clear History and Forget manage. A′ stays the fallback behind W-5's one reader type, if a macOS 27.x update denies A (NOTES27 178668601) | A read of data the app wrote while the widget wasn't running: the final `A.md` can't show it, since its lines print the feed's age as `age=Ns`, so it stays with W-5 (its tests, then Session R if W-5 ships). If the budget runs out: 1.1 on A |
 | **W0-4 (1):** accessory batteries from the sandbox | **Passed:** the sandboxed widget read them itself ("spike accessories sources=2 accessories=1") | W-8 in the MVP (G7-8) | — |
 | **W0-4 (2):** the rendering mode per Icon & widget style, Dim widgets and place | **No data from logs:** no "spike render" line reached the log from any process. Screenshots of the four Icon & widget styles on the desktop (focused and not) and in Notification Center show the widgets redraw per style | Design for all three modes everywhere (W-3b item 6). Screenshots are the only evidence: Session A's, then Session R step 5's (G7-4). Nothing in 0.7 logs the mode | Why the render line never reached the log [uncertain] |
 | **W0-4 (3):** `redactionReasons` and `showsWidgetContainerBackground` | **No data:** the same render line carried them | `.privacySensitive()` on names stays a cheap defence (P2 §8.8) | — |
-| **W0-4 (4), (5):** what a click delivers; whether `widgetURL` needs a registered scheme | **The `widgetURL` arrives, with no scheme registered** (SPIKE-W registers none): "spike click url scheme=batterypulse page=overview windows=1 active=true", through the app delegate's `application(_:open:)`, with no window open and with the main window open. No `NSUserActivity` arrived | W-3c handles the URL alone: no activity handler and no registered scheme (G7-9). W-1's route takes the `batterypulse` scheme seen arriving (W-1 item 8), and every widget sets exactly one `widgetURL` (W-3a item 6) | A click with BatteryPulse quit: Session R step 8 |
-| **W0-5:** VoiceOver on today's widget; Text size | **From the maintainer's phone photos** (the test widget on the desktop): focusing the widget reads "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image"; one step inside, "In Three-Quarter-Charged Battery, image, content is empty". So VoiceOver walks the widget as 9 separate items, reads the SF Symbol by its own name (the 75 % bucket) instead of the charge, and announces an empty group. Russian VoiceOver, the rotor and Text size weren't done: driving VoiceOver was too hard for the maintainer | W-3b item 5's requirements: decorative symbols hidden, the charge as its own element whose label carries the value, each row one element, no empty group, a button (W-9's, after 1.0) its own element. A Linux-tested label builder (`WidgetAccessibility`) makes every label, and Session R step 7 reads the tree through System Events or Accessibility Inspector, never by asking the maintainer to drive VoiceOver (G7-12) | Whether Text size reaches desktop widgets [unverified]: Session R step 7 |
-| **W0-6:** the offset format counts down without a reload | **Passed with `sign: .never`:** variant a (the default sign) printed "-2 hours, 6 minutes" (an offset to a later date is signed), variant b (`sign: .never`) printed "2 hours, 6 minutes", and the minutes ticked down without a reload | Time offers clock time or time left (G7-3), written `Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute], sign: .never))` in one helper (W-1 item 4) | Russian: pending in Session A; otherwise Session R step 4.3 |
+| **W0-4 (4), (5):** what a click delivers; whether `widgetURL` needs a registered scheme | **Two routes, and no scheme needed** (SPIKE-W registers none). A click on a widget with a `widgetURL` (the medium Battery widget) arrives as the URL through the app delegate's `application(_:open:)`: "spike click url scheme=batterypulse page=overview windows=1 active=true", once with no window open and once with the main window open. Two clicks on the body of the Test widget, which sets none, arrived as an `NSUserActivity` through `application(_:continue:restorationHandler:)`: its type is the intent's type name (`SpikeWidgetIntent`), its user info holds `WGWidgetUserInfoKeyFamily` and `WGWidgetUserInfoKeyKind`, and it has no `webpageURL` ("spike click activity type=other … webpageURL=false windows=0 active=true"). The interim report saw no activity | W-3c handles both routes and registers no scheme (G7-9): the URL through `WidgetRoute(url:)`, the activity through `WidgetRoute(activityType:)`, which maps our intent type names to their kind's page (W-1 item 8). W-1's route takes the `batterypulse` scheme seen arriving, and every widget still sets exactly one `widgetURL` (W-3a item 6), so the activity is the fallback for a click without one | A click with BatteryPulse quit: Session R step 8, which also records each click's route. The user info's values (only its keys were logged) [unverified]: the route relies on the activity's type alone |
+| **W0-5:** VoiceOver on today's widget; Text size | **VoiceOver, from the maintainer's phone photos** (the test widget on the desktop, in English): focusing the widget reads "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image"; one step inside, "In Three-Quarter-Charged Battery, image, content is empty". So VoiceOver walks the widget as 9 separate items, reads the SF Symbol by its own name (the 75 % bucket, at 80 %) instead of the charge, and announces an empty group. **The tree,** read through System Events (Finder's desktop group holds one group per desktop widget, described "widget"): the medium widget is 9 flat elements, an image with no label or value and 8 separate texts ("83%", "Not charging", then each label and value apart); the small one the image and 2 texts; the Test widget 8 texts and a button, each time-left letter apart from its value. No element pairs a label with its value. **Text size: no effect** at 17 pt, the widgets pixel-identical (answer 2). Russian VoiceOver and the rotor weren't done: driving VoiceOver was too hard for the maintainer | W-3b item 5's requirements: decorative symbols hidden, the charge as its own element whose label carries the value, each row one element, no empty group, a button (W-9's, after 1.0) its own element. A Linux-tested label builder (`WidgetAccessibility`) makes every label, and Session R step 7 reads the tree through the session's `ui` helper or Accessibility Inspector, never by asking the maintainer to drive VoiceOver (G7-12). **Text size, decided:** it doesn't reach desktop widgets, so no layout depends on it; W-3b keeps text styles, and step 7 keeps one shot as a record | — (step 7 reads the tree in English and Russian) |
+| **W0-6:** the offset format counts down without a reload | **Passed with `sign: .never`, in English and Russian.** Variant a (the default sign) printed "-2 hours, 0 minutes" (an offset to a later date is signed) and variant b (`sign: .never`) "2 hours, 0 minutes"; 65 s later both had gone down by one ("-1 hour, 59 minutes" and "1 hour, 59 minutes") on the same entry, without a reload. No seconds; a zero minutes field shows, and under an hour the hours field drops ("10 minutes"). Earlier frames read "2 hours, 10 minutes" and "2 hours, 6 minutes". In Russian, once redrawn, b read the Russian for "2 hours 12 minutes" without the comma, and a the same with a minus sign; a widget not yet redrawn kept its English text and English minutes | Time offers clock time or time left (G7-3), written `Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute], sign: .never))` in one helper (W-1 item 4) | — |
 
 ### 2.3 If 0.6.2's widget spikes never ran (W-0S): not needed
 
 Session A ran every widget spike on 2026-10-23 (§2.2), so W-0S has no cause, and no spike sitting
 comes before 0.7's code. W-1 and S-1 can start at once; W-2 and the widget packages start from §2.2's
-answers. If the final `A.md` contradicts the interim report (W0-2 above all), W-0 reopens that row
-before W-3a starts, and W0-1 (b)'s answer (the Details chooser) is asked of it before W-3a writes
-Details (§2.2).
+answers. The final `A.md` (2026-10-24) kept W0-2's answer and reversed only W0-4 (4)'s "no
+`NSUserActivity`" (W-3c item 2 handles both routes); it left W0-1 (b) unanswered, so W-3a's review
+makes the Details choice before its merge (§2.2).
 
 ### 2.4 Decisions needed before code, as answered on 2026-10-22 (Q7-10 on 2026-10-23)
 
@@ -418,16 +452,18 @@ guards; acceptance; effort; risk; rollback.
 - **Items:**
   1. Read 0.6.2's Appendix C (in `docs/plans/0.7.0/widgets.md`, or the copy or kept branch of D-1).
      Fill this plan's Appendix C table "From 0.6.2" with each D-row and each W0 row. Session A's
-     interim answers are already there (2026-10-23); this item completes them from the final
-     `A.md` on `claude/062-session-a`, and checks that D-13's redacted capture and D-17's installer
-     fix arrived. **Asked of the final `A.md`** before W-3a: the Details and Device choosers opened
-     once (W0-1 (b)), SPIKE-C's and SPIKE-I's W0-2 answers, the offset text in Russian (W0-6; the
-     English is settled, Appendix C row 5), the 80 → 100 → 80 timeline rows and the Russian Charge
-     Limit screenshot (D-13), and the Charge Limit's evening reads with their exact values, plus
-     the pending ones (Appendix C finding 9; FEA-35's 0.8 half).
-  2. §2.2 already records each spike's answer and its scope in §4's packages (2026-10-23). Check it
-     against the final `A.md`, and reopen any row it contradicts, as one commit to the committed
-     plan.
+     final answers are already there (2026-10-24, from `docs/plans/0.6.2/sessions/A.md`, merged at
+     `5849d01`), and D-13's redacted capture came with them; this item checks that D-17's installer
+     fix arrived. **What the final `A.md` brought of what this plan asked:** SPIKE-C's and SPIKE-I's
+     W0-2 answers (passed), the offset text in Russian (passed, W0-6), the 80 → 100 → 80 reads (the
+     100 % diff, as reads a minute after each change rather than timeline rows), the redacted
+     capture, and the Charge Limit's evening reads with their exact values plus the pending ones
+     (Appendix C finding 9; FEA-35's 0.8 half). **Not brought:** the Details and Device choosers
+     (never opened, so W0-1 (b) stays with W-3a's review, §2.2) and the Russian Charge Limit
+     screenshot (D-13).
+  2. §2.2 records each spike's final answer and its scope in §4's packages (2026-10-24, checked
+     against the final `A.md`, whose one reversed finding, W0-4 (4)'s activity, reopened W-3c's
+     click route). It lands as one commit to the committed plan.
   3. Re-resolve every file:line of this plan at the v0.6.2 tag. WP-15's git moves and WP-10's edits
      shift most of them.
   4. Check that every decision is still as recorded on 2026-10-22 and 2026-10-23: M-1, M-2, M-3,
@@ -436,7 +472,8 @@ guards; acceptance; effort; risk; rollback.
   6. **Before 0.6.2's branches are deleted** (the integration branch `claude/nice-faraday-k08mhb`,
      and `claude/062-*`; this is asked of 0.6.2's D3 too): check that
      `docs/plans/0.7.0/` holds 0.6.2's `m5-session.sh`, its swap helper, the hands-free helpers
-     (`ui.swift`, `frames.swift`, `SESSION-B.md`) and the whole P2 Appendix C (D-1, D-11). If
+     (`ui.swift`, `frames.swift`, `SESSION-B.md`), the whole P2 Appendix C and Session A's report
+     (`sessions/A.md` with its files; D-1, D-11). If
      not, read them from the 0.6.2 release PR's `refs/pull/<n>/head` (Q7-8).
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
@@ -598,6 +635,12 @@ guards; acceptance; effort; risk; rollback.
        arrive with no scheme registered (§2.2 W0-4 (4), (5)). `claude/070-w1` chose
        `io.github.nikitausov.batterypulse`; its rebase onto v0.6.2 changes the scheme and its pin in
        one commit, before anything ships it.
+     - **`WidgetRoute(activityType:)`:** a click without a `widgetURL` arrives as an
+       `NSUserActivity` whose type is the intent's type name (Session A: `SpikeWidgetIntent`, §2.2
+       W0-4 (4)). It maps the manifest's intent type names (item 10) to their kind's natural page
+       (`BatteryWidgetIntent` → Overview; W-8 adds `AccessoriesWidgetIntent` → Accessories) and
+       rejects any other type. It reads no user info, since Session A logged only its keys. The
+       rebase adds it in a commit of its own.
   9. **`ReadCoalescer<Value>`:** the pure logic of the widget's read cache. Requests within 5 s share
      one in-flight read and its result; there is a manual clock for tests.
   10. **`WidgetIntentManifest`:**
@@ -631,7 +674,8 @@ guards; acceptance; effort; risk; rollback.
     3 entries. An estimate ending between +30 and +45 minutes isn't shown on the stale entry. The
     stale entry shows the same clock time as the first.
   - **`WidgetRoute`:** round trips; rejects other schemes and hosts, unknown pages, `developer`,
-    `demo`, invalid `DeviceKey`s, and `DeviceKey.demo`.
+    `demo`, invalid `DeviceKey`s, and `DeviceKey.demo`; each intent type name maps to its kind's
+    page, and any other activity type is rejected.
   - **`ReadCoalescer`:** N concurrent requests within 5 s make 1 read; a request after 5 s makes a
     new read; a failed read isn't cached.
   - **`WidgetSurfaceTests`, the frozen-value pin** (P2 §8.13):
@@ -686,6 +730,24 @@ guards; acceptance; effort; risk; rollback.
      - its ceiling in `size-budget.json`, set at the RC plus about 5 % in D1, in a commit of its
        own;
      - it also counts toward `app_kb` (P2 §8.12).
+  5. **The edit sheet's strings** (Appendix C row 10; D-8; G7-13). In Session A the widgets followed
+     the extension's Russian `AppleLanguages`, but the edit sheet stayed English, although the
+     spike's strings had their Russian in the catalog. The system draws the sheet from
+     `Metadata.appintents`, so either the hand-extracted metadata doesn't carry those strings in a
+     form it localizes, or it resolves them in its own language, not the extension's [unverified
+     which]. So:
+     - **The check:** `appintents-check` lists every string the sheet shows (the intent's title and
+       description, each parameter's title, each `AppEnum` type and case, the Details entity's
+       type name, each `Summary`) with the key and table the metadata records, and fails unless
+       each is a catalog key with its Russian that the widget bundle's compiled `ru.lproj` table
+       holds. If `extract.actionsdata` records resolved text instead of keys, the check fails and
+       says so.
+     - **The fix, if it fails:** the step passes the processor the localization inputs Swift
+       Build's spec gives it (P2 Appendix B) [unverified which], or `build-app.sh` writes the
+       intent keys into the table the metadata names, until the check passes, before W-3a merges.
+     - **If it passes,** the English sheet came from the method, not the build: Session R step 4.3
+       sets BatteryPulse's own language as well, and a sheet still English is "not checked"
+       (G7-13), never a failure.
 - **Files:** `scripts/build-app.sh`, the new `scripts/appintents-check.swift` and
   `scripts/appintents-sample.actionsdata`, `.github/workflows/ci.yml`, `scripts/size-report.sh`,
   `scripts/size-budget.json`.
@@ -696,6 +758,7 @@ guards; acceptance; effort; risk; rollback.
   - The macOS log shows the step "skipped (no intents)" before W-3a, and "N intents, M parameters, K
     cases" after.
   - The self-test fails on the doctored copy.
+  - The check lists the edit sheet's strings with their keys and Russian (item 5).
 - **Effort:** M, 2 runs. **Risk:** low-medium.
   - The processor's options come from Swift Build's spec (P2 Appendix B), and SPIKE-W's build
     (#282) on the runner's Xcode 27.1 (ci.yml:63) showed they work (§2.2 W0-1).
@@ -783,9 +846,12 @@ guards; acceptance; effort; risk; rollback.
        `DisplayRepresentation(title:)` the field's catalog label, and its `EntityQuery` lists the
        fields that fit, in the extension, like SPIKE-W's `SpikeDetailQuery`. The pin test covers
        the ids.
-     - **Whether the query runs** in the ad-hoc extension is W0-1 (b), asked of the final `A.md`;
-       if it doesn't, Details become per-slot optional `AppEnum` parameters, decided in this
-       package's review before its merge (§2.2).
+     - **Whether the query runs** in the ad-hoc extension is W0-1 (b), which the final `A.md`
+       left open (the Device chooser was never opened, and A.md doesn't say whether Details' was: its slots stayed "Choose"). This package's review chooses before its merge:
+       G7-1's default, per-slot optional `AppEnum` parameters shown per family with
+       `When(widgetFamily:)`, or this entity, on the inference that the extension serves App
+       Intents requests (its perform ran there, W0-1 (c)), with Session R step 4.1's chooser as
+       the check (§2.2).
   3. **`AppIntentConfiguration(kind: BatteryWidgetKind.battery, intent:, provider:)`:**
      - `.supportedFamilies([.systemSmall, .systemMedium])` here; W-3b adds the rest.
      - `.containerBackground(.fill.tertiary, for: .widget)` as today.
@@ -832,8 +898,9 @@ guards; acceptance; effort; risk; rollback.
         extension stays cached for that build number. D1's growing build number stays (§6.5), and
         no two builds the M5 installs share a number;
       - a copy from the DMG over a running 0.6.x extension can still cache 0.7's build number with
-        the old descriptor, and its recovery is unverified (P2 §8.16), so the guide keeps "add it
-        again if it's gone" for that path (§6.5, §12).
+        the old descriptor, which Session A saw stay until the next version change (chronod's
+        refetch skips a static descriptor, and a chronod restart kept it; P2 §8.16), so the guide
+        keeps "add it again if it's gone" for that path (§6.5, §12).
 
       No new kind and no fallback branch: the evidence points at the extension, not at the
       configuration (G7-2).
@@ -953,7 +1020,7 @@ guards; acceptance; effort; risk; rollback.
 ### W-3b: Large and extra large, visuals, the attention row, accessibility, rendering modes (P1)
 
 - **Source:** P2 §8.5, §8.7, §8.15, §8.17; INV A11Y-06; HIG; the §2.2 rows for W0-4 (2) and W0-5
-  (the maintainer's VoiceOver photos, Appendix C); Q-W4, Q-W10, Q-W13.
+  (the maintainer's VoiceOver photos and the tree read, Appendix C row 8); Q-W4, Q-W10, Q-W13.
 - **Items:**
   1. **`.systemLarge`:** Automatic shows the charge block and 8 details in two columns (P2 §8.17).
   2. **`.systemExtraLarge`, only with Q-W10's explicit approval in the look check** (decided by
@@ -980,7 +1047,8 @@ guards; acceptance; effort; risk; rollback.
        offered: look-check question 8 asks only "on" or "never".
   5. **Accessibility** (P2 §8.15), with W0-5's requirements (§2.2: on today's widget VoiceOver read
      "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image", then "In
-     Three-Quarter-Charged Battery, image, content is empty"):
+     Three-Quarter-Charged Battery, image, content is empty"; the tree behind it is 9 flat
+     elements, an unlabelled image and 8 separate texts):
      - **Decorative symbols are hidden** (`accessibilityHidden(true)`): the level symbol, the cue's
        symbol beside its word, device and accessory glyphs. The level symbol's bucket also
        contradicts the number: `battery.75percent` stands for 63-87 %
@@ -999,7 +1067,8 @@ guards; acceptance; effort; risk; rollback.
        values (W-1's `WidgetRow` keeps labels as keys), so the views only localize and apply them.
        Tested on Linux (below).
      - **Text styles,** except the hero number. Values never truncate, and the planner drops a row
-       instead.
+       instead. Text size doesn't reach desktop widgets (no change at 17 pt, §2.2 W0-5), so no
+       layout depends on it.
      - **Checked without driving VoiceOver:** Session R step 7 reads the widgets' accessibility tree
        with the session's `ui` helper (AX at each widget's hit-tested frame), or points
        Accessibility Inspector at each widget by computer use (G7-12). The Russian labels are read the same way, with the extension in Russian (D-8).
@@ -1024,7 +1093,8 @@ guards; acceptance; effort; risk; rollback.
   layout on the M5 fixtures, in English and Russian (the catalog read as `WidgetTextBudget` does):
   - the charge element's label contains the formatted charge, and no label contains an SF Symbol
     name (`battery.`, `percent`) or its spoken form;
-  - the element count equals the blocks and rows the plan shows (today's widget made 9 items);
+  - the element count equals the blocks and rows the plan shows (today's medium widget made 9
+    flat elements: the symbol and 8 texts);
   - each row's label is "label, value", in the plan's order; no element has an empty label;
   - the state word and the attention row's words appear in the labels, so colour and symbol are
     never the only signal.
@@ -1057,9 +1127,16 @@ guards; acceptance; effort; risk; rollback.
      - `AppDelegate.application(_:open:)` takes the URL, through `WidgetRoute(url:)`. Session A
        saw exactly this: the `widgetURL` arrived there, with no window open and with the main
        window open (§2.2 W0-4 (4), (5)).
-     - **No activity handler:** no `NSUserActivity` arrived in Session A, so
-       `application(_:continue:restorationHandler:)` isn't added. Every widget sets exactly one
-       `widgetURL` (W-3a item 6), so no click comes without one.
+     - **The activity route too:** a click on a widget body without a `widgetURL` arrived in
+       Session A as an `NSUserActivity` whose type is the intent's type name
+       (`SpikeWidgetIntent`), with the family and kind keys in its user info and no `webpageURL`
+       (§2.2 W0-4 (4)). So `application(_:continue:restorationHandler:)` takes it through
+       `WidgetRoute(activityType:)` (W-1 item 8): the kind's natural page without a
+       configuration, since the activity carries none we read, and `false` for any other type.
+       Every widget still sets exactly one `widgetURL` (W-3a item 6), so this is the fallback for
+       a click the URL misses; it brings back P2 §8.9's handler for a kind-only click.
+     - Each click logs how it arrived (`url` or `activity`) and its page as case names (§11),
+       never a URL or the activity's values.
      - The app never imports App Intents (REJ-60), so `widgetConfigurationIntent(of:)` isn't used.
   3. **`WindowOpener.showMainWindow(page:)`** (`App/AppSettings.swift:224-240`):
      - A click with a page opens the main window at that page, because the compact window has no
@@ -1084,8 +1161,9 @@ guards; acceptance; effort; risk; rollback.
        navigation-only scheme registered before release (G7-9).
 - **Linux tests:** `WidgetRoute` (W-1), and a source test that `PageID` equals `storageKey`'s
   literals (W-1's pin).
-- **Guards:** `SecurityGuardTests` gains a placement: `application(_:open:)`, `onOpenURL` and
-  `handlesExternalEvents` appear only in `App/BatteryPulseApp.swift` (the delegate), and
+- **Guards:** `SecurityGuardTests` gains a placement: `application(_:open:)`,
+  `application(_:continue:restorationHandler:)`, `onOpenURL` and `handlesExternalEvents` appear
+  only in `App/BatteryPulseApp.swift` (the delegate), and
   `CFBundleURLTypes` nowhere in `scripts/build-app.sh` unless G7-9 adds it (a plain-text read of
   the script, as `HistoryTests.swift:251-256` reads it for the bundle ID, since `SourceScanner`
   covers only the Swift files of `Sources/`).
@@ -1094,7 +1172,8 @@ guards; acceptance; effort; risk; rollback.
 - **Acceptance:**
   - Both jobs green; the CI launch smoke.
   - Session R step 8: a click opens the right page with BatteryPulse quit, with no window open,
-    with the main window open, and with Window to open set to compact.
+    with the main window open, and with Window to open set to compact, and each click's route is
+    recorded.
 - **Effort:** M, 2 runs. **Risk:** medium (activation of an agent app with no window; Session A saw
   the app come forward with `active=true`).
 - **Rollback:** revert. A click then just opens the app, as in 0.6.1.
@@ -1188,33 +1267,34 @@ guards; acceptance; effort; risk; rollback.
          Terminal is the one grant he may have revoked (Screen Recording and Automation stay from
          Session A, P2 §6), kept from Session B or asked again by preflight while the maintainer
          is there, and `restore` reminds him that he may revoke it at the end of the series;
-       - `prepare` reads the Charge Limit with `pmset -g battlimit` (no IOKit key holds it,
-         Session A; [unverified below the limit], else a shot of System Settings → Battery). A
+       - `prepare` reads the Charge Limit with `pmset -g battlimit` on the adapter (no IOKit key
+         holds it, and `battlimit` holds the limit only on AC, below it too, Appendix C finding
+         9), else a shot of System Settings → Battery. A
          step changes it only on his yes, by computer use (or by his hand at two beeps if the
          slider asks for a password), at most 10 minutes at 100 %, and `restore` confirms it is
          back.
-     - **`charge-limit`** (QUA-05), needed if no redacted capture came from the final `A.md` or
-       Session B (D-13), or for the 100 % diff if the session's 80 → 100 → 80 recording doesn't
-       settle it (W-14 "Still open"). It runs on its own, any time after W-12 merges (A3) and before
-       C1, building `bpulse` from the checkout if `prepare` hasn't (v0.6.2's `--record` is enough),
-       because W-14 needs both by C1 (G7-18). It runs from a short local session with computer
+     - **`charge-limit`** (QUA-05): not needed for W-14, since the final `A.md` brought the
+       redacted capture and the 100 % diff (D-13). W-12 still builds it, because 0.8's FEA-35
+       check reads the number's candidates with it, at the limit on AC and then on battery (RD
+       §3.3), building `bpulse` from the checkout if `prepare` hasn't (v0.6.2's `--record` is
+       enough). It runs from a short local session with computer
        use, as Session R does (its start line and sentence: §6.2, "The short sessions"): the
        maintainer starts it and says yes, with the adapter in, and gives his yes before `send`
        when he is back (about 2 minutes in all). It reads the limit with `pmset -g battlimit` on
-       the adapter [unverified below the limit: Session A saw it only at the hold, and it clears
-       on battery, Appendix C finding 9], else from a shot of System Settings → Battery → (i) next
+       the adapter (which holds it below the limit too, and nothing on battery, Appendix C finding
+       9), else from a shot of System Settings → Battery → (i) next
        to Charging, and checks that the charge is at least 5 points below it, so it runs after a
        discharge. It then starts `caffeinate -i .build/release/bpulse --record` into a new, empty
        folder under `~/bp-070/` (UG:579-583: `caffeinate -i` keeps the Mac awake, and the folder
-       must not hold an earlier recording), and says whether `NotChargingReason` gained bit 24
-       when charging stops at the limit (W-14's decision). Then the session sets the limit to
-       100 % by computer use in System Settings → Battery → (i) next to Charging → Charge Limit
+       must not hold an earlier recording), and says whether `NotChargingReason` gained bit 24 when
+       charging stops at the limit (as in Session A's reads, W-14). Then the session sets the limit
+       to 100 % by computer use in System Settings → Battery → (i) next to Charging → Charge Limit
        (Apple's path, https://support.apple.com/102338 [unverified on macOS 27]), for at most 10
-       minutes, and back, confirmed by `pmset -g battlimit` or the same shot. If Session B
-       recorded that the slider asks for a password or Touch ID (P2 §6, the start's question on
-       the slider), the session never moves it: he moves it at the session's two beeps, to 100 %
-       and back (+1 min). The script prints the `NotChargingReason`, `IsCharging`, `FullyCharged`
-       and charge rows around each change.
+       minutes, and back, confirmed by `pmset -g battlimit` or the same shot. If Session B recorded
+       that the slider asks for a password or Touch ID (P2 §6, the start's question on the slider),
+       the session never moves it: he moves it at the session's two beeps, to 100 % and back (+1
+       min). The script prints the `NotChargingReason`, `IsCharging`, `FullyCharged` and charge rows
+       around each change.
      - **`hold-watch`** (QUA-06): the same recording overnight under `caffeinate -i`; in the
        morning it says whether an optimized-charging hold was seen (R:76-77) [uncertain: whether
        macOS holds the charge while the Mac is kept awake].
@@ -1252,10 +1332,10 @@ guards; acceptance; effort; risk; rollback.
 ### W-14: The Charge Limit's "Charged to limit" state (P1; the maintainer's request, 2026-10-23; G7-18)
 
 - **Source:** the maintainer's request after Session A's capture (2026-10-23: show the Charge Limit
-  in the app, the menu bar and the widget; §14 Q7-10); Session A's findings 7 and 9 (9: the
-  number's candidates, read that evening) and the Charge Limit research of 2026-10-23 (Appendix
-  C); INV FEA-35 (added 2026-10-23: the state in 0.7, the number in
-  0.8, RD §3.2, §3.3); QUA-05, now captured (D-13); RD NEW-01 (0.8, "Why it isn't charging"), whose
+  in the app, the menu bar and the widget; §14 Q7-10); Session A's findings 7 and 9 (9: the number's
+  candidates and the 100 % diff, final in its `A.md`) and the Charge Limit research of 2026-10-23
+  (Appendix C); INV FEA-35 (added 2026-10-23: the state in 0.7, the number in 0.8, RD §3.2, §3.3);
+  QUA-05, now captured (D-13); RD NEW-01 (0.8, "Why it isn't charging"), whose
   Charge Limit cause this takes early; FEA-20 (1.1, the widget field), whose Charge Limit part this
   takes early; M-3 (BatteryPulse never sets a limit); Apple's support article on the Charge Limit
   (https://support.apple.com/102338: Apple silicon with macOS 26.4 or later; System Settings →
@@ -1279,10 +1359,20 @@ guards; acceptance; effort; risk; rollback.
   in none of `bpulse --raw`, three `ioreg` dumps, `pmset -g` and `pmset -g batt`, and the Mac's
   battery has no `ChargeLimit` or `OptimizedCharging` key ("Optimized Battery Charging Engaged"
   exists only in the AirPods' entries).
+- **What the final `A.md` adds** (Appendix C finding 9): at the hold, `IPDChargingAllowed` 0 and
+  `ChargerInhibitReason` 0. **The 100 % diff:** with the limit raised to 100 %, `NotChargingReason`
+  read 0 in both places (bit 24 cleared), `IsCharging` 1, `ChargingCurrent` 2,626 and
+  `IPDChargingAllowed` 1, and the charge rose; set back to 80 % with the charge at 83 %, bit 24
+  returned with `IsCharging` 0, `ChargingCurrent` 0, `IPDChargingAllowed` 0 and
+  `ChargerInhibitReason` 0x10001000. So bit 24 is the hold's cause; `IsCharging`, `ChargingCurrent`
+  and `IPDChargingAllowed` follow it, and `ChargerInhibitReason` doesn't. **After a plug-in** 8
+  points below the limit (72 %), `NotChargingReason` read 128 (bit 7), not bit 24, with no charging
+  for the first read; then the Mac charged to 80 % and held there.
 - **What 0.7 shows, and what it doesn't:**
   - **The "at limit" state only.** BatteryPulse says the limit was reached, never which limit, and
     never infers that the Charge Limit is off: at 100 % and on battery every candidate source looks
-    the same.
+    the same (Session A: no policy in powerd's plist or `battlimit`, and `prior.limit` 80, in
+    both).
   - **No ring or battery marker:** the number is unknown, and the widget knows only the current
     charge, so a tick would sit exactly at the end of the fill: an end stop, not a limit marker.
   - **No menu bar icon change:** a tick is unreadable at that size, and macOS's own battery item
@@ -1351,7 +1441,9 @@ guards; acceptance; effort; risk; rollback.
      (`BatteryPresentation.swift:155-169`) and W-4's planner keeps. It can also start without one:
      plugged in at or up to 5 % below the limit, the state goes from discharging to not charging
      with bit 7 (0x80, as `m5-macos27-plugged-in-10s.plist` reads on AC), and bit 24 may follow
-     with no state change [unverified: when bit 24 appears after such a plug-in]. So the planner
+     with no state change [unverified within 5 % of the limit: Session A's plug-in at 72 %, 8 points
+     below, read bit 7 (128) and not charging first, then charged, and the hold came at 80 %;
+     Session R step 9 records it near the limit]. So the planner
      reloads at once when `isAtSystemChargeLimit` changes, a fifth reason under the 5-minute
      minimum W-4's four share (W-4 item 1).
   7. **Docs, W-14's own lines:** UG's Overview and Power text, and its notifications text: the
@@ -1363,12 +1455,13 @@ guards; acceptance; effort; risk; rollback.
      `NotChargingReason` is set while the Charge Limit holds the charge", and its Layout lists
      `SystemChargeLimit`; W-10 checks both against the code.
 - **The fixture:** `Tests/BatteryCoreTests/Fixtures/m5-macos27-charge-limit.plist`, from the
-  session's `bpulse --raw` capture at the 80 % hold (`charge-limit-80.plist`, kept on the Mac),
-  redacted per the Fixtures README, and only if the maintainer says yes; with a row in the README
-  and a case in `Fixture.swift` (D-13). W-14 may start on a hand-edited copy of
-  `m5-macos27-charging.plist` carrying the capture's values, but merges only with the real one
-  (NEW-01's rule); the copy is never committed under an `m5-macos27-` name, which CL keeps for real
-  captures. Without the real one by C1, W-14 moves whole to 0.8 (G7-18).
+  session's `bpulse --raw` capture at the 80 % hold, which came with the final `A.md` on the
+  maintainer's approval (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, 21:37; serials,
+  manufacturer data and `MfgData` read REDACTED; no UDID or device name). W-14 checks it against
+  the Fixtures README and commits it under that name, with a row in the README and a case in
+  `Fixture.swift` (D-13); `docs/plans/` never reaches main (D-1), so the fixture's copy is what
+  ships. With the real capture in hand, no hand-edited stand-in is needed (NEW-01's rule). Only a
+  capture that fails the README's check would move W-14 whole to 0.8 (G7-18).
 - **BatteryCore decisions and Linux tests** (`Tests/BatteryCoreTests/SystemChargeLimitTests.swift`):
   - the fixture is at the limit, with bit 24 in AppleSmartBattery and in its child;
   - every other M5 fixture and both `synthetic-legacy-*` are not (`m5-macos27-charging` has reason
@@ -1390,11 +1483,11 @@ guards; acceptance; effort; risk; rollback.
 - **Keys (§8), listed in English only:** "Charged to limit" · "Charge limit" · "Reached" ·
   "Charging stopped at the Charge Limit set in System Settings → Battery." · the glossary line with
   its added sentence. Each lands with its Russian in W-14's commit (CL). The Russian follows Apple's
-  Russian support article for the Charge Limit (https://support.apple.com/ru-ru/102338), which
-  gives Apple's terms for Charge Limit, the battery menu's "Charged to [%] Limit" and Charge to
-  Full Now, and System Settings → Battery's own string, verified in W-10's terminology pass against
-  D-13's screenshot, asked of the final `A.md` (W-0 item 1); without one, Apple's Russian article
-  stands. Session R step 9b only confirms it, and a mismatch is a one-key fix forward before D3.
+  Russian support article for the Charge Limit (https://support.apple.com/ru-ru/102338), which gives
+  Apple's terms for Charge Limit, the battery menu's "Charged to [%] Limit" and Charge to Full Now,
+  and System Settings → Battery's own string, verified in W-10's terminology pass; D-13's screenshot
+  didn't come with the final `A.md`, so Apple's Russian article stands. Session R step 9b only
+  confirms it, and a mismatch is a one-key fix forward before D3.
   The catalog's translation of "Charging on hold" (Optimized Charging's hold) is not reused for
   the Charge Limit.
 - **Files:** `Sources/BatteryCore/SystemChargeLimit.swift`, `Sources/BatteryCore/Widget/*` (the
@@ -1416,56 +1509,63 @@ guards; acceptance; effort; risk; rollback.
 - **Effort:** M, 2 runs [estimate]. RD §3 and §3.2 count them beside the 28-31 (FEA-35); RD §3.3
   nets FEA-35's 0.8 number at +1-2 runs, since NEW-01's Charge Limit cause moved here.
 - **Risks:**
-  - **Bit 24 is undocumented.** It rests on one M5 capture plus public reports from other Macs,
+  - **Bit 24 is undocumented.** It rests on Session A's reads on one M5 (bit 24 at each read of
+    the hold, and its clearing at 100 %) plus public reports from other Macs,
     and a macOS 27.x update could move it. W-12's quick check (item 3) and Raw Data show it.
   - **Optimized Charging's hold may set the same bit** [unverified, QUA-06]. The M5 reports that
     hold's flag for no battery of its own, so IOPS can't tell the two holds apart; W-12's
     `hold-watch` records one.
   - **The app's own alert:** "When charged to 90 %" never fires under an 80 % limit; the guide says
     so (item 7).
-- **Still open until a 100 % diff** (the limit raised from 80 to 100 % while held, then set back;
-  the session's 80 → 100 → 80 recording may already hold it, asked of the final `A.md`, D-13; else
-  W-12's `charge-limit` step, run with `bpulse --record` built from v0.6.2 or later, any time
-  after W-12 merges (A3) and before C1): whether bit 24 clears and charging resumes, which proves
-  it is the cause; which other keys flip (`ChargerInhibitReason`,
-  `PowerDistribution.IPDChargingAllowed`, `FullyCharged`; at the 80 % hold the charger child's
-  inhibit and power-distribution keys showed charging inhibited and not allowed, Appendix C finding
-  9, their exact keys and values with the final `A.md`); and what "off" looks like. If the bit
-  doesn't clear, W-14 moves to 0.8 before C1. A diff first seen in Session R that shows bit 24 not
-  clearing removes W-14 by a re-freeze (new RC-U and RC-F, then Session R steps 2-4 and 9b again).
+- **Settled by the 100 % diff** (the final `A.md`, D-13; Appendix C finding 9): bit 24 clears and
+  charging resumes when the limit is raised from 80 to 100 %, and it returns when the limit is set
+  back to 80 %, so it is the hold's cause and W-14 stays in 0.7. The other keys: `IsCharging`,
+  `ChargingCurrent` and `PowerDistribution.IPDChargingAllowed` follow bit 24, and
+  `ChargerInhibitReason` read 0 at the hold and 0x10001000 when the limit was set back below the
+  charge (the interim report had the charger's inhibit key showing charging inhibited at the
+  hold). "Off" (100 %) looks like no limit: `NotChargingReason` 0 and charging, `pmset -g
+  battlimit` "No battery level limits set" and no policy in powerd's plist. Still open: Optimized
+  Charging's hold (QUA-06, Risks) and a plug-in within 5 % of the limit (item 6).
 - **Rollback:** revert before D1. Once shipped, `systemChargeLimit` is frozen; if the bit changes
   meaning, a 0.7.x stops reading it, and the field shows nothing (dropped as unavailable).
 - **The configured percentage, 0.8** (FEA-35's second half, RD §3.3, beside NEW-01; nothing of it
-  in 0.7). No IOKit or IOPS key holds it (Session A; the research agrees). Candidates, best first
-  as known today; Session A's pending reads (Appendix C finding 9) decide where candidate 3 goes,
-  and it may become the first:
-  1. **The SMC key `CHLT`:** inside the read-only SMC rule (CL: commands 5, 8 and 9 through selector
+  in 0.7). No IOKit or IOPS key holds it (Session A; the research agrees). Session A's final reads
+  (Appendix C finding 9) reorder the candidates: powerd's plist and `pmset -g battlimit` hold the
+  limit's policy only while the Mac is on AC (both empty from about 5 minutes after unplugging,
+  the policy back at plug-in), so they give the active limit, not the setting, and System
+  Settings' `prior.limit` kept 80 on battery, so it gains, with its staleness caveat. Best first as
+  known today:
+  1. **powerd's charging preferences, read as a file, on AC:**
+     `/Library/Preferences/com.apple.powerd.charging.plist` (root's, readable by everyone). The
+     unsandboxed app reads it as a file: no `Process`, no private framework, no SMC. It holds
+     `bootSessionUUID` and `policies`, an `NSKeyedArchiver` archive of `ChargeCtrlPolicy` objects
+     with `soclimit` (80), `reason` (`manualChargeLimit`), `drain`, `isEndOfCharge`,
+     `noChargeToFull`, `terminated`, `owner` and `token` (an `NSUUID`): the values `battlimit`
+     prints. BatteryCore parses it on Linux as plain property lists: it walks the archive's
+     `$objects` and `$top` generically and never instantiates the private class, tested with a
+     redacted sample. **Only on AC:** powerd rewrote it with no policy about 5 minutes after
+     unplugging and with the policy again at plug-in, and with no policy at 100 %. So on AC a
+     policy is the active limit and no policy means no limit below 100 %; on battery it says
+     nothing, and a missing policy there is unknown, never "off". The widget's sandbox can't read
+     it. The format is private and undocumented, and a macOS 27.x update may change it.
+  2. **System Settings' prior limit, on battery, with its caveat:** the user defaults domain
+     `com.apple.batteryui.charging.mac` has one key, `com.apple.batteryui.charging.mac.prior.limit`,
+     which read 80 on battery, while the plist and `battlimit` were empty, but also with the limit
+     at 100 %. So it is the last limit set below 100 %, not proof that a limit is on: 0.8 may show
+     it on battery only as the limit last set, and on AC the plist wins. It is System Settings' own
+     record, so a change made elsewhere may leave it stale.
+  3. **The SMC key `CHLT`:** inside the read-only SMC rule (CL: commands 5, 8 and 9 through selector
      2), so no new exception. Seen in one public dump from an M3 Air: it shows the active limit only
-     and reads 00 on battery. Present on the M5 (`bpulse --smc` lists `CHLT` and `CHNC`, not
-     `CHLS`; Session A, 2026-10-23 evening), its value still unread, since `--smc` prints names
-     only. It needs a small, reviewed `bpulse --smc` value read of `CHLT` and `CHNC` first,
-     because a few SMC keys change state when read (bpulse's own comment).
-  2. **`pmset -g battlimit` through a `Process`:** a `SecurityGuardTests` exception (today only
-     `UpdateInstaller` starts a process), run only when bit 24 changes or on plug-in, never on a
-     poll; it answers only on AC (it clears about 300 s after unplugging), and its text is
-     undocumented. On the M5 it shows the 80 % limit, powerd's active policy (Session A,
-     2026-10-23 evening).
-  3. **powerd's charging preferences, read as a file** (new, Session A, 2026-10-23 evening):
-     `/Library/Preferences/com.apple.powerd.charging.plist`, which the user can read without root.
-     The unsandboxed app reads it as a file: no `Process`, no private framework, no SMC. It is an
-     `NSKeyedArchiver` archive whose `policies` value is an embedded binary plist of
-     `ChargeCtrlPolicy` objects, with keys that match `battlimit`'s fields (`Soc`, `Reason`,
-     `Drain` and others). BatteryCore parses it on Linux as a plain property list: it walks the
-     archive's `$objects` and `$top` generically and never instantiates the private class, tested
-     with a redacted sample. The widget's sandbox can't read it. The format is private and
-     undocumented, and a macOS 27.x update may change it; a missing policy is unknown, never "off".
-     The pending reads (`battlimit`, the plist and the `batteryui` domain at 100 % or off, back at 80 % and on battery more than 5
-     minutes after unplugging, and the file's modification time) show whether it holds the
-     configured setting in every power state or only the active policy, like `battlimit`.
-  4. **System Settings' prior limit, weaker:** the user defaults domain
-     `com.apple.batteryui.charging.mac` holds a prior limit of 80 on the M5 (Session A, 2026-10-23
-     evening). It is System Settings' own record, so it may be stale after a change made
-     elsewhere, and "prior" may mean the value from before the limit was turned off.
+     and reads 00 on battery, the plist's AC-only answer through an SMC read. Present on the M5
+     (`bpulse --smc` lists `CHLT` with 3 `hex_` bytes and `CHNC` with 8, not `CHLS`), its value
+     still unread, since `--smc` prints names only. It needs a small, reviewed `bpulse --smc` value
+     read of `CHLT` and `CHNC` first, because a few SMC keys change state when read (bpulse's own
+     comment).
+  4. **`pmset -g battlimit` through a `Process`:** the plist's policy as undocumented text (two
+     entries, `chargeSocLimitSoc` 80, `chargeSocLimitReason` `manualChargeLimit` and the flags;
+     "No battery level limits set" at 100 % and on battery), so now only the fallback if the
+     file's format changes: a `SecurityGuardTests` exception (today only `UpdateInstaller` starts
+     a process), run only when bit 24 changes or on plug-in, never on a poll, and only on AC.
   5. **The private PowerUI framework through `dlopen`:** the configured value in any power state,
      but it contradicts M-3 and needs a new `dlopen` exception; not recommended unless the maintainer
      reopens M-3.
@@ -1799,15 +1899,16 @@ adds only:
   1. **Terminology pass** over every key the widget packages and W-14 added, with Apple's Russian
      wording (CL localization rule). The review lists each new key with its Russian in the PR.
      W-14's keys are checked against Apple's Russian support article for the Charge Limit
-     (https://support.apple.com/ru-ru/102338) and System Settings → Battery's own string, from
-     D-13's screenshot, asked of the final `A.md` (W-0 item 1); without one, the article stands.
+     (https://support.apple.com/ru-ru/102338) and System Settings → Battery's own string;
+     D-13's screenshot didn't come with the final `A.md`, so the article stands.
      W-10 merges at C1, before Session R, so step 9b's screenshot only confirms it, and a mismatch
      is a one-key fix forward before D3. The catalog's translation of "Charging on hold" is not
      reused for them.
   2. **`LocalizationCatalogTests` review:** the App Intents literal forms landed in W-1 item 11.
-     W-10 checks that every intent string the widget packages added is in the catalog, and adds
-     the stretch's forms if it ran. Details' entity titles are the catalog's field labels; the
-     stretch's device titles are verbatim and ignored.
+     W-10 checks that every intent string the widget packages added is in the catalog, and that
+     W-2's list of the edit sheet's strings shows each as a key with its Russian in the widget
+     bundle (W-2 item 5), and adds the stretch's forms if it ran. Details' entity titles are the
+     catalog's field labels; the stretch's device titles are verbatim and ignored.
   3. **The placeholder rule:** if W-2's dump shows `${name}` keys, one reasoned exception limited to
      the widget's intent files, and CL's "%@ only" sentence names it.
   4. **Guards** (TCI-11):
@@ -2068,7 +2169,8 @@ from, and its own sentence. Each sentence names a ref and a path that survive 0.
 (`claude/070-integration` lives until the release, and the release PR's `refs/pull/<n>/head` stays
 after its branches are deleted). Each session follows Session R's rules, and its results leave the
 Mac only after his yes before `send`:
-- **Charge limit** (step 11; after W-12 merges and before C1, after a discharge):
+- **Charge limit** (step 11; not needed in 0.7, since the final `A.md` brought the capture and
+  the 100 % diff; its section stays in the runbook for 0.8's FEA-35 check, after a discharge):
 
   > Run the BatteryPulse 0.7 charge-limit capture hands-free: in ~/BatteryPulse run git fetch origin claude/070-integration && git show FETCH_HEAD:docs/plans/0.7.0/SESSION-R.md, then follow its section Charge limit.
 
@@ -2145,16 +2247,19 @@ Mac only after his yes before `send`:
      use, adding the widgets becomes one hands-on minute at the start.
 4. **The edit sheet** (computer use, about 25 actions; the choices follow a fixed rule):
    1. On the medium Battery widget: Edit Widget from its context menu; Layout set to Custom; the
-      first four details in the list; Time set to time left (if offered); Colours monochrome; Update
+      first four details in the list (with Details as the entity, a chooser that lists the fields is
+      W0-1 (b)'s answer); Time set to time left (if offered); Colours monochrome; Update
       time always; Done. Claude checks that the widget shows those choices (y/n).
    2. Edit Widget again: does the sheet show the choices made? y/n.
-   3. Russian, by the method 0.6.2 confirmed (D-8): the script switches the extension's language
-      and ends the extension.
+   3. Russian, by D-8's method, which in Session A reached the widgets but not the sheet: the
+      script switches the extension's language and BatteryPulse's own, and ends the extension.
       - Claude opens Edit Widget and reads its words: **1** all Russian, **2** some English (which),
         **3** the sheet didn't change language.
-      - A **3** is recorded "not checked", never "n".
-      - While the extension is in Russian, the script screenshots every placed widget. Then it
-        switches the language back.
+      - A **2** is a fix before release (a string W-2 item 5's check missed). A **3**, as in Session
+        A, is recorded "not checked", never "n" (G7-13).
+      - While the extension is in Russian, the script reloads every placed widget (one not yet
+        redrawn keeps its English, Session A) and screenshots them. Then it switches both languages
+        back.
    4. **A parameter added later** (RD C14 item 5): the script installs RC-P over RC-U (RC-U plus one
       dummy parameter, D1). Claude opens Edit Widget on the medium widget: are the choices made in
       4.1 still there? y/n. The script then installs RC-U2 for the rest of the session. The answer
@@ -2198,8 +2303,9 @@ Mac only after his yes before `send`:
    maintainer); the session reads the tree VoiceOver walks:
    - `ui tree` at each placed BatteryPulse widget's hit-tested frame (small, medium, large and
      Accessories; P1 found the host) records each element's role and label. It prints only the
-     subtree inside BatteryPulse's frame [unverified: whether the widget host exposes its tree on
-     macOS 27].
+     subtree inside BatteryPulse's frame. The tree is exposed: Session A read it under Finder's
+     desktop group, one group per desktop widget (Appendix C row 8), and `ui` reads it there
+     through AX, without a System Events query (W-12 item 1).
    - No new prompt: Terminal holds Accessibility for the session, kept from Session B or granted
      again at the start.
    - The session compares them with W-3b item 5's rules and the label builder's
@@ -2209,9 +2315,10 @@ Mac only after his yes before `send`:
      at each BatteryPulse widget by computer use. The script screenshots the inspector each time.
    - **In Russian:** if step 4.3's switch worked, the script switches the extension's language
      again, reads the tree again and switches it back. Otherwise it is recorded "not checked".
-   - Text size raised by computer use (System Settings → Accessibility → Display), and a shot: do
-     the widgets' words **1** grow, **2** stay unchanged, **3** get cut off (which)? Then it is set
-     back.
+   - Text size, a record only (decided, §2.2 W0-5: at 17 pt Session A saw no change): raised to
+     its largest by computer use (System Settings → Accessibility → Display), and a shot: do the
+     widgets' words **1** grow, **2** stay unchanged (expected), **3** get cut off (which: a fix
+     before release)? Then it is set back.
 8. **Clicks** (W-3c, G7-9):
    - The script quits BatteryPulse, then clicks the Battery widget at its frame (CGEvent). From the
      log and a shot: **1** Overview, **2** another page (which), **3** nothing opened.
@@ -2221,14 +2328,18 @@ Mac only after his yes before `send`:
      `restore`); once with the main window open; and once with BatteryPulse's own
      Settings → General → Window to open set to compact through defaults while the app is quit
      (expect the main window at the page), then set back.
-   - The script logs the page each click's URL delivered (never a full URL in a public log). A
-     **3** with BatteryPulse quit means the unregistered `batterypulse` URL didn't launch the app:
-     a navigation-only scheme is then registered before release (G7-9).
+   - The script records each click's route and page from the app's line (`url` or `activity`, and
+     the page's case; never a full URL in a public log). A click expected on Health that arrives as
+     an activity opens Overview, since the activity carries no configuration: a **2** naming the
+     route. A **3** with BatteryPulse quit means the unregistered `batterypulse` URL didn't launch
+     the app: a navigation-only scheme is then registered before release (G7-9).
 9. **Plug, unplug and accessories:**
    - **At the start, with him:** he unplugs at a beep and plugs in at a second beep 70 s later. The
      script screenshots the Battery widget every 10 s and takes `bpulse --json` at the same
      moments. Claude checks that the widget's state matches `bpulse --json`'s within a minute. At
-     his 80 % limit, plugging in shows the limit's not-charging state, not "Charging".
+     his 80 % limit, plugging in shows the limit's not-charging state, not "Charging": "Not
+     charging" while `NotChargingReason` reads bit 7 (Session A's plug-in read 128 first), then
+     "Charged to limit" once bit 24 appears; the step records when it does (W-14 item 6).
    - **Accessories,** in the GUI phase: a connected accessory is disconnected by an AX press in
      System Settings → Bluetooth (no computer-use screenshot of that pane), then reconnected
      [unverified: whether its source leaves `pmset -g accps`]. Did the Accessories widget change
@@ -2245,31 +2356,18 @@ Mac only after his yes before `send`:
     - If `bpulse --json` shows bit 24 right now (the battery menu would say "Charged to 80% Limit",
       or another number), the script also screenshots the Battery widgets; otherwise their look is
       CI's PNGs (§6.1b).
-    - If D-13 brought no Russian screenshot of the Charge Limit: System Settings → Battery → (i)
-      next to Charging, with System Settings in Russian [unverified: whether a language argument
-      reaches its panes, which run as separate extensions; probably not]. By default Apple's Russian
-      article stands, and W-10 took its words from it (W-10 merged at C1). A shot that does show
-      Russian confirms them, and a mismatch is a one-key fix forward before D3.
+    - D-13 brought no Russian screenshot of the Charge Limit (the final `A.md`), so: System Settings
+      → Battery → (i) next to Charging, with System Settings in Russian [unverified: whether a
+      language argument reaches its panes, which run as separate extensions; probably not]. By
+      default Apple's Russian article stands, and W-10 took its words from it (W-10 merged at C1). A
+      shot that does show Russian confirms them, and a mismatch is a one-key fix forward before D3.
 10. **F12** runs at the end of the logged day (§6.3), so the logged day starts on a candidate
     installed once and the extension isn't flipped through four versions first.
 11. **Optional:**
-    - **The Charge Limit capture and the 100 % diff** (QUA-05; only if D-13's redacted capture or
-      the 80 → 100 → 80 rows didn't come): `bash docs/plans/0.7.0/m5-session.sh charge-limit`
-      (W-12).
-      - W-14 needs both by C1 (G7-18), so this step runs on its own before that, any time after
-        W-12 merges (A3): the Charge limit short session (§6.2, "The short sessions"), with
-        `bpulse` built from the checkout (v0.6.2's `--record` is enough), started on his yes (§1's
-        maintainer time).
-      - In Session R it runs only if it still hasn't. A diff then showing bit 24 not clearing
-        removes W-14 by a re-freeze (W-14 "Still open"), while a capture serves 0.8 (G7-18).
-      - It needs a charge at least 5 points below the limit, so it runs after a discharge (for
-        example at the day's end, if he leaves the Mac plugged in for about half an hour), never at
-        the start.
-      - The session sets the limit to 100 % by computer use for at most 10 minutes, then back,
-        confirmed by `pmset -g battlimit` (else a System Settings → Battery shot), with `caffeinate
-        -i bpulse --record` into a new, empty folder under `~/bp-070/`. If Session B recorded that
-        the slider asks for a password or Touch ID, he moves it at the session's two beeps instead
-        (+1 min; W-12).
+    - **The Charge Limit capture and the 100 % diff** (QUA-05): **not needed.** D-13's redacted
+      capture and the 80 → 100 → 80 reads came with the final `A.md`, so `bash
+      docs/plans/0.7.0/m5-session.sh charge-limit` (W-12) doesn't run in 0.7, here or before C1;
+      W-12 keeps it for 0.8's FEA-35 check (RD §3.3).
     - **The optimized charging hold** (QUA-06): `… m5-session.sh hold-watch` on a separate night,
       never the logged day's, from the Hold watch short session (§6.2, "The short sessions"): he
       starts it in the evening and leaves the Mac plugged in with the lid open, and in the morning
@@ -2386,10 +2484,12 @@ approvals and, at its end, his yes before `send`: about 2 minutes. A second yes 
     configuration loss in §6.4.
   - **So D1 fixes it** before the candidates: both workflows take the build number from one clock
     that only grows (D1-D3). It is a technical change, and ROADMAP's decisions record it.
-- **Text size and desktop widgets:** whether Text size reaches desktop widgets is [unverified]
-  (W0-5 didn't get to it). A "2 unchanged" in step 7 is not a failure.
+- **Text size and desktop widgets:** Session A saw no change at 17 pt (W0-5), so a "2 unchanged"
+  in step 7 is expected and not a failure; only a 3 (words cut off) is a fix before release.
 - **A DMG copy over a running 0.6.x extension:** chronod may cache 0.7's build number with the old
-  static descriptor, as W0-2's first install did, and the recovery is unverified (P2 §8.16). The
+  static descriptor, as W0-2's first install did, and it doesn't repair itself: chronod's
+  refetch covers only descriptors with unresolved default intents, and a chronod restart kept it
+  (Session A), so it stays until the next version change (P2 §8.16). The
   in-app path ends the extension first (D-17); the guide keeps "add it again if it's gone" for a
   copy from the DMG (§12).
 - **Ad-hoc signing stays through 1.0** (M-1 is no):
@@ -2422,29 +2522,29 @@ approvals and, at its end, his yes before `send`: about 2 minutes. A second yes 
 
 | Gate | Decides | Measured by | If no measurement comes |
 |---|---|---|---|
-| **G7-1** configuration | App Intents configuration | **Answered: passed** (W0-1: CI on 2026-10-22, the edit sheets in Session A); W-2's CI check from then on | Configuration ships; presets (FEA-13) are not planned. W0-1 (b) is still open for Details' chooser: the final `A.md`, else W-3a's review chooses per-slot `AppEnum` parameters before its merge (§2.2) |
+| **G7-1** configuration | App Intents configuration | **Answered: passed** (W0-1: CI on 2026-10-22, the edit sheets in Session A); W-2's CI check from then on | Configuration ships; presets (FEA-13) are not planned. W0-1 (b) stays open for Details' chooser (the final `A.md` doesn't say whether it was opened): W-3a's review chooses before its merge, per-slot `AppEnum` parameters by default, or the entity checked by Session R step 4.1 (§2.2) |
 | **G7-2** placed widgets | today's kind becomes configurable | **Answered: passed** (W0-2: placed widgets survive with Automatic once the old extension is ended before the swap; W2's retest); 0.6.2's pre-swap end (D-17); Session R step 2 and §6.4 confirm | If Session R step 2 or §6.4 answers 2 or 3: check the logs for the pre-swap end and CHSErrorDomain 1103. If 0.6.2's installer didn't end the extension, D-17's 0.6.3 comes first. Otherwise compare with D-9 (the plain 0.6.1 → 0.6.2 in-app update); either way ship as designed, the notes say "add it again if it's gone", and it stays a documented known limitation at 1.0 (RD C3, C7). No new kind. **No Session R: no release** (§3) |
 | **G7-3** time left | the Time parameter | **Answered: passed** with `sign: .never` (W0-6); Session R step 6 confirms | A 4 in step 6 (a minus sign) is a fix before release; seconds or no countdown: time left isn't declared, clock time only |
 | **G7-4** rendering modes | which modes are designed and checked where | W0-4 (2): no log data, only screenshots (Session A); Session R step 5's screenshots | All three modes designed; every place checked in Session R |
 | **G7-5** stretch | W-5 to W-7 in 0.7 | W0-3 **passed** with A and A′ (the feed uses A, §2.2); the budget after A7. Q-W3 (yes) and M-1 (no) were decided on 2026-10-22 | No budget left: 1.1 on the feed (RD §3.2) |
 | **G7-8** Accessories widget | W-8 | W0-4 (1) **passed** (the sandboxed widget read them itself); Session R steps 3 and 9 confirm | W-8 ships; if a macOS 27.x update stops the read, its empty state shows (RD §7) |
-| **G7-9** URL scheme | register a navigation-only scheme | W0-4 (4), (5) **answered:** the `batterypulse` `widgetURL` reaches `application(_:open:)` unregistered, and no `NSUserActivity` arrives; Session R step 8 | No scheme registered and no activity handler. If step 8 shows a click with BatteryPulse quit opening nothing, the scheme is registered before release (§7.3) |
+| **G7-9** URL scheme | register a navigation-only scheme | W0-4 (4), (5) **answered** (the final `A.md`): the `batterypulse` `widgetURL` reaches `application(_:open:)` unregistered, and a click without one arrives as an `NSUserActivity` of the intent's type; Session R step 8 | No scheme registered; W-3c takes both routes. If step 8 shows a click with BatteryPulse quit opening nothing, the scheme is registered before release (§7.3) |
 | **G7-10** size | ceilings and cuts | the CI size report (§9) | Within 0.6.1's ceilings: a raise in a commit of its own. Above: §9's cut order |
 | **G7-11** reload delivery | whether the planner keeps percent-step reloads | the logged day: at least 90 % of the requests delivered per kind (P2 §8.10). Delivered = a `widget.timeline` of that kind before the next request; the median delay is reported (W-12 item 2) | Keep the Linux-tested planner; the measurement joins 0.8's sitting. A share under 90 % drops percent-step reloads only when deliveries are missing entirely, not merely delayed: WidgetKit may postpone a widget nobody can see until it becomes visible (https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date) |
 | **G7-12** accessibility | the widget's accessibility labels | W0-5's photos set the requirements (W-3b item 5); the label builder's Linux tests; Session R step 7's tree read (the session's `ui` helper, or Accessibility Inspector by computer use), never VoiceOver driven by the maintainer | The Linux tests stand, and the row stays open in `docs/VERIFICATION.md` |
-| **G7-13** Russian edit sheet | — | Session R step 4.3 | "Not checked"; `WidgetTextBudget` covers lengths |
+| **G7-13** Russian edit sheet | whether the sheet's strings need W-2's fix | W-2 item 5's check of the metadata's strings (CI); Session R step 4.3 (in Session A, D-8's method reached the widgets, not the sheet) | The check failing: W-2's fix before W-3a merges. Step 4.3 still English with the check passing: "not checked"; `WidgetTextBudget` covers lengths |
 | **G7-14** `bpulse` JSON | S-1 ships | D1's golden diff | Required (Linux); no M5 needed |
 | **G7-15** update path | the release | F12 (at the logged day's end, §6.3); §6.4 | F12 fails: as 0.6.2's G-16 (the installer's last good code). §6.4 step 3 shows 2 or 4: `--prerelease`, fix forward |
 | **G7-16** crashes and faults | whether the RC can ship | Session R and the logged day's `day-end` count (§6.3) | Any BatteryPulse or BatteryPulseWidget crash report, or any `fault` in the subsystem: no D3. Fix forward, build a new RC and repeat the Session R steps the fix touches |
 | **G7-17** placed kinds | whether W-4 filters reloads by `currentConfigurations()` | Session R step 9's per-kind counts (W-4 item 3) | Not shown to match: an empty answer keeps counting as "placed" for Battery |
-| **G7-18** Charge Limit | W-14 in 0.7 | A redacted `m5-macos27-charge-limit.plist` by C1 (D-13: from `charge-limit-80.plist`, only if the maintainer says yes); the 100 % diff by C1 (the final `A.md`, else W-12's `charge-limit` step between A3 and C1; W-14 "Still open"); Session R step 9b | No fixture by C1: W-14 moves whole to 0.8 (FEA-35, beside NEW-01), before anything frozen ships. A diff that shows bit 24 not clearing: the same; first seen in Session R, a re-freeze without W-14 (W-14 "Still open") |
+| **G7-18** Charge Limit | W-14 in 0.7 | **Answered: both came with the final `A.md`** (D-13): the redacted capture (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, which becomes `m5-macos27-charge-limit.plist`) and the 100 % diff (bit 24 clears at 100 % and returns at 80 %; W-14 "Settled by the 100 % diff"); Session R step 9b | No fixture by C1 (a capture that fails the Fixtures README's check): W-14 moves whole to 0.8 (FEA-35, beside NEW-01), before anything frozen ships |
 
 ### 7.2 Cut line
 
 **Never cut:** W-0, S-1, W-1, W-2, W-3a, W-3b with large, W-3c, W-4, W-8 (W0-4 (1) passed), W-10,
 W-12, W-13, W-14, and D1-D3. W-13 and W-14 are the maintainer's decisions, so the budget never cuts
 them: W-13 moves whole to 0.8 only if review finds a promise of §11 it can't keep, and W-14 only
-without its fixture by C1 or if the 100 % diff shows bit 24 not clearing (G7-18).
+without its fixture by C1 (G7-18; the capture and the 100 % diff came with the final `A.md`).
 
 **Conditional:** K-1 (M-9 is yes; it needs the maintainer's key by C1), and extra large (Q-W10;
 declared only on an explicit 1 or 2 in look-check question 3). W-11 and FEA-21 are in
@@ -2513,8 +2613,9 @@ PB §3.4's list and P2 §7.3's additions hold, except these intended changes:
 
 **New frozen surfaces 0.7 creates** (P2 §8.13; promised for 1.x in RD C14 item 5):
 - the kind strings;
-- the intent type names, the parameter names, every `AppEnum` raw value, and the Details entity's
-  ids (the field raw values, W-14's `systemChargeLimit` included);
+- the intent type names (a click without a `widgetURL` arrives as an activity of that type, W-3c),
+  the parameter names, every `AppEnum` raw value, and the Details entity's ids (the field raw
+  values, W-14's `systemChargeLimit` included);
 - `supportedFamilies` per kind, which are only ever added to;
 - Automatic's meaning in each family;
 - the `PageID` and `WidgetRoute` strings, with the `batterypulse` scheme (unregistered unless G7-9
@@ -2586,7 +2687,9 @@ exist in the app.
   unused key.
 - `WidgetTextBudget` (W-1) fails a Russian text that is too long for its slot.
 - `scripts/string-tables.swift` checks every table in both bundles (`build-app.sh:123`).
-- Session R step 4.3 checks the Russian edit sheet, by D-8's method.
+- W-2's `appintents-check` (item 5) checks that the edit sheet's strings are catalog keys the
+  widget bundle translates; Session R step 4.3 tries the sheet in Russian (in Session A, D-8's
+  method reached the widgets, not the sheet).
 
 ---
 
@@ -2742,7 +2845,8 @@ app with widgets placed.
     `DeviceKeys` HMAC), never a UDID or a serial (P2 §8.3, §8.5).
 - **Logs:**
   - Triggers are `StaticString` case names; the kind string and any name never go in a log.
-  - A click's route logs its case name as `.public` (`overview` … `accessories`, or `device`), and a
+  - A click logs how it arrived (`url` or `activity`) and its page's case name as `.public`
+    (`overview` … `accessories`, or `device`), and a
     device page's `DeviceKey` only as `.private(mask: .hash)`; never a full URL (CL logging: "a
     device key logs as `.private(mask: .hash)`"; P2 WP-W0 "Logs"). `device:<key>` is a page ID
     (`MainView.swift:74`), so the page ID itself is never logged `.public`.
@@ -2750,8 +2854,9 @@ app with widgets placed.
 - **No URL scheme is registered** (G7-9): the widget's `batterypulse://` URLs reach BatteryPulse
   through WidgetKit without one (W0-4 (5)), so no other app or web page can open its pages.
   `WidgetRoute(url:)` accepts known pages and valid `DeviceKey`s only, and a link never acts (P2
-  §8.9). If Session R step 8 forces a registered scheme, it stays navigation only: any app or web
-  page could then open a page of BatteryPulse, and nothing more.
+  §8.9); the activity route opens only our intent types' pages (W-3c). If Session R step 8
+  forces a registered scheme, it stays navigation only: any app or web page could then open a
+  page of BatteryPulse, and nothing more.
 - **The Charge Limit** (W-14): BatteryPulse reads the gauge's reason bit it already reads, and
   nothing about the configured limit; no new source, process or framework.
 - **The stretch's feed** (P2 §8.3, §8.8; INV SEC-08, DOC-08):
@@ -2809,7 +2914,7 @@ USER_GUIDE):
 | `docs/USER_GUIDE.md`, privacy (UG:502-509, UG:351-359) | **W-13:** UG:502-509 reworded (the check, the count and a download you chose); a new "Privacy" section with §11's statement; the devices' "Privacy" (UG:351-359) links to it. **With the stretch:** the feed | W-13, W-10 |
 | `README.md` | The Widget bullets (RM:84-86, "new in 0.3") list the configurable sizes and Accessories. The iOS promises go (R-1, DOC-09). "Status: early development" stays until 0.9.0 (RD §3.5, DIS-10). **W-13:** RM:120-125 ("The only requests to the internet are…") reworded, and a new "Privacy" section with §11's statement | W-10, R-1, W-13 |
 | What's New | `WhatsNew.version` 0.6.0 → 0.7.0 (`UpdateViews.swift:388`), and `WhatsNew.features` replaced with 0.7's 2-3 plus W-13's "Anonymous version count" (Q7-2), which later releases append for anyone coming from before 0.7 (W-13 item 6). Users coming from 0.6.x see it once (`UpdatePolicy.showsWhatsNew`, `Updates.swift:232`) | W-10, W-13 |
-| `CLAUDE.md` | **Layout:** `Sources/BatteryCore/Widget/` (the model, planner, routes and manifest); `BatteryArt` if W-11; the widget's intents and their rule. **The build:** the metadata step and `appintents-check.swift`. **Guards:** the new widget rules (time text, placements, routes). **Signposts:** `widget.timeline` and its triggers; `widget.reload`'s `policy.accessories`. **The placeholder exception,** if any. **Clicks:** the `batterypulse` route, unregistered unless G7-9 registers it. **W-14:** the macOS 27 layout convention gains "bit 24 (0x01000000) of `NotChargingReason` is set while the Charge Limit holds the charge", and Layout lists `SystemChargeLimit`. **Energy:** "widget reloads only in `WidgetRefresher`, through `WidgetReloadPolicy`" becomes "… through `WidgetReloadPlanner` (per kind, placed kinds only)". **Logging:** "an app and a BatteryKit twin" (or BatterySource after 0.6.2's WP-22) gains the widget's twin (W-3a item 8). **Layout, BatteryPulseWidget:** "signed with only the app-sandbox entitlement" gains the stretch's read-only exception, only if W-5 ships. **Releases:** the build number from one clock (D1). **W-13:** "Network" gains the version count and "no cookies"; Layout lists `VersionCounter`; Releases names `BatteryPulse-count.txt` | W-10, W-13, W-14 |
+| `CLAUDE.md` | **Layout:** `Sources/BatteryCore/Widget/` (the model, planner, routes and manifest); `BatteryArt` if W-11; the widget's intents and their rule. **The build:** the metadata step and `appintents-check.swift`. **Guards:** the new widget rules (time text, placements, routes). **Signposts:** `widget.timeline` and its triggers; `widget.reload`'s `policy.accessories`. **The placeholder exception,** if any. **Clicks:** the `batterypulse` route, unregistered unless G7-9 registers it, and the activity route for a click without a URL (W-3c). **W-14:** the macOS 27 layout convention gains "bit 24 (0x01000000) of `NotChargingReason` is set while the Charge Limit holds the charge", and Layout lists `SystemChargeLimit`. **Energy:** "widget reloads only in `WidgetRefresher`, through `WidgetReloadPolicy`" becomes "… through `WidgetReloadPlanner` (per kind, placed kinds only)". **Logging:** "an app and a BatteryKit twin" (or BatterySource after 0.6.2's WP-22) gains the widget's twin (W-3a item 8). **Layout, BatteryPulseWidget:** "signed with only the app-sandbox entitlement" gains the stretch's read-only exception, only if W-5 ships. **Releases:** the build number from one clock (D1). **W-13:** "Network" gains the version count and "no cookies"; Layout lists `VersionCounter`; Releases names `BatteryPulse-count.txt` | W-10, W-13, W-14 |
 | `docs/ROADMAP.md` | The 0.7 entry (R:543-556, which promises "every size macOS offers" and History, iPhone and iPad widgets) rewritten to what shipped, then ticked; the History and iPhone & iPad widgets, the portrait size and any family not shipped move to a new 1.1 entry (RD §3.8) that links `docs/plans/1.1/widgets.md` (D3); the Decisions edits of R-1 item 1; the build-number decision (D1); the frozen-outputs decision line (R:437-439) gains "device JSON dates and `formatVersion` shipped in 0.7"; Stage 1.2's widget line (R:202-208) updated from §6.4; Stage 4's WidgetKit line; the "Road to 1.0" section (R-1); "Next: 0.8" (RD §3.3); a "Widgets (0.7)" decisions paragraph (the kinds, Automatic frozen, the planner, the stretch's condition: the feed only, as M-1 is no); the Releases row, whose download counts follow a week later (§13 step 8, NEW-23). **W-14:** Stage 1's "a capture at the macOS Charge Limit stop point" (R:145-146) ticked once the fixture is committed. **W-13:** already written on 2026-10-22: the Decisions' "Privacy (0.7)", the Principles' Privacy line and the usage paragraph, which W-13's docs pass checks against what shipped; it adds only the Releases table's Count column from 0.7.0 and the "Road to 1.0" lines for C14 items 1, 6 and 8 | W-10, R-1, W-13, D3 |
 | `docs/plans/1.0/ROADMAP.md` | Already written on 2026-10-22: C14 items 1, 6 and 8, §1.1, §1.2 item 6, §3, §3.2 and §3.3, §4.3's Telemetry row, NEW-23, NEW-24 and M-11. W-13's docs pass checks them against what shipped. **W-14:** already written on 2026-10-23 (FEA-35, FEA-20, QUA-05, NEW-01, M-3, §3.2-§3.3: the "at limit" state in 0.7, the configured percentage as FEA-35's 0.8 half with W-14's candidates); W-14's docs pass checks them against what shipped | W-13, W-14 |
 | `docs/plans/1.0/INVENTORY.md` | Already written on 2026-10-23: FEA-35 (new), FEA-20, FEA-27, QUA-05, QUA-06 and the Summary's counts. W-14's docs pass checks them against what shipped | W-14 |
@@ -3080,11 +3185,14 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
     Reached"), the menu bar popover, the compact window and the Battery widget's state line and
     detail, from `NotChargingReason` bit 24 on external power while not charging;
   - **the percentage you set waits for 0.8:** no IOKit or IOPS key holds it, and every other source
-    is undocumented and needs a reviewed SMC read or a new exception first, or, for powerd's charging preferences file and System Settings' prior limit, the reads still pending on the Mac (W-14's candidates);
+    is undocumented, and the two that held it in Session A's reads tell only part: powerd's
+    charging preferences file (like `pmset -g battlimit`) holds it only while the Mac is on the
+    adapter, and System Settings' prior limit kept 80 on battery but also at 100 %, so it may be
+    stale (W-14's candidates);
   - no ring or battery marker and no menu bar icon change in 0.7, since without the number a mark
     would only sit at the end of the fill;
-  - it needs a redacted fixture from your capture, if you agree to commit one (G7-18); without it,
-    W-14 moves to 0.8.
+  - it needs a redacted fixture from your capture: it came with Session A's report on your approval
+    (2026-10-24), together with the proof that raising the limit clears the bit (G7-18).
 
 ---
 
@@ -3104,7 +3212,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 | FEA-08 App Intents metadata step | P2 W-2; W0-1 | W-2 (W0-1 passed) |
 | FEA-09 Accessories widget | P2 §8.4, §8.5, W-8; W0-4 (1) | W-8 (MVP: W0-4 (1) passed) |
 | FEA-10, FEA-11, FEA-12 feed, History, iPhone & iPad | P2 W-5 to W-7; RD §3.2 | Stretch on candidate A (G7-5: W0-3 passed with A and A′; Q-W3 yes, M-1 no), else 1.1 on the feed |
-| FEA-13 preset kinds | P2 §8.16 row 1; INV FEA-13 (0.7 only if W0-1 fails) | Not needed: W0-1 passed (G7-1); it returns only if the final `A.md` reopens W0-1 (§2.2) |
+| FEA-13 preset kinds | P2 §8.16 row 1; INV FEA-13 (0.7 only if W0-1 fails) | Not needed: W0-1 passed (G7-1); the final `A.md` didn't reopen W0-1 (§2.2) |
 | FEA-14 a 0.6.3 with static large sizes | P2 §9; Q-W1 | Not planned (RD §4.2) |
 | FEA-15 to FEA-20 (Refresh, portrait, dashboard, per-row links, specific accessories, "why not charging" field) | P2 §9.1 "Later"; RD §4.1 | After 1.0, except FEA-20's Charge Limit part: W-14 |
 | FEA-21 hide fully charged accessories | P2 §8.5 | W-8 (Q7-5: yes, by delegation; cut fourth if short) |
@@ -3123,7 +3231,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 | PLT-05 iOS code kept building | ci.yml:130-131; RD M-2 | R-1 (a ROADMAP line) |
 | TCI-10 widget render previews | P2 W-3 | W-3a, W-3b |
 | TCI-11 widget guard rules | P2 §8.7, §8.8, §8.11 | W-3a, W-3c, W-8, W-10 |
-| A11Y-06 widget accessibility | P2 §8.15; W0-5 (the maintainer's VoiceOver photos) | W-3b item 5 (the requirements and `WidgetAccessibility`, tested on Linux); Session R step 7 (the tree read) |
+| A11Y-06 widget accessibility | P2 §8.15; W0-5 (the maintainer's VoiceOver photos, Session A's tree read and Text size) | W-3b item 5 (the requirements and `WidgetAccessibility`, tested on Linux); Session R step 7 (the tree read) |
 | L10N-04 widget localization | P2 §8.11, W-10 | W-1 item 11 (the catalog test's App Intents forms), W-3a, W-3b, W-8, W-10 |
 | L10N-05 unit symbols in the widget | P2 §8.6 "Formatter" | W-3a |
 | NEW-13 backup key (public half) | RD M-9 (yes, by delegation) | K-1 |
@@ -3132,7 +3240,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 | NEW-23 download counts a week after publishing | RD §1.2 item 6, §5.2; the maintainer's question about downloads (2026-10-22); 0.6.2's `scripts/release-stats.swift` | §13 step 8; D-16; §11 |
 | Anonymous version count | §14 Q7-9; RD NEW-24, NEW-23, C14 items 1, 6, 8; INV DIS-11 | W-13 |
 | M-5's "Road to 1.0" in ROADMAP | RD §3.2 "Before code"; RD M-5 | R-1 (M-5 approved as written: the five promises, no dates) |
-| QUA-05 Charge Limit capture | R:145-146; RD §3.2; Session A finding 7 | Captured in Session A (D-13); the redacted fixture with the final `A.md` if the maintainer says yes (G7-18); else, and for the 100 % diff, W-12's `charge-limit` step between A3 and C1 (Session R step 11 only if it never ran) |
+| QUA-05 Charge Limit capture | R:145-146; RD §3.2; Session A finding 7 | Captured in Session A (D-13); the redacted fixture and the 100 % diff came with the final `A.md` (G7-18), so W-12's `charge-limit` step doesn't run for W-14 |
 | QUA-06 optimized charging hold | R:76-77; INV QUA-06 | Session R optional (W-12's `hold-watch` step, overnight `--record` under `caffeinate -i`) |
 | 0.6.2's cut items | P2 §7.2 | C-1 (Linux), Session R optional, or the matrix |
 | TCI-05, TCI-06, TCI-07, PLT-03 (Xcode items) | P2 WP-18; RD §5.1; Q-B7 (Xcode is installed on the M5) | TCI-05, TCI-07 and PLT-03: run in 0.6.2 by Session B (hands-free since 2026-10-23); whatever 0.6.2 left rides in 0.7 the same way, in Session R's GUI phase (C-1; Session R step 11). TCI-06 (SUI-18): dropped on 2026-10-23 (P2 WP-18) |
@@ -3154,10 +3262,12 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 | The build-number risk | ci.yml:135; `release.yml:109`; `build-app.sh:112-113` | Fixed in D1: one growing clock in both workflows (§6.5; this plan's addition) |
 | A parameter added to a shipped intent (1.1's History chart, FEA-19) | P2 §8.13; RD C14 item 5 | Session R step 4.4 (RC-P), recorded in Appendix C |
 | FEA-35 the Charge Limit shown, read-only, in the app, the menu bar and the widget (the maintainer's request, 2026-10-23) | §14 Q7-10; INV FEA-35; RD §3.2, §3.3; Session A findings 7 and 9; the Charge Limit research (Appendix C); RD NEW-01, FEA-20 | W-14: the "at limit" state in 0.7 (G7-18); the configured percentage in 0.8 (FEA-35's second half, beside NEW-01, with W-14's candidates) |
-| Session A's W0 answers (2026-10-23, interim) | P2 Appendix C; Appendix C here | §2.2; G7-1 to G7-5, G7-8, G7-9, G7-12 |
+| Session A's W0 answers (final, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24) | P2 Appendix C; Appendix C here | §2.2; G7-1 to G7-5, G7-8, G7-9, G7-12, G7-13 |
 | The widget extension ended before the swap | Session A's W0-2; P2 WP-16 item 6 | D-17; W-3a item 10; Session R step 2, §6.4 |
 | The iPad's connection label after unplugging | Session A's F5; P2 WP-23 | D-18; C-1 if 0.6.2 didn't fix it |
 | Session A's script lessons | P2 Appendix C | W-12 item 1 |
+| Clicks without a `widgetURL` arrive as an `NSUserActivity` of the intent's type | Session A's W0-4 (4) (Appendix C row 4) | W-1 item 8; W-3c item 2; G7-9; Session R step 8 |
+| The edit sheet stayed English under the extension's Russian | Session A's W0-2-W-ru (Appendix C row 10) | W-2 item 5; W-10 item 2; G7-13; Session R step 4.3 |
 | What 0.7 didn't build | P2 §8.3, §8.5, §8.8; W-5 to W-7, W-9 | Moved to `docs/plans/1.1/widgets.md` at D3 |
 
 ---
@@ -3357,24 +3467,32 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
   only screenshots), so W-3b designs for all three modes and Session R step 5's screenshots
   decide.
 
-**Answered by 0.6.2's Session A** (2026-10-23, interim; §2.2, Appendix C): the processor step under
-SwiftPM (W0-1); the per-family `size:` overload, for entity arrays only (W0-1 (a)); placed static
-widgets surviving the change to `AppIntentConfiguration`, once the old extension is ended before
-the swap (W0-2); accessory reads from the sandbox (W0-4 (1)); what a click delivers, and that no
-scheme is needed (W0-4 (4), (5)); the offset format's sign (W0-6).
+**Answered by 0.6.2's Session A** (final, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24; §2.2,
+Appendix C): the processor step under SwiftPM (W0-1); the per-family `size:` overload, for entity
+arrays only (W0-1 (a)); placed static widgets surviving the change to `AppIntentConfiguration`,
+once the old extension is ended before the swap (W0-2); accessory reads from the sandbox (W0-4
+(1)); what a click delivers, the URL or, without one, an activity of the intent's type, and that
+no scheme is needed (W0-4 (4), (5)); the offset format's sign, in English and Russian (W0-6); that
+AX can read the widgets' tree, under Finder's desktop group, and that Text size doesn't reach
+desktop widgets at 17 pt (W0-5); that bit 24 of `NotChargingReason` clears when the Charge Limit is
+raised to 100 % and returns at 80 % (W-14).
 
-**Not verified here; decided by the final `A.md` or 0.7's sittings:**
-- whether entity queries run in the ad-hoc extension, which Details' chooser needs (W0-1 (b));
+**Not verified here; decided by 0.7's runs and sittings:**
+- whether entity queries run in the ad-hoc extension, which Details' chooser needs (W0-1 (b): the
+  final `A.md` never opened the Device chooser and doesn't say whether Details' was, so W-3a's review chooses and Session R step 4.1 checks);
+- why the edit sheet stayed English under the extension's Russian: the hand-extracted metadata or
+  the system's language (W-2 item 5; Session R step 4.3);
+- the values of an activity's `WGWidgetUserInfoKeyKind` and `WGWidgetUserInfoKeyFamily` (W-3c
+  relies on its type only);
 - whether `IntentCollectionSize(min:max:)` compiles per family for an entity array (W-3a item 1);
 - whether a widget without `Metadata.appintents` still appears in the gallery (W-2's rollback);
 - the rendering mode per Icon & widget style and place: no log data, only screenshots (W0-4 (2));
-- whether Text size reaches desktop widgets (W0-5 didn't get to it);
-- which process hosts desktop widgets on macOS 27, and whether AX can read its accessibility tree
-  (0.6.2 Session B's P1, then Session R step 7);
+- which process hosts desktop widgets on macOS 27 (0.6.2 Session B's P1; AX reads their tree under
+  Finder's desktop group, Session A, so Session R step 7's read has a route);
 - whether a click with BatteryPulse quit launches it through the unregistered scheme (Session R
   step 8);
-- what bit 24 of `NotChargingReason` means beyond one M5 capture: whether it clears when the limit
-  is raised, and whether Optimized Charging's hold sets it too (W-14; QUA-06);
+- whether Optimized Charging's hold sets bit 24 of `NotChargingReason` too (W-14; QUA-06), and when
+  bit 24 appears after a plug-in within 5 % of the limit (W-14 item 6; Session R step 9);
 - System Settings → Battery's Russian string for the Charge Limit (W-14, W-10);
 - whether adding a parameter later resets placed widgets' choices (Session R step 4.4; it decides
   how 1.1 adds parameters, RD C14 item 5);
@@ -3409,34 +3527,34 @@ scheme is needed (W0-4 (4), (5)); the offset format's sign (W0-6).
 | D-4, answered 2026-10-22: shape B. `MacBatteryProvider.readNonisolated(scope:)` through `BatteryProvider.nonisolatedReader`; the protocol stays `@MainActor` (0.6.2 plan Appendix C, WP-14a) | 0.6.2 WP-14a | W-3a |
 | D-6: WP-10 kept or reverted | 0.6.2 | W-3c, W-4 style |
 | D-7: the widget ceilings after 0.6.2's D1 | `size-budget.json` | §9 |
-| D-8: the Russian method for the widget | 0.6.2 Session A step 3.3 | Session R step 4.3 |
+| D-8: the Russian method for the widget: **the extension's `AppleLanguages` reached the widgets, not the edit sheet** (the final `A.md`, W0-2-W-ru: 2; row 10 below) | 0.6.2 Session A step 3.3 | Session R step 4.3; W-2 item 5; G7-13 |
 | D-9: placed widgets after 0.6.1 → 0.6.2 in-app | 0.6.2 D3 | G7-2, Q7-4 |
 | D-12: the installer 0.6.2 shipped | 0.6.2 G-16 | F12 at the logged day's end (§6.3) |
-| D-13: the Charge Limit capture: **done in Session A** (finding 7 below); the redacted `charge-limit-80.plist`, the 80 → 100 → 80 rows and the Russian Charge Limit screenshot with the final `A.md`, if the maintainer says yes | 0.6.2 Session A | G7-18; W-14's fixture; W-10 item 1; else W-12's `charge-limit` step before C1 |
+| D-13: the Charge Limit capture: **done in Session A** (finding 7 below). **The final `A.md` brought** the redacted `charge-limit-80.plist` (`docs/plans/0.6.2/sessions/A/`, on the maintainer's approval) and the 80 → 100 → 80 reads (finding 9); **not** the Russian Charge Limit screenshot | 0.6.2 Session A | G7-18; W-14's fixture; W-10 item 1 (Apple's Russian article stands) |
 | D-16: ROADMAP's Releases table has download columns, with v0.6.2's counts; `scripts/release-stats.swift` exists and looks for `BatteryPulse-count.txt` | 0.6.2 D3 | §13 step 8 |
 | D-17: 0.6.2's installer ends the widget extension before the swap (WP-16 item 6), with its source test | 0.6.2 code; §6.4 step 3's log | G7-2; W-3a item 10 |
 | D-18: the iPad's connection label follows the transport (WP-23) | 0.6.2 | C-1 if not |
-| W0-1 to W0-6: each answer, and §2.2's row. The interim answers are below; the final `A.md` completes them (W-0 item 1) | 0.6.2 Appendix C; Session A | every package |
+| W0-1 to W0-6: each answer, and §2.2's row: **final**, from `docs/plans/0.6.2/sessions/A.md` (2026-10-24), below, with notes where the interim report differed (W-0 item 1) | 0.6.2 Appendix C; Session A | every package |
 | 0.6.2's A0, the 0.6.1 after-publishing intake: **passed** (recorded 2026-10-22). 0.6.0 → 0.6.1 through Install and Relaunch kept the desktop widget, which shows the current charge, and Open at login kept its state | the maintainer; P2 Appendix C | D-9's baseline; C-1 (WP-16 item 5 has no cause); §7.3 |
 | WP-18's Xcode items: what 0.6.2 ran and what it left | 0.6.2 Appendix C | C-1; Session R step 11 |
 | M-5's answer: **approved as written, with no dates** (recorded 2026-10-22; every decision is in §14) | the maintainer | R-1 |
 
-**0.6.2's Session A, interim** (2026-10-23; the local Claude session on the MacBook Air M5, still
-running; its final `A.md` comes on `claude/062-session-a`; 0.6.2's Appendix C at `0a4580e` records
-the report's first part: it still lists the W2 retest and W0-5 as open, and row 5 explains why
-its W0-6 minutes read 0):
+**0.6.2's Session A** (2026-10-23 and 24; the local Claude session on the MacBook Air M5). Final,
+from its `A.md` (`docs/plans/0.6.2/sessions/A.md`, merged at `5849d01`). The rows first held its
+interim report of 2026-10-23, and each says where the final report differs; row 10 is new:
 
 | Fact | Shown by | Decides |
 |---|---|---|
-| 1. W0-2: the first SPIKE-W install (282) greyed the placed widgets. At the version change chronod refetched the descriptors within about 2 ms from the old `BatteryPulseWidget` process, still running, and cached version 282 with the previous static descriptor; every reload then failed with CHSErrorDomain 1103. After the old extension was ended and SPIKE-W installed again (W2, run #307; the retest passed), the widgets placed under 0.6.1 and under SPIKE-I redrew in today's look with fresh values: a widget placed by 0.6.1 survives its kind becoming an `AppIntentConfiguration` (Automatic default) when the descriptor fetch reaches the new extension. chronod caches descriptors by `CFBundleVersion`. `WidgetRefresher.endPreviousExtension()` runs only at the new app's launch, too late. Fix: 0.6.2's WP-16 item 6 ends the extension before the swap in `UpdateInstaller`, so 0.6.2 → 0.7 is clean; 0.7's first launch keeps `endPreviousExtension()` | Session A; P2 WP-16 item 6 | §2.2 W0-2; G7-2; D-17; W-3a item 10 |
-| 2. W0-1 at run time: the edit sheets show the parameters (Battery: Layout, Main value, Time; Custom adds Details, with 4 slots on medium; the test widget: Main value, Details (4 on medium, more on extra large), Device). The `ParameterSummary` line is not visible on macOS 27. No entity query ran: the Device chooser was never opened | Session A | §2.2 W0-1, W0-1 (b); W-2, W-3a items 1-2; G7-1 |
-| 3. W0-3: the feed's candidates A (the home-relative-path read-only exception) and A′ (the shared-preference read-only exception) both work, 55 bytes read | Session A | §2.2 W0-3 (A, for the reason given there); G7-5 |
-| 4. W0-4: the sandboxed widget reads accessory batteries itself (sources=2 accessories=1). The four Icon & widget styles redraw per style (screenshots), but no render log line reached the log from any process, so rendering-mode data comes from screenshots only. The Refresh button's `perform` ran in the widget extension. Clicks arrive as a `widgetURL` with the `batterypulse` scheme (page=overview, with and without the main window) through `application(_:open:)`, with no scheme registered; no `NSUserActivity` arrived | Session A | W-8 (G7-8); W-3b item 6 (G7-4); W-9; W-3c (G7-9) |
-| 5. W0-6: the offset format printed "-2 hours, 6 minutes" in variant a (an offset to a later date needs `sign: .never`) and "2 hours, 6 minutes" in variant b; the minutes ticked down without a reload. Russian: pending. 0.6.2's Appendix C at `0a4580e` has "0 minutes" for both: not a discrepancy, but two readings of the same countdown at different moments (the maintainer's photo showed "-2 hours, 6 minutes" and "2 hours, 6 minutes" beside "Lasts until about 23:58"; the session's reading came later). The finding, `sign: .never`, stands; the final `A.md` only adds the Russian check (W-0 item 1) | Session A | G7-3; W-1 item 4; W-10's guard |
+| 1. W0-2: SPIKE-C over 0.6.1 and SPIKE-I over SPIKE-C kept the placed small and medium widgets as they were (answers 1; `pluginkit` lists the widget, 0.0.0, from `/Applications`; large and extra large weren't asked, as only small and medium are declared). The first SPIKE-W install (282, over SPIKE-I, in the installer's order: swap, `lsregister -f`, relaunch) failed: at the version change chronod refetched the descriptors in 2 ms, before SPIKE-W's extension started, from SPIKE-I's still running, and stored its 1 static descriptor as version 282's. The placed widgets lost Edit Widget, the gallery offered no Test widget, and every reload failed with CHSErrorDomain 1103 ("Intent configuration is required but was not provided"); a chronod restart kept the descriptor and dropped the cached snapshots, so the widgets turned grey. With the old extension ended first (by hand at 21:06; then W2, run #307, by the script at 21:45, the extension ended about 20 ms before the swap), chronod fetched both descriptors from the new extension, every reload then succeeded (after two CHSErrorDomain 1050 failures at once on the install by hand, and one NSCocoaErrorDomain 4099 at W2's swap, the old process's connection), under the default intent except the widget edited in the sheets, under its own, and the widgets placed under 0.6.1 (small, medium) and under SPIKE-I (medium) redrew in today's look with fresh values (answers 1). The reverse race (0.6.1 over a running SPIKE-W) repaired itself through chronod's refetch of descriptors with unresolved default intents; a static descriptor cached for a configurable version never qualifies, so it stays until the next version change. Reinstalling 0.6.1 over W2 kept every Battery widget; the Test widgets, a kind 0.6.1 lacks, kept W2's last picture. chronod caches descriptors by `CFBundleVersion`; `WidgetRefresher.endPreviousExtension()` runs only at the new app's launch, too late. Fix: 0.6.2's WP-16 item 6 ends the extension before the swap in `UpdateInstaller`, so 0.6.2 → 0.7 is clean; 0.7's first launch keeps `endPreviousExtension()`. **Differs from the interim report,** which quoted 1103 as "Connection to extension process was invalidated" and had the install itself grey the widgets | Session A; P2 WP-16 item 6 | §2.2 W0-2; G7-2; D-17; W-3a item 10; §6.5 |
+| 2. W0-1 at run time: the edit sheets show the parameters. Battery's (headed "Battery", "BatteryPulse" and the gallery description): Layout, Main value and Time at 0.6.1's defaults (Automatic, Charge, Clock time); Custom adds Details, with 4 slots on medium. The test widget's: Main value, Details (4 on medium, more on extra large), Device. Neither shows the `ParameterSummary` line ("Show Charge" nowhere). No entity query line: the Device chooser was never opened, and A.md doesn't say whether Details' was, so W0-1 (b) stays open in the final report too, and no `Summary` keys were dumped (W0-1 (d)) | Session A | §2.2 W0-1, W0-1 (b), (d); W-2, W-3a items 1-2; G7-1 |
+| 3. W0-3: the feed's candidates A (the home-relative-path read-only exception) and A′ (the shared-preference read-only exception) both work, 55 bytes read. The log prints the feed's age as `age=Ns`, so it doesn't show whether the app wrote while the widget wasn't running | Session A | §2.2 W0-3 (A, for the reason given there); G7-5 |
+| 4. W0-4: the sandboxed widget reads accessory batteries itself (sources=2 accessories=1). The four Icon & widget styles redraw per style (screenshots, on the desktop and in Notification Center), but no render log line reached the log from any process, so rendering-mode data comes from screenshots only. The Refresh button's `perform` ran in the widget extension (3 times). Clicks take two routes, with no scheme registered: the Battery widget's `widgetURL` arrived as `batterypulse://page/overview` through `application(_:open:)`, with no window open and with the main window open (its line counted 1 window both times), and two clicks on the body of the Test widget, which sets no `widgetURL`, arrived as an `NSUserActivity` of the intent's type (`SpikeWidgetIntent`), with `WGWidgetUserInfoKeyFamily` and `WGWidgetUserInfoKeyKind` in its user info, no `webpageURL` and no window open. **Differs from the interim report,** which saw no `NSUserActivity` | Session A | W-8 (G7-8); W-3b item 6 (G7-4); W-9; W-1 item 8, W-3c item 2 (G7-9) |
+| 5. W0-6: the offset format counts down without a reload, with `sign: .never`. At 21:17 variant a (the default sign) read "-2 hours, 0 minutes" (an offset to a later date is signed) and variant b "2 hours, 0 minutes"; 65 s later "-1 hour, 59 minutes" and "1 hour, 59 minutes" on the same entry. Earlier frames read "2 hours, 10 minutes" and "2 hours, 6 minutes", and a later tree read "10 minutes": a zero minutes field shows, and the hours field drops under an hour. No seconds. In Russian, once redrawn, b read the Russian for "2 hours 12 minutes" without the comma, and a the same with a minus sign; a widget not yet redrawn kept its English text and English minutes. The interim report's "6 minutes" (the maintainer's photo) and the "0 minutes" of 0.6.2's Appendix C at `0a4580e` are two readings of the same countdown, as the interim note said; the final report has both. The finding, `sign: .never`, stands, and Russian passed | Session A | G7-3; W-1 item 4; W-10's guard; D-8 |
 | 6. F5, iPad: the connection label doesn't follow the transport (0.6.2's WP-23, P2, fixes it; else C-1, D-18) | Session A | D-18 |
-| 7. Charge Limit (the maintainer set System Settings' Charge Limit to 80 %; read-only captures, files kept on the Mac; a redacted `bpulse --raw` capture `charge-limit-80.plist` comes with `A.md` if he says yes): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset -g` and `pmset -g batt`). When the limit engaged at 80 %: `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" exists only in the AirPods' entries. The maintainer explicitly asked to show the Charge Limit in the app, the menu bar and the widget | Session A | W-14; Q7-10; G7-18; D-13 |
-| 8. W0-5, VoiceOver (from the maintainer's phone photos, the test widget on the desktop): focusing the widget reads "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image"; one step inside, "In Three-Quarter-Charged Battery, image, content is empty". So VoiceOver walks the widget as 9 separate items, reads the SF Symbol by its own name (the 75 % bucket) instead of the charge, and announces an empty group. The rest of W0-5 (Russian VoiceOver, the rotor, Text size) wasn't done: driving VoiceOver was too hard for the maintainer | Session A | W-3b item 5 (decorative symbols hidden, the charge labelled with its value, one element per row, a button its own element, `WidgetAccessibility` tested on Linux); Session R step 7 (a tree read, not VoiceOver); G7-12 |
-| 9. Charge Limit's number, 2026-10-23 evening (read-only reads on AC power with the Charge Limit at 80 %; interim, the final `A.md` gives exact values): `pmset -g battlimit` shows the 80 % limit (powerd's active policy). `bpulse --smc` lists `CHLT` and `CHNC`; `CHLS` is not listed (names only, no values printed). `/Library/Preferences/com.apple.powerd.charging.plist` is readable by the user, without root: an `NSKeyedArchiver` archive whose `policies` value is an embedded binary plist of `ChargeCtrlPolicy` objects, with keys that match `battlimit`'s fields (`Soc`, `Reason`, `Drain` and others). The user defaults domain `com.apple.batteryui.charging.mac` holds a prior limit of 80. At the hold, the charger child's inhibit and power-distribution keys showed charging inhibited and not allowed (exact keys and values with the final `A.md`). **Pending, asked of the local session:** the same three sources (`battlimit`, the plist and the `batteryui` domain) at 100 % (or off), back at 80 %, and on battery more than 5 minutes after unplugging, plus the plist's modification time: they show whether the file holds the configured setting in every power state or only the active policy, like `battlimit`, which clears on battery after about 300 s | Session A | W-14's 0.8 candidates: the plist is a new one (a file the unsandboxed app reads, parsed generically in BatteryCore; its place, possibly first, waits for the pending reads), System Settings' prior limit a weaker one, and `CHLT` is present on the M5, its value unread; FEA-35's 0.8 half (RD §3.3); W-14 "Still open" (the keys at the hold); M-3 unchanged (no PowerUI) |
+| 7. Charge Limit (the maintainer set System Settings' Charge Limit to 80 %; read-only captures, files kept on the Mac except the redacted `bpulse --raw` capture of the hold, `charge-limit-80.plist`, which came with the final report on his approval, `docs/plans/0.6.2/sessions/A/`): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset -g` and `pmset -g batt`). When the limit engaged at 80 %: `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" exists only in the AirPods' entries. The final report adds, at the hold (21:37): `pmset -g batt` "AC attached; not charging"; in the charger child `ChargingVoltage` 4296 (4314 while charging), `ChargerInhibitReason` 0 and `ChargerHwIlimBackoffReason` 16 (unchanged); pmset's internal battery "Is Charging" false and "Time to Full Charge" 0; the SMC's `B0UC` and `SBAS` at 80, the charge; `bpulse --smc` lists 43 `CH*` keys with types but no values; below the limit (21:33-21:34) no SMC value was 80 but `B0FI`'s raw bytes (8000). The maintainer explicitly asked to show the Charge Limit in the app, the menu bar and the widget | Session A | W-14; Q7-10; G7-18; D-13 |
+| 8. W0-5, VoiceOver (from the maintainer's phone photos, the test widget on the desktop, in English): focusing the widget reads "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image"; one step inside, "In Three-Quarter-Charged Battery, image, content is empty". So VoiceOver walks the widget as 9 separate items, reads the SF Symbol by its own name (the 75 % bucket, at 80 %) instead of the charge, and announces an empty group. **The tree** (the final report), read through System Events: Finder's desktop group holds one group per desktop widget, described "widget", with flat children. The medium widget: an image described "image" with no label or value, then 8 texts ("83%", "Not charging", "Maximum capacity", "100%", "Cycle count", "51", "Temperature", "37.8 °C"), the 9 elements VoiceOver counted; the small one: the image, "83%", "Not charging"; the Test widget: 8 texts and a button, each time-left letter apart from its value. No element pairs a label with its value. **Text size** at 17 pt changed nothing: the widgets stayed pixel-identical to a shot at the usual size (answer 2). Russian VoiceOver and the rotor weren't done: driving VoiceOver was too hard for the maintainer | Session A | W-3b item 5 (decorative symbols hidden, the charge labelled with its value, one element per row, a button its own element, `WidgetAccessibility` tested on Linux); Session R step 7 (a tree read, not VoiceOver, under Finder's desktop group); Text size decided (§2.2 W0-5); G7-12 |
+| 9. Charge Limit's number and the 100 % diff (read-only reads, exact values). **At the 80 % hold, on AC** (21:37-22:18): `pmset -g battlimit` (no privileges) prints two entries, `chargeSocLimitSoc` 80, `chargeSocLimitReason` `manualChargeLimit`, `chargeSocLimitDrain` 1, `chargeSocLimitIsEOC` 1, `chargeSocLimitNoChargeToFull` 0, `Terminated` 0; `/Library/Preferences/com.apple.powerd.charging.plist` (root's, readable by everyone) holds `bootSessionUUID` and `policies`, an `NSKeyedArchiver` archive of `ChargeCtrlPolicy` objects with `soclimit` 80, `reason` `manualChargeLimit`, `drain`, `isEndOfCharge`, `noChargeToFull`, `owner`, `terminated` and `token` (an `NSUUID`); `com.apple.batteryui.charging.mac` has one key, `…prior.limit` = 80; `notifyutil -g com.apple.system.powersources.chargingtofulloverride` reads 0; the SMC lists `CHLT` (3 `hex_` bytes) and `CHNC` (8), no `CHLS`, values unread; `NotChargingReason` 16777216, `ChargerInhibitReason` 0, `IPDChargingAllowed` 0. **80 → 100 → 80** (23:44-23:47, a minute after each change): at 100 %, battlimit "No battery level limits set", the plist rewritten with no policy, `prior.limit` still 80, `NotChargingReason` 0 in both places, `IsCharging` 1, `ChargingCurrent` 2626, `IPDChargingAllowed` 1, the charge rising 80 → 83 %; back at 80 %, battlimit and the policy as before (the plist rewritten at 23:47:18), bit 24 again, `IsCharging` 0, `ChargingCurrent` 0, `IPDChargingAllowed` 0 and `ChargerInhibitReason` 268439552 (0x10001000), with the charge above the limit. **On battery** (read 1 h 58 min into the energy window): battlimit "No battery level limits set" and no policy in the plist, which had changed about 5 minutes after unplugging (00:01:28); `prior.limit` 80. **After plug-in** (the adapter logged at 01:56:51, read 5 s later): the plist had changed at 01:56:48, with the policy it had before; battlimit 80 again; `prior.limit` 80; `NotChargingReason` 128 (bit 7, not 24), `IsCharging` false, `ChargingCurrent` 0, `IPDChargingAllowed` 0, which was transient: the gauge's next update (01:57:41) was charging, and from 02:15 the charge held at 80 %. So powerd keeps the limit's policy only while on AC, and the setting survives unplugging. **Differs from the interim report,** which had the file as an archive whose `policies` is an embedded property list (the file is a property list, and `policies` holds the archive), and the charger's inhibit key showing charging inhibited at the hold (`ChargerInhibitReason` read 0 at exactly 80 %; `IPDChargingAllowed` 0 is the key that follows the hold) | Session A | W-14's 0.8 candidates, reordered (the plist on AC, then `prior.limit` on battery with its caveat, then `CHLT`, then `battlimit`); W-14 "Settled by the 100 % diff" and item 6; FEA-35's 0.8 half (RD §3.3); W-12's `prepare`; M-3 unchanged (no PowerUI) |
+| 10. The widgets in Russian (W0-2-W-ru: 2), new in the final report: with `AppleLanguages` (ru) in the extension's container preferences and the extension ended, the Battery widgets turned Russian (the Russian words for Not charging, Maximum capacity, Cycle count and Temperature), and the Test widgets once Refresh redrew them; the edit sheet stayed English (Battery, Layout, Main value, Time, Details). The spike's strings have their Russian in its catalog (`claude/062-spike-widget`). So D-8's method reaches the widgets, not the sheet, which the system draws from `Metadata.appintents` | Session A | D-8; W-2 item 5 (the check and the fix); W-10 item 2; Session R step 4.3; G7-13 |
 
 **The Charge Limit research** (2026-10-23; working notes outside the repository, built on Apple's
 support article https://support.apple.com/102338 and its Russian version, public captures from
@@ -3446,10 +3564,10 @@ other Macs, and this repository's fixtures):
 |---|---|---|
 | 0.7 ships the "at limit" state only: bit 24 of `NotChargingReason` with external power and `chargeState == .notCharging` (and no optimized hold flag, which wins), a computed `BatterySnapshot` property in a new BatteryCore file, no new `ChargeState` case (it is `Codable` in History and `--json`, frozen), and a type name that never meets `AlertSettings.chargeLimit` | the research; the M5 fixtures (`charging` reads 0, the on-battery and just-plugged-in captures 0x80) | W-14 items 1-2 |
 | Where it shows: Apple's wording "Charged to limit", Power's "Charge limit: Reached", the popover and the compact window through the shared phrase, the widget's state line and its `systemChargeLimit` field; no ring or battery marker (the number is unknown, so a tick would sit at the end of the fill); no menu bar icon change; Raw Data decodes bit 24 as the Charge Limit's hold; `bpulse` unchanged | the research | W-14 items 3-5; §7.3 |
-| The configured percentage is in no IOKit or IOPS key. Candidates for 0.8, best first: the SMC key `CHLT` (inside the read-only SMC rule; seen once on another Mac; the active limit only, 00 on battery; a reviewed `bpulse --smc` value read of `CHLT` and `CHNC` first); `pmset -g battlimit` through `Process` (a `SecurityGuardTests` exception; only on bit-24 changes or plug-in; AC only; undocumented text). Session A's evening reads (finding 9) add two: powerd's charging preferences file, read as a file by the unsandboxed app (no `Process`, no private framework, no SMC; a keyed archive that BatteryCore walks generically on Linux, never instantiating the private class, tested with a redacted sample; private and undocumented, so a macOS 27.x update may change it; its place, possibly first, waits for the pending reads), and, weaker, System Settings' prior limit in `com.apple.batteryui.charging.mac` (possibly stale, or the value from before "off"); last, the private PowerUI framework (contradicts M-3; not recommended unless M-3 is reopened). They also show `CHLT` present on the M5, its value unread, and `battlimit` at 80 %. The sandboxed widget can read the number only through the feed. "Off" is never inferred: 100 % and on battery look alike | the research; Session A's evening reads (finding 9) | W-14's 0.8 part; FEA-35's second half (RD §3.3) |
+| The configured percentage is in no IOKit or IOPS key. Candidates for 0.8, reordered by Session A's final reads (finding 9), best first: powerd's charging preferences file, read as a file by the unsandboxed app (no `Process`, no private framework, no SMC; a property list whose `policies` is a keyed archive that BatteryCore walks generically on Linux, never instantiating the private class, tested with a redacted sample; private and undocumented, so a macOS 27.x update may change it), which holds the active limit only on AC; System Settings' `prior.limit` in `com.apple.batteryui.charging.mac`, which kept 80 on battery but also at 100 %, so it is the last limit set, possibly stale, for use on battery only; the SMC key `CHLT` (inside the read-only SMC rule; seen once on another Mac: the active limit only, 00 on battery; present on the M5, its value unread; a reviewed `bpulse --smc` value read of `CHLT` and `CHNC` first); `pmset -g battlimit` through `Process` (the plist's policy as undocumented text, AC only; a `SecurityGuardTests` exception; only on bit-24 changes or plug-in), now only the file's fallback; last, the private PowerUI framework (contradicts M-3; not recommended unless M-3 is reopened). The sandboxed widget can read the number only through the feed. "Off" is never inferred: 100 % and on battery look alike | the research; Session A's reads (finding 9) | W-14's 0.8 part; FEA-35's second half (RD §3.3) |
 | Localization: Apple's Russian support article (https://support.apple.com/ru-ru/102338) gives Apple's terms for Charge Limit, the battery menu's "Charged to [%] Limit" and Charge to Full Now; the catalog's translation of "Charging on hold" (Optimized Charging's hold) must not be reused. The plan lists English keys only; the Russian is verified at implementation against System Settings' own string | Apple's support article | §8; W-10 item 1 |
-| Risks: bit 24 is undocumented (one M5 capture plus public reports from other Macs); Optimized Charging's hold may set the same bit (unverified, QUA-06); the app's "When charged to 90 %" alert never fires under an 80 % limit | the research | W-14 "Risks"; UG (W-14 item 7) |
-| Still open until a 100 % diff (the session's 80 → 100 → 80 recording may already hold it): whether bit 24 clears when the limit is raised, which other keys flip (at the 80 % hold the charger child's inhibit and power-distribution keys read charging inhibited and not allowed, finding 9), what "off" looks like | — | W-14 "Still open"; G7-18; W-12's `charge-limit` |
+| Risks: bit 24 is undocumented (Session A's reads on one M5 plus public reports from other Macs); Optimized Charging's hold may set the same bit (unverified, QUA-06); the app's "When charged to 90 %" alert never fires under an 80 % limit | the research | W-14 "Risks"; UG (W-14 item 7) |
+| Settled by the 100 % diff (the final `A.md`, finding 9): bit 24 clears and charging resumes when the limit is raised to 100 %, and it returns when the limit is set back to 80 %; `IsCharging`, `ChargingCurrent` and `IPDChargingAllowed` follow it, `ChargerInhibitReason` doesn't (0 at the hold, 0x10001000 when set back below the charge); 100 % looks like no limit. Still open: whether Optimized Charging's hold sets bit 24 (QUA-06), and when bit 24 appears after a plug-in within 5 % of the limit | the final `A.md` | W-14 "Settled by the 100 % diff" and item 6; G7-18 |
 
 **W-1, done early** (2026-10-22, on `claude/070-w1` at `d59c7e6`, CI green, 624 Linux tests; rebased onto v0.6.2 when 0.7 starts):
 
@@ -3474,11 +3592,12 @@ other Macs, and this repository's fixtures):
 |---|---|---|
 | The widget's `__text`, binary, `widget_appintents_bytes` and `strings_bytes` per commit | CI | G7-10 |
 | `appintents-check`'s counts; the extracted `Summary` keys | CI (W-2, W-3a) | W-10's placeholder rule |
+| The edit sheet's strings: their keys and tables in the metadata, and the widget bundle's Russian for each (W-2 item 5) | CI (W-2, W-3a) | G7-13; W-2's fix |
 | Whether the render test target links; whether Russian renders | CI (W-3a) | §6.1 |
 | The look check's answers 1-9, and the second look's | the PR | W-3b, W-8, §14 |
 | Session R steps 2-9b, per step: the answers, screenshots, `pluginkit`, the pre-swap and CHSErrorDomain 1103 lines, the click pages, step 7's accessibility tree (or Inspector screenshots) against the label builder, step 9b's Charge Limit screenshots | Session R | G7-2, G7-3, G7-4, G7-8, G7-9, G7-12, G7-13, G7-18 |
-| W-14: the redacted fixture's arrival; the 100 % diff (whether bit 24 clears, which keys flip, what "off" looks like); the Russian Charge Limit screenshot | the final `A.md` (D-13), else W-12's `charge-limit` step before C1 (fixture, diff) and Session R step 9b (screenshot); Session R step 11 only if the step never ran | G7-18; W-10 item 1 |
-| Details' chooser lists the fields (W0-1 (b)), and whether `init(min:max:)` compiled per family | the final `A.md`; W-3a's first CI build | W-3a items 1-2 |
+| W-14: the Russian Charge Limit screenshot (the redacted fixture and the 100 % diff came with the final `A.md`, D-13) | Session R step 9b | W-10 item 1 |
+| Details' chooser lists the fields (W0-1 (b)), and whether `init(min:max:)` compiled per family | W-3a's review (the choice) and first CI build; Session R step 4.1 (the chooser) | W-3a items 1-2 |
 | Step 4.4: whether a parameter added to a shipped intent kept the placed widget's choices | Session R (RC-P) | 1.1's added parameters (RD C14 item 5) |
 | Step 9: the per-kind counts from `currentConfigurations()` against the widgets placed | Session R | G7-17; W-4 item 3 |
 | Per kind: reloads requested and delivered, the share and the median delay; the widget's reads and their time per day; crash reports; faults; assertions | the logged day | G7-11, G7-16; §10 |

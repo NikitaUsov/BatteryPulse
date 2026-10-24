@@ -30,8 +30,11 @@ practices, as you see fit") and is decided as its recommendation.
 macOS's Charge Limit in the app, the menu bar and the widget. Showing it, read-only, is a new
 inventory row, FEA-35, distinct from FEA-27 (setting a limit, not in 1.x: M-3). 0.7 shows the "at
 limit" state (plan-0.7.0 W-14, §3.2), and 0.8 the configured number if one of its candidate
-sources passes its check (§3.3: the SMC's `CHLT`, `pmset -g battlimit` and, since Session A's
-evening reads, powerd's charging plist read as a file and System Settings' weaker prior limit).
+sources passes its check (§3.3). Session A's final report (2026-10-24) put them in this order:
+powerd's charging plist read as a file, which holds the limit only on AC; System Settings' prior
+limit, which kept it on battery but may be stale; the SMC's `CHLT`; and `pmset -g battlimit`. It
+also brought the redacted fixture and the diff at 100 % (bit 24 clears and returns), so FEA-35's
+0.7 half waits on neither.
 M-3 still rules out the private PowerUI client unless the maintainer reopens it. The counts below
 include FEA-35.
 
@@ -586,27 +589,27 @@ optional steps.
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
   2. **The optional Charge Limit capture (QUA-05): run in Session A** (2026-10-23, the limit at
-     80 %; P2 Appendix C). The pause set bit 24 (0x01000000) of `NotChargingReason`; no registry
-     key holds the configured 80. The redacted fixture comes with Session A's final notes, only on
-     the maintainer's yes. The local session also checked the number's candidates, read-only, on
-     AC at the 80 % limit (2026-10-23 evening; interim, exact values with its final notes):
-     `pmset -g battlimit` shows the 80 %; `bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS` (it
-     prints no `CH*` values; reading one waits for a reviewed change, §3.3); and it found two more,
-     powerd's charging plist, readable without root, and System Settings' prior limit (§3.3). The
-     same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging are pending. If no fixture is
-     committed, the step runs again with the session script's `charge-limit` step (0.7's W-12),
-     from a short hands-free local session. The script reads the limit (`pmset -g battlimit` on the
-     adapter, else a shot of System Settings → Battery [exact menu path unverified on macOS 27])
-     and checks that the charge is at least 5 points below it, because a capture that
-     starts at or above the limit records nothing. It then starts `caffeinate -i bpulse --record`
-     into a new, empty folder under the session's backup folder (`~/bp-062/` or `~/bp-070/`;
-     UG:579-583: without `caffeinate -i` the recording stops when the Mac sleeps, and the folder
-     must not hold an earlier recording) and beeps when charging stops at the limit. He starts
-     it, says yes and keeps the adapter in and the lid open, and gives his yes before `send` when
-     he is back: about 2 minutes in all, the rest unattended. FEA-35 needs the
-     fixture: without one by plan-0.7.0's C1, W-14 moves whole to 0.8 (plan-0.7.0 G7-18), so 0.7
-     runs the step between W-12's merge and C1, and its Session R offers it only if it never ran
-     (V).
+     80 %; P2 Appendix C; its final report, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24). The
+     pause set bit 24 (0x01000000) of `NotChargingReason`; no registry key holds the configured
+     80. The redacted capture of the hold came with the report, on the maintainer's approval, and
+     becomes FEA-35's fixture. The local session also read the number's candidates, read-only. At
+     80 % on AC, `pmset -g battlimit` and powerd's charging plist (readable without root) hold the
+     limit's policy (80, `manualChargeLimit`), System Settings' prior limit reads 80, and `bpulse
+     --smc` lists `CHLT` and `CHNC`, not `CHLS` (it prints no `CH*` values; reading one waits for a
+     reviewed change, §3.3). At 100 %, bit 24 cleared and charging resumed, `battlimit` read "No
+     battery level limits set" and the plist held no policy; back at 80 % both returned (the diff
+     at 100 %). On battery, `battlimit` and the plist were empty from about 5 minutes after
+     unplugging, and the policy came back at plug-in, while the prior limit stayed 80. So the
+     session script's `charge-limit` step (0.7's W-12) doesn't run for FEA-35's 0.7 half; it stays
+     for 0.8's check (§3.3), from a short hands-free local session. The script reads the limit
+     (`pmset -g battlimit` on the adapter, where it holds the limit below it too, else a shot of
+     System Settings → Battery [exact menu path unverified on macOS 27]) and checks that the
+     charge is at least 5 points below it, because a capture that starts at or above the limit
+     records nothing. It then starts `caffeinate -i bpulse --record` into a new, empty folder under
+     the session's backup folder (UG:579-583: without `caffeinate -i` the recording stops when the
+     Mac sleeps, and the folder must not hold an earlier recording) and beeps when charging stops
+     at the limit. He starts it, says yes and keeps the adapter in and the lid open, and gives his
+     yes before `send` when he is back: about 2 minutes in all, the rest unattended (V).
   3. **Q-B8: no** (P2's default; decided by delegation, 2026-10-22). Enhanced Security on an
      ad-hoc signature is unverified, and if AMFI refused the new version after the swap, users
      would be left with an app that doesn't launch (RES-security SEC-08 row; D). It was to be
@@ -728,8 +731,9 @@ optional steps.
       fixture is not, each condition alone ends the pause, bit 24 among other bits still counts,
       and the Demo scene is paused; `WidgetTextBudget` in both languages; the catalog tests.
     - **Gate (plan-0.7.0 G7-18):** it merges only with that fixture, made from Session A's
-      `charge-limit-80.plist` on the maintainer's yes. Without one by plan-0.7.0's C1 it moves
-      whole to 0.8, beside NEW-01.
+      `charge-limit-80.plist`, which came with its final report on the maintainer's approval
+      (2026-10-24), as did the diff at 100 % (bit 24 clears, then returns). Without the fixture by
+      plan-0.7.0's C1 it would move whole to 0.8, beside NEW-01.
   - **Fallback:** FEA-13, the preset kinds, only if W0-1 failed (P2 §8.16).
   - **For scripts:** QUA-14 (CB-02: ISO 8601 dates) and NEW-11 (`formatVersion` in every top-level
     JSON object `bpulse` prints). One line in the notes covers both.
@@ -814,10 +818,8 @@ optional steps.
     and about 3-4 minutes at its end (the batch and his yes; the session runs F12);
   - the after-publishing check, a short hands-free session (about 2 minutes of his time; the
     version count's step and its passive 10-minute wait are the session's);
-  - QUA-05, if Session A's capture isn't committed as a fixture: the session script's
-    `charge-limit` step (§3.1 item 2), plus the diff at 100 % if Session A's 80 → 100 → 80
-    recording doesn't already hold it, any time between W-12's merge and C1, since W-14 needs
-    both by then (plan-0.7.0 G7-18);
+  - QUA-05: nothing more. Session A's final report brought the fixture and the diff at 100 % (§3.1
+    item 2), so the session script's `charge-limit` step doesn't run in 0.7 (plan-0.7.0 G7-18);
   - QUA-06: the `hold-watch` step before bed, with the adapter in and the lid open. It records
     overnight under `caffeinate -i` and says in the morning whether a hold was seen, and with it
     whether the optimized hold also sets bit 24, which FEA-35 would show as the Charge Limit. Nobody
@@ -858,33 +860,36 @@ optional steps.
       (M-3).
   - **FEA-35's second half: the configured Charge Limit** (the "80"). No IOKit or IOPS key holds
     it (Session A: `bpulse --raw`, three `ioreg` dumps and `pmset`). The candidates, best first
-    as known today, each shipped only after its check; Session A's pending reads (plan-0.7.0
-    Appendix C finding 9) decide where the third goes, and it may become the first:
-    1. **The SMC's `CHLT`:** inside the read-only SMC rule (CLAUDE.md), so no new exception. Seen
-       once, on another Mac: the active limit only, 00 on battery. Present on the M5
-       (`bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS`; 2026-10-23 evening), its value still
-       unread. A reviewed `bpulse --smc` value read of `CHLT` and `CHNC` comes first.
-    2. **`pmset -g battlimit` through `Process`:** a `SecurityGuardTests` exception with its
-       reason (today only the update installer starts a process). It runs only on a bit-24
-       change or a plug-in, never per poll, answers only on AC (it clears about 300 s after
-       unplugging), and prints undocumented text, parsed in BatteryCore and tested on Linux with
-       verbatim samples. On the M5 it shows the 80 % limit, powerd's active policy.
-    3. **powerd's charging plist, read as a file** (new, 2026-10-23 evening):
+    as known today, each shipped only after its check. Session A's final reads (plan-0.7.0
+    Appendix C finding 9) reordered them: powerd's plist and `pmset -g battlimit` hold the limit's
+    policy only on AC, and the prior limit kept it on battery:
+    1. **powerd's charging plist, read as a file, on AC:**
        `/Library/Preferences/com.apple.powerd.charging.plist`, readable by the user without root.
-       The unsandboxed app reads the file: no `Process`, no private framework, no SMC. It is an
-       `NSKeyedArchiver` archive whose `policies` value is an embedded binary plist of
-       `ChargeCtrlPolicy` objects, with `battlimit`'s fields (`Soc`, `Reason`, `Drain` and
-       others). BatteryCore parses it on Linux as a plain property list, walking the archive's
-       `$objects` and `$top` generically and never instantiating the private class, tested with a
-       redacted sample. The widget's sandbox can't read it. The format is private and
-       undocumented, so a macOS 27.x update may change it. The pending reads (100 % or off, back at
-       80 %, on battery more than 5 minutes after unplugging, and the file's modification time)
-       show whether it holds the configured setting in every power state or only the active
-       policy, like `battlimit`.
-    4. **System Settings' prior limit, weaker:** the user defaults domain
-       `com.apple.batteryui.charging.mac` holds a prior limit of 80. It is System Settings' own
-       record, so it may be stale after a change made elsewhere, and "prior" may mean the value
-       from before the limit was turned off.
+       The unsandboxed app reads the file: no `Process`, no private framework, no SMC. It holds
+       `bootSessionUUID` and `policies`, an `NSKeyedArchiver` archive of `ChargeCtrlPolicy`
+       objects (`soclimit` 80, `reason` `manualChargeLimit`, `drain`, `isEndOfCharge`,
+       `noChargeToFull`, `terminated` and others), the values `battlimit` prints. BatteryCore parses
+       it on Linux as plain property lists, walking the archive's `$objects` and `$top` generically
+       and never instantiating the private class, tested with a redacted sample. It holds a policy
+       only on AC: powerd removed it about 5 minutes after unplugging, restored it at plug-in, and
+       wrote none at 100 %. So on AC a policy is the active limit; on battery it says nothing. The
+       widget's sandbox can't read it. The format is private and undocumented, so a macOS 27.x
+       update may change it.
+    2. **System Settings' prior limit, on battery, with its caveat:** the user defaults domain
+       `com.apple.batteryui.charging.mac` holds one key, a prior limit of 80, which stayed 80 on
+       battery, when the plist was empty, but also with the limit at 100 %. So it is the last
+       limit set below 100 %, not proof that one is on: on battery it can show only as the limit
+       last set, and on AC the plist wins. It is System Settings' own record, so a change made
+       elsewhere may leave it stale.
+    3. **The SMC's `CHLT`:** inside the read-only SMC rule (CLAUDE.md), so no new exception. Seen
+       once, on another Mac: the active limit only, 00 on battery, so at best what the plist
+       gives. Present on the M5 (`bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS`), its value
+       still unread. A reviewed `bpulse --smc` value read of `CHLT` and `CHNC` comes first.
+    4. **`pmset -g battlimit` through `Process`:** the plist's policy as undocumented text, so only
+       the file's fallback: a `SecurityGuardTests` exception with its reason (today only the update
+       installer starts a process). It runs only on a bit-24 change or a plug-in, never per poll,
+       answers only on AC (it clears about 300 s after unplugging), and its text is parsed in
+       BatteryCore and tested on Linux with verbatim samples.
     5. **The private PowerUI client:** it answers in any power state, but M-3 rules it out. Not
        taken unless the maintainer reopens M-3.
     - **Model:** a stored `systemChargeLimitPercent: Int?` (80-100; `nil` is unknown), so `--json`
@@ -894,9 +899,9 @@ optional steps.
     - **Where:** Power's row gains the number ("80 %", and "reached" while paused). The sandboxed
       widget can read none of the sources, so it gets the number only through the feed (FEA-10);
       without the feed it keeps 0.7's "Reached".
-    - **If no candidate passes:** the number stays unknown, a known limitation (§2.5). [uncertain
-      until the diff at 100 %: whether bit 24 clears when the limit is raised, which other keys
-      flip, and what "off" looks like]
+    - **If no candidate passes:** the number stays unknown, a known limitation (§2.5). The diff
+      at 100 % came with Session A's final report: bit 24 clears and charging resumes when the
+      limit is raised, `IPDChargingAllowed` follows it, and 100 % looks like no limit.
   - **NEW-02 Health summary,** at the top of Health.
     - Facts only: the condition, maximum capacity, and cycles out of the rated count. No grade of
       our own (V, D4).
@@ -1246,12 +1251,12 @@ condition or the reason.
 | FEA-32 | iOS analytics import | Not planned | M-2 |
 | FEA-33 | iOS widget | Not planned | M-2 |
 | FEA-34 | iOS Live Activity | Not planned | M-2 |
-| FEA-35 | Show macOS's Charge Limit, read-only | 0.7 (the state) and 0.8 (the number) | The maintainer's request (2026-10-23). The state is plan-0.7.0 W-14, P1, whole to 0.8 without a redacted fixture by plan-0.7.0's C1 (G7-18); the number only from a source that passes its check (§3.3): the SMC's `CHLT` (present on the M5, its value unread), `pmset -g battlimit`, powerd's charging plist read as a file (new, 2026-10-23 evening; its place, possibly first, waits for Session A's pending reads) or, weaker, System Settings' prior limit; never PowerUI (M-3) |
+| FEA-35 | Show macOS's Charge Limit, read-only | 0.7 (the state) and 0.8 (the number) | The maintainer's request (2026-10-23). The state is plan-0.7.0 W-14, P1, whole to 0.8 without a redacted fixture by plan-0.7.0's C1 (G7-18); the number only from a source that passes its check (§3.3), in the order Session A's final reads give: powerd's charging plist read as a file (the active limit, on AC only), System Settings' prior limit (kept on battery, possibly stale), the SMC's `CHLT` (present on the M5, its value unread) or `pmset -g battlimit` (the plist's policy as text, AC only); never PowerUI (M-3) |
 | QUA-01 | Clear black minimize frame | 0.6.2 | P1; fill (b), the graphite composite (Q-B2) |
 | QUA-02 | Clear tile preview selected/unselected | 0.6.2 | P1 |
 | QUA-03 | Beta styles graduation evidence | 0.6.2 | What it misses: 0.9.0 matrix, or a known limitation (beta) |
 | QUA-04 | Menu bar icon styles signed off | 0.6.2 (optional) | Else the 0.9.0 matrix |
-| QUA-05 | Charge Limit stop-point capture | 0.6.2 (optional; captured in Session A, 2026-10-23) | The pause is bit 24 (§3.1 item 2). The redacted fixture, on the maintainer's yes, gates FEA-35 in 0.7 (no fixture, no cause; else 0.8, G7-18). If no fixture is committed or the diff at 100 % is still open, 0.7 runs the step between W-12's merge and C1; its Session R offers it only if it never ran |
+| QUA-05 | Charge Limit stop-point capture | 0.6.2 (optional; captured in Session A, 2026-10-23) | The pause is bit 24, and it clears when the limit is raised to 100 % (§3.1 item 2). The redacted fixture gates FEA-35 in 0.7 (no fixture, no cause; else 0.8, G7-18); it came with Session A's final report on the maintainer's approval, with the diff at 100 %, so 0.7 doesn't run the step |
 | QUA-06 | Optimized charging hold capture | 0.7-0.8 (opportunistic) | Gates NEW-01's optimized-hold cause; without it, that cause waits until after 1.0. It also shows whether the hold sets bit 24, which FEA-35 would show as the Charge Limit [unverified] |
 | QUA-07 | Glossary keys, M1-M4 captures | After 1.0 | Ongoing; not a gate (C17's honest claim) |
 | QUA-08 | iPad capture, `ManufactureDate` | Not planned | Hardware; listed as a known limitation |
@@ -1499,10 +1504,10 @@ anonymous version count in 0.7 (NEW-24; plan-0.7.0 §14 Q7-9).
     exception if one is needed and its caveats recorded.
   - **Showing the limit is not charge limiting** (FEA-35, the maintainer's request of
     2026-10-23): 0.7 shows the paused state from a key the parser already reads (bit 24 of
-    `NotChargingReason`), and 0.8 the configured number from the SMC's `CHLT` (inside the
-    read-only SMC rule), `pmset -g battlimit` (a `SecurityGuardTests` exception), powerd's
-    charging plist read as a file, or, weaker, System Settings' prior limit, if a check proves
-    one (§3.3). None loads a private framework into BatteryPulse.
+    `NotChargingReason`), and 0.8 the configured number from powerd's charging plist read as a
+    file (on AC), System Settings' prior limit (on battery, possibly stale), the SMC's `CHLT`
+    (inside the read-only SMC rule) or `pmset -g battlimit` (a `SecurityGuardTests` exception),
+    if a check proves one (§3.3). None loads a private framework into BatteryPulse.
 - **Why:** 1.x's trust promise is read-only, and macOS already has the setting (R:677-684).
 - **If it were yes, for 80-100 %:**
   - a spike of the private client opened with `dlopen` (CLR:98 cites two outside measurements;
@@ -1663,8 +1668,9 @@ Each year brings betas at WWDC in June and the release in September [assumed], p
 
 The private sources are MobileDevice, `IOPSCopyPowerSourcesByType(4)` and the registry layout,
 which already moved once in 27 (R:63-75). FEA-35 adds two undocumented ones: bit 24 of
-`NotChargingReason` (one M5 capture plus outside reports) and, from 0.8, the number's source:
-`CHLT`, `pmset -g battlimit`'s text, powerd's charging plist (a private archive format) or System Settings' `com.apple.batteryui.charging.mac` record.
+`NotChargingReason` (Session A's reads on one M5 plus outside reports) and, from 0.8, the number's
+source: powerd's charging plist (a private archive format), System Settings'
+`com.apple.batteryui.charging.mac` record, `CHLT` or `pmset -g battlimit`'s text.
 
 - CI's canary (ci.yml:91-93).
 - The "Unavailable" states (UG:376-378).
@@ -1844,4 +1850,4 @@ There are 55 M5 rows (54 open: DIS-04, round A0, passed on 2026-10-22; FEA-35 jo
 | A 14-day daily-use period | D | **Not taken** | C4's 7 counted days instead (see above) |
 | Mac App Store never; no personal package catalog; no telemetry; no separate website | D, Q | **Taken; telemetry narrowed by the maintainer** | §4.3. He added one anonymous version count in 0.7 (NEW-24): no identifier, nothing about the Mac, only GitHub's public download totals; every other kind of telemetry stays rejected |
 | Cadence after 1.0; keep GPLv3 | D | **Modified** (decided by delegation; M-5 removed the 6-8-week pace: no schedule, a minor release when there is time and desire) | M-12, M-14 |
-| Charge limit: read it and explain it (V) / never in 1.x (Q) | V vs Q | **Resolved: explain from the readings only; no setter and no private-framework limit read in 1.x** | M-3. The read-only promise, plus no new private-API surface. The maintainer's request of 2026-10-23 adds the read-only display (FEA-35): the registry's bit 24 in 0.7, and in 0.8 the SMC's `CHLT`, `pmset -g battlimit`, powerd's charging plist read as a file, or, weaker, System Settings' prior limit, whichever passes its check, never PowerUI. |
+| Charge limit: read it and explain it (V) / never in 1.x (Q) | V vs Q | **Resolved: explain from the readings only; no setter and no private-framework limit read in 1.x** | M-3. The read-only promise, plus no new private-API surface. The maintainer's request of 2026-10-23 adds the read-only display (FEA-35): the registry's bit 24 in 0.7, and in 0.8 powerd's charging plist read as a file (on AC), System Settings' prior limit (on battery, possibly stale), the SMC's `CHLT` or `pmset -g battlimit`, whichever passes its check, never PowerUI. |
