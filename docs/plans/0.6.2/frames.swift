@@ -205,7 +205,11 @@ func dump(movie: URL, folder: URL, interval: Double, width: Int, region: Region?
         generator.maximumSize = CGSize(width: CGFloat(width), height: natural.height * CGFloat(width) / natural.width)
     }
 
-    var images: [CGImage] = []
+    // Only the sheet's frames stay in memory (at most 120, evenly picked from the frames the clip
+    // gives): a clip dumped frame by frame would otherwise hold hundreds of full frames.
+    let expected = max(1, Int((duration / interval).rounded(.up)))
+    let sheetStep = max(1, (expected + Layout.sheetLimit - 1) / Layout.sheetLimit)
+    var sheetFrames: [CGImage] = []
     var lines = ["index\ttime_s\tluma\tdark_pct\tchange_pct\tstep_pct\trect_luma\trect_dark_pct"]
     var rows: [(index: Int, time: Double, stats: FrameStats, change: Double, inside: FrameStats?)] = []
     var firstGrey: [UInt8] = []
@@ -244,13 +248,13 @@ func dump(movie: URL, folder: URL, interval: Double, width: Int, region: Region?
                 frameStats.darkShare, difference, step,
                 inside.map { String(format: "%.3f", $0.luma) } ?? "-",
                 inside.map { String(format: "%.1f", $0.darkShare) } ?? "-"))
-        images.append(image)
+        if index % sheetStep == 0 { sheetFrames.append(image) }
         index += 1
         time = Double(index) * interval
     }
     try (lines.joined(separator: "\n") + "\n").write(
         to: folder.appendingPathComponent("frames.tsv"), atomically: true, encoding: .utf8)
-    if let sheet = try contactSheet(images) {
+    if let sheet = try contactSheet(sheetFrames) {
         try writePNG(sheet, to: folder.appendingPathComponent("sheet.png"))
     }
 
@@ -272,9 +276,10 @@ func dump(movie: URL, folder: URL, interval: Double, width: Int, region: Region?
             ($0.inside?.darkShare ?? 0) > ($1.inside?.darkShare ?? 0)
         }
         for (rank, row) in inside.prefix(3).enumerated() {
-            let box = pixelRect(region.rect, screenWidth: screenWidth, imageWidth: images[row.index].width)
-            try writePNG(
-                try cropped(images[row.index], box), to: folder.appendingPathComponent("darkest-\(rank + 1).png"))
+            // Read back from its dump, the same pixels.
+            let image = try readImage(folder.appendingPathComponent(String(format: "frame-%04ld.png", row.index)))
+            let box = pixelRect(region.rect, screenWidth: screenWidth, imageWidth: image.width)
+            try writePNG(try cropped(image, box), to: folder.appendingPathComponent("darkest-\(rank + 1).png"))
             print(
                 String(
                     format: "darkest inside the rectangle %ld: frame-%04ld at %.3f s, luma %.3f, %.1f %% dark pixels",
