@@ -5454,6 +5454,13 @@ step_morning() {
   else
     out "- the overnight log stream: not started"
   fi
+  # S4w's style in effect, the shot half (WP-21's detectors): each run's window-ID shot, taken
+  # before its quiet minute, for the session to read now.
+  local shot
+  for shot in "$SHOTS"/queue/*-S4w-*.png; do
+    [ -f "$shot" ] || continue
+    echo "LOOK $shot: the style its name says? If not, note \"run <#>: style not in effect (not valid)\" ($SCRIPT note ...)"
+  done
 }
 
 # MARK: - Session B: restore gui, night and morning (step 10)
