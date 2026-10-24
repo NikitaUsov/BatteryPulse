@@ -312,6 +312,8 @@ step_answer() {
   kind="${spec%%|*}"
   rest="${spec#*|}"
   who="${rest%%|*}"
+  # Session B's judge records "unsure" for the morning batch where 3 isn't "something else".
+  if [ "$value" = unsure ] && [ "$SESSION" = B ] && [ "$by" = claude ]; then kind=text; fi
   case "$kind" in
     yn) case "$value" in y | n) ;; *) fail "$id takes y or n (y = looks right)" ;; esac ;;
     text) [ -n "$value" ] || fail "$id takes a text" ;;
@@ -2795,9 +2797,11 @@ step_judge() {
   fi
   if [ -n "$unsure" ]; then
     printf '%s\t%s\t%s\t%s\n' "$id" "$value" "$(printf '%s' "$note" | tr '\t\n' '  ')" "$(measure_of "$id" 5)" >>"$BATCH"
-    case "$kind" in
-      yn | 2) value=unsure ;;
-      *) value=3 ;;
+    # 3 where the scale's 3 is "something else (note)"; elsewhere (y/n, 1-2, a widget's "3 gone")
+    # "unsure".
+    case "$spec" in
+      *"3 something else"*) value=3 ;;
+      *) value=unsure ;;
     esac
     note="for the morning batch: claude read $read${note:+; $note}"
   fi
@@ -4692,11 +4696,13 @@ q_detect() {
   local touched=no slept=no adapter=no locked=no saver=no style=- lpm=no claude=no reasons="" rows log idle
   rows="$(awk -F '\t' -v s="$start" -v e="$end" 'NR > 1 && $1 >= s && $1 <= e' "$LOGS/sampler.tsv" 2>/dev/null || true)"
   idle="$(sample_field hid_idle_s "$s1")"
-  if awk -v i="$idle" -v d=$((end - start)) 'BEGIN { exit !(i != "unknown" && i + 2 < d) }'; then touched=yes; fi
-  if [ -n "$rows" ] && awk -F '\t' -v s="$start" '$7 != "unknown" && $7 != "-" && $7 + 3 < $1 - s { found = 1 } END { exit !found }' <<<"$rows"; then touched=yes; fi
+  # An unread HIDIdleTime ("" or unknown) says nothing either way.
+  if awk -v i="$idle" -v d=$((end - start)) 'BEGIN { exit !(i != "" && i != "unknown" && i + 2 < d) }'; then touched=yes; fi
+  if [ -n "$rows" ] && awk -F '\t' -v s="$start" '$7 != "" && $7 != "unknown" && $7 != "-" && $7 + 3 < $1 - s { found = 1 } END { exit !found }' <<<"$rows"; then touched=yes; fi
   if awk -F= '$1 == "seconds" { c = $2 } $1 == "awake_seconds" { a = $2 } END { exit !(a != "" && c - a > 1) }' "$file" 2>/dev/null; then slept=yes; fi
   log="$(q_pmset_log "$start" "$end")"
-  if awk '$4 == "Sleep" || $4 == "DarkWake" || $4 == "Wake" { found = 1 } END { exit !found }' <<<"$log"; then slept=yes; fi
+  # Not "Wake Requests" (scheduled wakes) or "Sleep Service": the Mac's own sleeps and wakes.
+  if awk '($4 == "Sleep" && $5 != "Service") || $4 == "DarkWake" || ($4 == "Wake" && $5 != "Requests") { found = 1 } END { exit !found }' <<<"$log"; then slept=yes; fi
   if [ -n "$rows" ] && awk -F '\t' '$5 == "Yes" { found = 1 } END { exit !found }' <<<"$rows"; then adapter=yes; fi
   if ! q_on_battery; then adapter=yes; fi
   if [ "$scenario" = S6 ]; then
@@ -4716,7 +4722,13 @@ q_detect() {
       case "$(q_universal_access)" in *"=1"*) style=yes ;; esac
       ;;
   esac
-  if [ "$(sample_field lowpower "$s0")" != "$want" ] || [ "$(sample_field lowpower "$s1")" != "$want" ]; then lpm=yes; fi
+  local lpm0 lpm1
+  lpm0="$(sample_field lowpower "$s0")"
+  lpm1="$(sample_field lowpower "$s1")"
+  # Unread by ui: pmset's setting for battery, which is the state on battery.
+  case "$lpm0" in 0 | 1) ;; *) lpm0="$(lowpowermode_of Battery)" ;; esac
+  case "$lpm1" in 0 | 1) ;; *) lpm1="$(lowpowermode_of Battery)" ;; esac
+  if [ "$lpm0" != "$want" ] || [ "$lpm1" != "$want" ]; then lpm=yes; fi
   if awk -v a="${c0%% *}" -v b="${c1%% *}" -v x="${c0##* }" -v y="${c1##* }" 'BEGIN {
       n = split(a, s, ","); for (i = 1; i <= n; i++) seen[s[i]] = 1
       m = split(b, e, ","); for (i = 1; i <= m; i++) if (e[i] != "" && !(e[i] in seen)) found = 1
@@ -5237,7 +5249,8 @@ step_arm() {
     if [ -z "$decided" ]; then
       if [ -f "$READY_FILE" ]; then
         decided=ready
-      elif arm_heartbeat_stale; then
+      elif [ -f "$WORK/away" ] && arm_heartbeat_stale; then
+        # Only in the GUI phase: before `mark away` he is at the Mac, and a pause is his.
         decided=stale
       fi
       if [ -n "$decided" ]; then arm_decide "$decided"; fi

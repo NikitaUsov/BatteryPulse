@@ -21,7 +21,8 @@
 //   select-row <app> <text>                          AXSelected on the matching row
 //   minimize on|off <app> [--window <title>]         AXMinimized
 //   fullscreen on|off <app> [--window <title>]       AXFullScreen (no keystroke)
-//   position <app> <x> <y> [<width> <height>] [--window <title>]
+//   position <app> <x> <y> [<width> <height>] [--window <title>]   (Terminal too: placed, never
+//                                                    clicked)
 //   banner <app name> [--seconds n] [--probe]        finds its banner in Notification Center's AX
 //                                                    tree and presses it (--probe: only finds it)
 //   quit <app>                                       an AX press on the app's own Quit menu item
@@ -30,7 +31,7 @@
 //   title <app>                                      its focused window's title (a System Settings pane)
 //   hit <point>                                      the element there: process, role, label,
 //                                                    the parent chain and the frame (proof P1)
-//   tree <app> [--match <text>] [--inside x y w h] [--depth n]
+//   tree <app> | --app <app> [--match <text>] [--inside x y w h] [--depth n]
 //   windows [--app <name>] [--main [--allow-cover <app>]] [--status-item]
 //   idle | locked | thermal | sample | access | screen | guard
 //                                                    sample: idle, locked and thermal in one line
@@ -721,6 +722,12 @@ enum Command {
         return try Processes.app(options.words[index])
     }
 
+    /// The app of a read: `--app <name>` (the plan's spelling) or the first word.
+    static func readTarget(_ options: Options) throws -> RunningProcess {
+        if let name = options.value("--app") { return try Processes.app(name) }
+        return try appArgument(options, 1)
+    }
+
     /// The element of `app` that `text` matches, the `--index`th (from 1).
     static func match(_ process: RunningProcess, _ text: String, _ options: Options) throws -> AXUIElement {
         let depth = Int(try options.number("--depth", default: 40))
@@ -909,7 +916,9 @@ enum Command {
     static func position(_ options: Options) throws {
         try Safety.checkAll()
         let process = try appArgument(options, 1)
-        try Safety.checkTarget(process)
+        // Terminal's windows go in the left third (§6 "Places"): moving a window clicks nothing in
+        // it, so Terminal may be placed, though never clicked or pressed.
+        if process.bundle != "com.apple.Terminal" { try Safety.checkTarget(process) }
         let numbers = options.words.dropFirst(2).compactMap(Double.init)
         guard numbers.count == 2 || numbers.count == 4 else {
             throw UsageError(description: "position <app> <x> <y> [<w> <h>]")
@@ -994,7 +1003,7 @@ enum Command {
             print("\(describe(rect)) \(AX.role(item))")
             return
         }
-        let process = try appArgument(options, 1)
+        let process = try readTarget(options)
         let rect: CGRect?
         if let text = options.value("--match") {
             rect = AX.frame(try match(process, text, options))
@@ -1012,7 +1021,7 @@ enum Command {
     /// The app's focused (else main) window title: System Settings' pane, say.
     static func title(_ options: Options) throws {
         try Safety.checkAll()
-        let process = try appArgument(options, 1)
+        let process = try readTarget(options)
         guard process.isPublic else { throw Refusal(description: "another app's titles aren't read") }
         let app = AX.application(process)
         let window = AX.element(AX.attribute(app, "AXFocusedWindow")) ?? AX.element(AX.attribute(app, "AXMainWindow"))
@@ -1048,7 +1057,7 @@ enum Command {
 
     static func tree(_ options: Options) throws {
         try Safety.checkAll()
-        let process = try appArgument(options, 1)
+        let process = try readTarget(options)
         let depth = Int(try options.number("--depth", default: 12))
         let inside = try options.rect("--inside")
         let text = options.value("--match")
