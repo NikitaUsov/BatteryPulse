@@ -208,9 +208,8 @@ struct DeveloperView: View {
         } rows: {
             ForEach(sections) { section in
                 Section {
-                    ForEach(section.rows) { row in
-                        TableRow(row)
-                    }
+                    // A `TableRow` per row, identified by the row's id.
+                    ForEach(section.rows)
                 } header: {
                     Text(verbatim: section.title)
                 }
