@@ -166,6 +166,7 @@ struct MobileDeviceLibrary: @unchecked Sendable {
         let getSocket = unsafe symbol("AMDServiceConnectionGetSocket", PointerCall.self)
         let invalidate = unsafe symbol("AMDServiceConnectionInvalidate", Invalidate.self)
 
+        // Unsafe: the looked-up addresses are only unwrapped here, none of them called.
         guard let subscribe = unsafe subscribe, let unsubscribe = unsafe unsubscribe,
             let copyDeviceIdentifier = unsafe copyDeviceIdentifier, let getInterfaceType = unsafe getInterfaceType,
             let connect = unsafe connect, let disconnect = unsafe disconnect,
@@ -179,6 +180,8 @@ struct MobileDeviceLibrary: @unchecked Sendable {
             unsafe dlclose(opened.handle)
             return .failure(.frameworkUnavailable("missing " + missing.joined(separator: ", ")))
         }
+        // Unsafe: the table stores the addresses as they are; each call through one is marked
+        // where it is made.
         let library = unsafe MobileDeviceLibrary(
             path: opened.path,
             notificationSubscribe: subscribe,

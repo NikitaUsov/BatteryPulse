@@ -313,6 +313,7 @@ final class MobileDeviceLink: IDeviceLink {
         guard status.isSuccess else { return status }
         guard let connection = unsafe connection else { return .missingResult }
         unsafe service = connection
+        // Unsafe: a call through a looked-up address, with the connection just stored.
         unsafe setTimeouts(socket: library.getSocket(connection))
         return .success
     }
