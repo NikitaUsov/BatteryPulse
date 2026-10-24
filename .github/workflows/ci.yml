@@ -49,6 +49,22 @@ jobs:
           -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
+      - name: Check the documentation links
+        # DocC resolves every ``Symbol`` link in BatteryCore's comments, internal symbols included,
+        # and fails on a broken or ambiguous one. The other targets link across modules, which DocC
+        # resolves only within one, so they aren't checked. With the build's flags the symbol graphs
+        # come from its products, without a rebuild; the step takes seconds.
+        run: |
+          swift package -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration \
+            dump-symbol-graph --minimum-access-level internal
+          mkdir -p "$RUNNER_TEMP/symbol-graphs"
+          find .build -path '*/symbolgraph/*' \( -name BatteryCore.symbols.json -o -name 'BatteryCore@*.symbols.json' \) \
+            -exec cp {} "$RUNNER_TEMP/symbol-graphs/" \;
+          # Without the graph, docc would check nothing and pass.
+          [ -s "$RUNNER_TEMP/symbol-graphs/BatteryCore.symbols.json" ] || { echo "error: no BatteryCore symbol graph" >&2; exit 1; }
+          docc convert --additional-symbol-graph-dir "$RUNNER_TEMP/symbol-graphs" --warnings-as-errors \
+            --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
+            --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
 
   macos:
     name: macOS · build & test
