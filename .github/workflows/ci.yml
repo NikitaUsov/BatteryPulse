@@ -65,6 +65,13 @@ jobs:
           docc convert --additional-symbol-graph-dir "$RUNNER_TEMP/symbol-graphs" --warnings-as-errors \
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
+      - name: Check Session B's energy queue (dry run)
+        # The 0.6.2 M5 session's queue with the world stubbed (PLAN.md WP-21): its order, its
+        # retries and its thresholds in three scenarios. Removed with the folder in D3.
+        run: |
+          for scenario in default low late; do
+            bash docs/plans/0.6.2/m5-session.sh queue --dry-run "$scenario"
+          done
 
   macos:
     name: macOS · build & test
@@ -174,6 +181,7 @@ jobs:
           bash -n docs/plans/0.6.2/m5-session.sh
           swiftc -typecheck docs/plans/0.6.2/swap.swift
           swiftc -typecheck docs/plans/0.6.2/frames.swift
+          swiftc -typecheck docs/plans/0.6.2/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
