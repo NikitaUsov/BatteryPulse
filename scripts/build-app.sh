@@ -60,10 +60,24 @@ timed_build() {
   swift build "$@"
   echo "Built $label in $((SECONDS - start)) s"
 }
+# The UUIDs of a Mach-O file or dSYM, one per architecture, sorted, on one line.
+uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
 timed_build "the app" -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
-timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
+APP_UUIDS="$(uuids "$BINARY")"
+# The widget's line alone adds -internalize-at-link, a hidden frontend flag of Swift 6.4: with _main
+# the only export, every public symbol is taken as internal to this link, so the linker drops the
+# public code of BatteryCore and BatterySource that the widget never calls. It changes how every
+# module compiles, so this line rebuilds the modules it shares with the app rather than reusing
+# them; the app, linked above, stays as it is (checked below). Code that only the runtime reaches
+# must survive it, which only a rendered widget shows: Session B's F8 checks every family on the
+# release candidate, and a blank widget drops this flag first (PLAN G-15).
+timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+if [ "$(uuids "$BINARY")" != "$APP_UUIDS" ]; then
+  echo "error: the widget's build relinked the app (UUID $APP_UUIDS before, $(uuids "$BINARY")after)" >&2
+  exit 1
+fi
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD_DIR/maps"
@@ -189,7 +203,6 @@ echo "The widget's dl imports: ${DL_IMPORTS:-none}"
 # build keeps its symbols for Instruments and the memory tools.
 DSYMS="$BUILD_DIR/dSYMs"
 mkdir -p "$DSYMS"
-uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
 for product in BatteryPulse BatteryPulseWidget; do
   # Swift Build writes a dSYM next to each release product; dsymutil makes one if that is missing
   # or belongs to an older link.
