@@ -622,10 +622,16 @@ Deferred from 0.6.1, each for the reason given:
   Developer ID build it was to be retried on won't exist without the paid account)
 - [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
   Check Now cancels a waiting automatic check (E10); SEC-18's research
-- [ ] Readability and tooling: SUI-09, the DocC check (SW-21), SW-13 for BatteryKit, SZ-08 with
-  the next glossary work, the SZ-11 and SZ-14 experiments, C2
-- [ ] CI: review `actions/checkout` v6.1.0 (a tag without a changelog entry so far) and
-  `upload-artifact` v7, both pinned by commit
+- [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
+  unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
+  of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
+  without a budget, since the runner's virtual machine counts no instructions; SUI-09 needed no
+  change, as every `@State` is already set in one place. SZ-11 (full LTO) and SZ-14
+  (`-dead_strip_dylibs`) were measured and not adopted: LTO lost the widget's debug symbols and
+  grew the DMG, and after K-03 every library the widget links is used
+- [ ] SZ-08 with the next glossary work
+- [x] CI: `actions/checkout` v7.0.1 and `upload-artifact` v7.0.2, pinned by commit in both
+  workflows; `checkout` v6.1.0 turned down, a tag still without a changelog entry
 - [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
   Charge Limit capture (Stage 1.1; captured in the first session, its fixture still to come); full
   screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
