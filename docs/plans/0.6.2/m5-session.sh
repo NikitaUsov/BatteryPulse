@@ -4421,10 +4421,21 @@ q_pack_temp() {
   plist_value "$LOGS/q-pack.plist" 0.BatteryData.Temperature
 }
 
+# claude_pids: the Claude CLI's processes, by their command line: the native install runs a
+# versioned file through the claude link, so its process name is the version, not "claude"; an npm
+# install runs node with the claude script.
+claude_pids() {
+  ps -axo pid=,args= 2>/dev/null | awk '{
+      n = split($2, path, "/")
+      if (path[n] == "claude" || $2 ~ /\/claude\/versions\//) { print $1; next }
+      if ((path[n] == "node" || path[n] == "bun") && $3 ~ /(^|\/)claude$/) print $1
+    }' || true
+}
+
 # q_claude: the Claude CLI's child processes (sorted, comma-joined) and its CPU seconds.
 q_claude() {
   local pids pid children="" cpu=0 time
-  pids="$(pgrep -x claude 2>/dev/null || true)"
+  pids="$(claude_pids)"
   for pid in $pids; do
     children="$children $(pgrep -P "$pid" 2>/dev/null | tr '\n' ' ' || true)"
     time="$(ps -o time= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
@@ -4690,8 +4701,9 @@ q_wait_for() {
 }
 
 # q_detect <start> <end> <scenario> <sample at start> <sample at end> <claude at start> <claude at
-# end> <rusage file> <want lpm> <first S6>: the detector columns, tab-separated: touched, slept,
-# adapter, locked, screensaver, style, lpm, claude, then the reasons for "not valid" (or "-").
+# end> <rusage file> <want lpm> <first S6> [<sample before the display went off>]: the detector
+# columns, tab-separated: touched, slept, adapter, locked, screensaver, style, lpm, claude, then
+# the reasons for "not valid" (or "-").
 q_detect() {
   local start="$1" end="$2" scenario="$3" s0="$4" s1="$5" c0="$6" c1="$7" file="$8" want="$9" first_s6="${10}"
   local touched=no slept=no adapter=no locked=no saver=no style=- lpm=no claude=no reasons="" rows log idle
@@ -4704,12 +4716,14 @@ q_detect() {
   log="$(q_pmset_log "$start" "$end")"
   # Not "Wake Requests" (scheduled wakes) or "Sleep Service": the Mac's own sleeps and wakes.
   if awk '($4 == "Sleep" && $5 != "Service") || $4 == "DarkWake" || ($4 == "Wake" && $5 != "Requests") { found = 1 } END { exit !found }' <<<"$log"; then slept=yes; fi
-  if [ -n "$rows" ] && awk -F '\t' '$5 == "Yes" { found = 1 } END { exit !found }' <<<"$rows"; then adapter=yes; fi
+  # The sampler's ExternalConnected comes from plutil's raw form, which prints a boolean as true
+  # or false; ioreg's text form says Yes.
+  if [ -n "$rows" ] && awk -F '\t' '$5 == "true" || $5 == "Yes" || $5 == "1" { found = 1 } END { exit !found }' <<<"$rows"; then adapter=yes; fi
   if ! q_on_battery; then adapter=yes; fi
   if [ "$scenario" = S6 ]; then
     # pmset displaysleepnow locks the screen when a password is required at once: only the first
-    # S6 run's start counts.
-    if [ "$first_s6" = yes ] && [ "$(sample_field locked "$s0")" = yes ]; then locked=yes; fi
+    # S6 run's start counts, read before the display went off (the 11th argument).
+    if [ "$first_s6" = yes ] && [ "$(sample_field locked "${11:-$s0}")" = yes ]; then locked=yes; fi
   else
     if [ "$(sample_field locked "$s0")" = yes ] || [ "$(sample_field locked "$s1")" = yes ]; then locked=yes; fi
     if [ "$(sample_field lid "$s0")" = closed ] || [ "$(sample_field lid "$s1")" = closed ]; then locked=yes; fi
@@ -4761,7 +4775,7 @@ q_detect() {
 # the displays asleep) with the perf lines, and the detectors.
 q_run() {
   local kind="$1" scenario="$2" build="$3" pair="$4" optional="$5" floor=50 want=0 seconds=240 charge capture file pid
-  local start end s0 s1 c0 c1 detect status assertions reads thermal why first_s6=no
+  local start end s0 s1 c0 c1 detect status assertions reads thermal why first_s6=no s_dark=""
   Q_INDEX=$((Q_INDEX + 1))
   Q_BUILD="$build"
   if [ "$optional" = yes ] || [ "$kind" = retry ]; then floor=56; fi
@@ -4809,6 +4823,8 @@ q_run() {
   q_sleep 60
   if [ "$scenario" = S6 ]; then
     if [ -z "$Q_DISPLAY_OFF" ]; then first_s6=yes; fi
+    # S6's lock check: the state before pmset displaysleepnow, which may lock the screen itself.
+    s_dark="$(q_sample)"
     let_display_sleep
     q_display_sleep
     Q_DISPLAY_OFF=1
@@ -4844,7 +4860,7 @@ q_run() {
   q_teardown "$scenario"
   if [ "$scenario" = S2-LPM ]; then q_set_lpm 0 || warn "Low Power Mode is still on"; fi
   reads="$(q_reads "$capture")"
-  detect="$(q_detect "$start" "$end" "$scenario" "$s0" "$s1" "$c0" "$c1" "$file" "$want" "$first_s6")"
+  detect="$(q_detect "$start" "$end" "$scenario" "$s0" "$s1" "$c0" "$c1" "$file" "$want" "$first_s6" "$s_dark")"
   status="${detect##*"$TAB"}"
   if [ -n "$why" ]; then status="${status:+$status, }$why"; fi
   if [ -n "$status" ]; then status="not valid: $status"; else status=valid; fi
@@ -5774,7 +5790,8 @@ dry_stubs() {
   q_confirm() { :; }
   q_teardown() { :; }
   q_wait_for() { return 0; }
-  q_sample() { echo "hid_idle_s=9999 locked=no lid=open thermal=nominal lowpower=$DRY_LPM"; }
+  # Once S6 has turned the display off, the screen is locked, as with a password required at once.
+  q_sample() { echo "hid_idle_s=9999 locked=$(if [ -n "$Q_DISPLAY_OFF" ]; then echo yes; else echo no; fi) lid=open thermal=nominal lowpower=$DRY_LPM"; }
   q_sudo_ok() { return 0; }
   q_set_lpm() { DRY_LPM="$1"; }
   lowpowermode_of() { echo "$DRY_LPM"; }
@@ -5804,8 +5821,9 @@ dry_stubs() {
       "$2" "$awake" "$(if [ "$Q_BUILD" = B ]; then echo 450.0; else echo 300.0; fi)" "$(if [ "$Q_BUILD" = B ]; then echo 4.500; else echo 3.000; fi)" >"$3"
     t=$((DRY_CLOCK + 10))
     while [ "$t" -lt $((DRY_CLOCK + $2)) ]; do
-      external=No locked=no idle=$((t - DRY_CLOCK + 400))
-      if dry_event adapter && [ $((t - DRY_CLOCK)) -gt 100 ]; then external=Yes; fi
+      # plutil's raw form of the boolean, as the real sampler writes it.
+      external=false locked=no idle=$((t - DRY_CLOCK + 400))
+      if dry_event adapter && [ $((t - DRY_CLOCK)) -gt 100 ]; then external=true; fi
       if dry_event locked && [ $((t - DRY_CLOCK)) -gt 100 ]; then locked=yes; fi
       if dry_event touched && [ $((t - DRY_CLOCK)) -gt 100 ]; then idle=5; fi
       printf '%s\t1\t3000\t5000\t%s\t3000\t%s\t%s\topen\tno\t2\t10.00\n' "$t" "$external" "$idle" "$locked" >>"$LOGS/sampler.tsv"
@@ -5821,7 +5839,7 @@ dry_stubs() {
 
 # dry_checks <scenario> <late epoch>: the queue's rules, one line per break.
 dry_checks() {
-  awk -F '\t' -v scenario="$1" -v late="$2" '
+  awk -F '\t' -v scenario="$1" -v late="$2" -v events="$DRY_EVENTS" '
     NR == 1 { next }
     { n++; kind[n] = $2; s[n] = $3; b[n] = $4; pair[n] = $5; start[n] = $6 + 0; charge[n] = $8 + 0; status[n] = $NF }
     END {
@@ -5840,6 +5858,7 @@ dry_checks() {
           if (lastS6 != "") print "a retry came after S6"
         }
         if (s[i] == "S6" && lastS6 == "") lastS6 = i
+        if (s[i] == "S6" && status[i] ~ /locked/) print "run " i " (S6) counted the lock its own display sleep brings"
         if (scenario == "late" && start[i] >= late && status[i] !~ /late/) print "run " i " started after the deadline"
         if (status[i] ~ /late/ && start[i] < late) print "run " i " was late too early"
       }
@@ -5856,8 +5875,15 @@ dry_checks() {
         if ((key in retried) && retried[key] > 1) print "run " i " was retried twice"
       }
       if (scenario == "default") {
-        for (i = 1; i <= n; i++) if (kind[i] == "run" && status[i] ~ /^not valid/) invalid++
-        if (invalid < 5) print "the scripted detector events didn t all mark their runs (" invalid " not valid)"
+        # Each scripted event marks its own run with its own reason.
+        reason["touched"] = "touched"; reason["adapter"] = "adapter"; reason["lpm"] = "LPM"
+        reason["claude"] = "Claude active"; reason["slept"] = "slept"; reason["locked"] = "locked"
+        m = split(events, list, " ")
+        for (j = 1; j <= m; j++) {
+          split(list[j], e, ":")
+          if (status[e[1]] !~ /^not valid/ || index(status[e[1]], reason[e[2]]) == 0)
+            print "run " e[1] " (" s[e[1]] ") isn t marked " reason[e[2]] ": " status[e[1]]
+        }
       }
     }' "$LOGS/queue-runs.tsv"
 }
