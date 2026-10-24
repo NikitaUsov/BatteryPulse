@@ -52,8 +52,16 @@ RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
 # so a link that is up to date keeps a map that matches its binary.
 MAPS="$PWD/.build/link-maps"
 mkdir -p "$MAPS"
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+# timed_build <label> <swift build arguments>: one build, followed by the seconds it took, so a CI
+# log shows what a build setting costs.
+timed_build() {
+  local label="$1" start="$SECONDS"
+  shift
+  swift build "$@"
+  echo "Built $label in $((SECONDS - start)) s"
+}
+timed_build "the app" -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
+timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 
