@@ -6151,10 +6151,12 @@ step_ready() {
 # back_since <epoch>: pmset -g log shows the lid after that time: a wake because it opened, or a
 # sleep because it closed (the morning's lid close, V-01's lid step). Software can't move the lid,
 # but it can turn the display on and make user activity (a posted move, caffeinate -u: proof P6),
-# so neither "Display is turned on" nor a UserActivity wake counts.
+# so neither "Display is turned on" nor a UserActivity wake counts. Apple Silicon logs the lid's
+# wake as "due to smc.70070000 lid ..." (lowercase), and a lid closed on a Mac already asleep logs
+# no Clamshell Sleep, so the open alone must count; a "Wake Requests" line (scheduled wakes) never.
 back_since() {
   pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" '
-    substr($0, 1, 19) > from && (($4 == "Wake" && /LidOpen|Lid Open/) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
+    substr($0, 1, 19) > from && (($4 == "Wake" && $5 != "Requests" && (/LidOpen|Lid Open/ || / lid([ \/]|$)/)) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
     END { exit !found }'
 }
 
