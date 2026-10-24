@@ -20,7 +20,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   `RegistryUpdateWatch` (an update no notification announced), metrics, `BatteryReport` text output,
   `CaptureFormat` (the capture property list, `BatterySnapshot.redacted`, Copy JSON's encoder),
   `RawValueDecoding`/`RawKeyGlossary` (Developer table; `RawDisplayRow`/`RawDisplaySection` are
-  its prebuilt rows), `History`/`HistoryStore`, `HistoryChartData` (the History page's charts),
+  its prebuilt rows, and `RawDisplayTable` keeps them, rebuilding only the sections whose
+  dictionary changed), `History`/`HistoryStore`, `HistoryChartData` (the History page's charts),
   `BatteryAlerts`, `Updates`, `UpdateInstall` (install policy, integrity, errors) and
   `ReleaseSigning` (`publicKeys`, the Ed25519 keys a release may be signed with),
   `MenuBarContent`/`BatteryIcon` (menu bar items and icon geometry), `IDevice*` (iPhone/iPad:

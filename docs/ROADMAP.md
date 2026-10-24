@@ -610,8 +610,11 @@ Deferred from 0.6.1, each for the reason given:
   - One notify key (E3b): `com.apple.system.powersources.timeremaining` dropped, since each one
     came with the "any power source" key within 10 ms.
   - The release candidate's session checks a cached read's time and the missed updates an hour.
-- [ ] SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07, SUI-11, SUI-12, E19)
-- [ ] Xcode on the Mac (installed on the M5; maintainer-run from Claude's step-by-step list):
+- [ ] SwiftUI instrument work on the pages, which switch in 21–54 ms (Session A, 2026-10-23): 0.6.2
+  rebuilds only the Raw Data sections that changed and keeps that page's body off the reading
+  (E19, SUI-07, SUI-11); the other pages' cost is the framework's geometry, and the charts stay
+  (SUI-12 not needed). Ticked when the release candidate's session measures the after
+- [ ] Xcode on the Mac (installed on the M5; run inside the release candidate's hands-free session):
   SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
   to its screenshots
 - [x] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
