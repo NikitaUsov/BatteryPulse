@@ -587,11 +587,18 @@ Deferred from 0.6.1, each for the reason given:
   What it breaks shows only at runtime, so it went first to the M5: the first session's
   notifications, pages, Demo Mode, Check Now and lid close showed no executor trap or crash, and
   the release candidate's session repeats them with an install
-- [ ] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
-  at p95, 72 % of it the registry. Read the registry only when it changes (E4b), then reads off
-  the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
-  `pmset -g pslog`; SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07,
-  SUI-11, SUI-12, E19)
+- [x] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
+  at p95, 72 % of it the registry.
+  - Read the registry only when it changes (E4b): a poll reuses the last read's registry unless
+    Power or Raw Data is shown or the copy is 5 minutes old. In the first session's 3 hours of
+    `pmset -g pslog` and `ioreg` samples, on battery and charging, every update of the registry
+    came with a notification; a read that finds one that didn't logs `registry.missed`.
+  - Reads off the main actor (E20, past its 4 ms threshold): in the first session's 2-hour run,
+    711 of 712 reads, all but the launch's.
+  - One notify key (E3b): `com.apple.system.powersources.timeremaining` dropped, since each one
+    came with the "any power source" key within 10 ms.
+  - The release candidate's session checks a cached read's time and the missed updates an hour.
+- [ ] SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07, SUI-11, SUI-12, E19)
 - [ ] Xcode on the Mac (installed on the M5; maintainer-run from Claude's step-by-step list):
   SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
   to its screenshots
