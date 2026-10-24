@@ -156,4 +156,76 @@ struct RegistryReadPolicyTests {
                 payload: [UInt8(current & 0xFF), UInt8(current >> 8)]),
         ]
     }
+
+    // MARK: - The field signal
+
+    private static let earlier = Date(timeIntervalSince1970: 1_792_045_678)
+    private static let later = Date(timeIntervalSince1970: 1_792_045_735)
+
+    /// Whether a read that begins and ends now, finding `updated`, saw a missed update.
+    private static func fetch(_ updated: Date?, into watch: inout RegistryUpdateWatch) -> Bool {
+        let mark = watch.mark
+        return watch.fetched(updated: updated, mark: mark)
+    }
+
+    @Test func anUpdateWithoutANotificationIsMissed() {
+        var watch = RegistryUpdateWatch()
+        let first = Self.fetch(Self.earlier, into: &watch)
+        let same = Self.fetch(Self.earlier, into: &watch)
+        let newer = Self.fetch(Self.later, into: &watch)
+        let again = Self.fetch(Self.later, into: &watch)
+        #expect(!first, "the first fetch has nothing to compare")
+        #expect(!same, "the same data")
+        #expect(newer, "new data, and no notification")
+        #expect(!again)
+    }
+
+    @Test func anUpdateAfterANotificationIsNotMissed() {
+        var watch = RegistryUpdateWatch()
+        _ = Self.fetch(Self.earlier, into: &watch)
+        watch.notificationArrived()
+        let missed = Self.fetch(Self.later, into: &watch)
+        #expect(!missed)
+    }
+
+    /// The registry changed just before a read fetched it, and its notification came while the
+    /// read was under way: the change was announced.
+    @Test func aNotificationDuringTheReadCounts() {
+        var watch = RegistryUpdateWatch()
+        _ = Self.fetch(Self.earlier, into: &watch)
+        let mark = watch.mark
+        watch.notificationArrived()
+        let missed = watch.fetched(updated: Self.later, mark: mark)
+        #expect(!missed)
+    }
+
+    /// A notification that came during the last read counts for the next one, whose read may be
+    /// the first to see its change.
+    @Test func aNotificationDuringTheLastReadCountsForTheNext() {
+        var watch = RegistryUpdateWatch()
+        let mark = watch.mark
+        watch.notificationArrived()
+        _ = watch.fetched(updated: Self.earlier, mark: mark)
+        let missed = Self.fetch(Self.later, into: &watch)
+        #expect(!missed)
+    }
+
+    @Test func aReadWithoutAnUpdateTimeChangesNothing() {
+        var watch = RegistryUpdateWatch()
+        _ = Self.fetch(Self.earlier, into: &watch)
+        let none = Self.fetch(nil, into: &watch)
+        let newer = Self.fetch(Self.later, into: &watch)
+        #expect(!none)
+        #expect(newer, "compared with the last update time found")
+    }
+
+    @Test func aResetForgetsTheLastFetch() {
+        var watch = RegistryUpdateWatch()
+        _ = Self.fetch(Self.earlier, into: &watch)
+        watch.reset()
+        let afterReset = Self.fetch(Self.later, into: &watch)
+        let again = Self.fetch(Self.later, into: &watch)
+        #expect(!afterReset, "Demo Mode or a stop came in between")
+        #expect(!again)
+    }
 }

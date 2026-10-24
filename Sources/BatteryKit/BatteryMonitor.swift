@@ -72,6 +72,10 @@ public final class BatteryMonitor {
     @ObservationIgnored private var slowValuesReadAt: ContinuousClock.Instant?
     /// When a read last fetched the registry, on ``clock``.
     @ObservationIgnored private var registryReadAt: ContinuousClock.Instant?
+    /// Spots the registry updates that came without a notification (``RegistryUpdateWatch``).
+    @ObservationIgnored private var registryWatch = RegistryUpdateWatch()
+    /// How many reads found such an update; each logged a `registry.missed` event.
+    @ObservationIgnored private(set) var missedRegistryUpdates = 0
     @ObservationIgnored private var slowValueClients: Set<String> = []
 
     /// How often reads fetch the values that change slowly, such as the SMC's cell voltages and
@@ -131,6 +135,8 @@ public final class BatteryMonitor {
         // device's first.
         registryReadAt = nil
         slowValuesReadAt = nil
+        // The device's notifications pause meanwhile.
+        registryWatch.reset()
         // A read in flight belongs to the provider shown until now.
         generation += 1
         requestedTrigger = nil
@@ -148,6 +154,7 @@ public final class BatteryMonitor {
     /// shown at once.
     private func providerChanged() {
         if overrideProvider == nil {
+            registryWatch.notificationArrived()
             requestRefresh()
         } else {
             refresh(trigger: .demo)
@@ -159,6 +166,8 @@ public final class BatteryMonitor {
         // A read in flight can't be stopped, but its result is dropped.
         generation += 1
         requestedTrigger = nil
+        // No notification is heard until the next start.
+        registryWatch.reset()
         observation?.cancel()
         observation = nil
         liveRefreshTask?.cancel()
@@ -284,7 +293,8 @@ public final class BatteryMonitor {
         generation += 1
         requestedTrigger = nil
         let scope = readScope(for: trigger, isPoll: trigger == .poll)
-        apply(activeProvider.read(scope: scope), scope: scope, trigger: trigger)
+        let mark = registryWatch.mark
+        apply(activeProvider.read(scope: scope), scope: scope, trigger: trigger, mark: mark)
     }
 
     /// Starts a read off the main actor or, while one is in flight, asks for one after it: any
@@ -310,9 +320,10 @@ public final class BatteryMonitor {
             let interval = Diagnostics.begin("refresh", trigger: trigger.name)
             let generation = generation
             let scope = readScope(for: trigger, isPoll: requestedPollsOnly)
+            let mark = registryWatch.mark
             let new = await Self.read(reader, scope: scope)
             if generation == self.generation {
-                apply(new, scope: scope, trigger: trigger)
+                apply(new, scope: scope, trigger: trigger, mark: mark)
             } else {
                 #if canImport(os)
                 Diagnostics.monitor.debug("A read that Demo Mode, stop() or a newer read superseded is dropped")
@@ -347,9 +358,13 @@ public final class BatteryMonitor {
     }
 
     /// Takes what a read found. ``snapshot`` and ``reading`` are reassigned only when they change.
-    private func apply(_ new: BatteryReading?, scope: BatteryReadScope, trigger: RefreshTrigger) {
+    /// `mark` is ``registryWatch``'s when the read began.
+    private func apply(_ new: BatteryReading?, scope: BatteryReadScope, trigger: RefreshTrigger, mark: Int) {
         lastReadAt = clock.now
-        if scope.rereadsRegistry { registryReadAt = lastReadAt }
+        if scope.rereadsRegistry {
+            registryReadAt = lastReadAt
+            if overrideProvider == nil, let new { checkRegistryUpdate(new, mark: mark, trigger: trigger) }
+        }
         if scope.readsAllSMCKeys { slowValuesReadAt = lastReadAt }
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) {
@@ -365,6 +380,15 @@ public final class BatteryMonitor {
             #endif
             scheduleFollowUps()
         }
+    }
+
+    /// Logs the `registry.missed` event, with the trigger of the read that found it, when a read that
+    /// fetched the device's registry found an update that no notification announced: E4b's field
+    /// signal, which a poll that reuses the registry would have missed.
+    private func checkRegistryUpdate(_ new: BatteryReading, mark: Int, trigger: RefreshTrigger) {
+        guard registryWatch.fetched(updated: new.snapshot.gaugeUpdatedAt, mark: mark) else { return }
+        missedRegistryUpdates += 1
+        Diagnostics.event("registry.missed", trigger: trigger.name)
     }
 
     /// A read found a battery where the previous one found none, or the other way around.

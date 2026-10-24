@@ -216,6 +216,13 @@ private func reading(percent: Double, at seconds: TimeInterval) -> BatteryReadin
         ))
 }
 
+/// A reading whose registry the gauge last updated `seconds` after 1970 (`UpdateTime`).
+private func reading(updated seconds: TimeInterval) -> BatteryReading {
+    var reading = reading(percent: 80, at: 1)
+    reading.snapshot.gaugeUpdatedAt = Date(timeIntervalSince1970: seconds)
+    return reading
+}
+
 private func reading(connected: Bool) -> BatteryReading {
     BatteryReading(
         snapshot: BatterySnapshot(
@@ -709,6 +716,87 @@ private func reading(connected: Bool) -> BatteryReading {
         let provider = FullReadProvider()
         #expect(provider.read(scope: .live) == nil)
         #expect(provider.readCount == 1)
+    }
+
+    // MARK: - Registry updates without a notification
+
+    /// Power is on screen, so every poll fetches the registry: one that finds new data although no
+    /// notification came since the last fetch logs `registry.missed`.
+    @Test(arguments: [true, false])
+    func anUpdateWithoutANotificationIsMissed(cachesOnPolls: Bool) async {
+        let provider = MockBatteryProvider(next: reading(updated: 100))
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+        monitor.setShowsSlowValues(true, for: "main")
+
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(monitor.missedRegistryUpdates == 0, "the same data")
+        provider.next = reading(updated: 160)
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(monitor.missedRegistryUpdates == 1)
+
+        provider.next = reading(updated: 220)
+        await notifyAndRead(provider)
+        #expect(monitor.missedRegistryUpdates == 1, "announced")
+        #expect(provider.registryReads.allSatisfy { $0 })
+    }
+
+    /// Only a read that fetched the registry has news of it.
+    @Test func aPollThatReusesTheRegistryIsNotChecked() {
+        let provider = MockBatteryProvider(next: reading(updated: 100))
+        let monitor = makeMonitor(provider, cachesOnPolls: true)
+        monitor.start()
+
+        provider.next = reading(updated: 160)
+        clock.advance(by: .seconds(10))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.scopes.last == .cached)
+        #expect(monitor.missedRegistryUpdates == 0)
+    }
+
+    /// The registry changed just before a read fetched it, and its notification came while the read
+    /// was under way: neither that read nor the notification's own counts a miss.
+    @Test func aNotificationDuringAReadAnnouncesItsChange() async {
+        let device = SuspendingProvider(next: reading(updated: 100))
+        let monitor = makeMonitor(device)
+        monitor.start()
+        monitor.setShowsSlowValues(true, for: "main")
+
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        device.simulateSystemChange()
+        await settle { clock.sleeperCount == 1 }
+        device.reader.finish(with: reading(updated: 160))
+        await settle { !monitor.isReadingOffMainActor }
+        clock.advance(by: BatteryMonitor.coalescingWindow)
+        await settle { device.reader.inFlight == 1 }
+        device.reader.finish(with: reading(updated: 160))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(device.reader.started == 2)
+        #expect(monitor.missedRegistryUpdates == 0)
+    }
+
+    /// Demo Mode and a stop pause the device's notifications: the data found after them is no miss.
+    @Test func aPauseOfTheNotificationsIsNoMiss() {
+        let provider = MockBatteryProvider(next: reading(updated: 100))
+        let monitor = makeMonitor(provider)
+        monitor.start()
+
+        monitor.setOverride(DemoBatteryProvider(battery: DemoScenario.lowBattery.battery))
+        provider.next = reading(updated: 160)
+        monitor.setOverride(nil)
+        monitor.stop()
+        provider.next = reading(updated: 220)
+        monitor.start()
+        #expect(provider.readCount == 3)
+        #expect(monitor.missedRegistryUpdates == 0)
+
+        provider.next = reading(updated: 280)
+        monitor.refresh()
+        #expect(monitor.missedRegistryUpdates == 1, "the manual read found news no notification told of")
     }
 
     // MARK: - Reads off the main actor

@@ -88,3 +88,53 @@ extension BatteryReading {
         )
     }
 }
+
+/// Spots a registry update that no notification announced, the case a poll that reuses the
+/// registry would miss until a read fetches it again: ``RegistryReadPolicy``'s field signal (the
+/// `registry.missed` event).
+///
+/// The battery monitor counts every change notification (``notificationArrived()``), takes a
+/// ``mark`` when a read that fetches the registry begins, and hands over what the read found
+/// (``fetched(updated:mark:)``). An update is missed when the gauge's update time differs from the
+/// last fetch's and no notification arrived since that fetch began, so a notification that comes
+/// while a read is under way still counts for the change that read saw. Any change notification
+/// counts, Low Power Mode's and thermal ones too, so one of them can hide a miss; a read that sees
+/// a change and lands before the change's notification arrives counts one too many.
+public struct RegistryUpdateWatch: Sendable, Equatable {
+    private struct Fetch: Sendable, Equatable {
+        let updated: Date
+        let mark: Int
+    }
+
+    private var notifications = 0
+    private var last: Fetch?
+
+    public init() {}
+
+    /// Counts a change notification.
+    public mutating func notificationArrived() {
+        notifications += 1
+    }
+
+    /// The notifications so far, for a read that fetches the registry to take when it begins.
+    public var mark: Int {
+        notifications
+    }
+
+    /// Takes the gauge's update time (`UpdateTime`) that a read found, which began at `mark`.
+    /// Returns `true` when the update time changed since the last fetch although no notification
+    /// arrived since that one began. A read without an update time changes nothing.
+    public mutating func fetched(updated: Date?, mark: Int) -> Bool {
+        guard let updated else { return false }
+        let previous = last
+        last = Fetch(updated: updated, mark: mark)
+        guard let previous else { return false }
+        return updated != previous.updated && notifications == previous.mark
+    }
+
+    /// Forgets the last fetch, after a time when notifications weren't heard: Demo Mode, or a
+    /// stopped monitor.
+    public mutating func reset() {
+        last = nil
+    }
+}
