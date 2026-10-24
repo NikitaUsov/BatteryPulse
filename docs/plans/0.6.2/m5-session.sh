@@ -1934,6 +1934,7 @@ s7_launches() {
       sleep 0.1
       waited=$((waited + 1))
     done
+    if [ "$SESSION" = B ]; then note_rc_pid; fi
     starts="$starts $start"
   done
   perf_stop "$STREAM"
@@ -2870,7 +2871,18 @@ launch_b() {
     tries=$((tries + 1))
   done
   app_running || warn "BatteryPulse didn't start within 10 s"
+  note_rc_pid
   sleep 2
+}
+
+# note_rc_pid: the running app's pid into rc-pids.txt when the installed build is the RC (or its
+# profiling twin, which shares its build number), for `v01 morning`'s executor count: build B's
+# runs, and the real 0.6.1 after F12, don't count against the RC.
+note_rc_pid() {
+  local rc
+  rc="$(awk -F '\t' '$1 == "C" { print $3 }' "$WORK/builds.tsv" 2>/dev/null || true)"
+  [ -n "$rc" ] && [ "$(installed_build)" = "$rc" ] && app_running || return 0
+  app_pid >>"$WORK/rc-pids.txt"
 }
 
 relaunch_b() {
@@ -4569,7 +4581,7 @@ q_launch() {
     sleep 0.25
     tries=$((tries + 1))
   done
-  if [ "$Q_BUILD" = C ] && app_running; then app_pid >>"$WORK/rc-pids.txt"; fi
+  note_rc_pid
   sleep 1
 }
 
@@ -5457,7 +5469,9 @@ restore_night() {
   install_build C --no-launch
   quit_app
   session_settings
-  open_app
+  launch
+  # The sleep-hygiene night's RC process: its executor lines count in the morning.
+  note_rc_pid
   mark_restored lowpowermode-battery "script (night)"
 }
 
