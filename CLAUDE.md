@@ -131,7 +131,12 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
 - Concurrency: a plain `async` function runs on its caller's actor
   (`NonisolatedNonsendingByDefault`). Work that leaves the main actor (decoding, hashing,
   building chart data or Raw Data rows) is a `@concurrent` function over `Sendable` values, not
-  `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`).
+  `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`). The battery reads leave it
+  too: `MacBatteryProvider` is `nonisolated` and `Sendable` (what it keeps between reads behind
+  `Mutex`es), offered as `BatteryProvider.nonisolatedReader` (`nil` by default, so the demo and
+  UIDevice providers read on the main actor), and `BatteryMonitor` reads every trigger but
+  `launch`, `demo` and `manual` in a `@concurrent` function, one read at a time, the requests
+  meanwhile folded into one follow-on read, each result assigned in one step.
 - Observation: a service follows `@Observable` state in a named task over
   `Observations { … }.dropFirst()` (the start value is no change) and cancels it in `stop()`;
   never `withObservationTracking`.
