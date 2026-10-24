@@ -110,6 +110,10 @@ Nobody is there to ask: Session A's questions to a cloud session become these ru
 - **A spoiled take** (a banner over the window, his touch, a clip that missed the animation): run
   that one step again once; the rerun replaces its section; note the first take. Then answer 3 (or
   `--unsure`).
+- **A banner not seen in 10 s:** look in Notification Center (an AX click on the clock, then a crop
+  of the banner; no computer-use screenshot while it is open), then answer it not seen (3, or n).
+- **A failed proof** prints its fallback (`PROOF Px: fail (...); fallback: ...`): switch that proof's
+  steps to it before you go on, so nothing waits for him later.
 - **A prompt or a password dialog:** while he is there (B0, B1), ask him to answer it; while he is
   away, leave it, record the step "not checked: prompt", and go on with steps that don't need it.
 - **A lock screen or the lid closed:** stop all GUI work, record "not checked: locked", and wait for
@@ -191,7 +195,8 @@ Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.
      burst; then the GUI phase on its own until 10 minutes before bedtime; at bedtime the arm window
      asks for Return, his password and the unplug; the queue then runs about 3 hours (give the
      expected end, bedtime plus about 3 h 15 min); the lid stays open until then; in the morning: the
-     lid closed for a minute, opened, log in, plug in, write "continue".
+     lid closed for a minute, opened, log in, plug in, write "continue" and keep off the Mac for
+     about 3 minutes; then a few questions and his yes before anything is sent.
    - End your turn and wait for his answer.
 3. **Record** (only on an explicit yes; anything else changes nothing, and you end):
    `$S answer --by person B-yes y`; `B-bedtime HH:MM` if he gave one; `B-charge-capture y|n`;
@@ -229,9 +234,11 @@ Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.
    failed gallery click: ask him to add or remove that widget now. Then each command family once,
    as preflight's `RUN` lines say (`ui idle`, `ui guard`, `shot`, `heartbeat`, one `measure` and
    `judge`, `status`), so every prompt comes now.
-5. **The banners, before the Focus:** `$S v01 notify`, then `$S v01 notify front`; answer
-   `V01-notification` and `V01-notification-front`. `$S f11 alert` (it may wait up to 6 minutes);
-   answer `F11-alert`.
+5. **The banners, before the Focus:** `ui banner` finds each banner by its English body, only
+   inside a BatteryPulse banner, and presses it within 10 s: "This is how battery alerts will look"
+   for V-01, "You can unplug the power adapter" for F11. `$S v01 notify`, then `$S v01 notify
+   front`; answer `V01-notification` and `V01-notification-front`. `$S f11 alert` (it may wait up to
+   6 minutes); answer `F11-alert`.
 6. **WP-23's device check,** only if he has an iPhone or iPad and its cable at hand: he plugs it in;
    turn Read iPhone and iPad batteries on in BatteryPulse's Settings → General by `ui press`; once
    its page shows values, say "Please pull the cable now"; press Refresh on its page and read whether
