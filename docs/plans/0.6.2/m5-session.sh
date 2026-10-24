@@ -940,6 +940,9 @@ step_attach() {
 step_unattach() {
   [ $# -eq 1 ] || fail "usage: $SCRIPT unattach <file name in publish/>"
   [ -f "$PUBLISH/captions.tsv" ] || fail "nothing is attached"
+  # Only an attached image's own name: never a path, so no other file is ever removed.
+  case "$1" in */* | .* | "") fail "unattach takes the name of an attached image in publish/, not a path" ;; esac
+  cut -f1 "$PUBLISH/captions.tsv" | grep -q -x -F -- "$1" || fail "$1 isn't attached (publish/captions.tsv)"
   awk -F '\t' -v name="$1" '$1 != name' "$PUBLISH/captions.tsv" >"$PUBLISH/captions.tmp"
   mv "$PUBLISH/captions.tmp" "$PUBLISH/captions.tsv"
   rm -f "$PUBLISH/$1"
@@ -2809,6 +2812,10 @@ register_shot() {
 # on the generated bright or busy wallpaper, since glass shows what lies behind it.
 attach_allowed() {
   local path line style paper size screen
+  # A remembered device shows by name in the sidebar (prepare removes them for the session).
+  if grep -q '"name"' "$SUPPORT/Devices/devices.json" 2>/dev/null; then
+    fail "BatteryPulse remembers a device by name ($SUPPORT/Devices/devices.json), which the sidebar shows: nothing is attached while it does"
+  fi
   path="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
   case "$path" in
     "$SHOTS"/* | "$REC"/*) ;;
@@ -3489,6 +3496,11 @@ fetch_builds_b() {
 step_prepare_b() {
   check_tools
   [ "$(answer_of B-yes)" = y ] || fail "first his one yes to the list of changes: $SCRIPT answer --by person B-yes y"
+  # Once the session has changed his app and data, a fresh backup would keep the session's state
+  # (the RC, no remembered devices) as his.
+  if [ "${1:-}" = --fresh-backup ] && [ -n "$(original_of app)" ]; then
+    fail "the session has changed his app and data already (changes.tsv): a fresh backup now would keep the session's state as his; nothing was done"
+  fi
   mkdir -p "$WORK" "$BUILDS" "$BIN" "$SHOTS" "$REC" "$LOGS" "$SECTIONS"
   touch "$CHANGES" "$HEARTBEAT"
   # S5's cover and the minimized TextEdit beside Standard and Frosted (COVER).
@@ -3528,6 +3540,15 @@ step_prepare_b() {
     record_change bp-settings "his settings (backup)" "the session's settings"
     record_change bp-support "his data (backup)" "the session's data"
     record_change widget-data "none" "the RC's widget data"
+  fi
+  # His remembered iPhones and iPads: outside Demo Mode the sidebar's Devices section lists them by
+  # name, so every shot of the main window would show them. They stay in the backup, which
+  # restore_all puts back, and are gone for the session.
+  if [ -d "$SUPPORT/Devices" ]; then
+    [ -d "$BACKUP/support/Devices" ] || fail "his remembered devices aren't in the backup ($BACKUP/support/Devices): nothing was removed"
+    [ -n "$(original_of remembered-devices)" ] || record_change remembered-devices "his (backup)" "none during the session"
+    quit_app
+    rm -rf "$SUPPORT/Devices"
   fi
   install_build C --no-launch
   relaunch_b
@@ -6181,7 +6202,7 @@ restore_how() {
       if wallpaper_is_still; then echo script; else echo "computer use from shots/prepare-desktop.png (a dynamic or aerial wallpaper: System Events would set a still)"; fi
       ;;
     appearance-auto) echo "computer use (System Settings → Appearance → Auto)" ;;
-    appearance | widget-languages | app | bp-settings | bp-support | widget-data | lowpowermode-battery) echo script ;;
+    appearance | widget-languages | app | bp-settings | bp-support | widget-data | remembered-devices | lowpowermode-battery) echo script ;;
     open-at-login) echo "AX (Settings → General → Open at login)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
     widgets) echo "computer use (the widgets he didn't keep)" ;;
@@ -6260,6 +6281,9 @@ restore_morning() {
   mark_restored bp-settings "script"
   mark_restored bp-support "script"
   mark_restored widget-data "script"
+  if [ -n "$(original_of remembered-devices)" ] && [ -d "$SUPPORT/Devices" ]; then
+    mark_restored remembered-devices "script (from the backup), read back"
+  fi
   # Restored only as pmset reads it now (the morning has no sudo ticket: restore_all prints the
   # PUT BACK line otherwise, and B.md heads its list with it).
   if [ -n "$(original_of lowpowermode-battery)" ] && lowpowermode_as_backup; then
