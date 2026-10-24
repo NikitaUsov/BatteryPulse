@@ -3196,11 +3196,15 @@ step_prepare_reads() {
   # No case statement inside $( ): bash 3.2 reads its pattern's ")" as the end of the substitution.
   if [ "$value" = 1 ]; then value=on; elif [ "$value" = 0 ]; then value=off; fi
   out "- Open at login (AX): $value"
-  if [ -r "$HOME/Library/DoNotDisturb/DB/Assertions.json" ]; then
-    out "- Focus: $(if grep -q '"storeAssertionRecords" *: *\[ *{' "$HOME/Library/DoNotDisturb/DB/Assertions.json"; then echo on; else echo off; fi)"
-  else
-    out "- Focus: not readable (his word at the start)"
-  fi
+  # grep's status tells "no Focus" (1) from a file that is missing or that the privacy rules keep
+  # from Terminal (2), which a -r test can't see.
+  value=0
+  grep -q '"storeAssertionRecords" *: *\[ *{' "$HOME/Library/DoNotDisturb/DB/Assertions.json" 2>/dev/null || value=$?
+  case "$value" in
+    0) out "- Focus: on" ;;
+    1) out "- Focus: off" ;;
+    *) out "- Focus: not readable (his word at the start)" ;;
+  esac
   for name in appearance desktop; do
     open "$(pane_url "$name")"
     sleep 2
