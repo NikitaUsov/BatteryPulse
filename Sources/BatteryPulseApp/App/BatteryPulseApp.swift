@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import BatterySource
 import SwiftUI
 
 @main

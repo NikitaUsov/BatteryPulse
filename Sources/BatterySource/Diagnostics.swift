@@ -2,7 +2,7 @@
 import os
 #endif
 
-/// Why ``BatteryMonitor`` reads the battery: the trigger of its `refresh` interval (see
+/// Why `BatteryMonitor` reads the battery: the trigger of its `refresh` interval (see
 /// ``Signposts``).
 public enum RefreshTrigger: Sendable, CaseIterable {
     /// A power-source or system-state change notification.
@@ -138,35 +138,37 @@ enum PerfLine {
     }
 }
 
-/// BatteryKit's loggers, one per area, and its signposts, in the app's subsystem. The app has a
-/// twin for its own areas (`App/Diagnostics.swift`). Error descriptions, paths, device names,
-/// serials and UDIDs never log as public.
-enum Diagnostics {
-    static let subsystem = "io.github.nikitausov.BatteryPulse"
+/// The loggers of BatterySource and BatteryKit, one per area, and their signposts, in the app's
+/// subsystem. The app has a twin for its own areas (`App/Diagnostics.swift`). Error descriptions,
+/// paths, device names, serials and UDIDs never log as public.
+public enum Diagnostics {
+    public static let subsystem = "io.github.nikitausov.BatteryPulse"
 
     #if canImport(os)
-    static let monitor = Logger(subsystem: subsystem, category: "monitor")
-    static let smc = Logger(subsystem: subsystem, category: "smc")
-    static let iokit = Logger(subsystem: subsystem, category: "iokit")
-    static let device = Logger(subsystem: subsystem, category: "device")
-    static let accessory = Logger(subsystem: subsystem, category: "accessory")
-    static let update = Logger(subsystem: subsystem, category: "update")
+    public static let monitor = Logger(subsystem: subsystem, category: "monitor")
+    public static let smc = Logger(subsystem: subsystem, category: "smc")
+    public static let iokit = Logger(subsystem: subsystem, category: "iokit")
+    public static let device = Logger(subsystem: subsystem, category: "device")
+    public static let accessory = Logger(subsystem: subsystem, category: "accessory")
+    public static let update = Logger(subsystem: subsystem, category: "update")
     /// The `perf` lines of ``signposts``.
-    static let perf = Logger(subsystem: subsystem, category: "perf")
-    static let signposts = Signposts(subsystem: subsystem, log: perf)
+    public static let perf = Logger(subsystem: subsystem, category: "perf")
+    public static let signposts = Signposts(subsystem: subsystem, log: perf)
     #else
-    static let signposts = Signposts()
+    public static let signposts = Signposts()
     #endif
 
-    static func begin(_ name: StaticString, trigger: StaticString? = nil) -> Signposts.Interval {
+    public static func begin(_ name: StaticString, trigger: StaticString? = nil) -> Signposts.Interval {
         signposts.begin(name, trigger: trigger)
     }
 
-    static func measure<T>(_ name: StaticString, trigger: StaticString? = nil, _ body: () throws -> T) rethrows -> T {
+    public static func measure<T>(_ name: StaticString, trigger: StaticString? = nil, _ body: () throws -> T) rethrows
+        -> T
+    {
         try signposts.measure(name, trigger: trigger, body)
     }
 
-    static func event(_ name: StaticString, trigger: StaticString? = nil) {
+    public static func event(_ name: StaticString, trigger: StaticString? = nil) {
         signposts.event(name, trigger: trigger)
     }
 }

@@ -1,4 +1,5 @@
 import BatteryCore
+import BatterySource
 
 /// Demo Mode's fixed accessories (``DemoAccessories``) instead of the connected ones.
 @MainActor

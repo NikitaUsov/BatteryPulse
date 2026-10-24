@@ -1,6 +1,6 @@
 import Testing
 
-@testable import BatteryKit
+@testable import BatterySource
 
 /// The `perf` lines are parsed by `scripts/perf-stats.swift`, so their format is fixed.
 @Suite struct DiagnosticsTests {

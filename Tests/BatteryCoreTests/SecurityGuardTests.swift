@@ -41,7 +41,7 @@ import Testing
                 pattern: words(#/\bdl(?:open|sym|close)\b/#),
                 allowed: [
                     "BatteryKit/MobileDevice/MobileDeviceLibrary.swift": .max,
-                    "BatteryKit/MacAccessoryProvider.swift": .max,
+                    "BatterySource/MacAccessoryProvider.swift": .max,
                 ],
                 message: "dlopen/dlsym only for MobileDevice and the accessory power sources"),
             // SEC-03: the update traffic goes through `UpdateNetwork`'s ephemeral sessions, which
@@ -54,7 +54,7 @@ import Testing
             Placement(
                 literals: ["IOServiceOpen", "IOConnect"],
                 pattern: words(#/\bIOServiceOpen\b|\bIOConnect\w+/#),
-                allowed: ["BatteryKit/SMCClient.swift": .max],
+                allowed: ["BatterySource/SMCClient.swift": .max],
                 message: "an IOKit user client only in the SMC client"),
             Placement(
                 literals: ["IORegistryEntrySetCFPropert"],
@@ -134,6 +134,17 @@ import Testing
         #expect(paths.count > appAndWidget.count)
     }
 
+    /// Every folder of `Sources` is a target the scan lists, so a new target can't escape the
+    /// guards: ``scansEveryTarget()`` only checks the listed ones.
+    @Test func everySourceFolderIsAListedTarget() throws {
+        let folders = try FileManager.default.contentsOfDirectory(
+            at: SourceScanner.sources, includingPropertiesForKeys: [.isDirectoryKey]
+        )
+        .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        .map(\.lastPathComponent)
+        #expect(folders.sorted() == (SourceScanner.targets + SourceScanner.otherTargets).sorted())
+    }
+
     @Test func allowListedFilesExist() {
         for path in Self.placements.flatMap(\.allowed.keys) {
             #expect(
@@ -154,7 +165,7 @@ import Testing
     /// (`kSMCHandleYPCEvent`), which carries the read commands that `SMCTests` pins.
     @Test func smcClientCallsOnlySelectorTwo() throws {
         let code = try #require(
-            try SourceScanner.allFiles.get().first { $0.path == "BatteryKit/SMCClient.swift" }
+            try SourceScanner.allFiles.get().first { $0.path == "BatterySource/SMCClient.swift" }
         ).code
         let calls = SourceScanner.calls(named: Self.words(#/\bIOConnect\w+/#), in: code)
         #expect(calls.map(\.name) == ["IOConnectCallStructMethod"])
@@ -172,7 +183,7 @@ import Testing
         #expect(!flags("Task(name: \"x\") { await work() }", path: "BatteryPulseApp/Main/MainView.swift"))
     }
 
-    private static let somewhere = "BatteryKit/MacBatteryProvider.swift"
+    private static let somewhere = "BatterySource/MacBatteryProvider.swift"
 
     private func flags(_ source: String, path: String = somewhere) -> Bool {
         !Self.violations(in: source, path: path).isEmpty
@@ -217,11 +228,12 @@ import Testing
 
     @Test func eachAPIIsAllowedOnlyWhereItIsToday() {
         #expect(!flags("dlsym(handle, name)", path: "BatteryKit/MobileDevice/MobileDeviceLibrary.swift"))
-        #expect(!flags("dlopen(path, RTLD_NOW)", path: "BatteryKit/MacAccessoryProvider.swift"))
-        #expect(flags("dlopen(path, RTLD_NOW)", path: "BatteryKit/SMCClient.swift"))
-        #expect(!flags("IOServiceOpen(service, task, 0, &port)", path: "BatteryKit/SMCClient.swift"))
+        #expect(!flags("dlopen(path, RTLD_NOW)", path: "BatterySource/MacAccessoryProvider.swift"))
+        #expect(flags("dlopen(path, RTLD_NOW)", path: "BatterySource/SMCClient.swift"))
+        #expect(!flags("IOServiceOpen(service, task, 0, &port)", path: "BatterySource/SMCClient.swift"))
         #expect(flags("IOServiceOpen(service, task, 0, &port)", path: "BatteryKit/MobileDevice/USBDeviceWatcher.swift"))
-        #expect(flags("IORegistryEntrySetCFProperty(entry, key, value)", path: "BatteryKit/SMCClient.swift"))
+        #expect(flags("IOServiceOpen(service, task, 0, &port)", path: "BatterySource/MacBatteryProvider.swift"))
+        #expect(flags("IORegistryEntrySetCFProperty(entry, key, value)", path: "BatterySource/SMCClient.swift"))
         #expect(!flags("let process = Process()", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))

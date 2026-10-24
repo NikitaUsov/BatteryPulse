@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import BatterySource
 import Foundation
 import Observation
 import os

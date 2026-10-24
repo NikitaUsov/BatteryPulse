@@ -2,7 +2,7 @@
 import BatteryCore
 import Testing
 
-@testable import BatteryKit
+@testable import BatterySource
 
 /// Runs on CI's macOS, a virtual machine that may have no battery: only the plumbing is checked.
 @MainActor

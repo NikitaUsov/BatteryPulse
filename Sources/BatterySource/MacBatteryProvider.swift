@@ -31,7 +31,7 @@ import Synchronization
 ///
 /// A read may run on any thread (``readNonisolated(scope:)``): what the provider keeps between
 /// reads, the registry's dictionaries, the SMC's values and its connection, is behind locks, so a
-/// caller such as ``BatteryMonitor`` can read off the main actor. Only ``observeChanges(_:)``
+/// caller such as `BatteryMonitor` can read off the main actor. Only ``observeChanges(_:)``
 /// belongs to the main actor.
 public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedBatteryReader {
     private let smc: SMCClient?

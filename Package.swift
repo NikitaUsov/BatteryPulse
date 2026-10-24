@@ -21,7 +21,11 @@ let package = Package(
     products: [
         // Platform-independent models, parsing and metrics. Builds and tests on Linux.
         .library(name: "BatteryCore", targets: ["BatteryCore"]),
-        // OS integration: IOKit on macOS, UIDevice on iOS, plus the observable monitor.
+        // The battery and accessory reads: IOKit and the SMC on macOS, UIDevice on iOS, with their
+        // loggers and signposts. The widget links it and BatteryCore alone.
+        .library(name: "BatterySource", targets: ["BatterySource"]),
+        // OS integration on top of BatterySource: the observable monitors, iPhone and iPad reads,
+        // and the CryptoKit code (device keys, update signatures).
         .library(name: "BatteryKit", targets: ["BatteryKit"]),
         // Command-line battery report (`swift run bpulse`). It reads this Mac's battery on macOS;
         // `--input` (a saved capture) and `--export` (a history folder) also run on Linux.
@@ -36,12 +40,14 @@ let package = Package(
         // here, so the compiler flags every unsafe construct. The one left is marked: C's
         // fixed-point formatting, which Darwin's Foundation declares unsafe (`BatteryReport`).
         .target(name: "BatteryCore", swiftSettings: strict + [.strictMemorySafety()]),
-        .target(name: "BatteryKit", dependencies: ["BatteryCore"], swiftSettings: strict),
+        // What the widget needs of the system and nothing more: no CryptoKit, no MobileDevice.
+        .target(name: "BatterySource", dependencies: ["BatteryCore"], swiftSettings: strict),
+        .target(name: "BatteryKit", dependencies: ["BatteryCore", "BatterySource"], swiftSettings: strict),
         // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
         // a pointer, and the macOS-only SMC listing's `String(format:)`.
         .executableTarget(
             name: "bpulse",
-            dependencies: ["BatteryCore", "BatteryKit"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryKit"],
             swiftSettings: strict + [.strictMemorySafety()]
         ),
         // The app runs on the main actor unless its code says otherwise (`nonisolated`,
@@ -49,12 +55,12 @@ let package = Package(
         // timeline provider on threads of its own.
         .executableTarget(
             name: "BatteryPulseApp",
-            dependencies: ["BatteryCore", "BatteryKit"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryKit"],
             swiftSettings: strict + [.defaultIsolation(MainActor.self)]
         ),
         .executableTarget(
             name: "BatteryPulseWidget",
-            dependencies: ["BatteryCore", "BatteryKit"],
+            dependencies: ["BatteryCore", "BatterySource"],
             swiftSettings: strict + [
                 // Allow only the APIs an app extension may use, as Xcode does for extension targets.
                 .unsafeFlags(["-application-extension"], .when(platforms: [.macOS]))
@@ -71,7 +77,9 @@ let package = Package(
             resources: [.copy("Fixtures")],
             swiftSettings: strict
         ),
-        .testTarget(name: "BatteryKitTests", dependencies: ["BatteryKit"], swiftSettings: strict),
+        .testTarget(
+            name: "BatterySourceTests", dependencies: ["BatterySource", "BatteryCore"], swiftSettings: strict),
+        .testTarget(name: "BatteryKitTests", dependencies: ["BatteryKit", "BatterySource"], swiftSettings: strict),
         // The option parser; the output forms are covered by rendering the fixtures (`--input`).
         .testTarget(name: "bpulseTests", dependencies: ["bpulse", "BatteryCore"], swiftSettings: strict),
     ]

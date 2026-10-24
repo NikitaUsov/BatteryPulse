@@ -1,5 +1,6 @@
 import BatteryCore
 import BatteryKit
+import BatterySource
 import Foundation
 
 let usage = """

@@ -1,5 +1,5 @@
 import BatteryCore
-import BatteryKit
+import BatterySource
 import Foundation
 
 /// `--record`: reads the battery every 5 s and keeps captures and a timeline in `folder`
