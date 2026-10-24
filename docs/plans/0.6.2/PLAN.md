@@ -397,7 +397,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
     same way: anything also seen there is the system's, not WP-13's. (TextEdit replaced Notes on
     2026-10-23: an empty file shows nothing private and closes without a save prompt.)
   - The maintainer's plain answers on each style (§6); the fill itself is decided (Q-B2).
-- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none).
+- **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none). After
+  round B1, (b) ships on Clear and Translucent Dark on Session A's interim verdicts (§7.1).
   **Effort:** S-M, 2-3 runs. **Risk:** low.
 
 ### WP-14a: Full reads off the main actor (E20) (P1)
@@ -526,8 +527,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Linux tests; the golden diff empty; the macOS job.
   - Session B: `read cached` p50 under 2 ms; F6 shows every page right; plug and unplug within
     0.4's window; at most 1 `registry.missed` per hour of logged runtime.
-- **Gates:** G-14b (E4b), G-14c (E3b). **Effort:** M, 2-3 runs. **Risk:** medium (values of different
-  ages in one snapshot).
+- **Gates:** G-14b (E4b), G-14c (E3b). After round B1, G-14b's Session A half and G-14c passed
+  (§7.1). **Effort:** M, 2-3 runs. **Risk:** medium (values of different ages in one snapshot).
 
 ### WP-15: Widget size and the lower target (P1)
 
@@ -592,8 +593,9 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - The posture check passes and the golden diff is empty.
   - Session A renders the internalized widget (SPIKE-I), and Session B the RC's own widget (F8,
     every family, both languages).
-- **Gate:** G-15 (§7.1). **Effort:** M, 3 runs. **Risk:** medium (a widget that doesn't render;
-  references only the runtime reaches).
+- **Gate:** G-15 (§7.1). After round B2, K-03 can ship by §3's exception, and internalize waits
+  for the RC's F8 and, on the app's line, Session B's pages (§7.1). **Effort:** M, 3 runs.
+  **Risk:** medium (a widget that doesn't render; references only the runtime reaches).
 
 ### WP-16: Installer on `diskutil`, the widget extension before the swap, attach timing, Check Now (P1/P3)
 
@@ -1254,25 +1256,36 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
 
 - **Items:** each rule or doc line is conditional on its item and gets one commit (as WP-12 did).
   - **CLAUDE.md:**
-    - `BatterySource` in the layout, and "an app and a BatterySource twin";
-    - `read`'s four triggers and the `registry.missed` event in the signpost list;
-    - E4b's two decisions;
+    - `BatterySource` in the layout (its target, library product and `BatterySourceTests`; the
+      `BatteryProvider`, `MacBatteryProvider`, `IOSBatteryProvider`, `AccessoryProvider` and
+      `MacAccessoryProvider` (the demo providers stay), `SMCClient`, `SystemNotifications` and
+      `Diagnostics` leave BatteryKit's line, as merged in round B2), and "an app and a BatterySource twin";
+    - `read`'s four triggers (`full`, `live`, `cached`, `cached.slow`) and the `registry.missed`
+      event in the signpost list (round B1);
+    - E4b's two decisions (`BatteryReadScope`'s `rereadsRegistry` and `readsAllSMCKeys`;
+      `RegistryReadPolicy` with its 5-minute safety net, as merged in round B1);
     - E20's isolation (a nonisolated provider; the monitor's `@concurrent` reads);
     - main actor by default for the app;
     - the `diskutil` installer;
-    - WindowLook's opaque minimize fill;
+    - WindowLook's minimize fill: the opaque graphite for Clear and Translucent Dark, Translucent
+      Light's own wash (G-13a, round B1);
     - strict memory safety for BatterySource and BatteryKit;
     - `release-stats.swift` in the `scripts/` list (download counts per release, WP-19).
   - **Guards:** none beyond the packages' own. WP-10 holds the isolation pin, and
     `EnergyGuardTests` stays unchanged because the safety net adds no sleep.
-  - **USER_GUIDE:** Clear's known issue removed (if G-13a passes); graduated styles described
-    without "beta"; the installer text if it names `hdiutil` anywhere. If E4b lands, one sentence
-    in the refresh paragraph (`docs/USER_GUIDE.md:124-132`, which says live values refresh every
-    2 seconds): capacities, temperature, cell voltages and adapter details update when macOS
-    reports new battery data, and at least every 5 minutes (or the safety-net age that ships);
-    Power and Raw Data read them on every refresh.
+  - **USER_GUIDE:** Clear's known issue (`docs/USER_GUIDE.md:162-163`) removed (if G-13a passes);
+    graduated styles described without "beta"; the installer text if it names `hdiutil` anywhere.
+    If E4b lands, one sentence in the refresh paragraph (`docs/USER_GUIDE.md:124-132`, which says
+    live values refresh every 2 seconds): capacities, temperature, cell voltages and adapter
+    details update when macOS reports new battery data, and at least every 5 minutes (the
+    safety-net age that merged in round B1, unless G-14b's "no E4b" commit lands); Power and Raw Data
+    read them on every refresh.
+  - **README:** the Architecture block (`README.md:218-226`) gains a BatterySource row, and
+    BatteryKit's row loses the IOKit and UIDevice providers, which K-03 moved (WP-15's review,
+    Appendix C).
   - **ROADMAP:**
-    - Stage 1.7 ticked, and Stage 1.3's light and dark comparison ticked (V1d).
+    - Stage 1.7 ticked (its read-path line, `docs/ROADMAP.md:585-589`, with E3b's
+      `timeremaining` dropped, B1), and Stage 1.3's light and dark comparison ticked (V1d).
     - Stage 1.2 ticked: round A0 passed (Appendix C). The in-app update 0.6.0 → 0.6.1 installed
       and relaunched, and kept the desktop widget, showing the current charge, and Open at login.
       The widget line keeps its note that one DMG replacement (0.3.0 → 0.3.1) lost placed widgets,
@@ -1287,7 +1300,7 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
       `docs/plans/1.0/ROADMAP.md`).
     - The 0.7 stage with §9.1's phases and CB-02 (D3 adds the link to
       `docs/plans/0.7.0/widgets.md`).
-- **Files:** `CLAUDE.md`, `docs/USER_GUIDE.md`, `docs/ROADMAP.md`.
+- **Files:** `CLAUDE.md`, `docs/USER_GUIDE.md`, `docs/ROADMAP.md`, `README.md`.
 - **Acceptance:** `LocalizationCatalogTests` (its `docs/` scan) is green, and the review confirms
   every new CLAUDE.md line against the merged code with `git grep`.
 - **Effort:** M, 2 runs. **Risk:** low.
@@ -1301,11 +1314,13 @@ As PLAN §3.5.
     §5 prints 38 lines at `9410861` (`betaWindowStyles` and an escaped-quote match in
     `scripts/perf-sample.ndjson` are new), and 38 at the RC (no key is added: WP-16 item 5
     doesn't run, A0);
-  - sets the ceilings;
+  - sets the ceilings (the `widget_*` ones to the RC's numbers plus about 5 %, in a commit of their
+    own, WP-15 item 4; at round B2's head (`fe0a9a0`) the widget binary is 778,640 B and its `__text` 489,132 B);
   - drafts the notes (`## What's new in 0.6.2`, checked by CB-06) and opens the draft PR with the
     session checklist. The notes list only user-visible changes, each only if its item landed
     (as PLAN §7 item 2 did):
-    - Clear minimizes without a black frame;
+    - Clear minimizes without a black frame (and Translucent in the dark appearance, while
+      `72b790d` stays);
     - each style that graduates, or that both stay beta;
     - Check Now no longer fails while an automatic check runs, if E10 lands;
     - the iPhone and iPad page names the connection its values came over, if WP-23 lands;
@@ -1378,8 +1393,8 @@ At most two agents, and never two packages on one file (mechanical rebase-overs 
 | A2 | WP-14a (E20) | WP-W0's SPIKE-C, SPIKE-I and SPIKE-W (CI builds on the spike branch) | WP-10 merged (WP-14a edits `HistoryRecorder`); W0-1's answer |
 | A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch (today's fill or (b), Q-B2), a normal CI build (throwaway branch `claude/062-spike-a2`); the field run, V-01 and the fill recordings need no profiling. Because Xcode is installed (Q-B7), the branch also adds a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
 | **Session A** | maintainer: about 65 min, then the 3-hour window | | A2′ |
-| B1 | WP-14b (E4b, E3b) | WP-13 | Session A (F13, the pslog, the fill recordings), or 14 days after A2′ on the defaults (WP-14b "When") |
-| B2 | WP-15 | (WP-16 ran early, below) | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free) |
+| B1 | WP-14b (E4b, E3b): **merged** as `43052dd` (head `dc3cca3`) | WP-13: **merged** as `c4803c8` (head `2b2dba0`) | Session A (F13, the pslog, the fill recordings), or 14 days after A2′ on the defaults (WP-14b "When"). **Ran** (2026-10-24) on Session A's window and its interim fill verdicts, not on the defaults; CI green on both heads and on `c4803c8` (run 40046692780); Appendix C |
+| B2 | WP-15: **merged** as `bb5132d` (head `fe0a9a0`, CI run 40052102109 green; integration run 40052599901 on `bb5132d` green) | (WP-16 ran early, below) | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free). **Ran** (2026-10-24); Appendix C |
 | B3 | WP-19 (SW-13 on BatterySource's moved files) | WP-17 (with the History riders) | WP-15 merged |
 | C1 | WP-21 (script, with the hands-free mode) | WP-22 (merges last) | Phase B |
 | D1 | freeze the RC | | C1 |
@@ -1790,8 +1805,12 @@ Numbers, and whatever else B2 moved there.
      shot of his list. `restore morning` puts Open at login back as prepare found it.
    - **F6:** every page on real data (E4b's mixed-age snapshot), by AX, a shot each, read by Claude
      against `bpulse --json` taken the same minute.
-   - **F8:** the RC's own widget in every family and both languages (G-15), large and extra large
-     placed as in step 1. Each comparison comes after one fixed action: a CGEvent click on the
+   - **F8:** the RC's own widget in every family and both languages (G-15). Its
+     `supportedFamilies` lists only `.systemSmall` and `.systemMedium`, so every family means
+     those two (WP-15's review, Appendix C): the large and extra-large additions of the yes-list
+     and the GUI phase, the optional question about keeping them for Session R, and B0's hands-on
+     minute under "If it can't" have no RC widget to place, and D1's `SESSION-B.md` drops them.
+     Each comparison comes after one fixed action: a CGEvent click on the
      empty desktop spot recorded at prepare, then 1 s, because Dim widgets reacts to the desktop's
      focus. If click-to-show-desktop is on, the spot is clicked again and checked with
      `ui windows`. The Russian half uses the method Session A confirmed (step 3.3). If none
@@ -2027,6 +2046,27 @@ Preflight also checks, without a proof's fallback:
 | SEC-08 | Enhanced Security | not run (Q-B8: no; after 1.0, not planned without notarization, M-1) | Not shipped |
 | G-17 | WP-17's changes | `page.switch` from the `perf` stream before and after, ≥ 10 switches per page; the SwiftUI instrument (Xcode is installed, Q-B7) | Only SUI-11's readability change |
 
+**Status after rounds B1 and B2** (2026-10-24; the facts are in Appendix C):
+- **G-13a:** fill (b) ships on Clear Light, Clear Dark and Translucent Dark (WP-13, `c4803c8`), on
+  Session A's interim verdicts (Translucent Dark's today's fill rated 2, a black frame); Translucent
+  Light keeps its wash. If the final `A.md` doesn't confirm Translucent Dark, `git revert 72b790d`
+  alone narrows it to Clear. Session B's 8 cases still decide whether the frame is gone.
+- **G-14a:** Session A's field run passes (interim: 711 of 712 reads off the main thread, the
+  launch's on it; no crash, no executor line); Session B repeats V-01 on the RC.
+- **G-14b:** Session A's half **passed** (F13), so E4b ships with the 5-minute safety net and
+  `RegistryReadPolicy.cachesOnPolls = true` (WP-14b, `43052dd`); the F13 defaults (the 60-s
+  safety net) no longer apply, and with no M5 run of a build containing E4b it is still no E4b.
+  Session B's four criteria remain, and it reads each `registry.missed` by its trigger and time
+  (Appendix C, WP-14b's known edges). "No E4b" is still the one-line commit.
+- **G-14c: passed:** `timeremaining` dropped in `c50b834`; "keep both keys" no longer applies.
+- **G-15:** K-03 (`60c08d1`) can ship by §3's exception (a move with only access and import
+  changes, an empty golden diff and a passing CI smoke). Both internalize lines need the RC's F8:
+  the widget offers only small and medium, so "every family" means those two, in both languages;
+  the app's line (`64f8aaa`) also needs Session B's pages (DC-4). A blank F8 removes the flag from
+  the widget's `build-app.sh` line by hand (`8549229` doesn't revert cleanly on top of
+  `64f8aaa`); a failed page reverts `64f8aaa`, which reverts cleanly. SZ-11 and SZ-14 aren't
+  adopted.
+
 ### 7.2 Cut line
 
 - **Never cut:** WP-10; SPIKE-A2; WP-13 item 1; WP-14a; WP-14b (unless G-14b's premise fails);
@@ -2069,14 +2109,22 @@ Preflight also checks, without a proof's fallback:
 and reload policy."
 
 **Intended, user-visible changes:**
-- Clear's minimize fill, (b) (and Translucent Dark's, if its recordings show the frame).
+- Clear's minimize fill, (b) (and Translucent Dark's, if its recordings show the frame; Session A's
+  interim ones did, so WP-13 gives it (b) too, Appendix C).
+- Settings → General's Window Style footer keeps the height of its longest note whatever the
+  choice (V1b's fix, WP-13 item 2): with Standard, one blank line with beta styles off, two with
+  them on.
 - Any style the maintainer graduates, with the Advanced footer and What's New text reworded
   (`WhatsNew.version` stays 0.6.0, Q-B5). No Low Power Mode fallback comes with it (Q-B10).
 - E4b's freshness:
-  - If F13 holds, registry values are as fresh as today.
-  - If it doesn't, the Power page is unaffected, because it keeps re-reading.
+  - If F13 holds, registry values are as fresh as today. It held in Session A, so the safety-net
+    age that merged is 5 minutes (WP-14b, Appendix C).
+  - If it doesn't, the Power page is unaffected, because it keeps re-reading (the first 2 s or
+    less after switching to Power or Raw Data can still show the cached registry, until the next
+    2-s poll re-reads it).
   - Elsewhere, the registry fields (capacities, cycles, temperature, cells, adapter telemetry), and
-    a history sample taken right after a cached poll, may be up to the safety-net age old.
+    a history sample taken right after a cached poll, may be up to the safety-net age old: 5
+    minutes in the worst case.
 - The iPhone and iPad page's connection label follows the transport its values came over (WP-23,
   if it lands; no new string).
 
@@ -2084,7 +2132,7 @@ and reload policy."
 - The installer's mount tool. The 0.6.1 → 0.6.2 update itself still uses 0.6.1's `hdiutil`.
 - The installer ends the widget extension before the swap (WP-16 item 6); the 0.6.1 → 0.6.2
   update still runs 0.6.1's installer, which doesn't.
-- The widget's target graph and size.
+- The widget's target graph and size, and both binaries' links (`-internalize-at-link`, G-15).
 - The `read` signpost's triggers and the `registry.missed` event in the `perf` output.
 
 **Unchanged:** the widget kind and look, entitlements (SEC-08 isn't run, Q-B8), storage formats,
@@ -3144,8 +3192,9 @@ sessions.
 
 Rows marked "interim" come from Session A's interim report of 2026-10-23 (the local Claude
 session on the M5) or, for its unattended window, from the maintainer's photo of Terminal of
-2026-10-24; Session A's final `A.md`, on `claude/062-session-a`, replaces both. **Still for
-Session A** marks what they leave open. Session A's energy runs are in the table after this one.
+2026-10-24 and the window's own summary, which he pasted the same day ("the window's summary");
+Session A's final `A.md`, on `claude/062-session-a`, replaces them. **Still for Session A** marks
+what they leave open. Session A's energy runs are in the table after this one.
 
 | Fact | Shown by | Decides |
 |---|---|---|
@@ -3162,13 +3211,17 @@ Session A** marks what they leave open. Session A's energy runs are in the table
 | W0-4, 2026-10-23 (interim): (1) **the sandboxed widget reads accessory batteries itself** ("spike accessories sources=2 accessories=1"). (2)-(3) the four Icon & widget styles ran on the desktop, focused and not, and in Notification Center, with screenshots, and the widgets redraw per style; but no process logged a "spike render" line, so the rendering mode, `showsWidgetContainerBackground` and `redactionReasons` have no log data. (4) a click delivers the URL to `application(_:open:)` with no window open and with the main window open ("spike click url scheme=batterypulse page=overview windows=1 active=true"); no `NSUserActivity` arrives. (5) the `widgetURL` reaches the app with no registered scheme (SPIKE-W registers none). **Still for Session A:** why the render lines are missing; until they come, the screenshots are §8.7's only evidence | Session A | W-8 (passes); §8.7; §8.9 (the URL route, no scheme registered; §8.16's scheme row doesn't apply) |
 | W0-5: VoiceOver text; Text size. **Still for Session A** (not in the interim report) | Session A | §8.15 |
 | W0-6, 2026-10-23 (interim), English only: the offset format prints "-2 hours, 0 minutes" without `sign: .never` (the offset runs to a later date) and "2 hours, 0 minutes" with it, and the minutes go down without a reload. **Still for Session A:** the Russian text | Session A | Time parameter (time left stays, with `sign: .never`; §8.16's W0-6 row doesn't apply) |
-| F13: `UpdateTime` changes against "any" lines | Session A's pslog and ioreg | G-14b |
-| E3b: `timeremaining` followed by "any" (battery and charging) | Session A's pslog | G-14c |
-| E20 field run: traps, crash reports, `read` threads; memory over 2 hours. Started 01:01:05 on 2026-10-24 on SPIKE-A2, with power in the menu bar and the display on (interim, the photo); its note "ri_energy_nj didn't move; check sysctl kern.pervasive_energy" is for the final `A.md` to explain. **Still for Session A:** the results | Session A (SPIKE-A2) | G-14a |
-| V-01: "executor" log lines, new crash reports, the maintainer's answers | Session A (SPIKE-A2); Session B (RC) | G-10, G-14a |
-| `read cached` p50; `registry.missed` per hour of logged runtime | Session B | G-14b |
+| F13, 2026-10-24 (interim, the window's summary): **passed.** On battery, 2.00 h sampled, 126 `UpdateTime` changes, each with an "any" line since the previous 10-s sample; charging, 0.99 h sampled, 62 changes, each with an "any" line. Notify lines by key over the window: any 194, percent 20, source 1, timeremaining 146 | Session A's pslog and ioreg sampler (the window) | G-14b's Session A half: E4b ships with the 5-minute safety net (not 60 s) and `RegistryReadPolicy.cachesOnPolls = true` (WP-14b, below) |
+| E3b, 2026-10-24 (interim, the window's summary): **passed.** On battery, 125 `timeremaining` lines, each followed by "any" within 10 ms; charging (0.99 h), 21, each followed by "any" within 10 ms | Session A's pslog (the window) | G-14c: `com.apple.system.powersources.timeremaining` dropped in `c50b834`, before WP-15 moved the file (WP-14b, below) |
+| E20 field run, 2026-10-24 (interim, the window's summary): started 01:01:05 on SPIKE-A2 (E20's build), 2 hours with power in the menu bar and the display on. 712 reads in the app, 711 off the main thread and 1 on it (the launch). `read` p50 7.232 ms, p95 9.716 ms; `registry` p50 5.290 ms, p95 5.729 ms, about 73 % of a read (E4b's target); the other parts, in ms as the summary gives them: `children` 1.071, `adapter` 0.490, `iops` 0.393, `parse` 0.198, `smc.power` 0.478 (668 samples), `smc.other` 2.124 (103). `refresh` by trigger: poll 584, notify 122, followUp 5, launch 1; reads per notify burst all 1 except one 2; `widget.reload`: policy 8, update 1. Footprint 20.2 → 20.5 MB; no crash, no executor line. The photo's note "ri_energy_nj didn't move; check sysctl kern.pervasive_energy" is for the final `A.md` to explain | Session A (SPIKE-A2) | G-14a: passes on this run (V-01 all y in Session A's status, the next row); Session B repeats V-01 on the RC |
+| V-01: "executor" log lines, new crash reports, the maintainer's answers. Session A (interim): all y (Session A's status); no executor line, no crash report (the window's summary). **Still for Session B:** the RC | Session A (SPIKE-A2); Session B (RC) | G-10, G-14a |
+| `read cached` p50; `registry.missed` per hour of logged runtime, each event read by its trigger and time (WP-14b's known edges, below) | Session B | G-14b |
+| WP-14b, 2026-10-24: **merged** into `claude/nice-faraday-k08mhb` as `43052dd` (head `dc3cca3`) in round B1, beside WP-13 (§5). **Item 1:** F13 passed (its row above), so E4b ships with the 5-minute safety net and `cachesOnPolls = true`. **Item 2:** `BatteryReadScope` is a struct of two `Bool`s, `rereadsRegistry` and `readsAllSMCKeys`, with the presets `.full`, `.live`, `.cached` and `.cachedSlow` (`.full` and `.live` keep their 0.6.1 meaning); the new `BatteryCore/RegistryReadPolicy.swift` holds `RegistryReadPolicy` (the static `cachesOnPolls`, `defaultSafetyNetAge` = 300 s, `.app`, `rereadsRegistry(isPoll:age:isShown:)`), `RegistryCapture` and `BatteryReading.init(registry:smc:timestamp:)`; `SMCReadPolicy` is unchanged. `MacBatteryProvider` keeps the last registry, IOPS and adapter dictionaries that found a battery behind a `Mutex`; a cached read with an empty cache fetches the registry anyway. **Item 3:** every trigger but `poll` re-reads the registry; a poll re-reads it while Power or Raw Data is shown, or once the cached copy is 5 minutes old, an age check inside existing reads (no new task or sleep). Beyond the plan, for correctness: a coalesced follow-on read still fetches the registry if any folded request wasn't a poll (`requestedPollsOnly`), even when it is labelled with a first request that was. The `read` signpost's trigger is `full`, `live`, `cached` or `cached.slow` and names what the read did. **Item 4:** a read that fetches the registry compares the snapshot's `gaugeUpdatedAt` (`UpdateTime`) with the last fetch's; if it changed and no change notification arrived since that fetch began, the monitor logs `Diagnostics.event("registry.missed")` with the refresh trigger of the read that found it (the pure logic is `RegistryUpdateWatch`; Demo Mode and `stop()` reset it; an internal counter, `missedRegistryUpdates`, serves the tests). **Item 5:** bpulse, `--record` and the widget still call `read()` (= `.full`); bpulse output is unchanged. **Item 6 (E3b):** `timeremaining` dropped from `powerSourceNotifications` in its own commit (`c50b834`), and the coalescing-window comment no longer says powerd posts two notifications. `perf-stats` adds, for each name with more than one trigger, a row over all of them (trigger "(all)", for intervals and events), so D1 compares `read (all)` with v0.6.1's `read -`; the sample gained 0.6.2-style `read` triggers and two `registry.missed` events (`.expected` regenerated). **"No E4b"** is one line, `RegistryReadPolicy.cachesOnPolls = false`, with no test change: every rule and monitor test runs with the switch on and off, and the suite passes with it off (5 + 117 + 581, the review's check); the 60-s fallback is `RegistryReadPolicy(cachesOnPolls:safetyNetAge:)` with another age, and either commit should reword `setShowsSlowValues`' "up to 5 minutes". No settings keys, storage formats, strings, entitlements, network behaviour, bpulse output or exit codes changed; `SecurityGuardTests` and `EnergyGuardTests` untouched and green (`IOServiceOpen` still only in `SMCClient`). The golden diff is empty by construction (BatteryCore only gained `RegistryReadPolicy.swift`; bpulse, the parser and the report are unchanged). Tests 565 core + 107 kit + 5 at `f1c2527` → 581 core (58 suites) + 117 kit (9) + 5; `MacBatteryProviderTests` pass on the runner (no battery), whose launch smoke logs `perf interval read ms=0.603 trigger=full`, then `No battery`; no fix commits | CI runs 40045151920 (`dc3cca3`; 40044943854 on `b43b3f8` was cancelled by the newer push, not failed), 40046692780 (`c4803c8`, both B1 merges); the round's review | G-14b's Session A half and G-14c (§7.1); Session B's G-14b criteria (the row above); WP-22: CLAUDE.md's signpost list (`read`'s four triggers, `registry.missed`) and E4b's two decisions, USER_GUIDE's refresh sentence, ROADMAP's E3b line |
+| WP-14b's known edges (minor, open). **`registry.missed` can be wrong three ways**, which Session B tells apart by each event's trigger and time: (1) too high: a read that sees a change and lands before that change's notification counts a miss (a miss followed by a `notify` refresh within about 1 s); (2) possibly too high around a wake: a notification queued during sleep can land after the first read after the wake (a `history`-triggered miss right after a wake; how often is unverified); (3) too low: any change notification counts, Low Power Mode and thermal ones included, and any later notification hides an earlier miss. With power in the menu bar (cached 10-s polls; no history read, since a read always came within 20 s) a miss shows only when the next fetch is the 5-minute safety net with no notification in between, so the detector is nearly blind there; it is fine-grained only while Power or Raw Data is shown (a fetch every 2 s) or with no polling (the history read each minute), so Session B counts it per hour of such runtime. `followUp`-triggered events are updates that the follow-up re-reads already catch. Also: `apply()` records a fetch by the scope the monitor asked for, so a `.cached` request that the provider turns into a fetch (an empty cache after a read without a battery) isn't recorded; the next safety-net re-read can come early and one baseline is skipped, values unaffected. The class doc and `setShowsSlowValues`' doc write the age as a fixed "5 minutes". **Freshness** (§7.3): pages other than Power and Raw Data show registry values up to 5 minutes old in the worst case (only if F13 fails in the field), and so does a history sample taken right after a cached poll; after switching to Power or Raw Data, the first poll interval or less (2 s, or 5 s in Low Power Mode, under reduced resources or heat) can still show the cached registry until the next poll (the lag the SMC's slow keys had in 0.6.1; no extra read on a page switch, per the plan's rule); a long sleep makes the first poll after the wake re-read (`ContinuousClock` counts sleep toward the age). F13 tested `UpdateTime` only: registry fields that might change without it (adapter or charger telemetry) can be 5 minutes old off Power and Raw Data, as §7.3 allows; the menu bar's power figure is SMC voltage × current, unaffected; F6 is the check | the implementer's notes; the round's review | left as is (no code defects; the docs' "5 minutes" changes only with the "no E4b" commit); Session B: G-14b's count and F6 |
 | mAh cadence: `RemainingCapacity` changes per hour | Session A's ioreg sampler | ROADMAP Stage 3 (WP-22) |
-| Clear's fill (b) and Translucent Dark's today's fill: recordings and answers | Session A step 6 | G-13a |
+| Clear's fill (b) and Translucent Dark's today's fill, 2026-10-23 (interim): recorded at normal speed with a frame dump every 0.05 s, answered 1 (like the window, or an even graphite grey), 2 (a black frame) or 3. Clear Light with (b): 1. Clear Dark with (b): 1 (its restore clip re-taken). Translucent Dark with today's fill: 2, the title bar band at RGB 0,0,0. Translucent Dark with (b): 1, at RGB 49,49,49. **Still for Session A:** the final `A.md` confirms these | Session A step 6 | G-13a: (b) extends to Translucent Dark (WP-13 item 1, next row) |
+| WP-13, 2026-10-24: **merged** into `claude/nice-faraday-k08mhb` as `c4803c8` (head `2b2dba0`) in round B1, beside WP-14b (§5). **Item 1 (G-13a):** `WindowLookPolicy.graphiteMinimizeFill` = `Tint(white: 0.1945, opacity: 1)` (0.03 × 0.65 + 0.5 × 0.35, sRGB-encoded; 0.1945 × 255 = 49.6, Session A's RGB 49,49,49; white text on it 12.9:1) through `minimizeFill(systemDark:)`, which `sheetSurface(systemDark:isMinimized:)` returns as `.fill`: on Clear Light and Clear Dark (`6c5f8ae`) and on Translucent Dark (`72b790d`, its own small commit); Translucent Light keeps its white wash at 45 %. It rests on Session A's interim verdicts (the row above) and matches SPIKE-A2's switch `b-and-translucent-dark` exactly (the same constant and `systemDark` condition). If the final `A.md` doesn't confirm Translucent Dark, `git revert 72b790d` alone narrows the fill to Clear; it applies cleanly on `2b2dba0`, whose comment fix (the review's) points at `minimizeFill` and reads true either way. Linux tests: Clear's fill is opaque and equals 0.1945 and the tint-over-mid-grey composite; white text on it clears 4.5:1; Standard and Frosted have no fill; Reduce Transparency gives nil. The swap still never animates and ends at the restore; `App/WindowLook.swift` changed only in comments; `sheetSurface`'s "never opaque" doc is rewritten. **Item 2 (V1b, `3d2e627`), the cause inferred from the code, not yet seen on the Mac:** nothing in a tile depends on the selection but the accent outline (drawn in the tile's 4 pt / 10 pt padding, away from the preview) and the selected trait. What changed with the choice was the footer under the picker (Standard no line, Frosted 1, Translucent and Clear 2), and Settings sizes its window to its content (`SettingsPage` uses `.fixedSize`), so a new choice resized the window and could move the tiles under Digital Color Meter's fixed reading point. The fix: the footer lays out every note the offered tiles can lead to and shows only the chosen one (as `Crossfade` does, unanimated), so it keeps the height of its longest note: with Standard, one blank line with beta styles off, two with them on. The choice of notes is in BatteryCore (`WindowLookPolicy.Note`, `.note`, `notes(offered:reduceTransparency:increaseContrast:)`), with Linux tests; the new `MotionGuardTests.tileSelectionChangesOnlyTheOutline` checks that `isSelected` reaches only the outline's stroke and the trait, compared in one place (it fails on a preview's `.opacity(isSelected ? …)`). The footer keeps its catalog keys. **Items 3-5 are left to Session B's answers:** item 3's evidence is Session B's steps 3 and 5 and S4w; item 4 stays out of 0.6.2 (Q-B4); item 5 runs only on the maintainer's answers and alone may add catalog keys (keys added early would fail `LocalizationCatalogTests` as unused); G-13c stays decided (no fallback). Tests 565 → 570 core (57 suites); lint clean | CI runs 40044109067 (`3d2e627`), 40045265599 (`2b2dba0`), 40046692780 (`c4803c8`); the round's review | G-13a shipped on interim verdicts (§7.1); Session B's 8 cases and V1b's pixel comparison; WP-22: CLAUDE.md's minimize-fill line, USER_GUIDE's Clear known issue (if G-13a passes in Session B), ROADMAP's G-13c line; D1: the release notes |
+| WP-13's known edges (minor, open): the V1b fix changes the look on the default setting: with Standard the Window Style footer keeps blank space the size of its longest note (one line, Frosted's, with beta styles off; two with them on; the overridden note's height under Reduce Transparency or Increase Contrast), the trade `Crossfade` makes in Settings and Welcome. The tiles moved only if AppKit doesn't keep the window's top edge when it resizes; Session B's scripted V1b compares window-relative captures (`screencapture -l`), which pass whether the window moved or not, so a pass shows identical preview pixels (what Q-B4 asks) without proving the cause. If it still finds different pixels, the next suspects are the plain button style's pressed or focus effects | the round's review; the implementer's notes | accepted as is; Session B's V1b |
 | The 8 recorded minimize cases and the plain answers | Session B step 3 | G-13a, G-13b |
 | The 24 screenshots and the 19 graduation shots, answered y or n; V1b's pixel comparison | Session B step 3 | G-13b; WP-13 item 2 |
 | The contrast audit's reports per beta style, appearance and page | Session B step 3 | G-13b (Q-B4) |
@@ -3200,7 +3253,9 @@ Session A** marks what they leave open. Session A's energy runs are in the table
 | `log stream` across the night's sleep: whether the stream kept its lines after the wake, and its gaps | Session B (B5-B7) | plan-0.7.0 §6.2 step 12 (`sudo log config` only if the stream dies) |
 | The hands-free mode's cost: the maintainer's minutes per moment, the GUI phase's length and computer-use actions, and the steps recorded "not checked" or "not run" with their reasons | Session B | plan-0.7.0 §6.2's estimates |
 | B3 bench rerun; `HistoryLoad.read` profile | WP-17 | WP-17 riders |
-| `-internalize-at-link` build times and sizes | WP-15 | G-15 |
+| WP-15, 2026-10-24: **merged** into `claude/nice-faraday-k08mhb` as `bb5132d` (head `fe0a9a0`) in round B2 (§5). **Item 1, K-03 (`60c08d1`):** a `BatterySource` target and library product, made by git moves of `BatteryProvider` (with `BatteryObservation`), `AccessoryProvider`, `MacBatteryProvider`, `MacAccessoryProvider`, `SMCClient`, `SystemNotifications`, `IOSBatteryProvider` and `Diagnostics` (`Signposts`, `RefreshTrigger`); the only access change is BatterySource's `Diagnostics` and its members made `public`. The widget depends on BatteryCore and BatterySource only; BatteryKit depends on BatterySource, with no `@_exported`. Beyond the plan's import list: `UpdateChecker.swift` and `HistoryView.swift` import BatterySource too (they call `Signposts.Interval.end()`, and `MemberImportVisibility` requires it), and `App/Diagnostics.swift`, the widget and `bpulse/Record.swift` import BatterySource instead of BatteryKit, whose other members they don't use. The new **`BatterySourceTests`** target takes `MacBatteryProviderTests`, `MacAccessoryProviderTests` and `DiagnosticsTests` (`@testable import BatterySource`), and `BatteryKitTests` gains the dependency. `SourceScanner.otherTargets` lists BatterySource; `SecurityGuardTests`' allow-list paths, `smcClientCallsOnlySelectorTwo`'s path and `somewhere` point at `BatterySource/`, and an `IOServiceOpen` injected into `BatterySource/MacBatteryProvider.swift` fails it (checked by hand, pinned as an expectation). The new Linux test **`everySourceFolderIsAListedTarget`** checks that the folders under `Sources/` equal `targets + otherTargets` (checked by hand to fail on a stray folder). `build-app.sh` fails if `otool -L` of the widget lists CryptoKit, and prints the widget's `nm -u` `_dl*` imports: `_dlerror _dlopen _dlsym` after K-03 and after internalize, so **dead stripping keeps `MacAccessoryProvider`** (informational). The widget's link map no longer lists CryptoKit (it did, with SHA256 code) or Observation. **The golden bpulse diff is empty** (Linux debug builds of `c4803c8` and the K-03 tree, and the review's of `c4803c8` and the head): every fixture in text, `--json`, `--raw` and `--decimal-comma`, the history exports (`--export csv`, `json`, `csv --days --decimal-comma` on a saved store), `--help`, the missing-history error and the usage and exit-code cases; only the current-time fields differ, as between any two runs. **Item 2:** `-internalize-at-link` on the widget's line (`8549229`), with a check that the app binary's UUID is the same before and after the widget's line, and, measured and adopted in its own commit, on the app's line (`64f8aaa`); both dSYMs still come from `$BIN_PATH` (`.build/out/Products/Release`) and match the bundle, the posture check passes, and the CI launch smoke passed with both flags (running at 30 s, `menuBarReady`, quit, no crash report, no failed runtime lookup in the launch log). `4c1c0bd` prints each release build line's time. **Item 3:** SZ-14 and SZ-11 measured and not adopted (next row). **Item 4** is D1's, after the RC. The review's one fix, `fe0a9a0`, names BatterySource in `build-app.sh`'s note on the export list (with internalize on both lines, the `_main`-only export list is what lets the linker drop unused public code); comment only, the same UUIDs. Tests: Linux 708 → 709 (587 core + 111 kit + 6 BatterySource + 5), macOS 728 → 729 (5 + 13 `BatterySourceTests` + 124 + 587); no compiler warnings; the iOS build of BatteryKit, which compiles BatterySource with `IOSBatteryProvider`, passed | CI runs 40048131190 (`60c08d1`), 40048658013 (`8549229`), 40049337069, 40050705024 (`64f8aaa`), 40052102109 (`fe0a9a0`); the round's review | G-15 (§7.1); D1's ceilings; WP-22: README's Architecture block, CLAUDE.md's layout lines and "an app and a BatterySource twin" |
+| WP-15's sizes and build times, 2026-10-24 (CI). **Before** (`c4803c8`, run 40046692780): widget binary 1,413,408 B, `__text` 970,476 B; app binary 2,924,912 B, `__text` 1,975,428 B; DMG 1,485,134 B. **K-03 alone** (run 40048131190): widget 1,131,008 B (−20.0 %), `__text` 775,896 B (−20.0 %); DMG 1,398,861 B (−5.8 %); app +16,480 B, `__text` +2,460 B (the public `Diagnostics`). **Widget internalize** on K-03 (run 40048658013): widget 778,640 B (−31.2 %), `__text` 489,132 B (−37.0 %); DMG 1,285,985 B (−8.1 %); the app unchanged (2,941,392 B, the same UUID as without the flag). **App internalize** (run 40049337069): app 2,941,392 → 2,837,888 B (−3.5 %), `__text` 1,977,888 → 1,895,020 B (−4.2 %); DMG 1,285,985 → 1,257,517 B. **The final head against `c4803c8`** (`64f8aaa`, run 40050705024): widget 778,640 B (**−44.9 %**), `__text` 489,132 B (−49.6 %); app 2,837,888 B (−3.0 %), `__text` 1,895,020 B (−4.1 %); DMG 1,257,281 B (**−15.3 %**); `app_kb` 4712 → 4004. `fe0a9a0` builds the same UUIDs (widget 88146EA5…, app 77312583…), so the builds are deterministic across runs. **Build times** (the app line varies 47-79 s on the same inputs): without the flag, app line 51 s and widget line 15 s (run 40048131190); the flag on the widget's line only, 79 s and 62 s (40048658013); on both lines, 50 s and 13 s (40049337069), 71 s and 19 s (40050705024), 47 s and 14 s (40052102109). **SZ-14** (`-dead_strip_dylibs` on the widget, run 40049337069): the same 29 dylibs and `__text` 489,132 B, because after K-03 every dylib supplies a symbol; not adopted. **SZ-11** (full LTO, SwiftPM's hidden `--experimental-lto-mode=full`, on top of internalize; runs 40049337069 and 40050154771): widget 778,640 → 664,560 B (−14.7 %), `__text` 489,132 → 384,804 B (−21.3 %), widget line 43 s; the app (an unsigned measure) −6.4 %, below the 10 % bar, though its `__text` fell 10.1 %. But the DMG grew 8,488 B (1,257,517 → 1,266,005), and `dsymutil` couldn't open the deleted LTO temporary object ("unable to open object file"), so the widget dSYM's `debug_info` shrank 1,533,764 → 761,598 B: **the dSYM lost the LTO'd code's DWARF**. Not adopted, after one adopted CI run: a hidden experimental option with no runtime evidence; a retry needs `-object_path_lto` | CI runs as listed | G-15's CI half; D1 lowers the `widget_*` ceilings to the RC's numbers plus about 5 % (now 778,640 B and `__text` 489,132 B) |
+| WP-15's known edges (minor, open): internalize has only partial runtime evidence, SPIKE-I (0.6.1 plus the widget's flag, small and medium) and the CI launch smoke. The widget's `supportedFamilies` is `[.systemSmall, .systemMedium]` (`BatteryPulseWidget.swift:25`), so SPIKE-I covered every family it offers, and F8's "every family" means those two, in both languages. The review found no runtime-only name lookup it could strip (no `NSClassFromString`, `NSSelectorFromString`, `_typeByName`, AppIntents, or `dlsym` of the app's own symbols), but conformance records are runtime metadata, so only the M5 runs show the result. `8549229` doesn't `git revert` cleanly on top of `64f8aaa` (the two overlap in the comment above the lines); `64f8aaa` and K-03 do (`git apply -R --check`), so a blank F8 is a one-line edit of the widget's line, plus "Both lines add" in that comment. The review's golden diff loaded no minute samples from its hand-made history store, so its CSV sample rows were empty in both builds (the export code is untouched; the days and JSON exports matched) | the round's review | left as is; G-15's fallback (§7.1) |
 | SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (Session B; the maintainer's y in the morning batch) | WP-18; SZ-10 ships or waits for 0.7 |
 | SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.9.0's SEC-02 decision (`docs/plans/1.0/ROADMAP.md` §3.5) |
 | `release-stats.swift`'s first live table (DMG and `.sig` per release; Count "—") against `gh api`, and the requests left | WP-19 | WP-19 acceptance |
