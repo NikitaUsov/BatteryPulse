@@ -1407,7 +1407,7 @@ EOF
 
 step_appearance() {
   case "${1:-}" in
-    light | dark) appearance "$1" ;;
+    light | dark) if [ "$SESSION" = B ]; then set_appearance "$1"; else appearance "$1"; fi ;;
     back)
       case "$(cat "$BACKUP/dark-mode" 2>/dev/null || echo unknown)" in
         true) appearance dark ;;
@@ -2218,7 +2218,8 @@ restore_all() {
   fi
   end_widget_extension
   restore_lowpowermode || true
-  if [ -s "$BACKUP/wallpapers" ] && [ "$(wallpapers)" != "$(cat "$BACKUP/wallpapers")" ]; then
+  if [ -s "$BACKUP/wallpapers" ] && [ "$(wallpapers)" != "$(cat "$BACKUP/wallpapers")" ] &&
+    { [ "$SESSION" != B ] || wallpaper_is_still; }; then
     local index=1 path
     while IFS= read -r path; do
       [ -n "$path" ] || continue
@@ -3728,18 +3729,39 @@ clip() {
 # set_appearance <light|dark>: by System Events, its original recorded once.
 set_appearance() {
   [ -n "$(original_of appearance)" ] || record_change appearance "$(is_dark)" "$1"
+  # A fixed appearance by System Events turns Auto off, and only computer use turns it back on.
+  if [ "$(cat "$BACKUP/auto-appearance" 2>/dev/null || echo 0)" = 1 ] && [ -z "$(original_of appearance-auto)" ]; then
+    record_change appearance-auto on off
+  fi
   appearance "$1"
 }
+
+# wallpaper_is_still: his wallpaper is a still picture, which System Events can put back: the
+# judge's prep-wallpaper-kind (1) where answered, else prepare's read of the paths. A dynamic or
+# aerial one would come back as a still image, so it is computer use's, from prepare's shot.
+wallpaper_is_still() {
+  case "$(answer_of prep-wallpaper-kind)" in
+    1) return 0 ;;
+    2 | 3) return 1 ;;
+  esac
+  [ "$(cat "$WORK/wallpaper-kind" 2>/dev/null || true)" = still ]
+}
+
+# wallpaper_as_backup: every desktop's picture reads as prepare's backup.
+wallpaper_as_backup() { [ -s "$BACKUP/wallpapers" ] && [ "$(wallpapers)" = "$(cat "$BACKUP/wallpapers")" ]; }
 
 # set_wallpaper <png>: every desktop's picture, by System Events; the originals are the backup's.
 set_wallpaper() {
   [ -n "$(original_of wallpaper)" ] || record_change wallpaper "the backup's list" "$(basename "$1")"
   osascript -e 'on run argv' -e 'tell application "System Events"' -e 'repeat with d in desktops' \
-    -e 'set picture of d to (item 1 of argv)' -e 'end repeat' -e 'end tell' -e 'end run' "$1" >/dev/null 2>&1
+    -e 'set picture of d to (item 1 of argv)' -e 'end repeat' -e 'end tell' -e 'end run' "$1" >/dev/null 2>&1 || return 1
+  # Which wallpaper the shots from here on show (bright or busy), for attach's check.
+  case "$1" in *bright*) echo bright ;; *busy*) echo busy ;; *) echo other ;; esac >"$WORK/wallpaper-now"
 }
 
 put_wallpapers_back() {
   [ -s "$BACKUP/wallpapers" ] || return 0
+  echo his >"$WORK/wallpaper-now"
   [ "$(wallpapers)" != "$(cat "$BACKUP/wallpapers")" ] || return 0
   local index=1 path
   while IFS= read -r path; do
@@ -5779,14 +5801,18 @@ step_morning() {
 # session (AX, System Events or computer use), confirmed with `restored <setting>`.
 restore_phase() {
   case "$1" in
-    appearance | wallpaper | widget-style | dim-widgets | text-size | increase-contrast | reduce-transparency | reduce-motion | cross-fade | show-borders | glass-slider | widget-languages) echo gui ;;
+    appearance | appearance-auto | wallpaper | widget-style | dim-widgets | text-size | increase-contrast | reduce-transparency | reduce-motion | cross-fade | show-borders | glass-slider | widget-languages) echo gui ;;
     *) echo morning ;;
   esac
 }
 
 restore_how() {
   case "$1" in
-    appearance | wallpaper | widget-languages | app | bp-settings | bp-support | widget-data | lowpowermode-battery) echo script ;;
+    wallpaper)
+      if wallpaper_is_still; then echo script; else echo "computer use from shots/prepare-desktop.png (a dynamic or aerial wallpaper: System Events would set a still)"; fi
+      ;;
+    appearance-auto) echo "computer use (System Settings → Appearance → Auto)" ;;
+    appearance | widget-languages | app | bp-settings | bp-support | widget-data | lowpowermode-battery) echo script ;;
     open-at-login) echo "AX (Settings → General → Open at login)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
     widgets) echo "computer use (the widgets he didn't keep)" ;;
@@ -5800,14 +5826,18 @@ restore_how() {
 # TextEdit would be a new Automation target).
 restore_gui_scriptable() {
   local original app
-  put_wallpapers_back || true
-  if [ -n "$(original_of wallpaper)" ]; then mark_restored wallpaper "script"; fi
+  # A still wallpaper by System Events, confirmed by a read; a dynamic or aerial one stays on the
+  # session's list (computer use from prepare's shot).
+  if [ -n "$(original_of wallpaper)" ] && wallpaper_is_still; then
+    put_wallpapers_back || true
+    if wallpaper_as_backup; then mark_restored wallpaper "script, read back"; fi
+  fi
   original="$(original_of appearance)"
   case "$original" in
-    true) if [ "$(is_dark)" != true ]; then appearance dark; fi ;;
-    false) if [ "$(is_dark)" != false ]; then appearance light; fi ;;
+    true) if [ "$(is_dark)" != true ]; then appearance dark || true; fi ;;
+    false) if [ "$(is_dark)" != false ]; then appearance light || true; fi ;;
   esac
-  [ -z "$original" ] || mark_restored appearance "script"
+  if [ -n "$original" ] && [ "$(is_dark)" = "$original" ]; then mark_restored appearance "script, read back"; fi
   if [ -n "$(original_of widget-languages)" ] && ! is_restored widget-languages; then
     if put_widget_languages_back; then mark_restored widget-languages "script, read back"; fi
   fi
@@ -5859,8 +5889,12 @@ restore_morning() {
   if [ -n "$(original_of lowpowermode-battery)" ] && lowpowermode_as_backup; then
     mark_restored lowpowermode-battery "pmset -g custom"
   fi
-  mark_restored appearance "script"
-  mark_restored wallpaper "script"
+  if [ -n "$(original_of appearance)" ] && [ "$(is_dark)" = "$(original_of appearance)" ]; then
+    mark_restored appearance "script, read back"
+  fi
+  if [ -n "$(original_of wallpaper)" ] && wallpaper_is_still && wallpaper_as_backup; then
+    mark_restored wallpaper "script, read back"
+  fi
   limit="$(answer_of prep-charge-limit)"
   now="$(pmset -g battlimit 2>/dev/null | grep -o -E '[0-9]+ ?%' | head -1 | tr -d ' %' || true)"
   out "- the Charge Limit: prepare found ${limit:-unknown}; pmset -g battlimit now: ${now:-shows none (a Battery pane shot confirms it)}"
@@ -5907,6 +5941,12 @@ restore_prompts_b() {
   fi
   if [ -n "$(original_of lowpowermode-battery)" ] && ! is_restored lowpowermode-battery; then
     echo "- Low Power Mode, in Terminal: sudo pmset -b lowpowermode $(cat "$BACKUP/lowpowermode-battery"); sudo pmset -c lowpowermode $(cat "$BACKUP/lowpowermode-ac")"
+  fi
+  if [ -n "$(original_of appearance-auto)" ] && ! is_restored appearance-auto; then
+    echo "- Set System Settings → Appearance back to Auto."
+  fi
+  if [ -n "$(original_of wallpaper)" ] && ! is_restored wallpaper; then
+    echo "- Put your wallpaper back (System Settings → Wallpaper), as it was before the session."
   fi
   echo "The backup stays in $BACKUP."
 }
