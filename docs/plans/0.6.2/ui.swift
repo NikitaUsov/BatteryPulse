@@ -273,8 +273,8 @@ enum Rules {
             let fields = line.split(separator: "\t").map(String.init)
             guard fields.count == 2, let limit = widgetLimits[fields[0]] else { return nil }
             let numbers = fields[1].split(whereSeparator: { $0.isWhitespace }).compactMap { Double(String($0)) }
-            guard numbers.count == 4, numbers[2] >= 20, numbers[3] >= 20, numbers[2] <= limit.width,
-                numbers[3] <= limit.height
+            guard numbers.count == 4, numbers[2] >= 20, numbers[3] >= 20, numbers[2] <= Double(limit.width),
+                numbers[3] <= Double(limit.height)
             else { return nil }
             return CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
         }
