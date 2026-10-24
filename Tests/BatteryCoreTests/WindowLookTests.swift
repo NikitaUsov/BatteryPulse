@@ -198,7 +198,8 @@ import Testing
 
     /// While a window minimizes, sits in the Dock and is restored, the sheet's place is a still
     /// fill: the animation shows only the window's own layers, without the desktop the glass
-    /// samples. Clear's is the opaque graphite; Translucent's is its own tint.
+    /// samples. Clear's and Translucent Dark's is the opaque graphite; Translucent Light's is its
+    /// own wash.
     @Test(arguments: [false, true])
     func minimizingSwapsTheGlassForAStillFill(systemDark: Bool) throws {
         typealias Surface = WindowLookPolicy.SheetSurface
@@ -242,14 +243,15 @@ import Testing
         #expect(abs(contrast - 12.9) < 0.05)
     }
 
-    /// Which sheets take the graphite while their window minimizes: Clear, in Light and Dark.
-    /// Translucent keeps its see-through fill, the sheet's own tint at the tint's opacity.
+    /// Which sheets take the graphite while their window minimizes: Clear, in Light and Dark, and
+    /// Translucent in Dark, whose black dimming showed the frame too (Session A). Translucent
+    /// Light keeps its see-through fill, the sheet's own wash at the wash's opacity.
     @Test(arguments: [false, true])
     func whichSheetsMinimizeToGraphite(systemDark: Bool) throws {
         for look in [WindowLook.translucent, .clear] {
             let policy = policy(look)
             let tint = try #require(policy.sheetTint(systemDark: systemDark))
-            let graphite = look == .clear
+            let graphite = look == .clear || systemDark
             let expected = graphite ? WindowLookPolicy.graphiteMinimizeFill : tint
             #expect(policy.minimizeFill(systemDark: systemDark) == expected, "\(look)")
         }

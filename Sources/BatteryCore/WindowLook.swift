@@ -215,15 +215,18 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 
     /// What the glass sheet's place draws while the window minimizes, sits in the Dock and is
-    /// restored: for Clear, the opaque ``graphiteMinimizeFill``; for Translucent, its own tint at
-    /// the tint's opacity, the sheet without its blur. `nil` without a sheet.
+    /// restored: for Clear and for Translucent in Dark, the opaque ``graphiteMinimizeFill``; for
+    /// Translucent in Light, its own white wash at the wash's opacity, the sheet without its blur.
+    /// `nil` without a sheet.
     ///
     /// With a see-through fill of its near-black tint, a Clear window turned black while it
-    /// minimized and came back (the 0.6.1 M5 session). Its opaque fill keeps the window's shape
-    /// in an even graphite instead, whatever the animation shows behind it.
+    /// minimized and came back (the 0.6.1 M5 session), and Session A's recordings showed
+    /// Translucent Dark's black dimming do the same in its title bar. The opaque fill keeps the
+    /// window's shape in an even graphite instead, whatever the animation shows behind it.
     public func minimizeFill(systemDark: Bool) -> Tint? {
         guard let tint = sheetTint(systemDark: systemDark) else { return nil }
-        return effective == .clear ? Self.graphiteMinimizeFill : tint
+        let graphite = effective == .clear || (effective == .translucent && systemDark)
+        return graphite ? Self.graphiteMinimizeFill : tint
     }
 
     /// What the glass sheet's place draws: the tinted glass, or, while the window minimizes, sits
@@ -231,10 +234,10 @@ public struct WindowLookPolicy: Equatable, Sendable {
     ///
     /// The minimize animation and the Dock show the window's own layers, and the desktop that the
     /// glass samples behind the window isn't one of them, so the glass would turn near-black for
-    /// the whole animation. Translucent's fill is see-through like its glass; Clear's is opaque,
-    /// so nothing behind the window can darken it. The swap is not a motion event and never
-    /// animates; the glass comes back once the window is restored. `nil` without a sheet:
-    /// Standard and Frosted draw as always.
+    /// the whole animation. Translucent Light's fill is see-through like its glass; the others
+    /// are opaque, so nothing behind the window can darken them. The swap is not a motion event
+    /// and never animates; the glass comes back once the window is restored. `nil` without a
+    /// sheet: Standard and Frosted draw as always.
     public func sheetSurface(systemDark: Bool, isMinimized: Bool) -> SheetSurface? {
         guard let tint = sheetTint(systemDark: systemDark) else { return nil }
         guard isMinimized else { return .glass(tint: tint) }
