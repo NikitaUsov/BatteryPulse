@@ -119,13 +119,17 @@ jobs:
           done
           echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
-        # None of them is built or run anywhere else: the first two need a Mac with a display, the
-        # others a running BatteryPulse.
+        # Nothing else builds or runs them. The menu bar shots and their display metrics need a Mac
+        # with a display, rusage a running BatteryPulse; perf-stats and release-stats run here on
+        # their samples, offline.
         run: |
           bash -n scripts/menu-bar-shots.sh
           swiftc -typecheck scripts/display-metrics.swift
           swiftc -typecheck scripts/rusage.swift
           swiftc -typecheck scripts/perf-stats.swift
+          swiftc -typecheck scripts/release-stats.swift
+          swift scripts/release-stats.swift --self-test
+          swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
           # The 0.6.2 M5 session's script and its helpers (PLAN.md §6, WP-21), until D3 removes
           # the folder.
