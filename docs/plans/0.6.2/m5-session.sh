@@ -2704,6 +2704,123 @@ not_checked() {
   echo "NOT CHECKED $id: $*"
 }
 
+# MARK: - Session B: measurements paired with judgments
+
+# measure <id> <kind> <arguments>: the script's half of a judgment, stored for `judge`:
+#   black <frames folder>         the darkest frame inside the window's rectangle: 2 (a black frame)
+#                                 below luma 0.06 with 40 % dark pixels, 1 above luma 0.12
+#   blank <image> [x y w h]       luma's spread: 2 (blank or grey) below 0.02, else 1
+#   same <image> <image> [x y w h] identical pixels: y, else n (V1b)
+#   differs <image> <image> [x y w h] more than 1 % of the pixels changed: y, else n (the menu bar)
+# The suggestion is "-" where the numbers sit between the thresholds.
+step_measure() {
+  b_only measure
+  [ $# -ge 3 ] || fail "usage: $SCRIPT measure <id> black|blank|same|differs <arguments>"
+  [ -x "$BIN/frames" ] || fail "the frame helper isn't built (see $BIN/frames.log)"
+  local id="$1" kind="$2" line suggestion="-" value
+  shift 2
+  question "$id" >/dev/null || fail "no question $id"
+  case "$kind" in
+    black)
+      [ -f "$1/frames.tsv" ] || fail "no frames.tsv in $1"
+      line="$(awk -F '\t' 'NR > 1 && $7 != "-" { if (best == "" || $8 + 0 > dark + 0) { best = $1; luma = $7; dark = $8 } }
+        END { if (best != "") print best, luma, dark }' "$1/frames.tsv")"
+      [ -n "$line" ] || fail "frames.tsv has no rectangle columns: dump with --rect"
+      value="darkest frame $(echo "$line" | awk '{ printf "%s, luma %s, %s %% dark", $1, $2, $3 }')"
+      suggestion="$(echo "$line" | awk '{ if ($2 < 0.06 && $3 >= 40) print 2; else if ($2 >= 0.12) print 1; else print "-" }')"
+      ;;
+    blank)
+      line="$("$BIN/frames" stats "$@")"
+      value="$line"
+      suggestion="$(echo "$line" | sed -n 's/.*stddev=\([0-9.]*\).*/\1/p' | awk '{ if ($1 < 0.02) print 2; else print 1 }')"
+      ;;
+    same | differs)
+      line="$("$BIN/frames" diff "$@")"
+      value="$line"
+      if [ "$kind" = same ]; then
+        case "$line" in *"identical=yes"*) suggestion=y ;; *) suggestion=n ;; esac
+      else
+        suggestion="$(echo "$line" | sed -n 's/.*changed_pct=\([0-9.]*\).*/\1/p' | awk '{ if ($1 > 1) print "y"; else print "n" }')"
+      fi
+      ;;
+    *) fail "a measure is black, blank, same or differs" ;;
+  esac
+  mkdir -p "$WORK"
+  touch "$MEASURES"
+  awk -F '\t' -v id="$id" '$1 != id' "$MEASURES" >"$MEASURES.tmp"
+  mv "$MEASURES.tmp" "$MEASURES"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$kind" "${suggestion:--}" "$(printf '%s' "$value" | tr '\t\n' '  ' | public)" \
+    "$(printf '%s' "$*" | public)" >>"$MEASURES"
+  echo "measured $id: $value; suggests ${suggestion:--}"
+}
+
+# measure_of <id> <column>: 3 the suggestion, 4 the numbers, 5 the evidence's paths.
+measure_of() {
+  [ -f "$MEASURES" ] || return 0
+  awk -F '\t' -v id="$1" -v want="$2" '$1 == id { print $want }' "$MEASURES"
+}
+
+# judge <id> <answer> [--unsure] [note...]: Claude's reading of the picture, paired with the
+# script's measurement. When the two disagree, or Claude is unsure, the answer is 3 (for a yes/no
+# or two-way question, "unsure") with the note, and the item joins the morning batch.
+step_judge() {
+  b_only judge
+  [ $# -ge 2 ] || fail "usage: $SCRIPT judge <id> <answer> [--unsure] [note...]"
+  local id="$1" value="$2" read="$2" unsure="" suggestion spec kind note
+  shift 2
+  if [ "${1:-}" = --unsure ]; then
+    unsure=1
+    shift
+  fi
+  note="$*"
+  spec="$(question "$id")" || fail "no question $id"
+  kind="${spec%%|*}"
+  suggestion="$(measure_of "$id" 3)"
+  if [ -n "$suggestion" ] && [ "$suggestion" != "-" ] && [ "$suggestion" != "$value" ]; then
+    unsure=1
+    note="disagrees with the pixels ($(measure_of "$id" 4); they suggest $suggestion)${note:+; $note}"
+  fi
+  if [ -n "$unsure" ]; then
+    printf '%s\t%s\t%s\t%s\n' "$id" "$value" "$(printf '%s' "$note" | tr '\t\n' '  ')" "$(measure_of "$id" 5)" >>"$BATCH"
+    case "$kind" in
+      yn | 2) value=unsure ;;
+      *) value=3 ;;
+    esac
+    note="for the morning batch: claude read $read${note:+; $note}"
+  fi
+  step_answer --by claude "$id" "$value" "$note"
+}
+
+# batch: the morning batch (B7): his y questions, the contact sheets per style, and every item
+# the session answered 3 or unsure.
+step_batch() {
+  b_only batch
+  local style sheet shots id
+  mkdir -p "$SHOTS/batch"
+  echo "The morning batch:"
+  for style in translucent clear; do
+    shots="$(find "$SHOTS/set" "$SHOTS/grad" -name "*-$style-*.png" 2>/dev/null | sort | tr '\n' ' ' || true)"
+    if [ -n "$shots" ] && [ -x "$BIN/frames" ]; then
+      sheet="$SHOTS/batch/$style-sheet.png"
+      # $shots is split on purpose: one argument per shot (the names have no spaces).
+      # shellcheck disable=SC2086
+      "$BIN/frames" sheet "$sheet" $shots >/dev/null
+      echo "SHEET $sheet ($(echo "$shots" | wc -w | tr -d ' ') shots of $style)"
+    else
+      echo "SHEET $style: no shots (the style stays beta)"
+    fi
+  done
+  ask grad-translucent-sheet grad-clear-sheet graduate-translucent graduate-clear SZ-10
+  if [ -s "$BATCH" ]; then
+    echo "Items the session answered 3 or unsure (look at each crop, then answer):"
+    while IFS=$'\t' read -r id _ note crop; do
+      ask "$id"
+      echo "  note: $note"
+      [ -z "$crop" ] || echo "  evidence: $crop"
+    done <"$BATCH"
+  fi
+}
+
 # MARK: - Session B: the hands (ui), the windows and the shots
 
 # ui <command...>: the ui helper with the taps and hosts preflight chose (PLAN.md WP-21); every
@@ -3550,6 +3667,705 @@ fill_clip() {
   # shellcheck disable=SC2086
   "$BIN/frames" dump "$movie" "$folder" 0.0167 1280 --rect $rect --screen "$(screen_width)" >"$folder.txt" 2>&1 || return 1
   [ -f "$folder/frames.tsv" ]
+}
+
+# MARK: - Session B: step 3, the beta styles
+
+FILL_CASES_B="translucent-light-main translucent-dark-main clear-light-main clear-dark-main translucent-light-compact translucent-dark-compact clear-light-compact clear-dark-compact standard-light-main frosted-light-main"
+
+# case <style>-<light|dark>-<main|compact>: one of the 8 glass-sheet cases (Standard and Frosted
+# once each, next to a minimized TextEdit window), minimized and restored by record_clip's method
+# (proof P5: a posted Shift in a 6-second clip, else AXMinimized in 3 s), measured, then judged.
+step_case() {
+  b_only case
+  b_fence
+  local name="${1:-}" style look window method seconds phase
+  case " $FILL_CASES_B " in *" $name "*) ;; *) fail "the cases are $FILL_CASES_B" ;; esac
+  style="${name%%-*}"
+  look="${name#*-}"
+  window="${look#*-}"
+  look="${look%%-*}"
+  method="$(cat "$WORK/fill-method" 2>/dev/null || echo ax)"
+  if [ "$method" = shift ]; then seconds=6; else seconds=3; fi
+  use_section 30-cases "The glass-sheet minimize and restore cases (WP-13, G-13a)"
+  if [ "$style" = standard ] || [ "$style" = frosted ]; then
+    open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
+    sleep 2
+    ui_run minimize on TextEdit >/dev/null 2>&1 || warn "TextEdit's window didn't minimize"
+  fi
+  if [ "$window" = compact ]; then
+    relaunch_b_style "$style" "$look" compact || {
+      not_checked "fill-$name" "the compact window didn't pass the occlusion check"
+      return 0
+    }
+  else
+    relaunch_b_style "$style" "$look" || {
+      not_checked "fill-$name" "the main window didn't pass the occlusion check"
+      return 0
+    }
+  fi
+  for phase in minimize restore; do
+    if ! fill_clip "case-$name" "$phase" "$method" "$seconds"; then
+      sleep 2
+      # A clip that missed the animation: retried once (§6 "Rules").
+      if [ "$phase" = restore ]; then ui_run minimize on BatteryPulse >/dev/null 2>&1 || true; fi
+      fill_clip "case-$name" "$phase" "$method" "$seconds" || {
+        not_checked "fill-$name" "the $phase clip missed the animation twice"
+        ui_run minimize off BatteryPulse >/dev/null 2>&1 || true
+        return 0
+      }
+    fi
+  done
+  step_measure "fill-$name" black "$REC/case-$name-minimize-frames" >/dev/null
+  out "- $name ($method, $seconds s): minimize $(grep -m1 'frame rate' "$REC/case-$name-minimize-frames.txt" || true); $(measure_of "fill-$name" 4); restore $(grep -m1 'darkest inside' "$REC/case-$name-restore-frames.txt" || true)"
+  echo "LOOK $REC/case-$name-minimize-frames/sheet.png and darkest-1.png; then $REC/case-$name-restore-frames/sheet.png"
+  ask "fill-$name"
+  echo "Then: $SCRIPT judge fill-$name <1-3> [--unsure] [note]"
+}
+
+# styleshot <translucent|clear> <bright|busy> <light|dark> <overview|history|settings>: one of the
+# 24 shots, after the occlusion check; Claude pre-judges it, and he answers one sheet per style.
+step_styleshot() {
+  b_only styleshot
+  b_fence
+  [ $# -eq 4 ] || fail "usage: $SCRIPT styleshot translucent|clear bright|busy light|dark overview|history|settings"
+  local style="$1" paper="$2" look="$3" page="$4" file before item rect
+  case "$style:$paper:$look:$page" in
+    translucent:* | clear:*) ;;
+    *) fail "the beta styles are translucent and clear" ;;
+  esac
+  file="$SHOTS/set/set-$style-$paper-$look-$page.png"
+  [ -f "$WORK/wallpaper-$paper.png" ] || fail "no generated $paper wallpaper (prepare reads)"
+  set_wallpaper "$WORK/wallpaper-$paper.png" || fail "System Events didn't set the wallpaper"
+  relaunch_b_style "$style" "$look" || {
+    not_checked "shot-$style-$paper-$look-$page" "the main window didn't pass the occlusion check"
+    return 0
+  }
+  case "$page" in
+    overview) window_shot "$file" ;;
+    history)
+      select_page History || warn "History wasn't selected"
+      sleep 2
+      rect="$(line_rect "$(main_window_line)")"
+      # A pointer move over the chart brings up the readout.
+      # shellcheck disable=SC2046
+      ui_run move $(awk '{ printf "%d %d", $1 + $3 * 0.6, $2 + $4 * 0.45 }' <<<"$rect") >/dev/null 2>&1 || true
+      sleep 1
+      window_shot "$file"
+      ;;
+    settings)
+      before="$(ui_run windows --app BatteryPulse 2>/dev/null | cut -f1 | tr '\n' ' ' || true)"
+      ui_run press BatteryPulse --menu-cmd , >/dev/null 2>&1 || warn "Settings didn't open"
+      sleep 2
+      item="$(ui_run windows --app BatteryPulse 2>/dev/null | awk -F '\t' -v before=" $before" 'index(before, " " $1 " ") == 0 && $2 == "layer 0" { print $4; exit }' || true)"
+      if [ -n "$item" ]; then rect_shot "$file" "$item"; else not_checked "shot-$style-$paper-$look-$page" "the Settings window didn't appear"; fi
+      ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
+      ;;
+    *) fail "a page is overview, history or settings" ;;
+  esac
+  ask "shot-$style-$paper-$look-$page"
+}
+
+# gradshot <translucent|clear> <light|dark> <raw|demo|history|fullscreen> [--ready], and
+# gradshot clear light settings | frosted <light|dark> gallery [--ready]: the graduation shots on
+# the bright wallpaper. Without --ready it sets the scene and says what the session adds (the
+# inspector, the demo bar, the gallery); with --ready it takes the shot.
+step_gradshot() {
+  b_only gradshot
+  b_fence
+  local style="${1:-}" look="${2:-}" item="${3:-}" ready="${4:-}" file rect
+  file="$SHOTS/grad/grad-$style-$look-$item.png"
+  case "$style:$item" in
+    translucent:raw | translucent:demo | translucent:history | translucent:fullscreen | clear:raw | clear:demo | clear:history | clear:fullscreen | clear:settings | frosted:gallery) ;;
+    *) fail "usage: $SCRIPT gradshot translucent|clear light|dark raw|demo|history|fullscreen | clear light settings | frosted light|dark gallery [--ready]" ;;
+  esac
+  if [ "$ready" != --ready ]; then
+    set_wallpaper "$WORK/wallpaper-bright.png" || warn "System Events didn't set the wallpaper"
+    relaunch_b_style "$style" "$look" || {
+      not_checked "grad-$style-$look-$item" "the main window didn't pass the occlusion check"
+      return 0
+    }
+    case "$item" in
+      raw)
+        select_page "Raw Data" || warn "Raw Data wasn't selected"
+        echo "DO (session): open the inspector (ui press or computer use), then: $SCRIPT gradshot $style $look raw --ready"
+        return 0
+        ;;
+      demo)
+        select_page "Demo Mode" || warn "Demo Mode wasn't selected"
+        echo "DO (session): start a demo so its bar shows, then: $SCRIPT gradshot $style $look demo --ready"
+        return 0
+        ;;
+      settings)
+        ui_run press BatteryPulse --menu-cmd , >/dev/null 2>&1 || true
+        echo "DO (session): place Settings → General beside the window (ui position), then: $SCRIPT gradshot $style $look settings --ready"
+        return 0
+        ;;
+      gallery)
+        echo "DO (session): open the widget gallery behind the window (computer use), then: $SCRIPT gradshot $style $look gallery --ready"
+        return 0
+        ;;
+      history)
+        select_page History || warn "History wasn't selected"
+        sleep 2
+        rect="$(line_rect "$(main_window_line)")"
+        # shellcheck disable=SC2046
+        ui_run scroll $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") 12 >/dev/null 2>&1 || true
+        sleep 1
+        window_shot "$file" || not_checked "grad-$style-$look-$item" "no shot"
+        ;;
+      fullscreen)
+        ui_run fullscreen on BatteryPulse >/dev/null 2>&1 || warn "AXFullScreen didn't take"
+        sleep 3
+        mkdir -p "$SHOTS/grad"
+        screencapture -x -m "$file"
+        ui_run fullscreen off BatteryPulse >/dev/null 2>&1 || true
+        sleep 2
+        echo "SHOT $file"
+        ;;
+    esac
+  else
+    mkdir -p "$SHOTS/grad"
+    case "$item" in
+      settings | gallery) screencapture -x -m "$file" && echo "SHOT $file (the main display; it stays on the Mac)" ;;
+      *) window_shot "$file" || not_checked "grad-$style-$look-$item" "no shot" ;;
+    esac
+  fi
+  ask "grad-$style-$look-$item"
+}
+
+# audit estimate <style> <light|dark> <overview|history|settings>: the contrast audit's fallback, a
+# scripted estimate from AX text frames and pixel luminance (frames contrast) on the current window.
+step_audit() {
+  b_only audit
+  b_fence
+  [ "${1:-}" = estimate ] && [ $# -eq 4 ] || fail "usage: $SCRIPT audit estimate <style> <light|dark> <overview|history|settings> (Accessibility Inspector's own audit is computer use's)"
+  local style="$2" look="$3" page="$4" file="$SHOTS/audit/audit-$2-$3-$4.png" rect scale low=0 count=0 frame ratio
+  window_shot "$file" >/dev/null || {
+    not_checked "audit-$style-$look-$page" "the window isn't clear"
+    return 0
+  }
+  rect="$(line_rect "$(main_window_line)")"
+  scale="$(ui_run screen 2>/dev/null | sed -n 's/.* scale=\([0-9.]*\).*/\1/p' || true)"
+  : >"$LOGS/audit-$style-$look-$page.txt"
+  while IFS= read -r frame; do
+    # The text's frame in the shot's pixels, from the window's origin.
+    # shellcheck disable=SC2046
+    ratio="$("$BIN/frames" contrast "$file" $(awk -v r="$rect" -v s="${scale:-2}" '{ split(r, w, " "); printf "%d %d %d %d", ($1 - w[1]) * s, ($2 - w[2]) * s, $3 * s, $4 * s }' <<<"$frame") 2>/dev/null |
+      sed -n 's/^contrast_ratio=\([0-9.]*\).*/\1/p' || true)"
+    [ -n "$ratio" ] || continue
+    count=$((count + 1))
+    printf '%s\t%s\n' "$frame" "$ratio" >>"$LOGS/audit-$style-$look-$page.txt"
+    if awk -v r="$ratio" 'BEGIN { exit !(r < 4.5) }'; then low=$((low + 1)); fi
+  done < <(ui_run tree BatteryPulse --depth 40 2>/dev/null | grep 'AXStaticText' | sed -n 's/.* frame \([0-9-]* [0-9-]* [0-9]* [0-9]*\)$/\1/p' |
+    awk -v r="$rect" '{ split(r, w, " "); if ($3 > 4 && $4 > 4 && $1 >= w[1] && $2 >= w[2] && $1 + $3 <= w[1] + w[3] && $2 + $4 <= w[2] + w[4]) print }')
+  use_section 31-audit "The contrast audit (WP-13 item 3)"
+  out "- $style $look $page: estimate only, $count texts, $low under 4.5:1 (AX text frames and pixel luminance; logs on the Mac)"
+  ask "audit-$style-$look-$page"
+}
+
+# v1b <x> <y> <w> <h>: the Clear tile in Settings → General (its frame in points), shot unselected
+# and selected by AX presses, compared inside the outline; identical pixels pass.
+step_v1b() {
+  b_only v1b
+  b_fence
+  [ $# -eq 4 ] || fail "usage: $SCRIPT v1b <x> <y> <w> <h> (the Clear tile's frame in Settings → General)"
+  local rect="$1 $2 $3 $4" scale inner
+  mkdir -p "$SHOTS/v1b"
+  ui_run press BatteryPulse Standard >/dev/null 2>&1 || true
+  sleep 1
+  rect_shot "$SHOTS/v1b/unselected.png" "$rect" >/dev/null
+  ui_run press BatteryPulse Clear >/dev/null 2>&1 || fail "the Clear tile didn't press"
+  sleep 1
+  rect_shot "$SHOTS/v1b/selected.png" "$rect" >/dev/null
+  ui_run press BatteryPulse Standard >/dev/null 2>&1 || true
+  scale="$(ui_run screen 2>/dev/null | sed -n 's/.* scale=\([0-9.]*\).*/\1/p' || true)"
+  # Inside the outline: 6 points in from each edge.
+  inner="$(awk -v w="$3" -v h="$4" -v s="${scale:-2}" 'BEGIN { printf "%d %d %d %d", 6 * s, 6 * s, (w - 12) * s, (h - 12) * s }')"
+  # shellcheck disable=SC2086
+  step_measure V1b same "$SHOTS/v1b/unselected.png" "$SHOTS/v1b/selected.png" $inner
+  echo "LOOK $SHOTS/v1b/unselected.png and $SHOTS/v1b/selected.png"
+  ask V1b
+}
+
+# MARK: - Session B: steps 2, 4, 6 and 7 (V-01, F6-F12, memory, the burst)
+
+# v01 notify [front] | menubar | check | morning (step 2).
+step_v01_b() {
+  b_fence
+  case "${1:-}" in
+    notify)
+      local id=V01-notification result
+      if [ "${2:-}" = front ]; then id=V01-notification-front; fi
+      if [ "$id" = V01-notification-front ]; then open_main; fi
+      ui_run press BatteryPulse --menu-cmd , >/dev/null 2>&1 || fail "Settings didn't open"
+      sleep 2
+      ui_run press BatteryPulse Notifications >/dev/null 2>&1 || warn "the Notifications pane didn't select"
+      sleep 1
+      ui_run press BatteryPulse "Send Test Notification" >/dev/null 2>&1 || fail "Send Test Notification didn't press"
+      result="$(ui_run banner BatteryPulse --seconds 10 2>&1 || true)"
+      sleep 2
+      use_section 20-v01 "V-01 on the RC (WP-10, WP-14a)"
+      out "- $id: $result; front window afterwards: $(ui_run windows 2>/dev/null | awk -F '\t' '$2 == "layer 0" { print $3; exit }')"
+      ask "$id"
+      ;;
+    menubar)
+      local item
+      item="$(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- || true)"
+      [ -n "$item" ] || fail "no menu bar item in CGWindowList"
+      mkdir -p "$SHOTS/v01"
+      set_appearance light
+      sleep 2
+      rect_shot "$SHOTS/v01/menubar-light.png" "$item" >/dev/null
+      set_appearance dark
+      sleep 2
+      rect_shot "$SHOTS/v01/menubar-dark.png" "$item" >/dev/null
+      appearance "$(if [ "$(original_of appearance)" = true ]; then echo dark; else echo light; fi)" || true
+      step_measure V01-menubar differs "$SHOTS/v01/menubar-light.png" "$SHOTS/v01/menubar-dark.png"
+      echo "LOOK $SHOTS/v01/menubar-light.png and $SHOTS/v01/menubar-dark.png"
+      ask V01-menubar
+      ;;
+    check)
+      use_section 20-v01 "V-01 on the RC (WP-10, WP-14a)"
+      local lines
+      lines="$(log_since "$(cat "$WORK/prepare.time")" "$EXECUTOR_PREDICATE" "$LOGS/executor-gui.ndjson")"
+      out "- B2's end ($(clock)): \"executor\" log lines since prepare: $lines"
+      if [ "$lines" -gt 0 ]; then
+        messages "$LOGS/executor-gui.ndjson" | head -20 >"$LOGS/executor-gui.txt"
+        out_block "$LOGS/executor-gui.txt"
+      fi
+      out "- crash reports since prepare:"
+      crash_summary "$WORK/prepare.marker"
+      ask V01-pages
+      ;;
+    morning)
+      use_section 20-v01 "V-01 on the RC (WP-10, WP-14a)"
+      local build pids count=0 report
+      build="$(awk -F '\t' '$1 == "C" { print $3 }' "$WORK/builds.tsv")"
+      log_since "$(cat "$WORK/prepare.time")" "$EXECUTOR_PREDICATE" "$LOGS/executor-night.ndjson" >/dev/null
+      pids="$(cat "$WORK/rc-pids.txt" 2>/dev/null | tr '\n' ' ' || true)"
+      out "- the morning: \"executor\" lines of the RC's processes: $(awk -v pids=" $pids " '
+        match($0, /"processID" *: *[0-9]+/) { p = substr($0, RSTART, RLENGTH); sub(/.*: */, "", p); if (index(pids, " " p " ")) n++ }
+        END { print n + 0 }' "$LOGS/executor-night.ndjson")"
+      while IFS= read -r report; do
+        [ -n "$report" ] || continue
+        if head -1 "$report" | grep -q "\"build_version\" *: *\"$build\""; then count=$((count + 1)); fi
+      done < <(crash_reports_since "$WORK/prepare.marker")
+      out "- the RC's crash reports (build $build) since prepare: $count (build B's runs don't count)"
+      shot after-lid
+      ask V01-lid
+      ;;
+    *) fail "usage: $SCRIPT v01 notify [front] | menubar | check | morning" ;;
+  esac
+}
+
+# f11 alert | login (step 4).
+step_f11() {
+  b_only f11
+  b_fence
+  use_section 40-f11 "F11: the charge alert and the login item"
+  case "${1:-}" in
+    alert)
+      local charge step="" waited=0 result
+      charge="$(battery_percent)"
+      if [ "${charge:-0}" -ge 80 ]; then
+        for step in 100 95 90 85 80; do
+          if [ "$charge" -ge "$step" ]; then break; fi
+        done
+      else
+        step=80
+        if ! pmset -g batt | grep -q -E '; charging;' || [ $((step - charge)) -gt 3 ]; then
+          out "- F11-alert: not run (at $charge %, not charging or more than 3 points below 80)"
+          step_answer --by claude F11-alert 3 "not run: the charge" >/dev/null
+          return 0
+        fi
+      fi
+      quit_app
+      set_default alertChargeLimit -int "$step"
+      defaults delete "$BUNDLE_ID" alertState 2>/dev/null || true
+      launch_b
+      until result="$(ui_run banner BatteryPulse --seconds 20 2>&1)" || [ "$waited" -ge 18 ]; do
+        waited=$((waited + 1))
+      done
+      out "- F11-alert: step $step % at $charge %: ${result:-no banner}"
+      ask F11-alert
+      ;;
+    login)
+      local before
+      before="$(answer_of prep-open-at-login)"
+      case "$before" in 1 | 2) ;; *)
+        not_checked F11-login "Open at login's original is unknown: never changed"
+        return 0
+        ;;
+      esac
+      record_change open-at-login "$(if [ "$before" = 1 ]; then echo on; else echo off; fi)" "off (F11)"
+      echo "DO (session): in Settings → General, turn Open at login $(if [ "$before" = 2 ]; then echo "on, then off again"; else echo off; fi) by ui press; then: $SCRIPT f11 listed"
+      ;;
+    listed)
+      open "$(pane_url login-items)"
+      sleep 3
+      out "- Login Items after Open at login off: $(ui_run tree "System Settings" --match BatteryPulse 2>&1 || true)"
+      ui_run quit "System Settings" >/dev/null 2>&1 || true
+      ask F11-login
+      ;;
+    *) fail "usage: $SCRIPT f11 alert | login | listed" ;;
+  esac
+}
+
+# f6 <page>: a page on real data (E4b's mixed-age snapshot) beside bpulse --json of the same minute.
+step_f6() {
+  b_only f6
+  b_fence
+  local page="${1:-}" label
+  case "$page" in
+    overview) label=Overview ;; power) label=Power ;; history) label=History ;; health) label=Health ;;
+    raw) label="Raw Data" ;; *) fail "usage: $SCRIPT f6 overview|power|history|health|raw" ;;
+  esac
+  app_running || launch_b
+  open_main
+  select_page "$label" || warn "$label wasn't selected"
+  sleep 2
+  if [ -x "$BIN/bpulse" ]; then "$BIN/bpulse" --json >"$LOGS/f6-$page.json" 2>&1 || true; fi
+  window_shot "$SHOTS/f6/f6-$page.png" || not_checked "F6-$page" "no shot"
+  echo "READ $LOGS/f6-$page.json (bpulse --json, the same minute)"
+  ask "F6-$page"
+}
+
+# f8 [ru on|off]: the RC's widgets after the fixed action (a click on the empty desktop spot, then
+# 1 s), one crop per family with its spread, in English or, after `f8 ru on`, in Russian.
+step_f8() {
+  b_only f8
+  b_fence
+  local lang=en family rect file
+  if [ "${1:-}" = ru ]; then
+    case "${2:-}" in
+      on)
+        record_change widget-languages "$(if [ -f "$BACKUP/widget-languages" ]; then echo "his own"; else echo none; fi)" "(ru)"
+        defaults write "$WIDGET_PREFS" AppleLanguages -array ru
+        end_widget_extension
+        sleep 5
+        echo "the widget extension is in Russian now: $SCRIPT f8 ru"
+        return 0
+        ;;
+      off)
+        defaults delete "$WIDGET_PREFS" AppleLanguages 2>/dev/null || true
+        end_widget_extension
+        mark_restored widget-languages "deleted"
+        echo "the widget extension is back in the system language"
+        return 0
+        ;;
+      "") lang=ru ;;
+      *) fail "usage: $SCRIPT f8 [ru on|ru off|ru]" ;;
+    esac
+  fi
+  click_desktop || not_checked "F8-$lang" "no desktop spot"
+  for family in small medium large xlarge; do
+    rect="$(widget_rect "$family")"
+    if [ -z "$rect" ]; then
+      not_checked "F8-$family-$lang" "no frame recorded for the $family widget"
+      continue
+    fi
+    file="$SHOTS/f8/f8-$family-$lang.png"
+    rect_shot "$file" "$rect" >/dev/null || continue
+    step_measure "F8-$family-$lang" blank "$file" >/dev/null
+    echo "LOOK $file ($(measure_of "F8-$family-$lang" 4))"
+    ask "F8-$family-$lang"
+  done
+}
+
+# f9: the app in Russian by a relaunch with -AppleLanguages (ru) (Overview, Settings, the update
+# warning); Claude checks truncation, English leftovers and the catalog's terms.
+step_f9() {
+  b_only f9
+  b_fence
+  quit_app
+  session_settings
+  open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(ru)"
+  sleep 3
+  open_main
+  place_window
+  window_shot "$SHOTS/f9/f9-overview.png" || not_checked F9-overview "no shot"
+  echo "DO (session): Settings (ui press BatteryPulse --menu-cmd ,) and the update warning, each by rect_shot or shot; then relaunch in English ($SCRIPT relaunch)"
+  ask F9-overview F9-settings F9-update
+}
+
+step_relaunch() {
+  b_only relaunch
+  b_fence
+  relaunch_b
+  open_main
+  place_window
+  echo "relaunched: $(app_version)"
+}
+
+# f12 rate | before | after (step 6; Q-B9, G-16, WP-16 item 6).
+step_f12() {
+  b_only f12
+  b_fence
+  use_section 60-f12 "F12: Install and Relaunch on the RC's installer (G-16)"
+  case "${1:-}" in
+    rate)
+      local left
+      left="$(curl -s https://api.github.com/rate_limit | sed -n 's/.*"core" *: *{[^}]*"remaining" *: *\([0-9]*\).*/\1/p' | head -1 || true)"
+      [ -n "$left" ] || left="$(curl -s https://api.github.com/rate_limit | tr -d ' \n' | sed -n 's/.*"rate":{[^}]*"remaining":\([0-9]*\).*/\1/p')"
+      out "- the unauthenticated requests left: ${left:-unknown}; a VPN active: $(cat "$WORK/vpn" 2>/dev/null || echo unknown)"
+      if [ -n "$left" ] && [ "$left" -ge 10 ]; then echo "F12 may run now: $SCRIPT f12 before"; else
+        echo "not now (fewer than 10 requests left): other steps first, then f12 rate again; else in the morning"
+        return 1
+      fi
+      ;;
+    before)
+      clock >"$WORK/f12.time"
+      click_desktop || true
+      sleep 2
+      rect_shot "$SHOTS/f12/before-small.png" "$(widget_rect small)" >/dev/null 2>&1 || true
+      rect_shot "$SHOTS/f12/before-medium.png" "$(widget_rect medium)" >/dev/null 2>&1 || true
+      if pgrep -x BatteryPulseWidget >/dev/null; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
+      out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension")"
+      echo "DO (session): Check for Updates, then Install and Relaunch, by AX presses; then: $SCRIPT f12 after"
+      ;;
+    after)
+      local waited=0 lines started swap
+      until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = 0.6.1 ] || [ "$waited" -ge 120 ]; do
+        sleep 1
+        waited=$((waited + 1))
+      done
+      sleep 5
+      out "- after: $(app_version), running $(if app_running; then echo yes; else echo no; fi)"
+      log_since "$(cat "$WORK/f12.time")" "subsystem == \"$BUNDLE_ID\" AND category == \"update\"" "$LOGS/f12-update.ndjson" >/dev/null
+      lines="$(messages "$LOGS/f12-update.ndjson" | grep -E 'extension before the swap|diskutil|attach|eject|swap' | head -12 || true)"
+      printf '%s\n' "$lines" >"$LOGS/f12-update.txt"
+      out "- the update log's installer lines:"
+      out_block "$LOGS/f12-update.txt"
+      swap="$(sed -n 's/.*Widget extension before the swap: \(.*\)/\1/p' "$LOGS/f12-update.txt" | head -1 || true)"
+      out "- the pre-swap extension end (WP-16 item 6): ${swap:-no line}$(if [ "$(cat "$WORK/f12-extension" 2>/dev/null)" = no ]; then echo "; no extension ran before Install: not exercised"; fi)"
+      started="$(ps -o lstart= -p "$(pgrep -x BatteryPulseWidget | head -1)" 2>/dev/null || echo "none running")"
+      out "- the BatteryPulseWidget process now: started $started"
+      click_desktop || true
+      sleep 2
+      rect_shot "$SHOTS/f12/after-small.png" "$(widget_rect small)" >/dev/null 2>&1 || true
+      rect_shot "$SHOTS/f12/after-medium.png" "$(widget_rect medium)" >/dev/null 2>&1 || true
+      [ ! -f "$SHOTS/f12/after-small.png" ] || step_measure F12-widget blank "$SHOTS/f12/after-small.png" >/dev/null
+      echo "LOOK $SHOTS/f12/before-small.png against after-small.png (and medium)"
+      ask F12-widget
+      echo "Then: $SCRIPT install C (the rest of B2 runs on the RC)"
+      ;;
+    *) fail "usage: $SCRIPT f12 rate | before | after" ;;
+  esac
+}
+
+# memory [<24-hour label> <7-day label>]: History → 7 days three times by AX, phys_footprint before,
+# after each and at the end (step 7; first in B2, on the backed-up history).
+step_memory() {
+  b_only memory
+  b_fence
+  local day="${1:-24 Hours}" week="${2:-7 Days}" pid cycle
+  use_section 75-memory "Memory: History → 7 days three times"
+  app_running || launch_b
+  open_main
+  select_page History || warn "History wasn't selected"
+  sleep 5
+  pid="$(app_pid)"
+  out "- before: $(footprint "$pid"), history $(du -sk "$SUPPORT/History" 2>/dev/null | cut -f1 || echo 0) KB"
+  for cycle in 1 2 3; do
+    ui_run press BatteryPulse "$week" >/dev/null 2>&1 || warn "$week didn't press"
+    sleep 6
+    ui_run press BatteryPulse "$day" >/dev/null 2>&1 || warn "$day didn't press"
+    sleep 4
+    out "- after cycle $cycle: $(footprint "$pid")"
+  done
+  sleep 10
+  out "- at the end: $(footprint "$pid") (the same process: $(if [ "$(app_pid)" = "$pid" ]; then echo yes; else echo no; fi))"
+}
+
+# burst (B1, step 7): 3 unplug and plug cycles at cues, 1 minute apart, each power event stamped,
+# P12 at the first unplug, ending plugged in; S8 counts only the reads a power-source notification
+# triggered.
+step_burst() {
+  b_only burst
+  b_fence
+  on_battery && fail "plug the adapter in first: the burst starts and ends plugged in"
+  begin_section 70-burst "S8: the burst (3 unplug and plug cycles)"
+  local cycle t0 waiter waited capture="$LOGS/burst.ndjson" key watch="" unplugs="" plugs=""
+  perf_capture "$capture"
+  for key in $NOTIFY_KEYS; do watch="$watch -w $key"; done
+  # shellcheck disable=SC2086
+  stamped "$LOGS/burst-notify.txt" notifyutil $watch
+  for cycle in 1 2 3; do
+    t0="$(date +%s)"
+    waiter=""
+    if [ "$cycle" = 1 ]; then
+      notifyutil -1 com.apple.system.powersources.source >/dev/null 2>&1 &
+      waiter=$!
+      sleep 0.5
+    fi
+    cue "Unplug the adapter now ($cycle of 3)"
+    echo "$(clock): unplug now ($cycle of 3)"
+    waited=0
+    until on_battery || [ "$waited" -ge 90 ]; do
+      sleep 1
+      waited=$((waited + 1))
+    done
+    if on_battery; then unplugs="$unplugs $(clock)"; else unplugs="$unplugs missed"; fi
+    if [ -n "$waiter" ]; then
+      sleep 2
+      if kill -0 "$waiter" 2>/dev/null; then
+        kill "$waiter" 2>/dev/null || true
+        proof_record P12 fail "no com.apple.system.powersources.source notification across the unplug" "the sampler's ExternalConnected column alone"
+        echo sampler >"$WORK/unplug-method"
+      else
+        proof_record P12 pass "a power-source notification came with the unplug"
+        echo notify >"$WORK/unplug-method"
+      fi
+    fi
+    sleep_until $((t0 + 30))
+    cue "Plug the adapter in now ($cycle of 3)"
+    echo "$(clock): plug in now ($cycle of 3)"
+    waited=0
+    while on_battery && [ "$waited" -lt 90 ]; do
+      sleep 1
+      waited=$((waited + 1))
+    done
+    if on_battery; then plugs="$plugs missed"; else plugs="$plugs $(clock)"; fi
+    [ "$cycle" = 3 ] || sleep_until $((t0 + 60))
+  done
+  sleep 20
+  perf_stop "$STREAM"
+  stop_pslog
+  out "- unplugged at:$unplugs; plugged in at:$plugs"
+  out "- reads per notify burst, widget reloads (S8: 1 read per burst, at most 1 reload per cycle):"
+  summarize "$capture" '^(intervals|name|refresh|read|notify|events|widget\.reload|burst)'
+  out "- power-source lines: $(grep -c powersources "$LOGS/burst-notify.txt" 2>/dev/null || echo 0)"
+  if on_battery; then echo "warning: the Mac is on battery: plug the adapter in"; fi
+  echo "NEXT: the Focus on (he turns it on), then $SCRIPT mark away"
+}
+
+# MARK: - Session B: page switches (step 5; WP-17's after)
+
+# page_targets: "<label>|<x> <y>" per page, the centre of its sidebar row's AX frame, read once
+# before the capture; a page without a frame is selected by AX instead ("<label>|ax").
+page_targets() {
+  local entry label frame
+  for entry in $PAGES; do
+    label="${entry%%:*}"
+    label="${label//_/ }"
+    frame="$(ui_run frame BatteryPulse --within AXOutline --match "$label" 2>/dev/null || true)"
+    if [ -n "$frame" ]; then
+      printf '%s|%s\n' "$label" "$(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$frame")"
+    else
+      printf '%s|ax\n' "$label"
+    fi
+  done
+}
+
+# cue_clicks <rounds> <seconds> <targets file>: each page clicked on the cue schedule.
+cue_clicks() {
+  local round target label point
+  for round in $(seq 1 "$1"); do
+    while IFS= read -r target; do
+      label="${target%%|*}"
+      point="${target#*|}"
+      if [ "$point" = ax ]; then
+        ui_run select-row BatteryPulse "$label" --within AXOutline >/dev/null 2>&1 || true
+      else
+        # shellcheck disable=SC2086
+        ui_run click $point >/dev/null 2>&1 || ui_run select-row BatteryPulse "$label" --within AXOutline >/dev/null 2>&1 || true
+      fi
+      sleep "$2"
+    done <"$3"
+  done
+}
+
+# pages [profiling]: on the RC with the perf stream, 10 clicks per page every 3 s; then the
+# profiling RC under xctrace --no-prompt with a watchdog (a background task the session waits on),
+# followed by 2 minutes of the main window in Clear for Clear's shadows.
+step_pages_b() {
+  b_fence
+  local capture targets="$WORK/page-targets.txt" template trace watchdog shadows
+  case "${1:-}" in
+    "")
+      install_build C --no-launch
+      relaunch_b
+      open_main
+      place_window
+      begin_section 80-pages "Page switches on the RC (WP-17's after)"
+      page_targets >"$targets"
+      out "- $(app_version), 10 rounds of 7 pages, a page every 3 s, by CGEvent clicks at the sidebar rows' AX frames ($(grep -c '|ax$' "$targets" || true) by AX selection)"
+      capture="$LOGS/pages.ndjson"
+      perf_capture "$capture"
+      cue_clicks 10 3 "$targets"
+      perf_stop "$STREAM"
+      out "- page.switch lines per page: $(page_counts "$capture" | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
+      summarize "$capture" '^(intervals|name|page\.switch)'
+      ;;
+    profiling)
+      begin_section 81-pages-xctrace "Page switches under xctrace (the profiling RC)"
+      if [ ! -f "$BUILDS/CP.dmg" ]; then
+        out "- not run: no profiling RC"
+        return 0
+      fi
+      if ! xcrun -f xctrace >/dev/null 2>&1; then
+        out "- not run: xcrun can't find xctrace"
+        return 0
+      fi
+      if [ "$(proof_result P9)" = fail ]; then
+        out "- not run (developer tools asked)"
+        return 0
+      fi
+      # CP may share C's build number (the same run): 0.6.1 goes between them.
+      install_build B --no-launch
+      install_build CP --no-launch
+      relaunch_b
+      open_main
+      place_window
+      page_targets >"$targets"
+      xcrun xctrace list templates >"$LOGS/xctrace-templates.txt" 2>&1 || true
+      template="$(grep -i -m1 swiftui "$LOGS/xctrace-templates.txt" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+\(.*\)$//' || true)"
+      shadows="$(grep -i -m1 'animation hitches' "$LOGS/xctrace-templates.txt" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+\(.*\)$//' || true)"
+      if [ -z "$template" ]; then
+        out "- not run: no SwiftUI template in 'xctrace list templates'"
+        return 0
+      fi
+      mkdir -p "$WORK/traces"
+      rm -rf "$WORK/traces/pages.trace" "$WORK/traces/clear.trace"
+      capture="$LOGS/pages-profiling.ndjson"
+      perf_capture "$capture"
+      xcrun xctrace record --no-prompt --template "$template" --attach "$(app_pid)" --time-limit 240s \
+        --output "$WORK/traces/pages.trace" >"$LOGS/xctrace-record.txt" 2>&1 </dev/null &
+      trace=$!
+      (sleep 330 && kill -INT "$trace" 2>/dev/null) &
+      watchdog=$!
+      BACKGROUND="$BACKGROUND $trace $watchdog"
+      sleep 5
+      cue_clicks 10 3 "$targets"
+      wait "$trace" || true
+      kill "$watchdog" 2>/dev/null || true
+      perf_stop "$STREAM"
+      out "- template: $template; trace: $(du -sh "$WORK/traces/pages.trace" 2>/dev/null | cut -f1 || echo none) (kept on the Mac)"
+      out "- page.switch lines per page under the profiler: $(page_counts "$capture" | tr '\n' ',' | sed 's/,$//; s/,/, /g')"
+      summarize "$capture" '^(intervals|name|page\.switch)'
+      # Clear's shadows: 2 minutes of the main window in Clear.
+      quit_app
+      session_settings
+      set_default betaWindowStyles -bool true
+      set_default windowLook -string clear
+      launch_b
+      open_main
+      xcrun xctrace record --no-prompt --template "${shadows:-$template}" --attach "$(app_pid)" --time-limit 120s \
+        --output "$WORK/traces/clear.trace" >"$LOGS/xctrace-clear.txt" 2>&1 </dev/null &
+      trace=$!
+      (sleep 210 && kill -INT "$trace" 2>/dev/null) &
+      watchdog=$!
+      BACKGROUND="$BACKGROUND $trace $watchdog"
+      wait "$trace" || true
+      kill "$watchdog" 2>/dev/null || true
+      out "- Clear's shadows: ${shadows:-$template}, 2 minutes; trace: $(du -sh "$WORK/traces/clear.trace" 2>/dev/null | cut -f1 || echo none)"
+      install_build B --no-launch
+      install_build C --no-launch
+      relaunch_b
+      ;;
+    *) fail "usage: $SCRIPT pages [profiling]" ;;
+  esac
 }
 
 # MARK: - Session B: the energy queue (B4, step 8; WP-21)
@@ -4638,6 +5454,92 @@ restore_prompts_b() {
   echo "The backup stays in $BACKUP."
 }
 
+# MARK: - Session B: the optional extras and WP-18's Xcode items
+
+# charge-limit check | record start | record stop: the morning-away block's Charge Limit capture
+# (Stage 1.1, QUA-05) with bpulse --record while the Mac charges to his limit; check confirms the
+# limit is back (pmset -g battlimit, else a Battery pane shot), and says so with a sound and an
+# alert when it isn't (the morning, after his continue).
+step_charge_limit() {
+  b_only charge-limit
+  local now want
+  case "${1:-}:${2:-}" in
+    check:)
+      want="$(answer_of prep-charge-limit)"
+      now="$(pmset -g battlimit 2>/dev/null | grep -o -E '[0-9]+ ?%' | head -1 | tr -d ' %' || true)"
+      if [ -z "$now" ]; then
+        open "$(pane_url battery)"
+        sleep 2
+        shot charge-limit-check
+        echo "pmset -g battlimit shows none: read the Battery pane's shot (it should say ${want:-the prepare value})"
+      elif [ "$now" = "$want" ]; then
+        echo "the Charge Limit is back at $now %"
+      else
+        echo "THE CHARGE LIMIT IS $now %, NOT $want %: put it back (computer use, System Settings → Battery)"
+        if ! is_away; then
+          sound Sosumi
+          osascript -e 'display alert "BatteryPulse Session B" message "The Charge Limit is not back yet." giving up after 600' >/dev/null 2>&1 &
+        fi
+        note_line "the Charge Limit read $now %, not $want %, at a check"
+        return 1
+      fi
+      ;;
+    record:start)
+      [ -x "$BIN/bpulse" ] || fail "bpulse isn't built: the capture is not run"
+      mkdir -p "$WORK/charge-capture"
+      nohup "$BIN/bpulse" --record "$WORK/charge-capture" >"$LOGS/charge-capture.txt" 2>&1 </dev/null &
+      echo $! >"$WORK/charge-capture.pid"
+      echo "bpulse --record runs (captures stay in $WORK/charge-capture, local)"
+      ;;
+    record:stop)
+      kill "$(cat "$WORK/charge-capture.pid" 2>/dev/null || echo 0)" 2>/dev/null || true
+      rm -f "$WORK/charge-capture.pid"
+      echo "stopped; $(find "$WORK/charge-capture" -type f 2>/dev/null | wc -l | tr -d ' ') captures (a fixture only on his yes at send)"
+      ;;
+    *) fail "usage: $SCRIPT charge-limit check | record start | record stop" ;;
+  esac
+}
+
+# menu-bar-shots <tag> [arguments]: scripts/menu-bar-shots.sh into shots/menubar (Stage 1.3, with
+# Increase Contrast or Reduce Transparency set by computer use first, each through change).
+step_menu_bar_shots() {
+  b_only menu-bar-shots
+  [ $# -ge 1 ] || fail "usage: $SCRIPT menu-bar-shots <tag> [--charge] [--looks <list>]"
+  mkdir -p "$SHOTS/menubar"
+  bash "$ROOT/scripts/menu-bar-shots.sh" "$SHOTS/menubar" "$@"
+}
+
+# wp18 previews | timing | icon <source.icon>: WP-18's items, through the script's one prefix:
+# the package in Xcode for SUI-17's canvas, SUI-19's type-check timing (local only, never
+# committed), and SZ-10's icon compiled by actool for the four icon styles' shots.
+step_wp18() {
+  b_only wp18
+  local build="$WORK/wp18-build"
+  case "${1:-}" in
+    previews)
+      (cd "$ROOT" && xed .) || fail "xed couldn't open the package"
+      echo "Xcode opens the package: resume the canvas by computer use, then: $SCRIPT judge SUI-17 <y|n> [note]"
+      ;;
+    timing)
+      begin_section 85-wp18 "WP-18: SUI-19's type-check timing"
+      (cd "$ROOT" && xcrun swift build -c debug --scratch-path "$build" -j 2 -Xswiftc -debug-time-function-bodies) \
+        >"$LOGS/sui19.txt" 2>&1 || out "- the build failed (see logs/sui19.txt on the Mac)"
+      grep -E '^[0-9]+\.[0-9]+ms' "$LOGS/sui19.txt" | sort -n -r | head -5 >"$LOGS/sui19-top.txt" || true
+      out "- the 5 slowest bodies (ms, file:line, the declaration):"
+      out_block "$LOGS/sui19-top.txt"
+      ;;
+    icon)
+      [ -f "${2:-}" ] || [ -d "${2:-}" ] || fail "usage: $SCRIPT wp18 icon <the .icon source>"
+      mkdir -p "$WORK/wp18-icon"
+      xcrun actool "$2" --compile "$WORK/wp18-icon" --platform macosx --minimum-deployment-target 27.0 \
+        --app-icon "$(basename "${2%.icon}")" --output-partial-info-plist "$WORK/wp18-icon/partial.plist" \
+        >"$LOGS/actool.txt" 2>&1 || fail "actool failed (see $LOGS/actool.txt)"
+      echo "compiled into $WORK/wp18-icon: switch the four Icon & widget styles by computer use (change widget-style first) and shoot each"
+      ;;
+    *) fail "usage: $SCRIPT wp18 previews | timing | icon <source.icon>" ;;
+  esac
+}
+
 # MARK: - Session B: the queue's dry run (CI on Linux; WP-21's proposal)
 
 # queue --dry-run [default|low|late]: the queue's order, its retries and its thresholds on any
@@ -4917,10 +5819,10 @@ case "$COMMAND" in
   f5) step_f5 "$@" ;;
   spike) step_spike "$@" ;;
   voiceover) step_voiceover ;;
-  v01) step_v01 "$@" ;;
+  v01) if [ "$SESSION" = B ]; then b_run step_v01_b "$@"; else step_v01 "$@"; fi ;;
   fill) step_fill "$@" ;;
   attach-timing) step_attach_timing ;;
-  pages) step_pages "$@" ;;
+  pages) if [ "$SESSION" = B ]; then b_run step_pages_b "$@"; else step_pages "$@"; fi ;;
   window) step_window ;;
   answer) step_answer "$@" ;;
   note) step_note "$@" ;;
@@ -4944,16 +5846,35 @@ case "$COMMAND" in
   heartbeat) b_run step_heartbeat "$@" ;;
   change) b_run step_change "$@" ;;
   restored) b_run step_restored "$@" ;;
+  measure) b_run step_measure "$@" ;;
+  judge) b_run step_judge "$@" ;;
+  batch) b_run step_batch ;;
   ui) b_run step_ui "$@" ;;
   pane) b_run step_pane "$@" ;;
   widget) b_run step_widget "$@" ;;
   desktop-spot) b_run step_desktop_spot "$@" ;;
   proof) b_run step_proof "$@" ;;
   preflight) b_run step_preflight ;;
+  case) b_run step_case "$@" ;;
+  styleshot) b_run step_styleshot "$@" ;;
+  gradshot) b_run step_gradshot "$@" ;;
+  audit) b_run step_audit "$@" ;;
+  v1b) b_run step_v1b "$@" ;;
+  f6) b_run step_f6 "$@" ;;
+  f8) b_run step_f8 "$@" ;;
+  f9) b_run step_f9 ;;
+  f11) b_run step_f11 "$@" ;;
+  f12) b_run step_f12 "$@" ;;
+  relaunch) b_run step_relaunch ;;
+  memory) b_run step_memory "$@" ;;
+  burst) b_run step_burst ;;
   arm) b_run step_arm "$@" ;;
   ready) b_run step_ready ;;
   continue) b_run step_continue ;;
   morning) b_run step_morning ;;
+  charge-limit) b_run step_charge_limit "$@" ;;
+  menu-bar-shots) b_run step_menu_bar_shots "$@" ;;
+  wp18) b_run step_wp18 "$@" ;;
   queue)
     if [ "${1:-}" = --dry-run ]; then
       queue_dry_run "${2:-default}"
