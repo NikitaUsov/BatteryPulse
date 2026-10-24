@@ -2976,11 +2976,13 @@ arm_of() { awk 'NR == 1 { print $1, $2 }' "$1" 2>/dev/null || true; }
 # arm_runs <pid> <start>: that process runs, and started then.
 arm_runs() { [ -n "$1" ] && [ -n "$2" ] && [ "$(proc_start "$1")" = "$2" ]; }
 
-# arm_is_ancestor <file>: the arm window that file records is this call's ancestor.
+# arm_is_ancestor <file>: the arm window that file records is this call's ancestor. The list is
+# read whole first: piped into grep -q under pipefail, ancestor_pids's next echo after a match gets
+# SIGPIPE (status 141), so the arm would be found only as the chain's last pid.
 arm_is_ancestor() {
   local pid="" start=""
   read -r pid start <<<"$(arm_of "$1")" || true
-  [ -n "$pid" ] && ancestor_pids | grep -qx "$pid" && arm_runs "$pid" "$start"
+  [ -n "$pid" ] && grep -qx -- "$pid" <<<"$(ancestor_pids)" && arm_runs "$pid" "$start"
 }
 
 # caller_is_arm: the arm window's process (arm.pid) is this call's ancestor.
