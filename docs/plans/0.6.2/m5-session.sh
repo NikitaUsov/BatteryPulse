@@ -3410,8 +3410,10 @@ proof_p9() {
   rm -rf "$WORK/traces/p9.trace"
   mkdir -p "$WORK/traces"
   echo "DO (person): if macOS asks for an administrator to allow developer tools, answer it now."
+  # A tool the session built, not a system binary: Instruments can't take the task port of a
+  # SIP-protected one such as /bin/sleep, whatever the developer-tools setting says.
   if xcrun xctrace record --template "Time Profiler" --time-limit 2s --output "$WORK/traces/p9.trace" \
-    --launch -- /bin/sleep 3 >"$LOGS/p9.txt" 2>&1; then
+    --launch -- "$BIN/rusage" "$$" 2 >"$LOGS/p9.txt" 2>&1 </dev/null; then
     proof_record P9 pass "a 2-second xctrace recording ran ($status)"
   else
     proof_record P9 fail "xctrace: $(tail -1 "$LOGS/p9.txt")" "the profiling pass is not run (developer tools asked)"
