@@ -198,8 +198,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   change); `pmset -g battlimit`, which shows the 80 %; powerd's charging preferences file
   (`/Library/Preferences/com.apple.powerd.charging.plist`, readable without root); and, weaker,
   System Settings' own record of a prior limit. Whether the file holds the setting in every
-  power state waits for the same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging. Open
-  until a capture is committed as a fixture
+  power state waits for the same reads at 100 % (or off), back at 80 % and on battery more than 5
+  minutes after unplugging. Open until a capture is committed as a fixture (QUA-05,
+  `docs/plans/1.0/ROADMAP.md`)
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
