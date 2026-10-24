@@ -8,7 +8,10 @@ import SwiftUI
 /// The selected tile is marked by an accent outline only, as System Settings marks its appearance
 /// thumbnails: every tile keeps the same standard fill, so a preview looks the same selected or
 /// not, and nothing is glass. The outline crossfades to the new tile. The choice itself is set
-/// without animation: only the tiles animate, never what the choice changes.
+/// without animation: only the tiles animate, never what the choice changes. What the choice
+/// changes around the picker keeps its height (the window style's footer), so the tiles stay
+/// where they are: Settings sizes its window to its content. `MotionGuardTests` checks that the
+/// selection reaches only the outline and the selected trait.
 ///
 /// A tile can carry a badge (the window styles' Beta) in its preview's top corner, so every tile
 /// keeps the same height.

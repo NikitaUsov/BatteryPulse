@@ -253,6 +253,41 @@ public struct WindowLookPolicy: Equatable, Sendable {
     }
 }
 
+// Settings → General's note under the window style picker.
+extension WindowLookPolicy {
+    /// What Settings → General says under the window style picker: what the chosen style costs,
+    /// or that an accessibility setting keeps the windows Standard.
+    public enum Note: Sendable, Hashable {
+        case overridden, frosted, translucent, clear
+    }
+
+    /// The note for this choice; `nil` for Standard, which costs nothing.
+    public var note: Note? {
+        if override != nil { return .overridden }
+        switch setting {
+        case .standard: return nil
+        case .frosted: return .frosted
+        case .translucent: return .translucent
+        case .clear: return .clear
+        }
+    }
+
+    /// Every note the picker can lead to while these styles are offered and the accessibility
+    /// settings stay as they are, in the picker's order. The footer lays them all out and shows
+    /// one, so it keeps the height of the longest whatever is chosen: Settings sizes its window to
+    /// its content, and a footer that grew or shrank with the choice would resize the window and
+    /// could move the tiles on screen, so a tile would look different once selected.
+    public static func notes(offered: [WindowLook], reduceTransparency: Bool, increaseContrast: Bool) -> [Note] {
+        var notes: [Note] = []
+        for look in offered {
+            let policy = WindowLookPolicy(
+                setting: look, reduceTransparency: reduceTransparency, increaseContrast: increaseContrast)
+            if let note = policy.note, !notes.contains(note) { notes.append(note) }
+        }
+        return notes
+    }
+}
+
 /// Clear's second legibility aid, on top of its dimming: each group of white content (a card, a
 /// Form row) gets a tight shadow and a soft halo, Apple's "other treatment beneath the glass". One
 /// composited pair per group, never per text, and never on the sidebar or the toolbar.

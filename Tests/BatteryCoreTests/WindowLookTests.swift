@@ -257,6 +257,40 @@ import Testing
         }
     }
 
+    /// Settings → General's note under the picker: what the choice costs, or that an
+    /// accessibility setting keeps the windows Standard; none for Standard.
+    @Test func notePerChoice() {
+        #expect(WindowLook.allCases.map { policy($0).note } == [nil, .frosted, .translucent, .clear])
+        for look in [WindowLook.frosted, .translucent, .clear] {
+            #expect(policy(look, reduceTransparency: true).note == .overridden)
+            #expect(policy(look, increaseContrast: true).note == .overridden)
+        }
+        #expect(policy(.standard, reduceTransparency: true).note == nil)
+    }
+
+    /// V1b: the footer lays out every note the offered tiles lead to and shows one, so its height,
+    /// and with it the Settings window's, stays the same whichever tile is selected, and the tiles
+    /// never move under the pointer.
+    @Test(arguments: [false, true])
+    func theFooterHoldsEveryNoteTheTilesLeadTo(betaStyles: Bool) {
+        let offered = WindowLook.offered(betaStyles: betaStyles)
+        for (reduce, contrast) in [(false, false), (true, false), (false, true), (true, true)] {
+            let notes = WindowLookPolicy.notes(
+                offered: offered, reduceTransparency: reduce, increaseContrast: contrast)
+            #expect(Set(notes).count == notes.count)
+            for look in offered {
+                if let note = policy(look, reduceTransparency: reduce, increaseContrast: contrast).note {
+                    #expect(notes.contains(note), "\(look)")
+                }
+            }
+        }
+        let plain = WindowLookPolicy.notes(offered: offered, reduceTransparency: false, increaseContrast: false)
+        #expect(plain == (betaStyles ? [.frosted, .translucent, .clear] : [.frosted]))
+        #expect(
+            WindowLookPolicy.notes(offered: offered, reduceTransparency: true, increaseContrast: false) == [.overridden]
+        )
+    }
+
     @Test func onlyClearTreatsItsContent() throws {
         for look in [WindowLook.standard, .frosted, .translucent] {
             #expect(policy(look).contentTreatment(systemDark: false) == nil)
