@@ -4472,7 +4472,13 @@ q_display_sleep() { pmset displaysleepnow >/dev/null 2>&1 || warn "pmset display
 q_history_kb() { du -sk "$SUPPORT/History" 2>/dev/null | cut -f1 || echo 0; }
 q_screensaver() { if pgrep -x ScreenSaverEngine >/dev/null 2>&1 || pgrep -x legacyScreenSaver >/dev/null 2>&1; then echo yes; else echo no; fi; }
 q_accessories() { pmset -g accps 2>/dev/null | grep -v -i 'InternalBattery' | grep -c -E '[0-9]+%' || true; }
+# q_universal_access: Reduce Transparency and Increase Contrast; a missing key is off, an unreadable
+# domain is unknown (the style column then says so, and the window-ID shot decides).
 q_universal_access() {
+  if ! defaults read com.apple.universalaccess >/dev/null 2>&1; then
+    echo "reduceTransparency=unknown increaseContrast=unknown"
+    return 0
+  fi
   printf 'reduceTransparency=%s increaseContrast=%s' "$(defaults read com.apple.universalaccess reduceTransparency 2>/dev/null || echo 0)" \
     "$(defaults read com.apple.universalaccess increaseContrast 2>/dev/null || echo 0)"
 }
@@ -4800,7 +4806,7 @@ q_detect() {
   case "$scenario" in
     S4w-*)
       style=no
-      case "$(q_universal_access)" in *"=1"*) style=yes ;; esac
+      case "$(q_universal_access)" in *"=1"*) style=yes ;; *unknown*) style=unknown ;; esac
       ;;
   esac
   local lpm0 lpm1
