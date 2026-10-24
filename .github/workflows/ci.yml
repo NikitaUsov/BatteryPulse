@@ -49,6 +49,13 @@ jobs:
           -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
+      - name: Check Session B's energy queue (dry run)
+        # The 0.6.2 M5 session's queue with the world stubbed (PLAN.md WP-21): its order, its
+        # retries and its thresholds in three scenarios. Removed with the folder in D3.
+        run: |
+          for scenario in default low late; do
+            bash docs/plans/0.6.2/m5-session.sh queue --dry-run "$scenario"
+          done
 
   macos:
     name: macOS · build & test

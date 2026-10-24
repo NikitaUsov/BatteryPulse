@@ -1,17 +1,26 @@
 #!/bin/bash
-# BatteryPulse 0.6.2: M5 Session A (docs/plans/0.6.2/PLAN.md §6), one command per call. A Claude
-# Code session on the Mac runs it as docs/plans/0.6.2/SESSION.md says; the person at the Mac only
-# does what needs hands, eyes or ears, and starts the unattended window in Terminal, where sudo
-# asks for the password once.
+# BatteryPulse 0.6.2: the M5 sessions (docs/plans/0.6.2/PLAN.md §6), one command per call.
 #
 #   bash docs/plans/0.6.2/m5-session.sh help
 #
-# Everything lands in ~/bp-062/A: the builds (each in its DMG), the backup of your app, settings and
-# data, screenshots, recordings, logs, the answers, and A.md, which `send` commits to
-# docs/plans/0.6.2/sessions/A.md on the branch claude/062-session-a (never another branch, never a
-# pull request). The builds stay in their DMGs and the backup in its zip, so the only
-# BatteryPulse.app on the disk is the one in /Applications, and macOS can't pick up another copy's
-# widget.
+# Session A: a Claude Code session on the Mac runs it as docs/plans/0.6.2/SESSION.md says; the
+# person at the Mac only does what needs hands, eyes or ears, and starts the unattended window in
+# Terminal, where sudo asks for the password once. Everything lands in ~/bp-062/A, and `send`
+# commits A.md to docs/plans/0.6.2/sessions/A.md on claude/062-session-a.
+#
+# Session B (hands-free; PLAN.md §6 and WP-21's hands-free mode; its runbook is SESSION-B.md): one
+# local Claude Code session with computer use runs it from the frozen worktree ~/bp-062/B/run (a
+# script run from there is Session B), drives the GUI through `ui` (ui.swift, with safety rules of
+# its own) and judges the pictures beside the script's pixel measurements; the energy queue runs
+# as a plain script in the arm window. Everything lands in ~/bp-062/B: each change goes into
+# changes.tsv before it is made, and every restore works from that file; `send` commits B.md to
+# docs/plans/0.6.2/sessions/B.md on claude/062-session-b after his yes, through a privacy lint. An
+# automated step that can't run records "not checked" or "not run" with its reason, and the
+# session goes on.
+#
+# In both, the builds stay in their DMGs and the backup in its zip, so the only BatteryPulse.app on
+# the disk is the one in /Applications, and macOS can't pick up another copy's widget. Never another
+# results branch, never a pull request.
 #
 # Every install goes the way UpdateInstaller goes: a copy staged on the same volume, one atomic swap
 # (swap.swift: renamex_np with RENAME_SWAP), lsregister -f, a relaunch. A build whose
@@ -20,17 +29,18 @@
 #
 # Wording (PLAN.md §3): every y/n question means "y = looks right"; everything else is a numbered
 # choice. A step prints its questions as ASK lines and its hands-on tasks as DO lines; `answer`
-# records the replies. The script reads the logs and counts the crash reports itself.
+# (and in Session B `judge`) records the replies. The script reads the logs and counts the crash
+# reports itself.
 #
 # It needs macOS 27, Xcode or the Command Line Tools, and the GitHub CLI (https://cli.github.com),
-# signed in. No python or perl. Millisecond times come from zsh's zsh/datetime module.
+# signed in. No python or perl; it runs on macOS's bash 3.2. Millisecond times come from zsh's
+# zsh/datetime module.
 set -euo pipefail
 
 # MARK: - Builds and places
 
 REPO="NikitaUsov/BatteryPulse"
 INTEGRATION_BRANCH="claude/nice-faraday-k08mhb"
-RESULTS_BRANCH="claude/062-session-a"
 
 # The builds (PLAN.md §5 A2 and A2′, WP-W0, WP-21), each a CI artifact pinned to its run. Every CI
 # build of a push has its run number as CFBundleVersion, so C (277) < I (278) < W (282) < A2 (285),
@@ -53,6 +63,14 @@ RUN_A="39413159534" # A: claude/baseline-0.6.0, #158 (076873d), the instrumented
 ARTIFACT_A="BatteryPulse-076873d5bf151db628de91e216a8bfabb9356e1a"
 TAG_B="v0.6.1" # B: the published 0.6.1 DMG
 
+# Session B's builds (PLAN.md §6, WP-21): B, the published 0.6.1 (TAG_B); C, the RC, which D1
+# dispatches as 0.5.99 so that F12's update check offers the real 0.6.1; CP, the RC's profiling
+# DMG. D1 pins the run and the artifact names here; while they are empty, prepare looks for the
+# newest successful CI run of the integration branch with the frozen worktree's code (rc_locate).
+RUN_RC=""
+ARTIFACT_RC=""
+ARTIFACT_RCP=""
+
 # SPIKE-A2's hidden switch (AppSettings.spikeA2MinimizeFillKey on that branch, never shipped): a
 # WindowLookPolicy.SpikeMinimizeFill raw value, read at launch. "b" gives Clear fill (b) and leaves
 # Translucent on today's fill; "b-and-translucent-dark" gives Translucent Dark fill (b) too.
@@ -64,9 +82,36 @@ BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 WIDGET_ID="$BUNDLE_ID.Widget"
 FEED_DOMAIN="$BUNDLE_ID.widgetfeed"
 APP="/Applications/BatteryPulse.app"
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/../../.." && pwd)"
+case "$HERE" in
+  "$HOME"/*) SCRIPT="bash ~${HERE#"$HOME"}/m5-session.sh" ;;
+  *) SCRIPT="bash $HERE/m5-session.sh" ;;
+esac
+# The session: B when the script runs from Session B's frozen worktree (~/bp-062/B/run, the start
+# line's one allow rule), A otherwise; BP_SESSION overrides it for a dry run elsewhere.
+case "$HERE" in
+  "$HOME"/bp-062/B/run/*) SESSION="${BP_SESSION:-B}" ;;
+  *) SESSION="${BP_SESSION:-A}" ;;
+esac
+# queue --dry-run (CI on Linux) is Session B's queue in a folder of its own.
+if [ "${1:-}" = queue ] && [ "${2:-}" = --dry-run ]; then
+  SESSION=B
+  BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-062-dry.XXXXXX")"
+fi
+case "$SESSION" in
+  A) RESULTS_BRANCH="claude/062-session-a" ;;
+  B) RESULTS_BRANCH="claude/062-session-b" ;;
+  *)
+    echo "error: BP_SESSION is A or B" >&2
+    exit 1
+    ;;
+esac
+TAB="$(printf '\t')"
 # BP_WORK only moves the folder for a dry run of the bookkeeping commands (help, answer, note,
-# status, send --dry-run) on another machine.
-WORK="${BP_WORK:-$HOME/bp-062/A}"
+# status, send --dry-run, queue --dry-run) on another machine.
+WORK="${BP_WORK:-$HOME/bp-062/$SESSION}"
 BACKUP="$WORK/backup"
 BUILDS="$WORK/builds"
 BIN="$WORK/bin"
@@ -88,12 +133,6 @@ EXECUTOR_PREDICATE='process BEGINSWITH "BatteryPulse" AND eventMessage CONTAINS[
 # The pages of WP-17's page switches, as the sidebar names them, and their signpost names.
 PAGES="Overview:overview Power:power History:history Health:health Accessories:accessories Raw_Data:developer Demo_Mode:demo"
 
-HERE="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$(cd "$HERE/../../.." && pwd)"
-case "$HERE" in
-  "$HOME"/*) SCRIPT="bash ~${HERE#"$HOME"}/m5-session.sh" ;;
-  *) SCRIPT="bash $HERE/m5-session.sh" ;;
-esac
 
 # MARK: - Small helpers
 
@@ -182,6 +221,7 @@ out_block() {
 # who: person (only the person can say) or judge (the session judges from the evidence the step
 # names, and asks the person only when it can't tell).
 question() {
+  if [ "$SESSION" = B ] && question_b "$1"; then return 0; fi
   case "$1" in
     prep-widget-style) echo "text|person|System Settings → Appearance → Icon & widget style: which is selected now (Default, Dark, Clear or Tinted)?" ;;
     prep-dim-widgets) echo "text|person|System Settings → Desktop & Dock → Dim widgets on desktop: which value is set now?" ;;
@@ -309,6 +349,8 @@ step_mark() {
   case "$1" in *[!A-Za-z0-9._-]*) fail "a mark is letters, digits, dots, dashes and underscores" ;; esac
   mkdir -p "$WORK"
   printf '%s\t%s\t%s\n' "$(now_ms)" "$(clock)" "$1" >>"$MARKS"
+  # Session B's away: no sound or speech from here until his morning continue (WP-21).
+  if [ "$SESSION" = B ] && [ "$1" = away ]; then clock >"$WORK/away"; fi
   echo "marked $1 at $(clock)"
 }
 
@@ -599,6 +641,12 @@ install_build() {
 }
 
 step_install() {
+  if [ "$SESSION" = B ]; then
+    [ $# -eq 1 ] || fail "usage: $SCRIPT install <B|C|CP|backup>"
+    case "$1" in B | C | CP | backup) ;; *) fail "no build $1 in Session B" ;; esac
+    install_build "$1"
+    return 0
+  fi
   [ $# -eq 1 ] || fail "usage: $SCRIPT install <C|I|W|W2|B|A2|A2P|A|backup>"
   case "$1" in C | I | W | W2 | B | A2 | A2P | A | backup) ;; *) fail "no build $1" ;; esac
   install_build "$1"
@@ -630,6 +678,13 @@ build_tools() {
     if ! xcrun swiftc -O "$HERE/frames.swift" -o "$BIN/frames" 2>"$BIN/frames.log"; then
       rm -f "$BIN/frames"
       warn "frames.swift didn't build (see $BIN/frames.log): step 6 then needs the recordings watched in QuickTime Player"
+    fi
+  fi
+  if [ "$SESSION" = B ] && tools_need_build ui "$HERE/ui.swift"; then
+    echo "building ui.swift..."
+    if ! xcrun swiftc -O "$HERE/ui.swift" -o "$BIN/ui" 2>"$BIN/ui.log"; then
+      rm -f "$BIN/ui"
+      warn "ui.swift didn't build (see $BIN/ui.log): every ui step is not checked"
     fi
   fi
   if [ ! -x "$BIN/bpulse" ]; then
@@ -2347,9 +2402,1282 @@ EOF
   echo "Sent: https://github.com/$REPO/blob/$RESULTS_BRANCH/docs/plans/0.6.2/sessions/A.md"
 }
 
+# MARK: - Session B: its questions
+
+# question_b <id>: Session B's questions, in question()'s format; judged ones are Claude's, beside
+# the script's measurement where one exists (WP-21), and each has its written criteria and default
+# in SESSION-B.md.
+question_b() {
+  local rest style paper look page family lang item
+  case "$1" in
+    B-yes) echo "yn|person|The list of changes and the start (PLAN.md §6, the yes-list): y = go ahead" ;;
+    B-bedtime) echo "text|person|His bedtime, HH:MM (default: 4 hours after the start)" ;;
+    B-charge-capture) echo "yn|person|The Charge Limit 80 → 100 → 80 in the morning-away block, at most 10 minutes at 100 %: y = yes" ;;
+    B-keep-widgets) echo "yn|person|Keep the large and extra-large widgets for 0.7's Session R: y = keep" ;;
+    B-keep-ax) echo "yn|person|Keep Terminal's Accessibility until Session R: y = keep (default: revoked in the morning)" ;;
+    B-slider-auth) echo "2|person|In Session A, did the Charge Limit slider ask for a password or Touch ID? 1 no, 2 yes (the capture then needs him and is not run)" ;;
+    B-usage) echo "text|person|What /usage showed at the start" ;;
+    B-send) echo "yn|person|Send B.md and the attached images to claude/062-session-b, after the contact sheet and the summary: y = send" ;;
+    prep-charge-limit) echo "text|judge|The Charge Limit (pmset -g battlimit, else the Battery pane's shot), in %" ;;
+    prep-widget-style) echo "text|judge|System Settings → Appearance → Icon & widget style in prepare's shot: Default, Dark, Clear or Tinted" ;;
+    prep-dim-widgets) echo "text|judge|System Settings → Desktop & Dock → Dim widgets on desktop in prepare's shot" ;;
+    prep-open-at-login) echo "2|judge|Open at login (BatteryPulse's own toggle, read by AX): 1 on, 2 off" ;;
+    prep-wallpaper-kind) echo "3|judge|His wallpaper in prepare's shot: 1 a still picture, 2 a dynamic one, 3 an aerial (restore by computer use from that shot)" ;;
+    P3-capture) echo "2|judge|On Clear, -l against -R: 1 -l keeps what lies behind the glass sheet (the same picture), 2 -l leaves it out" ;;
+    P4-frames) echo "3|judge|AXMinimized at normal speed, every frame, against Session A's case: 1 enough frames to judge the fill, 2 too few, 3 something else (note)" ;;
+    energy-setup) echo "2|judge|The energy setup at the hand-over: brightness about half, auto-brightness and True Tone off, his apps quit, a Focus on: 1 done, 2 not all (note; the default)" ;;
+    V01-notification) echo "yn|judge|The test notification's banner came, and its press brought BatteryPulse forward" ;;
+    V01-notification-front) echo "yn|judge|And again with the BatteryPulse window in front" ;;
+    V01-menubar) echo "yn|judge|The menu bar item looks right on a light and on a dark menu bar (the crops)" ;;
+    V01-pages) echo "yn|judge|Raw Data, History, Demo Mode on and off, Check Now (its offer closed by its own button) and Clear History, by AX: each worked" ;;
+    V01-lid) echo "yn|judge|After his 1-minute lid close: BatteryPulse runs with a current value in the menu bar (the after-lid shot)" ;;
+    F11-alert) echo "3|judge|The charge alert: 1 its banner appeared, 2 no banner in time, 3 not run" ;;
+    F11-login) echo "2|judge|Login Items after Open at login off: 1 gone, 2 still listed" ;;
+    F6-overview | F6-power | F6-history | F6-health | F6-raw)
+      echo "yn|judge|F6, ${1#F6-} on real data, against bpulse --json of the same minute: right"
+      ;;
+    F8-small-en | F8-medium-en | F8-large-en | F8-xlarge-en | F8-small-ru | F8-medium-ru | F8-large-ru | F8-xlarge-ru)
+      rest="${1#F8-}"
+      echo "4|judge|F8, the RC's ${rest%-*} widget in ${rest#*-}, after the desktop click: 1 right, 2 blank or grey, 3 gone, 4 different (note)"
+      ;;
+    F9-overview | F9-settings | F9-update) echo "yn|judge|F9 in Russian, ${1#F9-}: no truncation, no English left, the catalog's terms" ;;
+    F12-widget) echo "4|judge|After Install and Relaunch, the widget against the before shot: 1 same, 2 blank or grey, 3 gone, 4 different (note)" ;;
+    fill-translucent-light-main | fill-translucent-dark-main | fill-clear-light-main | fill-clear-dark-main | \
+      fill-translucent-light-compact | fill-translucent-dark-compact | fill-clear-light-compact | fill-clear-dark-compact | \
+      fill-standard-light-main | fill-frosted-light-main)
+      echo "3|judge|${1#fill-}: while it shrank into the Dock and came back: 1 like the window, or an even graphite grey (the chosen fill), 2 a black frame or rectangle, 3 something else (note)"
+      ;;
+    shot-*)
+      rest="${1#shot-}"
+      style="${rest%%-*}"
+      rest="${rest#*-}"
+      paper="${rest%%-*}"
+      rest="${rest#*-}"
+      look="${rest%%-*}"
+      page="${rest#*-}"
+      case "$style" in translucent | clear) ;; *) return 1 ;; esac
+      case "$paper" in bright | busy) ;; *) return 1 ;; esac
+      case "$look" in light | dark) ;; *) return 1 ;; esac
+      case "$page" in overview | history | settings) ;; *) return 1 ;; esac
+      echo "yn|judge|$style on the $paper wallpaper, $look, $page: readable, no black, grey or missing parts"
+      ;;
+    grad-translucent-sheet | grad-clear-sheet)
+      rest="${1#grad-}"
+      echo "yn|person|The contact sheet of ${rest%-sheet}'s shots (the 24 and the graduation shots): every shot looks right"
+      ;;
+    grad-clear-light-settings) echo "yn|judge|Settings → General beside a Clear window in Light: looks right" ;;
+    grad-frosted-light-gallery | grad-frosted-dark-gallery) echo "yn|judge|The widget gallery behind a Frosted window, ${1#grad-frosted-}: looks right" ;;
+    grad-*)
+      rest="${1#grad-}"
+      style="${rest%%-*}"
+      rest="${rest#*-}"
+      look="${rest%%-*}"
+      item="${rest#*-}"
+      case "$style" in translucent | clear) ;; *) return 1 ;; esac
+      case "$look" in light | dark) ;; *) return 1 ;; esac
+      case "$item" in raw | demo | history | fullscreen) ;; *) return 1 ;; esac
+      echo "yn|judge|Graduation shot, $style $look, $item: looks right"
+      ;;
+    graduate-translucent) echo "yn|person|From 0.6.2 on, offer Translucent without the Beta window styles setting?" ;;
+    graduate-clear) echo "yn|person|And Clear?" ;;
+    audit-*)
+      rest="${1#audit-}"
+      style="${rest%%-*}"
+      rest="${rest#*-}"
+      look="${rest%%-*}"
+      page="${rest#*-}"
+      case "$style" in translucent | clear) ;; *) return 1 ;; esac
+      case "$look" in light | dark) ;; *) return 1 ;; esac
+      case "$page" in overview | history | settings) ;; *) return 1 ;; esac
+      echo "3|judge|The contrast audit, $style $look $page: 1 no failure, 2 a failure (note), 3 not run or an estimate only"
+      ;;
+    V1b) echo "yn|judge|V1b: the Clear tile's preview is identical selected and unselected, inside the outline" ;;
+    SZ-10) echo "yn|person|The Icon Composer icon in the four icon styles (SZ-10): ship it in 0.6.2" ;;
+    SUI-17) echo "yn|judge|SUI-17: the previews render" ;;
+    *) return 1 ;;
+  esac
+}
+
+# The order of Session B's answers in status and B.md.
+questions_b() {
+  local style paper look page item
+  echo B-yes B-bedtime B-charge-capture B-keep-widgets B-keep-ax B-slider-auth B-usage
+  echo prep-charge-limit prep-widget-style prep-dim-widgets prep-open-at-login prep-widgets prep-wallpaper-kind
+  echo P3-capture P4-frames
+  echo V01-notification V01-notification-front V01-menubar V01-pages V01-lid
+  echo F11-alert F11-login F6-overview F6-power F6-history F6-health F6-raw
+  echo F8-small-en F8-medium-en F8-large-en F8-xlarge-en F8-small-ru F8-medium-ru F8-large-ru F8-xlarge-ru
+  echo F9-overview F9-settings F9-update F12-widget
+  for item in $FILL_CASES_B; do echo "fill-$item"; done
+  for style in translucent clear; do
+    for paper in bright busy; do
+      for look in light dark; do
+        for page in overview history settings; do echo "shot-$style-$paper-$look-$page"; done
+      done
+    done
+    for look in light dark; do
+      for item in raw demo history fullscreen; do echo "grad-$style-$look-$item"; done
+      for page in overview history settings; do echo "audit-$style-$look-$page"; done
+    done
+  done
+  echo grad-clear-light-settings grad-frosted-light-gallery grad-frosted-dark-gallery
+  echo V1b grad-translucent-sheet grad-clear-sheet graduate-translucent graduate-clear SZ-10 SUI-17 energy-setup B-send
+}
+
+# MARK: - Session B: bookkeeping (PLAN.md §6, WP-21's hands-free mode)
+
+# Session B's files, beside the shared ones (answers.tsv, notes.tsv, sections/).
+CHANGES="$WORK/changes.tsv"
+RESTORED="$WORK/restored.tsv"
+PROOFS="$WORK/proofs.tsv"
+MEASURES="$WORK/measures.tsv"
+BATCH="$WORK/batch.tsv"
+FENCE="$WORK/queue.started"
+READY_FILE="$WORK/ready"
+HEARTBEAT="$WORK/heartbeat"
+MORNING="$WORK/morning-items.txt"
+# Posted with the ready file: the arm window's waiter wakes at once instead of at its backstop.
+READY_NOTIFY="io.github.nikitausov.BatteryPulse.session-b.ready"
+# Every B run but the queue's: the queue reads them fresh, and a dry run swaps them out.
+DRY_RUN=""
+
+b_only() { [ "$SESSION" = B ] || fail "$1 is a Session B command: run it from the frozen worktree ~/bp-062/B/run"; }
+
+# mtime_of <file>: its modification time; GNU stat's -f means another thing, so -c goes first.
+mtime_of() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0; }
+
+# epoch_stamp <epoch>: "YYYY-MM-DD HH:MM:SS", the local time pmset -g log and log show use.
+epoch_stamp() { date -r "$1" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -d "@$1" '+%Y-%m-%d %H:%M:%S'; }
+
+epoch_hm() { date -r "$1" '+%H:%M' 2>/dev/null || date -d "@$1" '+%H:%M'; }
+
+is_away() { [ -f "$WORK/away" ] && [ ! -f "$WORK/continued" ]; }
+
+# sound <name>: a system sound, but none from `mark away` until his morning continue (WP-21).
+sound() {
+  if is_away; then return 0; fi
+  afplay "/System/Library/Sounds/$1.aiff" >/dev/null 2>&1 || true
+}
+
+# cue <text>: a sound and a notification while he is there (B0, B1); nothing once he is away.
+cue() {
+  if is_away; then return 0; fi
+  sound Glass
+  osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "BatteryPulse Session B"' \
+    -e 'end run' "$1" >/dev/null 2>&1 || true
+}
+
+ancestor_pids() {
+  local pid=$$ parent
+  while [ "$pid" -gt 1 ] 2>/dev/null; do
+    echo "$pid"
+    parent="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
+    if [ -z "$parent" ] || [ "$parent" = "$pid" ]; then break; fi
+    pid="$parent"
+  done
+}
+
+# caller_is_arm: the arm window's process (its pid in arm.pid) is this call's ancestor.
+caller_is_arm() {
+  local arm
+  arm="$(cat "$WORK/arm.pid" 2>/dev/null || true)"
+  [ -n "$arm" ] && ancestor_pids | grep -qx "$arm"
+}
+
+# b_fence: once `ready` is up, or while queue.started exists, no command acts until his morning
+# continue (§6 "Never act after ready"); `ui` enforces the same for itself.
+b_fence() {
+  if [ -f "$FENCE" ] && ! caller_is_arm; then
+    fail "the energy queue runs ($FENCE exists): results in the morning; nothing was done"
+  fi
+  if [ -f "$READY_FILE" ] && [ ! -f "$WORK/continued" ] && ! caller_is_arm; then
+    fail "ready is up: nothing acts until his morning continue; nothing was done"
+  fi
+  return 0
+}
+
+# The bedtime he gave at the start (B-bedtime, HH:MM), as an epoch after prepare; else 4 hours
+# after prepare.
+bedtime_epoch() {
+  local start hm day epoch
+  start="$(cat "$WORK/prepare.epoch" 2>/dev/null || date +%s)"
+  hm="$(answer_of B-bedtime)"
+  case "$hm" in
+    [0-9]:[0-5][0-9] | [01][0-9]:[0-5][0-9] | 2[0-3]:[0-5][0-9])
+      day="$(date -r "$start" '+%Y-%m-%d' 2>/dev/null || date '+%Y-%m-%d')"
+      epoch="$(date -j -f '%Y-%m-%d %H:%M' "$day $hm" +%s 2>/dev/null || echo "")"
+      if [ -z "$epoch" ]; then
+        echo $((start + 4 * 3600))
+        return 0
+      fi
+      if [ "$epoch" -le "$start" ]; then epoch=$((epoch + 86400)); fi
+      echo "$epoch"
+      ;;
+    *) echo $((start + 4 * 3600)) ;;
+  esac
+}
+
+# The GUI phase stops 10 minutes before his bedtime, or 4 hours after the start (B2).
+gui_end_epoch() {
+  local start bedtime cap
+  start="$(cat "$WORK/prepare.epoch" 2>/dev/null || date +%s)"
+  bedtime="$(bedtime_epoch)"
+  cap=$((start + 4 * 3600))
+  if [ $((bedtime - 600)) -lt "$cap" ]; then cap=$((bedtime - 600)); fi
+  echo "$cap"
+}
+
+gui_minutes_left() {
+  local left
+  left=$(($(gui_end_epoch) - $(date +%s)))
+  if [ "$left" -lt 0 ]; then left=0; fi
+  echo $((left / 60))
+}
+
+# heartbeat [<step and expected ready time>]: touched by every Session B call; with text, the
+# state the arm window shows.
+step_heartbeat() {
+  b_only heartbeat
+  if [ $# -gt 0 ]; then
+    english_only "$*"
+    printf '%s\t%s\n' "$(clock)" "$*" >"$WORK/state"
+  fi
+  echo "heartbeat $(clock); GUI phase: $(gui_minutes_left) minutes left (it stops at $(epoch_hm "$(gui_end_epoch)"))"
+}
+
+# record_change <setting> <original> <new>: one line of changes.tsv, written before the change.
+record_change() {
+  mkdir -p "$WORK"
+  printf '%s\t%s\t%s\t%s\n' "$1" "$(printf '%s' "$2" | tr '\t\n' '  ')" "$(printf '%s' "$3" | tr '\t\n' '  ')" \
+    "$(clock)" >>"$CHANGES"
+}
+
+# change <setting> <original> <new...>: the session's own record before a change it makes by
+# computer use or AX (restore works from this file, not from the session's context). A setting
+# whose original is unknown is never changed.
+step_change() {
+  b_only change
+  [ $# -ge 3 ] || fail "usage: $SCRIPT change <setting> <original> <new>"
+  local setting="$1" original="$2"
+  shift 2
+  case "$setting" in *[!A-Za-z0-9._-]*) fail "a setting's name is letters, digits, dots, dashes and underscores" ;; esac
+  case "$original" in "" | unknown | -) fail "never changed: the original of $setting is unknown, so the step that needs it is not checked" ;; esac
+  english_only "$original $*"
+  record_change "$setting" "$original" "$*"
+  echo "recorded: $setting $original -> $*"
+}
+
+original_of() {
+  [ -f "$CHANGES" ] || return 0
+  awk -F '\t' -v s="$1" '$1 == s { print $2; exit }' "$CHANGES"
+}
+
+changed_settings() {
+  [ -f "$CHANGES" ] || return 0
+  awk -F '\t' '!seen[$1]++ { print $1 }' "$CHANGES"
+}
+
+# restored <setting> [how]: the session put it back and confirmed it with a read or a shot.
+step_restored() {
+  b_only restored
+  [ $# -ge 1 ] || fail "usage: $SCRIPT restored <setting> [how it was confirmed]"
+  english_only "$*"
+  printf '%s\t%s\t%s\n' "$1" "$(clock)" "$(shift && printf '%s' "$*" | tr '\t\n' '  ')" >>"$RESTORED"
+  echo "restored: $1"
+}
+
+# is_restored <setting>: put back after its last change.
+is_restored() {
+  local changed restored
+  changed="$(awk -F '\t' -v s="$1" '$1 == s { t = $4 } END { print t }' "$CHANGES" 2>/dev/null || true)"
+  restored="$(awk -F '\t' -v s="$1" '$1 == s { t = $2 } END { print t }' "$RESTORED" 2>/dev/null || true)"
+  [ -n "$restored" ] && [ ! "$restored" \< "$changed" ]
+}
+
+mark_restored() { printf '%s\t%s\t%s\n' "$1" "$(clock)" "$2" >>"$RESTORED"; }
+
+# A step that couldn't run: "not checked" or "not run" with its reason, and the session goes on.
+not_checked() {
+  local id="$1"
+  shift
+  printf '%s\t%s\t%s\n' "$(date '+%H:%M')" "$id" "$*" >>"$WORK/not-checked.tsv"
+  echo "NOT CHECKED $id: $*"
+}
+
+# MARK: - Session B: the hands (ui), the windows and the shots
+
+# ui <command...>: the ui helper with the taps and hosts preflight chose (PLAN.md WP-21); every
+# action passes its own safety rules, the queue.started fence among them.
+ui_run() {
+  if [ ! -x "$BIN/ui" ]; then
+    warn "the ui helper isn't built (see $BIN/ui.log)"
+    return 1
+  fi
+  BP_UI_TAP="$(cat "$WORK/ui-tap" 2>/dev/null || echo hid)" BP_UI_HOSTS="$(cat "$WORK/ui-hosts" 2>/dev/null || true)" \
+    BP_FENCE="$FENCE" "$BIN/ui" "$@"
+}
+
+step_ui() {
+  b_only ui
+  ui_run "$@"
+}
+
+# launch_b [arguments...]: the installed app without its saved windows, in English for the GUI
+# phase's AX labels (a launch argument only; no setting changes).
+launch_b() {
+  open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(en)" "$@"
+  local tries=0
+  until app_running || [ "$tries" -ge 40 ]; do
+    sleep 0.25
+    tries=$((tries + 1))
+  done
+  app_running || warn "BatteryPulse didn't start within 10 s"
+  sleep 2
+}
+
+relaunch_b() {
+  quit_app
+  session_settings
+  launch_b
+}
+
+# open_main: the main window by a reopen event (applicationShouldHandleReopen shows it), with no
+# AX call into the app, so the queue may use it.
+open_main() {
+  open "$APP"
+  sleep 3
+}
+
+# main_window_line [<app allowed to cover it>]: CGWindowList's check of the main window (ui
+# windows --main): "main window <id> at <x y w h>: ok" or what is wrong.
+main_window_line() {
+  if [ -n "${1:-}" ]; then
+    ui_run windows --main --allow-cover "$1" 2>/dev/null || true
+  else
+    ui_run windows --main 2>/dev/null || true
+  fi
+}
+
+line_id() { sed -n 's/^main window \([0-9][0-9]*\) at .*/\1/p' <<<"$1"; }
+
+line_rect() { sed -n 's/^main window [0-9][0-9]* at \(-*[0-9][0-9]* -*[0-9][0-9]* [0-9][0-9]* [0-9][0-9]*\):.*/\1/p' <<<"$1"; }
+
+line_ok() { case "$1" in *": ok") return 0 ;; *) return 1 ;; esac }
+
+# window_shot <file> [<app allowed to cover>]: the main window after the occlusion check, by
+# -R <frame> (or by window ID where proof P3 showed it keeps what lies behind a glass sheet).
+window_shot() {
+  local file="$1" line rect id
+  line="$(main_window_line "${2:-}")"
+  if ! line_ok "$line"; then
+    echo "the main window isn't clear: ${line:-not on screen}" >&2
+    return 1
+  fi
+  id="$(line_id "$line")"
+  rect="$(line_rect "$line")"
+  mkdir -p "$(dirname "$file")"
+  if [ "$(cat "$WORK/shot-method" 2>/dev/null || echo R)" = l ]; then
+    screencapture -x -o -l"$id" "$file"
+  else
+    screencapture -x -R"$(tr ' ' ',' <<<"$rect")" "$file"
+  fi
+  [ -s "$file" ] || {
+    echo "screencapture wrote nothing" >&2
+    return 1
+  }
+  echo "SHOT $file (main window $rect)"
+}
+
+# rect_shot <file> <x y w h>: a rectangle of the screen, in points.
+rect_shot() {
+  mkdir -p "$(dirname "$1")"
+  if [ -n "$2" ] && screencapture -x -R"$(tr ' ' ',' <<<"$2")" "$1" && [ -s "$1" ]; then
+    echo "SHOT $1 ($2)"
+  else
+    echo "no shot of ${2:-an unknown rectangle} into $1" >&2
+    return 1
+  fi
+}
+
+# pane <name>: a System Settings pane by its URL (proof P8), with no Apple Event.
+pane_url() {
+  case "$1" in
+    appearance) echo "x-apple.systempreferences:com.apple.Appearance-Settings.extension" ;;
+    desktop) echo "x-apple.systempreferences:com.apple.Desktop-Settings.extension" ;;
+    displays) echo "x-apple.systempreferences:com.apple.Displays-Settings.extension" ;;
+    accessibility) echo "x-apple.systempreferences:com.apple.Accessibility-Settings.extension" ;;
+    login-items) echo "x-apple.systempreferences:com.apple.LoginItems-Settings.extension" ;;
+    battery) echo "x-apple.systempreferences:com.apple.Battery-Settings.extension" ;;
+    date-time) echo "x-apple.systempreferences:com.apple.Date-Time-Settings.extension" ;;
+    wallpaper) echo "x-apple.systempreferences:com.apple.Wallpaper-Settings.extension" ;;
+    *) return 1 ;;
+  esac
+}
+
+PANES="appearance desktop displays accessibility login-items battery date-time wallpaper"
+
+step_pane() {
+  b_only pane
+  b_fence
+  local url
+  url="$(pane_url "${1:-}")" || fail "usage: $SCRIPT pane <$(echo "$PANES" | tr ' ' '|')>"
+  open "$url"
+  sleep 2
+  ui_run title "System Settings" || true
+}
+
+# widget <family> <x> <y> <w> <h>: a placed widget's frame in points (from proof P1's `ui hit`),
+# for F8's and F12's crops. AX can't move widgets, so their frames come from here.
+step_widget() {
+  b_only widget
+  [ $# -eq 5 ] || fail "usage: $SCRIPT widget small|medium|large|xlarge <x> <y> <w> <h>"
+  case "$1" in small | medium | large | xlarge) ;; *) fail "a family is small, medium, large or xlarge" ;; esac
+  touch "$WORK/widgets.tsv"
+  awk -F '\t' -v f="$1" '$1 != f' "$WORK/widgets.tsv" >"$WORK/widgets.tmp"
+  mv "$WORK/widgets.tmp" "$WORK/widgets.tsv"
+  printf '%s\t%s %s %s %s\n' "$1" "$2" "$3" "$4" "$5" >>"$WORK/widgets.tsv"
+  echo "widget $1 at $2 $3 $4 $5"
+}
+
+widget_rect() { awk -F '\t' -v f="$1" '$1 == f { print $2 }' "$WORK/widgets.tsv" 2>/dev/null || true; }
+
+# desktop-spot <x> <y> | --image <png> <x> <y>: an empty spot of the desktop, the fixed action
+# before each widget comparison (Dim widgets reacts to the desktop's focus).
+step_desktop_spot() {
+  b_only desktop-spot
+  local hit
+  hit="$(ui_run hit "$@")" || fail "ui hit failed there: $hit"
+  case "$hit" in
+    *"process: Finder"* | *"process: Dock"* | *"process: WindowManager"* | *"process: Wallpaper"*) ;;
+    *) fail "that point isn't the desktop: $(head -1 <<<"$hit")" ;;
+  esac
+  # <x> <y> in points, or --image <png> <x> <y>, which ui converts at every click.
+  printf '%s\n' "$*" >"$WORK/desktop-spot.args"
+  echo "desktop spot: $(cat "$WORK/desktop-spot.args")"
+}
+
+# click_desktop: the fixed action before a widget comparison: a click on the empty desktop spot,
+# then 1 s; with click-to-show-desktop on, again, checked with ui windows.
+click_desktop() {
+  [ -f "$WORK/desktop-spot.args" ] || {
+    warn "no desktop spot recorded (desktop-spot)"
+    return 1
+  }
+  # The recorded arguments are split on purpose: <x> <y> or --image <png> <x> <y>.
+  # shellcheck disable=SC2046
+  ui_run click $(cat "$WORK/desktop-spot.args") >/dev/null || return 1
+  sleep 1
+  if [ "$(cat "$WORK/click-to-show-desktop" 2>/dev/null || echo 0)" = 1 ]; then
+    # shellcheck disable=SC2046
+    ui_run click $(cat "$WORK/desktop-spot.args") >/dev/null || return 1
+    sleep 1
+    ui_run windows >"$LOGS/windows-after-desktop-click.txt" 2>&1 || true
+  fi
+}
+
+# MARK: - Session B: the energy queue (B4, step 8; WP-21)
+
+# The world the queue touches, one function each, so `queue --dry-run` can stand in for it.
+q_now() { date +%s; }
+q_sleep() { sleep "$1"; }
+q_on_battery() { on_battery; }
+q_charge() { battery_percent; }
+q_install() { install_build "$1" --no-launch; }
+q_sample() { ui_run sample 2>/dev/null || echo "hid_idle_s=unknown locked=unknown lid=unknown thermal=unknown lowpower=unknown"; }
+q_sudo_ok() { sudo_ok; }
+q_set_lpm() { set_lowpowermode "$1"; }
+q_rusage() { rusage "$1" "$2" >"$3" 2>&1; }
+q_perf_start() { perf_capture "$1"; }
+q_perf_stop() { perf_stop "$STREAM"; }
+q_reads() { app_reads "$1"; }
+q_assertions() { pmset -g assertions 2>/dev/null | grep -c BatteryPulse || true; }
+q_pmset_log() { pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" -v to="$(epoch_stamp "$2")" 'substr($0, 1, 19) >= from && substr($0, 1, 19) <= to' || true; }
+q_display_sleep() { pmset displaysleepnow >/dev/null 2>&1 || warn "pmset displaysleepnow failed"; }
+q_history_kb() { du -sk "$SUPPORT/History" 2>/dev/null | cut -f1 || echo 0; }
+q_screensaver() { if pgrep -x ScreenSaverEngine >/dev/null 2>&1 || pgrep -x legacyScreenSaver >/dev/null 2>&1; then echo yes; else echo no; fi; }
+q_accessories() { pmset -g accps 2>/dev/null | grep -v -i 'InternalBattery' | grep -c -E '[0-9]+%' || true; }
+q_universal_access() {
+  printf 'reduceTransparency=%s increaseContrast=%s' "$(defaults read com.apple.universalaccess reduceTransparency 2>/dev/null || echo 0)" \
+    "$(defaults read com.apple.universalaccess increaseContrast 2>/dev/null || echo 0)"
+}
+q_after_measure() { :; }
+q_alert() {
+  osascript -e 'on run argv' -e 'display alert "BatteryPulse Session B" message (item 1 of argv) giving up after 45' \
+    -e 'end run' "$1" >/dev/null 2>&1 &
+}
+
+q_pack_temp() {
+  ioreg -r -c AppleSmartBatteryPack -a -d 1 >"$LOGS/q-pack.plist" 2>/dev/null || true
+  plist_value "$LOGS/q-pack.plist" 0.BatteryData.Temperature
+}
+
+# q_claude: the Claude CLI's child processes (sorted, comma-joined) and its CPU seconds.
+q_claude() {
+  local pids pid children="" cpu=0 time
+  pids="$(pgrep -x claude 2>/dev/null || true)"
+  for pid in $pids; do
+    children="$children $(pgrep -P "$pid" 2>/dev/null | tr '\n' ' ' || true)"
+    time="$(ps -o time= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
+    cpu="$(awk -v t="$time" -v c="$cpu" 'BEGIN {
+      days = 0; if (index(t, "-")) { split(t, d, "-"); days = d[1]; t = d[2] }
+      n = split(t, p, ":"); s = 0; for (i = 1; i <= n; i++) s = s * 60 + p[i]
+      printf "%.2f", c + s + days * 86400 }')"
+  done
+  printf '%s %s\n' "$(echo "$children" | tr ' ' '\n' | grep . | sort -n | tr '\n' ',' | sed 's/,$//')" "$cpu"
+}
+
+# q_sampler: every 10 s, Session A's columns (the pslog analysis reads them) and the detectors':
+# HIDIdleTime, the lock and the lid, the screen saver, and the Claude CLI's children and CPU.
+q_sampler() {
+  local battery="$LOGS/sample-battery.plist" pack="$LOGS/sample-pack.plist" sample claude
+  printf 'epoch\tupdate_time\tremaining_mah\tsystem_power_in_mw\texternal\tpack_temperature\thid_idle_s\tlocked\tlid\tscreensaver\tclaude_children\tclaude_cpu_s\n' \
+    >"$LOGS/sampler.tsv"
+  while kill -0 "$ARM_PID" 2>/dev/null; do
+    ioreg -r -c AppleSmartBattery -a -d 1 >"$battery" 2>/dev/null || true
+    ioreg -r -c AppleSmartBatteryPack -a -d 1 >"$pack" 2>/dev/null || true
+    sample="$(q_sample)"
+    claude="$(q_claude)"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date +%s)" "$(plist_value "$battery" 0.UpdateTime)" \
+      "$(plist_value "$battery" 0.BatteryData.RemainingCapacity)" \
+      "$(plist_value "$battery" 0.PowerTelemetryData.SystemPowerIn)" \
+      "$(plist_value "$battery" 0.ExternalConnected)" "$(plist_value "$pack" 0.BatteryData.Temperature)" \
+      "$(sample_field hid_idle_s "$sample")" "$(sample_field locked "$sample")" "$(sample_field lid "$sample")" \
+      "$(q_screensaver)" "$(echo "$claude" | cut -d' ' -f1 | tr ',' '\n' | grep -c . || true)" "${claude##* }" \
+      >>"$LOGS/sampler.tsv"
+    sleep 10
+  done
+}
+
+sample_field() { tr ' ' '\n' <<<"$2" | sed -n "s/^$1=//p" | head -1 || true; }
+
+# The plan (WP-21, 2026-10-24): a discarded warm-up; S2 B C B C B C; S1 B C B C B C; S2 with Low
+# Power Mode B C; S4w; S5, S10, S7, S3 and the minimized run; one retry of each run not valid; S6 B
+# C last. Each line: kind scenario build pair optional. Optional runs need 56 %, so S6 still
+# starts at 50 % or more.
+queue_plan() {
+  cat <<'EOF'
+warmup S2 C w0 no
+run S2 B p1 no
+run S2 C p1 no
+run S2 B p2 no
+run S2 C p2 no
+run S2 B p3 no
+run S2 C p3 no
+run S1 B p4 no
+run S1 C p4 no
+run S1 B p5 no
+run S1 C p5 no
+run S1 B p6 no
+run S1 C p6 no
+run S2-LPM B p7 no
+run S2-LPM C p7 no
+run S4w-standard C s1 no
+run S4w-clear C s2 no
+run S4w-translucent C s3 no
+run S4w-standard2 C s4 no
+run S4w-frosted C s5 yes
+run S5 C s6 yes
+run S10 C s7 yes
+s7 S7 B,C s8 no
+run S3 C s9 yes
+run MIN C s10 yes
+retries - - - -
+run S6 B p8 no
+run S6 C p8 no
+EOF
+}
+
+# The minutes a plan line takes, for the start message's times.
+q_minutes() {
+  case "$1" in
+    S6) echo 12 ;;
+    S7) echo 3 ;;
+    *) echo 6 ;;
+  esac
+}
+
+Q_INDEX=0
+Q_LATE=0
+Q_DISPLAY_OFF=""
+QUEUE_RUNS=""
+
+q_header() {
+  printf 'index\tkind\tscenario\tbuild\tpair\tstart\tend\tcharge_start\tcharge_end\tenergy_mj_h\tidle_wakeups_h\tinterrupt_wakeups_h\tcpu_s_h\tfootprint_mb\treads_min\tassertions\tthermal\tpack_temp\thistory_kb\tlpm\ttouched\tslept\tadapter\tlocked\tscreensaver\tstyle\tlpm_valid\tclaude\tstatus\n' \
+    >"$QUEUE_RUNS"
+}
+
+# q_not_run <kind> <scenario> <build> <pair> <reason>: a row with the columns from charge_end to
+# claude empty.
+q_not_run() {
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t\t%s' "$Q_INDEX" "$1" "$2" "$3" "$4" "$(q_now)" "$(q_charge)" >>"$QUEUE_RUNS"
+  printf '\t%.0s' 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 >>"$QUEUE_RUNS"
+  printf '\t%s\n' "not run: $5" >>"$QUEUE_RUNS"
+  echo "$(clock) run $Q_INDEX $2 $3: not run: $5"
+}
+
+# The scenario's settings, before its launch (every window closed unless the scenario opens one).
+q_settings() {
+  quit_app
+  session_settings
+  case "$1" in
+    S2*) set_default menuBarShowsPower -bool true ;;
+    S4w-* | S5 | MIN)
+      set_default betaWindowStyles -bool true
+      case "$1" in
+        S4w-clear) set_default windowLook -string clear ;;
+        S4w-translucent) set_default windowLook -string translucent ;;
+        S4w-frosted) set_default windowLook -string frosted ;;
+        *) set_default windowLook -string standard ;;
+      esac
+      ;;
+  esac
+}
+
+q_launch() {
+  open_app
+  local tries=0
+  until app_running || [ "$tries" -ge 40 ]; do
+    sleep 0.25
+    tries=$((tries + 1))
+  done
+  if [ "$Q_BUILD" = C ] && app_running; then app_pid >>"$WORK/rc-pids.txt"; fi
+  sleep 1
+}
+
+# q_setup <scenario> <index>: the scenario's state before its quiet minute, by a reopen event,
+# CGEvent clicks at CGWindowList frames and AX into TextEdit only; never an AX call into the
+# measured process. Prints why not, and fails, when it can't.
+q_setup() {
+  local scenario="$1" index="$2" line id rect offset title item before after
+  case "$scenario" in
+    S4w-* | S5 | MIN)
+      open_main
+      line="$(main_window_line)"
+      if ! line_ok "$line"; then
+        echo "the window isn't clear: ${line:-not on screen}"
+        return 1
+      fi
+      id="$(line_id "$line")"
+      rect="$(line_rect "$line")"
+      case "$scenario" in
+        S4w-*)
+          mkdir -p "$SHOTS/queue"
+          screencapture -x -o -l"$id" "$SHOTS/queue/$index-$scenario.png" 2>/dev/null || true
+          ;;
+        S5)
+          open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
+          sleep 3
+          # shellcheck disable=SC2086
+          ui_run position TextEdit $rect >/dev/null 2>&1 || {
+            echo "TextEdit couldn't be placed over the window"
+            return 1
+          }
+          sleep 1
+          line="$(main_window_line)"
+          case "$line" in *"covered by TextEdit"*) ;; *)
+            echo "TextEdit doesn't cover the window: $line"
+            return 1
+            ;;
+          esac
+          ;;
+        MIN)
+          offset="$(cat "$WORK/minimize-offset" 2>/dev/null || true)"
+          [ -n "$offset" ] || {
+            echo "no minimize button offset (ready records it)"
+            return 1
+          }
+          title="$(ui_run windows --app BatteryPulse 2>/dev/null | awk -F '\t' -v id="$id" '$1 == id { n = $5; sub(/^alpha [0-9.]* */, "", n); gsub(/"/, "", n); print n }' || true)"
+          echo "${title:-BatteryPulse}" >"$WORK/q-min-title"
+          # shellcheck disable=SC2046
+          ui_run click $(awk -v r="$rect" -v o="$offset" 'BEGIN { split(r, w, " "); split(o, d, " "); printf "%d %d", w[1] + d[1], w[2] + d[2] }') \
+            >/dev/null 2>&1 || {
+            echo "the minimize click was refused"
+            return 1
+          }
+          sleep 3
+          case "$(main_window_line)" in *"isn't on screen"* | "") ;; *)
+            echo "the window didn't minimize"
+            return 1
+            ;;
+          esac
+          ;;
+      esac
+      ;;
+    S3)
+      item="$(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- || true)"
+      [ -n "$item" ] || {
+        echo "no menu bar item window"
+        return 1
+      }
+      before="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
+      # shellcheck disable=SC2046
+      ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$item") >/dev/null 2>&1 || {
+        echo "the click on the menu bar item was refused"
+        return 1
+      }
+      sleep 2
+      after="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
+      [ "${after:-0}" -gt "${before:-0}" ] || {
+        echo "the popover didn't open"
+        return 1
+      }
+      echo "$before" >"$WORK/q-s3-before"
+      ;;
+  esac
+  return 0
+}
+
+# q_confirm <scenario>: the state still holds at the run's end (CGWindowList only); prints why not.
+q_confirm() {
+  case "$1" in
+    S3)
+      [ "$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)" -gt "$(cat "$WORK/q-s3-before" 2>/dev/null || echo 0)" ] ||
+        echo "the popover closed during the run"
+      ;;
+    MIN) case "$(main_window_line)" in *"isn't on screen"* | "") ;; *) echo "the window came back during the run" ;; esac ;;
+    S4w-*) line_ok "$(main_window_line)" || echo "the window wasn't clear at the end" ;;
+  esac
+  return 0
+}
+
+q_teardown() {
+  local tile
+  case "$1" in
+    S5) ui_run quit TextEdit >/dev/null 2>&1 || warn "TextEdit didn't quit by its menu" ;;
+    S3)
+      # shellcheck disable=SC2046
+      ui_run click $(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }') >/dev/null 2>&1 || true
+      ;;
+    MIN)
+      # The window's Dock tile, its frame from the Dock's AX tree, then CGWindowList's word.
+      tile="$(ui_run frame --dock "$(cat "$WORK/q-min-title" 2>/dev/null || echo BatteryPulse)" 2>/dev/null | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' || true)"
+      # shellcheck disable=SC2086
+      if [ -n "$tile" ] && ui_run click $tile >/dev/null 2>&1; then
+        sleep 3
+        if line_ok "$(main_window_line)"; then echo "restored from the Dock tile" >"$WORK/q-min-restore"; else echo "the Dock tile click didn't bring the window back" >"$WORK/q-min-restore"; fi
+      else
+        echo "no Dock tile to click" >"$WORK/q-min-restore"
+      fi
+      ;;
+  esac
+  return 0
+}
+
+# q_wait_for <what> <seconds>: nominal thermal state, or HIDIdleTime of 60 s; at most <seconds>.
+q_wait_for() {
+  local waited=0 sample
+  while [ "$waited" -lt "$2" ]; do
+    sample="$(q_sample)"
+    case "$1" in
+      nominal) [ "$(sample_field thermal "$sample")" != nominal ] || return 0 ;;
+      idle) awk -v i="$(sample_field hid_idle_s "$sample")" 'BEGIN { exit !(i + 0 >= 60) }' && return 0 ;;
+    esac
+    q_sleep 30
+    waited=$((waited + 30))
+  done
+  return 1
+}
+
+# q_detect <start> <end> <scenario> <sample at start> <sample at end> <claude at start> <claude at
+# end> <rusage file> <want lpm> <first S6>: the detector columns, tab-separated: touched, slept,
+# adapter, locked, screensaver, style, lpm, claude, then the reasons for "not valid" (or "-").
+q_detect() {
+  local start="$1" end="$2" scenario="$3" s0="$4" s1="$5" c0="$6" c1="$7" file="$8" want="$9" first_s6="${10}"
+  local touched=no slept=no adapter=no locked=no saver=no style=- lpm=no claude=no reasons="" rows log idle
+  rows="$(awk -F '\t' -v s="$start" -v e="$end" 'NR > 1 && $1 >= s && $1 <= e' "$LOGS/sampler.tsv" 2>/dev/null || true)"
+  idle="$(sample_field hid_idle_s "$s1")"
+  if awk -v i="$idle" -v d=$((end - start)) 'BEGIN { exit !(i != "unknown" && i + 2 < d) }'; then touched=yes; fi
+  if [ -n "$rows" ] && awk -F '\t' -v s="$start" '$7 != "unknown" && $7 != "-" && $7 + 3 < $1 - s { found = 1 } END { exit !found }' <<<"$rows"; then touched=yes; fi
+  if awk -F= '$1 == "seconds" { c = $2 } $1 == "awake_seconds" { a = $2 } END { exit !(a != "" && c - a > 1) }' "$file" 2>/dev/null; then slept=yes; fi
+  log="$(q_pmset_log "$start" "$end")"
+  if awk '$4 == "Sleep" || $4 == "DarkWake" || $4 == "Wake" { found = 1 } END { exit !found }' <<<"$log"; then slept=yes; fi
+  if [ -n "$rows" ] && awk -F '\t' '$5 == "Yes" { found = 1 } END { exit !found }' <<<"$rows"; then adapter=yes; fi
+  if ! q_on_battery; then adapter=yes; fi
+  if [ "$scenario" = S6 ]; then
+    # pmset displaysleepnow locks the screen when a password is required at once: only the first
+    # S6 run's start counts.
+    if [ "$first_s6" = yes ] && [ "$(sample_field locked "$s0")" = yes ]; then locked=yes; fi
+  else
+    if [ "$(sample_field locked "$s0")" = yes ] || [ "$(sample_field locked "$s1")" = yes ]; then locked=yes; fi
+    if [ "$(sample_field lid "$s0")" = closed ] || [ "$(sample_field lid "$s1")" = closed ]; then locked=yes; fi
+    if [ -n "$rows" ] && awk -F '\t' '$8 == "yes" || $9 == "closed" { found = 1 } END { exit !found }' <<<"$rows"; then locked=yes; fi
+  fi
+  if [ -n "$rows" ] && awk -F '\t' '$10 == "yes" { found = 1 } END { exit !found }' <<<"$rows"; then saver=yes; fi
+  if [ "$(q_screensaver)" = yes ]; then saver=yes; fi
+  case "$scenario" in
+    S4w-*)
+      style=no
+      case "$(q_universal_access)" in *"=1"*) style=yes ;; esac
+      ;;
+  esac
+  if [ "$(sample_field lowpower "$s0")" != "$want" ] || [ "$(sample_field lowpower "$s1")" != "$want" ]; then lpm=yes; fi
+  if awk -v a="${c0%% *}" -v b="${c1%% *}" -v x="${c0##* }" -v y="${c1##* }" 'BEGIN {
+      n = split(a, s, ","); for (i = 1; i <= n; i++) seen[s[i]] = 1
+      m = split(b, e, ","); for (i = 1; i <= m; i++) if (e[i] != "" && !(e[i] in seen)) found = 1
+      if (y - x > 2) found = 1
+      exit !found }'; then claude=yes; fi
+  [ "$touched" = no ] || reasons="$reasons, touched"
+  [ "$slept" = no ] || reasons="$reasons, slept"
+  [ "$adapter" = no ] || reasons="$reasons, adapter"
+  [ "$locked" = no ] || reasons="$reasons, locked"
+  [ "$saver" = no ] || reasons="$reasons, screen saver"
+  [ "$style" != yes ] || reasons="$reasons, style not in effect"
+  [ "$lpm" = no ] || reasons="$reasons, LPM"
+  [ "$claude" = no ] || reasons="$reasons, Claude active"
+  if [ "$scenario" = S6 ]; then
+    # Valid only with the display off from the run's start to its end.
+    if ! awk -v s="$(epoch_stamp "$start")" '
+        /Display is turned off/ { state = "off" } /Display is turned on/ { if (substr($0, 1, 19) > s) on = 1; state = "on" }
+        END { exit !(state == "off" && !on) }' <<<"$(q_pmset_log $((start - 14400)) "$end")"; then
+      reasons="$reasons, display on"
+    fi
+  fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$touched" "$slept" "$adapter" "$locked" "$saver" "$style" "$lpm" "$claude" \
+    "${reasons#, }"
+}
+
+# q_run <kind> <scenario> <build> <pair> <optional>: one energy run of WP-21 and its row: the build
+# installed, the scenario's settings, Low Power Mode as planned, a nominal thermal state, HIDIdleTime
+# of 60 s, the launch, the scenario's state, the quiet minute, then rusage over 4 minutes (S6 10,
+# the displays asleep) with the perf lines, and the detectors.
+q_run() {
+  local kind="$1" scenario="$2" build="$3" pair="$4" optional="$5" floor=50 want=0 seconds=240 charge capture file pid
+  local start end s0 s1 c0 c1 detect status assertions reads thermal why first_s6=no
+  Q_INDEX=$((Q_INDEX + 1))
+  Q_BUILD="$build"
+  if [ "$optional" = yes ] || [ "$kind" = retry ]; then floor=56; fi
+  if [ "$scenario" = S2-LPM ]; then want=1; fi
+  if [ "$scenario" = S6 ]; then seconds=600; fi
+  if [ "$(q_now)" -ge "$Q_LATE" ]; then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "late (3 hours after the bedtime unplug)"
+    return 0
+  fi
+  if ! q_on_battery; then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "on the adapter"
+    return 0
+  fi
+  charge="$(q_charge)"
+  case "$charge" in "" | *[!0-9]*) charge=0 ;; esac
+  if [ "$charge" -lt "$floor" ]; then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "below $floor %"
+    return 0
+  fi
+  if [ "$scenario" = S10 ] && [ "$(q_accessories)" = 0 ]; then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "pmset -g accps lists no accessory"
+    return 0
+  fi
+  echo "$(clock) run $Q_INDEX: $kind $scenario on $build at $charge %"
+  if ! (q_install "$build") >"$LOGS/q-install-$Q_INDEX.txt" 2>&1; then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "error (install: $(tail -1 "$LOGS/q-install-$Q_INDEX.txt"))"
+    return 0
+  fi
+  q_settings "$scenario"
+  if [ "$want" = 1 ] && [ "$(sample_field lowpower "$(q_sample)")" != 1 ]; then
+    if ! q_sudo_ok || ! q_set_lpm 1; then
+      q_not_run "$kind" "$scenario" "$build" "$pair" "no sudo ticket"
+      return 0
+    fi
+  fi
+  if [ "$want" = 0 ] && [ "$(lowpowermode_of Battery)" = 1 ] && q_sudo_ok; then q_set_lpm 0 || true; fi
+  q_wait_for nominal 600 || echo "the thermal state isn't nominal after 10 minutes: the run goes on, its row says so"
+  q_wait_for idle 600 || echo "HIDIdleTime stays under 60 s: the run goes on, the touch detector decides"
+  q_launch
+  if ! why="$(q_setup "$scenario" "$Q_INDEX")"; then
+    q_teardown "$scenario"
+    q_not_run "$kind" "$scenario" "$build" "$pair" "setup: $why"
+    return 0
+  fi
+  q_sleep 60
+  if [ "$scenario" = S6 ]; then
+    if [ -z "$Q_DISPLAY_OFF" ]; then first_s6=yes; fi
+    let_display_sleep
+    q_display_sleep
+    Q_DISPLAY_OFF=1
+    q_sleep 5
+  fi
+  pid="$(app_pid)"
+  if [ -z "$pid" ]; then
+    q_teardown "$scenario"
+    q_not_run "$kind" "$scenario" "$build" "$pair" "BatteryPulse wasn't running"
+    return 0
+  fi
+  capture="$LOGS/queue-$Q_INDEX-$scenario-$build.ndjson"
+  file="$LOGS/queue-$Q_INDEX-$scenario-$build.rusage"
+  s0="$(q_sample)"
+  c0="$(q_claude)"
+  thermal="$(sample_field thermal "$s0")"
+  q_perf_start "$capture"
+  start="$(q_now)"
+  q_rusage "$pid" "$seconds" "$file" &
+  local measuring=$!
+  q_sleep 5
+  assertions="$(q_assertions)"
+  if [ "$scenario" = S6 ]; then pmset -g assertions >"$LOGS/queue-$Q_INDEX-S6-assertions.txt" 2>&1 || true; fi
+  # A trapped signal ends wait early: wait again until rusage has really finished.
+  while kill -0 "$measuring" 2>/dev/null; do wait "$measuring" || true; done
+  wait "$measuring" 2>/dev/null || true
+  q_after_measure "$seconds"
+  end="$(q_now)"
+  q_perf_stop
+  s1="$(q_sample)"
+  c1="$(q_claude)"
+  why="$(q_confirm "$scenario")"
+  q_teardown "$scenario"
+  if [ "$scenario" = S2-LPM ]; then q_set_lpm 0 || warn "Low Power Mode is still on"; fi
+  reads="$(q_reads "$capture")"
+  detect="$(q_detect "$start" "$end" "$scenario" "$s0" "$s1" "$c0" "$c1" "$file" "$want" "$first_s6")"
+  status="${detect##*"$TAB"}"
+  if [ -n "$why" ]; then status="${status:+$status, }$why"; fi
+  if [ -n "$status" ]; then status="not valid: $status"; else status=valid; fi
+  if [ "$kind" = warmup ]; then status="warm-up, discarded ($status)"; fi
+  if [ "$thermal" != nominal ]; then status="$status; thermal $thermal"; fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$Q_INDEX" "$kind" "$scenario" "$build" \
+    "$pair" "$start" "$end" "$charge" "$(q_charge)" "$(rusage_value "$file" energy_mj_per_h)" \
+    "$(rusage_value "$file" idle_wakeups_per_h)" "$(rusage_value "$file" interrupt_wakeups_per_h)" \
+    "$(rusage_value "$file" cpu_s_per_h)" \
+    "$(awk -F= '$1 == "phys_footprint_bytes" { printf "%.1f", $2 / 1048576 }' "$file")" \
+    "$(awk -v n="${reads:-0}" -v s="$seconds" 'BEGIN { printf "%.1f", n * 60 / s }')" "$assertions" \
+    "$thermal/$(sample_field thermal "$s1")" "$(q_pack_temp)" "$(q_history_kb)" \
+    "$(sample_field lowpower "$s0")/$(sample_field lowpower "$s1")" "${detect%"$TAB"*}" "$status" >>"$QUEUE_RUNS"
+  echo "$(clock) run $Q_INDEX $scenario $build: $status"
+}
+
+# q_retries: one retry of each run marked not valid, none below 56 %; a run of S1, S2 or S2-LPM is
+# retried as its B and C pair, never alone; a Low Power Mode run that wasn't valid isn't retried,
+# since nothing would change it.
+q_retries() {
+  local list kind scenario build pair status done_pairs=" "
+  # A snapshot of the rows: the retries append to the same file.
+  list="$(awk -F '\t' 'NR > 1 && $2 == "run" { print $2 "\t" $3 "\t" $4 "\t" $5 "\t" $NF }' "$QUEUE_RUNS")"
+  while IFS=$'\t' read -r kind scenario build pair status; do
+    [ -n "$kind" ] || continue
+    case "$status" in "not valid: "*) ;; *) continue ;; esac
+    case "$status" in *LPM*) continue ;; esac
+    case "$scenario" in
+      S1 | S2 | S2-LPM)
+        case "$done_pairs" in *" $pair "*) continue ;; esac
+        done_pairs="$done_pairs$pair "
+        q_run retry "$scenario" B "$pair" yes </dev/null
+        q_run retry "$scenario" C "$pair" yes </dev/null
+        ;;
+      S6 | S7) ;;
+      *) q_run retry "$scenario" "$build" "$pair" yes </dev/null ;;
+    esac
+  done <<<"$list"
+}
+
+# q_s7: 5 cold launches per build (B, then C) to menuBarReady, with the reads before it.
+q_s7() {
+  if [ "$(q_now)" -ge "$Q_LATE" ] || ! q_on_battery || [ "$(q_charge)" -lt 50 ]; then
+    Q_INDEX=$((Q_INDEX + 1))
+    q_not_run s7 S7 B,C s8 "late, on the adapter or below 50 %"
+    return 0
+  fi
+  begin_section 89-s7 "S7, cold launches to menuBarReady (B against C)"
+  (s7_launches B 5) || out "- S7 on B: not run: error"
+  (s7_launches C 5) || out "- S7 on C: not run: error"
+}
+
+# q_announce_s6: the dark runs are announced, never silent to a person at the Mac: the arm window
+# comes to the front with the warning 30 s ahead (a notification would be hidden by the Focus);
+# no sound, since none plays from `mark away` until his morning continue.
+q_announce_s6() {
+  local text="The display turns off for 10 minutes on purpose; please don't wake the Mac."
+  echo
+  echo "=== $(clock): $text (S6 starts in 30 s) ==="
+  q_alert "$text"
+  q_sleep 30
+}
+
+# queue_expected <start epoch>: the start message's times.
+queue_expected() {
+  local at="$1" kind scenario build pair optional s6=""
+  while read -r kind scenario build pair optional; do
+    case "$kind" in retries) continue ;; esac
+    if [ "$scenario" = S6 ] && [ -z "$s6" ]; then s6="$at"; fi
+    at=$((at + $(q_minutes "$scenario") * 60))
+  done < <(queue_plan)
+  echo "$s6 $at"
+}
+
+# queue_run <bedtime unplug epoch>: the queue, in arm's process (its pid is in queue.started).
+queue_run() {
+  local unplug="$1" kind scenario build pair optional times started
+  Q_LATE=$((unplug + 3 * 3600))
+  QUEUE_RUNS="$LOGS/queue-runs.tsv"
+  q_header
+  begin_section 88-queue "The energy queue (B4; WP-21)"
+  started="$(q_now)"
+  times="$(queue_expected "$started")"
+  epoch_hm "${times##* }" >"$WORK/queue.expected"
+  out "- started $(clock) at $(q_charge) %, on $(if q_on_battery; then echo battery; else echo "the adapter"; fi); the bedtime unplug at $(epoch_hm "$unplug"); no run starts after $(epoch_hm "$Q_LATE")"
+  echo "The queue runs now. S6 (the display off for 10 minutes on purpose) at about $(epoch_hm "${times%% *}"); the end at about $(epoch_hm "${times##* }"). Please keep the lid open until then."
+  if [ -z "$DRY_RUN" ]; then
+    pmset -g assertions >"$LOGS/queue-assertions-start.txt" 2>&1 || true
+    out "- pmset -g assertions at the start: $(grep -c BatteryPulse "$LOGS/queue-assertions-start.txt" || true) BatteryPulse lines (the full list stays on the Mac)"
+    start_pslog
+    q_sampler &
+    BACKGROUND="$BACKGROUND $!"
+    if [ "$(lowpowermode_of Battery)" = 1 ]; then
+      if q_sudo_ok && q_set_lpm 0; then out "- Low Power Mode was set for battery: off for the runs (the EXIT trap puts it back)"; else
+        out "- Low Power Mode is set for battery and there is no sudo ticket: every run but S2-LPM is LPM (not valid)"
+      fi
+    fi
+    (q_install B) >"$LOGS/q-install-0.txt" 2>&1 || out "- install B at the start: error ($(tail -1 "$LOGS/q-install-0.txt"))"
+  fi
+  # Each run is wrapped: a failure is its row's "not run: error", and the queue goes on (never
+  # set -e's exit). Nothing in a run reads the plan's standard input.
+  while read -r kind scenario build pair optional; do
+    if [ "$scenario" = S6 ] && [ -z "$Q_DISPLAY_OFF" ] && [ "$(q_now)" -lt "$Q_LATE" ]; then q_announce_s6; fi
+    case "$kind" in
+      warmup | run) q_run "$kind" "$scenario" "$build" "$pair" "$optional" </dev/null || q_not_run "$kind" "$scenario" "$build" "$pair" "error" ;;
+      s7) q_s7 </dev/null || true ;;
+      retries) q_retries </dev/null || true ;;
+    esac
+  done < <(queue_plan)
+  queue_report
+}
+
+# queue_report: the energy table with the detector columns, then per scenario and build the
+# median of the valid runs (the warm-up never counts), C ÷ B, and B against Session A's B.
+queue_report() {
+  use_section 88-queue "The energy queue (B4; WP-21)"
+  out ""
+  out "| # | Kind | Run | Build | Charge | Energy mJ/h | Idle wake-ups/h | Interrupt wake-ups/h | CPU s/h | Footprint MB | Reads/min | Assertions | Thermal | Pack temp | History KB | LPM | Touched | Slept | Adapter | Locked | Screen saver | Style | LPM valid | Claude | Status |"
+  out "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+  awk -F '\t' 'NR > 1 {
+      lpmok = ($27 == "no") ? "yes" : ($27 == "yes" ? "no" : $27)
+      printf "| %s | %s | %s | %s | %s→%s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
+        $1, $2, $3, $4, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, lpmok, $28, $29 }' \
+    "$QUEUE_RUNS" | tee -a "$SECTION"
+  out ""
+  out "Medians of the valid runs per scenario and build (the spread is the lowest and highest run):"
+  out ""
+  queue_medians | tee -a "$SECTION"
+}
+
+# The rows of Session A's energy table (~/bp-062/A/logs/energy-rows.md) as "scenario build energy
+# idle interrupt cpu reads", for the cross-session check and the chain C ÷ B × B ÷ A.
+session_a_rows() {
+  local file="$HOME/bp-062/A/logs/energy-rows.md"
+  [ -f "$file" ] || return 0
+  awk -F '|' 'NR > 2 && $4 !~ /not/ { gsub(/ /, ""); if ($6 + 0 > 0) print $2, $3, $6, $7, $8, $9, $11 }' "$file"
+}
+
+queue_medians() {
+  awk -F '\t' -v arows="$(session_a_rows | tr '\n' ';')" '
+    function median(list,    n, v, i, j, t) {
+      n = split(list, v, " ")
+      for (i = 1; i <= n; i++) for (j = i + 1; j <= n; j++) if (v[j] + 0 < v[i] + 0) { t = v[i]; v[i] = v[j]; v[j] = t }
+      if (n == 0) return ""
+      return (n % 2) ? v[(n + 1) / 2] : (v[n / 2] + v[n / 2 + 1]) / 2
+    }
+    function spread(list,    n, v, i, lo, hi) {
+      n = split(list, v, " "); if (n == 0) return "-"
+      lo = hi = v[1] + 0
+      for (i = 2; i <= n; i++) { if (v[i] + 0 < lo) lo = v[i] + 0; if (v[i] + 0 > hi) hi = v[i] + 0 }
+      return lo "-" hi
+    }
+    NR > 1 && $NF == "valid" && $2 != "warmup" {
+      key = $3 " " $4; if (!(key in keys)) order[++keyCount] = key; keys[key] = 1; count[key]++
+      energy[key] = energy[key] " " $10; idle[key] = idle[key] " " $11; irq[key] = irq[key] " " $12
+      cpu[key] = cpu[key] " " $13; reads[key] = reads[key] " " $15
+    }
+    END {
+      n = split(arows, lines, ";")
+      for (i = 1; i <= n; i++) {
+        split(lines[i], f, " "); if (f[1] == "") continue
+        k = f[1] " " f[2]; aenergy[k] = aenergy[k] " " f[3]; acpu[k] = acpu[k] " " f[6]; aidle[k] = aidle[k] " " f[4]
+      }
+      print "| Scenario | Build | Valid runs | Energy mJ/h (spread) | Idle wake-ups/h | Interrupt wake-ups/h | CPU s/h (spread) | Reads/min | C ÷ B energy | C ÷ B CPU | B here ÷ B in Session A (energy, CPU) | C ÷ A energy, CPU (C ÷ B × B ÷ A) |"
+      print "|---|---|---|---|---|---|---|---|---|---|---|---|"
+      for (o = 1; o <= keyCount; o++) {
+        key = order[o]; split(key, kb, " "); s = kb[1]; b = kb[2]
+        e = median(energy[key]); c = median(cpu[key])
+        ratio_e = "-"; ratio_c = "-"; cross = "-"; chain = "-"
+        if (b == "C" && (s " B") in keys) {
+          eb = median(energy[s " B"]); cb = median(cpu[s " B"])
+          if (eb > 0) ratio_e = sprintf("%.2f", e / eb)
+          if (cb > 0) ratio_c = sprintf("%.2f", c / cb)
+          if ((s " A") in aenergy && (s " B") in aenergy) {
+            ea = median(aenergy[s " A"]); ebA = median(aenergy[s " B"]); ca = median(acpu[s " A"]); cbA = median(acpu[s " B"])
+            if (ea > 0 && ca > 0 && eb > 0 && cb > 0) chain = sprintf("%.2f, %.2f", (e / eb) * (ebA / ea), (c / cb) * (cbA / ca))
+          }
+        }
+        if (b == "B" && (s " B") in aenergy) {
+          ebA = median(aenergy[s " B"]); cbA = median(acpu[s " B"])
+          if (ebA > 0 && cbA > 0) {
+            de = e / ebA; dc = c / cbA
+            cross = sprintf("%.2f, %.2f%s", de, dc, (de < 0.85 || de > 1.15 || dc < 0.85 || dc > 1.15) ? " (more than 15 %: noise)" : "")
+          }
+        }
+        printf "| %s | %s | %d | %.1f (%s) | %.0f | %.0f | %.3f (%s) | %.1f | %s | %s | %s | %s |\n", s, b, count[key], e, spread(energy[key]),
+          median(idle[key]), median(irq[key]), c, spread(cpu[key]), median(reads[key]), ratio_e, ratio_c, cross, chain
+      }
+    }' "$QUEUE_RUNS"
+}
+
+# MARK: - Session B: the queue's dry run (CI on Linux; WP-21's proposal)
+
+# queue --dry-run [default|low|late]: the queue's order, its retries and its thresholds on any
+# machine, with the world stubbed: no app, no pmset, ioreg or notifyutil, a clock that jumps, a
+# charge that drains 1 % every 10 minutes, and scripted detector events (default: a touched S2, an
+# adapter S1, an LPM S2-LPM, a Claude-active S4w and a slept S4w; low: from 62 %; late: the
+# bedtime unplug 2 hours before the start). Exit status 1 on a broken rule.
+queue_dry_run() {
+  local scenario="${1:-default}" unplug problems
+  DRY_RUN=1
+  DRY_T0=1761300000
+  DRY_CLOCK="$DRY_T0"
+  DRY_CHARGE0=88
+  DRY_EVENTS=" "
+  DRY_LPM=0
+  DRY_CLAUDE_RUN=""
+  unplug="$DRY_T0"
+  case "$scenario" in
+    default) DRY_EVENTS=" 4:touched 10:adapter 12:lpm 17:claude 18:slept 20:locked " ;;
+    low) DRY_CHARGE0=62 ;;
+    late) unplug=$((DRY_T0 - 2 * 3600)) ;;
+    *) fail "the dry runs are default, low and late" ;;
+  esac
+  mkdir -p "$LOGS" "$SECTIONS" "$SHOTS"
+  ARM_PID=$$
+  printf 'epoch\tupdate_time\tremaining_mah\tsystem_power_in_mw\texternal\tpack_temperature\thid_idle_s\tlocked\tlid\tscreensaver\tclaude_children\tclaude_cpu_s\n' \
+    >"$LOGS/sampler.tsv"
+  dry_stubs
+  if ! queue_run "$unplug" >"$LOGS/dry-run.txt" 2>&1; then
+    cat "$LOGS/dry-run.txt"
+    fail "the dry run stopped"
+  fi
+  awk -F '\t' 'NR > 1 { printf "%3s %-7s %-16s %-4s %-4s %3s%%  %s\n", $1, $2, $3, $4, $5, $8, $NF }' "$LOGS/queue-runs.tsv"
+  problems="$(dry_checks "$scenario" $((unplug + 3 * 3600)))"
+  if [ -n "$problems" ]; then
+    printf '%s\n' "$problems" >&2
+    fail "the $scenario dry run broke the queue's rules"
+  fi
+  echo "dry run $scenario: the order, the retries and the thresholds hold ($(($(grep -c . "$LOGS/queue-runs.tsv") - 1)) rows)"
+  case "$WORK" in "${TMPDIR:-/tmp}"/bp-062-dry.*) rm -rf "$WORK" ;; esac
+}
+
+dry_event() {
+  case "$DRY_EVENTS" in *" $Q_INDEX:$1 "*) return 0 ;; esac
+  return 1
+}
+
+dry_stubs() {
+  q_now() { echo "$DRY_CLOCK"; }
+  q_sleep() { DRY_CLOCK=$((DRY_CLOCK + $1)); }
+  q_on_battery() { return 0; }
+  on_battery() { return 0; }
+  q_charge() { echo $((DRY_CHARGE0 - (DRY_CLOCK - DRY_T0) / 600)); }
+  battery_percent() { q_charge; }
+  q_install() { if dry_event error; then return 1; fi; }
+  quit_app() { :; }
+  session_settings() { :; }
+  set_default() { :; }
+  q_launch() { :; }
+  open_main() { :; }
+  app_pid() { echo 4242; }
+  app_running() { return 0; }
+  q_setup() { return 0; }
+  q_confirm() { :; }
+  q_teardown() { :; }
+  q_wait_for() { return 0; }
+  q_sample() { echo "hid_idle_s=9999 locked=no lid=open thermal=nominal lowpower=$DRY_LPM"; }
+  q_sudo_ok() { return 0; }
+  q_set_lpm() { DRY_LPM="$1"; }
+  lowpowermode_of() { echo "$DRY_LPM"; }
+  q_perf_start() { :; }
+  q_perf_stop() { :; }
+  q_reads() { echo 24; }
+  q_assertions() { echo 0; }
+  q_display_sleep() { :; }
+  let_display_sleep() { :; }
+  q_history_kb() { echo 100; }
+  q_screensaver() { echo no; }
+  q_accessories() { echo 0; }
+  q_universal_access() { echo "reduceTransparency=0 increaseContrast=0"; }
+  q_alert() { :; }
+  q_pack_temp() { echo 3000; }
+  q_claude() { if [ "$DRY_CLAUDE_RUN" = "$Q_INDEX" ]; then echo "1,2,3 10.00"; else echo "1,2 10.00"; fi; }
+  s7_launches() { out "- S7 $1: dry run"; }
+  q_pmset_log() {
+    # S6's display check reads 4 hours back: the display turned off just before the run.
+    if [ $(($2 - $1)) -gt 14000 ]; then printf '%s +0000 Notification        \tDisplay is turned off\n' "$(epoch_stamp $(($1 + 14400 - 5)))"; fi
+  }
+  # In the background, as rusage is: the figures, and the sampler's rows of the window.
+  q_rusage() {
+    local awake="$2" t external locked idle
+    if dry_event slept; then awake=$(($2 - 30)); fi
+    printf 'seconds=%s\nawake_seconds=%s\nenergy_mj_per_h=%s\nidle_wakeups_per_h=1000\ninterrupt_wakeups_per_h=2000\ncpu_s_per_h=%s\nphys_footprint_bytes=21000000\n' \
+      "$2" "$awake" "$(if [ "$Q_BUILD" = B ]; then echo 450.0; else echo 300.0; fi)" "$(if [ "$Q_BUILD" = B ]; then echo 4.500; else echo 3.000; fi)" >"$3"
+    t=$((DRY_CLOCK + 10))
+    while [ "$t" -lt $((DRY_CLOCK + $2)) ]; do
+      external=No locked=no idle=$((t - DRY_CLOCK + 400))
+      if dry_event adapter && [ $((t - DRY_CLOCK)) -gt 100 ]; then external=Yes; fi
+      if dry_event locked && [ $((t - DRY_CLOCK)) -gt 100 ]; then locked=yes; fi
+      if dry_event touched && [ $((t - DRY_CLOCK)) -gt 100 ]; then idle=5; fi
+      printf '%s\t1\t3000\t5000\t%s\t3000\t%s\t%s\topen\tno\t2\t10.00\n' "$t" "$external" "$idle" "$locked" >>"$LOGS/sampler.tsv"
+      t=$((t + 10))
+    done
+  }
+  q_after_measure() {
+    DRY_CLOCK=$((DRY_CLOCK + $1 - 5))
+    if dry_event lpm; then DRY_LPM=1; fi
+    if dry_event claude; then DRY_CLAUDE_RUN="$Q_INDEX"; fi
+  }
+}
+
+# dry_checks <scenario> <late epoch>: the queue's rules, one line per break.
+dry_checks() {
+  awk -F '\t' -v scenario="$1" -v late="$2" '
+    NR == 1 { next }
+    { n++; kind[n] = $2; s[n] = $3; b[n] = $4; pair[n] = $5; start[n] = $6 + 0; charge[n] = $8 + 0; status[n] = $NF }
+    END {
+      if (kind[1] != "warmup" || s[1] != "S2" || b[1] != "C") print "the first run isn t the S2 C warm-up"
+      if (status[1] !~ /^(warm-up|not run)/) print "the warm-up isn t discarded"
+      for (i = 1; i <= n; i++) {
+        if (kind[i] == "run" && s[i] == "S2") lastS2 = i
+        if (kind[i] == "run" && s[i] == "S1" && firstS1 == "") firstS1 = i
+        started = (status[i] !~ /^not run/)
+        if (started && charge[i] < 50) print "run " i " started below 50 %"
+        optional = (s[i] ~ /^(S4w-frosted|S5|S10|S3|MIN)$/ || kind[i] == "retry")
+        if (started && optional && charge[i] < 56) print "run " i " (optional or a retry) started below 56 %"
+        if (kind[i] == "retry") {
+          retried[s[i] " " pair[i] " " b[i]]++
+          if (s[i] == "S6" || s[i] == "S7") print "S6 or S7 was retried"
+          if (lastS6 != "") print "a retry came after S6"
+        }
+        if (s[i] == "S6" && lastS6 == "") lastS6 = i
+        if (scenario == "late" && start[i] >= late && status[i] !~ /late/) print "run " i " started after the deadline"
+        if (status[i] ~ /late/ && start[i] < late) print "run " i " was late too early"
+      }
+      if (s[n - 1] != "S6" || b[n - 1] != "B" || s[n] != "S6" || b[n] != "C") print "S6 B C isn t last"
+      if (firstS1 == "" || lastS2 >= firstS1) print "an S2 run comes after S1 began"
+      for (i = 1; i <= n; i++) {
+        if (kind[i] != "run" || status[i] !~ /^not valid/) continue
+        key = s[i] " " pair[i] " " b[i]
+        if (status[i] ~ /LPM/) { if (key in retried) print "the LPM-invalid run " i " was retried"; continue }
+        if (s[i] == "S6") continue
+        if (s[i] ~ /^(S1|S2|S2-LPM)$/) {
+          if (!((s[i] " " pair[i] " B") in retried) || !((s[i] " " pair[i] " C") in retried)) print "run " i " (" s[i] ") wasn t retried as its B and C pair"
+        } else if (!(key in retried)) print "run " i " (" s[i] ") wasn t retried"
+        if ((key in retried) && retried[key] > 1) print "run " i " was retried twice"
+      }
+      if (scenario == "default") {
+        for (i = 1; i <= n; i++) if (kind[i] == "run" && status[i] ~ /^not valid/) invalid++
+        if (invalid < 5) print "the scripted detector events didn t all mark their runs (" invalid " not valid)"
+      }
+    }' "$LOGS/queue-runs.tsv"
+}
+
 # MARK: - help
 
 step_help() {
+  if [ "$SESSION" = B ]; then
+    step_help_b
+    return 0
+  fi
   cat <<EOF
 usage: $SCRIPT <command> [arguments]
 
@@ -2384,11 +3712,78 @@ Any time:
   status                     answers so far, the installed build, the battery
   restore                    your app, settings, data and system settings back, then what to do by hand
   send [--dry-run]           A.md to docs/plans/0.6.2/sessions/ on $RESULTS_BRANCH
+
+Session B runs from ~/bp-062/B/run (see help there); queue --dry-run checks its queue anywhere.
 EOF
+}
+
+step_help_b() {
+  cat <<EOF
+usage: $SCRIPT <command> [arguments]          (Session B, hands-free; SESSION-B.md is the runbook)
+
+B0a and B0b (on the adapter, he is there):
+  answer --by person B-yes y (and B-bedtime, B-charge-capture, B-keep-widgets, B-keep-ax, B-slider-auth, B-usage)
+  prepare [--fresh-backup]   the backup into ~/bp-062/B, the builds (B, C = the RC, CP), the tools, the RC; a beep
+  prepare reads              the Charge Limit, the style keys, Open at login, the hot corners, the screen saver,
+                             the wallpaper, the generated wallpapers, the shots Claude reads
+  proof P1 --image <png> <x> <y> | P2 | P3 [1|2] | P4 | P6 | P7 | P8 | P9 | P11 | <P#> pass|fail <note>
+  preflight                  the checks, P2 P6 P7 P8 P9 P11, and every command family once
+  widget <family> <x> <y> <w> <h>; desktop-spot <x> <y> | --image <png> <x> <y>
+  v01 notify [front]; f11 alert   the banners, before the Focus
+  arm open                   the arm window (Terminal); it holds the display awake and waits
+B1:
+  burst                      3 unplug and plug cycles at cues, P12 at the first unplug (S8); then the Focus on,
+                             then: mark away (no sound from here until his continue)
+B2 (the GUI phase; heartbeat <step and expected ready time> after each step):
+  memory [<24-hour label> <7-day label>]; v01 menubar | check; f6 <page>; f8 [ru on|ru|ru off];
+  f9; relaunch; f11 login | listed; f12 rate | before | after; install C
+  case <style>-<light|dark>-<main|compact> (and standard-light-main, frosted-light-main)
+  styleshot <translucent|clear> <bright|busy> <light|dark> <overview|history|settings>
+  gradshot <style> <light|dark> <raw|demo|history|fullscreen|settings|gallery> [--ready]
+  audit estimate <style> <light|dark> <page>; v1b <x> <y> <w> <h>; pages [profiling]
+  pane <$(echo "$PANES" | tr ' ' '|')>
+  measure <id> black|blank|same|differs <arguments>; judge <id> <answer> [--unsure] [note]
+  change <setting> <original> <new> (before any change by computer use); restored <setting> <how>
+  ui <command...>            the hands (ui.swift's usage), through the script only
+B3:
+  restore gui                then the energy setup, answer --by claude energy-setup <1|2>, and last: ready
+B4-B5 (the arm window, no session): his Return, password and unplug; the queue; restore night
+B7 (on his continue):
+  continue; v01 morning; morning; restore morning; batch; send [--dry-run] (after answer --by person B-send y)
+The morning-away block and the extras: charge-limit check | record start | record stop; menu-bar-shots <tag> [...];
+  wp18 previews | timing | icon <source.icon>
+Any time: status, note, shot, crop, attach, unattach, help; queue --dry-run [default|low|late] anywhere.
+EOF
+}
+
+# b_run <step> [arguments]: a Session B step with set -e's exit off inside it, so a failed read or a
+# refused ui call is that item's "not checked" and the step goes on; fail still stops it.
+b_run() {
+  local status=0
+  "$@" || status=$?
+  if [ "$status" != 0 ]; then
+    warn "the step ended with status $status"
+    exit "$status"
+  fi
 }
 
 COMMAND="${1:-}"
 if [ $# -gt 0 ]; then shift; fi
+if [ "$SESSION" = B ]; then
+  # Once ready is up, or while the queue runs, nothing acts until his morning continue; every call
+  # but these reads is the session's heartbeat.
+  case "$COMMAND:${1:-}" in
+    help:* | -h:* | --help:* | status:* | continue:* | queue:* | arm: | :) ;;
+    *)
+      b_fence
+      mkdir -p "$WORK"
+      touch "$HEARTBEAT"
+      ;;
+  esac
+  case "$COMMAND" in
+    widgets-ref | f5 | spike | voiceover | fill | attach-timing | window) fail "$COMMAND is a Session A command" ;;
+  esac
+fi
 case "$COMMAND" in
   prepare) step_prepare "$@" ;;
   widgets-ref) step_widgets_ref ;;
@@ -2412,7 +3807,20 @@ case "$COMMAND" in
   status) step_status ;;
   restore) step_restore ;;
   send) step_send "$@" ;;
-  help | -h | --help) step_help ;;
+  heartbeat) b_run step_heartbeat "$@" ;;
+  change) b_run step_change "$@" ;;
+  restored) b_run step_restored "$@" ;;
+  ui) b_run step_ui "$@" ;;
+  pane) b_run step_pane "$@" ;;
+  widget) b_run step_widget "$@" ;;
+  desktop-spot) b_run step_desktop_spot "$@" ;;
+  queue)
+    if [ "${1:-}" = --dry-run ]; then
+      queue_dry_run "${2:-default}"
+    else
+      fail "the queue runs in the arm window ($SCRIPT arm open); queue --dry-run [default|low|late] checks its order anywhere"
+    fi
+    ;;
   *)
     step_help >&2
     exit 1
