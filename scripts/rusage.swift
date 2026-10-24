@@ -14,6 +14,8 @@
 //   instructions_per_h         ri_instructions
 //   disk_bytes_written_per_h   ri_diskio_byteswritten
 //   phys_footprint_bytes       ri_phys_footprint at the end (not scaled)
+// and `seconds` (the window by ContinuousClock, which counts sleep) beside `awake_seconds` (by
+// SuspendingClock, which doesn't): more than a second apart means the Mac slept during the window.
 // An energy figure of 0 usually means the kernel doesn't count it: check
 // `sysctl kern.pervasive_energy`.
 import Darwin
@@ -58,14 +60,19 @@ guard mach_timebase_info(&timebase) == KERN_SUCCESS, timebase.denom != 0 else {
 }
 let nanosecondsPerTick = Double(timebase.numer) / Double(timebase.denom)
 
+func inSeconds(_ duration: Duration) -> Double {
+    Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+}
+
 let clock = ContinuousClock()
+let awakeClock = SuspendingClock()
 let first = sample(pid)
 let startedAt = clock.now
+let awakeStartedAt = awakeClock.now
 Thread.sleep(forTimeInterval: seconds)
 let last = sample(pid)
-let elapsed = startedAt.duration(to: clock.now)
-let elapsedSeconds =
-    Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+let elapsedSeconds = inSeconds(startedAt.duration(to: clock.now))
+let awakeSeconds = inSeconds(awakeStartedAt.duration(to: awakeClock.now))
 let hours = elapsedSeconds / 3600
 
 func perHour(_ value: Double) -> Double { value / hours }
@@ -82,6 +89,7 @@ let cpuTicks = delta(first.ri_user_time, last.ri_user_time) + delta(first.ri_sys
 let lines: [(String, String)] = [
     ("pid", "\(pid)"),
     ("seconds", String(format: "%.1f", elapsedSeconds)),
+    ("awake_seconds", String(format: "%.1f", awakeSeconds)),
     ("energy_mj_per_h", String(format: "%.1f", perHour(Double(energy) / 1e6))),
     ("pcore_energy_pct", energy > 0 ? String(format: "%.1f", Double(pCoreEnergy) * 100 / Double(energy)) : "-"),
     ("idle_wakeups_per_h", counterPerHour(\.ri_pkg_idle_wkups)),
