@@ -2,7 +2,7 @@ import BatteryCore
 import Foundation
 import Testing
 
-/// Micro-benchmarks B1–B6 (playbook §2.5): reported, never asserted, and off unless `BP_BENCH=1`:
+/// Micro-benchmarks B1–B7 (playbook §2.5; B7 since WP-17): reported, never asserted, and off unless `BP_BENCH=1`:
 ///
 ///     BP_BENCH=1 swift test -c release --filter Benchmarks
 ///
@@ -15,6 +15,8 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["BP_BENCH"] == "1"))
 struct Benchmarks {
     static let runs = 15
+    /// How often B3 and B7 alternate their two periods.
+    static let rounds = 3
 
     // MARK: B1–B6
 
@@ -83,7 +85,9 @@ struct Benchmarks {
 
     /// B3: what the History page computes from the samples, ``HistoryChartData/make(samples:period:end:includesStatistics:)``
     /// for a day of minute samples and a week in ten-minute buckets. Until WP-3b the workload was
-    /// the chart points, spans and statistics alone, which `make` still builds.
+    /// the chart points, spans and statistics alone, which `make` still builds. Since WP-17 the two
+    /// alternate three times, one line each per round, so a machine whose speed drifts under load
+    /// shows as rounds that disagree.
     @Test func b3HistoryChartData() throws {
         let week = Self.week()
         let end = try #require(week.last).time
@@ -91,12 +95,14 @@ struct Benchmarks {
             ("24h", Array(week.suffix(24 * 60)), .day),
             ("7d", week, .week),
         ]
-        for period in periods {
-            let timing = Self.time {
-                HistoryChartData.make(
-                    samples: period.samples, period: period.period, end: end, includesStatistics: true)
+        for _ in 1...Self.rounds {
+            for period in periods {
+                let timing = Self.time {
+                    HistoryChartData.make(
+                        samples: period.samples, period: period.period, end: end, includesStatistics: true)
+                }
+                Self.report("B3", "history.chart.\(period.name)", timing.median)
             }
-            Self.report("B3", "history.chart.\(period.name)", timing.median)
         }
     }
 
@@ -162,6 +168,81 @@ struct Benchmarks {
         #expect(old.last == new.last)
         Self.report("B5", "raw.filter.fiveWay", old.median)
         Self.report("B5", "raw.filter.joined", new.median)
+    }
+
+    /// B7 (WP-17): the History page's load for this Mac, stage by stage, as the app's
+    /// `HistoryLoad.read` runs it (the app only builds on macOS): the period's samples from a fresh
+    /// store, which decodes their day files (`samples.cold`), and from the same store again
+    /// (`samples.warm`); the daily summaries (`days`); the chart data with its figures (`make`);
+    /// the summaries' points (`points`); then the whole load on a fresh store and again on it
+    /// (`total.cold`, `total.warm`). A week of minute samples and a year of daily summaries; the
+    /// two periods alternate three times.
+    @Test func b7HistoryLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let samples = Self.week()
+        try Self.writeSamples(samples, to: directory)
+        let end = try #require(samples.last).time
+        try Self.writeDays(count: 365, endingAt: end, to: directory)
+        let clock = ContinuousClock()
+        let stages = ["samples.cold", "samples.warm", "days", "make", "points", "total.cold", "total.warm"]
+        for _ in 1...Self.rounds {
+            for (name, period) in [("24h", HistoryPeriod.day), ("7d", HistoryPeriod.week)] {
+                let start = end.addingTimeInterval(-period.length)
+                var times: [String: [Duration]] = [:]
+                var results: [(HistoryChartData, [HistoryDayPoint])] = []
+                // Run 0 warms up.
+                for run in 0...Self.runs {
+                    var lap = clock.now
+                    var stage: [Duration] = []
+                    func measure() {
+                        let now = clock.now
+                        stage.append(now - lap)
+                        lap = now
+                    }
+                    let store = HistoryStore(directory: directory, now: { end })
+                    let cold = try await store.samples(from: start)
+                    measure()
+                    let warm = try await store.samples(from: start)
+                    measure()
+                    let days = try await store.dailySummaries()
+                    measure()
+                    let chart = HistoryChartData.make(samples: warm, period: period, end: end, includesStatistics: true)
+                    measure()
+                    let points = HistoryDayPoint.points(from: days)
+                    measure()
+                    let fresh = HistoryStore(directory: directory, now: { end })
+                    lap = clock.now
+                    let loadedCold = try await Self.load(fresh, from: start, period: period, end: end)
+                    measure()
+                    let loadedWarm = try await Self.load(fresh, from: start, period: period, end: end)
+                    measure()
+                    #expect(cold == warm && days.count == 365 && points.count == 365)
+                    #expect(loadedCold.0 == chart && loadedWarm.0 == chart && loadedWarm.1 == points)
+                    results.append(loadedWarm)
+                    guard run > 0 else { continue }
+                    for (index, name) in stages.enumerated() { times[name, default: []].append(stage[index]) }
+                }
+                withExtendedLifetime(results) {
+                    for stage in stages {
+                        Self.report("B7", "history.load.\(name).\(stage)", Self.median(of: times[stage] ?? []))
+                    }
+                }
+            }
+        }
+    }
+
+    /// What `HistoryLoad.read` does for this Mac: the period's samples and the daily summaries
+    /// from `store`, the chart data with its figures, and the summaries' points.
+    static func load(
+        _ store: HistoryStore, from start: Date, period: HistoryPeriod, end: Date
+    ) async throws -> (HistoryChartData, [HistoryDayPoint]) {
+        let samples = try await store.samples(from: start)
+        let days = try await store.dailySummaries()
+        return (
+            HistoryChartData.make(samples: samples, period: period, end: end, includesStatistics: true),
+            HistoryDayPoint.points(from: days)
+        )
     }
 
     /// B6: `bpulse`'s text and JSON output per fixture.
@@ -238,6 +319,27 @@ struct Benchmarks {
                 systemLoadWatts: isCharging ? 8.75 : 7.5, temperatureCelsius: isCharging ? 33.4 : 29.8,
                 remainingMAh: Int(percent * 45), fullChargeMAh: 4_500)
         }
+    }
+
+    /// Writes `count` daily summaries ending on `end`'s day to `days.jsonl`, the way
+    /// ``HistoryStore`` keeps them: one JSON line per day with sorted keys, capacity fading slowly.
+    static func writeDays(count: Int, endingAt end: Date, to directory: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
+        var data = Data()
+        for offset in (0..<count).reversed() {
+            let date = end.addingTimeInterval(-Double(offset) * 24 * 60 * 60)
+            let fade = Double(count - offset) * 0.02
+            let day = HistoryDay(
+                day: HistoryDay.key(for: date, calendar: calendar), healthPercent: 100 - fade,
+                capacityToDesignPercent: 104 - fade, nominalChargeCapacityMAh: 4_700 - (count - offset),
+                fullChargeCapacityMAh: 4_650 - (count - offset), cycleCount: (count - offset) / 2)
+            data.append(try encoder.encode(day))
+            data.append(0x0A)
+        }
+        try data.write(to: directory.appendingPathComponent("days.jsonl"))
     }
 
     /// Writes `samples` the way ``HistoryStore`` files them: JSON Lines with sorted keys, one file
