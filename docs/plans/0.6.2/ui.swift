@@ -1162,10 +1162,20 @@ enum Safety {
         }
     }
 
-    /// No window server window above level 0 (the menu bar) at the point: the topmost-window rule
-    /// passes over them, so Finder's desktop window counts as topmost under the whole menu bar.
+    /// The menu bar isn't at the point: the topmost-window rule passes over the window server's
+    /// windows, so Finder's desktop window counts as topmost under the whole menu bar. Its strip is
+    /// the top 44 points of a display (the M5's menu bar is the notch's height, about 37), or a
+    /// window server window above level 0 along a display's top edge, at most 60 points high (the
+    /// menu bar's backdrop). Not any window server window: the cursor's own contains the pointer
+    /// wherever it rests, so a second click on the same desktop spot would always be refused.
     static func checkNoMenuBar(_ point: CGPoint, _ list: [Window]) throws {
-        if list.contains(where: { Rules.windowServer.contains($0.owner) && $0.layer > 0 && $0.bounds.contains(point) }) {
+        let displays = Screen.displays()
+        let inStrip = displays.contains { $0.contains(point) && point.y < $0.minY + 44 }
+        let underBar = list.contains { window in
+            Rules.windowServer.contains(window.owner) && window.layer > 0 && window.bounds.contains(point)
+                && window.bounds.height <= 60 && displays.contains { abs($0.minY - window.bounds.minY) < 1 }
+        }
+        if inStrip || underBar {
             throw Refusal(description: "the menu bar is at that point, not the desktop")
         }
     }

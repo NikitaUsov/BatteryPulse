@@ -376,7 +376,12 @@ step_mark() {
   mkdir -p "$WORK"
   printf '%s\t%s\t%s\n' "$(now_ms)" "$(clock)" "$1" >>"$MARKS"
   # Session B's away: no sound or speech from here until his morning continue (WP-21).
-  if [ "$SESSION" = B ] && [ "$1" = away ]; then clock >"$WORK/away"; fi
+  if [ "$SESSION" = B ] && [ "$1" = away ]; then
+    clock >"$WORK/away"
+    if [ "$(cut -f3 <<<"$(shot_state)")" != none ]; then
+      warn "BatteryPulse remembers an iPhone or iPad by name (WP-23's check): $SCRIPT devices forget, or no picture taken from now on is attached"
+    fi
+  fi
   echo "marked $1 at $(clock)"
 }
 
@@ -906,6 +911,8 @@ shot() {
   case "$name" in *[!A-Za-z0-9._-]*) fail "a shot's name is letters, digits, dots, dashes and underscores" ;; esac
   mkdir -p "$SHOTS"
   screencapture -x "$SHOTS/$name.png" || fail "screencapture failed: allow Screen Recording for this app in System Settings → Privacy & Security"
+  # Never attached itself, but a crop of it shows what it showed then.
+  if [ "$SESSION" = B ]; then log_shot_state "$SHOTS/$name.png" "$(shot_state)"; fi
   sips -Z 1600 -s format jpeg -s formatOptions 70 "$SHOTS/$name.png" --out "$SHOTS/$name-view.jpg" >/dev/null
   echo "SHOT $SHOTS/$name-view.jpg (full size: $SHOTS/$name.png)"
 }
@@ -955,7 +962,7 @@ step_crop() {
   case "$6" in *[!A-Za-z0-9._-]*) fail "a crop's name is letters, digits, dots, dashes and underscores" ;; esac
   mkdir -p "$SHOTS"
   "$BIN/frames" crop "$1" "$2" "$3" "$4" "$5" "$SHOTS/$6.png"
-  if [ "$SESSION" = B ]; then register_shot "$SHOTS/$6.png"; fi
+  if [ "$SESSION" = B ]; then register_shot "$SHOTS/$6.png" "$1"; fi
 }
 
 # MARK: - prepare (step 1)
@@ -2621,8 +2628,12 @@ READY_FILE="$WORK/ready"
 HEARTBEAT="$WORK/heartbeat"
 MORNING="$WORK/morning-items.txt"
 # The crops the script made (window_shot, rect_shot, crop, a clip's darkest frames), each with the
-# window style and the wallpaper it was taken on: the only pictures attach publishes in Session B.
+# window style, the wallpaper and the remembered devices it was taken with: the only pictures
+# attach publishes in Session B.
 PRODUCED="$WORK/produced.tsv"
+# The state each of the script's pictures was taken in (shot's full shots and the crops; fields 2-4
+# of produced.tsv), the latest line per path: a crop takes its source's, not the state at the crop.
+SHOT_STATES="$WORK/shot-states.tsv"
 # S5's cover and the minimized TextEdit beside Standard and Frosted: an empty file (no save prompt
 # ever comes) whose name no document of his has, so ui aims at its window by title.
 COVER="$WORK/bp-062-cover.txt"
@@ -2798,12 +2809,53 @@ stop_leftovers() {
   done
 }
 
-# register_shot <file>: one of the script's crops, with the style and the wallpaper it shows.
+# abs_path <file>: the file's absolute path, as produced.tsv and shot-states.tsv record it.
+abs_path() { printf '%s/%s\n' "$(cd "$(dirname "$1")" && pwd)" "$(basename "$1")"; }
+
+# shot_state: what a picture taken now shows, as produced.tsv's fields 2-4: the window style, the
+# wallpaper, and "named" while BatteryPulse remembers an iPhone or iPad by name (outside Demo Mode
+# the sidebar's Devices section lists it), else "none".
+shot_state() {
+  printf '%s\t%s\t%s\n' "$(defaults read "$BUNDLE_ID" windowLook 2>/dev/null || echo standard)" \
+    "$(cat "$WORK/wallpaper-now" 2>/dev/null || echo his)" \
+    "$(if grep -q '"name"' "$SUPPORT/Devices/devices.json" 2>/dev/null; then echo named; else echo none; fi)"
+}
+
+# log_shot_state <file> <state>: the state a picture was taken in, for a later crop of it.
+log_shot_state() {
+  mkdir -p "$WORK"
+  printf '%s\t%s\n' "$(abs_path "$1")" "$2" >>"$SHOT_STATES"
+}
+
+# source_state <image>: what a crop of that image shows: the state logged when the script took it
+# (a full shot, a crop), else the state now, "named" when the image is older than the last
+# `devices forget` (a device may have been remembered when it was taken).
+source_state() {
+  local path state forgot
+  path="$(abs_path "$1")"
+  state="$(awk -F '\t' -v p="$path" '$1 == p { l = $2 "\t" $3 "\t" $4 } END { print l }' "$SHOT_STATES" 2>/dev/null || true)"
+  if [ -n "$state" ]; then
+    printf '%s\n' "$state"
+    return 0
+  fi
+  state="$(shot_state)"
+  forgot="$(cat "$WORK/devices-forgot" 2>/dev/null || true)"
+  if [ -n "$forgot" ] && [ "$(mtime_of "$1")" -le "$forgot" ]; then
+    printf '%s\tnamed\n' "$(cut -f1-2 <<<"$state")"
+  else
+    printf '%s\n' "$state"
+  fi
+}
+
+# register_shot <file> [<source image>]: one of the script's crops, with the style, the wallpaper
+# and the remembered devices it shows: those of the moment it was taken, or of its source's.
 register_shot() {
   [ "$SESSION" = B ] && [ -s "$1" ] || return 0
+  local state
+  if [ -n "${2:-}" ]; then state="$(source_state "$2")"; else state="$(shot_state)"; fi
   mkdir -p "$WORK"
-  printf '%s\t%s\t%s\n' "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")" \
-    "$(defaults read "$BUNDLE_ID" windowLook 2>/dev/null || echo standard)" "$(cat "$WORK/wallpaper-now" 2>/dev/null || echo his)" >>"$PRODUCED"
+  printf '%s\t%s\n' "$(abs_path "$1")" "$state" >>"$PRODUCED"
+  log_shot_state "$1" "$state"
 }
 
 # attach_allowed <image>: Session B publishes only the script's own crops (under shots/ or
@@ -2812,17 +2864,17 @@ register_shot() {
 # on the generated bright or busy wallpaper, since glass shows what lies behind it.
 attach_allowed() {
   local path line style paper size screen
-  # A remembered device shows by name in the sidebar (prepare removes them for the session).
-  if grep -q '"name"' "$SUPPORT/Devices/devices.json" 2>/dev/null; then
-    fail "BatteryPulse remembers a device by name ($SUPPORT/Devices/devices.json), which the sidebar shows: nothing is attached while it does"
-  fi
-  path="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+  path="$(abs_path "$1")"
   case "$path" in
     "$SHOTS"/* | "$REC"/*) ;;
     *) fail "only the script's own crops under shots/ or recordings/ are attached, not $1" ;;
   esac
   line="$(awk -F '\t' -v p="$path" '$1 == p { l = $0 } END { print l }' "$PRODUCED" 2>/dev/null || true)"
   [ -n "$line" ] || fail "$(basename "$1") isn't a crop the script made (a window or rectangle shot, crop, a clip's darkest frame): a full shot never leaves the Mac; crop it first ($SCRIPT crop ...)"
+  # A remembered device shows by name in the sidebar: judged by the state the picture was taken in,
+  # so the morning's restore (his own devices back) refuses only what is taken after it.
+  [ "$(cut -f4 <<<"$line")" = none ] ||
+    fail "$(basename "$1") was taken while BatteryPulse remembered an iPhone or iPad by name, which the sidebar shows: it is never attached; after WP-23's device check, $SCRIPT devices forget, then take it again (after restore morning his own devices are back: take it before)"
   style="$(cut -f2 <<<"$line")"
   paper="$(cut -f3 <<<"$line")"
   case "$style:$paper" in
@@ -2924,11 +2976,13 @@ arm_of() { awk 'NR == 1 { print $1, $2 }' "$1" 2>/dev/null || true; }
 # arm_runs <pid> <start>: that process runs, and started then.
 arm_runs() { [ -n "$1" ] && [ -n "$2" ] && [ "$(proc_start "$1")" = "$2" ]; }
 
-# arm_is_ancestor <file>: the arm window that file records is this call's ancestor.
+# arm_is_ancestor <file>: the arm window that file records is this call's ancestor. The list is
+# read whole first: piped into grep -q under pipefail, ancestor_pids's next echo after a match gets
+# SIGPIPE (status 141), so the arm would be found only as the chain's last pid.
 arm_is_ancestor() {
   local pid="" start=""
   read -r pid start <<<"$(arm_of "$1")" || true
-  [ -n "$pid" ] && ancestor_pids | grep -qx "$pid" && arm_runs "$pid" "$start"
+  [ -n "$pid" ] && grep -qx -- "$pid" <<<"$(ancestor_pids)" && arm_runs "$pid" "$start"
 }
 
 # caller_is_arm: the arm window's process (arm.pid) is this call's ancestor.
@@ -3554,6 +3608,36 @@ step_prepare_b() {
   relaunch_b
   sound Glass
   echo "BEEP (B0a is done): when he is back and has quit his own apps: $SCRIPT prepare reads"
+}
+
+# devices forget: right after WP-23's optional device check, before `mark away`. The iPhone or iPad
+# it plugged in is now remembered by name, which the sidebar shows, so no picture taken from then
+# on is attached. Only the session's own device store goes: his remembered devices stay in the
+# backup, which restore_all puts back, so once restore morning has begun nothing is removed.
+step_devices() {
+  b_only devices
+  [ $# -eq 1 ] && [ "$1" = forget ] || fail "usage: $SCRIPT devices forget"
+  [ -f "$BACKUP/done" ] || fail "no backup in $BACKUP: nothing was removed"
+  [ -n "$(original_of bp-support)" ] || fail "prepare hasn't put the session's data in place: nothing was removed"
+  if is_restored bp-support || [ -f "$SECTIONS/95-restore.md" ]; then
+    fail "restore morning has begun (his data goes back): his remembered devices stay; nothing was removed"
+  fi
+  if [ ! -d "$SUPPORT/Devices" ]; then
+    echo "BatteryPulse remembers no device"
+    return 0
+  fi
+  if [ -d "$BACKUP/support/Devices" ] && diff -rq "$BACKUP/support/Devices" "$SUPPORT/Devices" >/dev/null 2>&1; then
+    fail "$SUPPORT/Devices is the backup's (his remembered devices): nothing was removed"
+  fi
+  quit_app
+  # Its name stays a privacy term for B.md (privacy_terms), in a file that never leaves the Mac.
+  cat "$SUPPORT/Devices/devices.json" >>"$WORK/devices-forgotten.json" 2>/dev/null || true
+  rm -rf "$SUPPORT/Devices"
+  date +%s >"$WORK/devices-forgot"
+  # relaunch_b turns readDevices off again (session_settings), so nothing reads the device anew.
+  relaunch_b
+  [ "$(cut -f3 <<<"$(shot_state)")" = none ] || fail "BatteryPulse remembers a device by name again ($SUPPORT/Devices/devices.json)"
+  echo "forgot the session's remembered devices at $(clock): a picture taken from now on may be attached"
 }
 
 # prepare reads (B0b): what Session A asked, read instead (WP-21): the Charge Limit, the style keys,
@@ -6069,10 +6153,12 @@ step_ready() {
 # back_since <epoch>: pmset -g log shows the lid after that time: a wake because it opened, or a
 # sleep because it closed (the morning's lid close, V-01's lid step). Software can't move the lid,
 # but it can turn the display on and make user activity (a posted move, caffeinate -u: proof P6),
-# so neither "Display is turned on" nor a UserActivity wake counts.
+# so neither "Display is turned on" nor a UserActivity wake counts. Apple Silicon logs the lid's
+# wake as "due to smc.70070000 lid ..." (lowercase), and a lid closed on a Mac already asleep logs
+# no Clamshell Sleep, so the open alone must count; a "Wake Requests" line (scheduled wakes) never.
 back_since() {
   pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" '
-    substr($0, 1, 19) > from && (($4 == "Wake" && /LidOpen|Lid Open/) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
+    substr($0, 1, 19) > from && (($4 == "Wake" && $5 != "Requests" && (/LidOpen|Lid Open/ || / lid([ \/]|$)/)) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
     END { exit !found }'
 }
 
@@ -6512,8 +6598,8 @@ bluetooth_names() {
 
 # privacy_terms: what B.md must not name (WP-21): the ComputerName and LocalHostName, his full
 # name, an accessory's name (pmset -g accps, system_profiler's Bluetooth list), an iPhone's or
-# iPad's name from BatteryPulse's device store (now and in the backup), a VPN's name and the
-# network's name.
+# iPad's name from BatteryPulse's device store (now, in the backup, and what `devices forget`
+# removed), a VPN's name and the network's name.
 privacy_terms() {
   {
     scutil --get ComputerName 2>/dev/null || true
@@ -6521,7 +6607,7 @@ privacy_terms() {
     id -F 2>/dev/null || true
     pmset -g accps 2>/dev/null | sed -n 's/^ *-\(.*\) (id=.*/\1/p' | grep -v -i InternalBattery || true
     bluetooth_names
-    cat "$SUPPORT/Devices/devices.json" "$BACKUP/support/Devices/devices.json" 2>/dev/null |
+    cat "$SUPPORT/Devices/devices.json" "$BACKUP/support/Devices/devices.json" "$WORK/devices-forgotten.json" 2>/dev/null |
       grep -o '"name" *: *"[^"]*"' | sed 's/^"name" *: *"//; s/"$//' || true
     scutil --nc list 2>/dev/null | sed -n 's/.*"\([^"]*\)".*/\1/p' || true
     network_name
@@ -6895,6 +6981,7 @@ B0a and B0b (on the adapter, he is there):
   preflight                  the checks, P2 P6 P7 P8 P9 P11, and every command family once
   widget <family> <x> <y> <w> <h>; desktop-spot <x> <y> | --image <png> <x> <y>
   v01 notify [front]; f11 alert   the banners, before the Focus
+  devices forget             after WP-23's optional device check: the iPhone or iPad it remembered gone
   arm open                   the arm window (Terminal); it holds the display awake and waits
 B1:
   burst                      3 unplug and plug cycles at cues, P12 at the first unplug (S8); then the Focus on,
@@ -7002,6 +7089,7 @@ case "$COMMAND" in
   open-app) b_run step_open_app "$@" ;;
   widget) b_run step_widget "$@" ;;
   desktop-spot) b_run step_desktop_spot "$@" ;;
+  devices) b_run step_devices "$@" ;;
   proof) b_run step_proof "$@" ;;
   preflight) b_run step_preflight ;;
   case) b_run step_case "$@" ;;
