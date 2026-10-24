@@ -4992,7 +4992,7 @@ queue_report() {
         $1, $2, $3, $4, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, lpmok, $28, $29 }' \
     "$QUEUE_RUNS" | tee -a "$SECTION"
   out ""
-  out "Medians of the valid runs per scenario and build (the spread is the lowest and highest run):"
+  out "Medians of the valid runs per scenario and build, a valid run whose thermal state wasn't nominal among them (its row says so; the spread is the lowest and highest run):"
   out ""
   queue_medians | tee -a "$SECTION"
   queue_g14b
@@ -5036,7 +5036,7 @@ queue_medians() {
       for (i = 2; i <= n; i++) { if (v[i] + 0 < lo) lo = v[i] + 0; if (v[i] + 0 > hi) hi = v[i] + 0 }
       return lo "-" hi
     }
-    NR > 1 && $NF == "valid" && $2 != "warmup" {
+    NR > 1 && $NF ~ /^valid/ && $2 != "warmup" {
       key = $3 " " $4; if (!(key in keys)) order[++keyCount] = key; keys[key] = 1; count[key]++
       energy[key] = energy[key] " " $10; idle[key] = idle[key] " " $11; irq[key] = irq[key] " " $12
       cpu[key] = cpu[key] " " $13; reads[key] = reads[key] " " $15
