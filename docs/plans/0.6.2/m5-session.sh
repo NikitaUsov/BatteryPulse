@@ -478,9 +478,10 @@ wallpapers() {
   end tell' 2>/dev/null || true
 }
 
-# The widget extension's processes, by their executable's path: pgrep -x and pkill -x match macOS's
-# p_comm, cut to 16 characters, which "BatteryPulseWidget" (18) never equals.
-WIDGET_EXEC='BatteryPulseWidget\.appex/Contents/MacOS/BatteryPulseWidget'
+# The widget extension's processes, by their executable's path at the start of the argument list
+# (so no shell whose command line names it): pgrep -x and pkill -x match macOS's p_comm, cut to 16
+# characters, which "BatteryPulseWidget" (18) never equals.
+WIDGET_EXEC='^/[^ ]*/BatteryPulseWidget\.appex/Contents/MacOS/BatteryPulseWidget( |$)'
 widget_pids() { pgrep -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
 end_widget_extension() { pkill -TERM -f "$WIDGET_EXEC" 2>/dev/null || true; }
@@ -2597,6 +2598,13 @@ MORNING="$WORK/morning-items.txt"
 # The crops the script made (window_shot, rect_shot, crop, a clip's darkest frames), each with the
 # window style and the wallpaper it was taken on: the only pictures attach publishes in Session B.
 PRODUCED="$WORK/produced.tsv"
+# S5's cover and the minimized TextEdit beside Standard and Frosted: an empty file (no save prompt
+# ever comes) whose name no document of his has, so ui aims at its window by title.
+COVER="$WORK/bp-062-cover.txt"
+COVER_TITLE="bp-062-cover"
+# The apps the script opened that weren't running before ("<app>\t<pid>"): restore quits only
+# these, never his own Xcode project, documents or settings.
+LAUNCHED="$WORK/launched.tsv"
 # Posted with the ready file: the arm window's waiter wakes at once instead of at its backstop.
 READY_NOTIFY="io.github.nikitausov.BatteryPulse.session-b.ready"
 # The English bodies of the test notification and the charge alert (App/BatteryNotifier.swift),
@@ -2607,6 +2615,85 @@ CHARGE_ALERT_TEXT="You can unplug the power adapter"
 DRY_RUN=""
 
 b_only() { [ "$SESSION" = B ] || fail "$1 is a Session B command: run it from the frozen worktree ~/bp-062/B/run"; }
+
+# app_pid_of <app>: the main process of TextEdit, System Settings, Xcode or Accessibility Inspector,
+# by its executable's path at the start of the argument list (pgrep -x can't match past 16
+# characters, and a shell whose command line names the path must not count).
+app_pid_of() {
+  local exec
+  case "$1" in
+    TextEdit) exec='^/[^ ]*/TextEdit\.app/Contents/MacOS/TextEdit( |$)' ;;
+    "System Settings") exec='^/System/Applications/System Settings\.app/Contents/MacOS/System Settings( |$)' ;;
+    Xcode) exec='^/[^ ]*/Xcode[^/ ]*\.app/Contents/MacOS/Xcode( |$)' ;;
+    "Accessibility Inspector") exec='^/[^ ]*/Accessibility Inspector\.app/Contents/MacOS/Accessibility Inspector( |$)' ;;
+    *) return 0 ;;
+  esac
+  pgrep -f "$exec" 2>/dev/null | head -1 || true
+}
+
+# track_launch <app> <command...>: runs the command that opens the app; when the app wasn't
+# running before, its new process goes into launched.tsv.
+track_launch() {
+  local app="$1" before after tries=0
+  shift
+  before="$(app_pid_of "$app")"
+  "$@" >/dev/null 2>&1 || return 1
+  [ -z "$before" ] || return 0
+  after="$(app_pid_of "$app")"
+  while [ -z "$after" ] && [ "$tries" -lt 40 ]; do
+    sleep 0.25
+    tries=$((tries + 1))
+    after="$(app_pid_of "$app")"
+  done
+  if [ -n "$after" ]; then printf '%s\t%s\n' "$app" "$after" >>"$LAUNCHED"; fi
+  return 0
+}
+
+# launched_by_script <app>: its running process is one the script opened.
+launched_by_script() {
+  local pid
+  pid="$(app_pid_of "$1")"
+  [ -n "$pid" ] && grep -q -x -F "$1$TAB$pid" "$LAUNCHED" 2>/dev/null
+}
+
+# quit_if_launched <app>: quits the app by its own Quit menu item (AX) only when the script opened
+# it; his own instance stays as it was.
+quit_if_launched() {
+  local tries=0
+  launched_by_script "$1" || return 0
+  ui_run quit "$1" >/dev/null 2>&1 || return 0
+  while [ -n "$(app_pid_of "$1")" ] && [ "$tries" -lt 20 ]; do
+    sleep 0.25
+    tries=$((tries + 1))
+  done
+  echo "closed $1 (the script opened it)"
+}
+
+# open-app <TextEdit|Accessibility Inspector|Xcode>: an app the session needs (the contrast
+# audit's Inspector, say), opened by the script so restore knows it may quit it.
+step_open_app() {
+  b_only open-app
+  b_fence
+  case "${1:-}" in
+    TextEdit | "Accessibility Inspector" | Xcode) track_launch "$1" open -a "$1" || fail "can't open $1" ;;
+    *) fail "usage: $SCRIPT open-app \"Accessibility Inspector\" | Xcode | TextEdit" ;;
+  esac
+  echo "opened $1$(if launched_by_script "$1"; then echo " (restore gui quits it)"; else echo " (it ran already: restore leaves it)"; fi)"
+}
+
+# open_pane <name>: a System Settings pane by its URL (proof P8), System Settings tracked.
+open_pane() { track_launch "System Settings" open "$(pane_url "$1")"; }
+
+# close_cover: the cover's TextEdit window goes: TextEdit quits when the script opened it, else
+# only that window closes (his documents stay open).
+close_cover() {
+  [ -n "$(app_pid_of TextEdit)" ] || return 0
+  if launched_by_script TextEdit; then
+    ui_run quit TextEdit >/dev/null 2>&1
+  else
+    ui_run close TextEdit --window "$COVER_TITLE" >/dev/null 2>&1
+  fi
+}
 
 # register_shot <file>: one of the script's crops, with the style and the wallpaper it shows.
 register_shot() {
@@ -3150,7 +3237,7 @@ step_pane() {
   b_fence
   local url
   url="$(pane_url "${1:-}")" || fail "usage: $SCRIPT pane <$(echo "$PANES" | tr ' ' '|')>"
-  open "$url"
+  track_launch "System Settings" open "$url"
   sleep 2
   # The sidebar's selection and the title; ui acts only in a pane P8 confirmed.
   ui_run pane-state --expect "$1" || true
@@ -3260,9 +3347,8 @@ step_prepare_b() {
   [ "$(answer_of B-yes)" = y ] || fail "first his one yes to the list of changes: $SCRIPT answer --by person B-yes y"
   mkdir -p "$WORK" "$BUILDS" "$BIN" "$SHOTS" "$REC" "$LOGS" "$SECTIONS"
   touch "$CHANGES" "$HEARTBEAT"
-  # S5's cover and the minimized TextEdit beside Standard and Frosted: an empty file, so no save
-  # prompt ever comes.
-  [ -f "$WORK/cover.txt" ] || : >"$WORK/cover.txt"
+  # S5's cover and the minimized TextEdit beside Standard and Frosted (COVER).
+  [ -f "$COVER" ] || : >"$COVER"
   cd "$ROOT"
   backup "${1:-}"
   if [ ! -f "$WORK/prepare.time" ] || [ "${1:-}" = --fresh-backup ]; then
@@ -3316,7 +3402,7 @@ step_prepare_reads() {
     out "- Charge Limit: $limit % (pmset -g battlimit)"
   else
     out "- Charge Limit: pmset -g battlimit shows none (below the limit it may not; plan-0.7.0 Appendix C finding 9): read from the Battery pane"
-    open "$(pane_url battery)"
+    open_pane battery
     sleep 2
     shot settings-battery
     ask prep-charge-limit
@@ -3383,11 +3469,11 @@ step_prepare_reads() {
     *) out "- Focus: not readable (his word at the start)" ;;
   esac
   for name in appearance desktop; do
-    open "$(pane_url "$name")"
+    open_pane "$name"
     sleep 2
     shot "settings-$name"
   done
-  ui_run quit "System Settings" >/dev/null 2>&1 || true
+  quit_if_launched "System Settings"
   shot prepare-desktop
   echo "Read the shots (they stay on the Mac), then answer:"
   ask prep-widgets prep-widget-style prep-dim-widgets prep-wallpaper-kind
@@ -3595,7 +3681,7 @@ proof_p8() {
   : >"$LOGS/panes.tsv"
   : >"$WORK/ui-panes.tmp"
   for name in $PANES; do
-    open "$(pane_url "$name")" >/dev/null 2>&1 || true
+    open_pane "$name" || true
     sleep 2
     state="$(ui_run pane-state --expect "$name" 2>/dev/null || true)"
     sidebar="$(tr '\t' '\n' <<<"$state" | sed -n 's/^sidebar=//p' | head -1)"
@@ -3609,7 +3695,7 @@ proof_p8() {
     fi
   done
   mv "$WORK/ui-panes.tmp" "$WORK/ui-panes"
-  ui_run quit "System Settings" >/dev/null 2>&1 || true
+  quit_if_launched "System Settings"
   # The verdicts only: the titles may be Russian, and stay in logs/panes.tsv on the Mac.
   proof_record P8 "$(if [ -z "$failed" ]; then echo pass; else echo fail; fi)" \
     "its own pane per URL: $(awk -F '\t' '{ printf "%s=%s%s; ", $1, $4, ($2 == "-" ? " (sidebar unread)" : "") }' "$LOGS/panes.tsv")" \
@@ -3973,9 +4059,9 @@ step_case() {
     warn "no generated wallpaper (prepare reads): the case's crops stay on the Mac"
   fi
   if [ "$style" = standard ] || [ "$style" = frosted ]; then
-    open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
+    track_launch TextEdit open -a TextEdit "$COVER" || true
     sleep 2
-    ui_run minimize on TextEdit >/dev/null 2>&1 || warn "TextEdit's window didn't minimize"
+    ui_run minimize on TextEdit --window "$COVER_TITLE" >/dev/null 2>&1 || warn "TextEdit's cover window didn't minimize"
   fi
   if [ "$window" = compact ]; then
     relaunch_b_style "$style" "$look" compact || {
@@ -4292,10 +4378,10 @@ step_f11() {
       echo "DO (session): in Settings → General, turn Open at login $(if [ "$before" = 2 ]; then echo "on, then off again"; else echo off; fi) by ui press; then: $SCRIPT f11 listed"
       ;;
     listed)
-      open "$(pane_url login-items)"
+      open_pane login-items
       sleep 3
       out "- Login Items after Open at login off: $(ui_run tree "System Settings" --match BatteryPulse 2>&1 || true)"
-      ui_run quit "System Settings" >/dev/null 2>&1 || true
+      quit_if_launched "System Settings"
       ask F11-login
       ;;
     *) fail "usage: $SCRIPT f11 alert | login | listed" ;;
@@ -4930,12 +5016,13 @@ q_setup() {
           screencapture -x -o -l"$id" "$SHOTS/queue/$index-$scenario.png" 2>/dev/null || true
           ;;
         S5)
-          open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
+          track_launch TextEdit open -a TextEdit "$COVER" || true
           sleep 3
-          # 10 points past each edge, so a size the window server rounds still covers it all.
+          # 10 points past each edge, so a size the window server rounds still covers it all; the
+          # cover's own window, never one of his documents.
           # shellcheck disable=SC2046
           ui_run position TextEdit $(awk '{ printf "%d %d %d %d", $1 - 10, $2 - 10, $3 + 20, $4 + 20 }' <<<"$rect") \
-            >/dev/null 2>&1 || {
+            --window "$COVER_TITLE" >/dev/null 2>&1 || {
             echo "TextEdit couldn't be placed over the window"
             return 1
           }
@@ -5028,7 +5115,7 @@ q_confirm() {
 q_teardown() {
   local item title
   case "$1" in
-    S5) ui_run quit TextEdit >/dev/null 2>&1 || warn "TextEdit didn't quit by its menu" ;;
+    S5) close_cover || warn "TextEdit's cover window didn't close" ;;
     S3)
       item="$(ui_run windows --status-item 2>/dev/null || true)"
       # shellcheck disable=SC2046
@@ -5935,8 +6022,14 @@ restore_gui_scriptable() {
   fi
   quit_app
   session_settings
+  # Only what the script opened; one he had open, or computer use opened, stays, named for the
+  # session (it quits one it opened itself with ui quit).
+  if [ -n "$(app_pid_of TextEdit)" ] && ! launched_by_script TextEdit; then close_cover || true; fi
   for app in TextEdit "System Settings" "Accessibility Inspector" Xcode; do
-    if ui_run quit "$app" >/dev/null 2>&1; then echo "closed $app"; fi
+    quit_if_launched "$app"
+    if [ -n "$(app_pid_of "$app")" ]; then
+      echo "LEFT OPEN $app: the script didn't open it (his own, or opened by computer use: quit it only if the session opened it)"
+    fi
   done
 }
 
@@ -6003,7 +6096,7 @@ step_restore_b() {
       begin_section 95-restore-gui "Restore: the hand-over (B3)"
       restore_gui_scriptable
       restore_gui_items gui | tee "$MORNING.gui"
-      out "- $(clock): the appearance, the wallpaper, the session's settings; TextEdit, System Settings, Accessibility Inspector and Xcode closed; $(grep -c . "$MORNING.gui" || true) items for the session"
+      out "- $(clock): the appearance, the wallpaper, the session's settings; the TextEdit, System Settings, Accessibility Inspector and Xcode the script opened closed; $(grep -c . "$MORNING.gui" || true) items for the session"
       touch "$WORK/gui.done"
       echo "Then the energy setup by computer use on the Displays pane ($SCRIPT pane displays): brightness about half,"
       echo "auto-brightness and True Tone off, each with $SCRIPT change <brightness|auto-brightness|true-tone> <original> <new> first;"
@@ -6268,7 +6361,7 @@ step_charge_limit() {
       want="$(answer_of prep-charge-limit)"
       now="$(pmset -g battlimit 2>/dev/null | grep -o -E '[0-9]+ ?%' | head -1 | tr -d ' %' || true)"
       if [ -z "$now" ]; then
-        open "$(pane_url battery)"
+        open_pane battery
         sleep 2
         shot charge-limit-check
         echo "pmset -g battlimit shows none: read the Battery pane's shot (it should say ${want:-the prepare value})"
@@ -6317,7 +6410,7 @@ step_wp18() {
   local build="$WORK/wp18-build"
   case "${1:-}" in
     previews)
-      (cd "$ROOT" && xed .) || fail "xed couldn't open the package"
+      (cd "$ROOT" && track_launch Xcode xed .) || fail "xed couldn't open the package"
       echo "Xcode opens the package: resume the canvas by computer use, then: $SCRIPT judge SUI-17 <y|n> [note]"
       ;;
     timing)
@@ -6588,7 +6681,7 @@ B2 (the GUI phase; heartbeat <step and expected ready time> after each step):
   styleshot <translucent|clear> <bright|busy> <light|dark> <overview|history|settings>
   gradshot <style> <light|dark> <raw|demo|history|fullscreen|settings|gallery> [--ready]
   audit estimate <style> <light|dark> <page>; v1b <x> <y> <w> <h>; pages [profiling]
-  pane <$(echo "$PANES" | tr ' ' '|')>
+  pane <$(echo "$PANES" | tr ' ' '|')>; open-app "Accessibility Inspector" | Xcode | TextEdit (restore quits only these)
   measure <id> black|blank|same|differs <arguments>; judge <id> <answer> [--unsure] [note]
   change <setting> <original> <new> (before any change by computer use); restored <setting> <how>
   ui <command...>            the hands (ui.swift's usage), through the script only
@@ -6681,6 +6774,7 @@ case "$COMMAND" in
   batch) b_run step_batch ;;
   ui) b_run step_ui "$@" ;;
   pane) b_run step_pane "$@" ;;
+  open-app) b_run step_open_app "$@" ;;
   widget) b_run step_widget "$@" ;;
   desktop-spot) b_run step_desktop_spot "$@" ;;
   proof) b_run step_proof "$@" ;;
