@@ -138,15 +138,15 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   is marked `unsafe` with its reason. In BatteryCore and bpulse that is bpulse's three pointer and
   format calls and `BatteryReport.cFormat`'s `String(format:)`, which only Darwin's Foundation
   marks, so its marker sits under `#if canImport(Darwin)`: an unneeded one warns. In BatterySource
-  (IOKit, SMC, notify) and BatteryKit (MobileDevice, USB) each `unsafe` follows a comment that
-  starts with `Unsafe` and gives its reason (`// Unsafe: …`, or `Unsafe, here and below: …` for
-  a run of them). Four types are `@safe`, each saying why, and `SecurityGuardTests` allows no
-  other: `MacAccessoryProvider`, `MobileDeviceLibrary`, `MobileDeviceLink` and
+  (IOKit, SMC, notify, `dlsym`) and BatteryKit (MobileDevice, USB) the reason is a comment above
+  each `unsafe`, in a sentence that starts with `Unsafe` (`Unsafe: …`, or `Unsafe, here and
+  below: …` for a run of them). Four types are `@safe`, each saying why, and `SecurityGuardTests`
+  allows no other: `MacAccessoryProvider`, `MobileDeviceLibrary`, `MobileDeviceLink` and
   `USBDeviceWatcher`'s `Watch`; it also pins the one `nonisolated(unsafe)` (`SystemNotifications`)
   and allows no silenced `StrictMemorySafety`. The app and the widget build without the check, so
   the app's few unsafe calls stay unmarked: the `proc_*` calls (`WidgetRefresher`),
-  `UpdateInstaller`'s code-signature check (`Unmanaged<CFError>`) and `renamex_np`, and the menu
-  bar icon's CoreText glyph calls.
+  `UpdateInstaller`'s code-signature check (`Unmanaged<CFError>`) and `renamex_np` with its
+  `strerror`, and the menu bar icon's CoreText glyph calls.
 - Concurrency: the app target runs on the main actor by default (`.defaultIsolation(MainActor.self)`
   in `Package.swift`); the other targets, the widget included, stay nonisolated. App code that a
   framework calls on its own threads, or that runs off the main actor, is marked `nonisolated`,
