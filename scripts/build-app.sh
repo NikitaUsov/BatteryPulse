@@ -62,17 +62,18 @@ timed_build() {
 }
 # The UUIDs of a Mach-O file or dSYM, one per architecture, sorted, on one line.
 uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
-timed_build "the app" -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
+# Both lines add -internalize-at-link, a hidden frontend flag of Swift 6.4: with _main the only
+# export, every public symbol is taken as internal to the link, so the linker drops the public code
+# of the libraries that the binary never calls. Code that only the runtime reaches must survive it,
+# which only the running app and a rendered widget show: on the release candidate, Session B's
+# pages check the app and its F8 the widget in every family. A page that fails drops the flag from
+# the app's line, a blank widget from the widget's line (PLAN G-15).
+timed_build "the app" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
 APP_UUIDS="$(uuids "$BINARY")"
-# The widget's line alone adds -internalize-at-link, a hidden frontend flag of Swift 6.4: with _main
-# the only export, every public symbol is taken as internal to this link, so the linker drops the
-# public code of BatteryCore and BatterySource that the widget never calls. It changes how every
-# module compiles, so this line rebuilds the modules it shares with the app rather than reusing
-# them; the app, linked above, stays as it is (checked below). Code that only the runtime reaches
-# must survive it, which only a rendered widget shows: Session B's F8 checks every family on the
-# release candidate, and a blank widget drops this flag first (PLAN G-15).
+# With the app's flags, the widget's line reuses the modules the app's line compiled; with others
+# it rebuilds them. Either way the app, linked above, stays as it is (checked below).
 timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 if [ "$(uuids "$BINARY")" != "$APP_UUIDS" ]; then
   echo "error: the widget's build relinked the app (UUID $APP_UUIDS before, $(uuids "$BINARY")after)" >&2
