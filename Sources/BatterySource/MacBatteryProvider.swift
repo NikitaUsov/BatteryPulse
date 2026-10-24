@@ -135,7 +135,9 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
     // MARK: - IOKit
 
     static func smartBatteryProperties() -> PropertyDictionary? {
-        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        // Unsafe: the matching dictionary takes the class name as a C string, which the call
+        // copies.
+        let service = unsafe IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         guard service != 0 else { return nil }
         defer { IOObjectRelease(service) }
 
@@ -146,11 +148,14 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
     }
 
     static func properties(of entry: io_registry_entry_t) -> [String: Any]? {
+        // Unsafe: the dictionary comes back through an out-pointer, retained once (the Create
+        // rule), and is taken exactly once.
         var properties: Unmanaged<CFMutableDictionary>?
-        guard IORegistryEntryCreateCFProperties(entry, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS else {
+        guard unsafe IORegistryEntryCreateCFProperties(entry, &properties, kCFAllocatorDefault, 0) == KERN_SUCCESS
+        else {
             return nil
         }
-        return properties?.takeRetainedValue() as? [String: Any]
+        return unsafe properties?.takeRetainedValue() as? [String: Any]
     }
 
     /// The entries below `entry` in the IOService plane, shaped like `ioreg -a -l` prints them:
@@ -159,14 +164,18 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
     static func childProperties(of entry: io_registry_entry_t, depth: Int) -> [[String: Any]] {
         guard depth <= RegistryChildren.maximumDepth else { return [] }
         var iterator: io_iterator_t = 0
-        guard IORegistryEntryGetChildIterator(entry, kIOServicePlane, &iterator) == KERN_SUCCESS else { return [] }
+        // Unsafe: the plane's name as a C string, and the iterator through an out-pointer.
+        guard unsafe IORegistryEntryGetChildIterator(entry, kIOServicePlane, &iterator) == KERN_SUCCESS else {
+            return []
+        }
         defer { IOObjectRelease(iterator) }
 
         var children: [[String: Any]] = []
         var child = IOIteratorNext(iterator)
         while child != 0 {
             if var dictionary = properties(of: child) {
-                if let className = IOObjectCopyClass(child)?.takeRetainedValue() {
+                // Unsafe: the class name is retained once for us (Copy) and taken once.
+                if let className = unsafe IOObjectCopyClass(child)?.takeRetainedValue() {
                     dictionary[RegistryChildren.classKey] = className as String
                 }
                 let grandchildren = childProperties(of: child, depth: depth + 1)
@@ -180,7 +189,8 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
     }
 
     static func internalBatteryDescription() -> PropertyDictionary? {
-        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return nil }
+        // Unsafe: the blob is retained once for us (Copy) and taken once.
+        guard let info = unsafe IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return nil }
         let battery = powerSourceDescriptions(in: info).first {
             $0[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
         }
@@ -188,7 +198,9 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
     }
 
     static func externalAdapterDetails() -> PropertyDictionary? {
-        guard let details = IOPSCopyExternalPowerAdapterDetails()?.takeRetainedValue() as? [String: Any] else {
+        // Unsafe: the dictionary is retained once for us (Copy) and taken once.
+        guard let details = unsafe IOPSCopyExternalPowerAdapterDetails()?.takeRetainedValue() as? [String: Any]
+        else {
             return nil
         }
         return PropertyValue.dictionary(fromAny: details)

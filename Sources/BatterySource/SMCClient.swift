@@ -178,7 +178,10 @@ public final class SMCClient: Sendable {
             let connection = port
             let status = input.withUnsafeBytes { inBuffer in
                 output.withUnsafeMutableBytes { outBuffer in
-                    IOConnectCallStructMethod(
+                    // Unsafe: the buffers' addresses, valid inside these closures. Both hold
+                    // `SMCParamBlock.size` bytes, the sizes the call is given, and the reply's size
+                    // comes back through an out-pointer.
+                    unsafe IOConnectCallStructMethod(
                         connection, Self.selector, inBuffer.baseAddress, SMCParamBlock.size, outBuffer.baseAddress,
                         &outputSize)
                 }
@@ -202,8 +205,9 @@ public final class SMCClient: Sendable {
         /// `AppleSMCKeysEndpoint` over whichever match comes first.
         private static func openConnection() throws(Failure) -> io_connect_t {
             var iterator: io_iterator_t = 0
+            // Unsafe: the class name as a C string, and the iterator through an out-pointer.
             guard
-                IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("AppleSMC"), &iterator)
+                unsafe IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("AppleSMC"), &iterator)
                     == KERN_SUCCESS
             else { throw .serviceNotFound }
             defer { IOObjectRelease(iterator) }
@@ -224,14 +228,17 @@ public final class SMCClient: Sendable {
             defer { IOObjectRelease(chosen) }
 
             var connection: io_connect_t = 0
-            let status = IOServiceOpen(chosen, mach_task_self_, 0, &connection)
+            // Unsafe: the connection comes back through an out-pointer, and `mach_task_self_` is a
+            // C global, set once at process start and only read.
+            let status = unsafe IOServiceOpen(chosen, mach_task_self_, 0, &connection)
             guard status == KERN_SUCCESS, connection != 0 else { throw .open(status) }
             return connection
         }
 
         private static func name(of entry: io_registry_entry_t) -> String? {
             var buffer = [CChar](repeating: 0, count: 128)  // io_name_t
-            guard IORegistryEntryGetName(entry, &buffer) == KERN_SUCCESS else { return nil }
+            // Unsafe: the name is written into `buffer`, which has the 128 bytes of an `io_name_t`.
+            guard unsafe IORegistryEntryGetName(entry, &buffer) == KERN_SUCCESS else { return nil }
             return String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
         }
     }
