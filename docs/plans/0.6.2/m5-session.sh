@@ -2240,6 +2240,10 @@ step_restore() {
 # MARK: - status and send
 
 step_status() {
+  if [ "$SESSION" = B ]; then
+    step_status_b
+    return 0
+  fi
   local id value
   echo "folder: $WORK"
   if [ "$(uname -s)" = Darwin ]; then
@@ -2344,21 +2348,30 @@ build_report() {
   fi
 }
 
-# send [--dry-run]: A.md (and the attached images) committed to docs/plans/0.6.2/sessions/ on
-# claude/062-session-a, which starts from the integration branch; a fresh shallow clone in
-# ~/bp-062/A/send, so your own checkout stays as it is. Never another branch, never a pull request.
+# send [--dry-run]: <session>.md (and the attached images) committed to docs/plans/0.6.2/sessions/
+# on claude/062-session-a or -b, which starts from the integration branch; a fresh shallow clone in
+# ~/bp-062/<session>/send, so your own checkout stays as it is. Never another branch, never a pull
+# request. Session B's needs his yes (B-send) and passes the privacy lint first.
 step_send() {
-  local dry_run="" clone="$WORK/send" base name email total
+  local dry_run="" clone="$WORK/send" base name email total report="$WORK/$SESSION.md"
   if [ "${1:-}" = --dry-run ]; then dry_run=1; fi
   mkdir -p "$WORK"
-  build_report | public >"$WORK/A.md"
-  if has_cyrillic "$(cat "$WORK/A.md")"; then
-    fail "A.md contains Russian text; translate the answer or note it comes from, then send again"
+  if [ "$SESSION" = B ]; then
+    if [ -z "$dry_run" ] && [ "$(answer_of B-send)" != y ]; then
+      fail "his yes first, at the Mac, after the contact sheet of every attached image and the summary: $SCRIPT answer --by person B-send y"
+    fi
+    build_report_b | public >"$report"
+    privacy_lint "$report"
+  else
+    build_report | public >"$report"
+  fi
+  if has_cyrillic "$(cat "$report")"; then
+    fail "$SESSION.md contains Russian text; translate the answer or note it comes from, then send again"
   fi
   total=0
   if [ -s "$PUBLISH/captions.tsv" ]; then total="$(du -sk "$PUBLISH" | cut -f1)"; fi
   [ "$total" -le 6144 ] || fail "the attached images take $total KB; unattach some (at most 6 MB)"
-  echo "wrote $WORK/A.md ($(wc -l <"$WORK/A.md" | tr -d ' ') lines, images $total KB)"
+  echo "wrote $report ($(wc -l <"$report" | tr -d ' ') lines, images $total KB)"
   [ -z "$dry_run" ] || return 0
 
   rm -rf "$clone"
@@ -2369,12 +2382,12 @@ step_send() {
   git clone --quiet --depth 1 --branch "$base" "https://github.com/$REPO.git" "$clone"
   git -C "$clone" checkout --quiet -B "$RESULTS_BRANCH"
   mkdir -p "$clone/docs/plans/0.6.2/sessions"
-  rm -rf "$clone/docs/plans/0.6.2/sessions/A"
-  cp "$WORK/A.md" "$clone/docs/plans/0.6.2/sessions/A.md"
+  rm -rf "$clone/docs/plans/0.6.2/sessions/$SESSION"
+  cp "$report" "$clone/docs/plans/0.6.2/sessions/$SESSION.md"
   if [ -s "$PUBLISH/captions.tsv" ]; then
-    mkdir -p "$clone/docs/plans/0.6.2/sessions/A"
+    mkdir -p "$clone/docs/plans/0.6.2/sessions/$SESSION"
     cut -f1 "$PUBLISH/captions.tsv" | while IFS= read -r file; do
-      cp "$PUBLISH/$file" "$clone/docs/plans/0.6.2/sessions/A/"
+      cp "$PUBLISH/$file" "$clone/docs/plans/0.6.2/sessions/$SESSION/"
     done
   fi
   git -C "$clone" add -A docs/plans/0.6.2/sessions
@@ -2388,18 +2401,18 @@ step_send() {
     name="$(gh api user --jq .login)"
     email="$(gh api user --jq '"\(.id)+\(.login)@users.noreply.github.com"')"
   fi
-  git -C "$clone" -c user.name="$name" -c user.email="$email" commit --quiet -F - <<'EOF'
-Record M5 Session A's results
+  git -C "$clone" -c user.name="$name" -c user.email="$email" commit --quiet -F - <<EOF
+Record M5 Session $SESSION's results
 
 The answers, counts, perf-stats summaries, public log excerpts and the
-attached screenshots of Session A (PLAN.md §6), for the packages and
+attached crops of Session $SESSION (PLAN.md §6), for the packages and
 gates that wait on them.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
   git -C "$clone" -c credential.helper= -c 'credential.helper=!gh auth git-credential' \
     push --quiet origin "HEAD:refs/heads/$RESULTS_BRANCH"
-  echo "Sent: https://github.com/$REPO/blob/$RESULTS_BRANCH/docs/plans/0.6.2/sessions/A.md"
+  echo "Sent: https://github.com/$REPO/blob/$RESULTS_BRANCH/docs/plans/0.6.2/sessions/$SESSION.md"
 }
 
 # MARK: - Session B: its questions
@@ -5454,6 +5467,147 @@ restore_prompts_b() {
   echo "The backup stays in $BACKUP."
 }
 
+# MARK: - Session B: status, the report and send (step 9)
+
+step_status_b() {
+  local id value
+  echo "folder: $WORK (Session B)"
+  if [ "$(uname -s)" = Darwin ]; then
+    echo "installed: $(app_version); running: $(if app_running; then echo yes; else echo no; fi)"
+    echo "battery: $(battery_percent) %, $(if on_battery; then echo on battery; else echo on the adapter; fi)"
+  fi
+  echo "flags: $(for id in away ready queue.started queue.done continued gui.done; do if [ -f "$WORK/$id" ]; then printf '%s ' "$id"; fi; done)"
+  if [ -f "$HEARTBEAT" ]; then echo "heartbeat: $((($(date +%s) - $(mtime_of "$HEARTBEAT")) / 60)) minutes ago; GUI phase: $(gui_minutes_left) minutes left"; fi
+  echo "changes: $(changed_settings | grep -c . || true) settings; not put back yet: $(for id in $(changed_settings); do is_restored "$id" || printf '%s ' "$id"; done)"
+  echo "proofs: $(awk -F '\t' '{ printf "%s=%s ", $1, $2 }' "$PROOFS" 2>/dev/null)"
+  echo "not checked: $(grep -c . "$WORK/not-checked.tsv" 2>/dev/null || echo 0); morning batch: $(grep -c . "$BATCH" 2>/dev/null || echo 0)"
+  echo "queue rows: $(($(grep -c . "$LOGS/queue-runs.tsv" 2>/dev/null || echo 1) - 1))"
+  echo "answers:"
+  for id in $(questions_b); do
+    value="$(answer_of "$id")"
+    [ -z "$value" ] || printf '  %-34s %s\n' "$id" "$value"
+  done
+  echo "sections: $(find "$SECTIONS" -name '*.md' 2>/dev/null | sed 's|.*/||; s|\.md$||' | sort | tr '\n' ' ')"
+  echo "attached images: $(grep -c . "$PUBLISH/captions.tsv" 2>/dev/null || echo 0)"
+}
+
+# The Appendix C rows Session B owns (PLAN.md), with where B.md answers them.
+appendix_rows_b() {
+  cat <<'EOF'
+| Fact (PLAN.md Appendix C) | Where in this file |
+|---|---|
+| C energy: S1, S2, S2 Low Power Mode, S4w, S5, S10, S3, the minimized run, S6 (B and C, medians, C ÷ B, the chain to A, B against Session A's B) | The energy queue |
+| S7 launches on B and C | S7 |
+| S8, the burst: reads per notify burst, widget reloads per cycle; P12 | S8: the burst; Proofs |
+| Memory: History → 7 days three times | Memory |
+| Session B's runs marked not valid, per run, and their retries; whether a session acted while queue.started existed | The energy queue (the detector columns); Notes |
+| Sleep hygiene: pmset -g assertions per run; the night's DarkWake and wake lines | The energy queue (Assertions); The night |
+| The overnight log stream (plan-0.7.0 §6.2 step 12) | The night |
+| Session B's preflight: each proof's result and its fallback; the prompts met; Accessibility allowed again or not | Preflight; Proofs |
+| V-01 on the RC: executor lines, crash reports, the answers | V-01 on the RC; Answers |
+| G-13a: the 8 glass-sheet cases, Standard and Frosted | The glass-sheet cases; fill-* answers |
+| G-13b: the 24 shots and the 19 graduation shots, V1b, the contrast audit, the two plain questions | Answers (shot-*, grad-*, V1b, audit-*, graduate-*) |
+| G-16: F12 and its update log, the pre-swap extension end (WP-16 item 6) | F12 |
+| F6, F8 (G-15), F9, F11 | Answers (F6-*, F8-*, F9-*, F11-*); F11 |
+| WP-17's after: page.switch per page | Page switches |
+EOF
+}
+
+build_report_b() {
+  local id value by at note file caption setting
+  echo "# Session B results (BatteryPulse 0.6.2)"
+  echo
+  echo "Written by \`docs/plans/0.6.2/m5-session.sh send\` on $(date '+%Y-%m-%d %H:%M %z'). Session B ran hands-free"
+  echo "(PLAN.md §6): answers marked \"claude\" were judged by the Claude session from the pictures, beside the"
+  echo "script's pixel measurement where one exists; \"person\" ones came from the maintainer. Recordings,"
+  echo "full-desktop shots and logs stay on the Mac (\`~/bp-062/B\`)."
+  echo
+  local unrestored=""
+  for setting in $(changed_settings); do is_restored "$setting" || unrestored="$unrestored $setting"; done
+  if [ -n "$unrestored" ]; then
+    echo "**Not put back (for his hand):**$unrestored"
+    echo
+  fi
+  echo "## Appendix C rows this session owns"
+  echo
+  appendix_rows_b
+  echo
+  echo "## Answers"
+  echo
+  echo "| ID | Question | Answer | By | Time | Note |"
+  echo "|---|---|---|---|---|---|"
+  for id in $(questions_b); do
+    line="$(awk -F '\t' -v id="$id" '$1 == id { line = $0 } END { print line }' "$ANSWERS" 2>/dev/null || true)"
+    [ -n "$line" ] || continue
+    IFS=$'\t' read -r _ value by at note <<<"$line"
+    printf '| %s | %s | %s | %s | %s | %s |\n' "$id" "$(question_text "$id")" "$value" "$by" "$at" "${note:-}"
+  done
+  echo
+  if [ -s "$PROOFS" ]; then
+    echo "## Proofs"
+    echo
+    echo "| Proof | Result | Detail | Fallback | Time |"
+    echo "|---|---|---|---|---|"
+    awk -F '\t' '{ printf "| %s | %s | %s | %s | %s |\n", $1, $2, $3, $4, $5 }' "$PROOFS"
+    echo
+  fi
+  if [ -s "$WORK/not-checked.tsv" ]; then
+    echo "## Not checked or not run"
+    echo
+    awk -F '\t' '{ printf "- %s %s: %s\n", $1, $2, $3 }' "$WORK/not-checked.tsv"
+    echo
+  fi
+  for file in "$SECTIONS"/*.md; do
+    [ -f "$file" ] || continue
+    cat "$file"
+    echo
+  done
+  if [ -s "$NOTES" ]; then
+    echo "## Notes"
+    echo
+    while IFS=$'\t' read -r at note; do echo "- $at: $note"; done <"$NOTES"
+    echo
+  fi
+  if [ -s "$PUBLISH/captions.tsv" ]; then
+    echo "## Images"
+    echo
+    while IFS=$'\t' read -r file caption; do
+      echo "$caption"
+      echo
+      echo "![$caption](B/$file)"
+      echo
+    done <"$PUBLISH/captions.tsv"
+  fi
+}
+
+# privacy_terms: what B.md must not name (WP-21): the ComputerName, his full name, an accessory's
+# name from pmset -g accps, a VPN's name and the network's name.
+privacy_terms() {
+  {
+    scutil --get ComputerName 2>/dev/null || true
+    id -F 2>/dev/null || true
+    pmset -g accps 2>/dev/null | sed -n 's/^ *-\(.*\) (id=.*/\1/p' | grep -v -i InternalBattery || true
+    scutil --nc list 2>/dev/null | sed -n 's/.*"\([^"]*\)".*/\1/p' || true
+    ipconfig getsummary en0 2>/dev/null | sed -n 's/^ *SSID : //p' | grep -v -i redacted || true
+    networksetup -getairportnetwork en0 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p' || true
+  } | awk 'length($0) >= 3' | sort -u
+}
+
+# privacy_lint <file>: refuses the file if a line names any of them.
+privacy_lint() {
+  local term found=""
+  while IFS= read -r term; do
+    [ -n "$term" ] || continue
+    if grep -n -i -F -- "$term" "$1" >"$WORK/lint.txt" 2>/dev/null; then
+      found="$found $(cut -d: -f1 "$WORK/lint.txt" | tr '\n' ',' | sed 's/,$//')"
+    fi
+  done < <(privacy_terms)
+  rm -f "$WORK/lint.txt"
+  if [ -n "$found" ]; then
+    fail "B.md names the Mac, him, an accessory, a VPN or the network on line(s)$found: drop them (note, answer or section), then send again"
+  fi
+}
+
 # MARK: - Session B: the optional extras and WP-18's Xcode items
 
 # charge-limit check | record start | record stop: the morning-away block's Charge Limit capture
@@ -5882,6 +6036,7 @@ case "$COMMAND" in
       fail "the queue runs in the arm window ($SCRIPT arm open); queue --dry-run [default|low|late] checks its order anywhere"
     fi
     ;;
+  help | -h | --help) step_help ;;
   *)
     step_help >&2
     exit 1
