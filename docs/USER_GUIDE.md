@@ -125,7 +125,9 @@ Live values refresh every 2 seconds while a window or the menu bar popover is op
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
 or on another Space), and every 10 seconds when the menu bar shows power. In Low Power Mode,
 when macOS asks apps to save resources, or when the Mac runs hot, they refresh less often: every
-5 seconds in windows and every 30 seconds in the menu bar. While the displays sleep or the Mac
+5 seconds in windows and every 30 seconds in the menu bar. Capacities, temperature, cell voltages
+and adapter details update when macOS reports new battery data, and at least every 5 minutes;
+Power and Raw Data read them on every refresh. While the displays sleep or the Mac
 is switched to another user, the menu bar stops refreshing power and catches up once you're
 back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
 the history while recording is on (the default; turn it off in Settings → Advanced), so it uses

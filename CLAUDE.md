@@ -14,7 +14,10 @@ through the App Store. Reference hardware: MacBook Air M5.
   `BatterySnapshot` model, `MacPowerParser` (AppleSmartBattery + IOPS + adapter dictionaries),
   `RegistryChildren` (the pack, banks and charger entries below AppleSmartBattery), `SMC` (wire
   format and battery keys of the read-only SMC client; `SMCReadPolicy`/`SMCValueCache` read the
-  keys a poll doesn't show at most every 60 s), metrics, `BatteryReport` text output,
+  keys a poll doesn't show at most every 60 s), `RegistryReadPolicy` (a poll reuses the last
+  read's registry, IOPS and adapter dictionaries unless Power or Raw Data is shown or they are 5
+  minutes old, `defaultSafetyNetAge`; `cachesOnPolls` is its one switch, never a setting) and
+  `RegistryUpdateWatch` (an update no notification announced), metrics, `BatteryReport` text output,
   `CaptureFormat` (the capture property list, `BatterySnapshot.redacted`, Copy JSON's encoder),
   `RawValueDecoding`/`RawKeyGlossary` (Developer table; `RawDisplayRow`/`RawDisplaySection` are
   its prebuilt rows), `History`/`HistoryStore`, `HistoryChartData` (the History page's charts),
@@ -31,7 +34,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   (slower polls in Low Power Mode, under reduced resources or heat), `WindowLook`
   (`WindowLookPolicy`) and `ToneMap` (window styles). Must stay free of Apple-only frameworks.
 - `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
-  widget links besides BatteryCore (no CryptoKit, no MobileDevice). `BatteryProvider` protocol,
+  widget links besides BatteryCore (no CryptoKit, no MobileDevice). `BatteryProvider` protocol
+  (a read's `BatteryReadScope` is two decisions, `rereadsRegistry` and `readsAllSMCKeys`),
   `MacBatteryProvider` (IOKit, registry children, SMC via `SMCClient`), `IOSBatteryProvider`
   (UIDevice), `AccessoryProvider` and `MacAccessoryProvider` (the private
   `IOPSCopyPowerSourcesByType(4)` through `dlsym`, refreshed on the
@@ -147,10 +151,13 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `.private(mask: .hash)`).
 - Signposts: `Diagnostics.begin`/`measure`/`event` with `StaticString` names and triggers: a
   Points of Interest signpost plus a `perf` debug line that `scripts/perf-stats.swift` reads.
-  Names: `refresh` (its trigger is a `RefreshTrigger`), `read` with `registry`, `iops`,
-  `adapter`, `smc.power`, `smc.other`, `children` and `parse`; `history.load`, `history.record`,
-  `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`, `device.read`, `accessory.read`;
-  the events `widget.reload` and `menuBarReady`. Keep them stable: measurements compare by name.
+  Names: `refresh` (its trigger is a `RefreshTrigger`), `read` (its trigger, `full`, `live`,
+  `cached` or `cached.slow`, is what the read fetched: `BatteryReadScope.signpostName`) with
+  `registry`, `iops`, `adapter`, `smc.power`, `smc.other`, `children` and `parse`;
+  `history.load`, `history.record`, `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`,
+  `device.read`, `accessory.read`; the events `widget.reload`, `menuBarReady` and
+  `registry.missed` (a read that fetched the registry found an update no notification announced;
+  its trigger is the refresh's). Keep them stable: measurements compare by name.
 - Guard suites run on Linux over the sources with comments and strings blanked
   (`Tests/BatteryCoreTests/SourceScanner.swift`), Darwin code included: `MotionGuardTests`
   (motion, glass, window style, tone map), `EnergyGuardTests` (the energy rules above),
