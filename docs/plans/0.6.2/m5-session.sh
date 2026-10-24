@@ -422,6 +422,13 @@ session_settings() {
   set_default prefersCompactWindow -bool false
   # Off, the default: F5 turns device reads on for its own step only, so no energy run watches USB.
   set_default readDevices -bool false
+  # Session B alternates the RC, built as 0.5.99, with 0.6.1, whose What's New (0.6.0) opens at
+  # every launch after a 0.5.99 one (lastSeen 0.5.99 < 0.6.0 <= 0.6.1): a window that keeps B out
+  # of App Nap and inflates every B figure. The installed build's version counts as seen, which also
+  # skips the launch-time end of the previous extension (install_build ended it already).
+  if [ "$SESSION" = B ] && [ -f "$APP/Contents/Info.plist" ]; then
+    set_default lastSeenVersion -string "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)"
+  fi
 }
 
 relaunch_with_session_settings() {
@@ -4583,7 +4590,7 @@ q_sleep() { sleep "$1"; }
 q_on_battery() { on_battery; }
 q_charge() { battery_percent; }
 q_install() { install_build "$1" --no-launch; }
-q_sample() { ui_run sample 2>/dev/null || echo "hid_idle_s=unknown locked=unknown lid=unknown thermal=unknown lowpower=unknown"; }
+q_sample() { ui_run sample 2>/dev/null || echo "hid_idle_s=unknown locked=unknown lid=unknown screensaver=unknown thermal=unknown lowpower=unknown"; }
 q_sudo_ok() { sudo_ok; }
 q_set_lpm() { set_lowpowermode "$1"; }
 # q_lpm <0|1>: Low Power Mode for battery, its original (prepare's backup) in changes.tsv before
@@ -4601,7 +4608,14 @@ q_assertions() { pmset -g assertions 2>/dev/null | grep -c BatteryPulse || true;
 q_pmset_log() { pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" -v to="$(epoch_stamp "$2")" 'substr($0, 1, 19) >= from && substr($0, 1, 19) <= to' || true; }
 q_display_sleep() { pmset displaysleepnow >/dev/null 2>&1 || warn "pmset displaysleepnow failed"; }
 q_history_kb() { du -sk "$SUPPORT/History" 2>/dev/null | cut -f1 || echo 0; }
-q_screensaver() { if pgrep -x ScreenSaverEngine >/dev/null 2>&1 || pgrep -x legacyScreenSaver >/dev/null 2>&1; then echo yes; else echo no; fi; }
+# q_screensaver: the screen saver shows, by its on-screen window (ui sample): a process name match
+# fails past macOS's 16-character p_comm (ScreenSaverEngine, legacyScreenSaver), and a lingering
+# legacyScreenSaver process doesn't mean the saver runs.
+q_screensaver() {
+  local saver
+  saver="$(sample_field screensaver "$(q_sample)")"
+  echo "${saver:-unknown}"
+}
 q_accessories() { pmset -g accps 2>/dev/null | grep -v -i 'InternalBattery' | grep -c -E '[0-9]+%' || true; }
 # q_universal_access: Reduce Transparency and Increase Contrast; a missing key is off, an unreadable
 # domain is unknown (the style column then says so, and the window-ID shot decides).
@@ -4651,7 +4665,8 @@ q_claude() {
 }
 
 # q_sampler: every 10 s, Session A's columns (the pslog analysis reads them) and the detectors':
-# HIDIdleTime, the lock and the lid, the screen saver, and the Claude CLI's children and CPU.
+# HIDIdleTime, the lock and the lid, the screen saver's window, and the Claude CLI's child PIDs
+# (comma-joined, "-" for none) and CPU seconds.
 q_sampler() {
   local battery="$LOGS/sample-battery.plist" pack="$LOGS/sample-pack.plist" sample claude
   printf 'epoch\tupdate_time\tremaining_mah\tsystem_power_in_mw\texternal\tpack_temperature\thid_idle_s\tlocked\tlid\tscreensaver\tclaude_children\tclaude_cpu_s\n' \
@@ -4666,7 +4681,7 @@ q_sampler() {
       "$(plist_value "$battery" 0.PowerTelemetryData.SystemPowerIn)" \
       "$(plist_value "$battery" 0.ExternalConnected)" "$(plist_value "$pack" 0.BatteryData.Temperature)" \
       "$(sample_field hid_idle_s "$sample")" "$(sample_field locked "$sample")" "$(sample_field lid "$sample")" \
-      "$(q_screensaver)" "$(echo "$claude" | cut -d' ' -f1 | tr ',' '\n' | grep -c . || true)" "${claude##* }" \
+      "$(sample_field screensaver "$sample")" "$(children="${claude%% *}"; echo "${children:--}")" "${claude##* }" \
       >>"$LOGS/sampler.tsv"
     sleep 10
   done
@@ -4722,6 +4737,8 @@ q_minutes() {
 
 Q_INDEX=0
 Q_LATE=0
+# The Claude CLI's background CPU seconds per second, measured over the cooldown (arm_cooldown).
+Q_CLAUDE_RATE=0
 Q_DISPLAY_OFF=""
 QUEUE_RUNS=""
 
@@ -4792,8 +4809,10 @@ q_setup() {
         S5)
           open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
           sleep 3
-          # shellcheck disable=SC2086
-          ui_run position TextEdit $rect >/dev/null 2>&1 || {
+          # 10 points past each edge, so a size the window server rounds still covers it all.
+          # shellcheck disable=SC2046
+          ui_run position TextEdit $(awk '{ printf "%d %d %d %d", $1 - 10, $2 - 10, $3 + 20, $4 + 20 }' <<<"$rect") \
+            >/dev/null 2>&1 || {
             echo "TextEdit couldn't be placed over the window"
             return 1
           }
@@ -4804,6 +4823,15 @@ q_setup() {
             return 1
             ;;
           esac
+          # The whole window, not a corner of it: a TextEdit window's bounds contain the main
+          # window's (CGWindowList only).
+          if ! ui_run windows --app TextEdit 2>/dev/null | awk -F '\t' -v r="$rect" '$2 == "layer 0" {
+              split($4, b, " "); split(r, m, " ")
+              if (b[1] <= m[1] && b[2] <= m[2] && b[1] + b[3] >= m[1] + m[3] && b[2] + b[4] >= m[2] + m[4]) found = 1 }
+              END { exit !found }'; then
+            echo "TextEdit covers only part of the window"
+            return 1
+          fi
           ;;
         MIN)
           offset="$(cat "$WORK/minimize-offset" 2>/dev/null || true)"
@@ -4858,7 +4886,12 @@ q_setup() {
 
 # q_confirm <scenario>: the state still holds at the run's end (CGWindowList only); prints why not.
 q_confirm() {
+  local open
   case "$1" in
+    S1 | S2 | S2-LPM | S6 | S10)
+      open="$(ui_run windows --app BatteryPulse 2>/dev/null | awk -F '\t' '$2 == "layer 0"' | grep -c . || true)"
+      [ "${open:-0}" = 0 ] || echo "a window open ($open on screen)"
+      ;;
     S3)
       [ "$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)" -gt "$(cat "$WORK/q-s3-before" 2>/dev/null || echo 0)" ] ||
         echo "the popover closed during the run"
@@ -4953,11 +4986,18 @@ q_detect() {
   case "$lpm0" in 0 | 1) ;; *) lpm0="$(lowpowermode_of Battery)" ;; esac
   case "$lpm1" in 0 | 1) ;; *) lpm1="$(lowpowermode_of Battery)" ;; esac
   if [ "$lpm0" != "$want" ] || [ "$lpm1" != "$want" ]; then lpm=yes; fi
-  if awk -v a="${c0%% *}" -v b="${c1%% *}" -v x="${c0##* }" -v y="${c1##* }" 'BEGIN {
+  # The Claude CLI: a child process at the end, or in any sampler row of the run, that wasn't there
+  # at its start; or more CPU than its own background rate over the cooldown allows, plus 2 s.
+  if awk -v a="${c0%% *}" -v b="${c1%% *}" -v x="${c0##* }" -v y="${c1##* }" -v r="${Q_CLAUDE_RATE:-0}" \
+    -v d=$((end - start)) 'BEGIN {
       n = split(a, s, ","); for (i = 1; i <= n; i++) seen[s[i]] = 1
       m = split(b, e, ","); for (i = 1; i <= m; i++) if (e[i] != "" && !(e[i] in seen)) found = 1
-      if (y - x > 2) found = 1
+      if (y - x > r * d + 2) found = 1
       exit !found }'; then claude=yes; fi
+  if [ -n "$rows" ] && awk -F '\t' -v a="${c0%% *}" '
+      BEGIN { n = split(a, s, ","); for (i = 1; i <= n; i++) seen[s[i]] = 1 }
+      $11 != "" && $11 != "-" { m = split($11, p, ","); for (i = 1; i <= m; i++) if (p[i] != "" && !(p[i] in seen)) found = 1 }
+      END { exit !found }' <<<"$rows"; then claude=yes; fi
   [ "$touched" = no ] || reasons="$reasons, touched"
   [ "$slept" = no ] || reasons="$reasons, slept"
   [ "$adapter" = no ] || reasons="$reasons, adapter"
@@ -5072,6 +5112,10 @@ q_run() {
   detect="$(q_detect "$start" "$end" "$scenario" "$s0" "$s1" "$c0" "$c1" "$file" "$want" "$first_s6" "$s_dark")"
   status="${detect##*"$TAB"}"
   if [ -n "$why" ]; then status="${status:+$status, }$why"; fi
+  if [ -z "$(rusage_value "$file" energy_mj_per_h)" ]; then
+    status="${status:+$status, }rusage failed (the app quit)"
+    note_line "queue run $Q_INDEX ($scenario on $build): rusage failed, so the row has no figures (BatteryPulse quit or crashed during it)"
+  fi
   if [ -n "$status" ]; then status="not valid: $status"; else status=valid; fi
   if [ "$kind" = warmup ]; then status="warm-up, discarded ($status)"; fi
   if [ "$thermal" != nominal ]; then status="$status; thermal $thermal"; fi
@@ -5155,6 +5199,7 @@ queue_run() {
   times="$(queue_expected "$started")"
   epoch_hm "${times##* }" >"$WORK/queue.expected"
   out "- started $(clock) at $(q_charge) %, on $(if q_on_battery; then echo battery; else echo "the adapter"; fi); the bedtime unplug at $(epoch_hm "$unplug"); no run starts after $(epoch_hm "$Q_LATE")"
+  out "- the Claude CLI's background CPU over the cooldown: $Q_CLAUDE_RATE s a second (the Claude detector allows that rate over a run, plus 2 s)"
   echo "The queue runs now. S6 (the display off for 10 minutes on purpose) at about $(epoch_hm "${times%% *}"); the end at about $(epoch_hm "${times##* }"). Please keep the lid open until then."
   if [ -z "$DRY_RUN" ]; then
     pmset -g assertions >"$LOGS/queue-assertions-start.txt" 2>&1 || true
@@ -5418,7 +5463,10 @@ arm_decide() {
 # arm_cooldown <unplug epoch>: at least 10 minutes on battery, longer until the pack is within
 # 2 °C of Session A's first run, at most 20 minutes, ending with HIDIdleTime of 60 s or more.
 arm_cooldown() {
-  local from="$1" target temp now reply
+  local from="$1" target temp now reply claude0 claude1 at0
+  # The Claude CLI's own CPU while the session sits idle at ready: the detector's baseline.
+  claude0="$(q_claude)"
+  at0="$(date +%s)"
   target="$(awk -F '\t' 'NR == 2 { print $6 }' "$HOME/bp-062/A/logs/sampler.tsv" 2>/dev/null || true)"
   case "$target" in "" | *[!0-9]*) target="" ;; esac
   arm_say "cooldown: at least 10 minutes from $(epoch_hm "$from")$(if [ -n "$target" ]; then echo ", until the pack is within 2 °C of Session A's first run ($((target / 100)) °C)"; fi), at most 20"
@@ -5427,13 +5475,17 @@ arm_cooldown() {
     [ "$now" -lt $((from + 1200)) ] || break
     temp="$(q_pack_temp)"
     if [ "$now" -ge $((from + 600)) ]; then
-      if [ -z "$target" ] || awk -v t="$temp" -v g="$target" 'BEGIN { d = t - g; if (d < 0) d = -d; exit !(t != "-" && d <= 200) }'; then
+      # Only a warmer pack waits: a colder one starts at 10 minutes.
+      if [ -z "$target" ] || awk -v t="$temp" -v g="$target" 'BEGIN { exit !(t != "-" && t - g <= 200) }'; then
         if awk -v i="$(idle_seconds)" 'BEGIN { exit !(i + 0 >= 60) }'; then break; fi
       fi
     fi
     if read -r -t 30 -p "$(arm_prompt)" reply; then arm_return; else echo; fi
   done
-  arm_say "cooldown done: the pack at $(q_pack_temp) (hundredths of °C), HIDIdleTime $(idle_seconds) s"
+  claude1="$(q_claude)"
+  Q_CLAUDE_RATE="$(awk -v x="${claude0##* }" -v y="${claude1##* }" -v d=$(($(date +%s) - at0)) 'BEGIN { r = (d > 0 && y > x) ? (y - x) / d : 0; printf "%.5f", r }')"
+  echo "$Q_CLAUDE_RATE" >"$WORK/claude-rate"
+  arm_say "cooldown done: the pack at $(q_pack_temp) (hundredths of °C), HIDIdleTime $(idle_seconds) s; the Claude CLI's background CPU $Q_CLAUDE_RATE s a second"
 }
 
 # arm_after_queue (B5): Low Power Mode back, the sampler and the pslog stopped, restore night,
@@ -6123,7 +6175,7 @@ dry_stubs() {
   q_teardown() { :; }
   q_wait_for() { return 0; }
   # Once S6 has turned the display off, the screen is locked, as with a password required at once.
-  q_sample() { echo "hid_idle_s=9999 locked=$(if [ -n "$Q_DISPLAY_OFF" ]; then echo yes; else echo no; fi) lid=open thermal=nominal lowpower=$DRY_LPM"; }
+  q_sample() { echo "hid_idle_s=9999 locked=$(if [ -n "$Q_DISPLAY_OFF" ]; then echo yes; else echo no; fi) lid=open screensaver=no thermal=nominal lowpower=$DRY_LPM"; }
   q_sudo_ok() { return 0; }
   q_set_lpm() { DRY_LPM="$1"; }
   lowpowermode_of() { echo "$DRY_LPM"; }
@@ -6158,7 +6210,7 @@ dry_stubs() {
       if dry_event adapter && [ $((t - DRY_CLOCK)) -gt 100 ]; then external=true; fi
       if dry_event locked && [ $((t - DRY_CLOCK)) -gt 100 ]; then locked=yes; fi
       if dry_event touched && [ $((t - DRY_CLOCK)) -gt 100 ]; then idle=5; fi
-      printf '%s\t1\t3000\t5000\t%s\t3000\t%s\t%s\topen\tno\t2\t10.00\n' "$t" "$external" "$idle" "$locked" >>"$LOGS/sampler.tsv"
+      printf '%s\t1\t3000\t5000\t%s\t3000\t%s\t%s\topen\tno\t1,2\t10.00\n' "$t" "$external" "$idle" "$locked" >>"$LOGS/sampler.tsv"
       t=$((t + 10))
     done
   }
