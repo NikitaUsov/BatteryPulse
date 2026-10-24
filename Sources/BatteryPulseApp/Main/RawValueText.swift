@@ -21,10 +21,16 @@ nonisolated enum RawValueText {
     }
 
     /// What the cells' text depends on besides the reading: the region, which the numbers follow
-    /// as `BatteryFormatter.app` does, and the time zone of the dates. The language and the unit
+    /// as `BatteryFormatter.app` does, and the time zone of the dates. A fixed number and date in
+    /// the cells' own wording also show a change of the number format or the 24-hour time in
+    /// System Settings, which the region's identifier doesn't name. The language and the unit
     /// symbols are fixed per launch.
     private static var wording: String {
-        Locale.autoupdatingCurrent.identifier + " " + TimeZone.current.identifier
+        [
+            Locale.autoupdatingCurrent.identifier, TimeZone.current.identifier,
+            string(for: .milliwatts(1_234_567)), string(for: .date(Date(timeIntervalSinceReferenceDate: 0))),
+        ]
+        .joined(separator: " ")
     }
 
     static func string(for decoded: DecodedRawValue, _ f: BatteryFormatter = .app) -> String {
