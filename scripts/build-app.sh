@@ -40,9 +40,10 @@ DMG="$BUILD_DIR/$NAME.dmg"
 # build don't get them, and Package.swift holds only the language policy.
 # - Export only _main. An executable without plug-ins that link back to it needs no exported
 #   symbols; the export list makes every other global private, so each binary exports one name
-#   instead of the about 4,200 public names of BatteryCore and BatteryKit. It doesn't shrink the
-#   code: what -dead_strip keeps doesn't depend on the exports. The widget keeps _main too,
-#   though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
+#   instead of the public names of BatteryCore, BatterySource and BatteryKit. On its own it
+#   doesn't shrink the code: what -dead_strip keeps doesn't depend on the exports. It is what
+#   lets -internalize-at-link (below) drop the public code nothing calls. The widget keeps _main
+#   too, though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
 #   widget_other_exports out of size-report.sh's hygiene checks too.
 # - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
 #   and the History store ran no slower with it.
