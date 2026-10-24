@@ -90,11 +90,15 @@ case "$HERE" in
   *) SCRIPT="bash $HERE/m5-session.sh" ;;
 esac
 # The session: B when the script runs from Session B's frozen worktree (~/bp-062/B/run, the start
-# line's one allow rule), A otherwise; BP_SESSION overrides it for a dry run elsewhere.
+# line's one allow rule), A otherwise. BP_SESSION overrides it only off the Mac (a dry run
+# elsewhere): on the Mac the path alone decides, so no variable turns Session B's fence off.
 case "$HERE" in
-  "$HOME"/bp-062/B/run/*) SESSION="${BP_SESSION:-B}" ;;
-  *) SESSION="${BP_SESSION:-A}" ;;
+  "$HOME"/bp-062/B/run/*) SESSION=B ;;
+  *) SESSION=A ;;
 esac
+if [ "$(uname -s)" != Darwin ]; then SESSION="${BP_SESSION:-$SESSION}"; fi
+# Session B's folder, whatever this run's own folder is: the night fence lives there.
+B_HOME="$HOME/bp-062/B"
 # queue --dry-run (CI on Linux) is Session B's queue in a folder of its own.
 if [ "${1:-}" = queue ] && [ "${2:-}" = --dry-run ]; then
   SESSION=B
@@ -2571,7 +2575,10 @@ epoch_stamp() { date -r "$1" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -d "@$1" '
 
 epoch_hm() { date -r "$1" '+%H:%M' 2>/dev/null || date -d "@$1" '+%H:%M'; }
 
-is_away() { [ -f "$WORK/away" ] && [ ! -f "$WORK/continued" ]; }
+# <folder>/continued is newer than <folder>/<file>: his continue came after it.
+continued_after() { [ -f "$1/continued" ] && [ -f "$1/$2" ] && [ "$1/continued" -nt "$1/$2" ]; }
+
+is_away() { [ -f "$WORK/away" ] && ! continued_after "$WORK" away; }
 
 # sound <name>: a system sound, but none from `mark away` until his morning continue (WP-21).
 sound() {
@@ -2605,13 +2612,37 @@ caller_is_arm() {
 }
 
 # b_fence: once `ready` is up, or while queue.started exists, no command acts until his morning
-# continue (§6 "Never act after ready"); `ui` enforces the same for itself.
+# continue (§6 "Never act after ready"); a continue counts only when it is newer than ready. `ui`
+# enforces the same for itself, and night_fence for every run of this script.
 b_fence() {
   if [ -f "$FENCE" ] && ! caller_is_arm; then
     fail "the energy queue runs ($FENCE exists): results in the morning; nothing was done"
   fi
-  if [ -f "$READY_FILE" ] && [ ! -f "$WORK/continued" ] && ! caller_is_arm; then
+  if [ -f "$READY_FILE" ] && ! continued_after "$WORK" ready && ! caller_is_arm; then
     fail "ready is up: nothing acts until his morning continue; nothing was done"
+  fi
+  night_fence
+}
+
+# The arm window of ~/bp-062/B (arm.pid, or the first field of queue.started) is this call's
+# ancestor.
+caller_is_b_arm() {
+  local pid
+  for pid in "$(cat "$B_HOME/arm.pid" 2>/dev/null || true)" "$(cut -d' ' -f1 "$B_HOME/queue.started" 2>/dev/null || true)"; do
+    if [ -n "$pid" ] && ancestor_pids | grep -qx "$pid"; then return 0; fi
+  done
+  return 1
+}
+
+# night_fence: Session B's fence for every run of this script, wherever it runs from and whatever
+# its own folder (his checkout, Session A's commands): ~/bp-062/B's queue.started, or its ready
+# without a newer continue, stops every acting command but the arm's own.
+night_fence() {
+  if [ -f "$B_HOME/queue.started" ] && ! caller_is_b_arm; then
+    fail "Session B's energy queue runs ($B_HOME/queue.started exists): nothing acts until the morning; nothing was done"
+  fi
+  if [ -f "$B_HOME/ready" ] && ! continued_after "$B_HOME" ready && ! caller_is_b_arm; then
+    fail "Session B's ready is up ($B_HOME/ready): nothing acts until his morning continue; nothing was done"
   fi
   return 0
 }
@@ -5373,6 +5404,21 @@ arm_after_queue() {
   arm_say "the queue is done; the Mac may sleep now. Results in the morning."
 }
 
+# arm_no_unplug: no bedtime unplug by 3 hours after his bedtime: every run "not run: no unplug",
+# the fence down, and the arm ends (B5's restore has nothing to put back: no run changed anything).
+arm_no_unplug() {
+  local at
+  at="$(epoch_hm $(($(bedtime_epoch) + 3 * 3600)))"
+  arm_say "no unplug by $at (3 hours after his bedtime): the queue is not run tonight"
+  begin_section 88-queue "The energy queue (B4; WP-21)"
+  out "- not run: no bedtime unplug by $at (3 hours after his bedtime), so a morning unplug never starts it"
+  echo "not run: no unplug by $at ($(clock))" >"$WORK/queue.done"
+  rm -f "$FENCE"
+  sudo -k 2>/dev/null || true
+  let_display_sleep
+  if [ -n "$ARM_QUEUE_CAFFEINATE" ]; then kill "$ARM_QUEUE_CAFFEINATE" 2>/dev/null || true; fi
+}
+
 arm_exit() {
   if [ -f "$FENCE" ] && [ "$(cut -d' ' -f1 "$FENCE" 2>/dev/null)" = "$ARM_PID" ] && [ ! -f "$WORK/queue.done" ]; then
     # Stopped mid-queue: Low Power Mode back, and the fence down, so the morning can go on.
@@ -5429,6 +5475,12 @@ step_arm() {
       arm_say "the bedtime unplug at $(epoch_hm "$unplugged"): no run starts after $(epoch_hm $((unplugged + 3 * 3600)))"
     fi
     if [ -n "$decided" ] && on_battery; then break; fi
+    # No unplug 3 hours after his bedtime: the queue isn't run, so a morning unplug never starts
+    # it while he uses the Mac, and the fence comes down for his continue.
+    if [ -n "$decided" ] && [ "$(date +%s)" -ge $(($(bedtime_epoch) + 3 * 3600)) ]; then
+      arm_no_unplug
+      return 0
+    fi
     if read -r -t 60 -p "$(arm_prompt)" reply; then arm_return; else echo; fi
   done
   if [ "$unplugged" = 0 ]; then unplugged="$(date +%s)"; fi
@@ -5468,23 +5520,62 @@ step_ready() {
   echo "READY: end the turn now. A message that reaches the session after this gets a text-only answer (results in the morning), with no tool call."
 }
 
-# continue (B7): his morning word. Refused while the queue runs, and unless someone is at the Mac
-# (HIDIdleTime under 15 minutes: his lid close and login), so a session that wakes up at night
-# can't open the fence itself.
+# back_since <epoch>: pmset -g log shows him back after that time: the display turned on, or a
+# wake by the lid or by his hand (the morning's lid close and login, V-01's lid step).
+back_since() {
+  pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" '
+    substr($0, 1, 19) > from && (/Display is turned on/ || ($4 == "Wake" && /LidOpen|Lid Open|UserActivity|User Activity/)) { found = 1 }
+    END { exit !found }'
+}
+
+# continue (B7): his morning word, which opens the fence. Only after the night: the queue's end
+# (queue.done), or an arm window that is gone with ready up (it stopped early). Only with him at
+# the Mac: HIDIdleTime readable and at most 15 minutes, and pmset -g log showing him back after
+# the queue's last sign of life (the display turned on, or a lid or user wake). So a session that
+# wakes up at night, or a continue during B0-B2, can't open the fence itself; ui and every command
+# take a continue only when it is newer than ready.
 step_continue() {
   b_only continue
-  local arm idle
-  if [ -f "$FENCE" ]; then
-    arm="$(cut -d' ' -f1 "$FENCE")"
-    if kill -0 "$arm" 2>/dev/null; then
+  local pid alive="" idle since file at
+  if [ ! -f "$READY_FILE" ]; then
+    echo "continue isn't needed: ready isn't up, so nothing is fenced"
+    return 0
+  fi
+  if continued_after "$WORK" ready; then
+    echo "continued already at $(cat "$WORK/continued")"
+    return 0
+  fi
+  for pid in "$(cat "$WORK/arm.pid" 2>/dev/null || true)" "$(cut -d' ' -f1 "$FENCE" 2>/dev/null || true)"; do
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then alive="$pid"; fi
+  done
+  if [ -n "$alive" ]; then
+    if [ ! -f "$WORK/unplug.epoch" ]; then
+      fail "the arm window still waits for the bedtime unplug, with the fence up: continue comes after the queue (it gives up 3 hours after his bedtime)"
+    elif [ ! -f "$WORK/queue.done" ]; then
       fail "the queue still runs (its log: $LOGS/arm.log); tell him it ends at about $(cat "$WORK/queue.expected" 2>/dev/null || echo "the time the arm window gave")"
     fi
-    rm -f "$FENCE"
-    note_line "the arm window had stopped and left queue.started: removed at continue"
+    fail "the arm window is finishing the queue's end: continue again in a minute"
   fi
   idle="$(idle_seconds)"
-  if awk -v i="${idle:-0}" 'BEGIN { exit !(i + 0 > 900) }'; then
-    fail "HIDIdleTime is ${idle} s: continue comes after he is at the Mac (the lid close and his login)"
+  case "$idle" in
+    "" | *[!0-9.]*) fail "HIDIdleTime can't be read, and continue needs it (at most 900 s): nothing was opened" ;;
+  esac
+  if ! awk -v i="$idle" 'BEGIN { exit !(i + 0 <= 900) }'; then
+    fail "HIDIdleTime is $idle s: continue comes after he is at the Mac (the lid close and his login)"
+  fi
+  # The queue's last sign of life: its end, its fence, its log or ready, whichever is newest.
+  since=0
+  for file in "$WORK/queue.done" "$FENCE" "$LOGS/arm.log" "$READY_FILE"; do
+    [ -f "$file" ] || continue
+    at="$(mtime_of "$file")"
+    if [ "$at" -gt "$since" ]; then since="$at"; fi
+  done
+  if ! back_since "$since"; then
+    fail "pmset -g log shows nothing of him since $(epoch_stamp "$since") (no display turned on, no lid or user wake): he closes the lid for a minute, opens it and logs in, then continue"
+  fi
+  if [ -f "$FENCE" ]; then
+    rm -f "$FENCE"
+    note_line "the arm window had stopped and left queue.started: removed at continue"
   fi
   clock >"$WORK/continued"
   echo "continued at $(clock): the morning (B7) may begin: $SCRIPT morning"
@@ -6166,9 +6257,15 @@ b_run() {
 
 COMMAND="${1:-}"
 if [ $# -gt 0 ]; then shift; fi
+# Once Session B's ready is up, or while its queue runs, nothing acts until his morning continue:
+# checked before the session is told apart, so neither his own checkout nor Session A's commands
+# (install, restore, appearance) get past it. The reads and the arm itself are let through.
+case "$COMMAND:${1:-}" in
+  help:* | -h:* | --help:* | status:* | continue:* | queue:* | arm: | :) ;;
+  *) night_fence ;;
+esac
 if [ "$SESSION" = B ]; then
-  # Once ready is up, or while the queue runs, nothing acts until his morning continue; every call
-  # but these reads is the session's heartbeat.
+  # Every call but these reads is the session's heartbeat.
   case "$COMMAND:${1:-}" in
     help:* | -h:* | --help:* | status:* | continue:* | queue:* | arm: | :) ;;
     *)
