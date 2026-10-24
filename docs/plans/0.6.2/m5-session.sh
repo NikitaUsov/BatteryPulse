@@ -3328,11 +3328,37 @@ step_pane() {
 }
 
 # widget <family> <x> <y> <w> <h>: a placed widget's frame in points (from proof P1's `ui hit`),
-# for F8's and F12's crops. AX can't move widgets, so their frames come from here.
+# for F8's and F12's crops and for ui's window-list rule and `tree --inside`. AX can't move
+# widgets, so their frames come from here. A frame is recorded only when it is no larger than its
+# family's widget (one in pixels is twice as large) and `ui hit` finds a widget host's element
+# labelled BatteryPulse at its centre.
 step_widget() {
   b_only widget
   [ $# -eq 5 ] || fail "usage: $SCRIPT widget small|medium|large|xlarge <x> <y> <w> <h>"
-  case "$1" in small | medium | large | xlarge) ;; *) fail "a family is small, medium, large or xlarge" ;; esac
+  local limit number hit bundle
+  # ui.swift's Rules.widgetLimits, in points, with room to spare.
+  case "$1" in
+    small) limit="220 220" ;;
+    medium) limit="440 220" ;;
+    large) limit="440 460" ;;
+    xlarge) limit="880 460" ;;
+    *) fail "a family is small, medium, large or xlarge" ;;
+  esac
+  for number in "$2" "$3" "$4" "$5"; do
+    case "$number" in "" | *[!0-9.-]*) fail "a frame is four numbers in points: x y width height" ;; esac
+  done
+  awk -v w="$4" -v h="$5" -v l="$limit" 'BEGIN { split(l, m, " "); exit !(w >= 20 && h >= 20 && w <= m[1] && h <= m[2]) }' ||
+    fail "a $1 widget is at most ${limit% *} x ${limit#* } points: $4 x $5 isn't one (pixels instead of points?); nothing recorded"
+  hit="$(ui_run hit "$(awk -v x="$2" -v w="$4" 'BEGIN { printf "%d", x + w / 2 }')" \
+    "$(awk -v y="$3" -v h="$5" 'BEGIN { printf "%d", y + h / 2 }')" 2>&1)" ||
+    fail "ui hit at the frame's centre: $(head -1 <<<"$hit"); nothing recorded"
+  bundle="$(sed -n 's/^process: .* (\(.*\), pid .*/\1/p' <<<"$hit" | head -1 || true)"
+  case " com.apple.notificationcenterui com.apple.chronod $(tr '\n' ' ' <"$WORK/ui-hosts" 2>/dev/null || true) " in
+    *" ${bundle:-none} "*) ;;
+    *) fail "the frame's centre isn't a widget host's (${bundle:-unknown}): nothing recorded" ;;
+  esac
+  grep -q '^batterypulse_label: yes' <<<"$hit" ||
+    fail "no element labelled BatteryPulse at the frame's centre: not a BatteryPulse widget, nothing recorded"
   touch "$WORK/widgets.tsv"
   awk -F '\t' -v f="$1" '$1 != f' "$WORK/widgets.tsv" >"$WORK/widgets.tmp"
   mv "$WORK/widgets.tmp" "$WORK/widgets.tsv"
