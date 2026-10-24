@@ -126,11 +126,20 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   its own (the widget's two only shape the extension). `MemberImportVisibility` is on, so a file
   imports every module whose members it uses (`os` for a `Logger` call through `Diagnostics`,
   BatteryCore for a `MotionPolicy` member).
-  BatteryCore and bpulse build with strict memory safety: an unavoidable unsafe call is marked
-  `unsafe` with its reason (bpulse's three pointer and format calls, and `BatteryReport.cFormat`'s
-  `String(format:)`, which only Darwin's Foundation marks, so its marker sits under
-  `#if canImport(Darwin)`: an unneeded one warns). The rest of the unsafe code is BatteryKit's
-  system bindings (IOKit, SMC, MobileDevice, notify) and the app's `proc_*` calls.
+  BatteryCore, BatterySource, BatteryKit and bpulse build with strict memory safety
+  (`SecurityGuardTests`' `strictMemorySafetyTargets` is the list): every unavoidable unsafe use
+  is marked `unsafe` with its reason. In BatteryCore and bpulse that is bpulse's three pointer and
+  format calls and `BatteryReport.cFormat`'s `String(format:)`, which only Darwin's Foundation
+  marks, so its marker sits under `#if canImport(Darwin)`: an unneeded one warns. In BatterySource
+  (IOKit, SMC, notify) and BatteryKit (MobileDevice, USB) each `unsafe` follows a comment that
+  starts with `Unsafe` and gives its reason (`// Unsafe: …`, or `Unsafe, here and below: …` for
+  a run of them). Four types are `@safe`, each saying why, and `SecurityGuardTests` allows no
+  other: `MacAccessoryProvider`, `MobileDeviceLibrary`, `MobileDeviceLink` and
+  `USBDeviceWatcher`'s `Watch`; it also pins the one `nonisolated(unsafe)` (`SystemNotifications`)
+  and allows no silenced `StrictMemorySafety`. The app and the widget build without the check, so
+  the app's few unsafe calls stay unmarked: the `proc_*` calls (`WidgetRefresher`),
+  `UpdateInstaller`'s code-signature check (`Unmanaged<CFError>`) and `renamex_np`, and the menu
+  bar icon's CoreText glyph calls.
 - Concurrency: the app target runs on the main actor by default (`.defaultIsolation(MainActor.self)`
   in `Package.swift`); the other targets, the widget included, stay nonisolated. App code that a
   framework calls on its own threads, or that runs off the main actor, is marked `nonisolated`,
