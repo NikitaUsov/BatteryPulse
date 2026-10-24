@@ -20,45 +20,53 @@ struct WindowLookSettings: View {
     }
 
     var body: some View {
+        let increaseContrast = contrast == .increased
         let policy = WindowLookPolicy(
             setting: windowLook.available(betaStyles: betaStyles), reduceTransparency: reduceTransparency,
-            increaseContrast: contrast == .increased)
+            increaseContrast: increaseContrast)
+        let offered = WindowLook.offered(betaStyles: betaStyles)
         Section {
-            PreviewTilePicker(
-                selection: selection, values: WindowLook.offered(betaStyles: betaStyles), title: \.title,
-                badge: \.badge
-            ) { look in
+            PreviewTilePicker(selection: selection, values: offered, title: \.title, badge: \.badge) { look in
                 WindowLookPreview(look: look)
             }
         } header: {
             Text("Window Style")
         } footer: {
-            footer(policy)
+            footer(
+                shown: policy.note,
+                notes: WindowLookPolicy.notes(
+                    offered: offered, reduceTransparency: reduceTransparency, increaseContrast: increaseContrast))
         }
     }
 
-    /// What the choice costs, or why it doesn't apply. The tiles stay enabled under an
+    /// What the choice costs, or why it doesn't apply. Every note the tiles can lead to is laid
+    /// out and only the chosen one shows, so the footer keeps its height whatever is selected:
+    /// Settings sizes its window to its content, and a resize could move the tiles on screen. The
+    /// note changes with the choice, without animation. The tiles stay enabled under an
     /// accessibility setting, so the choice can still be made for later.
-    @ViewBuilder
-    private func footer(_ policy: WindowLookPolicy) -> some View {
-        if policy.override != nil {
-            Text(
-                "Standard is used while Reduce transparency or Increase contrast is on in Accessibility settings.")
-        } else {
-            switch policy.setting {
-            case .standard:
-                EmptyView()
-            case .frosted:
-                Text("Shows the desktop through BatteryPulse windows.")
-            case .translucent:
-                Text(
-                    "Shows more of the desktop through BatteryPulse windows. Can be harder to read and uses more energy."
-                )
-            case .clear:
-                Text(
-                    "Pure glass: the desktop shows through and all content turns white. The hardest to read, and uses more energy."
-                )
+    private func footer(shown: WindowLookPolicy.Note?, notes: [WindowLookPolicy.Note]) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(notes, id: \.self) { note in
+                noteText(note)
+                    .opacity(note == shown ? 1 : 0)
+                    .accessibilityHidden(note != shown)
             }
+        }
+    }
+
+    private func noteText(_ note: WindowLookPolicy.Note) -> Text {
+        switch note {
+        case .overridden:
+            Text("Standard is used while Reduce transparency or Increase contrast is on in Accessibility settings.")
+        case .frosted:
+            Text("Shows the desktop through BatteryPulse windows.")
+        case .translucent:
+            Text(
+                "Shows more of the desktop through BatteryPulse windows. Can be harder to read and uses more energy.")
+        case .clear:
+            Text(
+                "Pure glass: the desktop shows through and all content turns white. The hardest to read, and uses more energy."
+            )
         }
     }
 }

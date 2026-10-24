@@ -94,8 +94,9 @@ private struct WindowBackground: ViewModifier {
         case .glassSheet:
             // Translucent and Clear: one sheet of clear glass behind the sidebar, the toolbar and
             // the content, tinted with Translucent's dimming layer or Clear's dark dimming. While
-            // the window minimizes, sits in the Dock and is restored, a still fill of the same
-            // tint takes its place: the animation doesn't show the desktop the glass samples.
+            // the window minimizes, sits in the Dock and is restored, a still fill takes its place
+            // (an opaque graphite, or Translucent Light's own wash): the animation doesn't show
+            // the desktop the glass samples.
             content.containerBackground(for: .window) {
                 switch policy.sheetSurface(systemDark: systemDark, isMinimized: isMinimized) {
                 case .glass(let tint): GlassSheet(tint: Color(tint))
