@@ -2553,6 +2553,10 @@ HEARTBEAT="$WORK/heartbeat"
 MORNING="$WORK/morning-items.txt"
 # Posted with the ready file: the arm window's waiter wakes at once instead of at its backstop.
 READY_NOTIFY="io.github.nikitausov.BatteryPulse.session-b.ready"
+# The English bodies of the test notification and the charge alert (App/BatteryNotifier.swift),
+# which `ui banner` looks for.
+TEST_NOTIFICATION_TEXT="This is how battery alerts will look"
+CHARGE_ALERT_TEXT="You can unplug the power adapter"
 # Every B run but the queue's: the queue reads them fresh, and a dry run swaps them out.
 DRY_RUN=""
 
@@ -3920,7 +3924,9 @@ step_v01_b() {
       ui_run press BatteryPulse Notifications >/dev/null 2>&1 || warn "the Notifications pane didn't select"
       sleep 1
       ui_run press BatteryPulse "Send Test Notification" >/dev/null 2>&1 || fail "Send Test Notification didn't press"
-      result="$(ui_run banner BatteryPulse --seconds 10 2>&1 || true)"
+      # By the notification's own text (the app runs in English here), as proof P2 finds its probe:
+      # Notification Center also hosts the desktop widgets, and an earlier banner may still show.
+      result="$(ui_run banner "$TEST_NOTIFICATION_TEXT" --seconds 10 2>&1 || true)"
       sleep 2
       use_section 20-v01 "V-01 on the RC (WP-10, WP-14a)"
       out "- $id: $result; front window afterwards: $(ui_run windows 2>/dev/null | awk -F '\t' '$2 == "layer 0" { print $3; exit }')"
@@ -4001,7 +4007,7 @@ step_f11() {
       set_default alertChargeLimit -int "$step"
       defaults delete "$BUNDLE_ID" alertState 2>/dev/null || true
       launch_b
-      until result="$(ui_run banner BatteryPulse --seconds 20 2>&1)" || [ "$waited" -ge 18 ]; do
+      until result="$(ui_run banner "$CHARGE_ALERT_TEXT" --seconds 20 2>&1)" || [ "$waited" -ge 18 ]; do
         waited=$((waited + 1))
       done
       out "- F11-alert: step $step % at $charge %: ${result:-no banner}"

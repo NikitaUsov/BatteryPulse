@@ -26,8 +26,10 @@
 //   fullscreen on|off <app> [--window <title>]       AXFullScreen (no keystroke)
 //   position <app> <x> <y> [<width> <height>] [--window <title>]   (Terminal too: placed, never
 //                                                    clicked)
-//   banner <app name> [--seconds n] [--probe]        finds its banner in Notification Center's AX
-//                                                    tree and presses it (--probe: only finds it)
+//   banner <text> [--seconds n] [--probe]            finds the banner with that text (the
+//                                                    notification's own body) in Notification
+//                                                    Center's AX tree and presses it (--probe: only
+//                                                    finds it)
 //   quit <app>                                       an AX press on the app's own Quit menu item
 // Reads:
 //   frame <app> [--window <title> | --minimize-button | --match <text>] | frame --dock <title>
@@ -947,7 +949,7 @@ enum Command {
 
     static func banner(_ options: Options) throws {
         try Safety.checkAll()
-        guard options.words.count > 1 else { throw UsageError(description: "banner <app name>") }
+        guard options.words.count > 1 else { throw UsageError(description: "banner <text>") }
         let text = options.words[1]
         let seconds = try options.number("--seconds", default: 10)
         let start = Date()
