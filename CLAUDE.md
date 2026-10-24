@@ -14,7 +14,10 @@ through the App Store. Reference hardware: MacBook Air M5.
   `BatterySnapshot` model, `MacPowerParser` (AppleSmartBattery + IOPS + adapter dictionaries),
   `RegistryChildren` (the pack, banks and charger entries below AppleSmartBattery), `SMC` (wire
   format and battery keys of the read-only SMC client; `SMCReadPolicy`/`SMCValueCache` read the
-  keys a poll doesn't show at most every 60 s), metrics, `BatteryReport` text output,
+  keys a poll doesn't show at most every 60 s), `RegistryReadPolicy` (a poll reuses the last
+  read's registry, IOPS and adapter dictionaries unless Power or Raw Data is shown or they are 5
+  minutes old, `defaultSafetyNetAge`; `cachesOnPolls` is its one switch, never a setting) and
+  `RegistryUpdateWatch` (an update no notification announced), metrics, `BatteryReport` text output,
   `CaptureFormat` (the capture property list, `BatterySnapshot.redacted`, Copy JSON's encoder),
   `RawValueDecoding`/`RawKeyGlossary` (Developer table; `RawDisplayRow`/`RawDisplaySection` are
   its prebuilt rows), `History`/`HistoryStore`, `HistoryChartData` (the History page's charts),
@@ -30,15 +33,22 @@ through the App Store. Reference hardware: MacBook Air M5.
   `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`), `LiveRefreshPolicy`
   (slower polls in Low Power Mode, under reduced resources or heat), `WindowLook`
   (`WindowLookPolicy`) and `ToneMap` (window styles). Must stay free of Apple-only frameworks.
-- `Sources/BatteryKit` — `BatteryProvider` protocol, `MacBatteryProvider` (IOKit, registry
-  children, SMC via `SMCClient`), `IOSBatteryProvider` (UIDevice), `DemoBatteryProvider`,
-  `BatteryMonitor` (@Observable, event-driven + optional polling, one read per notification burst,
-  on an injected `MonitorClock`; `setOverride` swaps in the demo), `Diagnostics` (its loggers and
-  `Signposts`), `UpdateSignatureVerifier` (CryptoKit), `IDeviceTransport` and `MobileDevice/` (the
-  private MobileDevice framework through `dlopen`, never linked; no pairing calls),
-  `IDeviceMonitor` (opt-in, USB-triggered device reads; `USBDeviceWatcher`, `DeviceKeys` HMAC),
-  `AccessoryMonitor` and `MacAccessoryProvider` (the private `IOPSCopyPowerSourcesByType(4)`
-  through `dlsym`, refreshed on the `com.apple.system.accpowersources.*` notifications).
+- `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
+  widget links besides BatteryCore (no CryptoKit, no MobileDevice). `BatteryProvider` protocol
+  (a read's `BatteryReadScope` is two decisions, `rereadsRegistry` and `readsAllSMCKeys`),
+  `MacBatteryProvider` (IOKit, registry children, SMC via `SMCClient`), `IOSBatteryProvider`
+  (UIDevice), `AccessoryProvider` and `MacAccessoryProvider` (the private
+  `IOPSCopyPowerSourcesByType(4)` through `dlsym`, refreshed on the
+  `com.apple.system.accpowersources.*` notifications), `SystemNotifications` (the
+  `NotificationCenter` and notify(3) subscriptions, Low Power Mode and the thermal state) and
+  `Diagnostics` (the loggers and `Signposts` of BatterySource and BatteryKit, `RefreshTrigger`).
+  Tested by `BatterySourceTests`.
+- `Sources/BatteryKit` — on top of BatterySource: `DemoBatteryProvider`, `BatteryMonitor`
+  (@Observable, event-driven + optional polling, one read per notification burst, on an injected
+  `MonitorClock`; `setOverride` swaps in the demo), `UpdateSignatureVerifier` (CryptoKit),
+  `IDeviceTransport` and `MobileDevice/` (the private MobileDevice framework through `dlopen`,
+  never linked; no pairing calls), `IDeviceMonitor` (opt-in, USB-triggered device reads;
+  `USBDeviceWatcher`, `DeviceKeys` HMAC), `AccessoryMonitor` and `DemoAccessoryProvider`.
 - `Sources/BatteryPulseApp` — SwiftUI app (product `BatteryPulse`): `App/` (scenes, settings keys,
   Dock icon policy, localized phrases, `DemoController`, `Diagnostics` (loggers and signposts),
   `Motion` with the `\.motion` environment value and its presets, plus `SystemPowerState` and
@@ -67,13 +77,18 @@ through the App Store. Reference hardware: MacBook Air M5.
   (`BatteryPulse.dmg.sig`; `--help` is the key rotation runbook) and publishes
   `BatteryPulse-dSYMs.zip` beside them. The app's `Updates/UpdateInstaller` refuses an update
   without a `.sig` or one that fails its signature, digest, bundle or code-signature check, and
-  then offers only the release page, never the DMG (`UpdateFallback`). Never ask for or handle
-  the private key.
+  then offers only the release page, never the DMG (`UpdateFallback`). It mounts the DMG with
+  `diskutil image attach --readOnly` at a private mount point (`nobrowse`) and ejects it with
+  `diskutil eject`, by force (`unmountDisk force`) only with the image's own disk from `diskutil
+  info -plist` (`UpdateInstallPolicy`); updaters up to 0.6.1 use `hdiutil`, and CI's install step
+  runs both. Never ask for or handle the private key.
 - `scripts/` — `build-app.sh` (packages the app, `PROFILING=1` for an Instruments build, and
   fails on any signing-posture violation, listing each), `size-report.sh` with
   `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated
   table has every catalog key), `perf-stats.swift` (sums the `perf` log lines), `rusage.swift`
-  (one process's energy and wake-ups), `menu-bar-shots.sh` with `display-metrics.swift`.
+  (one process's energy and wake-ups), `release-stats.swift` (each release's DMG and signature
+  downloads from GitHub's public API, unauthenticated, for ROADMAP's Releases table a week after
+  a release), `menu-bar-shots.sh` with `display-metrics.swift`.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 
@@ -86,7 +101,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   Darwin code, push and check the macOS job.
 - Both CI jobs treat every compiler warning as an error (a deprecation stays a warning) and have
   time limits; the macOS job also packages the app, checks its size and signing posture, and
-  launches it once.
+  launches it once. The Linux job checks BatteryCore's documentation links ("Check the
+  documentation links": `docc convert --warnings-as-errors` over its symbol graph, internal
+  symbols included), so a broken or ambiguous DocC symbol link in a BatteryCore comment fails
+  it; the other targets' cross-module links aren't checked. The macOS job writes the release
+  bpulse's peak memory footprint per fixture, and `--help`'s, to its step summary ("Peak memory
+  of the parser"), with no budget.
 
 ## Commands
 
@@ -113,15 +133,33 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   its own (the widget's two only shape the extension). `MemberImportVisibility` is on, so a file
   imports every module whose members it uses (`os` for a `Logger` call through `Diagnostics`,
   BatteryCore for a `MotionPolicy` member).
-  BatteryCore and bpulse build with strict memory safety: an unavoidable unsafe call is marked
-  `unsafe` with its reason (bpulse's three pointer and format calls, and `BatteryReport.cFormat`'s
-  `String(format:)`, which only Darwin's Foundation marks, so its marker sits under
-  `#if canImport(Darwin)`: an unneeded one warns). The rest of the unsafe code is BatteryKit's
-  system bindings (IOKit, SMC, MobileDevice, notify) and the app's `proc_*` calls.
-- Concurrency: a plain `async` function runs on its caller's actor
+  BatteryCore, BatterySource, BatteryKit and bpulse build with strict memory safety
+  (`SecurityGuardTests`' `strictMemorySafetyTargets` is the list): every unavoidable unsafe use
+  is marked `unsafe` with its reason. In BatteryCore and bpulse that is bpulse's three pointer and
+  format calls and `BatteryReport.cFormat`'s `String(format:)`, which only Darwin's Foundation
+  marks, so its marker sits under `#if canImport(Darwin)`: an unneeded one warns. In BatterySource
+  (IOKit, SMC, notify, `dlsym`) and BatteryKit (MobileDevice, USB) the reason is a comment above
+  each `unsafe`, in a sentence that starts with `Unsafe` (`Unsafe: …`, or `Unsafe, here and
+  below: …` for a run of them). Four types are `@safe`, each saying why, and `SecurityGuardTests`
+  allows no other: `MacAccessoryProvider`, `MobileDeviceLibrary`, `MobileDeviceLink` and
+  `USBDeviceWatcher`'s `Watch`; it also pins the one `nonisolated(unsafe)` (`SystemNotifications`)
+  and allows no silenced `StrictMemorySafety`. The app and the widget build without the check, so
+  the app's few unsafe calls stay unmarked: the `proc_*` calls (`WidgetRefresher`),
+  `UpdateInstaller`'s code-signature check (`Unmanaged<CFError>`) and `renamex_np` with its
+  `strerror`, and the menu bar icon's CoreText glyph calls.
+- Concurrency: the app target runs on the main actor by default (`.defaultIsolation(MainActor.self)`
+  in `Package.swift`); the other targets, the widget included, stay nonisolated. App code that a
+  framework calls on its own threads, or that runs off the main actor, is marked `nonisolated`,
+  and `IsolationGuardTests` pins the app's four `@MainActor`s and those `nonisolated`
+  declarations. A plain `async` function runs on its caller's actor
   (`NonisolatedNonsendingByDefault`). Work that leaves the main actor (decoding, hashing,
   building chart data or Raw Data rows) is a `@concurrent` function over `Sendable` values, not
-  `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`).
+  `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`). The battery reads leave it
+  too: `MacBatteryProvider` is `nonisolated` and `Sendable` (what it keeps between reads behind
+  `Mutex`es), offered as `BatteryProvider.nonisolatedReader` (`nil` by default, so the demo and
+  UIDevice providers read on the main actor), and `BatteryMonitor` reads every trigger but
+  `launch`, `demo` and `manual` in a `@concurrent` function, one read at a time, the requests
+  meanwhile folded into one follow-on read, each result assigned in one step.
 - Observation: a service follows `@Observable` state in a named task over
   `Observations { … }.dropFirst()` (the start value is no change) and cancels it in `stop()`;
   never `withObservationTracking`.
@@ -133,7 +171,7 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `\.windowLook`, `\.contentTreatment`), and its objects are `@Observable` services that views
   read property by property; never `snapshot`, `reading`, dates, timers or geometry as a value,
   which would re-render every view that reads it.
-- Logging: `Diagnostics` (an app and a BatteryKit twin), one `Logger` per category of the
+- Logging: `Diagnostics` (an app and a BatterySource twin), one `Logger` per category of the
   `io.github.nikitausov.BatteryPulse` subsystem: `monitor`, `smc`, `iokit`, `history`, `device`,
   `accessory`, `update`, `widget`, `perf`. A failure that loses data or a feature is logged, not
   dropped with `try?`. Only static text, numbers and case names log as `.public`; error
@@ -141,16 +179,21 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `.private(mask: .hash)`).
 - Signposts: `Diagnostics.begin`/`measure`/`event` with `StaticString` names and triggers: a
   Points of Interest signpost plus a `perf` debug line that `scripts/perf-stats.swift` reads.
-  Names: `refresh` (its trigger is a `RefreshTrigger`), `read` with `registry`, `iops`,
-  `adapter`, `smc.power`, `smc.other`, `children` and `parse`; `history.load`, `history.record`,
-  `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`, `device.read`, `accessory.read`;
-  the events `widget.reload` and `menuBarReady`. Keep them stable: measurements compare by name.
+  Names: `refresh` (its trigger is a `RefreshTrigger`), `read` (its trigger, `full`, `live`,
+  `cached` or `cached.slow`, is what the read fetched: `BatteryReadScope.signpostName`) with
+  `registry`, `iops`, `adapter`, `smc.power`, `smc.other`, `children` and `parse`;
+  `history.load`, `history.record`, `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`,
+  `device.read`, `accessory.read`; the events `widget.reload`, `menuBarReady` and
+  `registry.missed` (a read that fetched the registry found an update no notification announced;
+  its trigger is the refresh's). Keep them stable: measurements compare by name.
 - Guard suites run on Linux over the sources with comments and strings blanked
   (`Tests/BatteryCoreTests/SourceScanner.swift`), Darwin code included: `MotionGuardTests`
   (motion, glass, window style, tone map), `EnergyGuardTests` (the energy rules above),
   `SecurityGuardTests` (where `dlopen`/`dlsym`, IOKit user clients, `Process` and `kill` may
-  appear, the SMC's one selector, and the escapes from the compiler's checks) and
-  `LocalizationCatalogTests`. An exception goes on the suite's list with its reason.
+  appear, the SMC's one selector, and the escapes from the compiler's checks),
+  `IsolationGuardTests` (the app's isolation, above) and `LocalizationCatalogTests`. An exception
+  goes on the suite's list with its reason. A new target joins `SourceScanner`'s lists in the
+  same commit (`everySourceFolderIsAListedTarget`).
 - Localization: UI literals are `LocalizedStringKey`/`String(localized:)` keyed by the English
   text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a
   ternary of literals to `Text` (it becomes a plain String). Add every new key with its Russian
@@ -169,7 +212,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   behind the whole window, Translucent with a dimming tint, Clear with a dark dimming, the
   window in the dark appearance, a graphite control tint (never white) and every colour through
   the tone map (`\.tones`, `App/ToneStyle.swift`; no system colour names in `Main/`,
-  `App/Localized.swift` or `App/DemoController.swift`). The sheet is the only glass under other
+  `App/Localized.swift` or `App/DemoController.swift`). While the window minimizes, sits in the
+  Dock and is restored, the sheet's place is a still fill, never animated
+  (`sheetSurface(systemDark:isMinimized:)`): the opaque `graphiteMinimizeFill` for Clear and for
+  Translucent in Dark, Translucent Light's own white wash. The sheet is the only glass under other
   glass. Only the main and compact windows; Reduce Transparency or Increase Contrast gives
   Standard. Content stays free of glass and materials: no material in `Main/` but the History
   chart's hover readout, which must read on every style; groups use `Card`/`CardGroup`/`LookForm`.

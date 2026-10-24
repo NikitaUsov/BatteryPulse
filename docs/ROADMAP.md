@@ -130,11 +130,13 @@ Data), without private APIs. The format still has to be checked against a real f
 ## Architecture
 
 ```
-BatteryCore  (Linux + Apple)   models, parsing, metrics, text report, history, SMC wire format
+BatteryCore    (Linux + Apple)   models, parsing, metrics, text report, history, SMC wire format
      ▲
-BatteryKit   (Apple)           IOKit (macOS) / UIDevice (iOS), BatteryMonitor (@Observable)
+BatterySource  (Apple)           IOKit and the SMC (macOS) / UIDevice (iOS)  ◀── Widgets
      ▲
-bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
+BatteryKit     (Apple)           BatteryMonitor (@Observable), iPhone and iPad, CryptoKit
+     ▲
+bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
 ```
 
 ## Stages
@@ -202,7 +204,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   `CHLT`, which `bpulse --smc` lists (it prints no `CH*` values; a value read waits for a reviewed
   change); and `pmset -g battlimit`, which prints the file's policy, also only on the adapter. The
   redacted capture of the hold came with the session's report. Open until it is committed as a
-  test fixture (0.7)
+  test fixture (0.7, QUA-05, `docs/plans/1.0/ROADMAP.md`)
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -218,7 +220,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
 - [x] Release notes in the Software Update window: join the lines of a wrapped paragraph or
   list item, which now break mid-sentence (seen with 0.3.1's notes)
-- [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
+- [x] Install updates from the app: download the DMG itself, verify it, replace the app and
   relaunch, instead of sending the user to the browser. Built in 0.4.0; the first real test is
   0.4.0 → 0.4.1 on the M5. Researched (October 2026, with an adversarial check):
   - A file a non-sandboxed app downloads with URLSession isn't quarantined (no
@@ -232,8 +234,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
     DMG); it catches a broken download but not a swapped one. An Ed25519 signature from CryptoKit,
     made in CI with a secret key and checked against a public key built into the app, proves the
     update is ours. Also check the bundle ID, the version and `codesign --verify --strict`.
-  - Mechanics: mount with `hdiutil attach -nobrowse -readonly`, copy next to the app on the same
-    volume, then a small detached step waits for the app to quit, swaps the two bundles
+  - Mechanics: mount with `hdiutil attach -nobrowse -readonly` (from 0.6.2 `diskutil image
+    attach`, Stage 1.7), copy next to the app on the same volume, then a small detached step
+    waits for the app to quit, swaps the two bundles
     atomically (`renamex_np` with `RENAME_SWAP`), deletes the old copy, registers the new one
     with Launch Services and relaunches it. Skip when the app runs translocated or outside a
     writable folder.
@@ -263,13 +266,14 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
 
   Seen on the M5 on 2026-10-22: the maintainer installed 0.6.1 through Install and Relaunch from
   0.6.0, the desktop widget stayed and showed the current charge, and Open at login kept its
-  state, so the login item needs no re-registering. 0.6.2 ticks this item.
-- [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
+  state, so the login item needs no re-registering.
+- [x] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
   kept them on the M5, and so did the in-app update from 0.6.0 to 0.6.1 on 2026-10-22, with the
-  widget current; 0.6.2 ticks this item.) Replacing 0.3.0 with 0.3.1 from the DMG
-  removed them; the gallery still offered the widget, and it worked once added again. The
-  in-place swap above keeps the path, registers the new copy and raises
-  `CFBundleVersion`, then reloads the timelines; each release's check after publishing looks
+  widget current.) Replacing 0.3.0 with 0.3.1 from the DMG removed them; the gallery still
+  offered the widget, and it worked once added again. The in-place swap above keeps the path,
+  registers the new copy and raises `CFBundleVersion`, then reloads the timelines; from 0.6.2 the
+  installer also ends the running widget extension just before the swap, so macOS can't take
+  the old one's description for the new version. Each release's check after publishing looks
   again; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
   coming, 2026-10-22), and the guide tells the user to add them again
 - [x] An About BatteryPulse window: version and build, license, links to the project, the User
@@ -299,10 +303,12 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)    Widgets
   Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
   charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
   to verify on the M5
-- [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
-  bar's height on displays with a notch. `scripts/menu-bar-shots.sh` shoots every style next to
-  the system item on light and dark wallpapers with both appearances, and records each display's
-  menu bar height, scale and notch (`scripts/display-metrics.swift`)
+- [x] Check light and dark menu bars: on the M5 the icon looks right next to the system's battery
+  item in both appearances (0.6.1's session, 2026-10-22)
+- [ ] Check Increase Contrast and Reduce Transparency, and the menu bar's height on displays with
+  a notch. `scripts/menu-bar-shots.sh` shoots every style next to the system item on light and
+  dark wallpapers with both appearances, and records each display's menu bar height, scale and
+  notch (`scripts/display-metrics.swift`)
 - [ ] 0.6.0: rework the drawn styles. On the M5 (0.4.0) they looked off next to the system item:
   Modern read heavier (a full capsule, a darker track, a small thin bolt) although it was
   smaller, Percentage Inside's digits changed colour at the fill edge, the previews in Settings
@@ -572,9 +578,13 @@ hour) whenever Xcode is open.
   choice, 2026-10-22) while the window minimizes and comes back; the Clear tile's preview looks
   the same selected or not; the evidence (screenshots in every style, energy) that decides
   whether Translucent and Clear leave beta
-- [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
-  each window style, a burst of plug changes, memory, devices and accessories
-- [ ] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
+- [ ] Energy, measured on the M5: 0.6.1 against the 0.6.0 baseline in the first session, and the
+  release candidate against 0.6.1 in the second. There, power in the menu bar and the icon and
+  charge alone each run in alternated 5-minute runs of the two builds, three pairs after a
+  discarded warm-up, compared by their medians (in the first session two identical runs of one
+  build differed by almost 2×, so one pair can't settle it); each window style, the displays
+  asleep, a burst of plug changes, memory, devices and accessories
+- [x] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
   table per release of DMG downloads, signature downloads (each in-app install fetches the
   signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
   (`BatteryPulse-count.txt`), from GitHub's public API without a login; within GitHub's limit of
@@ -584,39 +594,61 @@ hour) whenever Xcode is open.
 
 Deferred from 0.6.1, each for the reason given:
 
-- [ ] Main actor by default (WP-10), first: it needs a long session on the M5 (notifications,
-  sleep and wake, an install from a test release, the widget after an update), because what it
-  breaks shows only at runtime
-- [ ] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
-  at p95, 72 % of it the registry. Read the registry only when it changes (E4b), then reads off
-  the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
-  `pmset -g pslog`; SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07,
-  SUI-11, SUI-12, E19)
+- [x] Main actor by default (WP-10), first: the app target only, `@MainActor` in the app from 35
+  to 4, the code that runs off the main actor marked `nonisolated` and pinned by a guard test.
+  What it breaks shows only at runtime, so it went first to the M5: the first session's
+  notifications, pages, Demo Mode, Check Now and lid close showed no executor trap or crash, and
+  the release candidate's session repeats them with an install
+- [x] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
+  at p95, 72 % of it the registry.
+  - Read the registry only when it changes (E4b): a poll reuses the last read's registry unless
+    Power or Raw Data is shown or the copy is 5 minutes old. In the first session's 3 hours of
+    `pmset -g pslog` and `ioreg` samples, on battery and charging, every update of the registry
+    came with a notification; a read that finds one that didn't logs `registry.missed`.
+  - Reads off the main actor (E20, past its 4 ms threshold): in the first session's 2-hour run,
+    711 of 712 reads, all but the launch's.
+  - One notify key (E3b): `com.apple.system.powersources.timeremaining` dropped, since each one
+    came with the "any power source" key within 10 ms.
+  - The release candidate's session checks a cached read's time and the missed updates an hour.
+- [ ] SwiftUI instrument work on the pages, which switch in 30–65 ms (SUI-07, SUI-11, SUI-12, E19)
 - [ ] Xcode on the Mac (installed on the M5; maintainer-run from Claude's step-by-step list):
   SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
   to its screenshots
-- [ ] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
-  on alone; with `-internalize-at-link` on the widget (about −27 % of its `__text` in a test
-  build), the size headroom 0.7's widget work needs
+- [x] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
+  on alone, besides BatteryCore; with `-internalize-at-link` on the widget's and the app's link
+  lines, the size headroom 0.7's widget work needs. In CI, against the build before: the widget
+  binary −45 % (778,640 B, its `__text` −50 %), the app −3 %, the DMG −15 %. The flag ships only
+  if the release candidate's widget, in both sizes and languages, and pages look right on the M5
 - [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
-  `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
+  `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work. Built:
+  `diskutil image attach --readOnly --mountPoint <folder> --mountOptions nobrowse`, then
+  `diskutil eject`, and by force `unmountDisk force` and `eject` of the image's own disk, which
+  `diskutil info -plist` names; CI installs both ways. The update from 0.6.1 to 0.6.2 still runs
+  0.6.1's installer. The release candidate's in-app install on the M5 decides; unless it passes,
+  0.6.1's `hdiutil` code comes back
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
 - [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
   Check Now cancels a waiting automatic check (E10); SEC-18's research
-- [ ] Readability and tooling: SUI-09, the DocC check (SW-21), SW-13 for BatteryKit, SZ-08 with
-  the next glossary work, the SZ-11 and SZ-14 experiments, C2
-- [ ] CI: review `actions/checkout` v6.1.0 (a tag without a changelog entry so far) and
-  `upload-artifact` v7, both pinned by commit
+- [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
+  unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
+  of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
+  without a budget, since the runner's virtual machine counts no instructions; SUI-09 needed no
+  change, as every `@State` is already set in one place. SZ-11 (full LTO) and SZ-14
+  (`-dead_strip_dylibs`) were measured and not adopted: LTO lost the widget's debug symbols and
+  grew the DMG, and after K-03 every library the widget links is used
+- [ ] SZ-08 with the next glossary work
+- [x] CI: `actions/checkout` v7.0.1 and `upload-artifact` v7.0.2, pinned by commit in both
+  workflows; `checkout` v6.1.0 turned down, a tag still without a changelog entry
 - [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
   Charge Limit capture (Stage 1.1; captured in the first session, its fixture still to come); full
   screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
   1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
   on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,
   unless the session's optional device step runs (Stages 5 and 6); exported files in spreadsheet
-  apps (Stage 6); widgets kept on the desktop across an in-app update (Stage 1.2: seen kept across
-  0.6.0 → 0.6.1 on 2026-10-22; 0.6.2 ticks it)
+  apps (Stage 6). Widgets kept on the desktop across an in-app update, seen across 0.6.0 → 0.6.1
+  on 2026-10-22, are ticked in Stage 1.2
 
 ### 0.7
 
@@ -624,17 +656,27 @@ Widgets you configure, plus the device JSON's dates, the anonymous version count
 Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
-  defaults that keep a placed widget looking as it does today. The Battery widget in small,
-  medium and large (extra large if its layout is approved), and an Accessories widget, since
-  0.6.2's sandbox spike passed; History and iPhone & iPad widgets if time allows, else in 1.1, on
-  the small copy of readings the spike showed the widget can read.
-  The main value and visual, the details per size, clock time or time left, level colours or
-  monochrome; every rendering mode, device names hidden where the widget is redacted, clicks that
-  open the matching page, VoiceOver. Which fields fit which size is decided in BatteryCore and
-  tested on Linux. 0.6.2's throwaway builds on the M5 answered what the design depends on
-  (2026-10-23): App Intents metadata in a SwiftPM build works, the sandboxed widget can read a file
-  the app writes and the accessory batteries, and placed widgets survive the move to a
-  configurable widget once the old widget process is ended before the update swaps the app
+  defaults that keep a placed widget looking as it does today: the main value and visual, the
+  details per size, clock time or time left, level colours or monochrome; every rendering mode,
+  device names hidden where the widget is redacted, clicks that open the matching page,
+  VoiceOver. Which fields fit which size is decided in BatteryCore and tested on Linux. In
+  phases:
+  - 0.6.2, throwaway builds on the M5 for what the design depends on, plus the size headroom
+    (K-03 and `-internalize-at-link`) and the read off the main actor that the widget's provider
+    reuses. Their first answers (2026-10-23): a SwiftPM build gets the App Intents metadata and
+    the edit sheet shows the parameters; the sandboxed widget reads a file the app writes, and
+    reads accessory batteries itself; a widget placed by 0.6.1 survives the move to a
+    configurable widget if the old widget extension has ended before the swap, which 0.6.2's
+    installer sees to;
+  - the 0.7 MVP, never cut: the Battery widget in small, medium and large (extra large only if
+    its layout is approved), Layout Automatic or Custom, status lines, the read time, empty
+    states and accessibility, the reload planner, and the Accessories widget (all of them, or
+    the lowest);
+  - 0.7's stretch, else 1.1: the small copy of the last readings the app writes for the widgets
+    (the feed), and with it the History widget (with the 90-day capacity and cycle trend) and an
+    iPhone & iPad widget;
+  - after 1.0: a Refresh button, the extra-large dashboard and portrait size, per-row links,
+    chosen accessories
 - [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
   (`firstUseDate` is a number of seconds since 2001 today), and every top-level JSON object gains
   a format version, with a line in the release notes, because scripts that read it have to change
@@ -769,7 +811,10 @@ count adds one public number per release, how many Macs ran it (Decisions), and 
     on USB is read on attach, every 5 minutes while history is recorded and every minute while
     its page is visible; Wi-Fi only on Refresh and Check Again. Quick retries at 20 and 60 s;
     a time-out stalls automatic work until the user acts. The policy, roster and monitor are
-    tested on Linux with a scripted transport and a manual clock
+    tested on Linux with a scripted transport and a manual clock. From 0.6.2 the page's
+    connection label follows the transport its values came over: once the cable is pulled, a
+    read over Wi-Fi says Wi-Fi rather than USB, and a device still on its cable keeps USB and its
+    automatic reads; to check on the M5 with a device that is on both
 - [x] Remember each device and keep its history next to the Mac's (0.6): `Devices/devices.json`
   and a `HistoryStore` per device, keyed by HMAC-SHA256 of the UDID with a per-install secret;
   no UDID, serial or capture on disk. History has a source pop-up; Forget removes a device and
