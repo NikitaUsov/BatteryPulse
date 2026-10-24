@@ -2479,7 +2479,8 @@ step_send() {
     name="$(gh api user --jq .login)"
     email="$(gh api user --jq '"\(.id)+\(.login)@users.noreply.github.com"')"
   fi
-  git -C "$clone" -c user.name="$name" -c user.email="$email" commit --quiet -F - <<EOF
+  # In UTC, so the commit dates show no local time zone (the privacy audit, 2026-10-24).
+  TZ=UTC git -C "$clone" -c user.name="$name" -c user.email="$email" commit --quiet -F - <<EOF
 Record M5 Session $SESSION's results
 
 The answers, counts, perf-stats summaries, public log excerpts and the

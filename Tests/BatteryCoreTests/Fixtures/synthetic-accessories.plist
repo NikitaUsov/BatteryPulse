@@ -243,9 +243,9 @@
 			<key>Accessory Category</key>
 			<string>Unknown</string>
 			<key>Accessory Identifier</key>
-			<string>c8-2a-14-0f-3e-71</string>
+			<string>02-00-00-00-00-01</string>
 			<key>Address</key>
-			<string>c8-2a-14-0f-3e-71</string>
+			<string>02-00-00-00-00-01</string>
 			<key>Current Capacity</key>
 			<integer>7</integer>
 			<key>Is Charging</key>
