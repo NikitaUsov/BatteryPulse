@@ -89,6 +89,28 @@ jobs:
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
+      - name: Peak memory of the parser
+        # C2: the release bpulse's peak memory footprint while it renders each fixture, with
+        # --help's for the start-up share, in the step summary; no budget. On this runner, a
+        # virtual machine, /usr/bin/time -l prints no instruction or cycle counts, so the footprint
+        # is the one figure left. Three runs varied by a 16 KB page or two.
+        run: |
+          {
+            echo "### Peak memory footprint of the release bpulse"
+            echo
+            echo "| Input | Bytes |"
+            echo "|---|---:|"
+            for input in --help Tests/BatteryCoreTests/Fixtures/*.plist; do
+              if [ "$input" = --help ]; then
+                /usr/bin/time -l .build/release/bpulse --help > /dev/null 2> "$RUNNER_TEMP/time.txt"
+                name="--help (start-up)"
+              else
+                /usr/bin/time -l .build/release/bpulse --input "$input" > /dev/null 2> "$RUNNER_TEMP/time.txt"
+                name="$(basename "$input")"
+              fi
+              echo "| $name | $(awk '/peak memory footprint/ {print $1}' "$RUNNER_TEMP/time.txt") |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Smoke-run bpulse
         # Hosted runners are VMs without a battery, so exit status 2 ("no battery") is expected.
         run: |
