@@ -10,7 +10,10 @@
 // `shot`), converted to points. Never computer use's scaled coordinates.
 //
 // Actions (each passes the safety rules below first):
-//   click <point> [--shift | --control] [--double]   a left click; the modifier as flagsChanged
+//   click <point> [--shift | --control] [--double] [--cg-only]
+//                                                    a left click; the modifier as flagsChanged;
+//                                                    --cg-only hit-tests by the window list alone
+//                                                    (the queue's: no AX call into BatteryPulse)
 //   click --ax <app> <text> [--shift | --control]    at the centre of the element that matches
 //   move <point> | move --here                       --here: a 0-pixel move (proof P6)
 //   drag <point> <point> [--steps n] [--seconds s]   slow, in steps (the widget gallery)
@@ -505,12 +508,15 @@ enum Safety {
     }
 
     /// The owner of what lies at the point, by AX and by the topmost window, must be approved.
-    static func checkPoint(_ point: CGPoint) throws {
+    /// With `byAX` false (the queue's --cg-only), only the window list hit-tests the point: an AX hit
+    /// test asks the app under the point, and the measured process must never have an AX client.
+    static func checkPoint(_ point: CGPoint, byAX: Bool = true) throws {
         try checkCorners(point)
         var owners: [RunningProcess] = []
         var element: AXUIElement?
-        if AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element)
-            == .success, let element, let pid = AX.pid(element)
+        if byAX,
+            AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element)
+                == .success, let element, let pid = AX.pid(element)
         {
             owners.append(Processes.process(pid))
         }
@@ -627,6 +633,7 @@ struct Options {
         let takesFour: Set<String> = ["--inside"]
         let switches: Set<String> = [
             "--shift", "--control", "--double", "--here", "--probe", "--main", "--minimize-button", "--status-item",
+            "--cg-only",
         ]
         var rest: [String] = []
         var index = 0
@@ -763,7 +770,7 @@ enum Command {
         } else {
             point = try options.point(at: 1)
         }
-        try Safety.checkPoint(point)
+        try Safety.checkPoint(point, byAX: !options.has("--cg-only"))
         try Events.click(
             point, modifier: try modifier(options), double: options.has("--double"), tap: Events.tap(options))
         print("clicked \(Int(point.x)) \(Int(point.y))")

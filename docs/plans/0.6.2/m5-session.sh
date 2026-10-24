@@ -4555,8 +4555,9 @@ q_launch() {
 }
 
 # q_setup <scenario> <index>: the scenario's state before its quiet minute, by a reopen event,
-# CGEvent clicks at CGWindowList frames and AX into TextEdit only; never an AX call into the
-# measured process. Prints why not, and fails, when it can't.
+# CGEvent clicks at CGWindowList frames (hit-tested by the window list alone, --cg-only) and AX
+# into TextEdit only; never an AX call into the measured process. Prints why not, and fails, when
+# it can't.
 q_setup() {
   local scenario="$1" index="$2" line id rect offset title item before after
   case "$scenario" in
@@ -4599,7 +4600,7 @@ q_setup() {
           title="$(ui_run windows --app BatteryPulse 2>/dev/null | awk -F '\t' -v id="$id" '$1 == id { n = $5; sub(/^alpha [0-9.]* */, "", n); gsub(/"/, "", n); print n }' || true)"
           echo "${title:-BatteryPulse}" >"$WORK/q-min-title"
           # shellcheck disable=SC2046
-          ui_run click $(awk -v r="$rect" -v o="$offset" 'BEGIN { split(r, w, " "); split(o, d, " "); printf "%d %d", w[1] + d[1], w[2] + d[2] }') \
+          ui_run click --cg-only $(awk -v r="$rect" -v o="$offset" 'BEGIN { split(r, w, " "); split(o, d, " "); printf "%d %d", w[1] + d[1], w[2] + d[2] }') \
             >/dev/null 2>&1 || {
             echo "the minimize click was refused"
             return 1
@@ -4621,7 +4622,7 @@ q_setup() {
       }
       before="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
       # shellcheck disable=SC2046
-      ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$item") >/dev/null 2>&1 || {
+      ui_run click --cg-only $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$item") >/dev/null 2>&1 || {
         echo "the click on the menu bar item was refused"
         return 1
       }
@@ -4656,7 +4657,7 @@ q_teardown() {
     S5) ui_run quit TextEdit >/dev/null 2>&1 || warn "TextEdit didn't quit by its menu" ;;
     S3)
       # shellcheck disable=SC2046
-      ui_run click $(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }') >/dev/null 2>&1 || true
+      ui_run click --cg-only $(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }') >/dev/null 2>&1 || true
       ;;
     MIN)
       # The window's Dock tile, its frame from the Dock's AX tree, then CGWindowList's word.
