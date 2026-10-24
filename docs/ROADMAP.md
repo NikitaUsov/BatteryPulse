@@ -619,8 +619,8 @@ Deferred from 0.6.1, each for the reason given:
   `diskutil image attach --readOnly --mountPoint <folder> --mountOptions nobrowse`, then
   `diskutil eject`, and by force `unmountDisk force` and `eject` of the image's own disk, which
   `diskutil info -plist` names; CI installs both ways. The update from 0.6.1 to 0.6.2 still runs
-  0.6.1's installer. The release candidate's in-app install on the M5 decides; if it fails, 0.6.1's
-  `hdiutil` code comes back
+  0.6.1's installer. The release candidate's in-app install on the M5 decides; unless it passes,
+  0.6.1's `hdiutil` code comes back
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
