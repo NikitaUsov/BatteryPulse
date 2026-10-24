@@ -1,3 +1,22 @@
+## What's new in 0.6.2
+
+- **Window styles:** a Clear window, and a Translucent one in the dark appearance, no longer
+  turn black while they shrink into the Dock and come back: they show an even graphite grey on
+  the way. Translucent and Clear stay in beta (Settings → Advanced → Beta window styles).
+- **Check Now** no longer fails while an automatic update check is running: it takes over and
+  checks right away, on any network.
+- **iPhone and iPad:** a device's page names the connection its values came over, *Connected by
+  cable* or *Connected over Wi-Fi*, also after you unplug the cable and the device is read over
+  Wi-Fi.
+<!-- TODO(D3): add the energy line from Session B's S1 and S2 medians, 0.6.2 against 0.6.1
+(PLAN.md WP-21 and D1), as one bullet above this comment, and remove this comment. If a beta
+style graduates (Session B's graduate-translucent and graduate-clear answers), rewrite the
+Window styles bullet's last sentence. The update window shows this file as written, comments
+included, so nothing here may ship. -->
+
+Updating from 0.6.1: **Install and Relaunch** in the update window installs 0.6.2 from inside
+the app.
+
 ## What's new in 0.6.1
 
 - **Smaller and lighter:** the download shrinks from 3.7 MB to 1.4 MB (−61 %), and the
