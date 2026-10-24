@@ -101,7 +101,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   Darwin code, push and check the macOS job.
 - Both CI jobs treat every compiler warning as an error (a deprecation stays a warning) and have
   time limits; the macOS job also packages the app, checks its size and signing posture, and
-  launches it once.
+  launches it once. The Linux job checks BatteryCore's documentation links ("Check the
+  documentation links": `docc convert --warnings-as-errors` over its symbol graph, internal
+  symbols included), so a broken or ambiguous DocC symbol link in a BatteryCore comment fails
+  it; the other targets' cross-module links aren't checked. The macOS job writes the release
+  bpulse's peak memory footprint per fixture, and `--help`'s, to its step summary ("Peak memory
+  of the parser"), with no budget.
 
 ## Commands
 
