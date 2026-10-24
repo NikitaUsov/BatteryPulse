@@ -91,10 +91,14 @@ Contents:
 - **Maintainer time:** two M5 sittings. Every step has a default for when it doesn't run.
   - **Session A, early:** about 65 minutes hands-on, then a 3-hour unattended window (plug the
     adapter in once, at the 2-hour mark).
-  - **Session B, on the release candidate:** about 95 minutes hands-on and about 70 minutes
-    unattended.
-  - Both include the Xcode items, now that Xcode is installed on the M5 (Q-B7). WP-18's Xcode
-    work (about an hour) runs whenever Xcode is open, from Claude's step-by-step list.
+  - **Session B, on the release candidate, hands-free** (the maintainer's request, 2026-10-23;
+    §10, "The hands-free sessions"): about 18-22 minutes of his time in short moments (2 once
+    before, 10-12 at the start with the burst, 1 at bedtime, 5-7 in the morning), against about
+    100 before (plus WP-18's hour). One local Claude Code session with computer use does every
+    other step: the GUI steps on the adapter in the evening, then the energy queue runs as a
+    plain script overnight (§6).
+  - Both include the Xcode items, now that Xcode is installed on the M5 (Q-B7). WP-18's items run
+    inside Session B (SZ-10's answer joins his morning batch), not as an hour of his own.
 - **Decisions (2026-10-22):** no question of §10 stays open. The maintainer answered Q-B2, Q-B7,
   Q-W1 and, through M-1, Q-W3; he delegated the rest ("by best practices"), and each carries its
   recommended answer. M-1, the paid Apple Developer Program account, is no: no App Group (§8.3
@@ -104,8 +108,9 @@ Contents:
     come when there is time and desire, so this plan sets none. Round A0 passed. The integration
     branch is `claude/nice-faraday-k08mhb`. 0.7 gets an anonymous version count, on by default
     and announced; 0.6.2 changes nothing the app sends and adds only the release-stats script.
-- **Budget:** about 31-36 implementation and review runs plus 3 for fix-forward; the never-cut set
-  is about 22-27 (§7.2).
+- **Budget:** about 34-39 implementation and review runs plus 3 for fix-forward; the never-cut set
+  is about 24-29 (§7.2). WP-21's hands-free mode adds 2 runs, and SZ-10's icon source, now that
+  WP-18 runs inside Session B, 1 (2026-10-23).
 
 ---
 
@@ -177,7 +182,7 @@ own gates have a hyphen and are named after their packages (§7.1); the last col
 | G18 SEC-15 | Attach timing on the M5 → Session A, with WP-16 | SEC-15 |
 | G19 SEC-10 | No hang or crash seen (Q1) → **stays deferred** | none |
 | G20 SEC-08 | The in-app update is now possible after publishing, but **not run** (Q-B8: no; Enhanced Security is after 1.0 and not planned without notarization, M-1) | SEC-08 (not run) |
-| G21 SZ-10, -11, -14 | SZ-11 and SZ-14 in WP-15 as CI experiments; SZ-10 needs Xcode, which is installed on the M5 (WP-18, maintainer-run; Q-B7) | G-15 (SZ-11, SZ-14); WP-18 (SZ-10) |
+| G21 SZ-10, -11, -14 | SZ-11 and SZ-14 in WP-15 as CI experiments; SZ-10 needs Xcode, which is installed on the M5 (WP-18, run by Session B; Q-B7) | G-15 (SZ-11, SZ-14); WP-18 (SZ-10) |
 
 ---
 
@@ -351,7 +356,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
      A `MotionGuardTests` case or a review check confirms that the selection changes only the
      outline.
   3. **Graduation evidence** (no code unless the maintainer asks for a change). Session B step 3's
-     scripted shots (§6) cover the look items below. The contrast audit (step 3) and Clear's
+     scripted shots (§6) cover the look items below; the session takes and pre-judges them, and
+     the maintainer answers one contact sheet per style. The contrast audit (step 3) and Clear's
      shadows in Instruments (step 5) use Xcode, which is installed on the M5 (Q-B7), and the
      energy comes from S4w:
      - The contrast audit with Accessibility Inspector (it ships with Xcode); full screen; the
@@ -387,8 +393,9 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   - Linux tests; the macOS job.
   - Session B: no black frame in the 8 glass-sheet cases (Translucent and Clear × Light and Dark ×
     main and compact window), each recorded.
-  - Standard and Frosted are compared with a Notes window minimized the same way: anything also
-    seen there is the system's, not WP-13's.
+  - Standard and Frosted are compared with a TextEdit window (an empty document) minimized the
+    same way: anything also seen there is the system's, not WP-13's. (TextEdit replaced Notes on
+    2026-10-23: an empty file shows nothing private and closes without a save prompt.)
   - The maintainer's plain answers on each style (§6); the fill itself is decided (Q-B2).
 - **Gates:** G-13a (the fill), G-13b (graduation), G-13c (Low Power Mode: decided, none).
   **Effort:** S-M, 2-3 runs. **Risk:** low.
@@ -601,8 +608,8 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   1. **`UpdateInstallPolicy.attachArguments` and `detachArguments`** (BatteryCore). They start from
      the runner's own mapping, printed by CI run 39751622292's step "Install the way 0.6.0 does,
      then launch":
-     - attach: `/usr/sbin/diskutil image attach --mountOptions nobrowse --readOnly --mountPoint
-       <dir> <image>`, with the order taken from `diskutil image attach` help, which CI saves to
+     - attach: `/usr/sbin/diskutil image attach --readOnly --mountPoint <dir> --mountOptions nobrowse
+       <image>` (as merged, in the usage text's order), with the order taken from `diskutil image attach` help, which CI saves to
        Appendix C;
      - detach: `diskutil eject <dir>`.
 
@@ -755,28 +762,36 @@ package. Session B's F11 uses a reachable threshold and plainer wording.
   instrument.
 - **Gate:** G-17 (§7.1). **Effort:** M, 2 runs. **Risk:** low.
 
-### WP-18: Work that needs Xcode on the Mac (P2, maintainer-run)
+### WP-18: Work that needs Xcode on the Mac (P2, run by Session B)
 
-- **Source:** PLAN §6 (SUI-17, SUI-18, SUI-19, SZ-10; G21); Q-B7 (Xcode is installed on the M5).
+- **Source:** PLAN §6 (SUI-17, SUI-18, SUI-19, SZ-10; G21); Q-B7 (Xcode is installed on the M5);
+  the hands-free sessions (2026-10-23, §10).
 - **Items:**
   - **SUI-17:** a 30-minute previews spike. Do previews work in a SwiftPM executable target in
-    Xcode 27?
-  - **SUI-18:** the SwiftUI Specialist skill exported as a review checklist; nothing from it is
-    committed.
-  - **SUI-19:** type-check timing of the slowest bodies.
+    Xcode 27? Session B opens the package with `xed`, and computer use resumes the canvas (Xcode
+    is a "click" app for computer use, which is enough for Resume); a trust or macros prompt
+    comes up in B0's preflight while the maintainer is there. Claude judges y or n from the
+    canvas.
+  - **SUI-18: dropped** (2026-10-23): it would leave only an uncommitted checklist, and a review
+    run can use the skill directly.
+  - **SUI-19:** type-check timing of the slowest bodies: `xcrun swift build` with
+    `-Xswiftc -debug-time-function-bodies`, local only and never committed, on the adapter in Session B's B2 or its morning-away block.
   - **SZ-10:** the Icon Composer icon through `actool`. It changes how the app icon looks in every
     icon style. Decided by delegation (Q-B7): it is prepared and shown in the four icon styles,
-    and ships only on the maintainer's y to those screenshots; otherwise it waits for 0.7.
+    and ships only on the maintainer's y to those screenshots; otherwise it waits for 0.7. A
+    cloud run (1 run, §7.2) prepares the icon source [unverified: a hand-written `.icon` bundle
+    compiles with `actool`]; Session B builds it with `actool`, switches the four Icon & widget
+    styles by computer use and takes the shots; his y joins the morning batch.
 - **Who:** these need Xcode, which is installed on the M5 (Q-B7, 2026-10-22) and which cloud
-  sessions don't have. For each item the package prepares a step-by-step list: the commands to
-  paste, what to look at, and what to post back on the PR. The maintainer runs it whenever Xcode
-  is open; nothing waits for it.
+  sessions don't have. Session B runs them (§6); nothing waits for them, and an item Session B
+  doesn't reach is recorded "not run".
 - **Files:** nothing committed, except SZ-10's icon source and an `actool` line in `build-app.sh`,
   only on the maintainer's y to the icon's screenshots.
 - **Acceptance:** one Appendix C line per item: previews work, y or n (SUI-17); the type-check ms
   of the 5 slowest bodies (SUI-19); the icon's screenshots in the four icon styles with the
-  maintainer's y (SZ-10). SUI-18 leaves only the review checklist.
-- **Effort:** S-M of maintainer time. **Risk:** low.
+  maintainer's y (SZ-10).
+- **Effort:** 1 run (SZ-10's icon source) and about 1 minute of maintainer time (SZ-10's y).
+  **Risk:** low.
 
 ### WP-19: Readability and tooling (P2/P3)
 
@@ -976,8 +991,10 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     - Every run is on battery. The script refuses to start unless `pmset -g batt` shows Battery
       Power and at least 50 %.
     - It records `lowpowermode` before each run; Low Power Mode is off except in its own run.
-    - It asks once per session for: brightness about half, auto-brightness and True Tone off,
-      other apps quit, Focus on.
+    - The energy setup: brightness about half, auto-brightness and True Tone off, other apps quit,
+      Focus on. Session A's `window` asks for it once; in Session B the session sets the first
+      three itself at the hand-over, the maintainer quits his apps and turns a Focus on at the
+      start, and nothing asks (the hands-free mode below).
     - In every A, B and C run it records `pmset -g assertions | grep -c BatteryPulse`, which must
       be 0 (playbook §2.3 "Record per scenario" item 1: Preventing Sleep stays No outside an
       install).
@@ -995,16 +1012,45 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
   - **Session A's window, then the A2 build:** SPIKE-A2 with the `perf` stream for about
     110 minutes (E20's field run). `phys_footprint` is taken at its start and end, about 2 hours
     apart. `pmset -g pslog` and the ioreg sampler run all 3 hours.
-  - **Session B (C, with B for a same-day pair):**
-    - S1: C. S2: B C B C. S2 with Low Power Mode: C.
-    - S4w: Overview 5 minutes each in Standard, Translucent and Clear, with Frosted if time allows
-      (graduation and G-13c input).
-    - S5: the main window covered by a TextEdit window, 5 minutes.
-    - S6: C. S7: 5 launches.
-    - Burst: 3 unplug and plug cycles, 1 minute apart (S8), hands-on.
-    - Memory: History → 7 d three times, `phys_footprint` before and after, hands-on.
-    - Devices: an iPhone attached with all windows closed (S9; target under 1 ms/s on average) and
-      accessories connected (S10), if at hand.
+  - **Session B (C, with B for a same-day pair), in the queue's order, most important first.**
+    Session A's window (Appendix C, 2026-10-23/24) showed one pair can't settle a scenario: its
+    first run read high, and two identical S2 runs of one build differed by almost 2×. So the queue
+    opens with a warm-up, runs three pairs of S1 and S2, and every comparison uses the median of a
+    scenario's runs per build (added 2026-10-24):
+    - Warm-up: one 5-minute S2 run of C, discarded (recorded, never compared).
+    - S2: B C B C B C. A touched S2 run is retried as a B and C pair, never as a lone run an hour
+      later.
+    - S1: B C B C B C (B added on 2026-10-23, so S1 has the same-day pairs the C ÷ B × B ÷ A chain
+      and the 15 % check need; three pairs on 2026-10-24). If S1's median still has 0.6.1 or the
+      RC above 0.6.0 by more than the spread of its own runs, WP-21 looks for the cause before D1.
+    - S2 with Low Power Mode: B C (only with the sudo ticket; B added on 2026-10-24 for a same-day
+      pair).
+    - S4w: Overview 5 minutes each in Standard, Clear, Translucent and Standard again, so drift
+      shows against the first Standard; then Frosted if the charge allows (graduation and G-13c
+      input).
+    - S5: the main window covered by a TextEdit window, 5 minutes. Session B's B3 closed TextEdit, so the
+      queue opens `~/bp-062/B/cover.txt` with `open -a TextEdit`, places it over the main window
+      by `ui position` (AX into TextEdit only), confirms it with `ui windows` before the quiet
+      minute, and closes and quits it by AX presses after the run, before S6 locks the screen.
+    - S10: accessories connected, if `pmset -g accps` lists any.
+    - S7: 5 launches.
+    - S3 (the popover open) and a minimized run (new, 5 minutes each), each set up by CGEvent clicks
+      at CGWindowList frames before its quiet minute and confirmed in CGWindowList at its end,
+      never by an AX call into the measured process. The minimized run ends with a CGEvent click
+      on the window's Dock tile (its frame from the Dock's AX tree), confirmed in CGWindowList,
+      before the retries.
+    - One retry of each run marked not valid (none below 56 %), then **S6: B C, last** (B added on
+      2026-10-24: Session A's S6 B run was disturbed, so the pair is repeated here).
+    - The optional runs (Frosted, S5, S10, S3, the minimized run) are skipped below 56 %, so S6
+      still starts at 50 % or more.
+    - Burst: 3 unplug and plug cycles, 1 minute apart (S8), hands-on at the start (§6, B1);
+      `perf-stats` counts only the reads whose trigger is a power-source notification.
+    - Memory: History → 7 d three times, `phys_footprint` before and after, by the session, first
+      in its GUI phase, on the backed-up history (before Clear History, so the 7-day view isn't
+      empty).
+    - Devices: S9 (an iPhone attached with all windows closed; target under 1 ms/s on average) is
+      not run by default: an attached iPhone charges from the Mac all night and needs a second
+      touch. It stays open (Appendix A).
   - **Pass criteria (playbook §2.7):**
     - S1: wake-ups per hour ≤ 0.6.0, and about 1 read a minute.
     - S2: energy and CPU per hour −50 % against 0.6.0 (E4a, plus E4b if it lands). C against A
@@ -1016,23 +1062,193 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
     - Memory: no growth across cycles, and the idle footprint ≤ 0.6.0.
     - A difference under 15 % is noise (PLAN §4b), because the runs are shorter than the
       playbook's 30 minutes.
-  - **Sleep hygiene (Session B, optional; playbook §2.3 item 7):** after a night with the RC
-    installed and the lid closed, `pmset -g log | grep -i -E "DarkWake|Wake from" | grep -i
-    batterypulse` must be empty.
-  - **Not run, and staying open in Stage 1.4:** S3 (popover open) and the minimized or
-    other-Space runs, which need a hand at the keyboard mid-run; the frame-rate check, which needs
-    Instruments.
+    - `rusage` measures only BatteryPulse's own process, so what else runs in the background (the
+      Claude Code CLI, Terminal) barely moves the figures. The cross-session confounds are the
+      thermal state, the history's size and AX clients, so every run records the thermal state,
+      the pack temperature and the history's size, and no run's process has had an AX client.
+  - **Sleep hygiene (Session B's own night; playbook §2.3 item 7):** after the night with the RC
+    installed, `pmset -g log | grep -i -E "DarkWake|Wake from" | grep -i batterypulse` must be
+    empty. The night sleeps with the lid open; the maintainer's 1-minute lid close in the morning
+    covers V-01's lid path.
+  - **Not run, and staying open in Stage 1.4:** the other-Space run, which needs a hand mid-run,
+    and the frame-rate check, which needs Instruments. S3 and the minimized run join Session B's
+    queue (above).
+- **Hands-free mode for Session B** (the maintainer's request, 2026-10-23; §6, §10 "The hands-free
+  sessions"). The script gains what lets one local Claude Code session with computer use run
+  Session B without him, and the plain queue run without Claude:
+  - **`arm` and `queue` instead of `window`.** Claude opens `~/bp-062/B/arm.command` in a new
+    Terminal window (`open -a Terminal`, no Automation needed) at the start. The arm window:
+    - holds `caffeinate -d -i -t <GUI phase cap>` while the GUI phase runs, started by arm, not as
+      a Claude background task, and kills it when the queue starts;
+    - waits at a plain prompt (no password prompt waits, so nothing can type into one) and shows
+      the session's state: working (with the step and the expected ready time) or ready;
+    - at bedtime, on his Return, asks for the password once (`sudo -v`) and starts the keep-alive,
+      capped at the queue's end or 3 hours; it checks that the ticket is bound to its own
+      terminal (sudo's tty tickets: `sudo -n true` from a process with no terminal must fail;
+      otherwise S2-LPM is "not run" and `sudo -k` runs at once). Without the password the queue
+      still runs, with S2-LPM "not run";
+    - runs the queue from the frozen worktree (§6), so a later `git` update can't change a running
+      bash file;
+    - starts the queue when `ready` exists (a file plus a notify post; the waiter registers first,
+      then checks the file, with a 60-second backstop), or when the session's heartbeat file is
+      more than 20 minutes old (a stalled session), and only on battery, after a cooldown of at
+      least 10 minutes, longer until the pack temperature is within 2 °C of Session A's first run,
+      at most 20 minutes, with HIDIdleTime at least 60 s. On the stale-heartbeat path it first
+      runs the scriptable half of `restore gui` (the appearance, the wallpaper, BatteryPulse's
+      defaults, TextEdit and System Settings closed) and lists the computer-use items for the
+      morning;
+    - writes `~/bp-062/B/queue.started` as soon as it decides to start the queue (on `ready` or a
+      stale heartbeat), before the stale path's `restore gui` half and the cooldown, and removes it
+      at the queue's end (Session B's B5); on the stale-heartbeat path it also writes `ready` itself (marked
+      stale), so "never act after `ready`" holds until his morning "continue". While
+      `queue.started` exists, `ui` refuses every action whose caller isn't the queue (arm's pid
+      among its ancestors), so a stalled session that wakes up later, after a long retry or a
+      compaction, can't act during a run;
+    - never starts the queue later than 3 hours after his bedtime unplug: after that every run
+      left is "not run: late", so a morning unlock never starts it;
+    - starts with `install_build B`, wraps every run (a failure is recorded "not run: error" and the
+      queue goes on, never `set -e`'s exit), and logs the full `pmset -g assertions` list at its
+      start;
+    - keeps Session A's split: `caffeinate -i -w <arm's pid>` for the whole queue, and a separate,
+      killable `caffeinate -d`, both started at his Return (or at the queue's start, if he only
+      unplugged);
+    - posts no sound or speech from `mark away` until his morning "continue". Before S6 the arm
+      window comes to the front with the warning "The display turns off for 10 minutes on purpose;
+      please don't wake the Mac" 30 seconds ahead (a notification would be hidden by the Focus),
+      and the start message gives S6's expected time;
+    - drops `window`'s `read -r -p` energy-setup question: the session records the answer at the
+      hand-over (default 2).
+  - **Detectors** (each run's row gets touched, slept, adapter, locked, screen saver, style, Low
+    Power Mode and Claude columns; a run marked not valid is retried once before S6):
+    - **touch:** HIDIdleTime (`ioreg -c IOHIDSystem`) at each run's start and end and in the
+      10-second sampler. A run starts only at 60 s or more; a value below the run's elapsed time
+      marks it "touched". Posted events reset it too, which is why Claude ends its turn first;
+    - **Claude:** the sampler counts the Claude CLI's child processes and its CPU time; a new child,
+      or more than 2 s of CPU during a run, marks it "Claude active (not valid)";
+    - **sleep:** `rusage.swift` records a `SuspendingClock` duration beside its `ContinuousClock`
+      one; a difference over 1 s, or a Sleep or DarkWake line in `pmset -g log` inside the run,
+      marks it "slept (not valid)";
+    - **power:** the sampler's existing `ExternalConnected` column plus `pmset -g batt` at the
+      run's end; any `Yes` sample inside a run marks it "adapter (not valid)". This replaces
+      `field_run`'s 15-second poll; the queue waits for an unplug without polling (a
+      `notifyutil -1 com.apple.system.powersources.source` waiter registered first, then one
+      `pmset -g batt` check, looping per notification);
+    - **lock and lid:** `CGSessionCopyCurrentDictionary` and `AppleClamshellState`; a run during a
+      lock is "locked (not valid)". S6 checks the lock only at its start, because
+      `pmset displaysleepnow` locks the screen when a password is required at once;
+    - **screen saver:** `pgrep -x ScreenSaverEngine` (and `legacyScreenSaver`) [process names
+      unverified on 27] in the sampler; preflight reads the screen saver's idle time;
+    - **S6's display:** valid only with a "Display is turned off" line at its start and no
+      "turned on" line before its end in `pmset -g log`, plus a `pmset -g assertions` snapshot
+      during S6;
+    - **style in effect:** before each S4w quiet minute, a window-ID shot (`screencapture -l`,
+      which doesn't touch the app) and a read of `com.apple.universalaccess` (Reduce
+      Transparency, Increase Contrast); either flag on, or a shot Claude reads as the wrong style
+      at the morning check, marks the run "style not in effect (not valid)";
+    - **thermal:** `ui thermal` prints `ProcessInfo.thermalState` (what `LiveRefreshPolicy`
+      reads; `pmset -g therm` doesn't report it), Low Power Mode and HIDIdleTime at each run's
+      start and end; a run waits for nominal, at most 10 minutes;
+    - **Low Power Mode:** a state at the run's start or end that differs from the run's plan (on
+      only in S2-LPM) marks it "LPM (not valid)", with no retry, since nothing would change it.
+      Preflight reads `pmset -g custom`, and if Low Power Mode is set on for battery, the start
+      message tells him: with his password the queue turns it off for the other runs (the EXIT
+      trap puts it back); without it, those runs are "LPM (not valid)";
+    - **occlusion:** `ui windows` (CGWindowList only) before S4w: the main window on screen,
+      inside the display, not covered (except by S5's TextEdit window) and not full screen.
+  - **`preflight`** (the start, while he is there): the proofs of §6 ("Proofs"; P12 waits for the
+    burst), one run of every command family through Claude's Bash in auto mode (so every
+    permission prompt and every auto-mode block comes now), the reads that replace prepare's
+    questions, and a refusal of any `tell application` in the B scripts other than System Events
+    and BatteryPulse (another target would raise an Automation prompt at night). `/usage` is a
+    command he types, not one the script or the session runs: the session asks him to type it once
+    at the start (§6, B0a) [unverified: whether its result reaches the session].
+  - **`burst`:** 3 cycles at beeps and notifications, 1 minute apart, each power event stamped,
+    ending plugged in.
+  - **`docs/plans/0.6.2/ui.swift`** (AX, CGEvent and CGWindowList, built like `frames`):
+    - `click [--shift|--control]`, `move`, `drag` (slow, with steps), `scroll`, `press`,
+      `select-row`, `frame`, `hit`, `tree`, `windows`, `minimize on|off`, `fullscreen`,
+      `position`, `banner <app>`, `idle` (HIDIdleTime and both event-source states), `locked`,
+      `thermal` and `guard`;
+    - points come from AX or from `--image <png> x y` (pixels converted to points), never from
+      computer use's scaled coordinates;
+    - **its own safety rules**, so they don't rest on Claude alone: no key presses at all, only a
+      Shift or Control modifier (a flagsChanged event) around a click; never Esc, which would end
+      Claude's turn; every click hit-tests the topmost window's
+      owner and acts only on the approved list (BatteryPulse, the desktop, the Dock and the menu
+      bar, System Settings, Notification Center, the widget gallery's host, TextEdit,
+      Accessibility Inspector, Xcode); it always refuses SecurityAgent, UserNotificationCenter,
+      CoreServicesUIAgent, coreautha, loginwindow, a TCC prompt and Terminal; it refuses System
+      Settings while the pane is Privacy & Security, Users & Groups, Passwords or Login Password;
+      it refuses any action while the screen is locked or, unless the queue calls it, while
+      `queue.started` exists (above), and any point within 20 px of a hot
+      corner (`wvous-*-corner`) set to Lock Screen, Start Screen Saver or Put Display to Sleep;
+    - `ui guard` runs before each computer-use batch too, so a dialog that appears between a
+      screenshot and a click stops the batch;
+    - if preflight shows that events posted at the session tap work but leave HIDIdleTime alone,
+      `ui` posts there;
+    - `ui tree` on a widget host prints only the subtree inside BatteryPulse's frame, and
+      `ui tree --app "System Settings" --match BatteryPulse` prints only whether the row exists;
+    - CI: `swiftc -typecheck` beside `frames.swift`. The guard suites scan only `Sources/`, so
+      they don't apply; every call is public API.
+  - **`frames.swift`:** print the movie's frame rate and dump every frame (`frames dump <movie>
+    <dir> 0.0167`, zero tolerance); the sheet keeps at most 120 evenly picked frames, `frames.tsv`
+    lists every frame, and `fill_frames` crops the darkest ones to the window's rectangle.
+  - **`record_clip`:** fires the minimize itself 1 s into the clip, with no `DO` line and no sound
+    at night: a 3-second clip with `AXMinimized`, a 6-second clip (Session A's `FILL_SECONDS`)
+    with P5's posted Shift around a click on `AXMinimizeButton` (§6 "Proofs"). The restore clip
+    fires a posted Shift around a click on the window's Dock tile, or sets `AXMinimized` false.
+  - **`pages`:** CGEvent clicks at the sidebar rows' AX frames on the cue schedule instead of
+    `say` and notifications.
+  - **F12:** `curl -s https://api.github.com/rate_limit` (unauthenticated, the limit the app
+    uses; `gh api rate_limit` would show the token's); F12 runs with at least 10 requests left,
+    otherwise it waits while other steps run, then moves to the morning. A VPN is recorded only
+    as active yes or no.
+  - **`restore`:** split into `gui` (the hand-over), `night` (the queue's end) and `morning`. Every
+    change first appends `setting, original, new` to `~/bp-062/B/changes.tsv`, and restore works
+    from that file, not from the session's context, so it survives a compaction. A setting whose
+    original is "unknown" is never changed. The computer-use items are steps of their own;
+    `restore_prompts` keeps only what needs him: turning the Focus off and, unless he kept it,
+    revoking Terminal's Accessibility.
+  - **`prepare` reads instead of asking:** the Charge Limit (`pmset -g battlimit` on the adapter
+    [unverified below the limit: Session A saw it only at the hold, and it clears on battery after
+    about 300 s, plan-0.7.0 Appendix C finding 9], else a System Settings → Battery shot Claude
+    reads); Icon & widget
+    style and Dim widgets from a defaults diff (`defaults read -g`, `com.apple.WindowManager`)
+    plus a System Settings shot Claude reads; Open at login by an AX read of BatteryPulse's own
+    toggle; click-to-show-desktop (`EnableStandardClickToShowDesktop`), the hot corners and the
+    screen saver's idle time; the wallpaper (a still image, or a dynamic or aerial one, which
+    restore puts back by computer use from prepare's shot). It generates the bright and busy
+    wallpapers as PNGs.
+  - **Judgments with pixel checks:** every `judge` answer pairs Claude's reading of the picture
+    with the script's measurement where one exists (the darkest frame's luminance inside the
+    window's rectangle for a black frame; V1b's pixel comparison; a widget crop's variance for
+    blank or grey; a menu bar crop's diff). When the two disagree, or Claude is unsure, the
+    answer is 3 with a note and a crop, for the morning batch. Each `judge` question in
+    `SESSION-B.md` has written criteria and a default.
+  - **"Not checked" fallbacks:** every automated step records "not checked" or "not run" with its
+    reason and moves on; nothing waits for a person (§6's steps name each fallback under "If it
+    can't").
+  - **The report and `send`:** the energy table's new columns; the results branch and file become
+    `claude/062-session-b` and `sessions/B.md` (hard-coded for Session A today); `send` refuses
+    a `B.md` line with the ComputerName (`scutil --get ComputerName`), his full name, an accessory
+    name from `pmset -g accps`, a VPN name or the network's name; window owners appear only when
+    they are `com.apple.*` ("another app" otherwise), and assertions only as BatteryPulse lines.
+  - **CI** [proposal]: a `queue --dry-run` on Linux with stub `pmset`, `ioreg` and `notifyutil`,
+    to exercise the order, the retries and the thresholds.
 - **Output:**
   - The "Performance baseline (0.6.1 → 0.6.2)" tables in ROADMAP, with energy rows for the first
     time.
   - The 0.6.2 notes' energy line.
   - ROADMAP's "power in the menu bar for an hour" is reworded to the alternated 5-minute runs
     (WP-22).
-- **Files:** `docs/plans/0.6.2/m5-session.sh` and its swap helper; one `bash -n` line in ci.yml's
-  "Check the verification scripts" step, removed with the folder in D3.
-- **Acceptance:** `bash -n` passes in CI, and the `send` comment has a line for every Appendix C
-  row the sessions own.
-- **Effort:** S-M, 2 runs (script), plus the sessions.
+- **Files:** `docs/plans/0.6.2/m5-session.sh` and its swap helper; `docs/plans/0.6.2/ui.swift`,
+  `frames.swift`, and the runbook `docs/plans/0.6.2/SESSION-B.md`, which D1 adds (§6);
+  `scripts/rusage.swift` (the `SuspendingClock` duration); one `bash -n` line in ci.yml's "Check
+  the verification scripts" step, beside the helpers' type-check, removed with the folder in D3.
+- **Acceptance:** `bash -n` passes in CI, `ui.swift` type-checks, and the `send` comment has a line
+  for every Appendix C row the sessions own.
+- **Effort:** M, 4 runs: 2 for the script (Session A's), 2 for the hands-free mode; plus the
+  sessions.
 
 ### WP-22: Guards and docs (P1, merges last)
 
@@ -1099,26 +1315,44 @@ As PLAN §3.5.
     Xcode is installed, Q-B7); finalizes the session script, with Session A's fixes (Appendix C):
     `plist_count` splits `pmset -g accps -xml`'s back-to-back plists, every recording ends by
     `screencapture -v -V <seconds>` alone, window IDs come without the `osascript` window query,
-    and F12 checks the pre-swap extension end (WP-16 item 6).
-- **D2** is Session B.
+    and F12 checks the pre-swap extension end (WP-16 item 6); and adds the runbook
+    `docs/plans/0.6.2/SESSION-B.md` for WP-21's hands-free mode (built in C1), with its rules (§6)
+    and a section "After publishing" for D3's short session.
+- **D2** is Session B, hands-free (§6).
 - **D3:**
   - applies the answers or the defaults and records the numbers;
   - before removing the plan folder, moves §8, §9.1, §10's Q-W block with its answers and
     Appendix C's W0 rows to `docs/plans/0.7.0/widgets.md` (English only: `LocalizationCatalogTests`
     scans `docs/`), and links it from ROADMAP's 0.7 stage, so 0.7's plan cites a file that exists;
   - before `claude/nice-faraday-k08mhb` and the `claude/062-*` branches are deleted, copies
-    `m5-session.sh`, its swap helper and the whole of Appendix C into `docs/plans/0.7.0/` beside
-    `widgets.md` (plan-0.7.0 D-1, D-11, Q7-8; RD §3.1 item 6);
+    `m5-session.sh`, its swap helper, the hands-free helpers (`ui.swift`, `frames.swift`,
+    `SESSION-B.md`) and the whole of Appendix C into `docs/plans/0.7.0/` beside `widgets.md`
+    (plan-0.7.0 D-1, D-11, Q7-8; RD §3.1 item 6);
   - removes `docs/plans/0.6.2/` (and its `bash -n` line in ci.yml) and releases;
-  - runs the after-publishing check: PLAN §4b's list at `6aec4d2` with 0.6.2 in place of 0.6.1
-    (About shows the new version; History shows the past days; the settings and the menu bar look
-    are unchanged; the widget shows a current value; `codesign -dv --verbose=4` shows
-    `flags=0x10002(adhoc,runtime)`; `xattr -l` shows no quarantine; `sudo sfltool dumpbtm` still
-    lists the login item if it was on; notification permission is kept; on any failure,
-    `gh release edit v0.6.2 --prerelease`), plus V-01's post-update half (the widget reloaded
-    after the update);
-  - in everyday use on the first day, compares the widget's charge and "Lasts until" with the
-    popover's (within 2 points and about 15 minutes, `994c09d`);
+  - runs the after-publishing check in a short local session with computer use, as Session B
+    runs (about 2 minutes of the maintainer's time: the start line and the approvals). The plan
+    folder is gone by then, so the line reads the copy of `SESSION-B.md` from a ref that
+    survives, the release PR's head (plan-0.7.0 Q7-8); D3 gives him the line with `<n>` filled in
+    (Session B's shape, with the flags and the variable as checked in its once-before step):
+
+    ```
+    DISABLE_AUTOUPDATER=1 claude --allowedTools 'Bash(bash ~/bp-062/D3/run/docs/plans/0.7.0/m5-session.sh:*)' --permission-mode auto 'Run the BatteryPulse 0.6.2 after-publishing check hands-free: in ~/BatteryPulse run git fetch origin refs/pull/<n>/head && git show FETCH_HEAD:docs/plans/0.7.0/SESSION-B.md, then follow its section After publishing.'
+    ```
+
+    That section first makes its own frozen worktree `~/bp-062/D3/run` at FETCH_HEAD, the commit
+    the runbook was read from, and works from the copies in `docs/plans/0.7.0/` there, every
+    command through that script's one prefix, so the line's one allow rule covers them. It runs PLAN §4b's
+    list at `6aec4d2` with 0.6.2 in place of 0.6.1 (computer use or an AX press for Install and
+    Relaunch; Claude reads About for the new version, History for the past days, the settings
+    and the menu bar look for no change, and the widget for a current value; `codesign -dv
+    --verbose=4` shows `flags=0x10002(adhoc,runtime)`; `xattr -l` shows no quarantine; the login
+    item is still listed if it was on, by the `ui tree` read of Login Items instead of `sudo
+    sfltool dumpbtm`, which would need his password; notification permission is kept; on any
+    failure, `gh release edit v0.6.2 --prerelease` on his yes, as plan-0.7.0 §6.4 step 5 does),
+    plus V-01's post-update half (the widget reloaded after the update);
+  - compares the widget's charge and "Lasts until" with the popover's (within 2 points and about
+    15 minutes, `994c09d`): the short session opens the popover by a click and compares at its
+    end, and the maintainer's everyday use on the first day stands in for a second look;
   - **a week after publishing,** runs `swift scripts/release-stats.swift` (WP-19) and adds its DMG
     and `.sig` download columns to ROADMAP's Releases table, for 0.2.0-0.6.2, in a commit of its
     own. If the script was cut, `gh api 'repos/{owner}/{repo}/releases?per_page=100' --jq '.[] |
@@ -1145,27 +1379,38 @@ At most two agents, and never two packages on one file (mechanical rebase-overs 
 | A2′ | SPIKE-A2: the A2 integration tip plus the Clear fill switch (today's fill or (b), Q-B2), a normal CI build (throwaway branch `claude/062-spike-a2`); the field run, V-01 and the fill recordings need no profiling. Because Xcode is installed (Q-B7), the branch also adds a last step to the macOS job, after "Install the way 0.6.0 does, then launch" (the job's last step today), that runs `PROFILING=1 scripts/build-app.sh` and uploads `build/BatteryPulse-profiling.dmg`; it must come last, because `build-app.sh` starts with `rm -rf build` (`build-app.sh:60`). A profiling build in the package step would fail the job: the signing smoke, the size report and the upload expect `build/BatteryPulse.dmg` (ci.yml:132-171, `size-report.sh:19-20`), and a profiling build writes `BatteryPulse-profiling.dmg` with unstripped binaries (`build-app.sh:31-34, 185-187`) | | WP-14a merged |
 | **Session A** | maintainer: about 65 min, then the 3-hour window | | A2′ |
 | B1 | WP-14b (E4b, E3b) | WP-13 | Session A (F13, the pslog, the fill recordings), or 14 days after A2′ on the defaults (WP-14b "When") |
-| B2 | WP-15 | WP-16 | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free) |
+| B2 | WP-15 | (WP-16 ran early, below) | WP-14b merged (WP-15 git-moves its files and needs `Package.swift` free) |
 | B3 | WP-19 (SW-13 on BatterySource's moved files) | WP-17 (with the History riders) | WP-15 merged |
-| C1 | WP-21 (script) | WP-22 (merges last) | Phase B |
+| C1 | WP-21 (script, with the hands-free mode) | WP-22 (merges last) | Phase B |
 | D1 | freeze the RC | | C1 |
-| **Session B** | maintainer: about 95 min plus about 70 min unattended | | D1 |
+| **Session B** | hands-free: the maintainer about 18-22 min in short moments; the GUI phase and the energy queue run on their own (§6) | | D1 |
 | D3 | release | | Session B or its defaults |
 
 - **File ownership:** WP-19's SUI-09 stays in `App/`, and WP-17 in `Main/` and BatteryCore's
-  History files. WP-16's item 6 edits `App/WidgetRefresher.swift` and `IsolationGuardTests` in
-  B2, which no other B2 package touches.
+  History files. WP-16's item 6 edited `App/WidgetRefresher.swift` and `IsolationGuardTests` in
+  its early round (below), which WP-23 doesn't touch.
+- **Ran early (2026-10-23): WP-16 and WP-23,** beside each other, ahead of B1, because neither
+  shares a file with B1's WP-14b or WP-13, nor with the other. WP-23 changed only
+  `IDeviceSchedule.swift`, `IDeviceMonitor.swift` and their tests (not `DeviceView.swift`, nor `App/Localized.swift`, which WP-13 edits). Both merged into `claude/nice-faraday-k08mhb`
+  (WP-16 as `f8a7445`, WP-23 as `2737b51`; Appendix C), so B2 is WP-15 alone. The later
+  packages rebase over them mechanically: WP-16's one `scripts/build-app.sh` hunk is a comment
+  (lines 315-320), and WP-15's `import BatterySource` and WP-19's SW-13 markers land in WP-23's
+  `IDeviceMonitor.swift` as they would have before.
 - **Floating work:** WP-20 (SEC-18 only) takes any free slot after B1. WP-23 (the device
-  connection label) takes a free slot from B1 on, never beside WP-15, WP-17 or WP-19's SW-13
-  (WP-23 "When"). WP-18 runs whenever the maintainer has Xcode open, from Claude's step-by-step
-  list, and blocks nothing.
+  connection label) was to take a free slot from B1 on, never beside WP-15, WP-17 or WP-19's
+  SW-13 (WP-23 "When"); it ran early, beside WP-16 (above). WP-18 runs inside Session B (§6) and
+  blocks nothing; SZ-10's icon source is prepared by a cloud run before D1 (1 run, §7.2).
 
 ---
 
 ## 6. The M5 sessions
 
 Both sessions use one script, `bash docs/plans/0.6.2/m5-session.sh <step>`, built from the 0.6.1
-script, with prepare, backup, restore, `send` to the PR and the `perf` log stream.
+script, with prepare, backup, restore, `send` to the PR and the `perf` log stream. Session A is
+run by a local Claude Code session with the maintainer's hands (`SESSION.md`); Session B is
+hands-free: the same kind of session, the Claude Code CLI in Terminal with computer use, does the
+hands-on steps itself, and the energy queue runs as a plain script (WP-21's hands-free mode,
+`SESSION-B.md`; §10, "The hands-free sessions").
 
 Every build stays in its DMG, and the script installs it into `/Applications` the way
 `UpdateInstaller` does (WP-W0 "Install"), so only `/Applications/BatteryPulse.app` exists and macOS
@@ -1177,11 +1422,15 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 - Each session's prepare takes a fresh backup into its own folder, `~/bp-062/A` or `~/bp-062/B`.
 - Prepare records, and prints: the installed app; the `io.github.nikitausov.BatteryPulse` defaults
   domain; `~/Library/Application Support/io.github.nikitausov.BatteryPulse`; the appearance and the
-  wallpaper; `lowpowermode`; and, asked once because the script can't read them reliably, the Icon
-  & widget style, Dim widgets on desktop, whether Open at login is on (it is `SMAppService`
-  state, not a defaults key: `App/AppSettings.swift:307-319`), the Charge Limit in System
-  Settings → Battery (no registry key holds it, Appendix C), and whether Terminal is already
-  listed under System Settings → Privacy & Security → Accessibility.
+  wallpaper; `lowpowermode`; and, asked once in Session A because the script can't read them
+  reliably, the Icon & widget style, Dim widgets on desktop, whether Open at login is on (it is
+  `SMAppService` state, not a defaults key: `App/AppSettings.swift:307-319`), the Charge Limit in
+  System Settings → Battery (no registry key holds it, Appendix C), and whether Terminal is
+  already listed under System Settings → Privacy & Security → Accessibility. Session B's prepare
+  reads them instead (WP-21: `pmset -g battlimit`, a defaults diff and a System Settings shot, an
+  AX read of Open at login; Terminal's grants are known from Session A). A value it can't read is
+  "unknown", and a setting whose original is unknown is never changed: the steps that need it are
+  "not checked".
 - Prepare also builds `bpulse` with `xcrun swift build -c release --product bpulse` (`Package.swift`
   needs tools 6.4), next to `perf-stats` and `rusage`. CI uploads only the DMG, the size report,
   the link maps and the dSYMs (ci.yml:165-192), the DMG holds only the app, and the 0.6.1 script
@@ -1197,17 +1446,29 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   - runs `pmset -a lowpowermode <value saved at prepare>` from an EXIT trap, so an interrupted
     session puts it back too (if the sudo ticket has lapsed, it prints the command instead);
   - puts the wallpaper and the appearance back;
-  - then prompts for what only a hand can reset: "Turn VoiceOver off (Command-F5)"; "Set Text size
-    back"; "Set System Settings → Appearance → Icon & widget style back to <value printed at
-    prepare>", and the same for Dim widgets on desktop; "If Open at login was on before the
-    session, turn it on again in Settings → General"; "Set the Charge Limit in System Settings →
-    Battery back to <value printed at prepare>"; and, if Terminal wasn't listed at prepare, "Turn
-    Terminal off (or remove it) in System Settings → Privacy & Security → Accessibility".
+  - then, in Session A, prompts for what only a hand can reset: "Turn VoiceOver off
+    (Command-F5)"; "Set Text size back"; "Set System Settings → Appearance → Icon & widget style
+    back to <value printed at prepare>", and the same for Dim widgets on desktop; "If Open at login
+    was on before the session, turn it on again in Settings → General"; "Set the Charge Limit in
+    System Settings → Battery back to <value printed at prepare>"; and, if Terminal wasn't listed
+    at prepare, "Turn Terminal off (or remove it) in System Settings → Privacy & Security →
+    Accessibility".
   - Session A's restore covers neither, so the maintainer puts both back by hand: he changed the
     Charge Limit (80, 100, 80) for the capture, and allowed Accessibility for Terminal when a
-    window query through `osascript` asked for it (Appendix C). D1's script finds window IDs
-    without an `osascript` window query, so Session B asks for no Accessibility, as its step 3
-    already avoids a scripted keystroke.
+    window query through `osascript` asked for it (Appendix C).
+  - **In Session B,** restore is split into `gui`, `night` and `morning` and works from
+    `changes.tsv` (WP-21); the session puts the GUI items back itself, by AX, System Events or
+    computer use, and confirms each with a read or a shot. What stays for his hand is turning the
+    Focus off and, unless he chose to keep it, revoking Terminal's Accessibility (10 seconds).
+  - **Permissions in Session B:** it asks for no permission Session A didn't give. It runs on
+    Terminal's grants from Session A (Screen Recording, Accessibility, Automation of System Events
+    and BatteryPulse), which computer use in the CLI uses too. He was told to keep Accessibility
+    until Session B; if he revoked it after Session A, preflight asks again while he is there (one
+    prompt, then the switch with Touch ID or his password). His yes at the start decides whether
+    Accessibility stays until 0.7's Session R (his explicit choice, against Appendix C's "revert
+    after the session") or is revoked in B's morning (the default; Session R's preflight then asks
+    again while he is there). D1's script still finds window IDs without an `osascript` window
+    query (CGWindowList).
 
 ### Session A (after A2′; about 65 minutes hands-on, then a 3-hour unattended window)
 
@@ -1299,98 +1560,451 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
 - **At 3:00:** the script runs restore (above) and `send`, and leaves restore's prompts on screen
   for your return. If a widget is blank afterwards, remove it and add it again.
 
-### Session B (release candidate; about 95 minutes hands-on, about 70 minutes unattended)
+### Session B (release candidate, hands-free; about 18-22 minutes of the maintainer's time, the rest on its own)
 
-1. **prepare** (2 min): a fresh backup into `~/bp-062/B` (above), `bpulse`, then the RC, built as
-   0.5.99.
-2. **V-01 on the RC** (10 min; WP-10, WP-14a): as Session A's step 5, script-checked.
-3. **Beta styles** (35 min; WP-13):
-   - The 8 glass-sheet minimize and restore cases (Translucent and Clear × Light and Dark × main
-     and compact), each recorded with `screencapture -v -V <seconds>` (Session A: SIGINT or the
-     end of stdin loses the movie). Standard and Frosted once each next to a minimized Notes window.
-     "1 like the window, or an even graphite grey (the chosen fill), 2 a black frame or rectangle,
-     3 something else (note)".
-   - The screenshot set: 2 wallpapers (bright, busy) × Light and Dark × 3 pages (Overview, History
-     with the readout under the pointer, Settings) × Translucent and Clear = 24. The script
-     switches wallpaper, appearance and style, and captures the front window (`screencapture -o -l
-     <id>`) on Return.
-   - The graduation shots (WP-13 item 3), on the bright wallpaper, per beta style × appearance:
-     Raw Data with the inspector open; Demo Mode with its bar; History scrolled under the title;
-     the main window in full screen (you press Control-Command-F when asked, because a keystroke
-     from the script would need Accessibility access for Terminal) = 16. Plus Settings → General
-     beside a Clear window in Light, to show the dark appearance stays in its window, and the
-     widget gallery behind a Frosted window in Light and Dark: 19 in all, about 5 minutes.
-   - The contrast audit with Accessibility Inspector (about 10 minutes; Xcode is installed, Q-B7):
-     the script names each beta style, appearance and page (Overview, History, Settings), and you
-     run the audit from Claude's step-by-step list and save its report for the script.
-   - V1b (scripted): the script opens Settings → General and captures the window (`screencapture
-     -o -l <id>`) with Clear unselected and then selected. It compares the tile preview's pixels
-     inside the outline; identical pixels pass. You only click the tiles it names.
-   - Two plain questions (Q-B2 already chose the fill; Q-B4 says what a style needs first):
-     - "From 0.6.2 on, offer Translucent without the Beta window styles setting? y/n."
-     - "And Clear? y/n."
-4. **F6, F8, F9, F11** (15 min; F11's wait overlaps F6-F9):
-   - F11 first: "Plug in the adapter if it isn't." "When charged to" is a picker of 80, 85, 90, 95
-     and 100 % (`Settings/NotificationSettings.swift:18-21`), and the alert fires while plugged in
-     once the charge reaches it (`BatteryAlerts.swift:70-81`). The script quits the app, writes
-     the step to `alertChargeLimit`, deletes the stored `alertState` so the alert starts armed,
-     and relaunches. The step:
-     - charge 80 % or more: the highest step at or below it, which fires within seconds, as
-       0.6.1's F11 did;
+One local Claude Code session on the M5 runs Session B with computer use, and a plain script in a
+second Terminal window, the arm window, runs the energy queue (WP-21's hands-free mode; why one
+session, and why the CLI: §10, "The hands-free sessions"). The session does every step below
+itself: the script, AX, CGEvent, CGWindowList and System Events first, computer use where those
+can't reach, and its own judgment of the pictures. The maintainer does only what needs a person:
+the start line and one yes to the list of changes, quitting his own apps, the Focus on and off, the adapter, the lid and the morning login, his password at bedtime, the permission prompts, the taste questions, his typed "continue", revoking Terminal's Accessibility unless he keeps it, and his yes before `send`. An automated step that fails records "not checked" or "not run" with its reason, and the
+session moves on; its gate takes its default (§7.1). The runbook is
+`docs/plans/0.6.2/SESSION-B.md` (D1).
+
+**His part:** about 18-22 minutes, or 13-17 without the optional burst. Before the hands-free mode it
+was about 100 minutes (95 hands-on, 3 on the restore list), plus WP-18's hour.
+
+| When | What he does | Time |
+|---|---|---|
+| Once, any day before | Quit Session A's Claude session (one Claude session at a time on the Mac). In Terminal: `claude update`; in `~/BatteryPulse`, `claude`, then `/mcp` → `computer-use` → Enable (kept per project; interactive sessions only); `/status` shows a plan that includes computer use. In the same session he asks Claude to check the start line's flags (below) against `claude --help` and the CLI's documentation | 2 min |
+| The start, in the evening, on the adapter | In Terminal, in `~/BatteryPulse`, he pastes the start line below (his choice; no agent sets a permission mode or adds a rule), types `/usage` when the session asks, and gives one yes to the list of changes, with his bedtime. He may then leave for about 10 minutes while the session builds (B0a). At its beep: he quits his own apps, approves the app list (one prompt), allows Accessibility for Terminal again if he revoked it after Session A (one prompt, from preflight), and answers any other first-time prompt preflight brings up now | 5-7 min (about 1, then 4-6 at the beep) |
+| Right after: the burst (optional) | Unplug and plug in at the beeps, 3 times, 1 minute apart, ending plugged in (skipped: S8 is "not run"). Burst or not, he then turns a Focus on in Control Center (one click, once the session says the banners are done) and leaves the Mac on the adapter with the lid open | 5 min |
+| Bedtime | In the Terminal window "BatteryPulse arm": if it says ready, press Return and type his password; then unplug the adapter and leave the lid open. If it says the session is still working, he only unplugs, and the Low Power Mode run is "not run" | 1 min |
+| Morning | Close the lid for a minute, open it and log in (V-01's lid and wake), plug in, write "continue" and keep off the Mac for about 3 minutes. Then the batch: one contact sheet per beta style for step 3's y and its two plain questions, SZ-10's y, and any picture the session answered 3. Then his yes to `send`, given at the Mac after the session opens one contact sheet of every attached image and summarizes `B.md`'s text. Last, the Focus off and, unless he keeps it for Session R, Terminal's Accessibility off (10 s) | 5-7 min |
+
+The start line, in the pattern of Session A's sentence, as one line he pastes [check the flags on
+his CLI in the once-before step]:
+
+```
+DISABLE_AUTOUPDATER=1 claude --allowedTools 'Bash(bash ~/bp-062/B/run/docs/plans/0.6.2/m5-session.sh:*)' --permission-mode auto 'Run the BatteryPulse M5 Session B hands-free: in ~/BatteryPulse run git fetch origin claude/nice-faraday-k08mhb && git show FETCH_HEAD:docs/plans/0.6.2/SESSION-B.md, then follow that runbook from its first step.'
+```
+
+- One allow rule covers every command the session runs once B0a's worktree exists, since all of
+  them go through the frozen script's prefix (the rules below); the start sentence's `git fetch`
+  and `git show` and the worktree's creation come before it, under auto mode. The rule lasts for
+  this session only, and he adds no other.
+- `--allowedTools` comes before `--permission-mode`, so its list of rules ends before the
+  sentence.
+- The single quotes keep the shell from running anything inside the sentence, so the sentence has
+  no backticks and no apostrophe.
+- `DISABLE_AUTOUPDATER=1` keeps the CLI from updating itself overnight: an update's child
+  processes would count against a run (WP-21's Claude detector).
+
+Remote Control (`claude --remote-control`) stays off by default. At night it adds nothing, and it
+would store every desktop screenshot on his Claude account. "Bedtime" is whenever he leaves the
+Mac for the night, or for about two hours: the same order works by day.
+
+**The yes-list** (one yes at the start, before anything changes). The session may change these. It
+writes each change to `changes.tsv` first and puts each back:
+- the installed BatteryPulse (the session's builds replace it; the backup puts his back);
+- the appearance, the wallpaper (to the generated bright and busy PNGs), Icon & widget style, Dim
+  widgets on desktop and Text size;
+- desktop widgets: a small and a medium added if either is missing, large and extra large added
+  for F8, a blank one removed and added again, P10's test widget added and removed, and Session
+  A's dead Test widget removed (not put back);
+- Increase Contrast and Reduce Transparency, for the optional passes, and Stage 1.4's pass:
+  Reduce Motion, Prefer Cross-Fade Transitions, Show Borders and the Liquid Glass slider;
+- brightness, auto-brightness and True Tone, for the queue's energy setup;
+- Low Power Mode, for one run (and off for the other runs, if it is set on for battery);
+- BatteryPulse's settings and data, the widget's included (Clear History; the backup restores it).
+
+The same message asks five optional questions:
+- the Charge Limit 80 → 100 → 80 in the morning-away block, at most 10 minutes at 100 %;
+- keeping the large and extra-large widgets for 0.7's Session R;
+- keeping Terminal's Accessibility until Session R (default: revoked in the morning);
+- his bedtime (default: 4 hours after the start);
+- whether the Charge Limit slider asked for a password or Touch ID in Session A. If it did, the
+  capture needs him and is "not run".
+
+Never on the list: a VPN (F12 waits for GitHub instead), the Dock's slow-motion key or any other
+undocumented system key, and anything in Privacy & Security, Users & Groups or Passwords.
+
+**The blocks, in order.** Every GUI step and every display-on check comes before `ready`. After it,
+only the queue runs, and it draws nothing but its own runs. The session ends its turn at `ready`
+and acts again only on his "continue".
+- **B0a, the start** (on the adapter; he is there for the paste and the yes, about 1 min, then he
+  may leave; about 10 min [estimate], no prompt expected; "B0" below means B0a and B0b):
+  - The yes-list and his bedtime (above), first, before anything changes; `changes.tsv` started.
+    The same message asks him once to type `/usage`, which shows how much of his plan's limit is
+    left [unverified: whether its result reaches the session; if not, he says it with his yes].
+  - Step 1's first half (prepare): the frozen worktree `~/bp-062/B/run` at FETCH_HEAD, the commit
+    the runbook was read from (a later fix goes to the next session, never into a running one),
+    the fetches, the builds (`bpulse`, `ui`, `frames`, `perf-stats`, `rusage`), the backup and the
+    RC installed.
+  - Then a beep.
+- **B0b, at the beep** (he is there; 4-6 min):
+  - He quits his own apps, so the shots from here on don't show them.
+  - Step 1's second half: prepare's reads and shots.
+  - Preflight (WP-21): the proofs below and one run of every command family.
+  - The computer-use app batch, in one request: BatteryPulse, System Settings, Finder (for the
+    desktop and the Dock), Notification Center, the widget gallery's host (P1 names it), TextEdit,
+    Accessibility Inspector, Xcode, and Numbers if the spreadsheet check runs. The session opens
+    each surface once, so a surprise approval comes now. Control Center isn't needed: he turns the
+    Focus on himself.
+  - The banners, while he is there and before the Focus: V-01's two test notifications with their
+    banner clicks (step 2), and F11's alert (step 4; at his 80 % limit, the 80 step fires within
+    seconds).
+  - The arm window opens (`open -a Terminal ~/bp-062/B/arm.command`). It keeps the display awake
+    for the GUI phase and waits at a plain prompt. It asks for nothing yet.
+- **B1, the burst** (he is there; about 5 min; step 7): the session waits inside the `burst` call, so
+  it doesn't touch BatteryPulse. Each power event is stamped, and P12 runs at the first unplug.
+  The burst ends plugged in. Then `mark away`: no sound or speech from here until his morning
+  "continue".
+- **B2, the GUI phase** (on the adapter, he is away; about 2.5-3.5 hours at computer use's pace
+  [estimate]). It stops 10 minutes before his bedtime, or 4 hours after the start. What is left
+  then becomes "not run (time)", or moves to the morning-away block. The session touches
+  `~/bp-062/B/heartbeat` after each step and between computer-use batches:
+  1. memory (step 7), first, on the backed-up history;
+  2. the placed widgets: a shot; large and extra large added for F8; the dead Test widget shot
+     once, then removed;
+  3. V-01's other half (step 2), without Clear History;
+  4. F6, F8, F9 and F11's login item (step 4), on the real history;
+  5. the beta styles (step 3), whose History shots need it too; then Clear History (step 2's last
+     item), before the page switches, as in Session A;
+  6. the page switches (step 5);
+  7. F12 (step 6), when GitHub allows it, else later in B2, else in the morning; then
+     `install_build C`, so the rest of B2 runs on the RC;
+  8. WP-18: SUI-17, SUI-19, then SZ-10's shots;
+  9. the optional extras while time allows (below);
+  10. `v01 check` for the RC's window (step 2).
+- **B3, the hand-over** (about 5 min):
+  - `restore gui` (step 10).
+  - TextEdit (its empty `cover.txt`, so no save prompt), System Settings, Accessibility Inspector
+    and Xcode are closed and quit by AX presses, not by Apple Events: TextEdit would be a new
+    Automation target.
+  - The energy setup: brightness about half, auto-brightness and True Tone off, by computer use on
+    the Displays pane (P8's URL), with no key press (`ui`'s own rule). The energy-setup answer
+    is recorded.
+  - Every background task is stopped, and nothing is scheduled.
+  - Then `ready`, its last call, and the session ends its turn. A message that reaches it after
+    `ready` gets a text-only answer ("results in the morning"), with no tool call.
+- **B4, bedtime and the queue** (script only, about 160 minutes, plus the cooldown; about 100 before the warm-up and the extra pairs of 2026-10-24): his Return,
+  password and unplug, then the queue (step 8) in the arm window, after the cooldown and a quiet
+  minute. `queue.started` is already up: arm writes it as soon as it decides to start, here at
+  `ready` (WP-21).
+- **B5, the queue's end** (draws nothing):
+  - Low Power Mode goes back (the EXIT trap); the sampler and the pslog stop; the queue's section
+    is written; `restore night` runs; `queue.started` is removed.
+  - Arm starts a `log stream` with `PERF_PREDICATE`, to test whether a stream survives sleep (it
+    decides 0.7's Session R step 12).
+  - `sudo -k`; `caffeinate` is released.
+- **B6, the night:** the Mac sleeps on its own. This is the sleep-hygiene night on the RC (WP-21).
+- **B7, the morning,** on his "continue" (if `queue.started` still exists, the session tells him
+  when the queue ends and starts only then):
+  - the after-lid shot and `v01 check`'s morning half;
+  - `pmset -g log` for sleep hygiene, and the `log stream` result;
+  - `restore morning` (step 10);
+  - the report and the morning batch, then `send` after his yes (step 9).
+
+**The morning-away block** (optional, only if he says he leaves the Mac on the adapter for about an
+hour): the Charge Limit capture, SUI-19 or SZ-10's shots if B2 didn't reach them, the CSV in
+Numbers, and whatever else B2 moved there.
+
+**The steps** (what each checks, how the session does it, and what a failure costs):
+
+1. **prepare** (B0a, then B0b):
+   - Prepare's reads (above; WP-21). The session reads prepare's widget shot and adds a small and a
+     medium widget if either is missing (computer use: the gallery's click-to-add, then one slow
+     `ui drag`).
+   - **If it can't:** an unread setting is "unknown" and never changed; missing widgets make F8's
+     and F12's widget items "not checked".
+2. **V-01 on the RC** (B0, B2, the morning; WP-10, WP-14a):
+   - Send Test Notification (`NotificationSettings.swift:66`) by AX press, twice, the second time
+     with the window in front. `ui banner` finds each banner in Notification Center's AX tree and
+     clicks it within 10 s (P2).
+   - The menu bar item with a light and a dark bar: the appearance by System Events, a crop of the
+     item, and Claude's judgment beside the crop's pixel diff.
+   - Raw Data, History, Demo Mode on and off, Check Now (its offer closed by its own button), Clear
+     History: AX presses and CGEvent clicks, with computer use as the fallback.
+   - The lid: his 1-minute close in the morning.
+   - `v01 check` at B2's end counts the "executor" lines and the crash reports for the RC's window.
+     Its morning half counts only the RC's crash reports (by their `Version:`) and the executor
+     lines of the RC's pids, so build B's runs in the queue don't count against the RC.
+   - **If it can't:** per item "not checked"; G-10 still rests on the executor and crash counts.
+     Without the lid close: "lid not checked".
+3. **Beta styles** (B2; WP-13):
+   - **The 8 glass-sheet minimize and restore cases** (Translucent and Clear × Light and Dark × main
+     and compact):
+     - the style and the appearance set by defaults and System Events, and the window's place by
+       AX;
+     - the minimize fired by `record_clip` 1 s into the clip: if P5 shows slow motion, a posted
+       Shift around a click on `AXMinimizeButton` in a 6-second clip (Session A's
+       `FILL_SECONDS`), else `AXMinimized` in a 3-second clip, with every frame dumped and
+       calibrated against a Session A case (P4); the restore clip the same way, by a posted Shift
+       around a click on the window's Dock tile, or `AXMinimized` false;
+     - Standard and Frosted once each, next to a minimized TextEdit window (`cover.txt`, not
+       Notes);
+     - Claude reads `fill_frames`' sheet beside the darkest frame's luminance, and retries once.
+       The answers keep their scale: "1 like the window, or an even graphite grey (the chosen
+       fill), 2 a black frame or rectangle, 3 something else (note)".
+   - **The screenshot set:** 2 wallpapers (bright, busy) × Light and Dark × 3 pages (Overview,
+     History with the readout under the pointer, Settings) × Translucent and Clear = 24.
+     - The wallpaper and the appearance are set by System Events, the style by defaults and a
+       relaunch, and the pages by AX. A CGEvent pointer move brings up the History readout.
+     - Each shot is `screencapture -R <window frame>` after the occlusion check. A window-ID
+       capture is used only for Standard, because it may leave out what lies behind a glass
+       sheet (P3).
+     - Claude pre-judges each shot. His y comes in the morning batch, one contact sheet per style.
+   - **The graduation shots** (WP-13 item 3), on the bright wallpaper, per beta style ×
+     appearance: Raw Data with the inspector open; Demo Mode with its bar; History scrolled under
+     the title; the main window in full screen (by `AXFullScreen`, no keystroke) = 16. Plus
+     Settings → General beside a Clear window in Light, and the widget gallery behind a Frosted
+     window in Light and Dark, by computer use: 19 in all.
+   - **The contrast audit:** Accessibility Inspector's audit by computer use (clicks only), for
+     each beta style, appearance and page (Overview, History, Settings), with Claude reading its
+     results. The fallback is a scripted estimate from AX text frames and pixel luminance.
+   - **V1b:** AX presses on the tiles it names, and the existing pixel comparison inside the
+     outline; identical pixels pass.
+   - **The two plain questions,** in his morning batch: "From 0.6.2 on, offer Translucent without
+     the Beta window styles setting? y/n." "And Clear? y/n."
+   - **If it can't:**
+     - a case "not checked": G-13a falls back to Session A's cases (ship (b) on Clear);
+     - missing shots are listed, and a style with a shot missing or not answered y stays beta
+       (G-13b's default);
+     - "Inspector not run, estimate only": Q-B4 lacks the audit, so that style stays beta;
+     - no answer to the plain questions: both stay beta (Q-B4).
+4. **F6, F8, F9, F11** (B0, B2):
+   - **F11's alert,** in B0 on the adapter. "When charged to" is a picker of 80, 85, 90, 95 and
+     100 % (`Settings/NotificationSettings.swift:18-21`), and the alert fires while plugged in once
+     the charge reaches it (`BatteryAlerts.swift:70-81`). The script quits the app, writes the
+     step to `alertChargeLimit`, deletes the stored `alertState` so the alert starts armed, and
+     relaunches. The step:
+     - at 80 % or more, the highest step at or below the charge, which fires within seconds;
      - otherwise the lowest step above the charge, only if the Mac reports charging and that step
-       is at most 3 points away; it waits up to 6 minutes for the banner.
+       is at most 3 points away; it waits up to 6 minutes, while other B0 work goes on.
 
-     Otherwise, or with no banner in time, F11-alert is recorded as not run.
-   - F6: every page on real data (E4b's mixed-age snapshot).
-   - F8: the RC's own widget in every family and both languages (G-15). The Russian half uses the
-     method Session A confirmed (step 3.3). If none worked, F8-ru is recorded as not checked; the
-     widget's strings are unchanged since 0.6.1, and `scripts/string-tables.swift` already checks
-     that every translated table has every key. (`WidgetTextBudget`'s length test arrives with 0.7's
-     W-1.)
-   - F9: Russian (Overview, Settings, the update warning).
+     `ui banner` finds the banner, and a crop records it. Otherwise, or with no banner in time,
+     F11-alert is "not run".
+   - **F11's login item:** Open at login off by AX. `ui tree --app "System Settings" --match
+     BatteryPulse` says whether Login Items still lists it ("1 gone, 2 still listed"), without a
+     shot of his list. `restore morning` puts Open at login back as prepare found it.
+   - **F6:** every page on real data (E4b's mixed-age snapshot), by AX, a shot each, read by Claude
+     against `bpulse --json` taken the same minute.
+   - **F8:** the RC's own widget in every family and both languages (G-15), large and extra large
+     placed as in step 1. Each comparison comes after one fixed action: a CGEvent click on the
+     empty desktop spot recorded at prepare, then 1 s, because Dim widgets reacts to the desktop's
+     focus. If click-to-show-desktop is on, the spot is clicked again and checked with
+     `ui windows`. The Russian half uses the method Session A confirmed (step 3.3). If none
+     worked, F8-ru is "not checked": the widget's strings are unchanged since 0.6.1, and
+     `scripts/string-tables.swift` already checks that every translated table has every key.
+     (`WidgetTextBudget`'s length test arrives with 0.7's W-1.)
+   - **F9:** Russian (Overview, Settings, the update warning), by a relaunch with
+     `-AppleLanguages (ru)`. Claude checks for truncation, English leftovers and the catalog's
+     terms; his wording taste is optional in the batch.
    - A relaunch adds one history sample.
-   - Login item, in plain words: "Turn Open at login off in Settings → General. Is BatteryPulse gone
-     from System Settings → General → Login Items? 1 gone, 2 still listed."
-5. **Page switches** (16 min; WP-17's after; WP-13 item 3): on the RC with the `perf` stream on,
-   the script names each page, you click it, 10 times each. Then, with the profiling RC (D1), the
-   same again under `xctrace` (about 10 minutes; Xcode is installed, Q-B7), followed by 2 minutes
-   of the main window in Clear for Clear's shadows, recorded with the template the script picks
-   from `xcrun xctrace list templates`.
-6. **F12** (5 min; the script first checks GitHub's remaining API requests and asks to turn a VPN off, Q-B9): Check for Updates, then Install and
-   Relaunch. The RC's `diskutil` installer installs the real 0.6.1, which relaunches (G-16).
-   - Before Install: "Click an empty spot of the desktop so the widget draws." The script then
-     notes the `BatteryPulseWidget` processes (`pgrep -x`).
+   - **If it can't:** per item "not checked". If the gallery's host can't be approved for computer
+     use, adding large and extra large becomes one hands-on minute in B0.
+5. **Page switches** (B2; WP-17's after; WP-13 item 3):
+   - On the RC with the `perf` stream on: CGEvent clicks at the sidebar rows' AX frames on the
+     3-second cue schedule, 10 per page (AX select as the fallback).
+   - Then the profiling RC (D1) under `xctrace --no-prompt` with a watchdog, as a background task
+     the session waits on (about 10 minutes, the Bash tool's limit per call), followed by 2
+     minutes of the main window in Clear for Clear's shadows, recorded with the template the
+     script picks from `xcrun xctrace list templates`. The developer-tools dialog is either
+     already off (`DevToolsSecurity -status`) or answered in B0 (P9).
+   - **If it can't:** the profiling pass is "not run (developer tools asked)", and G-17 keeps the
+     plain pass.
+6. **F12** (B2; Q-B9):
+   - The rate check: `curl -s https://api.github.com/rate_limit`, with at least 10 requests left.
+   - Check for Updates, then Install and Relaunch, by AX press. The RC's `diskutil` installer
+     installs the real 0.6.1, which relaunches (G-16).
+   - Before Install: a CGEvent click on prepare's empty desktop spot, so the widget draws, then
+     `pgrep -x BatteryPulseWidget`.
    - After the relaunch, the script checks that the installer ended the extension before the swap
      (WP-16 item 6): the `update` log's pre-swap line, with every process it found ended (by
-     SIGTERM or SIGKILL) within 1,500 ms; no `BatteryPulseWidget` process started before the swap
-     (`ps -o lstart`); and "Compare the placed widgets with before: 1 same, 2 blank or grey,
-     3 gone, 4 different (note)". With no extension running before Install, item 6 is recorded as
-     not exercised.
-7. **Burst and memory** (10 min, hands-on): 3 unplug and plug cycles, 1 minute apart; History →
-   7 d three times.
-8. **Energy** (about 70 minutes unattended; WP-21): "Unplug the adapter now." The script asks once
-   for the admin password (the Low Power Mode run) and once for the energy setup (WP-21), checks
-   that the Mac is on battery with at least 50 %, then runs S1, S2 (B C B C), S2 with Low Power
-   Mode, S4w, S5, S6, S7. Devices and accessories (S9, S10) run if at hand.
-9. **send**.
-10. **restore** (3 min): the restore above, from `~/bp-062/B`. Its prompts include Open at login,
-   which F11 turned off.
+     SIGTERM or SIGKILL) within 1,500 ms, and no `BatteryPulseWidget` process started before the
+     swap (`ps -o lstart`). Claude gives the 1-4 answer from the before and after widget shots:
+     "1 same, 2 blank or grey, 3 gone, 4 different (note)". With no extension running before
+     Install, item 6 is recorded as not exercised.
+   - Then `install_build C`: the real 0.6.1 is now installed, and the rest of B2 runs on the RC.
+   - **If it can't:** "not run: rate-limited", retried later in B2, then in the morning; G-16 by
+     its gate.
+7. **Burst and memory** (B1, B2):
+   - **The burst:** his 3 unplug and plug cycles at the beeps, 1 minute apart, stamped (S8).
+   - **Memory:** History → 7 d three times by AX, `phys_footprint` before and after, first in B2.
+   - **If it can't:** without the burst, S8 is "not run"; memory is "not checked".
+8. **Energy** (B4; WP-21):
+   - The queue and its detectors, in WP-21's order: a discarded warm-up, S2 B C B C B C, S1 B C B C B C, S2 with Low Power Mode B C, S4w,
+     S5, S10, S7, S3 and the minimized run, the retries, then S6 B C last; medians per scenario and build.
+   - Each run starts only on battery, at 50 % or more, after a quiet minute, at a nominal thermal
+     state, with the screen unlocked and the main window uncovered (except in S5).
+   - S9 isn't run by default; S10 runs if `pmset -g accps` lists accessories.
+   - **If it can't:** a touched, slept, adapter, locked, screen-saver, style-not-in-effect or
+     Claude-active run is retried once (none below 56 %), then recorded "not valid"; an LPM run
+     isn't retried. Without the password, S2-LPM is "not run". An incomplete energy setup is
+     recorded as `energy-setup 2`, and the runs still run.
+9. **send** (B7): after his yes at the Mac, to `claude/062-session-b` (`sessions/B.md`), through
+   WP-21's privacy lint. Nothing leaves the Mac without the yes, and there are no interim pushes.
+   **If it can't:** a lint refusal names the line, and the session drops it, tells him, and sends
+   again; a failed push leaves `~/bp-062/B/B.md` and the attached crops in `~/bp-062/B/publish`
+   on the Mac, `send` can run again later on the same yes, and D3 otherwise takes the gates'
+   defaults.
+10. **restore** (B3, B5, B7): `restore gui`, `night` and `morning`, from `changes.tsv`. The morning
+    half puts back his app, the defaults domain, Application Support, the widget's data and
+    preferences, Open at login as prepare found it, and brightness, auto-brightness and True Tone.
+    It confirms the Charge Limit with `pmset -g battlimit` (else a System Settings → Battery shot).
+    **If it can't:** each item it can't put
+    back heads the morning report, for his hand.
 
-**Optional, any time** (0.6.0 open checks that stay in their stages):
-- the Charge Limit capture, with `bpulse --record` (built by prepare) while charging to the limit
-  (Stage 1.1, QUA-05). Session A already saw the paused state (`NotChargingReason` bit 24,
-  Appendix C) in read-only captures it kept local; this run adds the redacted before-and-after
-  captures as a committed fixture, only on the maintainer's yes to committing them;
-- the device connection label (WP-23), if an iPhone or iPad is at hand: cable, unplug, Refresh
-  over Wi-Fi; "Does the page say Connected over Wi-Fi? y/n";
-- sleep hygiene, the night before step 10's restore: with the RC installed and the lid closed
-  overnight, the script's `pmset -g log` check (WP-21) finds no wake attributed to BatteryPulse;
-- Stage 1.3 (3 min): `scripts/menu-bar-shots.sh` with Increase Contrast and with Reduce
-  Transparency, on a display with a notch; the plug state, 100 % on power, and Percentage Inside
-  with one, two and three digits;
-- Stage 1.4's accessibility pass (2 min each): the Liquid Glass slider at both ends, Reduce Motion,
-  Prefer Cross-Fade Transitions, Reduce Transparency, Increase Contrast, Show Borders;
-- exported CSV in spreadsheet apps, in a Russian and an English region (Stage 6).
+**Optional** (0.6.0 open checks that stay in their stages):
+- **The night:** sleep hygiene, the RC installed overnight (B6; WP-21).
+- **In B2, while time allows:**
+  - Stage 1.3: `scripts/menu-bar-shots.sh` with Increase Contrast and with Reduce Transparency, set
+    by computer use, on the display with a notch; the plug state from the burst's stamps; 100 % on
+    power and Percentage Inside with one, two and three digits, from Demo Mode [whether a scene
+    covers each is unverified].
+  - Stage 1.4's accessibility pass: the Liquid Glass slider at both ends, Reduce Motion, Prefer
+    Cross-Fade Transitions, Reduce Transparency, Increase Contrast, Show Borders. Each is set by
+    computer use, recorded, judged from the frames, and put back.
+- **The morning-away block:**
+  - The Charge Limit capture, with `bpulse --record` (built by prepare), while the Mac charges to
+    his limit after the night's discharge (Stage 1.1, QUA-05). Session A already saw the paused
+    state (`NotChargingReason` bit 24, Appendix C), in read-only captures it kept local.
+    - On the evening's yes, computer use raises the limit to 100 % for at most 10 minutes, then
+      sets it back.
+    - `pmset -g battlimit` (else a System Settings → Battery shot) confirms it at the block's end,
+      at every restart of the session and
+      after every compaction. If it isn't back, the arm window shows an alert with a sound, and the
+      morning report's first line says so.
+    - The redacted before-and-after captures become a committed fixture only on his yes at `send`.
+  - Exported CSV in Numbers, in a Russian and an English region (Stage 6; the Russian region
+    through `-AppleLocale` [unverified], else "Russian not checked").
+- **The device connection label** (WP-23), if an iPhone or iPad is at hand at the start: he plugs
+  its cable in at B0 and pulls it at a beep in B0b, before `mark away` (1 minute more). The session
+  refreshes over Wi-Fi and reads whether the page says "Connected over Wi-Fi". Otherwise it stays
+  open.
+
+**Proofs.** Some steps rest on behaviour nobody has checked on macOS 27. Each proof but P12 runs in
+B0's preflight, a few seconds each, while he is there, so any prompt it raises comes then; P12 runs
+at the burst's first unplug (B1), and without the burst the queue uses the sampler's
+`ExternalConnected` column alone. A failed proof switches its steps to their fallback before the
+session goes on, so nothing waits for him later. What is left of Session A may run the ones that
+change nothing earlier (P1, P3, P6, P7's reads, P8, and P9's `DevToolsSecurity -status`, writing
+only under `~/bp-062/A`), so D1 can fix the script first.
+
+| Proof | Decides | If it fails |
+|---|---|---|
+| P1: `ui hit` at a widget's centre: the hosting process, role, label, the parent chain and the frame | which process to approve for computer use; the widget click targets (F12, plan-0.7.0 §6.2 step 8); 0.7's tree read | widget points from prepare's shot (pixels to points), confirmed by `ui hit`; else computer use; else "not checked" |
+| P2: a probe notification, then Notification Center's AX tree within 3 s | `ui banner` (V-01, F11) | Notification Center opened by an AX click on the clock, and a crop of the banner (no computer-use screenshot with Notification Center open); else "not checked" |
+| P3: on Clear, `screencapture -o -l<id>` against `-R<frame>` | how the 24 and the 19 shots and V1b are captured | `-R` after the occlusion check for every style |
+| P4: `AXMinimized` during a 3-second clip, every frame dumped, against a Session A case and his verdict on it | G-13a's method | P5's posted Shift; if neither works, the cases are "not checked", and G-13a rests on Session A |
+| P5: a posted Shift (a flagsChanged event) around a click on `AXMinimizeButton`: does the animation last 2 s or more? | whether the cases keep Session A's slow motion | `AXMinimized` at normal speed with every frame (P4) |
+| P6: HIDIdleTime before and after a 0-pixel move posted at the HID tap, one posted at the session tap, and `caffeinate -u -t 1`; whether `.hidSystemState` ignores posted events | the touch detector; whether `ui` posts at the session tap; whether `ui guard` can hold the session while he touches the Mac | the session still ends its turn before the queue; during B2 only his Esc tells it he is there |
+| P7: the wallpaper through System Events; `defaults read com.apple.WindowManager`; the style keys in `defaults read -g`; `AppleICUForce24HourTime` | the wallpaper's restore; the style's read; click-to-show-desktop; 0.7's 24-hour read | a dynamic or aerial wallpaper is put back by computer use from prepare's shot; an unread setting is "unknown" |
+| P8: the System Settings pane URLs on 27 (`x-apple.systempreferences:` for Appearance, Desktop & Dock, Displays, Accessibility, Login Items, Battery, Date & Time, Wallpaper) | opening panes without Apple Events | computer use from System Settings' sidebar |
+| P9: `DevToolsSecurity -status`, else a 2-second `xctrace` recording | whether the profiling pass can run at night | the dialog answered now; else the profiling pass is "not run" |
+| P10: the app batch (which names computer use accepts); one click-to-add of a widget and its removal; a screenshot right after the first action (where computer use's own notification lands); one System Settings click under auto mode | the approval batch; the gallery plan; the crops | an app it refuses: its steps go to scripting, else "not checked"; the gallery: one hands-on minute in B0 |
+| P11: the popover opened by a CGEvent click on the menu bar item; 60 s later, still in CGWindowList | S3 | S3 stays open in Stage 1.4 |
+| P12: one power-source notification across the burst's first unplug | the queue's unplug waiter | the sampler's `ExternalConnected` column alone |
+
+Preflight also checks, without a proof's fallback:
+- a `screencapture` test that Claude judges, which brings up Screen Recording's periodic re-consent
+  prompt now if it is due [unverified on 27];
+- Apple Events to System Events and to BatteryPulse, and `CGPreflightPostEventAccess`;
+- a read of the extension's container preferences, which brings up the other apps' data prompt;
+- `pmset -g battlimit` and `pmset -g custom`;
+- the hot corners, the screen saver's idle time and the Focus state;
+- whether a VPN is active, and the charge;
+- `screencapture -v`'s frame rate.
+
+**Rules in the runbook** (so no cloud session is needed mid-run; `SESSION-B.md` holds them all):
+- **Frozen:** the runbook, the script and `ui` are fixed at B0. The session never edits them and
+  never adopts a later fix.
+- **Commands:**
+  - Every command after B0a's worktree exists goes through the frozen script's one prefix (`bash
+    ~/bp-062/B/run/docs/plans/0.6.2/m5-session.sh <step>`; `ui` only through the script), so the
+    start line's one allow rule covers them all; before it, the start sentence's `git fetch` and
+    `git show` and `git worktree add ~/bp-062/B/run FETCH_HEAD` run under auto mode.
+  - The session never adds or changes a permission rule. The morning report lists any allow rule
+    he added beyond the start line's, for him to remove after Session R.
+  - The session never retries a command auto mode blocked: that step moves to the morning.
+  - A call that may take over 2 minutes (`burst`, F11's wait, `pages`) passes the Bash tool a
+    `timeout` of 600000 ms, as Session A's runbook does; anything near the tool's 10-minute limit
+    (the `xctrace` pass) runs as a background task the session waits on.
+- **Places:** Terminal windows go in the left third, and BatteryPulse's windows and widgets on the
+  right, away from the top-right corner where banners land. Window places are recorded at prepare
+  and set by AX. AX can't move widgets, so their frames come from P1.
+- **A blank or grey widget:** shoot it and answer; then remove it and add it again by computer use,
+  and note that.
+- **A clip that missed the animation:** retry once, then 3.
+- **A banner not seen in 10 s:** look in Notification Center, then 3.
+- **A permission or password dialog while he is away:** leave it, record the step "not checked:
+  prompt", and go on with the steps that don't need it.
+  - The session never types a password and never approves a permission or authorization dialog.
+  - It never toggles anything in Privacy & Security, Users & Groups or Passwords.
+- **A lock screen, or the lid closed:** stop all GUI work and record "not checked: locked".
+- **A script error:** note it and skip the step. A harmless workaround is allowed only if it changes
+  no setting outside `changes.tsv`.
+- **He touches the Mac during B2:**
+  - If `ui guard` can tell his touches apart (P6), the session waits until his last touch is a
+    minute old.
+  - If he needs the Mac, he presses Esc: computer use stops, and the session's turn ends. He writes
+    "go on" when he is done, and the session re-checks the state first.
+  - Neither `ui` nor computer use ever sends Esc, which would end the turn.
+- **Findings** (crash reports, "executor" lines, black frames): note them and go on.
+- **The Charge Limit** changes only on the evening yes, is confirmed by `pmset -g battlimit` (else a
+  System Settings → Battery shot), and is always put back.
+- **After a compaction:** check the Charge Limit first, then re-read the runbook, `status`,
+  `answers.tsv` and `changes.tsv`.
+- **Never act after `ready` or once `queue.started` exists,** apart from the text-only answer;
+  the session checks for both before every step and every computer-use batch, until his morning
+  "continue". On a stale heartbeat arm writes both (`ready` marked stale), so a session that wakes
+  up later stays out through the queue and the night.
+
+**Privacy:**
+- Computer use's screenshots, and every picture the session reads, go to the model. None goes into
+  the repository.
+- His Focus, the hidden apps and the apps he quit limit what they show. His other desktop widgets
+  are in them, and the start message says so.
+- No computer-use screenshot is taken while Notification Center or Control Center is open: AX
+  actions and crops of BatteryPulse's frames instead.
+- Full-desktop, Notification Center and System Settings shots stay in `~/bp-062/B`. Only crops of
+  BatteryPulse's windows, widgets and menu bar item are attached.
+- `pmset -g accps`, `pmset -g log` and `scutil` outputs reach `B.md` only as counts or BatteryPulse
+  lines.
+- `send` runs only after his morning yes (step 9).
+
+**Risks of the hands-free mode:**
+- **Computer use is a research preview.** Controls may not be found on macOS 27, and approvals last
+  one session. AX and CGEvent come first, every step has its "not checked", and every app is asked
+  for at the start.
+- **A stall.** Several things would stop the session mid-phase:
+  - an auto-mode pause, after 3 classifier blocks in a row or 20 in all;
+  - an approval for an app missing from the batch;
+  - his plan's usage limit, on a turn of several hours full of images [unverified].
+
+  Preflight rehearses every command family, he types `/usage` once at the start when the session
+  asks [unverified: whether the session sees its result], and the arm window
+  starts the queue on a stale heartbeat, with `queue.started` and a stale `ready`, written at
+  once, keeping a session that wakes up later out of the runs and the night.
+- **Posted events reset HIDIdleTime.** This is safe only because the session ends its turn before
+  the queue and never acts after `ready` or once `queue.started` exists, which `ui` enforces too.
+- **The GUI phase's length is an estimate:** about 130-150 computer-use actions at 5-15 s each, plus
+  the clips, the judging and two page passes. On the adapter it costs no charge, and its cap ends it
+  before bedtime.
+- **The fanless Air warms** in the GUI phase (`xctrace`, Xcode, the recordings). The cooldown, the
+  thermal wait and the S2 pairs alternating B and C cover it.
+- **The widget host process and its AX tree are unknown on 27.** P1 finds them; the fallback is
+  computer use, then "not checked".
+- **Normal-speed minimizes may give too few frames to judge.** P4 and P5 decide, against a Session A
+  case.
+- **Computer use's own notifications** ("Claude is using your computer", at each turn's first action
+  and at its end) land at the top right. Widgets stay away from that corner, and shots are cropped
+  to BatteryPulse's frames.
+- **The lid closed before the queue's end** spoils the runs left. They are recorded so, and the start
+  message gives the expected end time.
+- **The cross-session 15 % check on B** rests on runs that record their thermal state and history
+  size. The background processes don't enter `rusage`'s figures.
 
 ---
 
@@ -1433,17 +2047,20 @@ Application Support (`restore_settings` :244-248, `step_restore` :867-876). In 0
   | WP-15 | 3 |
   | WP-16 | 2-3 |
   | WP-17 | 2 |
+  | WP-18 | 1 (SZ-10's icon source; the rest runs inside Session B) |
   | WP-19 | 2-3 |
   | WP-20 (SEC-18 only) | 1 |
   | WP-23 | 2 |
   | WP-W0 | 3 |
-  | WP-21 | 2 |
+  | WP-21 | 4 |
   | WP-22 | 2 |
   | D1+D3 | 2-3 |
 
-  That is about 31-36 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8; the release
+  That is about 34-39 runs plus 3 in reserve (SEC-08 left WP-20 on 2026-10-22, Q-B8; the release
   statistics joined WP-19 the same day; WP-16's item 6 and WP-23 came from Session A on
-  2026-10-23). The never-cut set is about 22-27. WP-18 is maintainer time, outside the runs.
+  2026-10-23, and WP-21's hands-free mode, 2 runs, the same day, which also moved WP-18 into
+  Session B, leaving it 1 run for SZ-10's icon source). The never-cut set is about 24-29; WP-18
+  isn't in it.
   These are effort estimates, not a schedule: no release has a date (M-5, §10).
 
 ### 7.3 Frozen surfaces and intended changes
@@ -2041,8 +2658,9 @@ ISO 8601) runs alongside in any slot that doesn't touch `bpulse`'s files.
 - **Checks:**
   - W0-5 in 0.6.2 (what VoiceOver says today; whether Text size reaches desktop widgets,
     unverified).
-  - The 0.7 session: VoiceOver on a desktop widget in each family and both languages; Increase
-    Contrast and Reduce Transparency.
+  - The 0.7 session: the accessibility tree VoiceOver walks, read by the session's `ui` helper on
+    a desktop widget in each family and both languages, with nobody driving VoiceOver
+    (plan-0.7.0 §6.2 step 7); Increase Contrast and Reduce Transparency.
 
 ### 8.16 If a spike fails
 
@@ -2129,7 +2747,8 @@ The maintainer answered on 2026-10-22. Q-B2, Q-B7 and Q-W1 are his own answers, 
 from his answer to M-1. He delegated every other question ("do it by best practices, as you see
 fit"), so each is recorded with its recommended answer and marked "decided by delegation". Q-B9 and
 Q-B11 were settled before. Later the same day he gave six further answers ("Further answers",
-below). No question of this plan stays open; what the maintainer still judges on sight in the
+below), and on 2026-10-23 he asked for hands-free sessions ("The hands-free sessions", below). No
+question of this plan stays open; what the maintainer still judges on sight in the
 sessions is listed in §3. The road-to-1.0 questions (M-1 to M-14) are in
 `docs/plans/1.0/ROADMAP.md` §6, and 0.7's own (Q7-1 to Q7-9) in `docs/plans/0.7.0/PLAN.md` §14.
 
@@ -2203,6 +2822,42 @@ Decided by the maintainer later the same day:
    unauthenticated and within its 60-requests-an-hour limit. WP-19 builds it; D3 copies its numbers
    into ROADMAP's Releases table a week after each release.
 
+### The hands-free sessions (2026-10-23)
+
+| Request | Decision | Where |
+|---|---|---|
+| The maintainer, 2026-10-23, during Session A: "Make the tests run by themselves, without me; I can't do two things at once, click and work." Session A showed the cost: every `DO (person)` line waited for him, and the timed steps tied him to the Mac | **Session B runs hands-free** (an engineering call on his request): his part is only what needs a person (the start line and one yes to the list of changes, quitting his own apps, the Focus on and off, the adapter, the lid and the morning login, his password at bedtime, the permission prompts, the taste questions, his typed "continue", revoking Terminal's Accessibility unless he keeps it, and his yes before `send`), about 18-22 minutes in short moments against about 100 (plus WP-18's hour). **One local Claude Code session, not two:** the CLI in Terminal with its built-in `computer-use` server runs the script, drives the GUI and judges the pictures, and the energy queue runs as a plain script in the arm window. Deterministic scripting comes first, computer use covers the rest, and a step it can't do is "not checked", with its gate's default | §6 Session B; WP-21's hands-free mode; WP-18; D3's after-publishing check; plan-0.7.0 §6.2 (Session R) |
+
+Why one session and not two:
+- **The lock:** only one session at a time can use the computer. A session takes the lock at its
+  first computer-use action and releases it when it exits, so a second session couldn't share the
+  GUI, and a session that only runs scripts would have nothing the GUI session lacks: it has Bash.
+- **Timing:** several steps tie the script's timing to a click (`record_clip`'s window, the page
+  cues, F11's banner wait, F12's before and after shots, the widget clicks). Across two sessions
+  each would need a file handshake: the relay problem again, between two Claudes.
+- **One judge:** the judgment needs the script's output and the pictures in one context.
+- **One owner of the quiet state:** two sessions mean two idle loads, two approval batches, two
+  permission modes and two things that can click during a run.
+- **What a second process adds** (a terminal for `sudo`, survival of a crash or a compaction, no
+  tool time limit, nothing of Claude's running during the measurements) comes from the arm window,
+  without a second Claude. His idea of a second local session is kept in this sense: a new local
+  session replaces his hands, and the second window is the queue.
+
+Why the CLI rather than the desktop app (whose computer use is Settings → This computer → computer
+use, with Accessibility and Screen Recording granted to Claude):
+- **Permissions:** every grant Session A gave sits on Terminal (Screen Recording, Accessibility,
+  Automation of System Events and BatteryPulse), and computer use in the CLI runs on the terminal's
+  grants, so Session B asks for no permission Session A didn't give; if he revoked Accessibility
+  after Session A, preflight asks again while he is there (one prompt, Touch ID or his password).
+  The desktop app would need its own, then the Automation and other apps' data prompts again.
+- **The pictures:** the CLI's terminal window stays visible but is left out of computer use's
+  screenshots, so Claude never sees its own output or the password window.
+- **The energy figures barely differ** either way, because `rusage` measures only BatteryPulse's
+  own process.
+- **The fallback:** the desktop app only if `/mcp` doesn't list `computer-use`, with "Keep computer
+  awake" off (the arm window's `caffeinate` covers it, and the app's own assertion would sit in
+  every run). The two surfaces are never mixed in one session.
+
 ### For 0.6.2
 
 - **Q-B2 (Clear's fill): (b), the graphite composite** (the maintainer). Asked: pick one of three
@@ -2231,10 +2886,14 @@ Decided by the maintainer later the same day:
   - Session B: about 95 minutes plus about 70 unattended, with the admin password once more.
   - Energy scenarios in the order they run: power in the menu bar (S2) first, then the window
     styles (S4w), then an iPhone attached and accessories (S9, S10) if at hand.
+  - **Superseded for Session B on 2026-10-23** by the hands-free sessions (above): about 18-22
+    minutes of his time against about 100 (plus WP-18's hour), the password once at bedtime, and
+    the queue's order of WP-21 (a warm-up, S2 first, S6 last; S9 not run by default), about 160 minutes plus
+    the cooldown.
 - **Q-B7 (Xcode): installed on the M5** (the maintainer). `xctrace` (WP-17; Session A step 8,
   Session B step 5), the contrast audit and Clear's shadows (WP-13 item 3; Session B steps 3 and 5)
-  and every WP-18 item run, maintainer-run from Claude's step-by-step list; no step depends on
-  whether Xcode is there any more. The Icon Composer icon (SZ-10), decided by delegation: prepared
+  and every WP-18 item run, in Session B since 2026-10-23 (before: maintainer-run from Claude's
+  step-by-step list); no step depends on whether Xcode is there any more. The Icon Composer icon (SZ-10), decided by delegation: prepared
   in WP-18 and shown in the four icon styles; it ships only on the maintainer's y to those
   screenshots, otherwise it waits for 0.7.
 - **Q-B8, decided by delegation: no.** Asked: is the Enhanced Security spike (SEC-08) worth a
@@ -2242,8 +2901,8 @@ Decided by the maintainer later the same day:
   unverified, an update that AMFI refused would leave an app that doesn't launch, and it stays
   after 1.0, not planned without notarization (M-1: no).
 - **Q-B9 (F12), settled:** the first try failed on GitHub's limit of 60 unauthenticated API requests an hour per address, used up behind a VPN that shares its address; the app said "GitHub is limiting requests", and the re-run after the limit reset passed. Not a defect; Session B's script
-  checks the remaining requests (`api.github.com/rate_limit`) before F12 and asks to turn a VPN
-  off, and F12 runs once.
+  checks the remaining unauthenticated requests (`curl -s https://api.github.com/rate_limit`)
+  before F12 and, hands-free, waits for them rather than asking to turn a VPN off; F12 runs once.
 - **Q-B10 (Low Power Mode), decided by delegation: no fallback.** Asked: if Translucent or Clear
   uses 15 % or more energy than Standard, should it give way to Standard while Low Power Mode is
   on? A window style is the user's explicit choice, Reduce Transparency and Increase Contrast
@@ -2329,16 +2988,17 @@ comments.
 | In-app install (Stage 1.2): tick it on F12 and 0.6.1's after-publishing check; re-register the login item after an update | ROADMAP 1.2 | WP-22 ticks it: A0 passed and kept the login item (Appendix C); WP-16 item 5 doesn't run |
 | 0.6.1 after-publishing results (widget, login item, notifications, first-day widget accuracy, `994c09d`) | PLAN §4b | intake A0: passed on 2026-10-22 (Appendix C); no P1 item |
 | SUI-07, SUI-11, SUI-12, E19 | PLAN §6, G17 | WP-17 |
-| SUI-17, SUI-18, SUI-19, SZ-10 | PLAN §6, G21 | WP-18 (maintainer-run from Claude's step-by-step list; Xcode is installed, Q-B7) |
+| SUI-17, SUI-18, SUI-19, SZ-10 | PLAN §6, G21 | WP-18, run inside Session B since 2026-10-23 (SUI-18 dropped; SZ-10's icon source by a cloud run, 1 run, and its y in the morning batch; Xcode is installed, Q-B7) |
 | SUI-09, SW-21, SW-13 (now BatterySource and BatteryKit), C2 | PLAN §6 | WP-19 |
 | CI pins (checkout v6.1.0, upload-artifact v7) | ROADMAP 1.7; PLAN Appendix C (B6) | WP-19 |
 | SEC-08 | PLAN §6, G20 | not run (Q-B8: no); Enhanced Security is after 1.0, not planned without notarization (M-1: no) |
 | SEC-18 | PLAN §6 | WP-20 (research) |
 | SEC-10 | PLAN §6, G19, Q1 | not in 0.6.2 (no evidence) |
 | SZ-08 | PLAN §6 | not in 0.6.2 (no glossary work) |
-| S1, S2, S4w, S5, S6, S7, S8, memory, S9, S10 | PLAN §4c; ROADMAP 1.4, 1.5, 1.6, 1.7, 5, 6; playbook §2 | WP-21; A/B in Session A, C in Session B |
-| S3 (popover), the minimized and other-Space runs, frame rate (Instruments) | ROADMAP 1.4 | stays open in Stage 1.4 |
-| Sleep hygiene (playbook §2.3 items 1 and 7) | playbook §2.3 | WP-21 (assertions in every run; the overnight check is Session B optional) |
+| S1, S2, S4w, S5, S6, S7, S8, memory, S10 | PLAN §4c; ROADMAP 1.4, 1.5, 1.6, 1.7, 6; playbook §2 | WP-21; A/B in Session A, C in Session B |
+| S9 (an iPhone attached, all windows closed) | ROADMAP 5; playbook §2 | not run by default in Session B (WP-21: the iPhone would charge from the Mac all night); stays open in Stage 5 |
+| S3 (popover), the minimized and other-Space runs, frame rate (Instruments) | ROADMAP 1.4 | S3 and the minimized run: Session B's queue (WP-21, set up by CGEvent before their quiet minute; P11); the other-Space run and the frame rate stay open in Stage 1.4 |
+| Sleep hygiene (playbook §2.3 items 1 and 7) | playbook §2.3 | WP-21 (assertions in every run; the overnight check is Session B's own night) |
 | Stage 1.4 legibility and accessibility pass | ROADMAP 1.4 | Session B optional; otherwise stays open |
 | F5 (iPhone page, accessories, earbuds) and accessory captures | 0.6.1 session (not run); ROADMAP 5, 6 | Session A step 2: run on 2026-10-23 with earbuds and an iPad, no keyboard (Appendix C) |
 | The widget extension ended before the swap | Session A's W0-2, 2026-10-23 | WP-16 item 6 (never cut); Session B's F12 checks it |
@@ -2346,7 +3006,7 @@ comments.
 | F9 (Russian) | 0.6.1 session (not run) | Session B step 4 |
 | F11-alert, F11-login | 0.6.1 session | closed (§4, WP-0) |
 | F12's first failure | 0.6.1 session | Q-B9, settled: GitHub's rate limit behind a VPN |
-| Charge Limit capture | ROADMAP 1.1; QUA-05 (`docs/plans/1.0/ROADMAP.md`) | partly settled in Session A (Appendix C: bit 24 while paused, the configured value in no key); the committed fixture is Session B optional; WP-22 writes the partial result into Stage 1.1 |
+| Charge Limit capture | ROADMAP 1.1; QUA-05 (`docs/plans/1.0/ROADMAP.md`) | partly settled in Session A (Appendix C: bit 24 while paused, the configured value in no key); the committed fixture is Session B optional (the morning-away block); WP-22 writes the partial result into Stage 1.1 |
 | Spreadsheet exports | ROADMAP 6 | Session B optional |
 | The Charge Limit shown in the app, the menu bar and the widget | the maintainer, 2026-10-23 (Session A) | FEA-35 (`docs/plans/1.0/INVENTORY.md`), not 0.6.2 (no new features): 0.7's W-14 for the state in the app, the menu bar and the widget (whole to 0.8 without a redacted fixture by plan-0.7.0's C1, G7-18), 0.8 for the number; "paused at the limit" has a source, the configured value has none in the registry (Appendix C) |
 | Widgets kept across an in-app update | ROADMAP 1.2 | A0: kept across 0.6.0 → 0.6.1 (Appendix C), so WP-22 ticks it; W0-2's control; Session B F8 |
@@ -2367,6 +3027,7 @@ comments.
 | Anonymous version count (on by default, announced) | the maintainer's answer, 2026-10-22 (§10, "Further answers" item 5) | 0.7 (`docs/plans/0.7.0/PLAN.md`); 0.6.2 changes nothing the app sends; WP-19's script has its column |
 | What 1.0 means; no release dates | M-5, approved 2026-10-22 (§10, "Further answers" item 1) | this plan sets no release date (§7.2) |
 | Integration and package branches | the maintainer's answer, 2026-10-22 (§10, "Further answers" item 4) | §3: `claude/nice-faraday-k08mhb`, `claude/062-<pkg>`, `claude/062-spike-widget` |
+| Hands-free M5 sessions: "Make the tests run by themselves, without me; I can't do two things at once, click and work." | the maintainer's request, 2026-10-23, during Session A (§10, "The hands-free sessions") | §6 Session B (one local Claude Code session with computer use, the queue as a plain script); WP-21's hands-free mode (+2 runs); WP-18 inside Session B; D3's after-publishing check as a short session; plan-0.7.0 §6.2 (Session R) |
 
 ## Appendix B: facts verified for this plan
 
@@ -2468,8 +3129,7 @@ from the traffic API and were not re-checked.
 - whether a placed widget survives the static-to-configurable change;
 - whether macOS ever redacts widgets, and whether Text size reaches desktop widgets;
 - what VoiceOver says for the level symbol;
-- `diskutil image attach`'s `-noautoopen` equivalent and the forced eject path;
-- whether `diskutil eject` of a mount point detaches the image;
+- answered by WP-16's CI runs (Appendix C, the `diskutil` row): `diskutil image attach` has no `-noautoopen` counterpart and needs none with `--mountOptions nobrowse`; the forced path is `unmountDisk force` then `eject` of the image's disk; and `diskutil eject` of a mount point also detaches the image's own disk;
 - whether a per-extension `AppleLanguages` reaches the widget and its edit sheet;
 - the hdiutil deprecation, which is seen only as runner warnings, not in Apple's release notes;
 - whether opening a desktop picture outside `~/Pictures` and the system folders shows a
@@ -2483,8 +3143,9 @@ sessions.
 ## Appendix C: facts 0.6.2 records (filled during the release)
 
 Rows marked "interim" come from Session A's interim report of 2026-10-23 (the local Claude
-session on the M5); its final `A.md`, on `claude/062-session-a`, replaces them. **Still for
-Session A** marks what that report leaves open.
+session on the M5) or, for its unattended window, from the maintainer's photo of Terminal of
+2026-10-24; Session A's final `A.md`, on `claude/062-session-a`, replaces both. **Still for
+Session A** marks what they leave open. Session A's energy runs are in the table after this one.
 
 | Fact | Shown by | Decides |
 |---|---|---|
@@ -2503,7 +3164,7 @@ Session A** marks what that report leaves open.
 | W0-6, 2026-10-23 (interim), English only: the offset format prints "-2 hours, 0 minutes" without `sign: .never` (the offset runs to a later date) and "2 hours, 0 minutes" with it, and the minutes go down without a reload. **Still for Session A:** the Russian text | Session A | Time parameter (time left stays, with `sign: .never`; §8.16's W0-6 row doesn't apply) |
 | F13: `UpdateTime` changes against "any" lines | Session A's pslog and ioreg | G-14b |
 | E3b: `timeremaining` followed by "any" (battery and charging) | Session A's pslog | G-14c |
-| E20 field run: traps, crash reports, `read` threads; memory over 2 hours | Session A (SPIKE-A2) | G-14a |
+| E20 field run: traps, crash reports, `read` threads; memory over 2 hours. Started 01:01:05 on 2026-10-24 on SPIKE-A2, with power in the menu bar and the display on (interim, the photo); its note "ri_energy_nj didn't move; check sysctl kern.pervasive_energy" is for the final `A.md` to explain. **Still for Session A:** the results | Session A (SPIKE-A2) | G-14a |
 | V-01: "executor" log lines, new crash reports, the maintainer's answers | Session A (SPIKE-A2); Session B (RC) | G-10, G-14a |
 | `read cached` p50; `registry.missed` per hour of logged runtime | Session B | G-14b |
 | mAh cadence: `RemainingCapacity` changes per hour | Session A's ioreg sampler | ROADMAP Stage 3 (WP-22) |
@@ -2514,24 +3175,53 @@ Session A** marks what that report leaves open.
 | Clear's shadows in Instruments | Session B step 5 | G-13b; Stage 1.5 |
 | S4w per style against Standard | Session B | ROADMAP's decision line (G-13c; no fallback, Q-B10) |
 | F8 per family and language (F8-ru: the method, or not checked) | Session B | G-15 |
-| F12: offered, installed, relaunched, per try; the pre-swap extension end (the `update` log line's counts and milliseconds, the `BatteryPulseWidget` processes before Install and after the swap, the placed widgets' 1-4 answer) | Session B | G-16; WP-16 item 6 |
+| F12: offered, installed, relaunched, per try; the pre-swap extension end (the `update` log line's counts and milliseconds, the `BatteryPulseWidget` processes before Install and after the swap, the placed widgets' 1-4 answer). The `update` notice reads exactly "Widget extension before the swap: <found> found, <n> ended by SIGTERM, <n> by SIGKILL, <n> still running, <ms> ms" (all `.public`); a process still alive at the give-up can end slightly above 1,500 ms (the last poll plus one 50 ms sleep), which already fails "every process ended". The script also checks that neither "The update's disk image isn't in diskutil info; it can't be ejected by force" (the `/private/var` match failing on the M5) nor "Ejecting the update's disk image failed: <status>" appears, and that no Finder window opens during the install (`diskutil image attach` has no `-noautoopen` counterpart; the DMG isn't marked to open a window, and the volume is mounted nobrowse) | Session B | G-16; WP-16 item 6; WP-21's F12 step (these checks) |
 | `page.switch` count and p50 per page, before and after | Session A step 8; Session B step 5 | G-17 |
 | F5 accessories, 2026-10-23 (interim): `bpulse --accessories` lists the 2 unnamed sources that `pmset -g accps` shows (AirPods), in 3 states. So macOS 27 doesn't hide the accessory list from apps (Stage 6's question). The F5 table's "not a list" for `pmset -g accps -xml` is the script's `plist_count`, which reads only the first of its back-to-back plists. **Still for Session A:** a keyboard on Bluetooth and on its cable (none was at hand; otherwise recorded as not run) | Session A step 2 | W0-4; ROADMAP Stage 6; D1's script |
 | F5 iPad, 2026-10-23 (interim): no Local Network prompt and no library-validation message; the device log shows only "MobileDevice 1860.2.5.100.2 loaded". After the cable was detached, a "didn't answer" banner sat over stale "Connected by cable" values, and a fresh read over Wi-Fi was still labelled "Connected by cable": the label doesn't follow the transport | Session A step 2 | WP-23; ROADMAP Stage 5 |
+| WP-23, 2026-10-23: **merged** into `claude/nice-faraday-k08mhb` as `2737b51` (head `ab44d4d`), beside WP-16, ahead of B1 (§5). **The cause, reproduced on Linux** (item 1; `IDeviceMonitorTests` with the fake transport and clock, an iPad listed on USB and Wi-Fi, the tests run on the 0.6.1 monitor and roster): `readOverWiFiAfterUnplugShowsWiFiThoughTheListStillSaysUSB` fails (after a Refresh over Wi-Fi the label stays `.usb`, the visible page keeps reading it every minute, and it never expires to "Not connected"); `unplugWhileStalledDropsUSBAndTryAgainReadsOverWiFi` fails (a read times out, then the cable leaves: the termination's list is dropped, and the label stays `.usb` under the timed-out banner's "Check the cable" wording, also after Try Again while usbmuxd lists USB); `unplugListedOnWiFiOnlyShowsWiFiAndKeepsOtherCables` already passed. The transport a read used never reached the label, and a USB termination reached it only through a list that applies. **The fix** (items 2-3): `IDeviceSession.readConnection` (the latest successful read's `Connection` key) and `usbTerminatedAt`; `IDeviceRoster.connection(of:now:)` takes the newest evidence (USB counts while the latest list has it and no termination, and no read over another interface after one, came later; a list or a USB read after the termination makes it count again; ties go to the termination or the read; otherwise the newest Wi-Fi sighting, then an unknown one, within 10 minutes), with the public `isOnUSB(_:)` and `sightingExpiry(of:now:)`, which `nextWake` uses. A read over another interface after a termination drops that device's `.usb`, so plugging it in again reads at once (`replugAfterReadOverWiFiReadsAtOnce`); a termination counts only with no arrival in the same debounce window; after one, automatic reads pause until the list applies; a read over Wi-Fi extends the Wi-Fi sighting to its own time. `DeviceView` and `Phrases.deviceProblem` already take `entry.connection` and didn't change; no new strings; item 2's read-transport field on `IDeviceEntry` was dropped, unused. **The review's major finding, fixed** (`acc1822`, reproduced by `readByCableAfterAnotherUnplugKeepsLaterFallbackReadsOnUSB`): `usbTerminatedAt` was set on every session and never cleared, so after any earlier termination a cabled device's first read that fell back to Wi-Fi dropped `.usb`: the label said Wi-Fi, its automatic reads and history stopped, and 10 minutes later it showed "Not connected" while still on its cable. A successful read over USB now clears it (a list that still has USB doesn't, since a stale usbmuxd listing is F5's likely cause). A minor one, fixed (`ab44d4d`, `forgottenAfterReadOverWiFiStaysHiddenWhileTheListStillSaysUSB`): Forget after a read over Wi-Fi no longer un-hides, reads and remembers the device at the next list. Tests 560 + 105 + 5 → 560 + 107 + 5 on the branch; lint clean; both CI jobs green | CI runs 40039705502 (`3b67fb2`), 40041297377 (`ab44d4d`); the round's review | WP-23 ran (its default, "not run", no longer applies); its M5 check is Session B's optional one (next row); ROADMAP Stage 5 (WP-22) |
+| WP-23's known edges (minor, open): (1) a debounce that ends during a read marks every session terminated before its list runs, so other cabled devices show Wi-Fi or "Not connected" for the 1-3 s until the list returns (two or more devices on cable and an unplug during a read; the fix would touch four paths, and the fake transport can't check its timing); (2) while the monitor is stalled, a termination discounts USB on every session, so a phone still on its cable shows "Not connected" under the "couldn't look for devices" banner until Try Again (0.6.1 showed "Connected by cable"); (3) a list after a termination that fails with an error other than a timeout leaves a cabled device on Wi-Fi or "Not connected", not read automatically, until the next list; (4) after another device's termination, a cabled device whose first read falls back to Wi-Fi isn't read by itself until the next list, which, with history on and no page visible, may come after its sighting expired; (5) a usbmuxd listing that keeps a gone USB interface counts, after a read over Wi-Fi, as a new attachment, so each such list causes one automatic read, which falls back to Wi-Fi. Nobody has checked on the M5 that usbmuxd keeps listing USB after the unplug | the round's review; the implementer's notes | left as is ((1)-(2) by the review; (3)-(5) documented by the implementer); Session B's optional check is the real test: cable, unplug, Refresh over Wi-Fi reads "Connected over Wi-Fi", then "Not connected" about 10 minutes later, and a read timing out at the unplug shows the Wi-Fi wording |
 | Charge Limit, 2026-10-23 (Session A; the maintainer set 80 % in System Settings; read-only captures, kept on the Mac): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset`). When the limit engaged at 80 % (21:37): `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" = false exists only in the AirPods' `accps` entries. `bpulse --smc` lists 43 `CH*` keys (names only, so whether one holds the limit is unknown). The maintainer wants the Charge Limit shown in the app, the menu bar and the widget. **Evening reads** (read-only, on AC at the 80 % limit; interim, exact values with the final `A.md`): `pmset -g battlimit` shows the 80 % limit; `bpulse --smc` lists `CHLT` and `CHNC`, not `CHLS`; the user-readable `/Library/Preferences/com.apple.powerd.charging.plist` (a keyed archive of `ChargeCtrlPolicy` objects with `battlimit`'s fields) and the defaults domain `com.apple.batteryui.charging.mac` (a prior limit of 80) are two more candidates for the number; and at the hold the charger child's inhibit and power-distribution keys showed charging inhibited and not allowed. The same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging, plus the plist's modification time, are pending (plan-0.7.0 Appendix C finding 9) | Session A (optional capture) | ROADMAP Stage 1.1, partly (WP-22); the display request is FEA-35 (`docs/plans/1.0/INVENTORY.md`), read-only and distinct from FEA-27 (setting a limit, not in 1.x, M-3): 0.7 shows the paused state from bit 24 (plan-0.7.0 W-14; a committed fixture still has to prove it, QUA-05: the redacted `charge-limit-80.plist` with the final `A.md` on the maintainer's yes, else Session B optional), and 0.8 the configured value, whose candidates are the SMC's `CHLT`, `pmset -g battlimit`, powerd's charging plist read as a file (its place, possibly first, waits for the pending reads) and, weaker, System Settings' prior limit (the private PowerUI client stays out, M-3); 0.8's NEW-01 keeps the other causes (bit 12 is still only a candidate); §8.3, §8.5; Appendix A |
 | Session A's script, 2026-10-23: `log_since` counted ndjson's closing summary line (fixed in `9a32e57`); `pmset -g accps -xml` writes one plist per source back to back, and `plist_count` reads only the first; `screencapture -v` stops only at `-V` (SIGINT or the end of stdin loses the movie); the installs end the widget extension before each swap (`56702f9`) | Session A | D1's script; Session B step 3 |
-| Session A's deviations, 2026-10-23: the session ran `killall chronod` once, for diagnosis; macOS asked for Accessibility for Terminal because of an `osascript` window query, and the maintainer allowed it, to revert after the session; the maintainer changed the Charge Limit himself (80, 100, 80), which restore doesn't cover | Session A | §6 (prepare asks for both, restore prompts for both); D1's script |
+| Session A's deviations, 2026-10-23: the session ran `killall chronod` once, for diagnosis; macOS asked for Accessibility for Terminal because of an `osascript` window query, and the maintainer allowed it, to revert after the session (he was later told to keep it until Session B, whose preflight asks again if he revoked it); the maintainer changed the Charge Limit himself (80, 100, 80), which restore doesn't cover | Session A | §6 (prepare asks for both, restore prompts for both; Session B's permissions); D1's script |
 | F9: Russian pages | Session B | D3 (a failure becomes a fix) |
 | F11: the alert step and the banner, or not run; the login item gone from Login Items | Session B | D3; ROADMAP Stage 1.2 |
-| `diskutil info -plist` fixture; both CI install passes | CI | WP-16 |
-| Sleep hygiene: `pmset -g assertions` per run; the overnight `pmset -g log` | Sessions A and B | WP-21 |
-| SEC-15 timings; `diskutil image attach` and `eject` usage text | Session A; CI | WP-16 |
+| WP-16, 2026-10-23: **merged** into `claude/nice-faraday-k08mhb` as `f8a7445` (head `90eaf7a`), ahead of its B2 slot, beside WP-23 (§5). Item 1: `UpdateInstallPolicy.diskutil` (`/usr/sbin/diskutil`); attach `image attach --readOnly --mountPoint <dir> --mountOptions nobrowse <image>` (the runner's mapping, in its usage text's order); `info -plist <dir>` right after the attach (after a failed attach, the eject runs only when info shows our image there); `eject <dir>`; the forced fallback `unmountDisk force <disk>`, then `eject <disk>`, only with a known disk; every failure logged. `imageDisk(info:mountPoint:)` reads the image's own whole disk (the one APFS physical store's, else `ParentWholeDisk`) and is nil unless `BusProtocol` is "Disk Image" and `MountPoint` is exactly the folder (`/private/var` counts as `/var`); it uses `PropertyListDecoder`, so BatteryCore needs no new `unsafe`, and is tested with the CI-captured `Fixtures/diskutil/info-apfs-macos27.plist` (a subfolder, so CI's `Fixtures/*.plist` render loop skips it; the README has its row). Item 2: the step "Install the way 0.6.1 does, then launch" keeps 0.6.1's `hdiutil` lines and runs the `diskutil` pass twice (a plain eject; a file held open, so the plain eject must fail and the forced path runs), each checked in `diskutil list`; `UpdateInstallTests.ciMountsTheWayTheInstallerDoes` pins the YAML to the policy. Item 4 (E10): the automatic check runs in its own task (`UpdateChecker.automaticCheck`); Check Now cancels it and checks on `UpdateNetwork.user`; a cancelled check writes no status, records nothing and doesn't clear `running`; `checkIfDue` skips while a check runs; **the new decision** `UpdatePolicy.checkNow(during:)` returns `start` (no check runs), `takeOver` (an automatic one runs) or `wait` (the user's own runs), with the new public enums `UpdateCheckKind` and `CheckNowAction`. Item 6: `endExtensionBeforeSwap()` as designed (50 ms polls with 10 ms tolerance, so `EnergyGuardTests`' one-shots stay four), awaited after `checkCodeSignature(staged)` right before `renamex_np`, pinned by `UpdateInstallTests.endsTheWidgetExtensionRightBeforeTheSwap`; both scans share one `nonisolated` helper, `IsolationGuardTests.offMain` lists the three declarations, and the `kill` allow-list is unchanged. Item 3 adopts nothing (SEC-15's row); item 5 not run (A0). Also new: `infoArguments`, `forcedDetachArguments`, `imageDisk`; `detachArguments` lost its `force:` parameter; no strings, settings keys, storage formats, bpulse output or update assets changed. **Revert map** (G-16's default): `git revert 6bf1412` alone brings back 0.6.1's `hdiutil` code and test, and still applies cleanly on the head (`git merge-tree`); a CI step back to 0.6.1 only also reverts `90eaf7a`, then `4124451`; item 6 (`68c672f`) and E10 (`5e54fa8`) revert on their own. Both CI jobs green on the package head with no compiler warnings (the only "WARNING" lines are `hdiutil`'s runtime deprecation notices in the 0.6.1 pass); the launch smoke logs `menuBarReady`. On Linux the merged head (`2737b51`, with WP-23) passes 565 core + 107 kit + 5 tests, and `swift format lint --strict` is clean | CI runs 40039004378 (`4124451`), 40040104901 (`6bf1412`), 40041426583 (`90eaf7a`); the round's review | WP-16 acceptance's CI part (passed); G-16's revert path; F12 stays Session B's; WP-22: `docs/ROADMAP.md` lines 230 and 597 still describe the `hdiutil` mechanics |
+| `diskutil` on the macOS 27 runner, 2026-10-23 (CI): **usage:** "USAGE: diskutil image attach [--verbose] [--stdinpassphrase] [--plist] [--readOnly] [--nobrowse] [--mountPoint <mountPoint>] [--mountOptions <mountOptions>] [--mp <mp>] [--noMount] <image-url> [--shadow <shadow> ...]", argument-parser style, with its own `-b`/`--nobrowse` and `--plist`, **no counterpart of `-noautoopen` and no verification-skip option**; a missing `--mountPoint` folder is created, and deleted on unmount; success prints the `/dev` node, a tab, the content hint and the mount point. "diskutil eject [force] MountPoint\|DiskIdentifier\|DeviceNode": **on macOS 27 `eject` takes `force`**; "diskutil u[n]mountDisk [force] MountPoint\|DiskIdentifier\|DeviceNode" also unmounts the virtual volumes APFS implies (the installer keeps the portable two steps). **The image's disk:** the DMG attaches as `disk17` (GUID_partition_scheme, `disk17s1` Apple_APFS), its volume `disk18s1` on the synthesized APFS container `disk18`; `diskutil info -plist <mount point>` gives `MountPoint` = the folder, `BusProtocol` "Disk Image", `APFSPhysicalStores` [`disk17s1`] and `ParentWholeDisk` `disk18` (the container, not the image's disk): the fixture. **Eject:** `diskutil eject <mount point>` printed "Disk <mount point> ejected" and also detached the image's own disk (`disk17` and `disk18` gone from `diskutil list`); with a file held open it failed ("Unmount of disk18 failed: at least one volume could not be unmounted / Unmount was dissented by PID … (/bin/bash)"), then `unmountDisk force disk17` printed "Forced unmount of all volumes on disk17 was successful" and `eject disk17` "Disk disk17 ejected", and nothing was left attached. **At the app's mount point** (the review's finding, fixed in `90eaf7a`: the first passes mounted under `$RUNNER_TEMP`, in `/Users`): both passes mount at `$(getconf DARWIN_USER_TEMP_DIR)BatteryPulse-update`, under `/var/folders`; `diskutil info` reports `MountPoint` resolved, `/private/var/folders/…/T/BatteryPulse-update`, with "Disk Image" and `disk17s1`; the eject of the unresolved `/var` path ejects the whole image, and the forced path behaves as under `/Users`. **Timings** (coarse, from the runner's log timestamps, not the M5): attach about 0.26 s, a plain eject about 0.18 s, the forced path (the failed eject, `unmountDisk force`, `eject`) about 0.36 s. Both install passes (0.6.1's `hdiutil`; `diskutil` plain and forced) green on every run | CI runs 40039004378, 40040104901, 40041426583 | WP-16 items 1-2: the parser, the forced fallback, the `/private/var` match and the eject by mount point; **G-16's CI half: passed** (its M5 half is F12); F12 is no longer the first test of the `/var` case |
+| WP-16's known edges (minor, open): an automatic check cancelled before its first job still sets "Checking", and would leave it showing only if that job ran after Check Now's whole check had finished, which can't happen in practice (both tasks are enqueued on the main queue, the automatic one first, and Check Now's check needs a network round trip); a `!Task.isCancelled` in `check()`'s first guard would close it. The app's own installer code (`UpdateInstallSteps` on `diskutil`, `endExtensionBeforeSwap()`) first runs for real in F12: CI runs the same commands from the shell, and the extension's end against chronod has only Session A's script behind it | the round's review | left as is, to avoid another Darwin commit; F12 is the real test |
+| Sleep hygiene: `pmset -g assertions` per run (Session A, interim: 0 BatteryPulse lines in every run of the window, the A/B energy row); the overnight `pmset -g log` | Sessions A and B | WP-21 |
+| SEC-15, 2026-10-23 (interim; Session A step 7, the real 0.6.1 DMG on the M5; the exact runs with the final `A.md`): `hdiutil attach` about 152 ms, with `-noverify` about 158 ms, `diskutil image attach` about 292 ms, which has no verification-skip option (the usage text: the `diskutil` row above). The skip saves nothing | Session A | SEC-15: **not adopted**, no code change (the `attachArguments` doc says why `diskutil` needs no `-noverify`); the move to `diskutil` costs about 140 ms per install, unseen beside a download, so WP-16 item 1 goes ahead |
+| Session A's swaps (interim; W0-2, WP-16 item 6): the script's pre-swap end of the widget extension took about 20 ms, by SIGTERM, on every swap (one logged 0 ms) | Session A (the script; the photo of Terminal) | WP-16 item 6's timings: the 0.5 s SIGKILL and the 1.5 s give-up are ample |
 | F12's first failure | Q-B9 | WP-16 acceptance |
-| A/B energy (S1, S2, S2 Low Power Mode, S6, S7) | Session A | WP-21 baseline |
+| A/B energy (S1, S2, S2 Low Power Mode, S6, S7), 2026-10-24 (interim, read from the maintainer's photo of Terminal; the final `A.md` gives the exact rows): Session A's unattended window, A = `claude/baseline-0.6.0` build 158 (the instrumented 0.6.0), B = 0.6.1 build 7; every run on battery, 1 minute to settle, then `rusage` over 4 minutes (S6 10 minutes with the displays asleep); started 23:56:41 on 2026-10-23 at 83 %, ended 01:00:32 at 77 %. The runs are in the table after this one; `pmset -g assertions` counted 0 BatteryPulse lines in every run. **S6's B run is not valid:** the maintainer woke the display and unlocked about a minute into it, not told that S6 darkens the screen on purpose. S7, 5 cold launches each to `menuBarReady` with power in the menu bar: B 162, 160, 161, 139, 141 ms (p50 160), with 1 read before `menuBarReady` and 1 in all per launch; A 179, 174, 177, 155, 151 ms (p50 174), with 2 reads before and 3 in all; the widget extension's process read 3 times in both | Session A's window (the photo) | WP-21 baseline, interim. 0.6.1 against 0.6.0 is lower in S2 (energy 443-517 against 504-948 mJ/h, CPU about 8-20 % lower, 6 reads a minute against 8) and in S2-LPM (energy about 46 % lower, 3.5 reads a minute against 8.5: the Low Power Mode refresh policy works); WP-2a's launch is confirmed on the M5 (1 read before `menuBarReady` instead of 2, launches about 8-9 % faster). S1 shows 0.6.1 higher (229 against 166 mJ/h) in a single pair that was the window's first run, while two identical S2 A runs differ by almost 2× (504 against 948), so one pair can't settle it: Session B (WP-21) discards a warm-up run, runs at least three pairs per scenario and compares medians, and if S1 still differs, WP-21 looks for the cause (WP-21's queue now has the discarded warm-up, three pairs each of S1 and S2, a same-day Low Power Mode pair, S6's B C pair and medians, 2026-10-24). The idle wake-ups (about 600-1,600 an hour, far more than the 2-8.5 reads a minute) are a question for the final `A.md`'s pslog and wake-up sources, and so are B's 3.5 reads a minute in S2-LPM and 2.0 in S1, above the 2 and about 1 that WP-21 expects. In absolute terms every row is under about 1 J an hour, about 0.0005 % of the battery an hour. S6's pair is repeated in Session B (B's row is disturbed), where the touch detector and the arm window's S6 warning (WP-21's hands-free mode) cover what disturbed it |
 | C energy, S4w, S5, burst, memory | Session B | WP-21, G-13c |
+| Session B's preflight: each proof's result (P1-P11 in B0's preflight, P12 at the burst's first unplug) and the fallback it switched to; the app names computer use accepted; the prompts and auto-mode blocks met at the start, and whether Accessibility had to be allowed again | Session B (B0, B1) | §6 Session B's steps; plan-0.7.0 W-12 and §6.2 |
+| Session B's runs marked not valid (touched, slept, adapter, locked, screen saver, style not in effect, Low Power Mode, Claude active), per run, and their retries; whether a session acted while `queue.started` existed | Session B (the queue) | WP-21's pass criteria; whether the detectors hold for Session R |
+| `log stream` across the night's sleep: whether the stream kept its lines after the wake, and its gaps | Session B (B5-B7) | plan-0.7.0 §6.2 step 12 (`sudo log config` only if the stream dies) |
+| The hands-free mode's cost: the maintainer's minutes per moment, the GUI phase's length and computer-use actions, and the steps recorded "not checked" or "not run" with their reasons | Session B | plan-0.7.0 §6.2's estimates |
 | B3 bench rerun; `HistoryLoad.read` profile | WP-17 | WP-17 riders |
 | `-internalize-at-link` build times and sizes | WP-15 | G-15 |
-| SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (the maintainer, from Claude's step-by-step list) | WP-18; SZ-10 ships or waits for 0.7 |
+| SUI-17 previews y or n; SUI-19's 5 slowest bodies in ms; SZ-10's shots in the four icon styles and the maintainer's answer | WP-18 (Session B; the maintainer's y in the morning batch) | WP-18; SZ-10 ships or waits for 0.7 |
 | SEC-18: what a self-signed identity keeps across an update | WP-20 | 0.9.0's SEC-02 decision (`docs/plans/1.0/ROADMAP.md` §3.5) |
 | `release-stats.swift`'s first live table (DMG and `.sig` per release; Count "—") against `gh api`, and the requests left | WP-19 | WP-19 acceptance |
 | The release statistics a week after publishing, 0.2.0-0.6.2 | D3 (`release-stats.swift`) | ROADMAP's Releases columns |
+
+**Session A's energy window, 2026-10-23/24 (interim).** Read from the maintainer's photo of Terminal,
+in the order it lists them; the final `A.md` gives the exact rows. A = `claude/baseline-0.6.0`
+build 158 (the instrumented 0.6.0), B = 0.6.1 build 7. Every run on battery: 1 minute to settle,
+then `rusage` over 4 minutes; S6 10 minutes with the displays asleep. LPM is Low Power Mode;
+Assertions counts BatteryPulse's lines in `pmset -g assertions`. What the rows decide: the A/B
+energy row above.
+
+| Run | Build | LPM | Energy mJ/h | Idle wake-ups/h | Interrupt wake-ups/h | CPU s/h | Footprint MB | App reads/min | Assertions |
+|---|---|---|---|---|---|---|---|---|---|
+| S1 | B | 0 | 229.3 | 945 | 1,890 | 1.779 | 20.3 | 2.0 | 0 |
+| S1 | A | 0 | 166.1 | 900 | 1,440 | 1.367 | 19.9 | 3.0 | 0 |
+| S2 | B | 0 | 443.5 | 1,290 | 2,490 | 4.664 | 20.4 | 6.0 | 0 |
+| S2 | A | 0 | 504.4 | 1,575 | 2,730 | 5.090 | 20.1 | 8.0 | 0 |
+| S2 | B | 0 | 517.2 | 1,440 | 2,700 | 4.778 | 20.6 | 6.2 | 0 |
+| S2 | A | 0 | 948.4 | 1,530 | 3,495 | 5.942 | 20.0 | 8.0 | 0 |
+| S2-LPM | B | 1 | 258.3 | 1,065 | 1,860 | 2.362 | 21.3 | 3.5 | 0 |
+| S2-LPM | A | 1 | 478.5 | 1,530 | 2,265 | 4.862 | 21.1 | 8.5 | 0 |
+| S6 | B | 0 | 215.0 | 1,020 | 1,770 | 2.021 | 20.4 | 2.1 | 0 (**not valid:** the display woken and the Mac unlocked about a minute in) |
+| S6 | A | 0 | 166.0 | 594 | 1,422 | 1.485 | 20.1 | 3.2 | 0 |

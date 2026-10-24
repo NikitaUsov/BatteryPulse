@@ -165,6 +165,13 @@ Contents:
    - Scripted; "y = looks right"; comparisons as numbered choices; recordings and screenshots as
      evidence.
    - The script, not the maintainer, reads the logs (P2 §3, "Session wording").
+   - **Hands-free from 0.6.2's Session B on** (the maintainer's request of 2026-10-23: "Make the
+     tests run by themselves, without me; I can't do two things at once, click and work"): one
+     local Claude Code session with computer use runs the script, works the screen and judges the
+     screenshots; he does only the start line and one yes to the list of changes, quitting his own apps, the Focus on and off, the physical moments (the adapter, the lid, a login), his password (once at Session B's bedtime; in
+     Session R only for `log config`, twice), the permission prompts, the taste answers, a typed
+     "continue" or "day-end", revoking Terminal's Accessibility unless he keeps it, and his yes before `send` (P2 §6 and §10, "The hands-free
+     sessions"; plan-0.7.0 §6.2).
 8. **Division of labour.** The maintainer decides only what he sees or does: look, behaviour,
    settings, the sessions and the release. Technical choices are delegated (P1 §8,
    "Architecture: delegated"). On 2026-10-22 he also delegated every open roadmap question but
@@ -465,26 +472,33 @@ Each is placed in §4 or §5.
 
 | Version | Theme | Headline | Maintainer M5 time | Runs |
 |---|---|---|---|---|
-| **0.6.2** | Foundation II (P2; plus a release-statistics script) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds; `scripts/release-stats.swift` (tooling, no app change) | Session A about 65 min, then 3 h unattended; Session B about 95 min, plus about 70 min unattended (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit in B). WP-18's maintainer-run items, about 60 min in a sitting of their own [estimate] | 29-33, plus 3 in reserve (P2 §7.2) |
-| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates; the anonymous version count (on by default, announced); the Charge Limit's paused state (FEA-35) | The look check (about 15 min at the desk, no M5, plus a 4-min second look), Session R (about 83 min), a logged day and its 10-min end, the after-publishing check (about 10 min, plus about 3 min and a passive 10-min wait for the version count); no spike sitting, since 0.6.2's Session A ran the widget spikes (plan-0.7.0 §6, §2.3) | 28-31 plus 3 in reserve, and about 2 for W-14 (FEA-35); never-cut 27-29 (W-8 and W-14 now never cut); stretch +8-9 [estimate, plan-0.7.0 §7.2] |
+| **0.6.2** | Foundation II (P2; plus a release-statistics script) | Main actor by default, the read path, Clear's minimize fix, widget headroom, the `diskutil` installer, energy against three builds; `scripts/release-stats.swift` (tooling, no app change) | Session A about 65 min by hand (run on 2026-10-23), then 3 h unattended; Session B hands-free, about 18-22 min of his time in short moments, the rest done by the local session and an overnight energy queue (P2 §6, with the Xcode steps: `xctrace` page switches in both, the contrast audit and WP-18's items in B); the after-publishing check, a short hands-free session, about 2 min [estimate] | 34-39, plus 3 in reserve (P2 §7.2; Session A's additions and the hands-free mode included, 2026-10-23) |
+| **0.7** | Widgets you configure | The configurable Battery widget in small, medium, large (extra large on the look check), plus Accessories; device JSON dates; the anonymous version count (on by default, announced); the Charge Limit's paused state (FEA-35) | The look check (about 15 min at the desk, no M5, plus a 4-min second look), Session R, hands-free (about 6-8 min of his time at its start, plus 1 once before; about 83 by hand before), a logged day and its 3-4-min end, the after-publishing check, a short hands-free session (about 2 min, plus a passive 10-min wait for the version count); no spike sitting, since 0.6.2's Session A ran the widget spikes (plan-0.7.0 §6, §2.3) | 28-31 plus 3 in reserve, about 2 for W-14 (FEA-35) and about 1 for the hands-free mode (W-12); never-cut 28-30 (W-8 and W-14 now never cut); stretch +8-9 [estimate, plan-0.7.0 §7.2] |
 | **0.8** | Answers in the app | Why it isn't charging, the configured Charge Limit (FEA-35), a health summary, explanations, Report a Problem, VoiceOver and the keyboard | A look sitting of about 40 min and a release-candidate sitting of about 85 min, the contrast audit included [estimate] | 30-38, FEA-35's number included [estimate] |
 | **0.9.0** | Ready for others (feature freeze) | Docs, the written promise, the ad-hoc first install documented (C16; no Developer ID, §3.4), `bpulse` in the app | About 50 min, plus up to 60 min for the verification matrix's open M5 rows [estimate] | 8-11, plus whatever 0.8's cut line moves [estimate] |
 | **0.9.x** | Release candidates (fixes only) | Soak, energy budgets, the upgrade matrix | About 40 min, plus 70 min unattended and a passive 7-day soak [estimate] | 1-3 each |
 | **1.0.0** | The promise | The last 0.9.x, renamed | The after-publishing check, about 10 min | 1-2 |
 
-**Totals [estimate]** (recomputed on 2026-10-22 for the maintainer's answers):
-- about 11-13 hours of hands-on time, plus the 5-minute NEW-22 check after each macOS 27.x
-  update, unattended windows and a passive soak week. The parts: 0.6.2's sessions, Xcode items
-  and check (about 230 min: Sessions A and B with their Xcode steps, 160, WP-18's sitting, 60,
-  and the check, 10), 0.7's sittings (about 125 min; no W-0S, since Session A ran the spikes),
+**Totals [estimate]** (recomputed on 2026-10-22 for the maintainer's answers, and on 2026-10-23
+for the hands-free sessions):
+- about 7-9 hours of hands-on time, plus the 5-minute NEW-22 check after each macOS 27.x
+  update, unattended windows and a passive soak week (about 11-13 hours before the hands-free
+  sessions). The parts: 0.6.2's sessions and check (about 85-90 min: Session A by hand, 65, with
+  its Xcode step; Session B hands-free, 18-22 of his time, with its Xcode steps and WP-18's items,
+  so WP-18's hour of his own is gone; and the check, a short hands-free session, about 2), 0.7's
+  sittings (about 31-34 min: the look check and its second look, 19, and Session R with its day's
+  end and after-publishing check, hands-free, 12-15; no W-0S, since Session A ran the spikes),
   0.8's (about 135), 0.9.0's (about 60-120), the 0.9.x sittings (about 50 each, two assumed) and
-  1.0's check (about 10). Xcode adds about 90 minutes to 0.6.2 and 10 to 0.8; the Developer ID
-  evening (S-ID) and the 30 minutes of secrets (G-ID) are gone with M-1's no. 0.7's version count
-  adds about 3 minutes to Session R and about 3 to its after-publishing check;
-- about 106-132 implementation and review runs, plus 8-9 if 0.7's stretch runs (0.6.2's
+  1.0's check (about 10); from 0.8 on they are still counted as sittings by hand. Xcode added
+  about 10 minutes to Session A, costs him about 1 in Session B (SZ-10's y) and adds 10 to 0.8;
+  the Developer ID evening (S-ID) and the 30 minutes of secrets (G-ID) are gone with M-1's no.
+  0.7's version count adds about 3 minutes of the sessions' own time to Session R and to its
+  after-publishing check, none of his;
+- about 112-139 implementation and review runs, plus 8-9 if 0.7's stretch runs (0.6.2's
   release-statistics script and 0.7's version count add about 3; FEA-35 adds about 3-4 (2 in 0.7,
   W-14, and 1-2 in 0.8, net of NEW-01's Charge Limit cause, which moved to 0.7), recomputed on
-  2026-10-23).
+  2026-10-23; the same day the hands-free mode added about 4 (3 in 0.6.2: WP-21's 2 and SZ-10's
+  icon source; 1 in 0.7, W-12) and Session A's 0.6.2 additions (WP-16 item 6, WP-23) about 2-3).
 
 **No dates (M-5, the maintainer, 2026-10-22).** "This is a hobby project; we release when there
 is time and desire." The table above is the order of the versions and their effort, not a
@@ -506,11 +520,13 @@ This roadmap changes nothing in 0.6.2's scope but one tooling item the maintaine
 2026-10-22: the release-statistics script (WP-19, below; NEW-23). His answers of 2026-10-22
 pick P2's own branches: Clear's fill (b) (Q-B2, so FEA-24 is not built), no Low Power Mode
 fallback (Q-B10, so FEA-23 is not built), no Enhanced Security spike (Q-B8), and Xcode on the M5
-(Q-B7, so WP-18 and the contrast audit run, maintainer-run with Claude's step-by-step list). The
-roadmap changes only where some cut items go: FEA-25 goes after 1.0, and SEC-01 is not planned
-(Q-B8 and M-1 are no), instead of P2 §7.2's "a cut item moves to 0.7". A cut WP-18 moves to 0.7
-as P2 says, still maintainer-run. The rest of a cut follows plan-0.7.0's C-1: Linux-only items
-ride 0.7's engineering lane, and items that need the M5 join Session R's optional steps.
+(Q-B7, so WP-18 and the contrast audit run; since 2026-10-23 inside the hands-free Session B, by
+the local Claude, with computer use where Xcode needs it). The roadmap changes only where some
+cut items go: FEA-25 goes after 1.0, and SEC-01 is not planned (Q-B8 and M-1 are no), instead of
+P2 §7.2's "a cut item moves to 0.7". A cut WP-18 moves to 0.7 as P2 says, into Session R's GUI
+phase, hands-free the same way (plan-0.7.0 C-1). The rest of a cut follows plan-0.7.0's C-1:
+Linux-only items ride 0.7's engineering lane, and items that need the M5 join Session R's
+optional steps.
 
 - **Theme:** the second maintenance and foundation release, with no new features (P2 §1). It
   carries 0.6.1's deferred backlog, fixes the beta styles' last known bug, runs the energy
@@ -526,7 +542,7 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   | WP-15 | SIZ-01, SIZ-02 (gated), SIZ-03, SIZ-04 |
   | WP-16 | PLT-02, SEC-04 (gated), QUA-12; DIS-07 not run (A0 kept the login item) |
   | WP-17 | ENG-11, ENG-12 |
-  | WP-18 (maintainer-run with Claude's step-by-step list; Xcode is installed, Q-B7) | TCI-05, TCI-06, TCI-07, PLT-03 |
+  | WP-18 (inside the hands-free Session B, by the local Claude with computer use where Xcode needs it; Xcode is installed, Q-B7) | TCI-05, TCI-07, PLT-03; TCI-06 (SUI-18) dropped on 2026-10-23 (P2 WP-18) |
   | WP-19 | SEC-05, QUA-13, TCI-02, TCI-03, TCI-04; NEW-23's release-statistics script (`scripts/release-stats.swift`, P2, cut last) |
   | WP-20 (optional) | SEC-02; SEC-01 not run (Q-B8) |
   | WP-W0 | FEA-01 to FEA-05, A11Y-05, L10N-03 |
@@ -551,10 +567,12 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
   - D1's golden, storage and settings diffs are empty except §7.3's intended changes.
   - Session B's F12 passes, or G-16 reverts to `hdiutil`.
   - The notes are as P2 D1 lists them, and D3's after-publishing check passes.
-- **M5 sessions:** A, B, the optional steps, WP-18's Xcode sitting and the after-publishing check
+- **M5 sessions:** A (by hand, 2026-10-23), B (hands-free, §1.2 item 7, with WP-18's items
+  inside it), the optional steps and the after-publishing check (a short hands-free session)
   (P2 §6, D3).
-- **Size:** 29-33 runs, the release-statistics script included, plus 3 for fixing forward; the
-  never-cut set is 22-26 (P2 §7.2; the script is cut last, not never-cut).
+- **Size:** 34-39 runs, the release-statistics script, Session A's additions (WP-16 item 6,
+  WP-23) and the hands-free mode (3 runs) included, plus 3 for fixing forward; the never-cut set
+  is 24-29 (P2 §7.2; the script is cut last, not never-cut).
 - **The release-statistics script (WP-19; the maintainer, 2026-10-22).** `swift
   scripts/release-stats.swift` prints one row per published release: DMG downloads, `.sig`
   downloads (each in-app install fetches the `.sig`, so this counts in-app updates) and the
@@ -576,14 +594,16 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
      prints no `CH*` values; reading one waits for a reviewed change, §3.3); and it found two more,
      powerd's charging plist, readable without root, and System Settings' prior limit (§3.3). The
      same reads at 100 % (or off), back at 80 % and on battery more than 5 minutes after unplugging are pending. If no fixture is
-     committed, the step runs again with the session script's `charge-limit` step (0.7's W-12).
-     The script asks for the limit set in System Settings → Battery [exact menu path unverified on
-     macOS 27] and checks that the charge is at least 5 points below it, because a capture that
+     committed, the step runs again with the session script's `charge-limit` step (0.7's W-12),
+     from a short hands-free local session. The script reads the limit (`pmset -g battlimit` on the
+     adapter, else a shot of System Settings → Battery [exact menu path unverified on macOS 27])
+     and checks that the charge is at least 5 points below it, because a capture that
      starts at or above the limit records nothing. It then starts `caffeinate -i bpulse --record`
      into a new, empty folder under the session's backup folder (`~/bp-062/` or `~/bp-070/`;
      UG:579-583: without `caffeinate -i` the recording stops when the Mac sleeps, and the folder
-     must not hold an earlier recording) and beeps when charging stops at the limit. Keep the
-     adapter in and the lid open: about 2 minutes of setup, then unattended. FEA-35 needs the
+     must not hold an earlier recording) and beeps when charging stops at the limit. He starts
+     it, says yes and keeps the adapter in and the lid open, and gives his yes before `send` when
+     he is back: about 2 minutes in all, the rest unattended. FEA-35 needs the
      fixture: without one by plan-0.7.0's C1, W-14 moves whole to 0.8 (plan-0.7.0 G7-18), so 0.7
      runs the step between W-12's merge and C1, and its Session R offers it only if it never ran
      (V).
@@ -593,13 +613,17 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
      retried on a Developer ID build, which M-1's no rules out, so it is not planned (§4.2).
   4. **Q-B7: Xcode is already installed on the M5** (2026-10-22). The 11 inventory rows that need
      it are no longer blocked (INV Summary). In 0.6.2 that means:
-     - WP-18 runs, maintainer-run from Claude's step-by-step list: the previews spike (SUI-17),
-       the SwiftUI Specialist checklist (SUI-18), type-check timing (SUI-19) and the Icon
-       Composer icon (SZ-10). The icon ships only on your y to its screenshots in the four icon
-       styles (P2 WP-18's acceptance; decided by delegation).
+     - WP-18 runs inside the hands-free Session B (2026-10-23): the local Claude runs the
+       previews spike (SUI-17), type-check timing (SUI-19) and the Icon Composer icon (SZ-10),
+       with computer use where Xcode needs it (the previews canvas, the four icon styles). The
+       SwiftUI Specialist checklist (SUI-18) is dropped: it would leave only an uncommitted
+       checklist, and a review run can use the skill directly. The icon ships only on your y to
+       its screenshots in the four icon styles, given in Session B's morning batch (P2 WP-18's
+       acceptance; decided by delegation).
      - Sessions A and B run their `xctrace` page switches, and Session B the contrast audit with
-       Accessibility Inspector (A11Y-03): about 65 and 95 minutes in all (P2 §6). C10 repeats the
-       audit in 0.8.
+       Accessibility Inspector (A11Y-03) by computer use: Session A about 65 minutes by hand (run
+       on 2026-10-23), Session B about 18-22 minutes of his time (P2 §6). C10 repeats the audit in
+       0.8.
   5. **Branches (settled; the integration branch by the maintainer, 2026-10-22):** 0.6.2's
      integration branch is `claude/nice-faraday-k08mhb`, the session's designated branch; each
      package goes on `claude/062-<pkg>` and the widget spikes on `claude/062-spike-widget` (P2
@@ -607,9 +631,10 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
      reachable as `refs/pull/11/head`, which GitHub keeps.
   6. **A step of 0.6.2's D3:** `main` gets only squash merges, so `docs/plans/` never enters its
      history. Before the package branches (`claude/062-*`) and the integration branch
-     `claude/nice-faraday-k08mhb` are deleted, D3 copies `m5-session.sh`, its swap helper and the
-     whole of Appendix C into `docs/plans/0.7.0/`, beside `widgets.md`; the release PR's
-     `refs/pull/<n>/head` keeps them reachable either way (plan-0.7.0 D-1).
+     `claude/nice-faraday-k08mhb` are deleted, D3 copies `m5-session.sh`, its swap helper, the
+     hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`) and the whole of Appendix C
+     into `docs/plans/0.7.0/`, beside `widgets.md`; the release PR's `refs/pull/<n>/head` keeps
+     them reachable either way (plan-0.7.0 D-1, D-11).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
      run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
      0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from
@@ -782,11 +807,13 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
 - **M5 sessions [estimate]** (plan-0.7.0 §6):
   - the look check at the desk (about 15 minutes, no M5) and a 4-minute second look (W-8's and
     W-14's PNGs);
-  - Session R, about 83 minutes, with the screenshot matrix scripted;
+  - Session R, hands-free like 0.6.2's Session B (§1.2 item 7): about 6-8 minutes of his time at
+    its start, plus 1 once before, of what was about 83 minutes by hand; the local Claude runs the
+    screenshot matrix and judges the shots;
   - a day of normal use with the `perf` stream on, for reloads delivered and the widget's energy,
-    and about 10 minutes at its end (F12);
-  - the after-publishing check, with the version count's step (about 3 minutes and a passive
-    10-minute wait);
+    and about 3-4 minutes at its end (the batch and his yes; the session runs F12);
+  - the after-publishing check, a short hands-free session (about 2 minutes of his time; the
+    version count's step and its passive 10-minute wait are the session's);
   - QUA-05, if Session A's capture isn't committed as a fixture: the session script's
     `charge-limit` step (§3.1 item 2), plus the diff at 100 % if Session A's 80 → 100 → 80
     recording doesn't already hold it, any time between W-12's merge and C1, since W-14 needs
@@ -798,7 +825,8 @@ ride 0.7's engineering lane, and items that need the M5 join Session R's optiona
     the Mac is kept awake].
 - **Size [estimate]:** 28-31 runs plus 3 for fixing forward; stretch +8-9 (plan-0.7.0 §7.2,
   which also counts D1-D3, the riders, W-3's split and W-13's 2 runs). W-14 (FEA-35) adds about 2
-  runs. Never-cut 27-29, W-14 included (W-8 and W-14 now never cut).
+  runs, and the hands-free mode about 1 (W-12, 2026-10-23). Never-cut 28-30, W-14 included (W-8
+  and W-14 now never cut).
 
 ### 3.3 0.8: Answers in the app
 
@@ -1134,6 +1162,7 @@ below runs unless M-1 is asked again.
 | App Nap's effect (ENG-14); Instruments profiling (ENG-15's Instruments half) | Close as not planned at 0.9.0 | C6 measures the targets without Instruments. ENG-13 covers how often the mAh values change. |
 | iPad capture (QUA-08) | Known limitation | No iPad at hand (R:620-621) |
 | K-02's CI half (TCI-08) | Not planned | P2 App A |
+| The SwiftUI Specialist review checklist (TCI-06, SUI-18) | Not planned (dropped on 2026-10-23, P2 WP-18) | It would leave only an uncommitted checklist, and a review run can use the skill directly; WP-18's other items run inside the hands-free Session B (§3.1) |
 | A public beta channel | No (M-4, decided by delegation) | There are about no outside users to test it (§1.1). 0.9.x must be normal releases anyway. A beta channel changes the update contract (Updates.swift:125). |
 
 ### 4.3 Rejected, and staying rejected
@@ -1292,16 +1321,16 @@ condition or the reason.
 | TCI-02 | CI pins | 0.6.2 | |
 | TCI-03 | DocC check | 0.6.2 | P3 |
 | TCI-04 | Parser instruction budget | 0.6.2 | P3 |
-| TCI-05 | Previews in SwiftPM target | 0.6.2 (maintainer-run) | WP-18, from Claude's step-by-step list (Xcode is installed, Q-B7); if 0.6.2 cuts WP-18, 0.7, still maintainer-run |
-| TCI-06 | SwiftUI Specialist checklist | 0.6.2 (maintainer-run) | As TCI-05 |
-| TCI-07 | Type-check timing | 0.6.2 (maintainer-run) | As TCI-05 |
+| TCI-05 | Previews in SwiftPM target | 0.6.2 (Session B) | WP-18, run inside the hands-free Session B by the local Claude, with computer use where Xcode needs it (Xcode is installed, Q-B7); if 0.6.2 cuts WP-18 or doesn't reach it, 0.7's Session R GUI phase, the same way (plan-0.7.0 C-1) |
+| TCI-06 | SwiftUI Specialist checklist | Not planned (dropped, 2026-10-23) | P2 WP-18: it would leave only an uncommitted checklist, and a review run can use the skill directly (§4.2) |
+| TCI-07 | Type-check timing | 0.6.2 (Session B) | As TCI-05 |
 | TCI-08 | K-02's CI half | Not planned | |
 | TCI-09 | Unconfirmed toolchain facts | 0.6.2 (as they fall out) | Whatever is left: not planned |
 | TCI-10 | Widget render previews in CI | 0.7 | |
 | TCI-11 | Widget guard rules | 0.7 | |
 | PLT-01 | Main actor by default | 0.6.2 | First |
 | PLT-02 | Installer on `diskutil` | 0.6.2 | |
-| PLT-03 | Icon Composer icon | 0.6.2 (maintainer-run) | As TCI-05; ships only on your y to its screenshots in the four icon styles (Q-B7) |
+| PLT-03 | Icon Composer icon | 0.6.2 (Session B) | As TCI-05; ships only on your y to its screenshots in the four icon styles (Q-B7), in Session B's morning batch |
 | PLT-04 | Private-API contingencies | After 1.0 | On breakage |
 | PLT-05 | iOS code kept building | 0.7 (decision) | M-2: kept until it first costs time |
 | A11Y-01 | Chart descriptors | 0.8 | Moved from not planned: C10 needs it |
@@ -1360,7 +1389,7 @@ signed off in its sitting.
 | Q-B6 | by delegation | The sessions as written, every energy scenario as planned |
 | Q-B9 | settled | GitHub's rate limit behind a VPN, seen in the session; Session B checks the remaining requests before F12 |
 | Q-B10 | by delegation | No Low Power Mode fallback (= P2's default, G-13c). FEA-23 is not built |
-| Q-B7 | the maintainer, 2026-10-22 | Xcode is already installed on the M5. WP-18 and the contrast audits run, maintainer-run from Claude's step-by-step list (§3.1 item 4). The Icon Composer icon ships only on your y to its screenshots (by delegation) |
+| Q-B7 | the maintainer, 2026-10-22 | Xcode is already installed on the M5. WP-18 and the contrast audits run, since 2026-10-23 inside the hands-free Session B, by the local Claude with computer use where Xcode needs it (§3.1 item 4; SUI-18 dropped). The Icon Composer icon ships only on your y to its screenshots (by delegation) |
 | Q-B8 | by delegation | No (= P2's default; §3.1). Enhanced Security is not planned (§4.2) |
 | Q-B11 | settled | An engineering call, not the maintainer's: `claude/baseline-0.6.0` kept until 0.6.2's D3; 0.6.1's integration history kept as `refs/pull/11/head` |
 | Q-W1 | the maintainer, 2026-10-22 | 0.7; no 0.6.3 (FEA-14 not planned) |
@@ -1648,11 +1677,13 @@ which already moved once in 27 (R:63-75). FEA-35 adds two undocumented ones: bit
 
 ### The single maintainer's time
 
-- About 11-13 hours of hands-on time to 1.0 [estimate], plus the 5-minute NEW-22 check after
+- About 7-9 hours of hands-on time to 1.0 [estimate], plus the 5-minute NEW-22 check after
   each macOS 27.x update, unattended windows and a passive soak week (§3, Totals). Xcode's items
-  add about 90 minutes to 0.6.2 and 10 to 0.8; the Developer ID evening and secrets are gone.
+  cost him about 11 minutes in 0.6.2 (Session A's `xctrace` pass and SZ-10's y) and 10 in 0.8;
+  the Developer ID evening and secrets are gone.
 - Every step has a default (PB practice).
-- Sessions are scripted, with unattended windows. The soak is passive.
+- Sessions are scripted, with unattended windows, and from 0.6.2's Session B on hands-free
+  (§1.2 item 7). The soak is passive.
 - The verification matrix is built up from 0.7 on.
 - Whatever isn't checked becomes a known limitation, not a blocker.
 - There are no dates (M-5): a release ships when there is time and desire, so a slow month delays

@@ -88,11 +88,11 @@ ideas** that must not come back. Counts are computed from the tables below.
 | Size | 4 | 2 | 1 | 0 | 0 | 7 |
 | Distribution | 5 | 1 | 0 | 3 | 2 | 11 |
 | Docs | 6 | 2 | 0 | 0 | 2 | 10 |
-| Tooling and CI | 7 | 2 | 0 | 1 | 1 | 11 |
+| Tooling and CI | 6 | 2 | 0 | 2 | 1 | 11 |
 | Platform debt | 3 | 0 | 1 | 0 | 1 | 5 |
 | Accessibility | 4 | 1 | 0 | 1 | 0 | 6 |
 | Localization | 3 | 2 | 0 | 0 | 0 | 5 |
-| **All** | **64** | **25** | **11** | **22** | **10** | **132** |
+| **All** | **63** | **25** | **11** | **23** | **10** | **132** |
 
 - **Unassigned:** 10, of which 8 are gaps no plan lists (marked "new"): QUA-06, QUA-15, SEC-07,
   DIS-09, DIS-10, DOC-09, DOC-10, PLT-05. The other two are leftovers (ENG-18, TCI-09).
@@ -101,6 +101,9 @@ ideas** that must not come back. Counts are computed from the tables below.
   moved to later: FEA-25 (Q-B4: not in 0.6.2, with a beta style's graduation). Later the same
   day: DIS-04 passed (round A0), so DIS-07's condition isn't met; DIS-10 is decided (approved as
   written, no dates); DIS-11 is added in 0.7 (the anonymous version count).
+- **Dropped on 2026-10-23** (moved to not planned): TCI-06 (SUI-18), when 0.6.2's Session B became
+  hands-free and took WP-18's items: it would leave only an uncommitted checklist, and a review run
+  can use the skill directly (P2 WP-18).
 - **Decisions:** 9 for 0.6.2 (Q-B2 to Q-B11) and 13 for widget customization (Q-W1 to Q-W13), §12.
   All are decided as of 2026-10-22: Q-B2, Q-B7 and Q-W1 by the maintainer, Q-W3 following his M-1
   answer, Q-B9 and Q-B11 settled before, the rest by delegation.
@@ -108,9 +111,10 @@ ideas** that must not come back. Counts are computed from the tables below.
   FEA-23 and SEC-01 left it; FEA-35 joined on 2026-10-23);
   maintainer taste 25 (the questions are now answered; the looks are still signed off in the
   sessions); Apple API behaviour 13; Xcode on the Mac 11 (installed on the M5, so these run,
-  maintainer-run); the paid account 12 (7 name it, 5 iOS rows inherit it through FEA-29), which the
-  maintainer declined, so they stay not planned or take the route without it; hardware not at
-  hand 6; evidence still to come 4.
+  since 2026-10-23 inside 0.6.2's hands-free Session B, by the local Claude with computer use
+  where Xcode needs it; TCI-06 dropped); the paid account 12 (7 name it, 5 iOS rows inherit it
+  through FEA-29), which the maintainer declined, so they stay not planned or take the route
+  without it; hardware not at hand 6; evidence still to come 4.
 - **User-visible:** 74 yes, 13 indirect (freshness, energy, speed), 45 no. **Sizes:** 83 S, 40 M,
   6 L, 3 XL.
 
@@ -278,7 +282,7 @@ Enhanced Security spike.
 |---|---|---|---|---|---|---|---|---|
 | DOC-01 | CLAUDE.md for 0.6.2 | `BatterySource` in the layout and "a BatterySource twin"; `read`'s four triggers and `registry.missed`; E4b; E20's isolation; main actor by default; the `diskutil` installer; the opaque minimize fill; strict memory safety for BatterySource and BatteryKit | P2 WP-22 | no | S | the packages that land | none | 0.6.2 (P1, last) |
 | DOC-02 | User Guide for 0.6.2 | Clear's known issue removed (UG:162-163); graduated styles without "beta"; a refresh sentence if E4b lands (UG:124-132); installer text | P2 WP-22 | yes | S | QUA-01, FEA-22, ENG-09 | none | 0.6.2 |
-| DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65, and Session B about 95); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
+| DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65) and Session B's (hands-free since 2026-10-23: about 18-22 minutes of the maintainer's time, P2 §1); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
 | DOC-04 | 0.6.2 release notes | `## What's new in 0.6.2` (checked by CB-06); only user-visible items that landed; the energy line; "Updating from 0.6.1" | P2 D1 | yes | S | DIS-08 | none | 0.6.2 |
 | DOC-05 | Plan files | Commit the 0.6.2 plan under `docs/plans/0.6.2/`; at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
@@ -295,9 +299,9 @@ Enhanced Security spike.
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |
-| TCI-05 | SUI-17: previews in a SwiftPM executable target | A 30-minute spike; if they don't work, a UI library target | R:520; P2 WP-18; RES-swiftui SUI-17 | no | S | none | Xcode on the Mac (Q-B7) [installed] | 0.6.2 (maintainer-run; else 0.7) |
-| TCI-06 | SUI-18: the SwiftUI Specialist skill as a review checklist | Exported on the Mac; nothing committed | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | 0.6.2 (maintainer-run; else 0.7) |
-| TCI-07 | SUI-19: type-check timing of the slowest bodies | The 5 slowest bodies, ms each | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | 0.6.2 (maintainer-run; else 0.7) |
+| TCI-05 | SUI-17: previews in a SwiftPM executable target | A 30-minute spike; if they don't work, a UI library target | R:520; P2 WP-18; RES-swiftui SUI-17 | no | S | none | Xcode on the Mac (Q-B7) [installed] | 0.6.2 (inside the hands-free Session B, by the local Claude with computer use where Xcode needs it; else 0.7's Session R, the same way) |
+| TCI-06 | SUI-18: the SwiftUI Specialist skill as a review checklist | Exported on the Mac; nothing committed | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | not planned (dropped on 2026-10-23, P2 WP-18: it would leave only an uncommitted checklist, and a review run can use the skill directly; was 0.6.2) |
+| TCI-07 | SUI-19: type-check timing of the slowest bodies | The 5 slowest bodies, ms each | R:520; P2 WP-18 | no | S | none | Xcode on the Mac [installed] | 0.6.2 (inside the hands-free Session B, as TCI-05; else 0.7) |
 | TCI-08 | K-02's CI half | A hung `swift test` past the swift-testing limit ends only at the job timeout | P1 App C A1 (P1:1709); P2 App A | no | S | none | none | not planned |
 | TCI-09 | Unconfirmed toolchain facts | `@diagnose(StrictMemorySafety…)` on 6.4.0; `_logChanges`; a monotone `LinePlot` interpolation; `xcrun agent skills export` arguments; xctrace's SwiftUI template name; per-cell `.help` cost; whether SwiftUI skips a Binding-only change | RES-swift §7; RES-swiftui §6 | no | S | none | Xcode on the Mac [installed] | unassigned (part falls out of ENG-11 and TCI-05 to TCI-07) |
 | TCI-10 | Widget render previews in CI | `ImageRenderer` PNGs per kind × family × language, a review aid | P2 W-3 | no | S | FEA-06 | none | 0.7 |
@@ -309,7 +313,7 @@ Enhanced Security spike.
 |---|---|---|---|---|---|---|---|---|
 | PLT-01 | WP-10: main actor by default for the app | `.defaultIsolation(MainActor.self)` for the app only; 35 annotations removed, 4 kept and pinned; off-main types marked `nonisolated`; V-01 on the M5 twice and after publishing | R:430-431, R:512-514; P2 WP-10, G-10; P1 §6, §8 Q2; RES-swift SW-04, V-01 | no | M | none | M5 session (runtime traps show only there) | 0.6.2 (P1, first) |
 | PLT-02 | Installer on `diskutil` | `diskutil image attach` and `diskutil eject` (with a forced fallback) instead of `hdiutil attach/detach/imageinfo`, deprecated in macOS 27; CI exercises both 0.6.1's and the new path | R:524-525; P2 WP-16 items 1-2, G-16; P1 App C B1 | no | M | none | M5 session (F12; default: back to `hdiutil`) | 0.6.2 (P1) |
-| PLT-03 | SZ-10: the Icon Composer icon | Compiled by `actool`; changes how the icon looks in the Clear and Tinted icon styles | R:520; P2 WP-18; Q-B7; RES-size SZ-10 | yes | S | none | Xcode on the Mac [installed], maintainer taste (Q-B7) [ships only on the maintainer's y to its screenshots] | 0.6.2 (maintainer-run; else 0.7) |
+| PLT-03 | SZ-10: the Icon Composer icon | Compiled by `actool`; changes how the icon looks in the Clear and Tinted icon styles | R:520; P2 WP-18; Q-B7; RES-size SZ-10 | yes | S | none | Xcode on the Mac [installed], maintainer taste (Q-B7) [ships only on the maintainer's y to its screenshots, in Session B's morning batch] | 0.6.2 (inside the hands-free Session B, as TCI-05; else 0.7) |
 | PLT-04 | Private-API contingencies | If Apple breaks MobileDevice, the usbmuxd/lockdown protocol behind `IDeviceTransport`; if macOS 27 hides accessory batteries from apps, `pmset -g accps -xml` | R:603-605, R:664-667 | yes (only on breakage) | L | none | Apple API (a future change) | later (on breakage) |
 | PLT-05 | iOS code kept building without an iOS app (new) | `IOSBatteryProvider` (`BatteryProvider.swift:58-59`) and CI's iOS build of BatteryKit (ci.yml:130-131) continue while the iOS app is not planned: keep as cheap insurance, or drop | as cited; R:705 | no | S | DIS-02 | maintainer taste (stance) [M-2: kept building until it first costs time] | unassigned (new) |
 
@@ -319,7 +323,7 @@ Enhanced Security spike.
 |---|---|---|---|---|---|---|---|---|
 | A11Y-01 | Chart descriptors for VoiceOver | Hourly or daily summaries for the History charts; Sources have no `accessibilityChartDescriptor` (grep) | R:573; P2 App A | yes | M | none | none | not planned |
 | A11Y-02 | Stage 1.4 accessibility pass | The Liquid Glass slider at both ends; Reduce Motion; Prefer Cross-Fade Transitions; Reduce Transparency; Increase Contrast; Show Borders | R:298-301; P2 §6 optional | yes | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
-| A11Y-03 | Contrast audit of the window styles | Accessibility Inspector on every style | R:338, R:536-537; P2 WP-13 item 3; Q-B7 | yes | S | none | Xcode on the Mac [installed, Q-B7] | 0.6.2 (Session B, maintainer-run) |
+| A11Y-03 | Contrast audit of the window styles | Accessibility Inspector on every style | R:338, R:536-537; P2 WP-13 item 3; Q-B7 | yes | S | none | Xcode on the Mac [installed, Q-B7] | 0.6.2 (Session B, hands-free: Accessibility Inspector by computer use) |
 | A11Y-04 | Menu bar icons under Increase Contrast and Reduce Transparency, and on a notch display | `scripts/menu-bar-shots.sh` | R:236-239, R:538-539; P2 §6 optional | yes | S | none | M5 session (optional) | 0.6.2 (optional; else stays open) |
 | A11Y-05 | W0-5: VoiceOver on today's widget; Text size | What VoiceOver says for the bucketed level symbol (63-87 % shows the 75 % symbol); whether Text size reaches desktop widgets | P2 WP-W0 (P2:761), §6 Session A step 4 | yes | S | none | M5 session | 0.6.2 |
 | A11Y-06 | Widget accessibility in 0.7 | One VoiceOver element per block, the level symbol hidden, one summary per chart, colour never the only signal in any rendering mode, text styles with scale limits; today's widget has no accessibility modifiers and a fixed 34 pt number | P2 §8.1, §8.7, §8.15 | yes | M | FEA-06 | M5 session (0.7) | 0.7 (MVP) |
@@ -350,7 +354,7 @@ still signed off in the sessions.
 | Q-B4 | What still looks wrong in Translucent and Clear; which must be fixed before graduation; may Translucent graduate first | quality | FEA-22, FEA-25 | both stay beta | By delegation: both stay beta until the maintainer signs one off in Session B; FEA-25 is not in 0.6.2 (later, with a graduation) |
 | Q-B5 | Announce a graduated style in What's New or only in the notes | docs | FEA-22 | `WhatsNew.version` stays 0.6.0 | By delegation: the release notes only; `WhatsNew.version` stays 0.6.0 |
 | Q-B6 | Are the two sessions' lengths acceptable; which energy scenarios matter most | energy/perf | ENG-01 to ENG-06 | the plan's sessions as written | By delegation: the sessions as written, every scenario as planned |
-| Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 | **The maintainer:** Xcode is already installed. The Xcode-only items run, maintainer-run with Claude's step-by-step list; by delegation, the Icon Composer icon ships only on the maintainer's y to its screenshots |
+| Q-B7 | Is Xcode on the M5; will the maintainer run the Xcode-only items; is the Icon Composer icon wanted | tooling/CI | ENG-11 (instrument), TCI-05 to TCI-07, PLT-03, A11Y-03, QUA-03 (shadows) | those items skipped or moved to 0.7 | **The maintainer:** Xcode is already installed. The Xcode-only items run, since 2026-10-23 inside 0.6.2's hands-free Session B, by the local Claude with computer use where Xcode needs it (TCI-06 dropped); by delegation, the Icon Composer icon ships only on the maintainer's y to its screenshots |
 | Q-B8 | Is the Enhanced Security spike worth a session step | security | SEC-01 | not run | By delegation: no; SEC-01 is not planned |
 | Q-B9 | What happened on F12's first try in 0.6.1's session | distribution | DIS-05 | settled: GitHub's rate limit behind a VPN; Session B checks the remaining requests first | Settled before |
 | Q-B10 | Should a style costing ≥ 15 % more energy give way to Standard under Low Power Mode | feature | FEA-23 | no fallback; decision stays open | By delegation: no fallback; FEA-23 is not planned |
