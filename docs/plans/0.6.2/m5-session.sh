@@ -6412,15 +6412,19 @@ privacy_terms() {
       grep -o '"name" *: *"[^"]*"' | sed 's/^"name" *: *"//; s/"$//' || true
     scutil --nc list 2>/dev/null | sed -n 's/.*"\([^"]*\)".*/\1/p' || true
     network_name
-  } | awk 'length($0) >= 3' | sort -u
+  } | awk 'length($0) >= 3' | grep -v -i -x -E "$GENERIC_NAMES" | sort -u || true
 }
+
+# Names that are a product's, not his (a device or an accessory left with its plain name), and
+# B.md's own words: never terms.
+GENERIC_NAMES='iphone|ipad|ipod|mac|macbook|macbook air|macbook pro|airpods|airpods pro|airpods max|magic mouse|magic keyboard|magic trackpad|apple watch|apple pencil|batterypulse'
 
 # privacy_words: his short user name and first name, matched as whole words only.
 privacy_words() {
   {
     id -un 2>/dev/null || true
     id -F 2>/dev/null | awk '{ print $1 }' || true
-  } | awk 'length($0) >= 3' | sort -u
+  } | awk 'length($0) >= 3' | grep -v -i -x -E 'admin|administrator|user|guest|root|test|owner' | sort -u || true
 }
 
 # privacy_lint <file>: refuses the file if a line names any of them.
