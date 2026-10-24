@@ -574,11 +574,12 @@ hour) whenever Xcode is open.
   choice, 2026-10-22) while the window minimizes and comes back; the Clear tile's preview looks
   the same selected or not; the evidence (screenshots in every style, energy) that decides
   whether Translucent and Clear leave beta
-- [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar, and the icon
-  and charge alone, each in alternated 5-minute runs of 0.6.1 and the release candidate, three
-  pairs after a discarded warm-up, compared by their medians (in the first session two identical
-  runs of one build differed by almost 2×, so one pair can't settle it); each window style, the
-  displays asleep, a burst of plug changes, memory, devices and accessories
+- [ ] Energy, measured on the M5: 0.6.1 against the 0.6.0 baseline in the first session, and the
+  release candidate against 0.6.1 in the second. There, power in the menu bar and the icon and
+  charge alone each run in alternated 5-minute runs of the two builds, three pairs after a
+  discarded warm-up, compared by their medians (in the first session two identical runs of one
+  build differed by almost 2×, so one pair can't settle it); each window style, the displays
+  asleep, a burst of plug changes, memory, devices and accessories
 - [x] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
   table per release of DMG downloads, signature downloads (each in-app install fetches the
   signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
