@@ -527,7 +527,7 @@ enum Safety {
             throw Refusal(description: "nothing to hit-test at (\(Int(point.x)), \(Int(point.y)))")
         }
         for owner in owners {
-            if Rules.isRefused(owner) { throw Refusal(description: "\(owner.name) is at that point: never acted on") }
+            if Rules.isRefused(owner) { throw Refusal(description: "\(owner.publicName) is at that point: never acted on") }
             if !Rules.isApproved(owner) {
                 throw Refusal(description: "\(owner.publicName) is at that point: not on the approved list")
             }
@@ -537,7 +537,7 @@ enum Safety {
 
     /// An app an AX action may target.
     static func checkTarget(_ process: RunningProcess) throws {
-        if Rules.isRefused(process) { throw Refusal(description: "\(process.name) is never acted on") }
+        if Rules.isRefused(process) { throw Refusal(description: "\(process.publicName) is never acted on") }
         if !Rules.isApproved(process) { throw Refusal(description: "\(process.publicName) isn't on the approved list") }
         if process.bundle == "com.apple.systempreferences" { try checkSettingsPane() }
     }
@@ -549,7 +549,7 @@ enum Safety {
             let owner = Processes.process(window.pid)
             if owner.name == "Terminal" { continue }
             if Rules.isRefused(owner) {
-                throw Refusal(description: "\(owner.name) shows a window (a dialog or a prompt)")
+                throw Refusal(description: "\(owner.publicName) shows a window (a dialog or a prompt)")
             }
         }
         if let front = Screen.windows().first(where: { $0.layer == 0 && $0.alpha > 0.01 }),
