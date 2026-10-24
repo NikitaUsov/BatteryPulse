@@ -4629,9 +4629,12 @@ q_universal_access() {
 }
 q_after_measure() { :; }
 q_alert() {
-  osascript -e 'on run argv' -e 'display alert "BatteryPulse Session B" message (item 1 of argv) giving up after 45' \
+  osascript -e 'on run argv' -e 'display alert "BatteryPulse Session B" message (item 1 of argv) giving up after 25' \
     -e 'end run' "$1" >/dev/null 2>&1 &
 }
+
+# q_after_s7: S7's time in the dry run (its launches run in subshells).
+q_after_s7() { :; }
 
 q_pack_temp() {
   ioreg -r -c AppleSmartBatteryPack -a -d 1 >"$LOGS/q-pack.plist" 2>/dev/null || true
@@ -4928,19 +4931,41 @@ q_teardown() {
 }
 
 # q_wait_for <what> <seconds>: nominal thermal state, or HIDIdleTime of 60 s; at most <seconds>.
+# An unread state isn't waited for: the run goes on at once, and its row says what wasn't read
+# (ui missing or failing would otherwise cost every run 20 minutes, and the queue its S6).
 q_wait_for() {
-  local waited=0 sample
+  local waited=0 value
   while [ "$waited" -lt "$2" ]; do
-    sample="$(q_sample)"
     case "$1" in
-      nominal) [ "$(sample_field thermal "$sample")" != nominal ] || return 0 ;;
-      idle) awk -v i="$(sample_field hid_idle_s "$sample")" 'BEGIN { exit !(i + 0 >= 60) }' && return 0 ;;
+      nominal) value="$(sample_field thermal "$(q_sample)")" ;;
+      *) value="$(sample_field hid_idle_s "$(q_sample)")" ;;
+    esac
+    case "$value" in
+      "" | unknown)
+        echo "the $1 state can't be read (ui sample): no wait; the row says so"
+        return 2
+        ;;
+    esac
+    case "$1" in
+      nominal) [ "$value" != nominal ] || return 0 ;;
+      *) awk -v i="$value" 'BEGIN { exit !(i + 0 >= 60) }' && return 0 ;;
     esac
     q_sleep 30
     waited=$((waited + 30))
   done
+  case "$1" in
+    nominal) echo "the thermal state isn't nominal after 10 minutes: the run goes on, its row says so" ;;
+    *) echo "HIDIdleTime stays under 60 s: the run goes on, the touch detector decides" ;;
+  esac
   return 1
 }
+
+# The time S6's pair keeps (2 x 12 minutes, its warning and a margin for the waits): no optional
+# run or retry starts unless it ends before Q_LATE minus this.
+Q_S6_RESERVE=$((25 * 60))
+
+# q_time_for <seconds>: a run that long still leaves S6 its time before the 3-hour cap.
+q_time_for() { [ $(($(q_now) + $1 + Q_S6_RESERVE)) -le "$Q_LATE" ]; }
 
 # q_detect <start> <end> <scenario> <sample at start> <sample at end> <claude at start> <claude at
 # end> <rusage file> <want lpm> <first S6> [<sample before the display went off>]: the detector
@@ -5048,6 +5073,10 @@ q_run() {
     q_not_run "$kind" "$scenario" "$build" "$pair" "pmset -g accps lists no accessory"
     return 0
   fi
+  if { [ "$optional" = yes ] || [ "$kind" = retry ]; } && ! q_time_for $(($(q_minutes "$scenario") * 60)); then
+    q_not_run "$kind" "$scenario" "$build" "$pair" "time kept for S6"
+    return 0
+  fi
   echo "$(clock) run $Q_INDEX: $kind $scenario on $build at $charge %"
   if ! (q_install "$build") >"$LOGS/q-install-$Q_INDEX.txt" 2>&1; then
     q_not_run "$kind" "$scenario" "$build" "$pair" "error (install: $(tail -1 "$LOGS/q-install-$Q_INDEX.txt"))"
@@ -5061,8 +5090,8 @@ q_run() {
     fi
   fi
   if [ "$want" = 0 ] && [ "$(lowpowermode_of Battery)" = 1 ] && q_sudo_ok; then q_lpm 0 || true; fi
-  q_wait_for nominal 600 || echo "the thermal state isn't nominal after 10 minutes: the run goes on, its row says so"
-  q_wait_for idle 600 || echo "HIDIdleTime stays under 60 s: the run goes on, the touch detector decides"
+  q_wait_for nominal 600 || true
+  q_wait_for idle 600 || true
   q_launch
   if ! why="$(q_setup "$scenario" "$Q_INDEX")"; then
     q_teardown "$scenario"
@@ -5071,7 +5100,11 @@ q_run() {
   fi
   q_sleep 60
   if [ "$scenario" = S6 ]; then
-    if [ -z "$Q_DISPLAY_OFF" ]; then first_s6=yes; fi
+    if [ -z "$Q_DISPLAY_OFF" ]; then
+      first_s6=yes
+      # The warning 30 s before the display goes off, not before the install and the quiet minute.
+      q_announce_s6
+    fi
     # S6's lock check: the state before pmset displaysleepnow, which may lock the screen itself.
     s_dark="$(q_sample)"
     let_display_sleep
@@ -5145,6 +5178,14 @@ q_retries() {
       S1 | S2 | S2-LPM)
         case "$done_pairs" in *" $pair "*) continue ;; esac
         done_pairs="$done_pairs$pair "
+        # The pair or neither: a lone B retry would leave its C to S6's time.
+        if ! q_time_for $((2 * $(q_minutes "$scenario") * 60)); then
+          Q_INDEX=$((Q_INDEX + 1))
+          q_not_run retry "$scenario" B "$pair" "time kept for S6"
+          Q_INDEX=$((Q_INDEX + 1))
+          q_not_run retry "$scenario" C "$pair" "time kept for S6"
+          continue
+        fi
         q_run retry "$scenario" B "$pair" yes </dev/null
         q_run retry "$scenario" C "$pair" yes </dev/null
         ;;
@@ -5164,15 +5205,17 @@ q_s7() {
   begin_section 89-s7 "S7, cold launches to menuBarReady (B against C)"
   (s7_launches B 5) || out "- S7 on B: not run: error"
   (s7_launches C 5) || out "- S7 on C: not run: error"
+  q_after_s7
 }
 
-# q_announce_s6: the dark runs are announced, never silent to a person at the Mac: the arm window
-# comes to the front with the warning 30 s ahead (a notification would be hidden by the Focus);
-# no sound, since none plays from `mark away` until his morning continue.
+# q_announce_s6: the dark runs are announced, never silent to a person at the Mac: inside the first
+# S6 run, 30 s before its display goes off, the arm window shows the warning and an alert comes to
+# the front (a notification would be hidden by the Focus); the alert gives up before the display
+# goes off. No sound, since none plays from `mark away` until his morning continue.
 q_announce_s6() {
   local text="The display turns off for 10 minutes on purpose; please don't wake the Mac."
   echo
-  echo "=== $(clock): $text (S6 starts in 30 s) ==="
+  echo "=== $(clock): $text (the display turns off in 30 s) ==="
   q_alert "$text"
   q_sleep 30
 }
@@ -5217,7 +5260,6 @@ queue_run() {
   # Each run is wrapped: a failure is its row's "not run: error", and the queue goes on (never
   # set -e's exit). Nothing in a run reads the plan's standard input.
   while read -r kind scenario build pair optional; do
-    if [ "$scenario" = S6 ] && [ -z "$Q_DISPLAY_OFF" ] && [ "$(q_now)" -lt "$Q_LATE" ]; then q_announce_s6; fi
     case "$kind" in
       warmup | run) q_run "$kind" "$scenario" "$build" "$pair" "$optional" </dev/null || q_not_run "$kind" "$scenario" "$build" "$pair" "error" ;;
       s7) q_s7 </dev/null || true ;;
@@ -6112,9 +6154,11 @@ step_wp18() {
 
 # queue --dry-run [default|low|late]: the queue's order, its retries and its thresholds on any
 # machine, with the world stubbed: no app, no pmset, ioreg or notifyutil, a clock that jumps, a
-# charge that drains 1 % every 10 minutes, and scripted detector events (default: a touched S2, an
-# adapter S1, an LPM S2-LPM, a Claude-active S4w and a slept S4w; low: from 62 %; late: the
-# bedtime unplug 2 hours before the start). Exit status 1 on a broken rule.
+# charge that drains 1 % every 10 minutes, the night's own times (the unplug 20 minutes before the
+# start, the arm's longest cooldown; 6-minute runs, 1 of them the install; S7 3 minutes), and
+# scripted detector events (default: a touched S2, an adapter S1, an LPM S2-LPM, a Claude-active
+# S4w and a slept S4w; low: from 62 %; late: the bedtime unplug 2 hours before the start). Exit
+# status 1 on a broken rule.
 queue_dry_run() {
   local scenario="${1:-default}" unplug problems
   DRY_RUN=1
@@ -6124,7 +6168,7 @@ queue_dry_run() {
   DRY_EVENTS=" "
   DRY_LPM=0
   DRY_CLAUDE_RUN=""
-  unplug="$DRY_T0"
+  unplug=$((DRY_T0 - 20 * 60))
   case "$scenario" in
     default) DRY_EVENTS=" 4:touched 10:adapter 12:lpm 17:claude 18:slept 20:locked " ;;
     low) DRY_CHARGE0=62 ;;
@@ -6162,7 +6206,11 @@ dry_stubs() {
   on_battery() { return 0; }
   q_charge() { echo $((DRY_CHARGE0 - (DRY_CLOCK - DRY_T0) / 600)); }
   battery_percent() { q_charge; }
-  q_install() { if dry_event error; then return 1; fi; }
+  q_install() {
+    if dry_event error; then return 1; fi
+    DRY_CLOCK=$((DRY_CLOCK + 60))
+  }
+  q_after_s7() { DRY_CLOCK=$((DRY_CLOCK + 180)); }
   quit_app() { :; }
   session_settings() { :; }
   set_default() { :; }
@@ -6242,11 +6290,19 @@ dry_checks() {
           if (lastS6 != "") print "a retry came after S6"
         }
         if (s[i] == "S6" && lastS6 == "") lastS6 = i
+        # S6 keeps its time: no optional run or retry starts unless it, and S6 after it, fit
+        # before the cap; one that was skipped for it had to be.
+        need = (kind[i] == "retry" && b[i] == "B" && s[i] ~ /^(S1|S2|S2-LPM)$/) ? 720 : 360
+        # A started run has its measurement start: 2 minutes (the install, the quiet minute) after the check.
+        if (started && optional && start[i] - 120 + need + 1500 > late) print "run " i " (optional or a retry) ate into S6s time"
+        if (status[i] ~ /time kept for S6/ && start[i] + need + 1500 <= late && !(kind[i] == "retry" && b[i] == "C" && status[i - 1] ~ /time kept/))
+          print "run " i " kept time for S6 it had"
         if (s[i] == "S6" && status[i] ~ /locked/) print "run " i " (S6) counted the lock its own display sleep brings"
         if (scenario == "late" && start[i] >= late && status[i] !~ /late/) print "run " i " started after the deadline"
         if (status[i] ~ /late/ && start[i] < late) print "run " i " was late too early"
       }
       if (s[n - 1] != "S6" || b[n - 1] != "B" || s[n] != "S6" || b[n] != "C") print "S6 B C isn t last"
+      if (scenario == "default" && (status[n - 1] ~ /^not run/ || status[n] ~ /^not run/)) print "S6 didn t run in the default night"
       if (firstS1 == "" || lastS2 >= firstS1) print "an S2 run comes after S1 began"
       for (i = 1; i <= n; i++) {
         if (kind[i] != "run" || status[i] !~ /^not valid/) continue
