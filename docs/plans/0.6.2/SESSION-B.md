@@ -61,12 +61,15 @@ Everything below is for you, the session this line started. Your first step is B
   that may take over 2 minutes (`preflight`, `f11 alert`, `burst`, `case`, `memory`, `pages`, `f12
   after`, `v01 check`, every `restore`, `morning`, `send`). Anything near the tool's 10-minute limit
   runs as a background task you wait on: `prepare`, `pages profiling`, `wp18 timing`. While one runs,
-  the screen is the task's: no GUI action; judge the pictures already taken, and make a script call
-  (a `judge`, else `$S heartbeat "<task> running"`) at least every 10 minutes, since after `mark away`
-  the arm window takes a heartbeat older than 20 minutes for a stall and starts the queue. Stop every
-  background task before `ready`.
-- **Heartbeat.** After each step and between computer-use batches: `$S heartbeat "<step> done; ready
-  about HH:MM"`. It prints the GUI phase's minutes left.
+  the screen is the task's: no GUI action; judge the pictures already taken, and keep the heartbeat
+  (below). Stop every background task before `ready`.
+- **Heartbeat.** Every script call but `help`, `status` and `continue` touches it. After `mark away`
+  the arm window takes a heartbeat older than 20 minutes for a stall: it writes `queue.started` at
+  once, and the rest of B2 is lost. So after `mark away` never let 10 minutes pass without a script
+  call, whatever you are doing: a long run of computer-use actions (the audit, the gallery, the
+  extras), a background task, judging. After each step, between computer-use batches and at least
+  every 10 minutes: `$S heartbeat "<step> done, ready about HH:MM"` (a `judge` counts too). It
+  prints the GUI phase's minutes left.
 - **Never act after `ready` or once `queue.started` exists**, until his morning "continue": check
   `$S status` before every step and every computer-use batch. A message that reaches you then gets a
   text-only answer (say: "the results come in the morning"), with no tool call.
@@ -212,10 +215,14 @@ Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.
 
 ## B0b: at the beep (he is there, 4-6 minutes)
 
-1. `$S prepare reads`; read every shot it names and answer `prep-*` (table). If `prep-widgets` is 2,
+1. First `$S ui access`: prepare's reads and P1 use AX before preflight would ask. If it says
+   `ax_trusted=no`, ask him to turn Terminal on under System Settings → Privacy & Security →
+   Accessibility now (his switch, his Touch ID or password), then `$S ui access` again. Then `$S
+   prepare reads`; read every shot it names and answer `prep-*` (table). If `prep-widgets` is 2,
    add the missing small or medium BatteryPulse widget by computer use (the gallery's click-to-add,
    then one slow `$S ui drag`), with `$S change desktop-widgets "<what was there>" "<what you added>"`
-   first, and take `$S shot prepare-desktop-2`.
+   first, and take `$S shot prepare-desktop-2`. Your first computer-use call, here or in step 4,
+   requests access for P10's whole app batch (step 4) at once.
 2. **P1 and the frames:** `$S proof P1 --image <shot> <x> <y>` at a widget's centre (the shot's
    pixels); then `$S widget small <x> <y> <w> <h>` and `$S widget medium ...` in points from P1's
    frames (no large or extra-large: the RC has none), and `$S desktop-spot --image <shot> <x> <y>` on
@@ -227,8 +234,10 @@ Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.
 4. Your proofs: `$S proof P3`, then `$S proof P3 <1|2>` from its pictures; `$S proof P4` (it runs P5
    too), then `$S judge P4-frames <1-3>`; **P10:** one computer-use access request for the whole
    batch (BatteryPulse, System Settings, Finder, Notification Center, the widget host P1 named,
-   TextEdit, Accessibility Inspector, Xcode, and Numbers if the CSV check will run), one widget
-   click-to-add in the gallery and its removal, a screenshot right after the first action (where
+   TextEdit, Accessibility Inspector, Xcode; not Numbers: the CSV check isn't run, B7), one widget
+   click-to-add in the gallery and its removal (`$S change p10-widget none "added"` first, `$S
+   restored p10-widget "<the shot that shows it gone>"` after), a screenshot right after the first
+   action (where
    computer use's own notification lands), one System Settings click; then `$S proof P10 pass|fail
    "<what it showed>"`. An app it refuses: that app's steps go to scripting, else "not checked"; a
    failed gallery click: ask him to add or remove that widget now. Then each command family once,
@@ -266,7 +275,8 @@ block. In this order:
 1. **Memory:** `$S memory` (History → 7 d three times, `phys_footprint` before and after).
 2. **The placed widgets:** `$S shot widgets-placed`. Session A's dead Test widget: one shot, then
    `$S change test-widget "placed" "removed"` and remove it by computer use; it isn't put back. A
-   blank or grey widget anywhere: shoot it, answer, then remove it and add it again by computer use,
+   blank or grey widget anywhere: shoot it, answer, then `$S change <family>-widget "blank" "added
+   again"`, remove it and add it again by computer use, `$S restored <family>-widget "<the shot>"`,
    and note that.
 3. **V-01's other half:** `$S v01 menubar`, answer `V01-menubar`; then Raw Data, History, Demo Mode
    on and off, Check Now (close its offer by its own button) by `ui press`, `ui select-row` and `ui
@@ -289,7 +299,9 @@ block. In this order:
      `--ready`; `$S gradshot clear light settings`; `$S gradshot frosted <light|dark> gallery`. Answer
      each `grad-*`.
    - The contrast audit: `$S open-app "Accessibility Inspector"`, its audit by computer use (clicks
-     only) for each beta style, appearance and page (Overview, History, Settings); answer `audit-*`.
+     only) for each beta style, appearance and page (Overview, History, Settings), each right after
+     the `styleshot <style> bright <look> <page>` that left the window so (the script sets the
+     style, the look and the page; you change none of them otherwise); answer `audit-*`.
      Without the Inspector: `$S audit estimate <style> <look> <page>`, answered 3.
    - V1b: `$S v1b <x> <y> <w> <h>` with the Clear tile's frame in Settings → General; answer `V1b`.
    - Then Clear History by `ui press` (`V01-pages` is answered at item 10).
@@ -343,20 +355,23 @@ run, the retries, S6 last); `restore night`; the night's sleep on the RC.
    the Charge Limit capture if `B-charge-capture` is y and `B-slider-auth` is 1 (`$S charge-limit
    record start`; `$S change charge-limit <his value> 100`; the slider to 100 % by computer use for
    at most 10 minutes; back to his value; `$S restored charge-limit "pmset -g battlimit"`; `$S
-   charge-limit record stop`), whatever B2 moved here, and the exported CSV in Numbers (an English
-   and a Russian region; "Russian not checked" if `-AppleLocale` doesn't take). Last, `$S
-   charge-limit check`: if the limit isn't back, that is the report's first line, and say so.
+   charge-limit record stop`) and whatever B2 moved here. The exported CSV in Numbers isn't run:
+   nothing through the frozen script opens Numbers with a region, and the save and open panels would
+   need typing or file browsing; `$S note "Stage 6 CSV in Numbers not run: no route through the
+   script"`. Last, `$S charge-limit check`: if the limit isn't back, that is the report's first
+   line, and say so.
 5. `$S restore morning`; do the GUI items it lists (brightness, auto-brightness, True Tone, Open at
    login as prepare found it), each `restored`. Anything you can't put back heads the report, for his
    hand.
 6. Ask: "Did you add any allow rule beyond the start line's? Which?" Then `$S note "allow rules he
    added: <his answer>"`, for him to remove after Session R.
-7. `$S batch`: open each `SHEET` for him (Preview, by computer use; or give him the path), and ask its
-   questions: per beta style its contact sheet (`grad-translucent-sheet`, `grad-clear-sheet`), "From
+7. `$S batch`: give him each `SHEET`'s full path to open himself (he types `! open <path>` at your
+   prompt, or uses Finder; you never open a file by computer use, which would mean file browsing or
+   typing), and ask its questions: per beta style its contact sheet (`grad-translucent-sheet`, `grad-clear-sheet`), "From
    0.6.2 on, offer Translucent without the Beta window styles setting? y/n." "And Clear? y/n."
    (`graduate-translucent`, `graduate-clear`), `SZ-10`'s y if it ran, and every item you answered 3
    or unsure. Record each with `--by person`.
-8. `$S send --dry-run`; open its `SHEET` (every attached image) and summarize `~/bp-062/B/B.md` in
+8. `$S send --dry-run`; give him its `SHEET` (every attached image) the same way and summarize `~/bp-062/B/B.md` in
    Russian; on his yes, `$S answer --by person B-send y`, then `$S send`. A lint refusal names a line:
    drop it (`unattach`, or leave the note out), tell him, `send --dry-run` and his yes again. A failed
    push keeps everything in `~/bp-062/B`; `send` can run again later on the same yes.
