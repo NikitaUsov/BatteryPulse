@@ -4159,10 +4159,23 @@ step_f12() {
       rect_shot "$SHOTS/f12/before-medium.png" "$(widget_rect medium)" >/dev/null 2>&1 || true
       if pgrep -x BatteryPulseWidget >/dev/null; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
       out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension")"
+      # Finder's on-screen windows every half second until `f12 after` (at most 10 minutes), so a
+      # window the install opens and closes again is seen too (CGWindowList only).
+      ui_run windows --app Finder 2>/dev/null | grep -c . >"$WORK/f12-finder-before" || true
+      : >"$LOGS/f12-finder.txt"
+      touch "$WORK/f12.watch"
+      (
+        trap '' HUP
+        end=$(($(date +%s) + 600))
+        while [ -f "$WORK/f12.watch" ] && [ "$(date +%s)" -lt "$end" ]; do
+          printf '%s\t%s\n' "$(date +%s)" "$(ui_run windows --app Finder 2>/dev/null | grep -c . || true)" >>"$LOGS/f12-finder.txt"
+          sleep 0.5
+        done
+      ) </dev/null >/dev/null 2>&1 &
       echo "DO (session): Check for Updates, then Install and Relaunch, by AX presses; then: $SCRIPT f12 after"
       ;;
     after)
-      local waited=0 lines started swap
+      local waited=0 lines started swap found left ms verdict swap_at swap_epoch pid lstart early="" failures finder
       until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = 0.6.1 ] || [ "$waited" -ge 120 ]; do
         sleep 1
         waited=$((waited + 1))
@@ -4176,8 +4189,34 @@ step_f12() {
       out_block "$LOGS/f12-update.txt"
       swap="$(sed -n 's/.*Widget extension before the swap: \(.*\)/\1/p' "$LOGS/f12-update.txt" | head -1 || true)"
       out "- the pre-swap extension end (WP-16 item 6): ${swap:-no line}$(if [ "$(cat "$WORK/f12-extension" 2>/dev/null)" = no ]; then echo "; no extension ran before Install: not exercised"; fi)"
-      started="$(ps -o lstart= -p "$(pgrep -x BatteryPulseWidget | head -1)" 2>/dev/null || echo "none running")"
-      out "- the BatteryPulseWidget process now: started $started"
+      # WP-16 item 6's checks (PLAN.md F12, Appendix C): every process the installer found ended,
+      # by SIGTERM or SIGKILL, within 1,500 ms; no BatteryPulseWidget process from before the swap;
+      # neither eject failure; no Finder window during the install.
+      found="$(sed -n 's/^\([0-9]*\) found,.*/\1/p' <<<"$swap")"
+      left="$(sed -n 's/.* \([0-9]*\) still running,.*/\1/p' <<<"$swap")"
+      ms="$(sed -n 's/.*, \([0-9]*\) ms$/\1/p' <<<"$swap")"
+      if [ -z "$found" ] || [ -z "$left" ] || [ -z "$ms" ]; then verdict="not checked (no pre-swap line)"
+      elif [ "$found" = 0 ]; then verdict="not exercised (none found)"
+      elif [ "$left" = 0 ] && [ "$ms" -le 1500 ]; then verdict="yes ($found in $ms ms)"
+      else verdict="no ($left still running, $ms ms)"; fi
+      out "- every extension process the installer found ended within 1,500 ms: $verdict"
+      swap_at="$(entries "$LOGS/f12-update.ndjson" | awk -F '\t' 'index($3, "Widget extension before the swap") { print substr($1, 1, 19); exit }')"
+      swap_epoch="$(date -j -f '%Y-%m-%d %H:%M:%S' "$swap_at" +%s 2>/dev/null || true)"
+      started=""
+      for pid in $(pgrep -x BatteryPulseWidget 2>/dev/null || true); do
+        lstart="$(ps -o lstart= -p "$pid" 2>/dev/null || true)"
+        [ -n "$lstart" ] || continue
+        started="$started ${lstart# }"
+        if [ -n "$swap_epoch" ] && [ "$(date -j -f '%a %b %d %T %Y' "$lstart" +%s 2>/dev/null || echo "$swap_epoch")" -lt "$swap_epoch" ]; then
+          early="$early $pid"
+        fi
+      done
+      out "- BatteryPulseWidget processes now: ${started:- none running}; started before the swap (${swap_at:-its time unknown}): $(if [ -n "$early" ]; then echo "yes (not valid)"; elif [ -n "$swap_epoch" ]; then echo no; else echo "not checked"; fi)"
+      failures="$(messages "$LOGS/f12-update.ndjson" | grep -c -F -e "it can't be ejected by force" -e "Ejecting the update's disk image failed" || true)"
+      out "- \"isn't in diskutil info; it can't be ejected by force\" or \"Ejecting the update's disk image failed\" lines: ${failures:-0} (must be 0)"
+      rm -f "$WORK/f12.watch"
+      finder="$(awk -F '\t' '$2 + 0 > max { max = $2 + 0 } END { print NR " samples, at most " max + 0 }' "$LOGS/f12-finder.txt" 2>/dev/null || true)"
+      out "- Finder's on-screen windows during the install: ${finder:-not sampled}, against $(cat "$WORK/f12-finder-before" 2>/dev/null || echo unknown) before (more means a window opened)"
       click_desktop || true
       sleep 2
       rect_shot "$SHOTS/f12/after-small.png" "$(widget_rect small)" >/dev/null 2>&1 || true
