@@ -647,16 +647,27 @@ Widgets you configure, plus the device JSON's dates, the anonymous version count
 Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
-  defaults that keep a placed widget looking as it does today. The Battery widget in small,
-  medium and large (extra large if its layout is approved), and an Accessories widget if 0.6.2's
-  sandbox spike passes; History and iPhone & iPad widgets later unless their data path is proven.
-  The main value and visual, the details per size, clock time or time left, level colours or
-  monochrome; every rendering mode, device names hidden where the widget is redacted, clicks that
-  open the matching page, VoiceOver. Which fields fit which size is decided in BatteryCore and
-  tested on Linux. First, in 0.6.2, throwaway builds on the M5 answer what the design depends on:
-  App Intents metadata in a SwiftPM build, a file the app writes that the sandboxed widget can
-  read, accessory reads from the sandbox, and placed widgets surviving the move to a configurable
-  widget
+  defaults that keep a placed widget looking as it does today: the main value and visual, the
+  details per size, clock time or time left, level colours or monochrome; every rendering mode,
+  device names hidden where the widget is redacted, clicks that open the matching page,
+  VoiceOver. Which fields fit which size is decided in BatteryCore and tested on Linux. In
+  phases:
+  - 0.6.2, throwaway builds on the M5 for what the design depends on, plus the size headroom
+    (K-03 and `-internalize-at-link`) and the read off the main actor that the widget's provider
+    reuses. Their first answers (2026-10-23): a SwiftPM build gets the App Intents metadata and
+    the edit sheet shows the parameters; the sandboxed widget reads a file the app writes, and
+    reads accessory batteries itself; a widget placed by 0.6.1 survives the move to a
+    configurable widget if the old widget extension has ended before the swap, which 0.6.2's
+    installer sees to;
+  - the 0.7 MVP, never cut: the Battery widget in small, medium and large (extra large only if
+    its layout is approved), Layout Automatic or Custom, status lines, the read time, empty
+    states and accessibility, the reload planner, and the Accessories widget (all of them, or
+    the lowest);
+  - 0.7's stretch, else 1.1: the small copy of the last readings the app writes for the widgets
+    (the feed), and with it the History widget (with the 90-day capacity and cycle trend) and an
+    iPhone & iPad widget;
+  - after 1.0: a Refresh button, the extra-large dashboard and portrait size, per-row links,
+    chosen accessories
 - [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
   (`firstUseDate` is a number of seconds since 2001 today), and every top-level JSON object gains
   a format version, with a line in the release notes, because scripts that read it have to change
