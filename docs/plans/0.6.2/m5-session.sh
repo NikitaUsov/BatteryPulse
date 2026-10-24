@@ -85,6 +85,19 @@ APP="/Applications/BatteryPulse.app"
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
+# The account's own home. On the Mac it comes from the user database, and HOME must be it: a run
+# with another HOME would find no fence, take itself for Session A and record its changes in a
+# folder no restore reads.
+ACCOUNT_HOME="$HOME"
+if [ "$(uname -s)" = Darwin ]; then
+  ACCOUNT_HOME="$(dscl . -read "/Users/$(id -un)" NFSHomeDirectory 2>/dev/null |
+    awk 'NR == 1 { sub(/^NFSHomeDirectory:[ ]*/, ""); if ($0 != "") { print; exit } next } { sub(/^ +/, ""); print; exit }' ||
+    true)"
+  if [ -z "$ACCOUNT_HOME" ] || [ "$HOME" != "$ACCOUNT_HOME" ]; then
+    echo "error: HOME ($HOME) isn't the account's home folder (${ACCOUNT_HOME:-unreadable}, dscl): nothing was done" >&2
+    exit 1
+  fi
+fi
 case "$HERE" in
   "$HOME"/*) SCRIPT="bash ~${HERE#"$HOME"}/m5-session.sh" ;;
   *) SCRIPT="bash $HERE/m5-session.sh" ;;
@@ -93,16 +106,19 @@ esac
 # line's one allow rule), A otherwise. BP_SESSION overrides it only off the Mac (a dry run
 # elsewhere): on the Mac the path alone decides, so no variable turns Session B's fence off.
 case "$HERE" in
-  "$HOME"/bp-062/B/run/*) SESSION=B ;;
+  "$ACCOUNT_HOME"/bp-062/B/run/*) SESSION=B ;;
   *) SESSION=A ;;
 esac
 if [ "$(uname -s)" != Darwin ]; then SESSION="${BP_SESSION:-$SESSION}"; fi
 # Session B's folder, whatever this run's own folder is: the night fence lives there.
-B_HOME="$HOME/bp-062/B"
-# queue --dry-run (CI on Linux) is Session B's queue in a folder of its own.
+B_HOME="$ACCOUNT_HOME/bp-062/B"
+# queue --dry-run (CI on Linux) is Session B's queue in a folder of its own. On the Mac nothing
+# else moves the folder: a BP_WORK of the caller's would hold no fence and no change record.
 if [ "${1:-}" = queue ] && [ "${2:-}" = --dry-run ]; then
   SESSION=B
   BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-062-dry.XXXXXX")"
+elif [ "$(uname -s)" = Darwin ]; then
+  BP_WORK=""
 fi
 case "$SESSION" in
   A) RESULTS_BRANCH="claude/062-session-a" ;;
@@ -114,8 +130,8 @@ case "$SESSION" in
 esac
 TAB="$(printf '\t')"
 # BP_WORK only moves the folder for a dry run of the bookkeeping commands (help, answer, note,
-# status, send --dry-run, queue --dry-run) on another machine.
-WORK="${BP_WORK:-$HOME/bp-062/$SESSION}"
+# status, send --dry-run, queue --dry-run) on another machine, and for queue --dry-run.
+WORK="${BP_WORK:-$ACCOUNT_HOME/bp-062/$SESSION}"
 BACKUP="$WORK/backup"
 BUILDS="$WORK/builds"
 BIN="$WORK/bin"
@@ -924,6 +940,9 @@ step_attach() {
 step_unattach() {
   [ $# -eq 1 ] || fail "usage: $SCRIPT unattach <file name in publish/>"
   [ -f "$PUBLISH/captions.tsv" ] || fail "nothing is attached"
+  # Only an attached image's own name: never a path, so no other file is ever removed.
+  case "$1" in */* | .* | "") fail "unattach takes the name of an attached image in publish/, not a path" ;; esac
+  cut -f1 "$PUBLISH/captions.tsv" | grep -q -x -F -- "$1" || fail "$1 isn't attached (publish/captions.tsv)"
   awk -F '\t' -v name="$1" '$1 != name' "$PUBLISH/captions.tsv" >"$PUBLISH/captions.tmp"
   mv "$PUBLISH/captions.tmp" "$PUBLISH/captions.tsv"
   rm -f "$PUBLISH/$1"
@@ -2793,6 +2812,10 @@ register_shot() {
 # on the generated bright or busy wallpaper, since glass shows what lies behind it.
 attach_allowed() {
   local path line style paper size screen
+  # A remembered device shows by name in the sidebar (prepare removes them for the session).
+  if grep -q '"name"' "$SUPPORT/Devices/devices.json" 2>/dev/null; then
+    fail "BatteryPulse remembers a device by name ($SUPPORT/Devices/devices.json), which the sidebar shows: nothing is attached while it does"
+  fi
   path="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
   case "$path" in
     "$SHOTS"/* | "$REC"/*) ;;
@@ -2879,12 +2902,37 @@ ancestor_pids() {
   done
 }
 
-# caller_is_arm: the arm window's process (its pid in arm.pid) is this call's ancestor.
-caller_is_arm() {
-  local arm
-  arm="$(cat "$WORK/arm.pid" 2>/dev/null || true)"
-  [ -n "$arm" ] && ancestor_pids | grep -qx "$arm"
+# proc_start <pid>: when the process started, in seconds since 1970 (ui compares the same,
+# pbi_start_tvsec): arm.pid and queue.started hold it beside the pid, so a later process that got
+# the same pid (after a reboot or a kill) isn't taken for the arm window.
+proc_start() {
+  local started
+  started="$(LC_ALL=C ps -o lstart= -p "$1" 2>/dev/null | tr -s ' ' | sed 's/^ //; s/ $//' || true)"
+  [ -n "$started" ] || return 0
+  if [ "$(uname -s)" = Darwin ]; then
+    started="$(LC_ALL=C date -j -f '%a %b %d %T %Y' "$started" +%s 2>/dev/null || true)"
+  else
+    started="$(date -d "$started" +%s 2>/dev/null || true)"
+  fi
+  case "$started" in "" | *[!0-9]*) return 0 ;; esac
+  echo "$started"
 }
+
+# arm_of <file>: the arm window's "<pid> <start>", the first two fields of arm.pid or queue.started.
+arm_of() { awk 'NR == 1 { print $1, $2 }' "$1" 2>/dev/null || true; }
+
+# arm_runs <pid> <start>: that process runs, and started then.
+arm_runs() { [ -n "$1" ] && [ -n "$2" ] && [ "$(proc_start "$1")" = "$2" ]; }
+
+# arm_is_ancestor <file>: the arm window that file records is this call's ancestor.
+arm_is_ancestor() {
+  local pid="" start=""
+  read -r pid start <<<"$(arm_of "$1")" || true
+  [ -n "$pid" ] && ancestor_pids | grep -qx "$pid" && arm_runs "$pid" "$start"
+}
+
+# caller_is_arm: the arm window's process (arm.pid) is this call's ancestor.
+caller_is_arm() { arm_is_ancestor "$WORK/arm.pid"; }
 
 # b_fence: once `ready` is up, or while queue.started exists, no command acts until his morning
 # continue (§6 "Never act after ready"); a continue counts only when it is newer than ready. `ui`
@@ -2899,15 +2947,8 @@ b_fence() {
   night_fence
 }
 
-# The arm window of ~/bp-062/B (arm.pid, or the first field of queue.started) is this call's
-# ancestor.
-caller_is_b_arm() {
-  local pid
-  for pid in "$(cat "$B_HOME/arm.pid" 2>/dev/null || true)" "$(cut -d' ' -f1 "$B_HOME/queue.started" 2>/dev/null || true)"; do
-    if [ -n "$pid" ] && ancestor_pids | grep -qx "$pid"; then return 0; fi
-  done
-  return 1
-}
+# The arm window of ~/bp-062/B (arm.pid, or queue.started) is this call's ancestor.
+caller_is_b_arm() { arm_is_ancestor "$B_HOME/arm.pid" || arm_is_ancestor "$B_HOME/queue.started"; }
 
 # night_fence: Session B's fence for every run of this script, wherever it runs from and whatever
 # its own folder (his checkout, Session A's commands): ~/bp-062/B's queue.started, or its ready
@@ -3176,17 +3217,17 @@ step_batch() {
 
 # MARK: - Session B: the hands (ui), the windows and the shots
 
-# ui <command...>: the ui helper with what preflight and the session recorded (PLAN.md WP-21): the
-# tap (P6), the widget hosts (P1), the System Settings panes it may act in (P8) and the widgets'
-# frames (`widget`). Every action passes its own safety rules, the fences among them.
+# ui <command...>: the ui helper. It reads what preflight and the session recorded (PLAN.md WP-21)
+# from ~/bp-062/B itself, never from the environment: the tap (ui-tap, P6), the widget hosts
+# (ui-hosts, P1), the System Settings panes it may act in (ui-panes, P8), the widgets' frames
+# (widgets.tsv, `widget`) and the apps the script opened (launched.tsv). Every action passes its own
+# safety rules, the fences among them.
 ui_run() {
   if [ ! -x "$BIN/ui" ]; then
     warn "the ui helper isn't built (see $BIN/ui.log)"
     return 1
   fi
-  BP_UI_TAP="$(cat "$WORK/ui-tap" 2>/dev/null || echo hid)" BP_UI_HOSTS="$(cat "$WORK/ui-hosts" 2>/dev/null || true)" \
-    BP_UI_PANES="$(cat "$WORK/ui-panes" 2>/dev/null || true)" \
-    BP_UI_WIDGETS="$(cut -f2 "$WORK/widgets.tsv" 2>/dev/null || true)" BP_FENCE="$FENCE" "$BIN/ui" "$@"
+  "$BIN/ui" "$@"
 }
 
 # The main window's CGWindowID, from CGWindowList (no AX), for a click's --window.
@@ -3328,11 +3369,37 @@ step_pane() {
 }
 
 # widget <family> <x> <y> <w> <h>: a placed widget's frame in points (from proof P1's `ui hit`),
-# for F8's and F12's crops. AX can't move widgets, so their frames come from here.
+# for F8's and F12's crops and for ui's window-list rule and `tree --inside`. AX can't move
+# widgets, so their frames come from here. A frame is recorded only when it is no larger than its
+# family's widget (one in pixels is twice as large) and `ui hit` finds a widget host's element
+# labelled BatteryPulse at its centre.
 step_widget() {
   b_only widget
   [ $# -eq 5 ] || fail "usage: $SCRIPT widget small|medium|large|xlarge <x> <y> <w> <h>"
-  case "$1" in small | medium | large | xlarge) ;; *) fail "a family is small, medium, large or xlarge" ;; esac
+  local limit number hit bundle
+  # ui.swift's Rules.widgetLimits, in points, with room to spare.
+  case "$1" in
+    small) limit="220 220" ;;
+    medium) limit="440 220" ;;
+    large) limit="440 460" ;;
+    xlarge) limit="880 460" ;;
+    *) fail "a family is small, medium, large or xlarge" ;;
+  esac
+  for number in "$2" "$3" "$4" "$5"; do
+    case "$number" in "" | *[!0-9.-]*) fail "a frame is four numbers in points: x y width height" ;; esac
+  done
+  awk -v w="$4" -v h="$5" -v l="$limit" 'BEGIN { split(l, m, " "); exit !(w >= 20 && h >= 20 && w <= m[1] && h <= m[2]) }' ||
+    fail "a $1 widget is at most ${limit% *} x ${limit#* } points: $4 x $5 isn't one (pixels instead of points?); nothing recorded"
+  hit="$(ui_run hit "$(awk -v x="$2" -v w="$4" 'BEGIN { printf "%d", x + w / 2 }')" \
+    "$(awk -v y="$3" -v h="$5" 'BEGIN { printf "%d", y + h / 2 }')" 2>&1)" ||
+    fail "ui hit at the frame's centre: $(head -1 <<<"$hit"); nothing recorded"
+  bundle="$(sed -n 's/^process: .* (\(.*\), pid .*/\1/p' <<<"$hit" | head -1 || true)"
+  case " com.apple.notificationcenterui com.apple.chronod $(tr '\n' ' ' <"$WORK/ui-hosts" 2>/dev/null || true) " in
+    *" ${bundle:-none} "*) ;;
+    *) fail "the frame's centre isn't a widget host's (${bundle:-unknown}): nothing recorded" ;;
+  esac
+  grep -q '^batterypulse_label: yes' <<<"$hit" ||
+    fail "no element labelled BatteryPulse at the frame's centre: not a BatteryPulse widget, nothing recorded"
   touch "$WORK/widgets.tsv"
   awk -F '\t' -v f="$1" '$1 != f' "$WORK/widgets.tsv" >"$WORK/widgets.tmp"
   mv "$WORK/widgets.tmp" "$WORK/widgets.tsv"
@@ -3429,6 +3496,11 @@ fetch_builds_b() {
 step_prepare_b() {
   check_tools
   [ "$(answer_of B-yes)" = y ] || fail "first his one yes to the list of changes: $SCRIPT answer --by person B-yes y"
+  # Once the session has changed his app and data, a fresh backup would keep the session's state
+  # (the RC, no remembered devices) as his.
+  if [ "${1:-}" = --fresh-backup ] && [ -n "$(original_of app)" ]; then
+    fail "the session has changed his app and data already (changes.tsv): a fresh backup now would keep the session's state as his; nothing was done"
+  fi
   mkdir -p "$WORK" "$BUILDS" "$BIN" "$SHOTS" "$REC" "$LOGS" "$SECTIONS"
   touch "$CHANGES" "$HEARTBEAT"
   # S5's cover and the minimized TextEdit beside Standard and Frosted (COVER).
@@ -3468,6 +3540,15 @@ step_prepare_b() {
     record_change bp-settings "his settings (backup)" "the session's settings"
     record_change bp-support "his data (backup)" "the session's data"
     record_change widget-data "none" "the RC's widget data"
+  fi
+  # His remembered iPhones and iPads: outside Demo Mode the sidebar's Devices section lists them by
+  # name, so every shot of the main window would show them. They stay in the backup, which
+  # restore_all puts back, and are gone for the session.
+  if [ -d "$SUPPORT/Devices" ]; then
+    [ -d "$BACKUP/support/Devices" ] || fail "his remembered devices aren't in the backup ($BACKUP/support/Devices): nothing was removed"
+    [ -n "$(original_of remembered-devices)" ] || record_change remembered-devices "his (backup)" "none during the session"
+    quit_app
+    rm -rf "$SUPPORT/Devices"
   fi
   install_build C --no-launch
   relaunch_b
@@ -5664,6 +5745,7 @@ queue_medians() {
 # MARK: - Session B: the arm window (B0b to B5; WP-21's arm)
 
 ARM_PID=""
+ARM_START=""
 ARM_SUDO=""
 ARM_GUI_CAFFEINATE=""
 ARM_QUEUE_CAFFEINATE=""
@@ -5792,7 +5874,7 @@ arm_return() {
 # arm_decide <ready|stale>: queue.started at once, before the stale path's restore and the
 # cooldown, so a session that wakes up later can't act during a run.
 arm_decide() {
-  printf '%s %s %s\n' "$ARM_PID" "$(clock)" "$1" >"$FENCE"
+  printf '%s %s %s %s\n' "$ARM_PID" "$ARM_START" "$(clock)" "$1" >"$FENCE"
   arm_say "the queue is decided ($1): $FENCE is up"
   if [ "$1" = stale ]; then
     [ -f "$READY_FILE" ] || printf 'stale %s\n' "$(clock)" >"$READY_FILE"
@@ -5895,11 +5977,16 @@ step_arm() {
     return 0
   fi
   [ -t 0 ] || fail "arm runs in its own Terminal window: $SCRIPT arm open"
-  if [ -f "$WORK/arm.pid" ] && kill -0 "$(cat "$WORK/arm.pid")" 2>/dev/null; then fail "an arm window runs already"; fi
+  local running="" running_start=""
+  read -r running running_start <<<"$(arm_of "$WORK/arm.pid")" || true
+  if arm_runs "$running" "$running_start"; then fail "an arm window runs already"; fi
   [ ! -f "$WORK/queue.done" ] || fail "the queue ran already ($(cat "$WORK/queue.done"))"
   mkdir -p "$LOGS"
   ARM_PID=$$
-  echo "$ARM_PID" >"$WORK/arm.pid"
+  ARM_START="$(proc_start "$ARM_PID")"
+  # Without its start time, ui and the fences wouldn't know the arm window for theirs.
+  [ -n "$ARM_START" ] || fail "this window's start time can't be read (ps -o lstart): the arm doesn't start"
+  echo "$ARM_PID $ARM_START" >"$WORK/arm.pid"
   printf '\033]0;BatteryPulse arm\007'
   trap arm_exit EXIT
   # A waiter's SIGUSR1 ends the prompt's wait early; the 60-second timeout is the backstop.
@@ -5979,23 +6066,30 @@ step_ready() {
   echo "READY: end the turn now. A message that reaches the session after this gets a text-only answer (results in the morning), with no tool call."
 }
 
-# back_since <epoch>: pmset -g log shows him back after that time: the display turned on, or a
-# wake by the lid or by his hand (the morning's lid close and login, V-01's lid step).
+# back_since <epoch>: pmset -g log shows the lid after that time: a wake because it opened, or a
+# sleep because it closed (the morning's lid close, V-01's lid step). Software can't move the lid,
+# but it can turn the display on and make user activity (a posted move, caffeinate -u: proof P6),
+# so neither "Display is turned on" nor a UserActivity wake counts.
 back_since() {
   pmset -g log 2>/dev/null | awk -v from="$(epoch_stamp "$1")" '
-    substr($0, 1, 19) > from && (/Display is turned on/ || ($4 == "Wake" && /LidOpen|Lid Open|UserActivity|User Activity/)) { found = 1 }
+    substr($0, 1, 19) > from && (($4 == "Wake" && /LidOpen|Lid Open/) || ($4 == "Sleep" && /Clamshell Sleep/)) { found = 1 }
     END { exit !found }'
 }
 
+# proof_detail <id>: what a proof recorded (proofs.tsv's third field).
+proof_detail() { awk -F '\t' -v id="$1" '$1 == id { detail = $3 } END { print detail }' "$PROOFS" 2>/dev/null || true; }
+
 # continue (B7): his morning word, which opens the fence. Only after the night: the queue's end
 # (queue.done), or an arm window that is gone with ready up (it stopped early). Only with him at
-# the Mac: HIDIdleTime readable and at most 15 minutes, and pmset -g log showing him back after
-# the queue's last sign of life (the display turned on, or a lid or user wake). So a session that
-# wakes up at night, or a continue during B0-B2, can't open the fence itself; ui and every command
-# take a continue only when it is newer than ready.
+# the Mac, by what software can't make: the screen unlocked at the console with the lid open (his
+# login), the input idle at most 15 minutes (HIDIdleTime, or the HID event state where proof P6
+# found it blind to posted events), and pmset -g log showing the lid closed or opened after the
+# queue's last sign of life. So a session that wakes up at night, or a continue during B0-B2,
+# can't open the fence itself; ui and every command take a continue only when it is newer than
+# ready.
 step_continue() {
   b_only continue
-  local pid alive="" idle since file at
+  local pid start alive="" idle since file at state source
   if [ ! -f "$READY_FILE" ]; then
     echo "continue isn't needed: ready isn't up, so nothing is fenced"
     return 0
@@ -6004,8 +6098,11 @@ step_continue() {
     echo "continued already at $(cat "$WORK/continued")"
     return 0
   fi
-  for pid in "$(cat "$WORK/arm.pid" 2>/dev/null || true)" "$(cut -d' ' -f1 "$FENCE" 2>/dev/null || true)"; do
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then alive="$pid"; fi
+  for file in "$WORK/arm.pid" "$FENCE"; do
+    pid=""
+    start=""
+    read -r pid start <<<"$(arm_of "$file")" || true
+    if arm_runs "$pid" "$start"; then alive="$pid"; fi
   done
   if [ -n "$alive" ]; then
     if [ ! -f "$WORK/unplug.epoch" ]; then
@@ -6015,12 +6112,25 @@ step_continue() {
     fi
     fail "the arm window is finishing the queue's end: continue again in a minute"
   fi
-  idle="$(idle_seconds)"
+  # Software can't unlock the screen: his password or Touch ID did.
+  state="$(ui_run locked 2>/dev/null || true)"
+  if [ "$state" != "locked=no lid=open console=yes" ]; then
+    fail "the screen isn't unlocked at the console with the lid open (${state:-ui locked unread}): continue comes after he has logged in; nothing was opened"
+  fi
+  # A posted move or caffeinate -u resets HIDIdleTime (proof P6); the HID event state, where P6
+  # found that it ignores posted events, only counts his hands.
+  if proof_detail P6 | grep -q -F 'ignores posted events: yes'; then
+    idle="$(state_seconds)"
+    source="the HID event state"
+  else
+    idle="$(idle_seconds)"
+    source="HIDIdleTime"
+  fi
   case "$idle" in
-    "" | *[!0-9.]*) fail "HIDIdleTime can't be read, and continue needs it (at most 900 s): nothing was opened" ;;
+    "" | *[!0-9.]*) fail "$source can't be read, and continue needs it (at most 900 s): nothing was opened" ;;
   esac
   if ! awk -v i="$idle" 'BEGIN { exit !(i + 0 <= 900) }'; then
-    fail "HIDIdleTime is $idle s: continue comes after he is at the Mac (the lid close and his login)"
+    fail "$source says $idle s since the last input: continue comes after he is at the Mac (the lid close and his login)"
   fi
   # The queue's last sign of life: its end, its fence, its log or ready, whichever is newest.
   since=0
@@ -6030,7 +6140,7 @@ step_continue() {
     if [ "$at" -gt "$since" ]; then since="$at"; fi
   done
   if ! back_since "$since"; then
-    fail "pmset -g log shows nothing of him since $(epoch_stamp "$since") (no display turned on, no lid or user wake): he closes the lid for a minute, opens it and logs in, then continue"
+    fail "pmset -g log shows no lid close or open since $(epoch_stamp "$since"): he closes the lid for a minute, opens it and logs in, then continue"
   fi
   if [ -f "$FENCE" ]; then
     rm -f "$FENCE"
@@ -6092,7 +6202,7 @@ restore_how() {
       if wallpaper_is_still; then echo script; else echo "computer use from shots/prepare-desktop.png (a dynamic or aerial wallpaper: System Events would set a still)"; fi
       ;;
     appearance-auto) echo "computer use (System Settings → Appearance → Auto)" ;;
-    appearance | widget-languages | app | bp-settings | bp-support | widget-data | lowpowermode-battery) echo script ;;
+    appearance | widget-languages | app | bp-settings | bp-support | widget-data | remembered-devices | lowpowermode-battery) echo script ;;
     open-at-login) echo "AX (Settings → General → Open at login)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
     widgets) echo "computer use (the widgets he didn't keep)" ;;
@@ -6171,6 +6281,9 @@ restore_morning() {
   mark_restored bp-settings "script"
   mark_restored bp-support "script"
   mark_restored widget-data "script"
+  if [ -n "$(original_of remembered-devices)" ] && [ -d "$SUPPORT/Devices" ]; then
+    mark_restored remembered-devices "script (from the backup), read back"
+  fi
   # Restored only as pmset reads it now (the morning has no sudo ticket: restore_all prints the
   # PUT BACK line otherwise, and B.md heads its list with it).
   if [ -n "$(original_of lowpowermode-battery)" ] && lowpowermode_as_backup; then
@@ -6571,6 +6684,7 @@ queue_dry_run() {
   esac
   mkdir -p "$LOGS" "$SECTIONS" "$SHOTS"
   ARM_PID=$$
+  ARM_START="$(proc_start "$ARM_PID")"
   printf 'epoch\tupdate_time\tremaining_mah\tsystem_power_in_mw\texternal\tpack_temperature\thid_idle_s\tlocked\tlid\tscreensaver\tclaude_children\tclaude_cpu_s\n' \
     >"$LOGS/sampler.tsv"
   dry_stubs
