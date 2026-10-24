@@ -5618,10 +5618,29 @@ appendix_rows_b() {
 | V-01 on the RC: executor lines, crash reports, the answers | V-01 on the RC; Answers |
 | G-13a: the 8 glass-sheet cases, Standard and Frosted | The glass-sheet cases; fill-* answers |
 | G-13b: the 24 shots and the 19 graduation shots, V1b, the contrast audit, the two plain questions | Answers (shot-*, grad-*, V1b, audit-*, graduate-*) |
-| G-16: F12 and its update log, the pre-swap extension end (WP-16 item 6) | F12 |
+| G-16: F12 and its update log, the pre-swap extension end (WP-16 item 6), the eject-failure lines, Finder's windows during the install, widget processes from before the swap, the 1-4 answer | F12; Answers (F12-widget) |
+| G-14b: `read cached` p50 and `registry.missed` per hour of logged runtime | The energy queue (the G-14b line) |
 | F6, F8 (G-15), F9, F11 | Answers (F6-*, F8-*, F9-*, F11-*); F11 |
 | WP-17's after: page.switch per page | Page switches |
+| Clear's shadows in Instruments | Page switches under xctrace |
+| WP-18: SUI-17's previews, SUI-19's 5 slowest bodies, SZ-10's icon and his answer | WP-18: SUI-19's type-check timing; Answers (SUI-17, SZ-10) |
+| The hands-free mode's cost: his minutes per moment, the GUI phase's length, the steps not checked or not run | Timeline; Not checked or not run; Notes |
+| WP-23's optional device check (Connected over Wi-Fi, then Not connected) | Notes (when it ran) |
 EOF
+}
+
+# timeline_b: when each phase began and ended, from the session's own files (the hands-free
+# mode's cost, Appendix C).
+timeline_b() {
+  echo "## Timeline"
+  echo
+  echo "- prepare (B0a): $(cat "$WORK/prepare.time" 2>/dev/null || echo "-")"
+  echo "- mark away (the GUI phase begins): $(cat "$WORK/away" 2>/dev/null || echo "-")"
+  echo "- restore gui (B3): $(if [ -f "$WORK/gui.done" ]; then epoch_stamp "$(mtime_of "$WORK/gui.done")"; else echo "-"; fi)"
+  echo "- ready: $(cat "$READY_FILE" 2>/dev/null || echo "-")"
+  echo "- the queue's end: $(cat "$WORK/queue.done" 2>/dev/null || echo "-")"
+  echo "- continue (B7): $(cat "$WORK/continued" 2>/dev/null || echo "-")"
+  echo
 }
 
 build_report_b() {
@@ -5643,6 +5662,7 @@ build_report_b() {
   echo
   appendix_rows_b
   echo
+  timeline_b
   echo "## Answers"
   echo
   echo "| ID | Question | Answer | By | Time | Note |"
