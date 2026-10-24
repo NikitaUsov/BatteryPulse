@@ -11,6 +11,10 @@ final class MockBatteryProvider: BatteryProvider {
     private(set) var readCount = 0
     /// What each read was asked to fetch.
     private(set) var scopes: [BatteryReadScope] = []
+    /// Whether each read was asked to fetch the registry.
+    var registryReads: [Bool] { scopes.map(\.rereadsRegistry) }
+    /// Whether each read was asked for every SMC key.
+    var allSMCKeyReads: [Bool] { scopes.map(\.readsAllSMCKeys) }
     private(set) var handler: (@MainActor @Sendable () -> Void)?
     let cancellations = LockedValue(0)
 
@@ -224,8 +228,11 @@ private func reading(connected: Bool) -> BatteryReading {
 @Suite(.timeLimit(.minutes(1))) struct BatteryMonitorTests {
     let clock = ManualMonitorClock()
 
-    private func makeMonitor(_ provider: MockBatteryProvider) -> BatteryMonitor {
-        BatteryMonitor(provider: provider, clock: clock)
+    private func makeMonitor(
+        _ provider: MockBatteryProvider, cachesOnPolls: Bool = RegistryReadPolicy.cachesOnPolls
+    ) -> BatteryMonitor {
+        BatteryMonitor(
+            provider: provider, clock: clock, registryPolicy: RegistryReadPolicy(cachesOnPolls: cachesOnPolls))
     }
 
     /// Posts one change notification and ends its coalescing window: one read.
@@ -534,9 +541,10 @@ private func reading(connected: Bool) -> BatteryReading {
 
     // MARK: - Slow values
 
-    @Test func slowValuesAtMostOnceAMinute() {
+    @Test(arguments: [true, false])
+    func slowValuesAtMostOnceAMinute(cachesOnPolls: Bool) {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
-        let monitor = makeMonitor(provider)
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
         monitor.start()
         #expect(provider.scopes == [.full], "the first read fetches everything")
 
@@ -544,18 +552,19 @@ private func reading(connected: Bool) -> BatteryReading {
         monitor.refresh(trigger: .poll)
         clock.advance(by: .seconds(57))
         monitor.refresh(trigger: .notify)
-        #expect(provider.scopes == [.full, .live, .live])
+        #expect(provider.allSMCKeyReads == [true, false, false])
         clock.advance(by: .seconds(1))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes.last == .full, "a minute after the last full read")
+        #expect(provider.allSMCKeyReads.last == true, "a minute after the last full read")
         clock.advance(by: .seconds(2))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes.last == .live)
+        #expect(provider.allSMCKeyReads.last == false)
     }
 
-    @Test func aViewThatShowsSlowValuesGetsThemOnEveryRead() {
+    @Test(arguments: [true, false])
+    func aViewThatShowsSlowValuesGetsThemOnEveryRead(cachesOnPolls: Bool) {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
-        let monitor = makeMonitor(provider)
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
         monitor.start()
 
         monitor.setShowsSlowValues(true, for: "main")
@@ -565,21 +574,23 @@ private func reading(connected: Bool) -> BatteryReading {
         monitor.setShowsSlowValues(false, for: "main")
         clock.advance(by: .seconds(2))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes == [.full, .full, .full], "while any client shows them")
+        #expect(provider.scopes == [.full, .full, .full], "while any client shows them, the registry too")
 
         monitor.setShowsSlowValues(false, for: "popover")
         monitor.setShowsSlowValues(false, for: "popover")
         clock.advance(by: .seconds(2))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes.last == .live)
+        #expect(provider.scopes.last == (cachesOnPolls ? .cached : .live))
         clock.advance(by: .seconds(58))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes.last == .full, "the minute counts from the last full read")
+        #expect(
+            provider.scopes.last == (cachesOnPolls ? .cachedSlow : .full), "the minute counts from the last full read")
     }
 
-    @Test func aManualReadFetchesSlowValues() {
+    @Test(arguments: [true, false])
+    func aManualReadFetchesSlowValues(cachesOnPolls: Bool) {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
-        let monitor = makeMonitor(provider)
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
         monitor.start()
 
         clock.advance(by: .seconds(2))
@@ -590,13 +601,14 @@ private func reading(connected: Bool) -> BatteryReading {
         // 61 s after the launch read, 59 s after the manual one.
         clock.advance(by: .seconds(29))
         monitor.refresh(trigger: .poll)
-        #expect(provider.scopes == [.full, .full, .live, .live], "the minute counts from the manual read")
+        #expect(provider.allSMCKeyReads == [true, true, false, false], "the minute counts from the manual read")
     }
 
-    @Test func leavingDemoModeReadsSlowValuesAgain() {
+    @Test(arguments: [true, false])
+    func leavingDemoModeReadsSlowValuesAgain(cachesOnPolls: Bool) {
         let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
         let demo = MockBatteryProvider(next: reading(percent: 50, at: 1))
-        let monitor = makeMonitor(provider)
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
         monitor.start()
 
         monitor.setOverride(demo)
@@ -604,7 +616,93 @@ private func reading(connected: Bool) -> BatteryReading {
         monitor.refresh(trigger: .demo)
         monitor.setOverride(nil)
         #expect(demo.scopes == [.full, .live])
-        #expect(provider.scopes == [.full, .full], "the device's slow values are as old as the demo")
+        #expect(provider.scopes == [.full, .full], "the device's values are as old as the demo")
+    }
+
+    // MARK: - The registry
+
+    /// Every trigger but a poll fetches the registry: a notification's, a follow-up, the launch, the
+    /// history's sample (which covers wake), Demo Mode's and a manual read.
+    @Test(arguments: [true, false])
+    func everyReadButAPollFetchesTheRegistry(cachesOnPolls: Bool) {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+        for trigger in [RefreshTrigger.notify, .followUp, .history, .demo, .manual] {
+            clock.advance(by: .seconds(1))
+            monitor.refresh(trigger: trigger)
+        }
+        clock.advance(by: .seconds(1))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.registryReads == [true, true, true, true, true, true, !cachesOnPolls])
+    }
+
+    /// Polls every 10 s, as with power in the menu bar: they reuse the registry until it is 5 minutes
+    /// old, and the 5 minutes count from the last read that fetched it, whatever its trigger.
+    @Test(arguments: [true, false])
+    func aPollReusesTheRegistryForFiveMinutes(cachesOnPolls: Bool) {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+        for _ in 0..<29 {
+            clock.advance(by: .seconds(10))
+            monitor.refresh(trigger: .poll)
+        }
+        #expect(provider.registryReads == [true] + Array(repeating: !cachesOnPolls, count: 29))
+        clock.advance(by: .seconds(10))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.registryReads.last == true, "5 minutes after the launch read: the safety net")
+        clock.advance(by: .seconds(10))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.registryReads.last == !cachesOnPolls)
+
+        clock.advance(by: .seconds(200))
+        monitor.refresh(trigger: .notify)
+        clock.advance(by: .seconds(200))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.registryReads.suffix(2) == [true, !cachesOnPolls], "200 s after the notification's read")
+    }
+
+    @Test(arguments: [true, false])
+    func aPollFetchesTheRegistryWhilePowerOrRawDataIsShown(cachesOnPolls: Bool) {
+        let provider = MockBatteryProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+
+        monitor.setShowsSlowValues(true, for: "main")
+        for _ in 0..<3 {
+            clock.advance(by: .seconds(2))
+            monitor.refresh(trigger: .poll)
+        }
+        monitor.setShowsSlowValues(false, for: "main")
+        clock.advance(by: .seconds(2))
+        monitor.refresh(trigger: .poll)
+        #expect(provider.registryReads == [true, true, true, true, !cachesOnPolls])
+    }
+
+    /// The adapter going in is a notification, which fetches the registry, and so does each of the
+    /// extra reads after it, while the registry and macOS catch up.
+    @Test(arguments: [true, false])
+    func pluggingInFetchesTheRegistryOnEveryFollowUp(cachesOnPolls: Bool) async {
+        let provider = MockBatteryProvider(next: reading(connected: false))
+        let monitor = makeMonitor(provider, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+        clock.advance(by: .seconds(10))
+        monitor.refresh(trigger: .poll)
+
+        provider.next = reading(connected: true)
+        await notifyAndRead(provider)
+        #expect(provider.scopes.last == .live, "the registry, and the SMC's live pair 10 s after the launch read")
+        await settle { clock.sleeperCount == 1 }
+        var elapsed = Duration.zero
+        let delays = monitor.powerChangeFollowUps
+        for (index, delay) in delays.enumerated() {
+            clock.advance(by: delay - elapsed)
+            elapsed = delay
+            let sleepers = index < delays.count - 1 ? 1 : 0
+            await settle { provider.readCount == 4 + index && clock.sleeperCount == sleepers }
+        }
+        #expect(provider.registryReads == [true, !cachesOnPolls] + Array(repeating: true, count: 1 + delays.count))
     }
 
     @Test func providersWithoutSlowValuesReadInFull() {
@@ -615,8 +713,11 @@ private func reading(connected: Bool) -> BatteryReading {
 
     // MARK: - Reads off the main actor
 
-    private func makeMonitor(_ provider: SuspendingProvider) -> BatteryMonitor {
-        BatteryMonitor(provider: provider, clock: clock)
+    private func makeMonitor(
+        _ provider: SuspendingProvider, cachesOnPolls: Bool = RegistryReadPolicy.cachesOnPolls
+    ) -> BatteryMonitor {
+        BatteryMonitor(
+            provider: provider, clock: clock, registryPolicy: RegistryReadPolicy(cachesOnPolls: cachesOnPolls))
     }
 
     /// The launch read (the one before `menuBarReady`), a manual one (Copy Report reads the snapshot
@@ -653,7 +754,7 @@ private func reading(connected: Bool) -> BatteryReading {
         await settle { device.reader.inFlight == 1 }
         #expect(monitor.snapshot?.chargePercent == 80, "nothing changes until the read lands")
         #expect(!device.reader.ranOnMainActor)
-        #expect(device.reader.scopes == [.live])
+        #expect(device.reader.scopes == [trigger == .poll && RegistryReadPolicy.cachesOnPolls ? .cached : .live])
 
         device.reader.finish(with: reading(percent: 79, at: 2))
         await settle { !monitor.isReadingOffMainActor }
@@ -709,6 +810,36 @@ private func reading(connected: Bool) -> BatteryReading {
         #expect(monitor.snapshot?.chargePercent == 78)
         #expect(device.reader.started == 2)
         #expect(clock.sleeperCount == 0)
+    }
+
+    /// A follow-on read serves every request that waited for it: one that isn't a poll, such as a
+    /// notification's, makes it fetch the registry, whatever the first request was.
+    @Test(arguments: [true, false])
+    func aFollowOnReadFetchesWhatItsRequestsNeed(cachesOnPolls: Bool) async {
+        let device = SuspendingProvider(next: reading(percent: 80, at: 1))
+        let monitor = makeMonitor(device, cachesOnPolls: cachesOnPolls)
+        monitor.start()
+
+        clock.advance(by: .seconds(5))
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .poll)
+        monitor.refresh(trigger: .notify)
+        monitor.refresh(trigger: .poll)
+        #expect(monitor.requestedTrigger == .poll, "labelled with the first request")
+        device.reader.finish(with: reading(percent: 79, at: 2))
+        await settle { device.reader.started == 2 }
+        device.reader.finish(with: reading(percent: 78, at: 3))
+        await settle { !monitor.isReadingOffMainActor }
+
+        monitor.refresh(trigger: .poll)
+        await settle { device.reader.inFlight == 1 }
+        monitor.refresh(trigger: .poll)
+        device.reader.finish(with: reading(percent: 77, at: 4))
+        await settle { device.reader.started == 4 }
+        device.reader.finish(with: reading(percent: 76, at: 5))
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(device.reader.scopes.map(\.rereadsRegistry) == [!cachesOnPolls, true, !cachesOnPolls, !cachesOnPolls])
     }
 
     @Test func aReadThatLandsInDemoModeIsDropped() async {

@@ -7,8 +7,9 @@ public protocol BatteryProvider: AnyObject {
     /// (desktop Mac, CI virtual machine, iOS Simulator).
     func read() -> BatteryReading?
 
-    /// Reads the current state; `.live` lets the provider reuse what an earlier read fetched of
-    /// the values that change slowly. A provider without such values reads in full (the default).
+    /// Reads the current state; a scope other than `.full` lets the provider reuse what an earlier
+    /// read fetched of the values that change slowly. A provider without such values reads in full
+    /// (the default).
     func read(scope: BatteryReadScope) -> BatteryReading?
 
     /// What reads this battery off the main actor, for a caller that keeps its reads off it, such
@@ -38,13 +39,42 @@ public protocol NonisolatedBatteryReader: Sendable {
     func readNonisolated(scope: BatteryReadScope) async -> BatteryReading?
 }
 
-/// What a battery read fetches again.
-public enum BatteryReadScope: Sendable {
-    /// Everything, as ``BatteryProvider/read()`` does: on a Mac, every SMC key.
-    case full
-    /// What polls exist for: on a Mac, the SMC's live voltage and current. The slow values, such
-    /// as the SMC's cell voltages and temperatures, may come from an earlier read.
-    case live
+/// What a battery read fetches again, as two independent decisions: the registry
+/// (``RegistryReadPolicy``) and the SMC's slow keys (``SMCReadPolicy``). A provider may reuse what
+/// an earlier read fetched of what the scope leaves out; one without such values reads in full.
+public struct BatteryReadScope: Sendable, Hashable {
+    /// Whether the read fetches the registry again: on a Mac, `AppleSmartBattery` and its
+    /// children, and the power-source and adapter dictionaries. `false` lets the provider reuse
+    /// an earlier read's, once one has fetched them.
+    public var rereadsRegistry: Bool
+    /// Whether the read asks the SMC for every key. `false` asks only for the live voltage and
+    /// current, and the slow values, such as the SMC's cell voltages and temperatures, may come
+    /// from an earlier read.
+    public var readsAllSMCKeys: Bool
+
+    public init(rereadsRegistry: Bool, readsAllSMCKeys: Bool) {
+        self.rereadsRegistry = rereadsRegistry
+        self.readsAllSMCKeys = readsAllSMCKeys
+    }
+
+    /// Everything, as ``BatteryProvider/read()`` does: the registry and every SMC key.
+    public static let full = BatteryReadScope(rereadsRegistry: true, readsAllSMCKeys: true)
+    /// The registry and the SMC's live pair.
+    public static let live = BatteryReadScope(rereadsRegistry: true, readsAllSMCKeys: false)
+    /// What polls exist for: the SMC's live pair, beside an earlier read's registry.
+    public static let cached = BatteryReadScope(rereadsRegistry: false, readsAllSMCKeys: false)
+    /// Every SMC key beside an earlier read's registry: a poll when the slow values are due.
+    public static let cachedSlow = BatteryReadScope(rereadsRegistry: false, readsAllSMCKeys: true)
+
+    /// The `read` signpost's trigger (``Signposts``): `full`, `live`, `cached` or `cached.slow`.
+    public var signpostName: StaticString {
+        switch (rereadsRegistry, readsAllSMCKeys) {
+        case (true, true): "full"
+        case (true, false): "live"
+        case (false, false): "cached"
+        case (false, true): "cached.slow"
+        }
+    }
 }
 
 /// Keeps a change subscription alive; cancels it on `cancel()` or deinit.
