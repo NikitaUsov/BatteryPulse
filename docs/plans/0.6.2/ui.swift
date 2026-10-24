@@ -167,10 +167,13 @@ enum Rules {
     static let dock = "com.apple.dock"
     static let controlCenter = "com.apple.controlcenter"
     static let terminal = "com.apple.Terminal"
+    static let textEdit = "com.apple.TextEdit"
+    static let xcode = "com.apple.dt.Xcode"
     /// The apps an AX action (press, select-row, minimize, fullscreen, position, close, quit, a menu
-    /// command) may target. Finder, the Dock and Control Center never are.
+    /// command) may target. Finder, the Dock and Control Center never are; TextEdit and Xcode only in
+    /// the session's own window (`OwnWindows`).
     static let targetBundles: Set<String> = [
-        batteryPulse, settings, "com.apple.TextEdit", "com.apple.AccessibilityInspector", "com.apple.dt.Xcode",
+        batteryPulse, settings, textEdit, "com.apple.AccessibilityInspector", xcode,
     ]
     /// The widget hosts known before proof P1; P1 may add a WidgetKit host (ui-hosts).
     static let builtInHosts: Set<String> = [notificationCenter, "com.apple.chronod"]
@@ -204,8 +207,8 @@ enum Rules {
     static let aliases: [String: String] = [
         "notification center": notificationCenter, "notificationcenter": notificationCenter,
         "system settings": settings, "dock": dock, "finder": finder, "control center": controlCenter,
-        "controlcenter": controlCenter, "batterypulse": batteryPulse, "textedit": "com.apple.TextEdit",
-        "xcode": "com.apple.dt.Xcode", "accessibility inspector": "com.apple.AccessibilityInspector",
+        "controlcenter": controlCenter, "batterypulse": batteryPulse, "textedit": textEdit,
+        "xcode": xcode, "accessibility inspector": "com.apple.AccessibilityInspector",
     ]
 
     static func bundle(for query: String) -> String { aliases[query.lowercased()] ?? query }
@@ -548,13 +551,16 @@ enum AX {
         return element(attribute(app, "AXFocusedWindow")) ?? element(attribute(app, "AXMainWindow"))
     }
 
-    /// The window titled `title`, else the main window, else the first one.
+    /// The window titled exactly `title` (or `title` with a file extension: TextEdit may show it),
+    /// else the main window, else the first one.
     static func window(_ process: RunningProcess, title: String?) throws -> AXUIElement {
         let all = windows(process)
         if let title {
-            if let match = all.first(where: { (string($0, "AXTitle") ?? "").localizedCaseInsensitiveContains(title) }) {
-                return match
+            let match = all.first { window in
+                let shown = string(window, "AXTitle") ?? ""
+                return shown == title || (shown as NSString).deletingPathExtension == title
             }
+            if let match { return match }
             throw NotFound(description: "no window titled \(title) in \(process.publicName)")
         }
         if let main = element(attribute(application(process), "AXMainWindow")) { return main }
@@ -572,6 +578,49 @@ enum AX {
     static func perform(_ element: AXUIElement, _ action: String) throws {
         let error = AXUIElementPerformAction(element, action as CFString)
         guard error == .success else { throw Failure(description: "\(action) failed (AXError \(error.rawValue))") }
+    }
+}
+
+// MARK: - TextEdit's and Xcode's own windows
+
+/// TextEdit and Xcode hold his documents and projects: ui acts only in the session's own window of
+/// each, TextEdit's cover file and Xcode's window of the frozen worktree (WP-18's package).
+enum OwnWindows {
+    static func resolved(_ path: String) -> String { URL(fileURLWithPath: path).resolvingSymlinksInPath().path }
+
+    /// The window's document (AXDocument, a file URL) as a path.
+    static func document(_ window: AXUIElement) -> String? {
+        guard let text = AX.string(window, "AXDocument"), let url = URL(string: text), url.isFileURL else { return nil }
+        return url.resolvingSymlinksInPath().path
+    }
+
+    /// Whether ui may act in that window of the process: every window of the other targets.
+    static func allows(_ window: AXUIElement, of process: RunningProcess) -> Bool {
+        switch process.bundle {
+        case Rules.textEdit:
+            return document(window) == resolved(Safety.home + "/bp-062-cover.txt")
+        case Rules.xcode:
+            guard let path = document(window) else { return false }
+            let run = resolved(Safety.home + "/run")
+            return path == run || path.hasPrefix(run + "/")
+        default:
+            return true
+        }
+    }
+
+    static func check(_ window: AXUIElement?, of process: RunningProcess) throws {
+        guard process.bundle == Rules.textEdit || process.bundle == Rules.xcode else { return }
+        guard let window, allows(window, of: process) else {
+            throw Refusal(
+                description: "\(process.publicName): ui acts only in the session's own window (TextEdit's cover file, Xcode's frozen worktree)"
+            )
+        }
+    }
+
+    /// The window an element lies in: its AXWindow, else the nearest AXWindow among its parents.
+    static func window(of element: AXUIElement) -> AXUIElement? {
+        if let window = AX.element(AX.attribute(element, "AXWindow")) { return window }
+        return AX.chain(element, hops: 40).first { AX.string($0, "AXRole") == "AXWindow" }
     }
 }
 
@@ -1035,8 +1084,8 @@ enum Safety {
             guard Rules.isPointApproved(bundle) else { throw Refusal(description: "\(bundle) isn't on the approved list") }
             let isHost = Rules.widgetHosts().contains(bundle)
             guard byAX else {
-                if bundle == Rules.settings || bundle == Rules.controlCenter {
-                    throw Refusal(description: "System Settings and Control Center need the AX hit test")
+                if [Rules.settings, Rules.controlCenter, Rules.textEdit, Rules.xcode].contains(bundle) {
+                    throw Refusal(description: "System Settings, Control Center, TextEdit and Xcode need the AX hit test")
                 }
                 if isHost, !Rules.isInsideWidget(point) {
                     throw Refusal(description: "not inside a recorded BatteryPulse widget frame")
@@ -1053,6 +1102,7 @@ enum Safety {
             if bundle == Rules.controlCenter, !AX.hasIdentifier(ax.element, Rules.clockIdentifier, hops: 3) {
                 throw Refusal(description: "Control Center is approved for its clock alone")
             }
+            try OwnWindows.check(OwnWindows.window(of: ax.element), of: ax.owner)
             // A widget host also holds his other widgets, the Notification Center panel and his
             // banners: only an element inside a BatteryPulse-labelled one, whatever frame was recorded.
             if isHost, !AX.isInsideBatteryPulse(ax.element) {
@@ -1589,6 +1639,8 @@ enum Command {
         try Safety.checkTarget(process)
         let inSettings = process.bundle == Rules.settings
         if let character = options.value("--menu-cmd") {
+            // A menu command acts on the front window.
+            try OwnWindows.check(AX.frontWindow(process), of: process)
             let item = try menuItem(process, command: character)
             if inSettings { try Panes.checkLabels(of: item) }
             try AX.perform(item, "AXPress")
@@ -1597,6 +1649,7 @@ enum Command {
         }
         guard options.words.count > 2 else { throw UsageError(description: "press <app> <text>") }
         let matched = try match(process, options.words[2], options)
+        try OwnWindows.check(OwnWindows.window(of: matched), of: process)
         var element = matched
         let action = options.value("--action") ?? "AXPress"
         // A label inside a button: press the nearest ancestor that can.
@@ -1633,6 +1686,7 @@ enum Command {
         try Safety.checkTarget(process)
         guard options.words.count > 2 else { throw UsageError(description: "select-row <app> <text>") }
         let matched = try match(process, options.words[2], options)
+        try OwnWindows.check(OwnWindows.window(of: matched), of: process)
         var element = matched
         var hops = 0
         while !AX.role(element).hasPrefix("AXRow"), hops < 5, let parent = AX.parent(element) {
@@ -1648,8 +1702,11 @@ enum Command {
         print("selected the row")
     }
 
+    /// The --window window (else the main one); in TextEdit and Xcode only the session's own.
     static func window(_ options: Options, _ process: RunningProcess) throws -> AXUIElement {
-        try AX.window(process, title: options.value("--window"))
+        let target = try AX.window(process, title: options.value("--window"))
+        try OwnWindows.check(target, of: process)
+        return target
     }
 
     static func minimize(_ options: Options) throws {
@@ -1776,6 +1833,14 @@ enum Command {
         try Safety.checkAction()
         let process = try appArgument(options, 1)
         try Safety.checkTarget(process, panes: false)
+        // His own running copy of an app is never quit: only BatteryPulse, and a process the script
+        // opened (launched.tsv: "<app>\t<pid>").
+        let launched = Files.text("launched.tsv").split(separator: "\n").compactMap { line in
+            line.split(separator: "\t").last.flatMap { pid_t(String($0)) }
+        }
+        guard process.bundle == Rules.batteryPulse || launched.contains(process.pid) else {
+            throw Refusal(description: "\(process.publicName) wasn't opened by the script (launched.tsv): it is never quit")
+        }
         try AX.perform(try menuItem(process, command: "Q"), "AXPress")
         print("pressed Quit in \(process.publicName)")
     }
@@ -1794,7 +1859,9 @@ enum Command {
         let process = try readTarget(options)
         let rect: CGRect?
         if let text = options.value("--match") {
-            rect = AX.frame(try match(process, text, options))
+            let matched = try match(process, text, options)
+            try OwnWindows.check(OwnWindows.window(of: matched), of: process)
+            rect = AX.frame(matched)
         } else if options.has("--minimize-button") {
             let button = AX.element(AX.attribute(try window(options, process), "AXMinimizeButton"))
             guard let button else { throw NotFound(description: "the window has no minimize button") }
