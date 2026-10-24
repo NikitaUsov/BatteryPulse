@@ -639,8 +639,8 @@ Deferred from 0.6.1, each for the reason given:
   1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
   on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,
   unless the session's optional device step runs (Stages 5 and 6); exported files in spreadsheet
-  apps (Stage 6); widgets kept on the desktop across an in-app update (Stage 1.2: seen kept across
-  0.6.0 → 0.6.1 on 2026-10-22; 0.6.2 ticks it)
+  apps (Stage 6). Widgets kept on the desktop across an in-app update, seen across 0.6.0 → 0.6.1
+  on 2026-10-22, are ticked in Stage 1.2
 
 ### 0.7
 
