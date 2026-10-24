@@ -215,7 +215,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   the on/off switch (off becomes never; a manual Check for Updates still works with never)
 - [x] Release notes in the Software Update window: join the lines of a wrapped paragraph or
   list item, which now break mid-sentence (seen with 0.3.1's notes)
-- [ ] Install updates from the app: download the DMG itself, verify it, replace the app and
+- [x] Install updates from the app: download the DMG itself, verify it, replace the app and
   relaunch, instead of sending the user to the browser. Built in 0.4.0; the first real test is
   0.4.0 → 0.4.1 on the M5. Researched (October 2026, with an adversarial check):
   - A file a non-sandboxed app downloads with URLSession isn't quarantined (no
@@ -261,13 +261,14 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
 
   Seen on the M5 on 2026-10-22: the maintainer installed 0.6.1 through Install and Relaunch from
   0.6.0, the desktop widget stayed and showed the current charge, and Open at login kept its
-  state, so the login item needs no re-registering. 0.6.2 ticks this item.
-- [ ] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
+  state, so the login item needs no re-registering.
+- [x] Keep the widgets on the desktop across an update. (Replacing 0.3.1 with 0.4.0 from the DMG
   kept them on the M5, and so did the in-app update from 0.6.0 to 0.6.1 on 2026-10-22, with the
-  widget current; 0.6.2 ticks this item.) Replacing 0.3.0 with 0.3.1 from the DMG
-  removed them; the gallery still offered the widget, and it worked once added again. The
-  in-place swap above keeps the path, registers the new copy and raises
-  `CFBundleVersion`, then reloads the timelines; each release's check after publishing looks
+  widget current.) Replacing 0.3.0 with 0.3.1 from the DMG removed them; the gallery still
+  offered the widget, and it worked once added again. The in-place swap above keeps the path,
+  registers the new copy and raises `CFBundleVersion`, then reloads the timelines; from 0.6.2 the
+  installer also ends the running widget extension just before the swap, so macOS can't take
+  the old one's description for the new version. Each release's check after publishing looks
   again; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
   coming, 2026-10-22), and the guide tells the user to add them again
 - [x] An About BatteryPulse window: version and build, license, links to the project, the User
