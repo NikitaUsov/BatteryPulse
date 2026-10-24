@@ -77,8 +77,11 @@ through the App Store. Reference hardware: MacBook Air M5.
   (`BatteryPulse.dmg.sig`; `--help` is the key rotation runbook) and publishes
   `BatteryPulse-dSYMs.zip` beside them. The app's `Updates/UpdateInstaller` refuses an update
   without a `.sig` or one that fails its signature, digest, bundle or code-signature check, and
-  then offers only the release page, never the DMG (`UpdateFallback`). Never ask for or handle
-  the private key.
+  then offers only the release page, never the DMG (`UpdateFallback`). It mounts the DMG with
+  `diskutil image attach --readOnly` at a private mount point (`nobrowse`) and ejects it with
+  `diskutil eject`, by force (`unmountDisk force`) only with the image's own disk from `diskutil
+  info -plist` (`UpdateInstallPolicy`); updaters up to 0.6.1 use `hdiutil`, and CI's install step
+  runs both. Never ask for or handle the private key.
 - `scripts/` — `build-app.sh` (packages the app, `PROFILING=1` for an Instruments build, and
   fails on any signing-posture violation, listing each), `size-report.sh` with
   `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated

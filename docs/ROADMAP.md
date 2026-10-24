@@ -229,8 +229,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
     DMG); it catches a broken download but not a swapped one. An Ed25519 signature from CryptoKit,
     made in CI with a secret key and checked against a public key built into the app, proves the
     update is ours. Also check the bundle ID, the version and `codesign --verify --strict`.
-  - Mechanics: mount with `hdiutil attach -nobrowse -readonly`, copy next to the app on the same
-    volume, then a small detached step waits for the app to quit, swaps the two bundles
+  - Mechanics: mount with `hdiutil attach -nobrowse -readonly` (from 0.6.2 `diskutil image
+    attach`, Stage 1.7), copy next to the app on the same volume, then a small detached step
+    waits for the app to quit, swaps the two bundles
     atomically (`renamex_np` with `RENAME_SWAP`), deletes the old copy, registers the new one
     with Launch Services and relaunches it. Skip when the app runs translocated or outside a
     writable folder.
@@ -600,7 +601,12 @@ Deferred from 0.6.1, each for the reason given:
   binary −45 % (778,640 B, its `__text` −50 %), the app −3 %, the DMG −15 %. The flag ships only
   if the release candidate's widget, in both sizes and languages, and pages look right on the M5
 - [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
-  `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work
+  `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work. Built:
+  `diskutil image attach --readOnly --mountPoint <folder> --mountOptions nobrowse`, then
+  `diskutil eject`, and by force `unmountDisk force` and `eject` of the image's own disk, which
+  `diskutil info -plist` names; CI installs both ways. The update from 0.6.1 to 0.6.2 still runs
+  0.6.1's installer. The release candidate's in-app install on the M5 decides; if it fails, 0.6.1's
+  `hdiutil` code comes back
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
