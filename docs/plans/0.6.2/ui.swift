@@ -15,7 +15,9 @@
 //   move <point> | move --here                       --here: a 0-pixel move (proof P6)
 //   drag <point> <point> [--steps n] [--seconds s]   slow, in steps (the widget gallery)
 //   scroll <point> <lines>                           positive lines scroll down
-//   press <app> <text> [--role r] [--index n] [--action AXPress] | press <app> --menu-cmd <char>
+//   press <app> <text> [--role r] [--within role] [--index n] [--action AXPress]
+//   press <app> --menu-cmd <char>                    the menu item with that Command key and no other
+//                                                    modifier (Settings… is ",", Close "W")
 //   select-row <app> <text>                          AXSelected on the matching row
 //   minimize on|off <app> [--window <title>]         AXMinimized
 //   fullscreen on|off <app> [--window <title>]       AXFullScreen (no keystroke)
@@ -25,11 +27,13 @@
 //   quit <app>                                       an AX press on the app's own Quit menu item
 // Reads:
 //   frame <app> [--window <title> | --minimize-button | --match <text>] | frame --dock <title>
+//   title <app>                                      its focused window's title (a System Settings pane)
 //   hit <point>                                      the element there: process, role, label,
 //                                                    the parent chain and the frame (proof P1)
 //   tree <app> [--match <text>] [--inside x y w h] [--depth n]
 //   windows [--app <name>] [--main [--allow-cover <app>]] [--status-item]
-//   idle | locked | thermal | access | screen | guard
+//   idle | locked | thermal | sample | access | screen | guard
+//                                                    sample: idle, locked and thermal in one line
 //   Options of every command: --tap hid|session (else BP_UI_TAP, else hid).
 //
 // Safety rules (exit status 3 when one refuses):
@@ -278,6 +282,14 @@ enum AX {
     static func label(_ element: AXUIElement) -> String {
         ["AXTitle", "AXDescription", "AXValue", "AXIdentifier", "AXHelp"]
             .compactMap { string(element, $0) }.filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+
+    /// AXValue as text, numbers included (a checkbox's 0 or 1).
+    static func value(_ element: AXUIElement) -> String {
+        guard let value = attribute(element, "AXValue") else { return "-" }
+        if let number = value as? NSNumber { return number.stringValue }
+        if let text = value as? String { return text.count > 60 ? String(text.prefix(60)) + "…" : text }
+        return "-"
     }
 
     static func role(_ element: AXUIElement) -> String {
@@ -609,7 +621,7 @@ struct Options {
     init(_ arguments: [String]) throws {
         let takesOne: Set<String> = [
             "--tap", "--window", "--match", "--role", "--index", "--action", "--menu-cmd", "--steps", "--seconds",
-            "--depth", "--app", "--allow-cover", "--dock", "--ax",
+            "--depth", "--app", "--allow-cover", "--dock", "--ax", "--within",
         ]
         let takesFour: Set<String> = ["--inside"]
         let switches: Set<String> = [
@@ -712,7 +724,16 @@ enum Command {
     /// The element of `app` that `text` matches, the `--index`th (from 1).
     static func match(_ process: RunningProcess, _ text: String, _ options: Options) throws -> AXUIElement {
         let depth = Int(try options.number("--depth", default: 40))
-        let found = AX.find(in: AX.application(process), text: text, role: options.value("--role"), depth: depth)
+        var root = AX.application(process)
+        if let container = options.value("--within") {
+            // The first element of that role (a sidebar's AXOutline, say), so a page's name in the
+            // window's title doesn't match too.
+            guard let first = AX.find(in: root, text: nil, role: container, depth: depth).first else {
+                throw NotFound(description: "no \(container) in \(process.publicName)")
+            }
+            root = first
+        }
+        let found = AX.find(in: root, text: text, role: options.value("--role"), depth: depth)
         let index = Int(try options.number("--index", default: 1))
         guard index >= 1, index <= found.count else {
             throw NotFound(description: "no element matching \(text) in \(process.publicName) (\(found.count) found)")
@@ -744,7 +765,9 @@ enum Command {
     static func move(_ options: Options) throws {
         try Safety.checkAll()
         let point = options.has("--here") ? Events.current() : try options.point(at: 1)
-        try Safety.checkPoint(point)
+        // A 0-pixel move where the pointer already is clicks nothing: no hit test, so it works over
+        // Terminal too (proof P6).
+        if !options.has("--here") { try Safety.checkPoint(point) }
         try Events.mouse(.mouseMoved, point, flags: [], clicks: 0, tap: Events.tap(options))
         print("moved to \(Int(point.x)) \(Int(point.y))")
     }
@@ -986,6 +1009,17 @@ enum Command {
         print(describe(rect))
     }
 
+    /// The app's focused (else main) window title: System Settings' pane, say.
+    static func title(_ options: Options) throws {
+        try Safety.checkAll()
+        let process = try appArgument(options, 1)
+        guard process.isPublic else { throw Refusal(description: "another app's titles aren't read") }
+        let app = AX.application(process)
+        let window = AX.element(AX.attribute(app, "AXFocusedWindow")) ?? AX.element(AX.attribute(app, "AXMainWindow"))
+        guard let window else { throw NotFound(description: "\(process.publicName) has no window") }
+        print("title: \(AX.string(window, "AXTitle") ?? "")")
+    }
+
     static func hit(_ options: Options) throws {
         try Safety.checkAll()
         let point = try options.point(at: 1)
@@ -1040,7 +1074,7 @@ enum Command {
             let isInside = inside.map { box in frame.map { box.insetBy(dx: -2, dy: -2).contains($0) } ?? false } ?? true
             if isInside {
                 print(
-                    "\(String(repeating: "  ", count: level))\(AX.role(element)) \"\(AX.label(element))\" frame \(frame.map(describe) ?? "-")"
+                    "\(String(repeating: "  ", count: level))\(AX.role(element)) \"\(AX.label(element))\" value \(AX.value(element)) frame \(frame.map(describe) ?? "-")"
                 )
                 printed += 1
             }
@@ -1127,6 +1161,23 @@ enum Command {
         print("thermal=\(state) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0) hid_idle_s=\(hid)")
     }
 
+    /// The queue sampler's one line: HIDIdleTime, the lock and the lid, the thermal state and Low
+    /// Power Mode, with no AX call.
+    static func sample() {
+        let hid = Screen.hidIdleSeconds().map { String(format: "%.1f", $0) } ?? "unknown"
+        let state: String
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal: state = "nominal"
+        case .fair: state = "fair"
+        case .serious: state = "serious"
+        case .critical: state = "critical"
+        @unknown default: state = "unknown"
+        }
+        print(
+            "hid_idle_s=\(hid) locked=\(Screen.isLocked() ? "yes" : "no") lid=\(Screen.isLidClosed() ? "closed" : "open") thermal=\(state) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0)"
+        )
+    }
+
     static func access() {
         let yes = { (value: Bool) in value ? "yes" : "no" }
         print(
@@ -1158,11 +1209,13 @@ enum Command {
         case "quit": try quit(options)
         case "frame": try frame(options)
         case "hit": try hit(options)
+        case "title": try title(options)
         case "tree": try tree(options)
         case "windows": try windows(options)
         case "idle": idle()
         case "locked": locked()
         case "thermal": thermal()
+        case "sample": sample()
         case "access": access()
         case "screen": screen()
         case "guard":
@@ -1173,7 +1226,7 @@ enum Command {
     }
 
     static let usage =
-        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|banner|quit|frame|hit|tree|windows|idle|locked|thermal|access|screen|guard ... (see ui.swift)"
+        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|banner|quit|frame|title|hit|tree|windows|idle|locked|thermal|sample|access|screen|guard ... (see ui.swift)"
 }
 
 do {

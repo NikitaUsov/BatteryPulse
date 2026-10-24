@@ -22,6 +22,9 @@
 //       luma, dark_pct and stddev (luma's standard deviation: near 0 for a blank or grey crop).
 //   frames diff <image> <image> [<x> <y> <width> <height>]
 //       mean_diff_pct, changed_pct (pixels with a channel more than 8 of 255 apart) and identical.
+//   frames contrast <image> [<x> <y> <width> <height>]
+//       An estimate of the text contrast inside the rectangle: the WCAG ratio between the 5th and
+//       95th percentiles of the pixels' relative luminance (the contrast audit's fallback).
 //   frames sheet <output.png> <image>...
 //       A contact sheet of the images, in order (at most 120).
 //   frames wallpaper bright|busy <output.png> <width> <height>
@@ -326,6 +329,35 @@ func compare(_ first: URL, _ second: URL, rect: CGRect?) throws {
             Double(changed) * 100 / Double(pixels), a == b ? "yes" : "no"))
 }
 
+/// WCAG's relative luminance of an sRGB pixel, 0-1.
+func relativeLuminance(_ red: UInt8, _ green: UInt8, _ blue: UInt8) -> Double {
+    func linear(_ value: UInt8) -> Double {
+        let channel = Double(value) / 255
+        return channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+    }
+    return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+}
+
+func contrast(image: URL, rect: CGRect?) throws {
+    let part = try cropped(try readImage(image), rect)
+    let pixels = try rgba(part)
+    var values: [Double] = []
+    values.reserveCapacity(pixels.count / 4)
+    var index = 0
+    while index + 2 < pixels.count {
+        values.append(relativeLuminance(pixels[index], pixels[index + 1], pixels[index + 2]))
+        index += 4
+    }
+    guard !values.isEmpty else { throw HelperError(description: "no pixels") }
+    values.sort()
+    let dark = values[values.count * 5 / 100]
+    let light = values[min(values.count - 1, values.count * 95 / 100)]
+    print(
+        String(
+            format: "contrast_ratio=%.2f dark_luminance=%.4f light_luminance=%.4f", (light + 0.05) / (dark + 0.05),
+            dark, light))
+}
+
 func sheet(output: URL, images: [URL]) throws {
     guard let picture = try contactSheet(try images.map(readImage)) else { throw HelperError(description: "no images") }
     try writePNG(picture, to: output)
@@ -389,7 +421,7 @@ func trailingRect(_ arguments: [String], from index: Int) throws -> CGRect? {
 func run(_ arguments: [String]) async throws {
     let usage = HelperError(
         description:
-            "usage: frames dump <movie> <folder> [interval s] [width px] [--rect x y w h --screen W] | fps <movie> | crop <image> <x> <y> <width> <height> <output.png> | stats <image> [x y w h] | diff <image> <image> [x y w h] | sheet <output.png> <image>... | wallpaper bright|busy <output.png> <width> <height>"
+            "usage: frames dump <movie> <folder> [interval s] [width px] [--rect x y w h --screen W] | fps <movie> | crop <image> <x> <y> <width> <height> <output.png> | stats <image> [x y w h] | diff <image> <image> [x y w h] | contrast <image> [x y w h] | sheet <output.png> <image>... | wallpaper bright|busy <output.png> <width> <height>"
     )
     guard arguments.count >= 2 else { throw usage }
     switch arguments[1] {
@@ -442,6 +474,9 @@ func run(_ arguments: [String]) async throws {
         try compare(
             URL(fileURLWithPath: arguments[2]), URL(fileURLWithPath: arguments[3]),
             rect: try trailingRect(arguments, from: 4))
+    case "contrast":
+        guard arguments.count == 3 || arguments.count == 7 else { throw usage }
+        try contrast(image: URL(fileURLWithPath: arguments[2]), rect: try trailingRect(arguments, from: 3))
     case "sheet":
         guard arguments.count >= 4 else { throw usage }
         try sheet(output: URL(fileURLWithPath: arguments[2]), images: arguments[3...].map { URL(fileURLWithPath: $0) })
