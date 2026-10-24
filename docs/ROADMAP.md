@@ -803,7 +803,10 @@ count adds one public number per release, how many Macs ran it (Decisions), and 
     on USB is read on attach, every 5 minutes while history is recorded and every minute while
     its page is visible; Wi-Fi only on Refresh and Check Again. Quick retries at 20 and 60 s;
     a time-out stalls automatic work until the user acts. The policy, roster and monitor are
-    tested on Linux with a scripted transport and a manual clock
+    tested on Linux with a scripted transport and a manual clock. From 0.6.2 the page's
+    connection label follows the transport its values came over: once the cable is pulled, a
+    read over Wi-Fi says Wi-Fi rather than USB, and a device still on its cable keeps USB and its
+    automatic reads; to check on the M5 with a device that is on both
 - [x] Remember each device and keep its history next to the Mac's (0.6): `Devices/devices.json`
   and a `HistoryStore` per device, keyed by HMAC-SHA256 of the UDID with a per-install secret;
   no UDID, serial or capture on disk. History has a source pop-up; Forget removes a device and
