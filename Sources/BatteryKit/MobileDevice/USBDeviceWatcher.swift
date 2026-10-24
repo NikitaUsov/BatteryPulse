@@ -34,7 +34,8 @@ final class USBDeviceWatcher: IDeviceAttachEvents, Sendable {
     /// A matching dictionary for Apple USB devices. Each notification needs its own: the call
     /// consumes one reference.
     static func matching() -> CFMutableDictionary? {
-        guard let matching = IOServiceMatching("IOUSBHostDevice") else { return nil }
+        // Unsafe: the class name as a C string, which the call copies.
+        guard let matching = unsafe IOServiceMatching("IOUSBHostDevice") else { return nil }
         // The same object, toll-free bridged: the key goes into the dictionary IOKit receives.
         (matching as NSMutableDictionary)["idVendor"] = NSNumber(value: appleVendorID)
         return matching
@@ -42,8 +43,10 @@ final class USBDeviceWatcher: IDeviceAttachEvents, Sendable {
 
     /// Whether the service is an iPhone or iPad, by its USB product ID.
     static func isMobileDevice(_ service: io_object_t) -> Bool {
+        // Unsafe: the value is retained once for us (the Create rule) and taken once.
         guard
-            let value = IORegistryEntryCreateCFProperty(service, "idProduct" as CFString, kCFAllocatorDefault, 0)?
+            let value = unsafe IORegistryEntryCreateCFProperty(
+                service, "idProduct" as CFString, kCFAllocatorDefault, 0)?
                 .takeRetainedValue(),
             let product = (value as? NSNumber)?.intValue
         else { return false }
@@ -66,6 +69,10 @@ final class USBDeviceWatcher: IDeviceAttachEvents, Sendable {
 
 /// The IOKit state of one `changes()` stream. Used only on the watcher's queue; IOKit calls the
 /// callbacks there too (`IONotificationPortSetDispatchQueue`).
+///
+/// `@safe`: the notification port it keeps is created in `start(on:)` and destroyed once, in
+/// `stop()`, and nothing outside the class sees it.
+@safe
 private final class Watch: @unchecked Sendable {
     // `@unchecked`: the `var`s are touched only on the watcher's serial queue, where IOKit calls
     // back too; the class is Sendable only so the stream's handlers can hand it to that queue.
@@ -80,27 +87,32 @@ private final class Watch: @unchecked Sendable {
     }
 
     func start(on queue: DispatchQueue) {
-        guard !isStopped, port == nil else { return }
-        guard let port = IONotificationPortCreate(kIOMainPortDefault) else {
+        // Unsafe, here and below: the port is an opaque pointer, used only while this object
+        // holds it.
+        guard !isStopped, unsafe port == nil else { return }
+        guard let port = unsafe IONotificationPortCreate(kIOMainPortDefault) else {
             continuation.finish()
             return
         }
-        IONotificationPortSetDispatchQueue(port, queue)
-        self.port = port
+        unsafe IONotificationPortSetDispatchQueue(port, queue)
+        unsafe self.port = port
         // Unretained: the stream's termination handler keeps this object alive until `stop()`,
-        // which destroys the port first, so no callback runs after that.
-        let refCon = Unmanaged.passUnretained(self).toOpaque()
-        let arrived = IOServiceAddMatchingNotification(
+        // which destroys the port first, so no callback runs after that. Unsafe: the context is
+        // this object's address, and each callback turns it back into the object, borrowed.
+        let refCon = unsafe Unmanaged.passUnretained(self).toOpaque()
+        // Unsafe: the port, the notification type as a C string, the context and the iterator
+        // through an out-pointer.
+        let arrived = unsafe IOServiceAddMatchingNotification(
             port, kIOFirstMatchNotification, USBDeviceWatcher.matching(),
             { refCon, iterator in
-                guard let refCon else { return }
-                Unmanaged<Watch>.fromOpaque(refCon).takeUnretainedValue().handle(iterator, .arrived)
+                guard let refCon = unsafe refCon else { return }
+                unsafe Unmanaged<Watch>.fromOpaque(refCon).takeUnretainedValue().handle(iterator, .arrived)
             }, refCon, &arrivals)
-        let terminated = IOServiceAddMatchingNotification(
+        let terminated = unsafe IOServiceAddMatchingNotification(
             port, kIOTerminatedNotification, USBDeviceWatcher.matching(),
             { refCon, iterator in
-                guard let refCon else { return }
-                Unmanaged<Watch>.fromOpaque(refCon).takeUnretainedValue().handle(iterator, .terminated)
+                guard let refCon = unsafe refCon else { return }
+                unsafe Unmanaged<Watch>.fromOpaque(refCon).takeUnretainedValue().handle(iterator, .terminated)
             }, refCon, &terminations)
         guard arrived == KERN_SUCCESS, terminated == KERN_SUCCESS else {
             stop()
@@ -124,8 +136,9 @@ private final class Watch: @unchecked Sendable {
         if terminations != 0 { IOObjectRelease(terminations) }
         arrivals = 0
         terminations = 0
-        if let port { IONotificationPortDestroy(port) }
-        port = nil
+        // Unsafe: the port, destroyed once and forgotten.
+        if let port = unsafe port { unsafe IONotificationPortDestroy(port) }
+        unsafe port = nil
     }
 }
 #endif

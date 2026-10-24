@@ -108,7 +108,10 @@ import Testing
                 literals: ["@safe"],
                 pattern: words(#/@safe\b/#),
                 allowed: [
-                    "BatterySource/MacAccessoryProvider.swift": 1
+                    "BatteryKit/MobileDevice/MobileDeviceLibrary.swift": 1,
+                    "BatteryKit/MobileDevice/MobileDeviceTransport.swift": 1,
+                    "BatteryKit/MobileDevice/USBDeviceWatcher.swift": 1,
+                    "BatterySource/MacAccessoryProvider.swift": 1,
                 ],
                 message: "@safe; mark each unsafe use `unsafe` with its reason instead"),
             Placement(
@@ -120,8 +123,8 @@ import Testing
     }
 
     /// The targets that build with strict memory safety: the parsers of untrusted input
-    /// (BatteryCore, bpulse) and the system bindings (BatterySource).
-    static let strictMemorySafetyTargets = ["BatteryCore", "BatterySource", "bpulse"]
+    /// (BatteryCore, bpulse) and the system bindings (BatterySource, BatteryKit).
+    static let strictMemorySafetyTargets = ["BatteryCore", "BatterySource", "BatteryKit", "bpulse"]
 
     /// Every rule broken in `source`, as "path:line: message".
     static func violations(in source: String, path: String) -> [String] {
@@ -287,6 +290,17 @@ import Testing
         #expect(!flags(sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
         #expect(flags(sink + sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
         #expect(!flags("final class DownloadWatcher: Sendable {}"))
+    }
+
+    /// SW-13: four `@safe` types, one in each listed file: the accessory function's address, the
+    /// MobileDevice function table, a device link's service connection and the USB watch's port.
+    @Test func fourSafeTypes() {
+        let allowed = Self.placements.first { $0.message.hasPrefix("@safe") }?.allowed ?? [:]
+        #expect(allowed.values.reduce(0, +) == 4)
+        let link = "@safe\nfinal class MobileDeviceLink {}\n"
+        #expect(!flags(link, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(flags(link + link, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(flags(link, path: "BatteryKit/IDeviceMonitor.swift"))
     }
 
     /// SW-13: the targets that build with strict memory safety are exactly the listed ones, so a

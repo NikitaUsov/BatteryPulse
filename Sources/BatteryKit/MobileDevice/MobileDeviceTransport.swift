@@ -107,12 +107,13 @@ final class MobileDeviceSink: @unchecked Sendable {
     }
 
     func receive(device: UnsafeMutableRawPointer?, message: UInt32) {
-        guard message == 1 || message == 2, let device else { return }
+        // Unsafe: the AMDeviceRef's address, which the framework keeps valid during the callback.
+        guard message == 1 || message == 2, let device = unsafe device else { return }
         lock.lock()
         defer { lock.unlock() }
         guard isActive else { return }
         // Borrowed from the framework; storing the reference retains the AMDevice.
-        let object = Unmanaged<AnyObject>.fromOpaque(device).takeUnretainedValue()
+        let object = unsafe Unmanaged<AnyObject>.fromOpaque(device).takeUnretainedValue()
         if message == 1 {
             if !devices.contains(where: { $0 === object }) { devices.append(object) }
         } else {
@@ -139,8 +140,9 @@ enum MobileDeviceDiscovery {
         sink.begin()
         defer { sink.end() }
 
-        let subscription = try subscribe(library: library)
-        defer { _ = library.notificationUnsubscribe(subscription) }
+        // Unsafe: the subscription is the framework's opaque pointer, ended once, here.
+        let subscription = try unsafe subscribe(library: library)
+        defer { _ = unsafe library.notificationUnsubscribe(subscription) }
 
         waitForDevices(library: library, sink: sink, wanted: wanted)
         var objects = sink.snapshot()
@@ -158,18 +160,23 @@ enum MobileDeviceDiscovery {
     /// so the closure, which captures nothing, converts to a C function pointer.
     private static func subscribe(library: MobileDeviceLibrary) throws -> UnsafeMutableRawPointer {
         var subscription: UnsafeMutableRawPointer?
-        let code = library.notificationSubscribe(
+        // Unsafe: a call through the looked-up address, with a C callback and the subscription
+        // through an out-pointer.
+        let code = unsafe library.notificationSubscribe(
             { info, _ in
-                guard let info else { return }
-                let device = info.load(as: UnsafeMutableRawPointer?.self)
-                let message = info.load(fromByteOffset: MemoryLayout<UnsafeMutableRawPointer>.size, as: UInt32.self)
-                MobileDeviceSink.shared.receive(device: device, message: message)
+                // Unsafe: the callback's info is the framework's struct, read at the offsets its
+                // header gives (device at 0, message at 8), during the callback only.
+                guard let info = unsafe info else { return }
+                let device = unsafe info.load(as: UnsafeMutableRawPointer?.self)
+                let message = unsafe info.load(
+                    fromByteOffset: MemoryLayout<UnsafeMutableRawPointer>.size, as: UInt32.self)
+                unsafe MobileDeviceSink.shared.receive(device: device, message: message)
             }, 0, 0, nil, &subscription)
         let status = IDeviceStatus(code: code)
-        guard status.isSuccess, let subscription else {
+        guard status.isSuccess, let subscription = unsafe subscription else {
             throw IDeviceError.subscriptionFailed(status.isSuccess ? .missingResult : status)
         }
-        return subscription
+        return unsafe subscription
     }
 
     /// Runs this thread's run loop in short slices until the device list settles, `wanted`
@@ -211,22 +218,32 @@ enum MobileDeviceDiscovery {
     /// `AMDCreateDeviceList`, a second opinion: it can miss a Wi-Fi device that notifications
     /// report, but costs nothing to ask.
     private static func listedDevices(library: MobileDeviceLibrary) -> [AnyObject] {
-        guard let create = library.createDeviceList, let list = create()?.takeRetainedValue() else { return [] }
+        // Unsafe: a call through the looked-up address; the list is retained once for us (Copy)
+        // and taken once, and its devices belong to it (Get), so they are borrowed, then retained by
+        // the returned array.
+        guard let create = unsafe library.createDeviceList, let list = unsafe create()?.takeRetainedValue() else {
+            return []
+        }
         return (0..<CFArrayGetCount(list)).compactMap { index in
-            CFArrayGetValueAtIndex(list, index).map { Unmanaged<AnyObject>.fromOpaque($0).takeUnretainedValue() }
+            unsafe CFArrayGetValueAtIndex(list, index).map {
+                unsafe Unmanaged<AnyObject>.fromOpaque($0).takeUnretainedValue()
+            }
         }
     }
 
     private static func identifier(of device: AnyObject, library: MobileDeviceLibrary) -> String {
-        let pointer = Unmanaged.passUnretained(device).toOpaque()
-        return library.copyDeviceIdentifier(pointer).map { $0.takeRetainedValue() as String } ?? ""
+        // Unsafe: the device's address, valid while `device` retains it, and a call through the
+        // looked-up address whose string is retained once for us (Copy) and taken once.
+        let pointer = unsafe Unmanaged.passUnretained(device).toOpaque()
+        return unsafe library.copyDeviceIdentifier(pointer).map { unsafe $0.takeRetainedValue() as String } ?? ""
     }
 
     /// The device's UDID and interface; `nil` for a companion proxy (a Watch through its iPhone).
     private static func attachment(for device: AnyObject, library: MobileDeviceLibrary)
         -> IDeviceAttachment<AnyObject>?
     {
-        let interfaceType = Int(library.getInterfaceType(Unmanaged.passUnretained(device).toOpaque()))
+        // Unsafe: the device's address, valid while `device` retains it.
+        let interfaceType = unsafe Int(library.getInterfaceType(Unmanaged.passUnretained(device).toOpaque()))
         guard interfaceType != IDeviceConnection.companionProxyInterfaceType else { return nil }
         return IDeviceAttachment(
             id: identifier(of: device, library: library), connection: IDeviceConnection(interfaceType: interfaceType),
@@ -237,6 +254,10 @@ enum MobileDeviceDiscovery {
 // MARK: - Calls
 
 /// ``IDeviceLink`` for one `AMDeviceRef`, which it keeps retained.
+///
+/// `@safe`: the service connection it keeps is started in ``startService(_:)``, used only by its
+/// own calls, and invalidated and released once, in ``closeService()``.
+@safe
 final class MobileDeviceLink: IDeviceLink {
     let connection: IDeviceConnection
     private let library: MobileDeviceLibrary
@@ -255,38 +276,44 @@ final class MobileDeviceLink: IDeviceLink {
         closeService()
     }
 
+    /// The AMDeviceRef's address, valid while `device` retains it. Unsafe, in every call below that
+    /// passes it: a call through a looked-up address, with this address.
     private var pointer: UnsafeMutableRawPointer {
-        Unmanaged.passUnretained(device).toOpaque()
+        unsafe Unmanaged.passUnretained(device).toOpaque()
     }
 
     func connect() -> IDeviceStatus {
-        IDeviceStatus(code: library.connect(pointer))
+        unsafe IDeviceStatus(code: library.connect(pointer))
     }
 
     func isPaired() -> Bool? {
-        library.isPaired.map { $0(pointer) != 0 }
+        unsafe library.isPaired.map { unsafe $0(pointer) != 0 }
     }
 
     func validatePairing() -> IDeviceStatus {
-        IDeviceStatus(code: library.validatePairing(pointer))
+        unsafe IDeviceStatus(code: library.validatePairing(pointer))
     }
 
     func startSession() -> IDeviceStatus {
-        IDeviceStatus(code: library.startSession(pointer))
+        unsafe IDeviceStatus(code: library.startSession(pointer))
     }
 
     func copyValue(domain: String?, key: String?) -> PropertyValue? {
-        let value = library.copyValue(pointer, domain.map { $0 as CFString }, key.map { $0 as CFString })
-        return value.flatMap { PropertyValue(any: $0.takeRetainedValue()) }
+        let value = unsafe library.copyValue(pointer, domain.map { $0 as CFString }, key.map { $0 as CFString })
+        // Unsafe: the value is retained once for us (Copy) and taken once.
+        return unsafe value.flatMap { unsafe PropertyValue(any: $0.takeRetainedValue()) }
     }
 
     func startService(_ name: String) -> IDeviceStatus {
+        // Unsafe: the connection comes back through an out-pointer, +1, and is kept in `service`
+        // until ``closeService()`` releases it.
         var connection: UnsafeMutableRawPointer?
-        let status = IDeviceStatus(code: library.secureStartService(pointer, name as CFString, nil, &connection))
+        let status = unsafe IDeviceStatus(
+            code: library.secureStartService(pointer, name as CFString, nil, &connection))
         guard status.isSuccess else { return status }
-        guard let connection else { return .missingResult }
-        service = connection
-        setTimeouts(socket: library.getSocket(connection))
+        guard let connection = unsafe connection else { return .missingResult }
+        unsafe service = connection
+        unsafe setTimeouts(socket: library.getSocket(connection))
         return .success
     }
 
@@ -296,25 +323,29 @@ final class MobileDeviceLink: IDeviceLink {
         guard socket >= 0 else { return }
         var timeout = timeval(tv_sec: MobileDeviceTransport.socketTimeoutSeconds, tv_usec: 0)
         let size = socklen_t(MemoryLayout<timeval>.size)
-        _ = setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, size)
-        _ = setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, size)
+        // Unsafe: the option's value through a pointer to `timeout`, `size` bytes long.
+        _ = unsafe setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, size)
+        _ = unsafe setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, size)
     }
 
     func send(_ message: PropertyDictionary) -> IDeviceStatus {
-        guard let service else { return .notConnected }
+        // Unsafe: the open connection, and a call through a looked-up address.
+        guard let service = unsafe service else { return .notConnected }
         guard let dictionary = PropertyValue.dictionary(message).foundationValue as? [String: Any] else {
             return .missingResult
         }
-        return IDeviceStatus(code: library.sendMessage(service, dictionary as CFDictionary, .xmlFormat_v1_0))
+        return unsafe IDeviceStatus(code: library.sendMessage(service, dictionary as CFDictionary, .xmlFormat_v1_0))
     }
 
     func receive() -> (status: IDeviceStatus, reply: PropertyDictionary?) {
-        guard let service else { return (.notConnected, nil) }
+        // Unsafe: the open connection, a call through a looked-up address, and the reply through an
+        // out-pointer, retained once for us and taken once.
+        guard let service = unsafe service else { return (.notConnected, nil) }
         var reply: Unmanaged<CFTypeRef>?
         var format = CFPropertyListFormat.xmlFormat_v1_0
-        let status = IDeviceStatus(code: library.receiveMessage(service, &reply, &format))
+        let status = unsafe IDeviceStatus(code: library.receiveMessage(service, &reply, &format))
         // Taken even on failure, so a partial reply isn't leaked.
-        let object = reply?.takeRetainedValue()
+        let object = unsafe reply?.takeRetainedValue()
         guard status.isSuccess else { return (status, nil) }
         guard let object, let dictionary = PropertyValue.dictionary(fromAny: object) else {
             return (.missingResult, nil)
@@ -323,18 +354,20 @@ final class MobileDeviceLink: IDeviceLink {
     }
 
     func closeService() {
-        guard let service else { return }
-        library.invalidate(service)
-        Unmanaged<AnyObject>.fromOpaque(service).release()
-        self.service = nil
+        // Unsafe: the connection is invalidated, released (the one reference `startService(_:)`
+        // took) and forgotten, once.
+        guard let service = unsafe service else { return }
+        unsafe library.invalidate(service)
+        unsafe Unmanaged<AnyObject>.fromOpaque(service).release()
+        unsafe self.service = nil
     }
 
     func stopSession() -> IDeviceStatus {
-        IDeviceStatus(code: library.stopSession(pointer))
+        unsafe IDeviceStatus(code: library.stopSession(pointer))
     }
 
     func disconnect() -> IDeviceStatus {
-        IDeviceStatus(code: library.disconnect(pointer))
+        unsafe IDeviceStatus(code: library.disconnect(pointer))
     }
 }
 #endif
