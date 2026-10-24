@@ -318,6 +318,9 @@ step_answer() {
   who="${rest%%|*}"
   # Session B's judge records "unsure" for the morning batch where 3 isn't "something else".
   if [ "$value" = unsure ] && [ "$SESSION" = B ] && [ "$by" = claude ]; then kind=text; fi
+  if [ "$SESSION" = B ] && [ "$id" = B-send ] && [ "$value" = y ]; then
+    publish_sheet_fresh || fail "first the contact sheet of every attached image ($SCRIPT send --dry-run), shown to him, then his yes"
+  fi
   case "$kind" in
     yn) case "$value" in y | n) ;; *) fail "$id takes y or n (y = looks right)" ;; esac ;;
     text) [ -n "$value" ] || fail "$id takes a text" ;;
@@ -338,6 +341,7 @@ step_answer() {
   mv "$ANSWERS.tmp" "$ANSWERS"
   printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$(printf '%s' "$value" | tr '\t\n|' '  /')" "$by" "$(date '+%H:%M')" \
     "$(printf '%s' "$note" | tr '\t\n|' '  /')" >>"$ANSWERS"
+  if [ "$SESSION" = B ] && [ "$id" = B-send ]; then touch "$WORK/send-yes"; fi
   echo "recorded $id = $value ($by)"
 }
 
@@ -902,6 +906,7 @@ step_attach() {
   caption="$*"
   [ -f "$image" ] || fail "no image $image"
   english_only "$caption"
+  if [ "$SESSION" = B ]; then attach_allowed "$image"; fi
   mkdir -p "$PUBLISH"
   touch "$PUBLISH/captions.tsv"
   count="$(wc -l <"$PUBLISH/captions.tsv" | tr -d ' ')"
@@ -927,8 +932,10 @@ step_unattach() {
 step_crop() {
   [ $# -eq 6 ] || fail "usage: $SCRIPT crop <image> <x> <y> <width> <height> <name> (pixels from the top left)"
   [ -x "$BIN/frames" ] || fail "the frame helper isn't built (see $BIN/frames.log)"
+  case "$6" in *[!A-Za-z0-9._-]*) fail "a crop's name is letters, digits, dots, dashes and underscores" ;; esac
   mkdir -p "$SHOTS"
   "$BIN/frames" crop "$1" "$2" "$3" "$4" "$5" "$SHOTS/$6.png"
+  if [ "$SESSION" = B ]; then register_shot "$SHOTS/$6.png"; fi
 }
 
 # MARK: - prepare (step 1)
@@ -2393,6 +2400,11 @@ step_send() {
     if [ -z "$dry_run" ] && [ "$(answer_of B-send)" != y ]; then
       fail "his yes first, at the Mac, after the contact sheet of every attached image and the summary: $SCRIPT answer --by person B-send y"
     fi
+    if [ -n "$dry_run" ]; then
+      publish_sheet
+    elif ! publish_sheet_fresh || { [ -f "$WORK/publish-sheet.png" ] && ! [ "$WORK/send-yes" -nt "$WORK/publish-sheet.png" ]; }; then
+      fail "an image was attached after the contact sheet, or his yes came before it: $SCRIPT send --dry-run, show him the new sheet, then his yes again"
+    fi
     build_report_b | public >"$report"
     privacy_lint "$report"
   else
@@ -2582,6 +2594,9 @@ FENCE="$WORK/queue.started"
 READY_FILE="$WORK/ready"
 HEARTBEAT="$WORK/heartbeat"
 MORNING="$WORK/morning-items.txt"
+# The crops the script made (window_shot, rect_shot, crop, a clip's darkest frames), each with the
+# window style and the wallpaper it was taken on: the only pictures attach publishes in Session B.
+PRODUCED="$WORK/produced.tsv"
 # Posted with the ready file: the arm window's waiter wakes at once instead of at its backstop.
 READY_NOTIFY="io.github.nikitausov.BatteryPulse.session-b.ready"
 # The English bodies of the test notification and the charge alert (App/BatteryNotifier.swift),
@@ -2592,6 +2607,69 @@ CHARGE_ALERT_TEXT="You can unplug the power adapter"
 DRY_RUN=""
 
 b_only() { [ "$SESSION" = B ] || fail "$1 is a Session B command: run it from the frozen worktree ~/bp-062/B/run"; }
+
+# register_shot <file>: one of the script's crops, with the style and the wallpaper it shows.
+register_shot() {
+  [ "$SESSION" = B ] && [ -s "$1" ] || return 0
+  mkdir -p "$WORK"
+  printf '%s\t%s\t%s\n' "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")" \
+    "$(defaults read "$BUNDLE_ID" windowLook 2>/dev/null || echo standard)" "$(cat "$WORK/wallpaper-now" 2>/dev/null || echo his)" >>"$PRODUCED"
+}
+
+# attach_allowed <image>: Session B publishes only the script's own crops (under shots/ or
+# recordings/), never a picture the size of the display (the Dock, the menu bar's extras, his
+# desktop's file names, a banner), and a Clear, Translucent or Frosted one only when it was taken
+# on the generated bright or busy wallpaper, since glass shows what lies behind it.
+attach_allowed() {
+  local path line style paper size screen
+  path="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+  case "$path" in
+    "$SHOTS"/* | "$REC"/*) ;;
+    *) fail "only the script's own crops under shots/ or recordings/ are attached, not $1" ;;
+  esac
+  line="$(awk -F '\t' -v p="$path" '$1 == p { l = $0 } END { print l }' "$PRODUCED" 2>/dev/null || true)"
+  [ -n "$line" ] || fail "$(basename "$1") isn't a crop the script made (a window or rectangle shot, crop, a clip's darkest frame): a full shot never leaves the Mac; crop it first ($SCRIPT crop ...)"
+  style="$(cut -f2 <<<"$line")"
+  paper="$(cut -f3 <<<"$line")"
+  case "$style:$paper" in
+    clear:bright | clear:busy | translucent:bright | translucent:busy | frosted:bright | frosted:busy) ;;
+    clear:* | translucent:* | frosted:*)
+      fail "a $style shot shows what lies behind its glass: only one taken on the generated bright or busy wallpaper is attached ($(basename "$1") was taken on $paper)"
+      ;;
+  esac
+  size="$(sips -g pixelWidth -g pixelHeight "$1" 2>/dev/null | awk '/pixelWidth/ { w = $2 } /pixelHeight/ { h = $2 } END { print w " " h }')"
+  screen="$(ui_run screen 2>/dev/null | awk '{ split($0, f, " "); for (i in f) { if (f[i] ~ /^scale=/) s = substr(f[i], 7) }
+    if (match($0, /main=[-0-9]+ [-0-9]+ [0-9]+ [0-9]+/)) { split(substr($0, RSTART + 5, RLENGTH - 5), m, " "); printf "%d %d %d %d", m[3], m[4], m[3] * s, m[4] * s } }' || true)"
+  if [ -n "$screen" ] && [ -n "$size" ]; then
+    case " $(awk '{ print $1 " " $2 }' <<<"$screen") | $(awk '{ print $3 " " $4 }' <<<"$screen") " in
+      *" $size "*) fail "$(basename "$1") is the size of the display: a full-screen picture is never attached; crop it to BatteryPulse's window or widget" ;;
+    esac
+  fi
+  return 0
+}
+
+# publish_sheet: the contact sheet of every attached image, in B.md's order, for him to see with
+# B.md's summary before his B-send (send --dry-run builds it).
+publish_sheet() {
+  local files
+  rm -f "$WORK/publish-sheet.png"
+  files="$(cut -f1 "$PUBLISH/captions.tsv" 2>/dev/null | sed "s|^|$PUBLISH/|" | tr '\n' ' ' || true)"
+  if [ -z "$files" ]; then
+    echo "no attached images: no contact sheet"
+    return 0
+  fi
+  [ -x "$BIN/frames" ] || fail "the frame helper isn't built: no contact sheet of the attached images, so no send"
+  # $files is split on purpose: one argument per image (their names have no spaces).
+  # shellcheck disable=SC2086
+  "$BIN/frames" sheet "$WORK/publish-sheet.png" $files >/dev/null
+  echo "SHEET $WORK/publish-sheet.png: every attached image; open it for him with B.md's summary, then his B-send"
+}
+
+# The sheet shows what is attached now: newer than the last attach (true with nothing attached).
+publish_sheet_fresh() {
+  [ -s "$PUBLISH/captions.tsv" ] || return 0
+  [ -f "$WORK/publish-sheet.png" ] && [ "$WORK/publish-sheet.png" -nt "$PUBLISH/captions.tsv" ]
+}
 
 # mtime_of <file>: its modification time; GNU stat's -f means another thing, so -c goes first.
 mtime_of() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0; }
@@ -3034,6 +3112,7 @@ window_shot() {
     echo "screencapture wrote nothing" >&2
     return 1
   }
+  register_shot "$file"
   echo "SHOT $file (main window $rect)"
 }
 
@@ -3041,6 +3120,7 @@ window_shot() {
 rect_shot() {
   mkdir -p "$(dirname "$1")"
   if [ -n "$2" ] && screencapture -x -R"$(tr ' ' ',' <<<"$2")" "$1" && [ -s "$1" ]; then
+    register_shot "$1"
     echo "SHOT $1 ($2)"
   else
     echo "no shot of ${2:-an unknown rectangle} into $1" >&2
@@ -3858,6 +3938,12 @@ fill_clip() {
   rm -rf "$folder"
   # shellcheck disable=SC2086
   "$BIN/frames" dump "$movie" "$folder" 0.0167 1280 --rect $rect --screen "$(screen_width)" >"$folder.txt" 2>&1 || return 1
+  # The darkest frames are cropped to the window: the clip's only pictures attach may publish (its
+  # frames and sheet are the whole screen).
+  local crop
+  for crop in "$folder"/darkest-*.png; do
+    if [ -f "$crop" ]; then register_shot "$crop"; fi
+  done
   [ -f "$folder/frames.tsv" ]
 }
 
@@ -3880,6 +3966,12 @@ step_case() {
   method="$(cat "$WORK/fill-method" 2>/dev/null || echo ax)"
   if [ "$method" = shift ]; then seconds=6; else seconds=3; fi
   use_section 30-cases "The glass-sheet minimize and restore cases (WP-13, G-13a)"
+  # On the generated bright wallpaper, like the screenshot set: the glass shows what lies behind it.
+  if [ -f "$WORK/wallpaper-bright.png" ]; then
+    set_wallpaper "$WORK/wallpaper-bright.png" || warn "System Events didn't set the wallpaper: the case's crops stay on the Mac"
+  else
+    warn "no generated wallpaper (prepare reads): the case's crops stay on the Mac"
+  fi
   if [ "$style" = standard ] || [ "$style" = frosted ]; then
     open -a TextEdit "$WORK/cover.txt" >/dev/null 2>&1 || true
     sleep 2
@@ -6084,29 +6176,79 @@ build_report_b() {
   fi
 }
 
-# privacy_terms: what B.md must not name (WP-21): the ComputerName, his full name, an accessory's
-# name from pmset -g accps, a VPN's name and the network's name.
+# network_name: the Wi-Fi network's name, where macOS doesn't redact it (often it does).
+network_name() {
+  {
+    ipconfig getsummary en0 2>/dev/null | sed -n 's/^ *SSID : //p'
+    networksetup -getairportnetwork en0 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p'
+    system_profiler SPAirPortDataType 2>/dev/null | awk '/Current Network Information:/ { getline; sub(/^ */, ""); sub(/:$/, ""); print; exit }'
+  } | grep -v -i -E 'redacted|^$' | head -1 || true
+}
+
+# bluetooth_names: the names system_profiler lists under Connected and Not Connected, the
+# accessories that aren't attached at send time too.
+bluetooth_names() {
+  system_profiler SPBluetoothDataType 2>/dev/null | awk '
+    /^ *(Connected|Not Connected):$/ { match($0, /^ */); level = RLENGTH; child = -1; inlist = 1; next }
+    inlist {
+      match($0, /^ */); indent = RLENGTH
+      if (indent <= level && $0 ~ /[^ ]/) { inlist = 0; next }
+      if ($0 ~ /:$/ && (child < 0 || indent == child)) { child = indent; name = substr($0, indent + 1); sub(/:$/, "", name); print name }
+    }' || true
+}
+
+# privacy_terms: what B.md must not name (WP-21): the ComputerName and LocalHostName, his full
+# name, an accessory's name (pmset -g accps, system_profiler's Bluetooth list), an iPhone's or
+# iPad's name from BatteryPulse's device store (now and in the backup), a VPN's name and the
+# network's name.
 privacy_terms() {
   {
     scutil --get ComputerName 2>/dev/null || true
+    scutil --get LocalHostName 2>/dev/null || true
     id -F 2>/dev/null || true
     pmset -g accps 2>/dev/null | sed -n 's/^ *-\(.*\) (id=.*/\1/p' | grep -v -i InternalBattery || true
+    bluetooth_names
+    cat "$SUPPORT/Devices/devices.json" "$BACKUP/support/Devices/devices.json" 2>/dev/null |
+      grep -o '"name" *: *"[^"]*"' | sed 's/^"name" *: *"//; s/"$//' || true
     scutil --nc list 2>/dev/null | sed -n 's/.*"\([^"]*\)".*/\1/p' || true
-    ipconfig getsummary en0 2>/dev/null | sed -n 's/^ *SSID : //p' | grep -v -i redacted || true
-    networksetup -getairportnetwork en0 2>/dev/null | sed -n 's/^Current Wi-Fi Network: //p' || true
+    network_name
+  } | awk 'length($0) >= 3' | sort -u
+}
+
+# privacy_words: his short user name and first name, matched as whole words only.
+privacy_words() {
+  {
+    id -un 2>/dev/null || true
+    id -F 2>/dev/null | awk '{ print $1 }' || true
   } | awk 'length($0) >= 3' | sort -u
 }
 
 # privacy_lint <file>: refuses the file if a line names any of them.
 privacy_lint() {
-  local term found=""
+  local term found="" scrubbed="$WORK/lint-scrubbed.txt"
+  # The bundle ID and the repository's owner are public and may contain his name: taken out first,
+  # so they never count, line numbers kept.
+  awk -v a="$(tr '[:upper:]' '[:lower:]' <<<"$BUNDLE_ID")" -v b="$(tr '[:upper:]' '[:lower:]' <<<"${REPO%%/*}")" '{
+      l = tolower($0)
+      while ((i = index(l, a)) > 0) l = substr(l, 1, i - 1) substr(l, i + length(a))
+      while ((i = index(l, b)) > 0) l = substr(l, 1, i - 1) substr(l, i + length(b))
+      print l }' "$1" >"$scrubbed"
   while IFS= read -r term; do
     [ -n "$term" ] || continue
-    if grep -n -i -F -- "$term" "$1" >"$WORK/lint.txt" 2>/dev/null; then
+    if grep -n -i -F -- "$term" "$scrubbed" >"$WORK/lint.txt" 2>/dev/null; then
       found="$found $(cut -d: -f1 "$WORK/lint.txt" | tr '\n' ',' | sed 's/,$//')"
     fi
   done < <(privacy_terms)
-  rm -f "$WORK/lint.txt"
+  while IFS= read -r term; do
+    [ -n "$term" ] || continue
+    if grep -n -i -w -F -- "$term" "$scrubbed" >"$WORK/lint.txt" 2>/dev/null; then
+      found="$found $(cut -d: -f1 "$WORK/lint.txt" | tr '\n' ',' | sed 's/,$//')"
+    fi
+  done < <(privacy_words)
+  rm -f "$WORK/lint.txt" "$scrubbed"
+  if [ -z "$(network_name)" ]; then
+    echo "note: the network's name couldn't be read (macOS redacts it), so B.md wasn't checked for it"
+  fi
   if [ -n "$found" ]; then
     fail "B.md names the Mac, him, an accessory, a VPN or the network on line(s)$found: drop them (note, answer or section), then send again"
   fi
