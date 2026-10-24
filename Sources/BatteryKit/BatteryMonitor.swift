@@ -70,8 +70,9 @@ public final class BatteryMonitor {
 
     /// How long a burst of change notifications may last: one read follows the first of them
     /// after this window, give or take ``coalescingTolerance``, which lets the OS fold the wake-up
-    /// into another. powerd posts two notifications for one battery update, and Low Power Mode and
-    /// thermal changes post their own. Together they delay a plug or unplug by at most 250 ms.
+    /// into another. Besides powerd's, Low Power Mode and thermal changes post their own
+    /// notifications. Together the window and its tolerance delay a plug or unplug by at most
+    /// 250 ms.
     static let coalescingWindow: Duration = .milliseconds(150)
     static let coalescingTolerance: Duration = .milliseconds(100)
 

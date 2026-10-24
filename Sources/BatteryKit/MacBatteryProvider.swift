@@ -21,8 +21,8 @@ import Synchronization
 ///   key; ``read(scope:)`` with `.live` asks only for the live pair and keeps the rest from the
 ///   read that last asked for them (``SMCValueCache``).
 ///
-/// Changes are pushed through notify(3) power-source keys, so no polling is needed unless the UI
-/// shows live current/power values.
+/// Changes are pushed through a notify(3) power-source key (``powerSourceNotifications``), so no
+/// polling is needed unless the UI shows live current/power values.
 ///
 /// A read may run on any thread (``readNonisolated(scope:)``): what the provider keeps between
 /// reads, the SMC's values and its connection, is behind locks, so a caller such as
@@ -93,12 +93,13 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
         }
     }
 
-    /// notify(3) keys from IOPowerSources.h: `kIOPSNotifyAnyPowerSource` and
-    /// `kIOPSNotifyTimeRemaining` (the key `IOPSNotificationCreateRunLoopSource` uses internally).
-    static let powerSourceNotifications = [
-        "com.apple.system.powersources",
-        "com.apple.system.powersources.timeremaining",
-    ]
+    /// The notify(3) key from IOPowerSources.h that powerd posts whenever any power source changes,
+    /// the registry's battery data included: `kIOPSNotifyAnyPowerSource`. Not
+    /// `kIOPSNotifyTimeRemaining`, the key `IOPSNotificationCreateRunLoopSource` uses internally:
+    /// powerd posts it in the same pass, just before this one, so it only told of the same change
+    /// twice. On the M5 (macOS 27), every one was followed by this key within 10 ms, in 2 hours on
+    /// battery and 1 hour charging.
+    static let powerSourceNotifications = ["com.apple.system.powersources"]
 
     @MainActor
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
