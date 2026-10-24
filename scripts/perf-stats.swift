@@ -12,6 +12,9 @@
 // and the script prints:
 //   - per interval name and trigger: the count, and p50 and p95 in ms (nearest rank);
 //   - per event name and trigger: the count;
+//   - after the rows of a name with more than one trigger, the same over all of them, with the
+//     trigger `(all)`: `read`'s four (full, live, cached, cached.slow) together compare with the
+//     single `read -` of the builds before 0.6.2;
 //   - per process: its reads, the reads before its first menuBarReady, its widget reloads, and the
 //     reads of each notify burst. A burst is a run of `refresh trigger=notify` lines less than 1 s
 //     apart; its reads are the `read` lines logged between the start of its first refresh and the
@@ -170,11 +173,25 @@ struct Group {
     let lines: [PerfLine]
 }
 
-/// The lines of one kind, grouped by name and trigger, sorted by both.
+/// The trigger of a name's total row.
+let allTriggers = "(all)"
+
+/// The lines of one kind, grouped by name and trigger, sorted by both. A name with more than one
+/// trigger is followed by a group of all its lines, whose trigger is ``allTriggers``.
 func groups(_ kind: PerfLine.Kind) -> [Group] {
     let grouped = Dictionary(grouping: lines.filter { $0.kind == kind }) { "\($0.name) \($0.trigger)" }
-    return grouped.values.map { Group(name: $0[0].name, trigger: $0[0].trigger, lines: $0) }
+    let sorted = grouped.values.map { Group(name: $0[0].name, trigger: $0[0].trigger, lines: $0) }
         .sorted { ($0.name, $0.trigger) < ($1.name, $1.trigger) }
+    var result: [Group] = []
+    for (index, group) in sorted.enumerated() {
+        result.append(group)
+        guard index == sorted.count - 1 || sorted[index + 1].name != group.name else { continue }
+        let ofName = sorted.filter { $0.name == group.name }
+        if ofName.count > 1 {
+            result.append(Group(name: group.name, trigger: allTriggers, lines: ofName.flatMap(\.lines)))
+        }
+    }
+    return result
 }
 
 var intervalRows = [["name", "trigger", "count", "p50", "p95"]]

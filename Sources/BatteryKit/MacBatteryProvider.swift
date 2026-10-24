@@ -17,22 +17,30 @@ import Synchronization
 /// - `IOPSCopyExternalPowerAdapterDetails` — the connected adapter.
 /// - The SMC's battery keys (``SMCBattery``): the live pack voltage and current, and a second
 ///   source for the temperature and cell voltages. A key takes one round trip of about
-///   0.2–0.5 ms, so all 16 take about 3–8 ms (derived, not measured). ``read()`` asks for every
-///   key; ``read(scope:)`` with `.live` asks only for the live pair and keeps the rest from the
-///   read that last asked for them (``SMCValueCache``).
+///   0.2–0.5 ms, so all 16 take about 3–8 ms (derived, not measured).
 ///
-/// Changes are pushed through notify(3) power-source keys, so no polling is needed unless the UI
-/// shows live current/power values.
+/// ``read()`` fetches everything. ``read(scope:)`` makes two separate decisions
+/// (``BatteryReadScope``): without ``BatteryReadScope/rereadsRegistry`` it reuses the registry,
+/// IOPS and adapter dictionaries of the read that last fetched them and found a battery, about
+/// three quarters of a read on the M5 (``RegistryReadPolicy``); without
+/// ``BatteryReadScope/readsAllSMCKeys`` it asks the SMC only for the live pair and keeps the rest
+/// from the read that last asked for them (``SMCValueCache``).
+///
+/// Changes are pushed through a notify(3) power-source key (``powerSourceNotifications``), so no
+/// polling is needed unless the UI shows live current/power values.
 ///
 /// A read may run on any thread (``readNonisolated(scope:)``): what the provider keeps between
-/// reads, the SMC's values and its connection, is behind locks, so a caller such as
-/// ``BatteryMonitor`` can read off the main actor. Only ``observeChanges(_:)`` belongs to the main
-/// actor.
+/// reads, the registry's dictionaries, the SMC's values and its connection, is behind locks, so a
+/// caller such as ``BatteryMonitor`` can read off the main actor. Only ``observeChanges(_:)``
+/// belongs to the main actor.
 public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedBatteryReader {
     private let smc: SMCClient?
     /// Held for a read's whole SMC part, so a second read at the same time reuses its values
     /// (``SMCValueCache/minimumAge``) instead of asking the SMC again.
     private let smcCache = Mutex(SMCValueCache())
+    /// The dictionaries of the read that last fetched the registry and found a battery, for the
+    /// reads that reuse them; `nil` before one has.
+    private let registryCache = Mutex<RegistryCapture?>(nil)
 
     /// - Parameter readsSMC: `false` where the SMC can't be opened anyway, such as in the
     ///   sandboxed widget, so no attempt shows up as a sandbox violation.
@@ -40,8 +48,9 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
         smc = readsSMC ? SMCClient() : nil
     }
 
-    /// Reads everything, every SMC key included, as `bpulse` and the widget always have. A read
-    /// within ``SMCValueCache/minimumAge`` of the last one reuses its SMC values.
+    /// Reads everything, the registry and every SMC key included, as `bpulse` and the widget
+    /// always have. A read within ``SMCValueCache/minimumAge`` of the last one reuses its SMC
+    /// values.
     public nonisolated func read() -> BatteryReading? {
         readNonisolated(scope: .full)
     }
@@ -57,25 +66,35 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
 
     /// ``read(scope:)`` from any thread, for callers off the main actor.
     public nonisolated func readNonisolated(scope: BatteryReadScope) -> BatteryReading? {
-        let interval = Diagnostics.begin("read")
+        // A read that may reuse the registry fetches it until one has found a battery. The
+        // signpost names what the read does.
+        let cached = scope.rereadsRegistry ? nil : registryCache.withLock { $0 }
+        let done = BatteryReadScope(rereadsRegistry: cached == nil, readsAllSMCKeys: scope.readsAllSMCKeys)
+        let interval = Diagnostics.begin("read", trigger: done.signpostName)
         defer { interval.end() }
-        let smartBattery = Diagnostics.measure("registry") { Self.smartBatteryProperties() }
-        let powerSource = Diagnostics.measure("iops") { Self.internalBatteryDescription() }
-        guard smartBattery != nil || powerSource != nil else { return nil }
+        let registry = cached ?? fetchRegistry()
+        guard registry.hasBattery else { return nil }
 
-        let adapterDetails = Diagnostics.measure("adapter") { Self.externalAdapterDetails() }
-        let smcCapture = smartBattery == nil ? [:] : smcValues(readsOtherKeys: scope == .full)
+        let smcCapture = registry.smartBattery == nil ? [:] : smcValues(readsOtherKeys: scope.readsAllSMCKeys)
         let parse = Diagnostics.begin("parse")
-        var reading = BatteryReading(
-            smartBattery: smartBattery ?? [:],
-            powerSource: powerSource ?? [:],
-            adapterDetails: adapterDetails ?? [:],
-            smc: smcCapture,
-            timestamp: Date()
-        )
+        var reading = BatteryReading(registry: registry, smc: smcCapture, timestamp: Date())
         reading.snapshot.applySystemState()
         parse.end()
         return reading
+    }
+
+    /// Fetches the registry, IOPS and adapter dictionaries, and keeps them for the reads that
+    /// reuse them while they show a battery.
+    private func fetchRegistry() -> RegistryCapture {
+        var registry = RegistryCapture(
+            smartBattery: Diagnostics.measure("registry") { Self.smartBatteryProperties() },
+            powerSource: Diagnostics.measure("iops") { Self.internalBatteryDescription() })
+        if registry.hasBattery {
+            registry.adapterDetails = Diagnostics.measure("adapter") { Self.externalAdapterDetails() }
+        }
+        let kept = registry.hasBattery ? registry : nil
+        registryCache.withLock { $0 = kept }
+        return registry
     }
 
     /// The SMC's values after asking for the groups that are due: the live pair (`smc.power`) and,
@@ -93,12 +112,13 @@ public nonisolated final class MacBatteryProvider: BatteryProvider, NonisolatedB
         }
     }
 
-    /// notify(3) keys from IOPowerSources.h: `kIOPSNotifyAnyPowerSource` and
-    /// `kIOPSNotifyTimeRemaining` (the key `IOPSNotificationCreateRunLoopSource` uses internally).
-    static let powerSourceNotifications = [
-        "com.apple.system.powersources",
-        "com.apple.system.powersources.timeremaining",
-    ]
+    /// The notify(3) key from IOPowerSources.h that powerd posts whenever any power source changes,
+    /// the registry's battery data included: `kIOPSNotifyAnyPowerSource`. Not
+    /// `kIOPSNotifyTimeRemaining`, the key `IOPSNotificationCreateRunLoopSource` uses internally:
+    /// powerd posts it in the same pass, just before this one, so it only told of the same change
+    /// twice. On the M5 (macOS 27), every one was followed by this key within 10 ms, in 2 hours on
+    /// battery and 1 hour charging.
+    static let powerSourceNotifications = ["com.apple.system.powersources"]
 
     @MainActor
     public func observeChanges(_ handler: @escaping @MainActor @Sendable () -> Void) -> BatteryObservation {
