@@ -128,7 +128,11 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `String(format:)`, which only Darwin's Foundation marks, so its marker sits under
   `#if canImport(Darwin)`: an unneeded one warns). The rest of the unsafe code is BatteryKit's
   system bindings (IOKit, SMC, MobileDevice, notify) and the app's `proc_*` calls.
-- Concurrency: a plain `async` function runs on its caller's actor
+- Concurrency: the app target runs on the main actor by default (`.defaultIsolation(MainActor.self)`
+  in `Package.swift`); the other targets, the widget included, stay nonisolated. App code that a
+  framework calls on its own threads, or that runs off the main actor, is marked `nonisolated`,
+  and `IsolationGuardTests` pins the app's four `@MainActor`s and those `nonisolated`
+  declarations. A plain `async` function runs on its caller's actor
   (`NonisolatedNonsendingByDefault`). Work that leaves the main actor (decoding, hashing,
   building chart data or Raw Data rows) is a `@concurrent` function over `Sendable` values, not
   `Task.detached`. Tasks have names (`Task(name: "Type.purpose")`). The battery reads leave it
@@ -167,8 +171,8 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (`Tests/BatteryCoreTests/SourceScanner.swift`), Darwin code included: `MotionGuardTests`
   (motion, glass, window style, tone map), `EnergyGuardTests` (the energy rules above),
   `SecurityGuardTests` (where `dlopen`/`dlsym`, IOKit user clients, `Process` and `kill` may
-  appear, the SMC's one selector, and the escapes from the compiler's checks) and
-  `LocalizationCatalogTests`. An exception goes on the suite's list with its reason. A new target
+  appear, the SMC's one selector, and the escapes from the compiler's checks),
+  `IsolationGuardTests` (the app's isolation, above) and `LocalizationCatalogTests`. An exception goes on the suite's list with its reason. A new target
   joins `SourceScanner`'s lists in the same commit (`everySourceFolderIsAListedTarget`).
 - Localization: UI literals are `LocalizedStringKey`/`String(localized:)` keyed by the English
   text; interpolate only pre-formatted Strings (placeholders are always `%@`); never pass a

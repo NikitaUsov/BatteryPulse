@@ -581,9 +581,11 @@ hour) whenever Xcode is open.
 
 Deferred from 0.6.1, each for the reason given:
 
-- [ ] Main actor by default (WP-10), first: it needs a long session on the M5 (notifications,
-  sleep and wake, an install from a test release, the widget after an update), because what it
-  breaks shows only at runtime
+- [x] Main actor by default (WP-10), first: the app target only, `@MainActor` in the app from 35
+  to 4, the code that runs off the main actor marked `nonisolated` and pinned by a guard test.
+  What it breaks shows only at runtime, so it went first to the M5: the first session's
+  notifications, pages, Demo Mode, Check Now and lid close showed no executor trap or crash, and
+  the release candidate's session repeats them with an install
 - [ ] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
   at p95, 72 % of it the registry. Read the registry only when it changes (E4b), then reads off
   the main actor (E20, past its 4 ms threshold); fewer notify keys (E3b) after 3 hours of
