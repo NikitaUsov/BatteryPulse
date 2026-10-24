@@ -2848,15 +2848,32 @@ step_batch() {
 
 # MARK: - Session B: the hands (ui), the windows and the shots
 
-# ui <command...>: the ui helper with the taps and hosts preflight chose (PLAN.md WP-21); every
-# action passes its own safety rules, the queue.started fence among them.
+# ui <command...>: the ui helper with what preflight and the session recorded (PLAN.md WP-21): the
+# tap (P6), the widget hosts (P1), the System Settings panes it may act in (P8) and the widgets'
+# frames (`widget`). Every action passes its own safety rules, the fences among them.
 ui_run() {
   if [ ! -x "$BIN/ui" ]; then
     warn "the ui helper isn't built (see $BIN/ui.log)"
     return 1
   fi
   BP_UI_TAP="$(cat "$WORK/ui-tap" 2>/dev/null || echo hid)" BP_UI_HOSTS="$(cat "$WORK/ui-hosts" 2>/dev/null || true)" \
-    BP_FENCE="$FENCE" "$BIN/ui" "$@"
+    BP_UI_PANES="$(cat "$WORK/ui-panes" 2>/dev/null || true)" \
+    BP_UI_WIDGETS="$(cut -f2 "$WORK/widgets.tsv" 2>/dev/null || true)" BP_FENCE="$FENCE" "$BIN/ui" "$@"
+}
+
+# The main window's CGWindowID, from CGWindowList (no AX), for a click's --window.
+main_window_id() { line_id "$(main_window_line)"; }
+
+# ui_click_main <x> <y> [options...]: a click aimed at BatteryPulse's main window, by its ID.
+ui_click_main() {
+  local x="$1" y="$2" id
+  shift 2
+  id="$(main_window_id)"
+  [ -n "$id" ] || {
+    echo "the main window isn't on screen" >&2
+    return 1
+  }
+  ui_run click "$x" "$y" --expect BatteryPulse --window "$id" "$@"
 }
 
 step_ui() {
@@ -2976,7 +2993,8 @@ step_pane() {
   url="$(pane_url "${1:-}")" || fail "usage: $SCRIPT pane <$(echo "$PANES" | tr ' ' '|')>"
   open "$url"
   sleep 2
-  ui_run title "System Settings" || true
+  # The sidebar's selection and the title; ui acts only in a pane P8 confirmed.
+  ui_run pane-state --expect "$1" || true
 }
 
 # widget <family> <x> <y> <w> <h>: a placed widget's frame in points (from proof P1's `ui hit`),
@@ -2995,28 +3013,28 @@ step_widget() {
 widget_rect() { awk -F '\t' -v f="$1" '$1 == f { print $2 }' "$WORK/widgets.tsv" 2>/dev/null || true; }
 
 # desktop-spot <x> <y> | --image <png> <x> <y>: an empty spot of the desktop, the fixed action
-# before each widget comparison (Dim widgets reacts to the desktop's focus).
+# before each widget comparison (Dim widgets reacts to the desktop's focus). ui checks it as every
+# click there will be checked (--expect desktop): a desktop-level window of Finder, WindowManager
+# or the wallpaper on top, no icon or control under AX, never the Dock or a Finder window.
 step_desktop_spot() {
   b_only desktop-spot
-  local hit
-  hit="$(ui_run hit "$@")" || fail "ui hit failed there: $hit"
-  case "$hit" in
-    *"process: Finder"* | *"process: Dock"* | *"process: WindowManager"* | *"process: Wallpaper"*) ;;
-    *) fail "that point isn't the desktop: $(head -1 <<<"$hit")" ;;
-  esac
+  local probe
+  probe="$(ui_run click "$@" --expect desktop --probe 2>&1)" || fail "that point isn't the bare desktop: $probe"
   # <x> <y> in points, or --image <png> <x> <y>, which ui converts at every click.
-  printf '%s\n' "$*" >"$WORK/desktop-spot.args"
+  printf '%s --expect desktop\n' "$*" >"$WORK/desktop-spot.args"
   echo "desktop spot: $(cat "$WORK/desktop-spot.args")"
 }
 
 # click_desktop: the fixed action before a widget comparison: a click on the empty desktop spot,
-# then 1 s; with click-to-show-desktop on, again, checked with ui windows.
+# then 1 s; with click-to-show-desktop on, again, checked with ui windows. Each click is refused
+# unless the bare desktop is still what lies there.
 click_desktop() {
   [ -f "$WORK/desktop-spot.args" ] || {
     warn "no desktop spot recorded (desktop-spot)"
     return 1
   }
-  # The recorded arguments are split on purpose: <x> <y> or --image <png> <x> <y>.
+  # The recorded arguments are split on purpose: <x> <y> or --image <png> <x> <y>, then
+  # --expect desktop.
   # shellcheck disable=SC2046
   ui_run click $(cat "$WORK/desktop-spot.args") >/dev/null || return 1
   sleep 1
@@ -3240,7 +3258,10 @@ state_seconds() { ui_run idle 2>/dev/null | sed -n 's/.* hid_state_s=\([0-9.-]*\
 # lower <a> <b>: a is below b by more than half a second (HIDIdleTime went back: an event).
 lower() { awk -v a="${1:-0}" -v b="${2:-0}" 'BEGIN { exit !(a + 0.5 < b) }'; }
 
-# P1 --image <png> <x> <y> | <x> <y>: ui hit at a widget's centre.
+# P1 --image <png> <x> <y> | <x> <y>: ui hit at a widget's centre. Only a widget host (Notification
+# Center, chronod or a WidgetKit process) with a BatteryPulse label in the hit chain passes and
+# joins ui-hosts; a mis-aimed point (no widget yet, a window over it, Finder) fails, so no other app
+# is ever approved this way (ui also ignores any other entry).
 proof_p1() {
   local hit owner bundle
   hit="$(ui_run hit "$@" 2>&1)" || {
@@ -3251,15 +3272,22 @@ proof_p1() {
   owner="$(sed -n 's/^process: \(.*\) (\(.*\), pid .*/\1/p' <<<"$hit" | head -1 || true)"
   bundle="$(sed -n 's/^process: .* (\(.*\), pid .*/\1/p' <<<"$hit" | head -1 || true)"
   case "$bundle" in
-    com.apple.*)
-      grep -qx "$bundle" "$WORK/ui-hosts" 2>/dev/null || echo "$bundle" >>"$WORK/ui-hosts"
-      tr '\n' ' ' <"$WORK/ui-hosts" >"$WORK/ui-hosts.tmp" && tr ' ' '\n' <"$WORK/ui-hosts.tmp" | grep . | sort -u >"$WORK/ui-hosts"
-      rm -f "$WORK/ui-hosts.tmp"
-      proof_record P1 pass "the widget's host is $owner ($bundle); its chain is in logs/p1-hit.txt"
-      echo "The host joins ui's approved list. Record each widget's frame: $SCRIPT widget <family> x y w h"
+    com.apple.notificationcenterui | com.apple.chronod | [Cc]om.apple.[Ww]idget[Kk]it.*) ;;
+    *)
+      proof_record P1 fail "the point's owner is ${owner:-unknown} (${bundle:-no bundle}), not a widget host" \
+        "widget points from prepare's shot, then computer use"
+      return 0
       ;;
-    *) proof_record P1 fail "the widget's host is ${owner:-unknown}" "widget points from prepare's shot, then computer use" ;;
   esac
+  if ! grep -q '^batterypulse_label: yes' <<<"$hit"; then
+    proof_record P1 fail "$owner is there, but no element of the hit chain is labelled BatteryPulse (logs/p1-hit.txt)" \
+      "widget points from prepare's shot, then computer use"
+    return 0
+  fi
+  { cat "$WORK/ui-hosts" 2>/dev/null || true; echo "$bundle"; } | tr ' ' '\n' | grep . | sort -u >"$WORK/ui-hosts.tmp"
+  mv "$WORK/ui-hosts.tmp" "$WORK/ui-hosts"
+  proof_record P1 pass "the widget's host is $owner ($bundle), with a BatteryPulse label in its chain (logs/p1-hit.txt)"
+  echo "The host is ui's widget host now. Record each widget's frame: $SCRIPT widget <family> x y w h"
 }
 
 # P2: a probe notification, then Notification Center's AX tree within 3 s.
@@ -3399,21 +3427,34 @@ proof_p7() {
     "a dynamic or aerial wallpaper by computer use from prepare's shot; an unread setting is unknown"
 }
 
-# P8: the System Settings pane URLs on 27.
+# P8: the System Settings pane URLs on 27. Each URL must switch to its own pane: the title must be
+# that pane's (ui knows each pane's English and Russian name) and the sidebar's selection readable.
+# The confirmed panes (name, sidebar selection, title) go into ui-panes, the only places ui acts in
+# System Settings (with Accessibility → Display); a pane that failed is computer use's alone.
 proof_p8() {
-  local name title failed=""
+  local name state sidebar title match failed=""
   : >"$LOGS/panes.tsv"
+  : >"$WORK/ui-panes.tmp"
   for name in $PANES; do
     open "$(pane_url "$name")" >/dev/null 2>&1 || true
     sleep 2
-    title="$(ui_run title "System Settings" 2>/dev/null | sed 's/^title: //' || true)"
-    printf '%s\t%s\n' "$name" "${title:-none}" >>"$LOGS/panes.tsv"
-    [ -n "$title" ] || failed="$failed $name"
+    state="$(ui_run pane-state --expect "$name" 2>/dev/null || true)"
+    sidebar="$(tr '\t' '\n' <<<"$state" | sed -n 's/^sidebar=//p' | head -1)"
+    title="$(tr '\t' '\n' <<<"$state" | sed -n 's/^title=//p' | head -1)"
+    match="$(tr '\t' '\n' <<<"$state" | sed -n 's/^match=//p' | head -1)"
+    printf '%s\t%s\t%s\t%s\n' "$name" "${sidebar:--}" "${title:-none}" "${match:-no}" >>"$LOGS/panes.tsv"
+    if [ "$match" = yes ] && [ -n "$sidebar" ] && [ "$sidebar" != - ] && [ -n "$title" ]; then
+      printf '%s\t%s\t%s\n' "$name" "$sidebar" "$title" >>"$WORK/ui-panes.tmp"
+    else
+      failed="$failed $name"
+    fi
   done
+  mv "$WORK/ui-panes.tmp" "$WORK/ui-panes"
   ui_run quit "System Settings" >/dev/null 2>&1 || true
+  # The verdicts only: the titles may be Russian, and stay in logs/panes.tsv on the Mac.
   proof_record P8 "$(if [ -z "$failed" ]; then echo pass; else echo fail; fi)" \
-    "panes opened: $(awk -F '\t' '{ printf "%s=%s; ", $1, $2 }' "$LOGS/panes.tsv")" \
-    "$(if [ -n "$failed" ]; then echo "computer use from System Settings' sidebar for:$failed"; else echo -; fi)"
+    "its own pane per URL: $(awk -F '\t' '{ printf "%s=%s%s; ", $1, $4, ($2 == "-" ? " (sidebar unread)" : "") }' "$LOGS/panes.tsv")" \
+    "$(if [ -n "$failed" ]; then echo "computer use from System Settings' sidebar for:$failed (ui doesn't act there)"; else echo -; fi)"
 }
 
 # P9: whether the profiling pass can run at night without the developer-tools dialog.
@@ -3449,13 +3490,16 @@ proof_p11() {
     return 0
   fi
   before="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
-  # The item's centre: x + w/2, y + h/2.
+  # The item's centre (x + w/2, y + h/2), clicked as the queue's S3 clicks it: by the window list
+  # alone, at the item's own window.
   # shellcheck disable=SC2046
-  ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") >/dev/null 2>&1 || true
+  ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") --cg-only --expect BatteryPulse \
+    --window "${item%% *}" >/dev/null 2>&1 || true
   sleep 60
   after="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
   # shellcheck disable=SC2046
-  ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") >/dev/null 2>&1 || true
+  ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") --cg-only --expect BatteryPulse \
+    --window "${item%% *}" >/dev/null 2>&1 || true
   if [ "${after:-0}" -gt "${before:-0}" ]; then
     echo "$rect" >"$WORK/status-item"
     proof_record P11 pass "the popover opened by a posted click and stayed 60 s ($before windows, then $after)"
@@ -3667,7 +3711,7 @@ select_page() {
   frame="$(ui_run frame BatteryPulse --within AXOutline --match "$1" 2>/dev/null || true)"
   if [ -n "$frame" ]; then
     # shellcheck disable=SC2046
-    ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$frame") >/dev/null 2>&1 && return 0
+    ui_click_main $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$frame") >/dev/null 2>&1 && return 0
   fi
   ui_run select-row BatteryPulse "$1" --within AXOutline >/dev/null 2>&1
 }
@@ -3677,14 +3721,18 @@ screen_width() { ui_run screen 2>/dev/null | sed -n 's/^main=[-0-9]* [-0-9]* \([
 # fill_clip <name> <minimize|restore> <ax|shift> <seconds>: one clip of a case, every frame dumped,
 # the darkest ones cropped to the window's rectangle (frames.swift).
 fill_clip() {
-  local name="$1" phase="$2" method="$3" seconds="$4" movie folder line rect point title
+  local name="$1" phase="$2" method="$3" seconds="$4" movie folder line rect point title id
   movie="$REC/$name-$phase.mov"
   folder="$REC/$name-$phase-frames"
   if [ "$phase" = minimize ]; then
     line="$(main_window_line)"
     line_ok "$line" || return 1
     line_rect "$line" >"$REC/$name.rect"
+    line_id "$line" >"$REC/$name.id"
     ui_run title BatteryPulse 2>/dev/null | sed 's/^title: //' >"$REC/$name.title" || true
+    # The Dock's minimized-window tiles before this minimize: the restore clicks only the tile
+    # that appears, never one of his own minimized windows.
+    ui_run frame --dock --list >"$REC/$name.dock" 2>/dev/null || : >"$REC/$name.dock"
   fi
   rect="$(cat "$REC/$name.rect" 2>/dev/null || true)"
   [ -n "$rect" ] || return 1
@@ -3692,17 +3740,18 @@ fill_clip() {
     minimize:ax) clip "$movie" "$seconds" ui_run minimize on BatteryPulse || return 1 ;;
     restore:ax) clip "$movie" "$seconds" ui_run minimize off BatteryPulse || return 1 ;;
     minimize:shift)
+      id="$(cat "$REC/$name.id" 2>/dev/null || true)"
       point="$(ui_run frame BatteryPulse --minimize-button 2>/dev/null | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' || true)"
-      [ -n "$point" ] || return 1
+      [ -n "$point" ] && [ -n "$id" ] || return 1
       # shellcheck disable=SC2086
-      clip "$movie" "$seconds" ui_run click $point --shift || return 1
+      clip "$movie" "$seconds" ui_run click $point --shift --expect BatteryPulse --window "$id" || return 1
       ;;
     restore:shift)
       title="$(cat "$REC/$name.title" 2>/dev/null || true)"
-      point="$(ui_run frame --dock "${title:-BatteryPulse}" 2>/dev/null | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' || true)"
-      [ -n "$point" ] || return 1
-      # shellcheck disable=SC2086
-      clip "$movie" "$seconds" ui_run click $point --shift || return 1
+      # The tile that appeared since the minimize, titled as the window was; ui finds it and
+      # checks that it is what lies at its centre.
+      clip "$movie" "$seconds" ui_run click --expect dock-tile --new-since "$REC/$name.dock" \
+        ${title:+--dock-title "$title"} --shift || return 1
       ;;
   esac
   rm -rf "$folder"
@@ -3771,7 +3820,7 @@ step_styleshot() {
   b_only styleshot
   b_fence
   [ $# -eq 4 ] || fail "usage: $SCRIPT styleshot translucent|clear bright|busy light|dark overview|history|settings"
-  local style="$1" paper="$2" look="$3" page="$4" file before item rect
+  local style="$1" paper="$2" look="$3" page="$4" file before item rect line
   case "$style:$paper:$look:$page" in
     translucent:* | clear:*) ;;
     *) fail "the beta styles are translucent and clear" ;;
@@ -3788,10 +3837,12 @@ step_styleshot() {
     history)
       select_page History || warn "History wasn't selected"
       sleep 2
-      rect="$(line_rect "$(main_window_line)")"
+      line="$(main_window_line)"
+      rect="$(line_rect "$line")"
       # A pointer move over the chart brings up the readout.
       # shellcheck disable=SC2046
-      ui_run move $(awk '{ printf "%d %d", $1 + $3 * 0.6, $2 + $4 * 0.45 }' <<<"$rect") >/dev/null 2>&1 || true
+      ui_run move $(awk '{ printf "%d %d", $1 + $3 * 0.6, $2 + $4 * 0.45 }' <<<"$rect") --expect BatteryPulse \
+        --window "$(line_id "$line")" >/dev/null 2>&1 || true
       sleep 1
       window_shot "$file"
       ;;
@@ -3815,7 +3866,7 @@ step_styleshot() {
 step_gradshot() {
   b_only gradshot
   b_fence
-  local style="${1:-}" look="${2:-}" item="${3:-}" ready="${4:-}" file rect
+  local style="${1:-}" look="${2:-}" item="${3:-}" ready="${4:-}" file rect line
   file="$SHOTS/grad/grad-$style-$look-$item.png"
   case "$style:$item" in
     translucent:raw | translucent:demo | translucent:history | translucent:fullscreen | clear:raw | clear:demo | clear:history | clear:fullscreen | clear:settings | frosted:gallery) ;;
@@ -3850,9 +3901,11 @@ step_gradshot() {
       history)
         select_page History || warn "History wasn't selected"
         sleep 2
-        rect="$(line_rect "$(main_window_line)")"
+        line="$(main_window_line)"
+        rect="$(line_rect "$line")"
         # shellcheck disable=SC2046
-        ui_run scroll $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") 12 >/dev/null 2>&1 || true
+        ui_run scroll $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$rect") 12 --expect BatteryPulse \
+          --window "$(line_id "$line")" >/dev/null 2>&1 || true
         sleep 1
         window_shot "$file" || not_checked "grad-$style-$look-$item" "no shot"
         ;;
@@ -4341,18 +4394,21 @@ page_targets() {
   done
 }
 
-# cue_clicks <rounds> <seconds> <targets file>: each page clicked on the cue schedule.
+# cue_clicks <rounds> <seconds> <targets file>: each page clicked on the cue schedule, each click
+# aimed at the main window by its ID.
 cue_clicks() {
-  local round target label point
+  local round target label point id
+  id="$(main_window_id)"
   for round in $(seq 1 "$1"); do
     while IFS= read -r target; do
       label="${target%%|*}"
       point="${target#*|}"
-      if [ "$point" = ax ]; then
+      if [ "$point" = ax ] || [ -z "$id" ]; then
         ui_run select-row BatteryPulse "$label" --within AXOutline >/dev/null 2>&1 || true
       else
         # shellcheck disable=SC2086
-        ui_run click $point >/dev/null 2>&1 || ui_run select-row BatteryPulse "$label" --within AXOutline >/dev/null 2>&1 || true
+        ui_run click $point --expect BatteryPulse --window "$id" >/dev/null 2>&1 ||
+          ui_run select-row BatteryPulse "$label" --within AXOutline >/dev/null 2>&1 || true
       fi
       sleep "$2"
     done <"$3"
@@ -4681,10 +4737,13 @@ q_setup() {
             return 1
           }
           title="$(ui_run windows --app BatteryPulse 2>/dev/null | awk -F '\t' -v id="$id" '$1 == id { n = $5; sub(/^alpha [0-9.]* */, "", n); gsub(/"/, "", n); print n }' || true)"
-          echo "${title:-BatteryPulse}" >"$WORK/q-min-title"
+          echo "$title" >"$WORK/q-min-title"
+          # The Dock's minimized-window tiles before the minimize (AX into the Dock, never into
+          # BatteryPulse): the teardown clicks only the tile that appears.
+          ui_run frame --dock --list >"$WORK/q-min-dock" 2>/dev/null || : >"$WORK/q-min-dock"
           # shellcheck disable=SC2046
           ui_run click --cg-only $(awk -v r="$rect" -v o="$offset" 'BEGIN { split(r, w, " "); split(o, d, " "); printf "%d %d", w[1] + d[1], w[2] + d[2] }') \
-            >/dev/null 2>&1 || {
+            --expect BatteryPulse --window "$id" >/dev/null 2>&1 || {
             echo "the minimize click was refused"
             return 1
           }
@@ -4705,7 +4764,8 @@ q_setup() {
       }
       before="$(ui_run windows --app BatteryPulse 2>/dev/null | grep -c . || true)"
       # shellcheck disable=SC2046
-      ui_run click --cg-only $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$item") >/dev/null 2>&1 || {
+      ui_run click --cg-only $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' <<<"$item") --expect BatteryPulse \
+        --window "$(ui_run windows --status-item 2>/dev/null | cut -d' ' -f1)" >/dev/null 2>&1 || {
         echo "the click on the menu bar item was refused"
         return 1
       }
@@ -4735,22 +4795,24 @@ q_confirm() {
 }
 
 q_teardown() {
-  local tile
+  local item title
   case "$1" in
     S5) ui_run quit TextEdit >/dev/null 2>&1 || warn "TextEdit didn't quit by its menu" ;;
     S3)
+      item="$(ui_run windows --status-item 2>/dev/null || true)"
       # shellcheck disable=SC2046
-      ui_run click --cg-only $(ui_run windows --status-item 2>/dev/null | cut -d' ' -f2- | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }') >/dev/null 2>&1 || true
+      [ -z "$item" ] || ui_run click --cg-only $(cut -d' ' -f2- <<<"$item" | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }') \
+        --expect BatteryPulse --window "${item%% *}" >/dev/null 2>&1 || true
       ;;
     MIN)
-      # The window's Dock tile, its frame from the Dock's AX tree, then CGWindowList's word.
-      tile="$(ui_run frame --dock "$(cat "$WORK/q-min-title" 2>/dev/null || echo BatteryPulse)" 2>/dev/null | awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' || true)"
-      # shellcheck disable=SC2086
-      if [ -n "$tile" ] && ui_run click $tile >/dev/null 2>&1; then
+      # The tile that appeared at the minimize (the Dock's AX tree, never BatteryPulse's), titled
+      # as the window was, then CGWindowList's word; never an app's tile or one of his windows.
+      title="$(cat "$WORK/q-min-title" 2>/dev/null || true)"
+      if ui_run click --expect dock-tile --new-since "$WORK/q-min-dock" ${title:+--dock-title "$title"} >/dev/null 2>&1; then
         sleep 3
         if line_ok "$(main_window_line)"; then echo "restored from the Dock tile" >"$WORK/q-min-restore"; else echo "the Dock tile click didn't bring the window back" >"$WORK/q-min-restore"; fi
       else
-        echo "no Dock tile to click" >"$WORK/q-min-restore"
+        echo "no single new Dock tile to click" >"$WORK/q-min-restore"
       fi
       ;;
   esac

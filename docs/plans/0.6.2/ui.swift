@@ -9,15 +9,30 @@
 // or as `--image <png> <x> <y>`: pixels of a full-screen shot of the main display (the script's
 // `shot`), converted to points. Never computer use's scaled coordinates.
 //
+// Every click, move and scroll names what it is aimed at, and acts only when that is what lies at
+// the point, by AX and by the topmost window (--cg-only: by the window alone):
+//   --expect <app or bundle> [--window <CGWindowID>]  BatteryPulse, System Settings, TextEdit,
+//                                                    Accessibility Inspector, Xcode, a BatteryPulse
+//                                                    widget in its host, Control Center's clock
+//   --expect desktop                                 the bare desktop: a desktop-level window of
+//                                                    Finder, WindowManager or the wallpaper, and no
+//                                                    icon or control under AX; one plain click only
+//   --expect dock-tile (--new-since <file> | --dock-title <title>)   click only: the minimized
+//                                                    window's own Dock tile (see frame --dock)
+//
 // Actions (each passes the safety rules below first):
-//   click <point> [--shift | --control] [--double] [--cg-only]
+//   click <point> --expect … [--shift | --control] [--double] [--cg-only] [--probe]
 //                                                    a left click; the modifier as flagsChanged;
 //                                                    --cg-only hit-tests by the window list alone
-//                                                    (the queue's: no AX call into BatteryPulse)
+//                                                    (the queue's: no AX call into BatteryPulse);
+//                                                    --probe checks the point and clicks nothing
 //   click --ax <app> <text> [--shift | --control]    at the centre of the element that matches
-//   move <point> | move --here                       --here: a 0-pixel move (proof P6)
-//   drag <point> <point> [--steps n] [--seconds s]   slow, in steps (the widget gallery)
-//   scroll <point> <lines>                           positive lines scroll down
+//   click --expect dock-tile (--new-since <file> | --dock-title <title>) [--shift]
+//   move <point> --expect … | move --here           --here: a 0-pixel move (proof P6)
+//   drag <point> <point> [--steps n] [--seconds s]   slow, in steps: from a widget in its host to
+//                                                    the desktop or the widget layer, never onto an
+//                                                    icon or the Dock
+//   scroll <point> <lines> --expect …                positive lines scroll down
 //   press <app> <text> [--role r] [--within role] [--index n] [--action AXPress]
 //   press <app> --menu-cmd <char>                    the menu item with that Command key and no other
 //                                                    modifier (Settings… is ",", Close "W")
@@ -26,43 +41,64 @@
 //   fullscreen on|off <app> [--window <title>]       AXFullScreen (no keystroke)
 //   position <app> <x> <y> [<width> <height>] [--window <title>]   (Terminal too: placed, never
 //                                                    clicked)
+//   close <app> --window <title>                     an AX press on that window's close button
 //   banner <text> [--seconds n] [--probe]            finds the banner with that text (the
 //                                                    notification's own body) in Notification
 //                                                    Center's AX tree and presses it (--probe: only
 //                                                    finds it)
 //   quit <app>                                       an AX press on the app's own Quit menu item
 // Reads:
-//   frame <app> [--window <title> | --minimize-button | --match <text>] | frame --dock <title>
-//   title <app>                                      its focused window's title (a System Settings pane)
-//   hit <point>                                      the element there: process, role, label,
-//                                                    the parent chain and the frame (proof P1)
+//   frame <app> [--window <title> | --minimize-button | --match <text>]
+//   frame --dock --list                              every minimized window's Dock tile: its frame
+//                                                    and a hash of its title (no title printed)
+//   frame --dock (--new-since <file> | --dock-title <title> | <title>)
+//                                                    the tile that appeared since the --list file,
+//                                                    else the one tile with exactly that title;
+//                                                    never an app's tile
+//   title BatteryPulse | "System Settings"           its focused window's title
+//   pane-state [--expect <pane>]                     System Settings: the sidebar's selected row,
+//                                                    the title, and whether they are that pane's
+//                                                    (proof P8's names)
+//   hit <point>                                      the element there: process, role, the parent
+//                                                    chain and the frames (proof P1); labels only
+//                                                    inside BatteryPulse
 //   tree <app> | --app <app> [--match <text>] [--inside x y w h] [--depth n]
 //   windows [--app <name>] [--main [--allow-cover <app>]] [--status-item]
 //   idle | locked | thermal | sample | access | screen | guard
-//                                                    sample: idle, locked and thermal in one line
+//                                                    sample: idle, locked, the screen saver and
+//                                                    thermal in one line
 //   Options of every command: --tap hid|session (else BP_UI_TAP, else hid).
 //
 // Safety rules (exit status 3 when one refuses):
 //   - no key presses at all: only a Shift or Control modifier, as a flagsChanged event, around a
 //     click; never Esc, which would end the Claude session's turn;
-//   - every click, move, drag and scroll hit-tests the point, by AX and by the topmost window
-//     there, and acts only on an approved owner (BatteryPulse, the desktop, the Dock and the menu
-//     bar, System Settings, Notification Center, the widget gallery's host, TextEdit,
-//     Accessibility Inspector, Xcode; the hosts proof P1 found, from BP_UI_HOSTS);
+//   - a click, move or scroll acts only where its --expect holds (above); AX actions target only
+//     BatteryPulse, System Settings, TextEdit, Accessibility Inspector and Xcode. Finder is only
+//     ever the bare desktop, the Dock only the minimized window's tile, Control Center only its
+//     clock; a widget host only at a BatteryPulse widget (a frame the script recorded, or a
+//     BatteryPulse label in the AX chain); the hosts proof P1 found (BP_UI_HOSTS) count only when
+//     they are widget hosts;
 //   - it always refuses SecurityAgent, UserNotificationCenter, CoreServicesUIAgent, coreautha,
-//     loginwindow, a TCC prompt and Terminal, and System Settings while its pane is Privacy &
-//     Security, Users & Groups, Passwords or Login Password;
+//     loginwindow, a TCC prompt and Terminal, and refuses any action while one of them, the screen
+//     saver or loginwindow shows a window (Terminal's own windows aside);
+//   - System Settings: it acts only while every window shows a pane proof P8 confirmed
+//     (BP_UI_PANES) or Accessibility → Display, with the sidebar's selection readable, and never
+//     while the sidebar or the title is Privacy & Security, Users & Groups, Touch ID & Password,
+//     Lock Screen, Passwords or Login Password, nor on an element whose label names one of them;
 //   - it refuses everything that touches AX or posts an event while the screen is locked or the
-//     lid is closed, and while ~/bp-062/B/queue.started (or BP_FENCE) exists, unless the process
-//     named in that file (the arm window's queue) is among its own ancestors;
+//     lid is closed, while ~/bp-062/B/queue.started (or BP_FENCE) exists, and while
+//     ~/bp-062/B/ready exists without a newer ~/bp-062/B/continued, unless the arm window (its pid
+//     in arm.pid or queue.started) is among its own ancestors;
 //   - it refuses any point within 20 points of a hot corner set to Start Screen Saver, Put Display
 //     to Sleep or Lock Screen;
-//   - `guard` exits 3 when any of these holds now, or a refused process shows a window.
+//   - `guard` exits 3 when any of these holds now, or System Settings shows a pane it never acts in.
 // Exit status: 0 done, 1 failed, 2 a wrong call, 3 refused, 4 not found.
 //
-// Privacy: window and element labels are printed only for BatteryPulse and Apple's own processes
-// ("another app" otherwise); `tree` of another app prints only what --match or --inside selects,
-// and of System Settings only whether the match exists. Every call is public API.
+// Privacy: process names are printed only for BatteryPulse and Apple's own processes ("another
+// app" otherwise); element labels only for BatteryPulse's elements and those inside an element
+// labelled BatteryPulse; `tree` of a widget host only inside a recorded widget frame, of System
+// Settings only whether the match exists, of another app only roles and frames. Every call is
+// public API.
 import ApplicationServices
 import CoreGraphics
 import Foundation
@@ -97,19 +133,38 @@ struct Window {
     let alpha: Double
 }
 
+/// What a click, move or scroll is aimed at (`--expect`).
+enum Expectation {
+    case app(String)
+    /// Notification Center at a banner that `banner` found by its own text.
+    case banner
+    case desktop
+    case dockTile(AXUIElement)
+}
+
 enum Rules {
     static let batteryPulse = "io.github.nikitausov.BatteryPulse"
-    /// The owners a click may land on, by bundle identifier.
-    static let approvedBundles: Set<String> = [
-        batteryPulse, "com.apple.finder", "com.apple.dock", "com.apple.WindowManager",
-        "com.apple.wallpaper.agent", "com.apple.systemuiserver", "com.apple.controlcenter",
-        "com.apple.systempreferences", "com.apple.notificationcenterui", "com.apple.TextEdit",
-        "com.apple.AccessibilityInspector", "com.apple.dt.Xcode", "com.apple.chronod",
+    static let settings = "com.apple.systempreferences"
+    static let notificationCenter = "com.apple.notificationcenterui"
+    static let finder = "com.apple.finder"
+    static let dock = "com.apple.dock"
+    static let controlCenter = "com.apple.controlcenter"
+    static let terminal = "com.apple.Terminal"
+    /// The apps an AX action (press, select-row, minimize, fullscreen, position, close, quit, a menu
+    /// command) may target. Finder, the Dock and Control Center never are.
+    static let targetBundles: Set<String> = [
+        batteryPulse, settings, "com.apple.TextEdit", "com.apple.AccessibilityInspector", "com.apple.dt.Xcode",
     ]
-    /// The desktop picture's owner, whatever macOS 27 calls it.
-    static let approvedPrefixes = ["com.apple.wallpaper"]
-    /// The window server's own windows (the menu bar, the cursor), by owner name.
-    static let approvedOwners: Set<String> = ["Window Server", "WindowServer"]
+    /// The widget hosts known before proof P1; P1 may add a WidgetKit host (BP_UI_HOSTS).
+    static let builtInHosts: Set<String> = [notificationCenter, "com.apple.chronod"]
+    /// Control Center's one approved element: the clock, which opens Notification Center (P2).
+    static let clockIdentifier = "com.apple.menuextra.clock"
+    /// The bare desktop's owners: Finder's desktop window, WindowManager and the wallpaper.
+    static let desktopBundles: Set<String> = [finder, "com.apple.WindowManager"]
+    static let desktopPrefixes = ["com.apple.wallpaper"]
+    /// The window server's own windows (the menu bar's backdrop, the cursor), by owner name: never
+    /// the topmost window of a hit test.
+    static let windowServer: Set<String> = ["Window Server", "WindowServer"]
     /// Never acted on, whatever the approved list says.
     static let refusedNames: Set<String> = [
         "SecurityAgent", "UserNotificationCenter", "CoreServicesUIAgent", "coreautha", "loginwindow",
@@ -117,40 +172,91 @@ enum Rules {
     ]
     static let refusedBundles: Set<String> = [
         "com.apple.SecurityAgent", "com.apple.UserNotificationCenter", "com.apple.coreservices.uiagent",
-        "com.apple.loginwindow", "com.apple.Terminal", "com.apple.LocalAuthentication.UIAgent",
+        "com.apple.loginwindow", terminal, "com.apple.LocalAuthentication.UIAgent",
         "com.apple.tccd", "com.apple.accessibility.universalAccessAuthWarn",
     ]
-    /// System Settings panes it never acts in, English and Russian, lowercased, as window title
-    /// fragments ("password" covers Passwords, Login Password and Touch ID & Password).
-    static let refusedPanes: [String] = [
-        "privacy", "users & groups", "password",
-        "\u{043A}\u{043E}\u{043D}\u{0444}\u{0438}\u{0434}\u{0435}\u{043D}\u{0446}\u{0438}\u{0430}\u{043B}\u{044C}\u{043D}\u{043E}\u{0441}\u{0442}\u{044C}",
-        "\u{043F}\u{043E}\u{043B}\u{044C}\u{0437}\u{043E}\u{0432}\u{0430}\u{0442}\u{0435}\u{043B}\u{0438} \u{0438} \u{0433}\u{0440}\u{0443}\u{043F}\u{043F}\u{044B}",
-        "\u{043F}\u{0430}\u{0440}\u{043E}\u{043B}",
+    static let screenSaverNames = ["ScreenSaverEngine", "legacyScreenSaver"]
+    /// AX roles that are a file's icon or its name, or a control: never "the bare desktop".
+    static let iconRoles: Set<String> = [
+        "AXImage", "AXDockItem", "AXTextField", "AXStaticText", "AXButton", "AXCell", "AXRow", "AXCheckBox",
+        "AXMenuItem", "AXMenuButton", "AXPopUpButton", "AXRadioButton", "AXLink", "AXSlider", "AXIncrementor",
     ]
-    /// Hot corner actions it keeps away from: Start Screen Saver, Put Display to Sleep, Lock Screen.
-    static let dangerousCorners: Set<Int> = [5, 10, 13]
-    static let cornerMargin: CGFloat = 20
     /// Apps known by another name than their process.
     static let aliases: [String: String] = [
-        "notification center": "com.apple.notificationcenterui", "notificationcenter": "com.apple.notificationcenterui",
-        "system settings": "com.apple.systempreferences", "dock": "com.apple.dock", "finder": "com.apple.finder",
-        "batterypulse": batteryPulse, "textedit": "com.apple.TextEdit", "xcode": "com.apple.dt.Xcode",
-        "accessibility inspector": "com.apple.AccessibilityInspector",
+        "notification center": notificationCenter, "notificationcenter": notificationCenter,
+        "system settings": settings, "dock": dock, "finder": finder, "control center": controlCenter,
+        "controlcenter": controlCenter, "batterypulse": batteryPulse, "textedit": "com.apple.TextEdit",
+        "xcode": "com.apple.dt.Xcode", "accessibility inspector": "com.apple.AccessibilityInspector",
     ]
+
+    static func bundle(for query: String) -> String { aliases[query.lowercased()] ?? query }
 
     static func isRefused(_ process: RunningProcess) -> Bool {
         refusedNames.contains(process.name) || refusedBundles.contains(process.bundle)
             || process.name.localizedCaseInsensitiveContains("tcc")
     }
 
-    static func isApproved(_ process: RunningProcess) -> Bool {
-        if isRefused(process) { return false }
-        if approvedBundles.contains(process.bundle) || approvedOwners.contains(process.name) { return true }
-        if approvedPrefixes.contains(where: { process.bundle.hasPrefix($0) }) { return true }
-        // The widget hosts proof P1 found, which the script passes on.
-        let hosts = (ProcessInfo.processInfo.environment["BP_UI_HOSTS"] ?? "").split(separator: " ").map(String.init)
-        return hosts.contains(process.bundle) || hosts.contains(process.name)
+    static func isTerminal(_ process: RunningProcess) -> Bool {
+        process.bundle == terminal || process.name == "Terminal"
+    }
+
+    static func isLoginWindow(_ process: RunningProcess) -> Bool {
+        process.name == "loginwindow" || process.bundle == "com.apple.loginwindow"
+    }
+
+    static func isScreenSaver(_ process: RunningProcess, owner: String = "") -> Bool {
+        screenSaverNames.contains { process.name.hasPrefix($0) || owner.hasPrefix($0) }
+            || process.bundle.hasPrefix("com.apple.ScreenSaver")
+    }
+
+    static func isDesktopOwner(_ process: RunningProcess) -> Bool {
+        desktopBundles.contains(process.bundle) || desktopPrefixes.contains { process.bundle.hasPrefix($0) }
+    }
+
+    /// The topmost window of the bare desktop: a desktop-level window of Finder, WindowManager or
+    /// the wallpaper, or the Dock's desktop picture far below every other level (where a release
+    /// still draws it there); never the Dock's own bar, which sits above level 0.
+    static func isDesktopWindow(_ window: Window, _ owner: RunningProcess) -> Bool {
+        guard window.layer < 0 else { return false }
+        return isDesktopOwner(owner) || (owner.bundle == dock && window.layer < -1_000_000)
+    }
+
+    static func isWidgetHostCandidate(_ bundle: String) -> Bool {
+        builtInHosts.contains(bundle) || bundle.lowercased().hasPrefix("com.apple.widgetkit.")
+    }
+
+    /// The widget hosts: the known ones, and BP_UI_HOSTS' entries (split on any whitespace) that are
+    /// widget hosts; any other entry is ignored.
+    static func widgetHosts() -> Set<String> {
+        let listed = (ProcessInfo.processInfo.environment["BP_UI_HOSTS"] ?? "")
+            .split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        return builtInHosts.union(listed.filter(isWidgetHostCandidate))
+    }
+
+    /// The owners a click, move or scroll may be aimed at.
+    static func isPointApproved(_ bundle: String) -> Bool {
+        targetBundles.contains(bundle) || bundle == controlCenter || widgetHosts().contains(bundle)
+    }
+
+    /// The widget frames the script recorded (BP_UI_WIDGETS, one "x y w h" per line), in points.
+    static func widgetFrames() -> [CGRect] {
+        (ProcessInfo.processInfo.environment["BP_UI_WIDGETS"] ?? "").split(separator: "\n").compactMap { line in
+            let numbers = line.split(whereSeparator: { $0.isWhitespace }).compactMap { Double(String($0)) }
+            guard numbers.count == 4 else { return nil }
+            return CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
+        }
+    }
+
+    static func isInsideWidget(_ point: CGPoint) -> Bool {
+        widgetFrames().contains { $0.insetBy(dx: -2, dy: -2).contains(point) }
+    }
+
+    /// A rectangle that is one of the recorded widget frames, within 2 points.
+    static func isRecordedWidget(_ rect: CGRect) -> Bool {
+        widgetFrames().contains {
+            abs($0.minX - rect.minX) <= 2 && abs($0.minY - rect.minY) <= 2 && abs($0.width - rect.width) <= 2
+                && abs($0.height - rect.height) <= 2
+        }
     }
 }
 
@@ -194,7 +300,7 @@ enum Processes {
 
     /// The running app a name, alias or bundle identifier stands for.
     static func app(_ query: String) throws -> RunningProcess {
-        let wanted = Rules.aliases[query.lowercased()] ?? query
+        let wanted = Rules.bundle(for: query)
         var byName: RunningProcess?
         for pid in all() {
             guard let path = path(pid), path.contains(".app/") else { continue }
@@ -252,6 +358,19 @@ enum AX {
 
     static func children(_ element: AXUIElement) -> [AXUIElement] { elements(element, "AXChildren") }
 
+    static func parent(_ element: AXUIElement) -> AXUIElement? { self.element(attribute(element, "AXParent")) }
+
+    /// The element, then its parents, at most `hops` of them.
+    static func chain(_ element: AXUIElement, hops: Int) -> [AXUIElement] {
+        var chain = [element]
+        var current = element
+        while chain.count <= hops, let next = parent(current) {
+            chain.append(next)
+            current = next
+        }
+        return chain
+    }
+
     static func actions(_ element: AXUIElement) -> [String] {
         var names: CFArray?
         guard AXUIElementCopyActionNames(element, &names) == .success, let names = names as? [String] else {
@@ -270,6 +389,15 @@ enum AX {
         var pid: pid_t = 0
         guard AXUIElementGetPid(element, &pid) == .success else { return nil }
         return pid
+    }
+
+    /// The element at a point, by the system-wide hit test (it asks the app that owns the point).
+    static func element(at point: CGPoint) -> AXUIElement? {
+        var found: AXUIElement?
+        guard AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &found)
+            == .success
+        else { return nil }
+        return found
     }
 
     static func frame(_ element: AXUIElement) -> CGRect? {
@@ -304,6 +432,29 @@ enum AX {
         return role
     }
 
+    /// A file's icon or its name, or a control: what "the bare desktop" never is.
+    static func isIconLike(_ element: AXUIElement) -> Bool {
+        let role = string(element, "AXRole") ?? ""
+        let subrole = string(element, "AXSubrole") ?? ""
+        return Rules.iconRoles.contains(role) || subrole.localizedCaseInsensitiveContains("icon")
+            || attribute(element, "AXFilename") != nil
+    }
+
+    /// Whether the element or one of its first `hops` parents carries that identifier.
+    static func hasIdentifier(_ element: AXUIElement, _ identifier: String, hops: Int) -> Bool {
+        chain(element, hops: hops).contains { string($0, "AXIdentifier") == identifier }
+    }
+
+    /// Whether the element or one of its parents is labelled BatteryPulse (a widget's container).
+    static func isInsideBatteryPulse(_ element: AXUIElement) -> Bool {
+        chain(element, hops: 10).contains { label($0).localizedCaseInsensitiveContains("BatteryPulse") }
+    }
+
+    /// Whether the element is `target` or lies inside it, within `hops` parents.
+    static func isOrIsInside(_ element: AXUIElement, _ target: AXUIElement, hops: Int) -> Bool {
+        chain(element, hops: hops).contains { CFEqual($0, target) }
+    }
+
     /// Breadth first, at most `depth` levels and 20,000 elements.
     static func find(in root: AXUIElement, text: String?, role wanted: String?, depth: Int) -> [AXUIElement] {
         var found: [AXUIElement] = []
@@ -323,6 +474,12 @@ enum AX {
     }
 
     static func windows(_ process: RunningProcess) -> [AXUIElement] { elements(application(process), "AXWindows") }
+
+    /// The focused window, else the main one.
+    static func frontWindow(_ process: RunningProcess) -> AXUIElement? {
+        let app = application(process)
+        return element(attribute(app, "AXFocusedWindow")) ?? element(attribute(app, "AXMainWindow"))
+    }
 
     /// The window titled `title`, else the main window, else the first one.
     static func window(_ process: RunningProcess, title: String?) throws -> AXUIElement {
@@ -348,6 +505,168 @@ enum AX {
     static func perform(_ element: AXUIElement, _ action: String) throws {
         let error = AXUIElementPerformAction(element, action as CFString)
         guard error == .success else { throw Failure(description: "\(action) failed (AXError \(error.rawValue))") }
+    }
+}
+
+// MARK: - System Settings' panes
+
+enum Panes {
+    /// Panes it never acts in, English and Russian, lowercased, as fragments of the sidebar's
+    /// selection or the title ("password" covers Passwords, Login Password and Touch ID & Password).
+    static let refused: [String] = [
+        "privacy", "users & groups", "password", "touch id", "lock screen",
+        "\u{043A}\u{043E}\u{043D}\u{0444}\u{0438}\u{0434}\u{0435}\u{043D}\u{0446}\u{0438}\u{0430}\u{043B}\u{044C}\u{043D}\u{043E}\u{0441}\u{0442}\u{044C}",
+        "\u{043F}\u{043E}\u{043B}\u{044C}\u{0437}\u{043E}\u{0432}\u{0430}\u{0442}\u{0435}\u{043B}\u{0438} \u{0438} \u{0433}\u{0440}\u{0443}\u{043F}\u{043F}\u{044B}",
+        "\u{043F}\u{0430}\u{0440}\u{043E}\u{043B}",
+        "\u{044D}\u{043A}\u{0440}\u{0430}\u{043D} \u{0431}\u{043B}\u{043E}\u{043A}\u{0438}\u{0440}\u{043E}\u{0432}\u{043A}\u{0438}",
+    ]
+    /// The title each of proof P8's pane URLs should show (the script's PANES), English and Russian.
+    static let expected: [String: [String]] = [
+        "appearance": ["appearance", "\u{043E}\u{0444}\u{043E}\u{0440}\u{043C}\u{043B}\u{0435}\u{043D}\u{0438}\u{0435}"],
+        "desktop": ["desktop", "\u{0440}\u{0430}\u{0431}\u{043E}\u{0447}\u{0438}\u{0439} \u{0441}\u{0442}\u{043E}\u{043B}"],
+        "displays": ["display", "\u{0434}\u{0438}\u{0441}\u{043F}\u{043B}\u{0435}"],
+        "accessibility": [
+            "accessibility",
+            "\u{0443}\u{043D}\u{0438}\u{0432}\u{0435}\u{0440}\u{0441}\u{0430}\u{043B}\u{044C}\u{043D}\u{044B}\u{0439} \u{0434}\u{043E}\u{0441}\u{0442}\u{0443}\u{043F}",
+        ],
+        "login-items": ["login items", "\u{043E}\u{0431}\u{044A}\u{0435}\u{043A}\u{0442}\u{044B} \u{0432}\u{0445}\u{043E}\u{0434}\u{0430}"],
+        "battery": ["battery", "\u{0430}\u{043A}\u{043A}\u{0443}\u{043C}\u{0443}\u{043B}\u{044F}\u{0442}\u{043E}\u{0440}"],
+        "date-time": ["date", "\u{0434}\u{0430}\u{0442}\u{0430}"],
+        "wallpaper": ["wallpaper", "\u{043E}\u{0431}\u{043E}\u{0438}"],
+    ]
+    /// Accessibility → Display (Text size, Increase Contrast, Reduce Transparency, motion), the one
+    /// subpane allowed beyond P8's list.
+    static let accessibilityDisplay: Set<String> = ["display", "\u{0434}\u{0438}\u{0441}\u{043F}\u{043B}\u{0435}\u{0439}"]
+
+    static func isRefused(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return refused.contains { lowered.contains($0) }
+    }
+
+    static func matches(_ name: String, title: String) -> Bool {
+        let lowered = title.lowercased()
+        return (expected[name] ?? []).contains { lowered.contains($0) } && !isRefused(title)
+    }
+
+    /// Proof P8's confirmed panes (BP_UI_PANES: "<name>\t<sidebar>\t<title>" per line).
+    static func allowed() -> [(name: String, sidebar: String, title: String)] {
+        (ProcessInfo.processInfo.environment["BP_UI_PANES"] ?? "").split(separator: "\n").compactMap { line in
+            let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard fields.count == 3 else { return nil }
+            return (name: fields[0], sidebar: fields[1], title: fields[2])
+        }
+    }
+
+    static func isAllowed(sidebar: String, title: String) -> Bool {
+        allowed().contains { pane in
+            guard pane.sidebar == sidebar else { return false }
+            return pane.title == title || (pane.name == "accessibility" && accessibilityDisplay.contains(title.lowercased()))
+        }
+    }
+
+    /// The sidebar's selected row (the first AXOutline's AXSelectedRows): its label and texts.
+    static func sidebarSelection(_ window: AXUIElement) -> String? {
+        guard let outline = AX.find(in: window, text: nil, role: "AXOutline", depth: 12).first,
+            let row = AX.elements(outline, "AXSelectedRows").first
+        else { return nil }
+        let texts = AX.find(in: row, text: nil, role: "AXStaticText", depth: 4).map { AX.string($0, "AXValue") ?? AX.label($0) }
+        let parts = ([AX.label(row)] + texts).filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// Every System Settings window: a pane P8 confirmed, its sidebar readable, nothing refused.
+    static func check(_ settings: RunningProcess) throws {
+        for window in AX.windows(settings) {
+            let title = AX.string(window, "AXTitle") ?? ""
+            let sidebar = sidebarSelection(window)
+            if isRefused(title) || isRefused(sidebar ?? "") {
+                throw Refusal(description: "System Settings shows a pane it never acts in")
+            }
+            guard let sidebar else {
+                throw Refusal(description: "System Settings' sidebar selection can't be read: it isn't acted in")
+            }
+            guard isAllowed(sidebar: sidebar, title: title) else {
+                throw Refusal(description: "System Settings shows a pane outside proof P8's list (\(title))")
+            }
+        }
+    }
+
+    /// The element, its two parents and its children to depth 2 must not name a refused pane (the
+    /// sidebar's Privacy & Security row, an "Open Privacy Settings" button).
+    static func checkLabels(of element: AXUIElement) throws {
+        let around = AX.chain(element, hops: 2) + AX.find(in: element, text: nil, role: nil, depth: 2)
+        if around.contains(where: { isRefused(AX.label($0)) }) {
+            throw Refusal(description: "that element names a System Settings pane it never acts in")
+        }
+    }
+}
+
+// MARK: - The Dock's tiles
+
+enum Dock {
+    struct Tile {
+        let element: AXUIElement
+        let frame: CGRect
+        let hash: String
+    }
+
+    /// FNV-1a over the title's UTF-8: tiles are compared without printing his windows' titles.
+    static func titleHash(_ title: String) -> String {
+        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+        for byte in title.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100_0000_01b3
+        }
+        return String(hash, radix: 16)
+    }
+
+    /// Every minimized window's tile (AXMinimizedWindowDockItem); an app's own tile never counts.
+    static func minimizedTiles() throws -> [Tile] {
+        let dock = try Processes.app(Rules.dock)
+        return AX.find(in: AX.application(dock), text: nil, role: "AXDockItem", depth: 6).compactMap { item in
+            guard AX.string(item, "AXSubrole") == "AXMinimizedWindowDockItem", let frame = AX.frame(item) else {
+                return nil
+            }
+            return Tile(element: item, frame: frame, hash: titleHash(AX.string(item, "AXTitle") ?? ""))
+        }
+    }
+
+    /// The hashes a `frame --dock --list` file holds.
+    static func listed(_ path: String) throws -> [String] {
+        guard let text = try? String(contentsOfFile: path, encoding: .utf8) else {
+            throw Failure(description: "can't read \(path)")
+        }
+        return text.split(separator: "\n").compactMap { $0.split(separator: "\t").last.map(String.init) }
+    }
+
+    /// The tile meant: with --new-since, the one minimized window that appeared since that list
+    /// (and, with --dock-title too, titled so); else the one tile with exactly that title.
+    static func tile(_ options: Options, title positional: String? = nil) throws -> Tile {
+        let tiles = try minimizedTiles()
+        let wanted = (options.value("--dock-title") ?? positional).map(titleHash)
+        if let since = options.value("--new-since") {
+            var before: [String: Int] = [:]
+            for hash in try listed(since) { before[hash, default: 0] += 1 }
+            var now: [String: Int] = [:]
+            for tile in tiles { now[tile.hash, default: 0] += 1 }
+            let grown = now.filter { $0.value > (before[$0.key] ?? 0) }
+            guard grown.count == 1, let new = grown.first, new.value - (before[new.key] ?? 0) == 1 else {
+                throw NotFound(description: "no single new minimized-window tile in the Dock (\(grown.count) titles grew)")
+            }
+            guard new.value == 1, let tile = tiles.first(where: { $0.hash == new.key }) else {
+                throw NotFound(description: "the new tile's title is on \(new.value) tiles: which one is new can't be told")
+            }
+            if let wanted, wanted != tile.hash {
+                throw NotFound(description: "the new tile isn't titled as the window was")
+            }
+            return tile
+        }
+        guard let wanted else { throw UsageError(description: "a Dock tile is --new-since <file> or --dock-title <title>") }
+        let matches = tiles.filter { $0.hash == wanted }
+        guard matches.count == 1, let tile = matches.first else {
+            throw NotFound(description: "\(matches.count) minimized-window tiles have that title (one is needed)")
+        }
+        return tile
     }
 }
 
@@ -391,18 +710,35 @@ enum Screen {
         }
     }
 
-    /// The frontmost visible window that contains the point.
-    static func topWindow(at point: CGPoint) -> Window? {
-        windows().first { $0.bounds.contains(point) && $0.alpha > 0.01 && $0.layer < 1000 }
+    /// The frontmost visible window that contains the point, at any level (the screen saver and a
+    /// lock shield included); only the window server's own windows are passed over.
+    static func topWindow(at point: CGPoint, in list: [Window]) -> Window? {
+        list.first { $0.bounds.contains(point) && $0.alpha > 0.01 && !Rules.windowServer.contains($0.owner) }
+    }
+
+    /// Windows that count for the safety scans: visible and larger than a few points.
+    static func visible(_ list: [Window]) -> [Window] {
+        list.filter { $0.alpha > 0.01 && $0.bounds.width * $0.bounds.height > 100 }
     }
 
     static func session() -> [String: Any] {
         (CGSessionCopyCurrentDictionary() as? [String: Any]) ?? [:]
     }
 
-    static func isLocked() -> Bool { (session()["CGSSessionScreenIsLocked"] as? Bool) ?? false }
+    /// Locked by the session's own key, or with a loginwindow window on screen (its key may be
+    /// missing).
+    static func isLocked(_ list: [Window]? = nil) -> Bool {
+        if (session()["CGSSessionScreenIsLocked"] as? Bool) ?? false { return true }
+        return visible(list ?? windows()).contains { Rules.isLoginWindow(Processes.process($0.pid)) }
+    }
 
     static func isOnConsole() -> Bool { (session()["kCGSSessionOnConsoleKey"] as? Bool) ?? true }
+
+    /// The screen saver shows: an on-screen window of ScreenSaverEngine or legacyScreenSaver (not
+    /// the process alone, which may linger).
+    static func screenSaverShows(_ list: [Window]? = nil) -> Bool {
+        visible(list ?? windows()).contains { Rules.isScreenSaver(Processes.process($0.pid), owner: $0.owner) }
+    }
 
     static func registryProperty(_ service: String, _ key: String) -> CFTypeRef? {
         let entry = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching(service))
@@ -443,22 +779,50 @@ enum Screen {
 
 // MARK: - The safety rules
 
+/// What lies at a point: the topmost window and its owner, and (by AX) the element and its owner.
+struct Hit {
+    let top: Window
+    let topOwner: RunningProcess
+    let element: AXUIElement?
+    let axOwner: RunningProcess?
+}
+
 enum Safety {
+    static let home = NSHomeDirectory() + "/bp-062/B"
+
+    static func modified(_ path: String) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
+    }
+
+    static func firstPid(in path: String) -> pid_t? {
+        let text = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+        return text.split(whereSeparator: { $0.isWhitespace }).first.flatMap { pid_t(String($0)) }
+    }
+
+    /// The arm window's process (arm.pid, or the first field of queue.started) is an ancestor.
+    static func callerIsArm() -> Bool {
+        let ancestors = Processes.ancestors()
+        return [home + "/arm.pid", home + "/queue.started"].compactMap(firstPid).contains { ancestors.contains($0) }
+    }
+
     static func fenceFiles() -> [String] {
-        var files = [NSHomeDirectory() + "/bp-062/B/queue.started"]
+        var files = [home + "/queue.started"]
         if let extra = ProcessInfo.processInfo.environment["BP_FENCE"], !extra.isEmpty { files.append(extra) }
         return files
     }
 
-    /// Refuses while the queue runs, unless the queue's own process is an ancestor.
+    /// Refuses while the queue runs, and from `ready` until a newer `continue`, unless the arm
+    /// window's own process is an ancestor.
     static func checkFence() throws {
         for file in fenceFiles() where FileManager.default.fileExists(atPath: file) {
-            let text = (try? String(contentsOfFile: file, encoding: .utf8)) ?? ""
-            let owner = text.split(whereSeparator: { $0 == " " || $0 == "\n" || $0 == "\t" }).first.flatMap {
-                pid_t($0)
-            }
-            if let owner, Processes.ancestors().contains(owner) { continue }
+            if let owner = firstPid(in: file), Processes.ancestors().contains(owner) { continue }
             throw Refusal(description: "the energy queue runs (\(file) exists): nothing may act until the morning")
+        }
+        if let readyAt = modified(home + "/ready") {
+            let continued = modified(home + "/continued").map { $0 > readyAt } ?? false
+            if !continued, !callerIsArm() {
+                throw Refusal(description: "ready is up (\(home)/ready): nothing acts until his morning continue")
+            }
         }
     }
 
@@ -468,10 +832,29 @@ enum Safety {
         if !Screen.isOnConsole() { throw Refusal(description: "the session isn't on the console") }
     }
 
-    /// Every rule that doesn't depend on a point.
+    /// Every rule that doesn't depend on a point (the reads' rules).
     static func checkAll() throws {
         try checkFence()
         try checkSession()
+    }
+
+    /// No refused process, screen saver or lock window on screen (Terminal's own windows aside).
+    static func scanWindows(_ list: [Window]) throws {
+        for window in Screen.visible(list) {
+            let owner = Processes.process(window.pid)
+            if Rules.isLoginWindow(owner) { throw Refusal(description: "the screen is locked (loginwindow shows a window)") }
+            if Rules.isScreenSaver(owner, owner: window.owner) { throw Refusal(description: "the screen saver shows") }
+            if Rules.isTerminal(owner) { continue }
+            if Rules.isRefused(owner) {
+                throw Refusal(description: "\(owner.publicName) shows a window (a dialog or a prompt)")
+            }
+        }
+    }
+
+    /// An action's rules: every rule above, and the window scan.
+    static func checkAction() throws {
+        try checkAll()
+        try scanWindows(Screen.windows())
     }
 
     static func checkCorners(_ point: CGPoint) throws {
@@ -494,70 +877,145 @@ enum Safety {
         }
     }
 
-    /// The System Settings window title, if System Settings shows a window.
-    static func settingsTitle() -> String? {
-        guard let settings = try? Processes.app("com.apple.systempreferences") else { return nil }
-        let app = AX.application(settings)
-        let window = AX.element(AX.attribute(app, "AXFocusedWindow")) ?? AX.element(AX.attribute(app, "AXMainWindow"))
-        return window.flatMap { AX.string($0, "AXTitle") }
-    }
-
-    static func checkSettingsPane() throws {
-        guard let title = settingsTitle()?.lowercased() else { return }
-        if Rules.refusedPanes.contains(where: { title.contains($0) }) {
-            throw Refusal(description: "System Settings shows a pane it never acts in")
-        }
-    }
-
-    /// The owner of what lies at the point, by AX and by the topmost window, must be approved.
-    /// With `byAX` false (the queue's --cg-only), only the window list hit-tests the point: an AX hit
-    /// test asks the app under the point, and the measured process must never have an AX client.
-    static func checkPoint(_ point: CGPoint, byAX: Bool = true) throws {
+    /// The point's hit test: no refused process, screen saver or lock window anywhere under it
+    /// (Terminal's only as the topmost), then the topmost window and, by AX, the element.
+    static func hitTest(_ point: CGPoint, byAX: Bool) throws -> Hit {
         try checkCorners(point)
-        var owners: [RunningProcess] = []
-        var element: AXUIElement?
-        if byAX,
-            AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element)
-                == .success, let element, let pid = AX.pid(element)
-        {
-            owners.append(Processes.process(pid))
+        let list = Screen.windows()
+        for window in list where window.bounds.contains(point) && window.alpha > 0.01 {
+            let owner = Processes.process(window.pid)
+            if Rules.isTerminal(owner) { continue }
+            if Rules.isRefused(owner) || Rules.isScreenSaver(owner, owner: window.owner) {
+                throw Refusal(description: "\(owner.publicName) has a window at that point: never acted on")
+            }
         }
-        if let window = Screen.topWindow(at: point) { owners.append(Processes.process(window.pid)) }
-        guard !owners.isEmpty else {
+        guard let top = Screen.topWindow(at: point, in: list) else {
             throw Refusal(description: "nothing to hit-test at (\(Int(point.x)), \(Int(point.y)))")
         }
-        for owner in owners {
-            if Rules.isRefused(owner) { throw Refusal(description: "\(owner.publicName) is at that point: never acted on") }
-            if !Rules.isApproved(owner) {
-                throw Refusal(description: "\(owner.publicName) is at that point: not on the approved list")
+        let topOwner = Processes.process(top.pid)
+        if Rules.isRefused(topOwner) { throw Refusal(description: "\(topOwner.publicName) is at that point: never acted on") }
+        guard byAX, let element = AX.element(at: point), let pid = AX.pid(element) else {
+            return Hit(top: top, topOwner: topOwner, element: nil, axOwner: nil)
+        }
+        let axOwner = Processes.process(pid)
+        if Rules.isRefused(axOwner) { throw Refusal(description: "\(axOwner.publicName) is at that point: never acted on") }
+        return Hit(top: top, topOwner: topOwner, element: element, axOwner: axOwner)
+    }
+
+    /// A click, move or scroll: what lies at the point must be what the caller expects.
+    static func checkPoint(_ point: CGPoint, expect: Expectation, byAX: Bool, windowID: UInt32?) throws {
+        let hit = try hitTest(point, byAX: byAX)
+        if let windowID, hit.top.id != windowID {
+            throw Refusal(description: "the topmost window there is \(hit.top.id), not window \(windowID)")
+        }
+        switch expect {
+        case .app(let bundle):
+            guard Rules.isPointApproved(bundle) else { throw Refusal(description: "\(bundle) isn't on the approved list") }
+            guard hit.topOwner.bundle == bundle else {
+                throw Refusal(description: "\(hit.topOwner.publicName) has the topmost window there, not the expected app")
             }
-            if owner.bundle == "com.apple.systempreferences" { try checkSettingsPane() }
+            let isHost = Rules.widgetHosts().contains(bundle)
+            guard byAX else {
+                if bundle == Rules.settings || bundle == Rules.controlCenter {
+                    throw Refusal(description: "System Settings and Control Center need the AX hit test")
+                }
+                if isHost, !Rules.isInsideWidget(point) {
+                    throw Refusal(description: "not inside a recorded BatteryPulse widget frame")
+                }
+                return
+            }
+            guard let element = hit.element, let axOwner = hit.axOwner, axOwner.bundle == bundle else {
+                throw Refusal(description: "AX finds \(hit.axOwner?.publicName ?? "nothing") there, not the expected app")
+            }
+            if bundle == Rules.settings {
+                try Panes.check(axOwner)
+                try Panes.checkLabels(of: element)
+            }
+            if bundle == Rules.controlCenter, !AX.hasIdentifier(element, Rules.clockIdentifier, hops: 3) {
+                throw Refusal(description: "Control Center is approved for its clock alone")
+            }
+            if isHost, !Rules.isInsideWidget(point), !AX.isInsideBatteryPulse(element) {
+                throw Refusal(description: "not a BatteryPulse widget (no recorded frame, no BatteryPulse label)")
+            }
+        case .banner:
+            guard hit.topOwner.bundle == Rules.notificationCenter,
+                !byAX || hit.axOwner?.bundle == Rules.notificationCenter
+            else { throw Refusal(description: "the banner isn't at that point") }
+        case .desktop:
+            guard Rules.isDesktopWindow(hit.top, hit.topOwner) else {
+                throw Refusal(
+                    description: "the topmost window there isn't the desktop (\(hit.topOwner.publicName), layer \(hit.top.layer))")
+            }
+            if let element = hit.element, let axOwner = hit.axOwner {
+                guard Rules.isDesktopOwner(axOwner) else {
+                    throw Refusal(description: "AX finds \(axOwner.publicName) there, not the desktop")
+                }
+                if AX.isIconLike(element) {
+                    throw Refusal(description: "an icon or a control is at that point (\(AX.role(element)))")
+                }
+            }
+        case .dockTile(let tile):
+            guard byAX else { throw Refusal(description: "a Dock tile needs the AX hit test") }
+            guard hit.topOwner.bundle == Rules.dock, hit.axOwner?.bundle == Rules.dock, let element = hit.element,
+                AX.isOrIsInside(element, tile, hops: 2)
+            else { throw Refusal(description: "the Dock tile found isn't what lies at its centre") }
         }
     }
 
-    /// An app an AX action may target.
-    static func checkTarget(_ process: RunningProcess) throws {
-        if Rules.isRefused(process) { throw Refusal(description: "\(process.publicName) is never acted on") }
-        if !Rules.isApproved(process) { throw Refusal(description: "\(process.publicName) isn't on the approved list") }
-        if process.bundle == "com.apple.systempreferences" { try checkSettingsPane() }
+    /// A drag's start: a widget in its host (the gallery's or a placed one), never a file.
+    static func checkDragFrom(_ point: CGPoint) throws {
+        let hit = try hitTest(point, byAX: true)
+        let hosts = Rules.widgetHosts()
+        guard hosts.contains(hit.topOwner.bundle), hit.axOwner.map({ hosts.contains($0.bundle) }) ?? false else {
+            throw Refusal(description: "a drag starts only at a widget in its host (\(hit.topOwner.publicName) is there)")
+        }
     }
 
-    /// `guard`: every rule, now, plus no refused process showing a window.
+    /// A drag's end: the widget layer, or the bare desktop; never an icon, a folder or the Dock.
+    static func checkDragTo(_ point: CGPoint) throws {
+        let hit = try hitTest(point, byAX: true)
+        let hosts = Rules.widgetHosts()
+        let atDesktop = Rules.isDesktopWindow(hit.top, hit.topOwner)
+        guard hosts.contains(hit.topOwner.bundle) || atDesktop else {
+            throw Refusal(description: "a drag ends only on the desktop or the widget layer (\(hit.topOwner.publicName) is there)")
+        }
+        if let element = hit.element, let axOwner = hit.axOwner {
+            if axOwner.bundle == Rules.dock { throw Refusal(description: "a drag never ends on the Dock") }
+            guard hosts.contains(axOwner.bundle) || Rules.isDesktopOwner(axOwner) else {
+                throw Refusal(description: "AX finds \(axOwner.publicName) at the drag's end")
+            }
+            if Rules.isDesktopOwner(axOwner), AX.isIconLike(element) {
+                throw Refusal(description: "an icon is at the drag's end")
+            }
+        }
+    }
+
+    /// An app an AX action may target; System Settings only on a confirmed pane (`quit` skips that:
+    /// its Quit menu item touches no pane).
+    static func checkTarget(_ process: RunningProcess, panes: Bool = true) throws {
+        if Rules.isRefused(process) { throw Refusal(description: "\(process.publicName) is never acted on") }
+        guard Rules.targetBundles.contains(process.bundle) else {
+            throw Refusal(description: "\(process.publicName) isn't a target (Finder, the Dock and Control Center never are)")
+        }
+        if panes, process.bundle == Rules.settings { try Panes.check(process) }
+    }
+
+    /// `guard`: every action's rule, now, plus System Settings' panes whenever it shows a window.
     static func checkNow() throws {
         try checkAll()
-        for window in Screen.windows() where window.alpha > 0.01 && window.bounds.width * window.bounds.height > 100 {
-            let owner = Processes.process(window.pid)
-            if owner.name == "Terminal" { continue }
-            if Rules.isRefused(owner) {
-                throw Refusal(description: "\(owner.publicName) shows a window (a dialog or a prompt)")
-            }
-        }
-        if let front = Screen.windows().first(where: { $0.layer == 0 && $0.alpha > 0.01 }),
-            Processes.process(front.pid).bundle == "com.apple.systempreferences"
-        {
-            try checkSettingsPane()
+        let list = Screen.windows()
+        try scanWindows(list)
+        let shown = Set(Screen.visible(list).filter { $0.layer == 0 }.map(\.pid))
+        if let settings = try? Processes.app(Rules.settings), shown.contains(settings.pid) {
+            try Panes.check(settings)
         }
     }
+}
+
+extension Rules {
+    /// Hot corner actions it keeps away from: Start Screen Saver, Put Display to Sleep, Lock Screen.
+    static let dangerousCorners: Set<Int> = [5, 10, 13]
+    static let cornerMargin: CGFloat = 20
 }
 
 // MARK: - Posted events
@@ -599,8 +1057,10 @@ enum Events {
     static func click(_ point: CGPoint, modifier flags: CGEventFlags, double: Bool, tap: CGEventTapLocation) throws {
         if !flags.isEmpty {
             try modifier(flags, down: true, tap: tap)
-            pause(0.08)
         }
+        // The modifier comes back up however the click ends, so Shift or Control never stays down.
+        defer { if !flags.isEmpty { try? modifier(flags, down: false, tap: tap) } }
+        if !flags.isEmpty { pause(0.08) }
         try mouse(.mouseMoved, point, flags: flags, clicks: 0, tap: tap)
         pause(0.08)
         for count in 1...(double ? 2 : 1) {
@@ -609,10 +1069,7 @@ enum Events {
             try mouse(.leftMouseUp, point, flags: flags, clicks: count, tap: tap)
             pause(0.08)
         }
-        if !flags.isEmpty {
-            pause(0.08)
-            try modifier(flags, down: false, tap: tap)
-        }
+        if !flags.isEmpty { pause(0.08) }
     }
 
     static func current() -> CGPoint { CGEvent(source: nil)?.location ?? .zero }
@@ -630,12 +1087,12 @@ struct Options {
     init(_ arguments: [String]) throws {
         let takesOne: Set<String> = [
             "--tap", "--window", "--match", "--role", "--index", "--action", "--menu-cmd", "--steps", "--seconds",
-            "--depth", "--app", "--allow-cover", "--dock", "--ax", "--within",
+            "--depth", "--app", "--allow-cover", "--ax", "--within", "--expect", "--new-since", "--dock-title",
         ]
         let takesFour: Set<String> = ["--inside"]
         let switches: Set<String> = [
             "--shift", "--control", "--double", "--here", "--probe", "--main", "--minimize-button", "--status-item",
-            "--cg-only",
+            "--cg-only", "--dock", "--list",
         ]
         var rest: [String] = []
         var index = 0
@@ -682,6 +1139,13 @@ struct Options {
         let numbers = list.compactMap(Double.init)
         guard numbers.count == 4 else { throw UsageError(description: "\(name) takes four numbers") }
         return CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
+    }
+
+    /// A point command's --window: a CGWindowID the topmost window there must have.
+    func windowID() throws -> UInt32? {
+        guard let text = values["--window"] else { return nil }
+        guard let id = UInt32(text) else { throw UsageError(description: "--window takes a CGWindowID here") }
+        return id
     }
 
     /// Pixels of a full-screen shot of the main display, as points.
@@ -737,6 +1201,18 @@ enum Command {
         return try appArgument(options, 1)
     }
 
+    /// What a point command is aimed at (`--expect`), which every click, move and scroll names.
+    static func expectation(_ options: Options) throws -> Expectation {
+        guard let value = options.value("--expect") else {
+            throw UsageError(description: "name what lies at the point: --expect <app | bundle | desktop | dock-tile>")
+        }
+        switch value {
+        case "desktop": return .desktop
+        case "dock-tile": throw UsageError(description: "--expect dock-tile is a click's, and takes no point")
+        default: return .app(Rules.bundle(for: value))
+        }
+    }
+
     /// The element of `app` that `text` matches, the `--index`th (from 1).
     static func match(_ process: RunningProcess, _ text: String, _ options: Options) throws -> AXUIElement {
         let depth = Int(try options.number("--depth", default: 40))
@@ -758,38 +1234,63 @@ enum Command {
     }
 
     static func click(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
+        let flags = try modifier(options)
+        let double = options.has("--double")
+        let byAX = !options.has("--cg-only")
         let point: CGPoint
+        let expect: Expectation
         if let appName = options.value("--ax") {
             let process = try Processes.app(appName)
-            try Safety.checkTarget(process)
+            if Rules.isRefused(process) || !Rules.isPointApproved(process.bundle) {
+                throw Refusal(description: "\(process.publicName) isn't on the approved list")
+            }
             guard let text = options.words.dropFirst().first else {
                 throw UsageError(description: "click --ax <app> <text>")
             }
             let element = try match(process, text, options)
             guard let frame = AX.frame(element) else { throw Failure(description: "the element has no frame") }
             point = CGPoint(x: frame.midX, y: frame.midY)
+            expect = .app(process.bundle)
+        } else if options.value("--expect") == "dock-tile" {
+            let tile = try Dock.tile(options)
+            point = CGPoint(x: tile.frame.midX, y: tile.frame.midY)
+            expect = .dockTile(tile.element)
         } else {
             point = try options.point(at: 1)
+            expect = try expectation(options)
         }
-        try Safety.checkPoint(point, byAX: !options.has("--cg-only"))
-        try Events.click(
-            point, modifier: try modifier(options), double: options.has("--double"), tap: Events.tap(options))
+        if case .desktop = expect, double || !flags.isEmpty {
+            throw Refusal(description: "the desktop takes one plain click (a double click opens, a modifier selects)")
+        }
+        if case .dockTile = expect, double { throw Refusal(description: "a Dock tile takes a single click") }
+        try Safety.checkPoint(point, expect: expect, byAX: byAX, windowID: try options.windowID())
+        if options.has("--probe") {
+            print("would click \(Int(point.x)) \(Int(point.y)): the point holds")
+            return
+        }
+        try Events.click(point, modifier: flags, double: double, tap: Events.tap(options))
         print("clicked \(Int(point.x)) \(Int(point.y))")
     }
 
     static func move(_ options: Options) throws {
-        try Safety.checkAll()
-        let point = options.has("--here") ? Events.current() : try options.point(at: 1)
+        try Safety.checkAction()
         // A 0-pixel move where the pointer already is clicks nothing: no hit test, so it works over
         // Terminal too (proof P6).
-        if !options.has("--here") { try Safety.checkPoint(point) }
+        let point: CGPoint
+        if options.has("--here") {
+            point = Events.current()
+        } else {
+            point = try options.point(at: 1)
+            try Safety.checkPoint(
+                point, expect: try expectation(options), byAX: !options.has("--cg-only"), windowID: try options.windowID())
+        }
         try Events.mouse(.mouseMoved, point, flags: [], clicks: 0, tap: Events.tap(options))
         print("moved to \(Int(point.x)) \(Int(point.y))")
     }
 
     static func drag(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let from = try options.point(at: 1)
         let to = try options.point(at: 3)
         let steps = max(2, Int(try options.number("--steps", default: 30)))
@@ -799,30 +1300,34 @@ enum Command {
             return CGPoint(x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t)
         }
         for point in points { try Safety.checkCorners(point) }
-        try Safety.checkPoint(from)
-        try Safety.checkPoint(to)
+        try Safety.checkDragFrom(from)
+        try Safety.checkDragTo(to)
         let tap = Events.tap(options)
         try Events.mouse(.mouseMoved, from, flags: [], clicks: 0, tap: tap)
         Events.pause(0.1)
         try Events.mouse(.leftMouseDown, from, flags: [], clicks: 1, tap: tap)
+        // The button comes back up where the drag got to, however it ends.
+        var reached = from
+        defer { try? Events.mouse(.leftMouseUp, reached, flags: [], clicks: 1, tap: tap) }
         // A hold before the first step, so a widget in the gallery lifts.
         Events.pause(0.4)
         for point in points.dropFirst() {
             try Events.mouse(.leftMouseDragged, point, flags: [], clicks: 1, tap: tap)
+            reached = point
             Events.pause(seconds / Double(steps))
         }
         Events.pause(0.3)
-        try Events.mouse(.leftMouseUp, to, flags: [], clicks: 1, tap: tap)
         print("dragged \(Int(from.x)) \(Int(from.y)) to \(Int(to.x)) \(Int(to.y)) in \(steps) steps")
     }
 
     static func scroll(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let point = try options.point(at: 1)
         guard options.words.count > 3, let lines = Int32(options.words[3]) else {
             throw UsageError(description: "scroll <point> <lines>")
         }
-        try Safety.checkPoint(point)
+        try Safety.checkPoint(
+            point, expect: try expectation(options), byAX: !options.has("--cg-only"), windowID: try options.windowID())
         let tap = Events.tap(options)
         try Events.mouse(.mouseMoved, point, flags: [], clicks: 0, tap: tap)
         Events.pause(0.08)
@@ -838,25 +1343,30 @@ enum Command {
     }
 
     static func press(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let process = try appArgument(options, 1)
         try Safety.checkTarget(process)
+        let inSettings = process.bundle == Rules.settings
         if let character = options.value("--menu-cmd") {
             let item = try menuItem(process, command: character)
+            if inSettings { try Panes.checkLabels(of: item) }
             try AX.perform(item, "AXPress")
             print("pressed the menu item with Command-\(character) in \(process.publicName)")
             return
         }
         guard options.words.count > 2 else { throw UsageError(description: "press <app> <text>") }
-        var element = try match(process, options.words[2], options)
+        let matched = try match(process, options.words[2], options)
+        var element = matched
         let action = options.value("--action") ?? "AXPress"
         // A label inside a button: press the nearest ancestor that can.
         var hops = 0
-        while !AX.actions(element).contains(action), hops < 4,
-            let parent = AX.element(AX.attribute(element, "AXParent"))
-        {
+        while !AX.actions(element).contains(action), hops < 4, let parent = AX.parent(element) {
             element = parent
             hops += 1
+        }
+        if inSettings {
+            try Panes.checkLabels(of: matched)
+            try Panes.checkLabels(of: element)
         }
         try AX.perform(element, action)
         print("\(action) on \(AX.role(element)) in \(process.publicName)")
@@ -877,18 +1387,22 @@ enum Command {
     }
 
     static func selectRow(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let process = try appArgument(options, 1)
         try Safety.checkTarget(process)
         guard options.words.count > 2 else { throw UsageError(description: "select-row <app> <text>") }
-        var element = try match(process, options.words[2], options)
+        let matched = try match(process, options.words[2], options)
+        var element = matched
         var hops = 0
-        while !AX.role(element).hasPrefix("AXRow"), hops < 5, let parent = AX.element(AX.attribute(element, "AXParent"))
-        {
+        while !AX.role(element).hasPrefix("AXRow"), hops < 5, let parent = AX.parent(element) {
             element = parent
             hops += 1
         }
         guard AX.role(element).hasPrefix("AXRow") else { throw NotFound(description: "the match isn't in a row") }
+        if process.bundle == Rules.settings {
+            try Panes.checkLabels(of: matched)
+            try Panes.checkLabels(of: element)
+        }
         try AX.set(element, "AXSelected", NSNumber(value: true))
         print("selected the row")
     }
@@ -898,7 +1412,7 @@ enum Command {
     }
 
     static func minimize(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         guard options.words.count > 2, ["on", "off"].contains(options.words[1]) else {
             throw UsageError(description: "minimize on|off <app>")
         }
@@ -911,7 +1425,7 @@ enum Command {
     }
 
     static func fullscreen(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         guard options.words.count > 2, ["on", "off"].contains(options.words[1]) else {
             throw UsageError(description: "fullscreen on|off <app>")
         }
@@ -923,39 +1437,54 @@ enum Command {
     }
 
     static func position(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let process = try appArgument(options, 1)
         // Terminal's windows go in the left third (§6 "Places"): moving a window clicks nothing in
         // it, so Terminal may be placed, though never clicked or pressed.
-        if process.bundle != "com.apple.Terminal" { try Safety.checkTarget(process) }
+        if process.bundle != Rules.terminal { try Safety.checkTarget(process) }
         let numbers = options.words.dropFirst(2).compactMap(Double.init)
         guard numbers.count == 2 || numbers.count == 4 else {
             throw UsageError(description: "position <app> <x> <y> [<w> <h>]")
         }
         let target = try window(options, process)
-        let wanted = CGRect(
-            x: numbers[0], y: numbers[1], width: numbers.count == 4 ? numbers[2] : 0,
-            height: numbers.count == 4 ? numbers[3] : 0)
+        var origin = CGPoint(x: numbers[0], y: numbers[1])
+        guard let place = AXValueCreate(.cgPoint, &origin) else { throw Failure(description: "can't make a point") }
+        // The origin first, so the size isn't clamped at the old place; then the origin again, in
+        // case the size moved it.
+        try AX.set(target, "AXPosition", place)
         if numbers.count == 4 {
-            var size = wanted.size
-            guard let value = AXValueCreate(.cgSize, &size) else { throw Failure(description: "can't make a size") }
-            try AX.set(target, "AXSize", value)
+            var size = CGSize(width: numbers[2], height: numbers[3])
+            guard let extent = AXValueCreate(.cgSize, &size) else { throw Failure(description: "can't make a size") }
+            try AX.set(target, "AXSize", extent)
+            try AX.set(target, "AXPosition", place)
         }
-        var origin = wanted.origin
-        guard let value = AXValueCreate(.cgPoint, &origin) else { throw Failure(description: "can't make a point") }
-        try AX.set(target, "AXPosition", value)
         print("\(process.publicName)'s window at \(AX.frame(target).map(describe) ?? "unknown")")
     }
 
+    /// An AX press on the named window's own close button (TextEdit's cover, when TextEdit runs
+    /// for him too and isn't the session's to quit).
+    static func close(_ options: Options) throws {
+        try Safety.checkAction()
+        let process = try appArgument(options, 1)
+        try Safety.checkTarget(process)
+        guard options.value("--window") != nil else { throw UsageError(description: "close <app> --window <title>") }
+        let target = try window(options, process)
+        guard let button = AX.element(AX.attribute(target, "AXCloseButton")) else {
+            throw NotFound(description: "the window has no close button")
+        }
+        try AX.perform(button, "AXPress")
+        print("closed the window in \(process.publicName)")
+    }
+
     static func banner(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         guard options.words.count > 1 else { throw UsageError(description: "banner <text>") }
         let text = options.words[1]
         let seconds = try options.number("--seconds", default: 10)
         let start = Date()
-        var center = try? Processes.app("com.apple.notificationcenterui")
+        var center = try? Processes.app(Rules.notificationCenter)
         while Date().timeIntervalSince(start) < seconds {
-            if center == nil { center = try? Processes.app("com.apple.notificationcenterui") }
+            if center == nil { center = try? Processes.app(Rules.notificationCenter) }
             if let center {
                 let found = AX.find(in: AX.application(center), text: text, role: nil, depth: 14)
                 if var element = found.first {
@@ -965,9 +1494,7 @@ enum Command {
                         return
                     }
                     var hops = 0
-                    while !AX.actions(element).contains("AXPress"), hops < 4,
-                        let parent = AX.element(AX.attribute(element, "AXParent"))
-                    {
+                    while !AX.actions(element).contains("AXPress"), hops < 4, let parent = AX.parent(element) {
                         element = parent
                         hops += 1
                     }
@@ -976,7 +1503,7 @@ enum Command {
                         print("banner found after \(elapsed) ms; pressed")
                     } else if let frame = AX.frame(element) {
                         let point = CGPoint(x: frame.midX, y: frame.midY)
-                        try Safety.checkPoint(point)
+                        try Safety.checkPoint(point, expect: .banner, byAX: true, windowID: nil)
                         try Events.click(point, modifier: [], double: false, tap: Events.tap(options))
                         print("banner found after \(elapsed) ms; clicked at its centre")
                     } else {
@@ -991,25 +1518,22 @@ enum Command {
     }
 
     static func quit(_ options: Options) throws {
-        try Safety.checkAll()
+        try Safety.checkAction()
         let process = try appArgument(options, 1)
-        try Safety.checkTarget(process)
-        guard !["com.apple.finder", "com.apple.dock", "com.apple.notificationcenterui"].contains(process.bundle) else {
-            throw Refusal(description: "\(process.name) is never quit")
-        }
+        try Safety.checkTarget(process, panes: false)
         try AX.perform(try menuItem(process, command: "Q"), "AXPress")
         print("pressed Quit in \(process.publicName)")
     }
 
     static func frame(_ options: Options) throws {
         try Safety.checkAll()
-        if let title = options.value("--dock") {
-            let dock = try Processes.app("com.apple.dock")
-            let items = AX.find(in: AX.application(dock), text: title, role: "AXDockItem", depth: 6)
-            // A minimized window's tile first, then the app's.
-            let item = items.first { AX.role($0).contains("Minimized") } ?? items.first
-            guard let item, let rect = AX.frame(item) else { throw NotFound(description: "no Dock tile for \(title)") }
-            print("\(describe(rect)) \(AX.role(item))")
+        if options.has("--dock") {
+            if options.has("--list") {
+                for tile in try Dock.minimizedTiles() { print("\(describe(tile.frame))\t\(tile.hash)") }
+                return
+            }
+            let tile = try Dock.tile(options, title: options.words.dropFirst().first)
+            print("\(describe(tile.frame)) \(AX.role(tile.element))")
             return
         }
         let process = try readTarget(options)
@@ -1027,40 +1551,59 @@ enum Command {
         print(describe(rect))
     }
 
-    /// The app's focused (else main) window title: System Settings' pane, say.
+    /// The focused (else main) window's title of BatteryPulse or System Settings (a pane's name);
+    /// another app's titles are his documents' names.
     static func title(_ options: Options) throws {
         try Safety.checkAll()
         let process = try readTarget(options)
-        guard process.isPublic else { throw Refusal(description: "another app's titles aren't read") }
-        let app = AX.application(process)
-        let window = AX.element(AX.attribute(app, "AXFocusedWindow")) ?? AX.element(AX.attribute(app, "AXMainWindow"))
-        guard let window else { throw NotFound(description: "\(process.publicName) has no window") }
+        guard process.bundle == Rules.batteryPulse || process.bundle == Rules.settings else {
+            throw Refusal(description: "only BatteryPulse's and System Settings' titles are read")
+        }
+        guard let window = AX.frontWindow(process) else { throw NotFound(description: "\(process.publicName) has no window") }
         print("title: \(AX.string(window, "AXTitle") ?? "")")
+    }
+
+    /// System Settings' front window: the sidebar's selected row, the title, and with --expect
+    /// whether both are that pane's (proof P8).
+    static func paneState(_ options: Options) throws {
+        try Safety.checkAll()
+        let settings = try Processes.app(Rules.settings)
+        guard let window = AX.frontWindow(settings) else { throw NotFound(description: "System Settings has no window") }
+        let title = AX.string(window, "AXTitle") ?? ""
+        let sidebar = Panes.sidebarSelection(window)
+        let clean = { (text: String) in text.replacingOccurrences(of: "\t", with: " ").replacingOccurrences(of: "\n", with: " ") }
+        var match = "-"
+        if let name = options.value("--expect") {
+            guard Panes.expected[name] != nil else { throw UsageError(description: "no pane \(name) in proof P8's list") }
+            match = Panes.matches(name, title: title) && !Panes.isRefused(sidebar ?? "") ? "yes" : "no"
+        }
+        print("sidebar=\(sidebar.map(clean) ?? "-")\ttitle=\(clean(title))\tmatch=\(match)")
     }
 
     static func hit(_ options: Options) throws {
         try Safety.checkAll()
         let point = try options.point(at: 1)
-        var element: AXUIElement?
-        guard
-            AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element)
-                == .success, let found = element, let pid = AX.pid(found)
-        else { throw NotFound(description: "no element at (\(Int(point.x)), \(Int(point.y)))") }
+        guard let found = AX.element(at: point), let pid = AX.pid(found) else {
+            throw NotFound(description: "no element at (\(Int(point.x)), \(Int(point.y)))")
+        }
         let owner = Processes.process(pid)
         print("process: \(owner.publicName) (\(owner.isPublic ? owner.bundle : "-"), pid \(pid))")
-        if let window = Screen.topWindow(at: point) {
+        if let window = Screen.topWindow(at: point, in: Screen.windows()) {
             print("top window: \(window.id), owner \(Processes.process(window.pid).publicName), layer \(window.layer)")
         }
         guard owner.isPublic else { return }
-        var current: AXUIElement? = found
-        var level = 0
-        while let item = current, level < 12 {
+        // Labels only inside BatteryPulse: its own elements, or from the hit element up to the first
+        // element labelled BatteryPulse (a widget's container); above it, roles and frames only.
+        let chain = AX.chain(found, hops: 11)
+        let own = owner.bundle == Rules.batteryPulse
+        let labelled = chain.firstIndex { AX.label($0).localizedCaseInsensitiveContains("BatteryPulse") }
+        print("batterypulse_label: \(own || labelled != nil ? "yes" : "no")")
+        for (level, item) in chain.enumerated() {
+            let shows = own || (labelled.map { level <= $0 } ?? false)
             let frame = AX.frame(item).map(describe) ?? "-"
             print(
-                "\(String(repeating: "  ", count: level))\(AX.role(item)) \"\(AX.label(item))\" frame \(frame) actions \(AX.actions(item).joined(separator: ","))"
+                "\(String(repeating: "  ", count: level))\(AX.role(item)) \"\(shows ? AX.label(item) : "-")\" frame \(frame) actions \(AX.actions(item).joined(separator: ","))"
             )
-            current = AX.element(AX.attribute(item, "AXParent"))
-            level += 1
         }
     }
 
@@ -1070,16 +1613,25 @@ enum Command {
         let depth = Int(try options.number("--depth", default: 12))
         let inside = try options.rect("--inside")
         let text = options.value("--match")
-        let isBatteryPulse = process.bundle == Rules.batteryPulse
-        if process.bundle == "com.apple.systempreferences" {
+        if process.bundle == Rules.settings {
             guard let text else { throw Refusal(description: "System Settings' tree is read only as --match <text>") }
             let count = AX.find(in: AX.application(process), text: text, role: nil, depth: depth + 10).count
             print("match \(text): \(count > 0 ? "found" : "not found") (\(count))")
             return
         }
-        guard isBatteryPulse || text != nil || inside != nil else {
+        let own = process.bundle == Rules.batteryPulse
+        let host = Rules.widgetHosts().contains(process.bundle)
+        if host {
+            // A widget host holds his other widgets and his notifications: only a recorded
+            // BatteryPulse widget's frame is read.
+            guard let inside, Rules.isRecordedWidget(inside) else {
+                throw Refusal(description: "a widget host's tree is read only --inside a recorded widget frame")
+            }
+        } else if !own, text == nil, inside == nil {
             throw Refusal(description: "another app's tree is read only as --match <text> or --inside x y w h")
         }
+        // Another app's labels and values are his: roles and frames only.
+        let showsText = own || host
         let roots =
             text.map {
                 AX.find(in: AX.application(process), text: $0, role: options.value("--role"), depth: depth + 10)
@@ -1091,9 +1643,8 @@ enum Command {
             let frame = AX.frame(element)
             let isInside = inside.map { box in frame.map { box.insetBy(dx: -2, dy: -2).contains($0) } ?? false } ?? true
             if isInside {
-                print(
-                    "\(String(repeating: "  ", count: level))\(AX.role(element)) \"\(AX.label(element))\" value \(AX.value(element)) frame \(frame.map(describe) ?? "-")"
-                )
+                let detail = showsText ? " \"\(AX.label(element))\" value \(AX.value(element))" : ""
+                print("\(String(repeating: "  ", count: level))\(AX.role(element))\(detail) frame \(frame.map(describe) ?? "-")")
                 printed += 1
             }
             for child in AX.children(element) { walk(child, level + 1) }
@@ -1166,33 +1717,28 @@ enum Command {
         )
     }
 
-    static func thermal() {
-        let state: String
+    static func thermalState() -> String {
         switch ProcessInfo.processInfo.thermalState {
-        case .nominal: state = "nominal"
-        case .fair: state = "fair"
-        case .serious: state = "serious"
-        case .critical: state = "critical"
-        @unknown default: state = "unknown"
+        case .nominal: return "nominal"
+        case .fair: return "fair"
+        case .serious: return "serious"
+        case .critical: return "critical"
+        @unknown default: return "unknown"
         }
-        let hid = Screen.hidIdleSeconds().map { String(format: "%.1f", $0) } ?? "unknown"
-        print("thermal=\(state) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0) hid_idle_s=\(hid)")
     }
 
-    /// The queue sampler's one line: HIDIdleTime, the lock and the lid, the thermal state and Low
-    /// Power Mode, with no AX call.
+    static func thermal() {
+        let hid = Screen.hidIdleSeconds().map { String(format: "%.1f", $0) } ?? "unknown"
+        print("thermal=\(thermalState()) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0) hid_idle_s=\(hid)")
+    }
+
+    /// The queue sampler's one line: HIDIdleTime, the lock and the lid, the screen saver's window,
+    /// the thermal state and Low Power Mode, with no AX call.
     static func sample() {
         let hid = Screen.hidIdleSeconds().map { String(format: "%.1f", $0) } ?? "unknown"
-        let state: String
-        switch ProcessInfo.processInfo.thermalState {
-        case .nominal: state = "nominal"
-        case .fair: state = "fair"
-        case .serious: state = "serious"
-        case .critical: state = "critical"
-        @unknown default: state = "unknown"
-        }
+        let list = Screen.windows()
         print(
-            "hid_idle_s=\(hid) locked=\(Screen.isLocked() ? "yes" : "no") lid=\(Screen.isLidClosed() ? "closed" : "open") thermal=\(state) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0)"
+            "hid_idle_s=\(hid) locked=\(Screen.isLocked(list) ? "yes" : "no") lid=\(Screen.isLidClosed() ? "closed" : "open") screensaver=\(Screen.screenSaverShows(list) ? "yes" : "no") thermal=\(thermalState()) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0)"
         )
     }
 
@@ -1223,11 +1769,13 @@ enum Command {
         case "minimize": try minimize(options)
         case "fullscreen": try fullscreen(options)
         case "position": try position(options)
+        case "close": try close(options)
         case "banner": try banner(options)
         case "quit": try quit(options)
         case "frame": try frame(options)
         case "hit": try hit(options)
         case "title": try title(options)
+        case "pane-state": try paneState(options)
         case "tree": try tree(options)
         case "windows": try windows(options)
         case "idle": idle()
@@ -1244,7 +1792,7 @@ enum Command {
     }
 
     static let usage =
-        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|banner|quit|frame|title|hit|tree|windows|idle|locked|thermal|sample|access|screen|guard ... (see ui.swift)"
+        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|close|banner|quit|frame|title|pane-state|hit|tree|windows|idle|locked|thermal|sample|access|screen|guard ... (see ui.swift)"
 }
 
 do {
