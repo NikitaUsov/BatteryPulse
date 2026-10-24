@@ -12,6 +12,13 @@ on:
         description: Version to build into the app, without the v (for example 0.5.99); empty for 0.0.0
         required: false
         default: ""
+      profiling:
+        # Also a profiling build of the same commit, with the same version and build number, for
+        # Instruments (the 0.6.2 release candidate's page switches under xctrace; PLAN.md D1).
+        description: Also build and upload a profiling DMG (get-task-allow, unstripped)
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -386,3 +393,19 @@ jobs:
           echo "Last lines of the app's log:"
           tail -20 "$RUNNER_TEMP/launch.log"
           exit "$status"
+      - name: Package the profiling build
+        # Only on a dispatch that asks for it. Last, because build-app.sh starts by removing build/,
+        # which every step above reads; the same version and build number as the DMG above, so a
+        # release candidate and its profiling build come from one run.
+        if: inputs.profiling
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: PROFILING=1 scripts/build-app.sh
+      - name: Upload the profiling DMG
+        if: inputs.profiling
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BatteryPulse-profiling-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
+          path: build/BatteryPulse-profiling.dmg
+          if-no-files-found: error

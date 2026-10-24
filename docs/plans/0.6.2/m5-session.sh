@@ -63,10 +63,10 @@ RUN_A="39413159534" # A: claude/baseline-0.6.0, #158 (076873d), the instrumented
 ARTIFACT_A="BatteryPulse-076873d5bf151db628de91e216a8bfabb9356e1a"
 TAG_B="v0.6.1" # B: the published 0.6.1 DMG
 
-# Session B's builds (PLAN.md §6, WP-21): B, the published 0.6.1 (TAG_B); C, the RC, which D1
-# dispatches as 0.5.99 so that F12's update check offers the real 0.6.1; CP, the RC's profiling
-# DMG. D1 pins the run and the artifact names here; while they are empty, prepare looks for the
-# newest successful CI run of the integration branch with the frozen worktree's code (rc_locate).
+# Session B's builds (PLAN.md §6, WP-21): B, the published 0.6.1 (TAG_B); C, the RC, dispatched
+# as 0.5.99 so that F12's update check offers the real 0.6.1; CP, the RC's profiling DMG, from the
+# same run (ci.yml's dispatch with version 0.5.99 and profiling on). They stay empty (D1), so
+# prepare finds that run by the frozen worktree's code (rc_locate); pinning them overrides it.
 RUN_RC=""
 ARTIFACT_RC=""
 ARTIFACT_RCP=""
@@ -3501,28 +3501,39 @@ click_desktop() {
 # MARK: - Session B: prepare (step 1, B0a and B0b)
 
 # The RC's CI run: pinned by D1 (RUN_RC), else the newest successful CI run of the integration
-# branch at the frozen commit or an ancestor with the same code, preferring D1's 0.5.99 dispatch.
+# branch at the frozen commit or an ancestor with the same code that holds D1's 0.5.99 DMG (the
+# dispatch with version 0.5.99 and profiling on, whose run also holds the profiling DMG). A later
+# push of the same code (the ceilings' commit, say) is newer but builds 0.0.0, so it is only the
+# fallback when no such dispatch is found.
 rc_locate() {
   RC_RUN="$RUN_RC"
   RC_ARTIFACT="$ARTIFACT_RC"
   RC_ARTIFACT_P="$ARTIFACT_RCP"
   [ -z "$RC_RUN" ] || return 0
-  local head run sha names
+  local head run sha names artifact fallback=""
   head="$(git -C "$ROOT" rev-parse HEAD)"
   while IFS=$'\t' read -r run sha; do
     [ -n "$run" ] || continue
     git -C "$ROOT" merge-base --is-ancestor "$sha" "$head" 2>/dev/null || continue
     git -C "$ROOT" diff --quiet "$sha" "$head" -- Sources Resources Package.swift scripts/build-app.sh 2>/dev/null || continue
-    names="$(gh api "repos/$REPO/actions/runs/$run/artifacts" --jq '.artifacts[] | select(.expired | not) | .name' 2>/dev/null || true)"
-    RC_ARTIFACT="$(grep -x "BatteryPulse-0\\.5\\.99-$sha" <<<"$names" || grep -x "BatteryPulse-$sha" <<<"$names" || true)"
-    [ -n "$RC_ARTIFACT" ] || continue
-    RC_ARTIFACT_P="$(grep -E -x "BatteryPulse-profiling-(0\\.5\\.99-)?$sha" <<<"$names" | head -1 || true)"
-    RC_RUN="$run"
-    echo "the RC: run $run ($RC_ARTIFACT), commit ${sha:0:7}; profiling: ${RC_ARTIFACT_P:-none}"
-    return 0
+    names="$(gh api "repos/$REPO/actions/runs/$run/artifacts?per_page=100" --jq '.artifacts[] | select(.expired | not) | .name' 2>/dev/null || true)"
+    artifact="$(grep -x "BatteryPulse-0\\.5\\.99-$sha" <<<"$names" || true)"
+    if [ -n "$artifact" ]; then
+      RC_RUN="$run"
+      RC_ARTIFACT="$artifact"
+      RC_ARTIFACT_P="$(grep -x "BatteryPulse-profiling-0\\.5\\.99-$sha" <<<"$names" || true)"
+      echo "the RC: run $run ($RC_ARTIFACT), commit ${sha:0:7}; profiling: ${RC_ARTIFACT_P:-none}"
+      return 0
+    fi
+    if [ -z "$fallback" ] && grep -q -x "BatteryPulse-$sha" <<<"$names"; then
+      fallback="$run$TAB$sha$TAB$(grep -x "BatteryPulse-profiling-$sha" <<<"$names" || true)"
+    fi
   done < <(gh run list -R "$REPO" -b "$INTEGRATION_BRANCH" -w ci.yml -s success -L 30 --json databaseId,headSha \
     --jq '.[] | [.databaseId, .headSha] | @tsv' 2>/dev/null || true)
-  fail "no CI run of the RC with this code; D1 pins RUN_RC in the script"
+  [ -n "$fallback" ] || fail "no CI run of the RC with this code; D1 pins RUN_RC in the script"
+  IFS=$'\t' read -r RC_RUN sha RC_ARTIFACT_P <<<"$fallback"
+  RC_ARTIFACT="BatteryPulse-$sha"
+  warn "no 0.5.99 dispatch of this code: the RC is run $RC_RUN's push build (0.0.0), commit ${sha:0:7}; profiling: ${RC_ARTIFACT_P:-none}"
 }
 
 fetch_builds_b() {
