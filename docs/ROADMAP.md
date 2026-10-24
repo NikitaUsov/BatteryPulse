@@ -572,7 +572,7 @@ hour) whenever Xcode is open.
   whether Translucent and Clear leave beta
 - [ ] Energy, measured on the M5 against the 0.6.0 baseline: power in the menu bar for an hour,
   each window style, a burst of plug changes, memory, devices and accessories
-- [ ] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
+- [x] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
   table per release of DMG downloads, signature downloads (each in-app install fetches the
   signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
   (`BatteryPulse-count.txt`), from GitHub's public API without a login; within GitHub's limit of

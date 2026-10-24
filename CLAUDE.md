@@ -86,7 +86,9 @@ through the App Store. Reference hardware: MacBook Air M5.
   fails on any signing-posture violation, listing each), `size-report.sh` with
   `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated
   table has every catalog key), `perf-stats.swift` (sums the `perf` log lines), `rusage.swift`
-  (one process's energy and wake-ups), `menu-bar-shots.sh` with `display-metrics.swift`.
+  (one process's energy and wake-ups), `release-stats.swift` (each release's DMG and signature
+  downloads from GitHub's public API, unauthenticated, for ROADMAP's Releases table a week after
+  a release), `menu-bar-shots.sh` with `display-metrics.swift`.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 
