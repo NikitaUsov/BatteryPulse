@@ -297,10 +297,12 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   Symbols, with every state the system shows: charging (bolt), plugged in but not charging or
   charge on hold (plug), low (red at 20 % and below), Low Power Mode (yellow). Built in 0.4.0,
   to verify on the M5
-- [ ] Check light and dark menu bars, Increase Contrast and Reduce Transparency, and the menu
-  bar's height on displays with a notch. `scripts/menu-bar-shots.sh` shoots every style next to
-  the system item on light and dark wallpapers with both appearances, and records each display's
-  menu bar height, scale and notch (`scripts/display-metrics.swift`)
+- [x] Check light and dark menu bars: on the M5 the icon looks right next to the system's battery
+  item in both appearances (0.6.1's session, 2026-10-22)
+- [ ] Check Increase Contrast and Reduce Transparency, and the menu bar's height on displays with
+  a notch. `scripts/menu-bar-shots.sh` shoots every style next to the system item on light and
+  dark wallpapers with both appearances, and records each display's menu bar height, scale and
+  notch (`scripts/display-metrics.swift`)
 - [ ] 0.6.0: rework the drawn styles. On the M5 (0.4.0) they looked off next to the system item:
   Modern read heavier (a full capsule, a darker track, a small thin bolt) although it was
   smaller, Percentage Inside's digits changed colour at the fill edge, the previews in Settings
