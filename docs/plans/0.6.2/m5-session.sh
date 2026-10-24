@@ -1811,18 +1811,24 @@ com.apple.system.powersources.attach com.apple.system.powersources.lowbattery"
 
 # stamped <output> <command...>: the command under a pseudo-terminal, so it writes each line at once,
 # and each line stamped by one zsh process with the time it arrived (seconds, to the microsecond).
-stamped() {
-  local output="$1"
-  shift
-  if [ ! -f "$BIN/stamp.zsh" ]; then
-    cat >"$BIN/stamp.zsh" <<'EOF'
+# write_stamp_script: the zsh stamper stamped() runs, written once (Session B's prepare writes it
+# before it seals the tools).
+write_stamp_script() {
+  [ ! -f "$BIN/stamp.zsh" ] || return 0
+  mkdir -p "$BIN"
+  cat >"$BIN/stamp.zsh" <<'EOF'
 zmodload zsh/datetime
 while IFS= read -r line; do
   line=${line%$'\r'}
   print -r -- "$EPOCHREALTIME $line"
 done
 EOF
-  fi
+}
+
+stamped() {
+  local output="$1"
+  shift
+  write_stamp_script
   # script's standard input is a pipe that stays open past the window (4 hours): at an end of
   # input, script passes it on to the command or stops, so /dev/null could end both at once.
   script -q /dev/null "$@" < <(sleep 14400) 2>&1 | zsh -f "$BIN/stamp.zsh" >"$output" &
@@ -2695,6 +2701,84 @@ close_cover() {
   fi
 }
 
+# The tools and the frozen scripts the arm runs while sudo's ticket lives ($BIN, this folder,
+# scripts/): hashed and made read-only at prepare, and checked by the arm before sudo -v and before
+# the queue, so a tool changed or rebuilt from changed code never runs with the ticket.
+SEAL="$WORK/seal.tsv"
+
+seal_files() {
+  {
+    find "$BIN" -type f 2>/dev/null
+    find "$HERE" -maxdepth 1 -type f 2>/dev/null
+    find "$ROOT/scripts" -maxdepth 1 -type f 2>/dev/null
+  } | sort
+}
+
+# file_hash <file>: SHA-256 by openssl, else shasum, else MD5 (whichever the Mac has).
+file_hash() {
+  local hash
+  hash="$(openssl dgst -sha256 -r "$1" 2>/dev/null | cut -d' ' -f1)"
+  [ -n "$hash" ] || hash="$(shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1)"
+  [ -n "$hash" ] || hash="$(md5 -q "$1" 2>/dev/null)"
+  echo "$hash"
+}
+
+unseal_tools() {
+  chmod -R u+w "$BIN" "$HERE" "$ROOT/scripts" 2>/dev/null || true
+  chmod u+w "$SEAL" 2>/dev/null || true
+}
+
+seal_tools() {
+  local file hash
+  write_stamp_script
+  : >"$SEAL.tmp"
+  while IFS= read -r file; do
+    hash="$(file_hash "$file")"
+    [ -n "$hash" ] || fail "can't hash $file (no openssl, shasum or md5): the arm couldn't check its tools"
+    printf '%s\t%s\n' "$hash" "$file" >>"$SEAL.tmp"
+  done < <(seal_files)
+  mv "$SEAL.tmp" "$SEAL"
+  chmod -R a-w "$BIN" "$HERE" "$ROOT/scripts" 2>/dev/null || true
+  chmod a-w "$SEAL"
+  echo "sealed $(grep -c . "$SEAL") files (the tools and the frozen scripts): read-only, checked by the arm"
+}
+
+# seal_holds: every sealed file as prepare hashed it, no file added, and the frozen worktree's
+# tracked files as at its commit.
+seal_holds() {
+  local hash file
+  [ -s "$SEAL" ] || return 1
+  while IFS=$'\t' read -r hash file; do
+    [ -f "$file" ] && [ "$(file_hash "$file")" = "$hash" ] || return 1
+  done <"$SEAL"
+  [ "$(seal_files)" = "$(cut -f2 "$SEAL")" ] || return 1
+  git -C "$ROOT" diff --quiet HEAD 2>/dev/null
+}
+
+# The background processes the morning steps end (the overnight log stream, bpulse --record), by
+# their pid files, checked against their command lines.
+leftover_running() {
+  local pid what
+  pid="$(cat "$WORK/$1.pid" 2>/dev/null || true)"
+  case "$1" in night-stream) what="log stream" ;; *) what="--record" ;; esac
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && ps -o args= -p "$pid" 2>/dev/null | grep -q -F -- "$what"
+}
+
+# stop_leftovers: ends them when `morning` or `charge-limit record stop` didn't (restore morning,
+# the next prepare).
+stop_leftovers() {
+  local name
+  for name in night-stream charge-capture; do
+    if leftover_running "$name"; then
+      kill -INT "$(cat "$WORK/$name.pid")" 2>/dev/null || true
+      sleep 1
+      if leftover_running "$name"; then kill -TERM "$(cat "$WORK/$name.pid")" 2>/dev/null || true; fi
+      echo "stopped the $name process left running"
+    fi
+    rm -f "$WORK/$name.pid"
+  done
+}
+
 # register_shot <file>: one of the script's crops, with the style and the wallpaper it shows.
 register_shot() {
   [ "$SESSION" = B ] && [ -s "$1" ] || return 0
@@ -3356,8 +3440,11 @@ step_prepare_b() {
     date +%s >"$WORK/prepare.epoch"
     touch "$WORK/prepare.marker"
   fi
+  stop_leftovers
+  unseal_tools
   fetch_builds_b
   build_tools
+  seal_tools
   begin_section 00-prepare "Prepare (B0a)"
   out "- prepared: $(cat "$WORK/prepare.time"); macOS $(sw_vers -productVersion) ($(sw_vers -buildVersion)); the frozen script at $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   out "- installed before the session: $(cat "$BACKUP/version")"
@@ -5667,6 +5754,11 @@ arm_return() {
     return 0
   fi
   arm_queue_caffeinate
+  if ! seal_holds; then
+    echo "none" >"$WORK/sudo.state"
+    arm_say "The tools or the frozen scripts changed since prepare (seal.tsv): no password tonight, and the queue won't run. Unplug the adapter and leave the lid open."
+    return 0
+  fi
   echo "sudo asks for your password once (Low Power Mode for one run, and putting it back):"
   if sudo -v; then
     # sudo's tty tickets: from another terminal, the ticket must not work.
@@ -5764,12 +5856,16 @@ arm_after_queue() {
 # arm_no_unplug: no bedtime unplug by 3 hours after his bedtime: every run "not run: no unplug",
 # the fence down, and the arm ends (B5's restore has nothing to put back: no run changed anything).
 arm_no_unplug() {
-  local at
-  at="$(epoch_hm $(($(bedtime_epoch) + 3 * 3600)))"
-  arm_say "no unplug by $at (3 hours after his bedtime): the queue is not run tonight"
+  arm_not_run "no bedtime unplug by $(epoch_hm $(($(bedtime_epoch) + 3 * 3600))) (3 hours after his bedtime), so a morning unplug never starts it"
+}
+
+# arm_not_run <why>: the queue isn't run tonight: its section says why, the fence comes down for
+# his continue, and the arm ends.
+arm_not_run() {
+  arm_say "the queue is not run tonight: $1"
   begin_section 88-queue "The energy queue (B4; WP-21)"
-  out "- not run: no bedtime unplug by $at (3 hours after his bedtime), so a morning unplug never starts it"
-  echo "not run: no unplug by $at ($(clock))" >"$WORK/queue.done"
+  out "- not run: $1"
+  echo "not run: $1 ($(clock))" >"$WORK/queue.done"
   rm -f "$FENCE"
   if [ -n "$ARM_KEEPALIVE" ]; then kill "$ARM_KEEPALIVE" 2>/dev/null || true; fi
   sudo -k 2>/dev/null || true
@@ -5850,6 +5946,11 @@ step_arm() {
   kill "$ARM_GUI_CAFFEINATE" 2>/dev/null || true
   arm_queue_caffeinate
   arm_cooldown "$(date +%s)"
+  # The queue runs with sudo's ticket: only the tools and scripts prepare sealed.
+  if ! seal_holds; then
+    arm_not_run "the tools or the frozen scripts changed since prepare (seal.tsv)"
+    return 0
+  fi
   queue_run "$unplugged"
   arm_after_queue
 }
@@ -6063,6 +6164,7 @@ restore_night() {
 # brightness, auto-brightness, True Tone, the widgets, the Charge Limit), each confirmed.
 restore_morning() {
   local limit now
+  stop_leftovers
   restore_all
   use_section 95-restore "Restore"
   mark_restored app "script"
@@ -6084,6 +6186,8 @@ restore_morning() {
   now="$(pmset -g battlimit 2>/dev/null | grep -o -E '[0-9]+ ?%' | head -1 | tr -d ' %' || true)"
   out "- the Charge Limit: prepare found ${limit:-unknown}; pmset -g battlimit now: ${now:-shows none (a Battery pane shot confirms it)}"
   if [ -n "$(original_of charge-limit)" ] && [ -n "$now" ] && [ "$now" = "$limit" ]; then mark_restored charge-limit "pmset -g battlimit"; fi
+  # The night is over: the frozen worktree and the tools writable again, so he can remove them.
+  unseal_tools
   restore_gui_items morning
   restore_gui_items gui
 }
@@ -6212,6 +6316,9 @@ build_report_b() {
   echo
   local unrestored=""
   for setting in $(changed_settings); do is_restored "$setting" || unrestored="$unrestored $setting"; done
+  for setting in night-stream charge-capture; do
+    if leftover_running "$setting"; then unrestored="$unrestored $setting (still running)"; fi
+  done
   if [ -n "$unrestored" ]; then
     echo "**Not put back (for his hand):**$unrestored"
     echo
