@@ -1,0 +1,146 @@
+[
+  {
+    "tag_name": "v0.6.2",
+    "published_at": null,
+    "draft": true,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 0
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 0
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.6.2-rc.1",
+    "published_at": "2026-10-23T18:30:00Z",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "BatteryPulse-dSYMs.zip",
+        "download_count": 1
+      },
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 2
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 1
+      },
+      {
+        "name": "notes.txt",
+        "download_count": 5
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.6.1",
+    "published_at": "2026-10-22T09:14:11Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse-dSYMs.zip",
+        "download_count": 0
+      },
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 3
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 2
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.6.0",
+    "published_at": "2026-10-16T05:48:47Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 3
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 3
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.5.0",
+    "published_at": "2026-10-15T15:07:28Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 2
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 1
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.4.0",
+    "published_at": "2026-10-15T14:30:27Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 1
+      },
+      {
+        "name": "BatteryPulse.dmg.sig",
+        "download_count": 0
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.3.1",
+    "published_at": "2026-10-15T07:03:13Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 4
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.3.0",
+    "published_at": "2026-10-15T00:01:33Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 2
+      }
+    ]
+  },
+  {
+    "tag_name": "v0.2.0",
+    "published_at": "2026-10-14T18:52:36Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BatteryPulse.dmg",
+        "download_count": 1
+      }
+    ]
+  }
+]

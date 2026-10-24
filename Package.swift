@@ -40,9 +40,14 @@ let package = Package(
         // here, so the compiler flags every unsafe construct. The one left is marked: C's
         // fixed-point formatting, which Darwin's Foundation declares unsafe (`BatteryReport`).
         .target(name: "BatteryCore", swiftSettings: strict + [.strictMemorySafety()]),
-        // What the widget needs of the system and nothing more: no CryptoKit, no MobileDevice.
-        .target(name: "BatterySource", dependencies: ["BatteryCore"], swiftSettings: strict),
-        .target(name: "BatteryKit", dependencies: ["BatteryCore", "BatterySource"], swiftSettings: strict),
+        // What the widget needs of the system and nothing more: no CryptoKit, no MobileDevice. Its
+        // IOKit, SMC and notify(3) bindings mark each unsafe use `unsafe` with its reason.
+        .target(name: "BatterySource", dependencies: ["BatteryCore"], swiftSettings: strict + [.strictMemorySafety()]),
+        // Its MobileDevice and USB bindings mark each unsafe use `unsafe` with its reason, as
+        // BatterySource's do.
+        .target(
+            name: "BatteryKit", dependencies: ["BatteryCore", "BatterySource"],
+            swiftSettings: strict + [.strictMemorySafety()]),
         // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
         // a pointer, and the macOS-only SMC listing's `String(format:)`.
         .executableTarget(

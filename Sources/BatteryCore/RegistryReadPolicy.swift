@@ -22,7 +22,7 @@ public struct RegistryReadPolicy: Sendable, Equatable {
     /// battery and 1 hour charging, so a missed one is the exception this only bounds.
     public static let defaultSafetyNetAge: Duration = .seconds(300)
 
-    /// The app's: polls reuse the registry while ``cachesOnPolls`` is on.
+    /// The app's: polls reuse the registry while ``cachesOnPolls-type.property`` is on.
     public static let app = RegistryReadPolicy(cachesOnPolls: cachesOnPolls)
 
     /// Whether polls may reuse the registry; `false` fetches it on every read.

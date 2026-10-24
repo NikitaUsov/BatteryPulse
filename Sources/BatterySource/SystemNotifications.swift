@@ -44,7 +44,8 @@ func observeNotifications(
         }
     }
     return {
-        for token in tokens {
+        // Unsafe: `tokens` is `nonisolated(unsafe)`, for the reason above.
+        for token in unsafe tokens {
             NotificationCenter.default.removeObserver(token)
         }
     }
@@ -65,7 +66,9 @@ func observeNotifyKeys(
     var tokens: [Int32] = []
     for name in names {
         var token: Int32 = 0
-        let status = notify_register_dispatch(name, &token, .main) { _ in
+        // Unsafe: the key as a C string, which notifyd copies, and the token through an
+        // out-pointer.
+        let status = unsafe notify_register_dispatch(name, &token, .main) { _ in
             MainActor.assumeIsolated { handler() }
         }
         if status == 0 {
@@ -84,8 +87,12 @@ func observeNotifyKeys(
 /// The description of each power source in `info`: the blob of `IOPSCopyPowerSourcesInfo`, or of
 /// another call that returns one.
 func powerSourceDescriptions(in info: CFTypeRef) -> [[String: Any]] {
-    let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] ?? []
-    return sources.compactMap { IOPSGetPowerSourceDescription(info, $0)?.takeUnretainedValue() as? [String: Any] }
+    // Unsafe: the list is retained once for us (Copy) and taken once; each description belongs to
+    // `info` (Get), so it is borrowed, never released.
+    let sources = unsafe IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] ?? []
+    return sources.compactMap {
+        unsafe IOPSGetPowerSourceDescription(info, $0)?.takeUnretainedValue() as? [String: Any]
+    }
 }
 #endif
 
