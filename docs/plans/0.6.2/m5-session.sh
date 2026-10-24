@@ -2729,7 +2729,8 @@ not_checked() {
 # measure <id> <kind> <arguments>: the script's half of a judgment, stored for `judge`:
 #   black <frames folder>         the darkest frame inside the window's rectangle: 2 (a black frame)
 #                                 below luma 0.06 with 40 % dark pixels, 1 above luma 0.12
-#   blank <image> [x y w h]       luma's spread: 2 (blank or grey) below 0.02, else 1
+#   blank <image> [x y w h]       luma's spread: 2 (blank or grey) below 0.02, else "!2" (anything
+#                                 but blank: the spread can't tell right from gone or different)
 #   same <image> <image> [x y w h] identical pixels: y, else n (V1b)
 #   differs <image> <image> [x y w h] more than 1 % of the pixels changed: y, else n (the menu bar)
 # The suggestion is "-" where the numbers sit between the thresholds.
@@ -2752,7 +2753,7 @@ step_measure() {
     blank)
       line="$("$BIN/frames" stats "$@")"
       value="$line"
-      suggestion="$(echo "$line" | sed -n 's/.*stddev=\([0-9.]*\).*/\1/p' | awk '{ if ($1 < 0.02) print 2; else print 1 }')"
+      suggestion="$(echo "$line" | sed -n 's/.*stddev=\([0-9.]*\).*/\1/p' | awk '{ if ($1 < 0.02) print 2; else print "!2" }')"
       ;;
     same | differs)
       line="$("$BIN/frames" diff "$@")"
@@ -2796,9 +2797,11 @@ step_judge() {
   spec="$(question "$id")" || fail "no question $id"
   kind="${spec%%|*}"
   suggestion="$(measure_of "$id" 3)"
-  if [ -n "$suggestion" ] && [ "$suggestion" != "-" ] && [ "$suggestion" != "$value" ]; then
+  # "!X" suggests anything but X; another suggestion is the answer itself.
+  if [ -n "$suggestion" ] && [ "$suggestion" != "-" ] &&
+    { [ "$suggestion" = "!$value" ] || { [ "${suggestion#!}" = "$suggestion" ] && [ "$suggestion" != "$value" ]; }; }; then
     unsure=1
-    note="disagrees with the pixels ($(measure_of "$id" 4); they suggest $suggestion)${note:+; $note}"
+    note="disagrees with the pixels ($(measure_of "$id" 4); they suggest $(if [ "${suggestion#!}" != "$suggestion" ]; then echo "anything but ${suggestion#!}"; else echo "$suggestion"; fi))${note:+; $note}"
   fi
   if [ -n "$unsure" ]; then
     printf '%s\t%s\t%s\t%s\n' "$id" "$value" "$(printf '%s' "$note" | tr '\t\n' '  ')" "$(measure_of "$id" 5)" >>"$BATCH"
