@@ -3,10 +3,11 @@
 Session B of BatteryPulse 0.6.2 runs on the release candidate (RC) on the MacBook Air M5. One local
 Claude Code session with computer use does every step itself, and a plain script in a second
 Terminal window, the arm window, runs the energy queue. PLAN.md §6 "Session B" is the plan; this file
-is what the session does. The maintainer does only what needs a person: the start line and one yes,
-quitting his own apps, the Focus on and off, the adapter, the lid and the morning login, his password
-at bedtime, permission prompts, taste questions, his typed "continue", revoking Terminal's
-Accessibility unless he keeps it, and his yes before `send`.
+is what the session does. The maintainer does only what needs a person: the launcher and one yes,
+quitting his own apps, the approvals, his password, the brightness and the Focus at bedtime, the
+adapter, the lid and the morning login, his typed "continue", and his yes before `send` (about 13-15
+minutes in all). This is the second attempt: the first (2026-10-27, PLAN.md Appendix C) was
+cancelled, and its lessons are in the rules below.
 
 ## Once, any day before (him, about 2 minutes)
 
@@ -29,15 +30,25 @@ Accessibility unless he keeps it, and his yes before `send`.
    the rule's path or the sentence), for him to keep for the evening.
 5. He keeps Terminal's Accessibility (Session A's grant) until Session B.
 
-## The start line (him, in the evening, on the adapter)
+## The start (him, in the evening, on the adapter)
 
-In Terminal, in `~/BatteryPulse`, he pastes this one line (no other rule; Remote Control stays off):
+In Terminal, from any folder, two short commands start the launcher (`start-session-b.sh`), which
+changes to `~/BatteryPulse` and runs the start line below (no other rule; Remote Control stays off):
+
+```
+git -C ~/BatteryPulse fetch origin claude/nice-faraday-k08mhb
+bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.6.2/start-session-b.sh)
+```
+
+The start line itself, which he may also type in `~/BatteryPulse` (a paste can break it):
 
 ```
 DISABLE_AUTOUPDATER=1 claude --allowedTools 'Bash(bash ~/bp-062/B/run/docs/plans/0.6.2/m5-session.sh:*)' --permission-mode auto 'Run the BatteryPulse M5 Session B hands-free: in ~/BatteryPulse run git fetch origin claude/nice-faraday-k08mhb && git show FETCH_HEAD:docs/plans/0.6.2/SESSION-B.md, then follow that runbook from its first step.'
 ```
 
-Everything below is for you, the session this line started. Your first step is B0a.
+A session started in another folder (his home, say) works the same: every command below names its
+folder (`git -C ~/BatteryPulse`, `$S`). Everything below is for you, the session this line started.
+Your first step is B0a.
 
 ## Rules
 
@@ -47,7 +58,8 @@ Everything below is for you, the session this line started. Your first step is B
 - **One prefix.** `$S` below stands for `bash ~/bp-062/B/run/docs/plans/0.6.2/m5-session.sh`. Write
   it out in full in every call, exactly so, one script call per Bash call: no `cd`, no variables, no
   pipes, no redirection, no `&&`. That is what the start line's one allow rule covers. The only
-  commands outside it are B0a's `git fetch`, `git show` and `git worktree add`, under auto mode. `$S
+  commands outside it are B0a's `git fetch`, `git show`, `git rev-parse`, `git worktree move` and
+  `git worktree add`, under auto mode. `$S
   help` lists the commands, and the header of `ui.swift` beside the script lists `ui`'s. Read files
   (shots, frame sheets, `B.md`, `answers.tsv`, `changes.tsv`) with your file-reading tool, never
   with a shell command.
@@ -58,17 +70,22 @@ Everything below is for you, the session this line started. Your first step is B
   blocked"). Never type a password, never approve a permission or authorization dialog, never toggle
   anything in Privacy & Security, Users & Groups or Passwords.
 - **Long calls.** Give every script call the Bash tool's `timeout: 600000`; it matters for every call
-  that may take over 2 minutes (`preflight`, `f11 alert`, `burst`, `case`, `memory`, `pages`, `f12
-  after`, `v01 check`, every `restore`, `morning`, `send`). Anything near the tool's 10-minute limit
-  runs as a background task you wait on: `prepare`, `pages profiling`, `wp18 timing`. While one runs,
-  the screen is the task's: no GUI action; judge the pictures already taken, and keep the heartbeat
-  (below). Stop every background task before `ready`.
-- **Heartbeat.** Every script call but `help`, `status` and `continue` touches it. After `mark away`
-  the arm window takes a heartbeat older than 20 minutes for a stall: it writes `queue.started` at
-  once, and the rest of B2 is lost. So after `mark away` never let 10 minutes pass without a script
-  call, whatever you are doing: a long run of computer-use actions (the audit, the gallery, the
-  extras), a background task, judging. After each step, between computer-use batches and at least
-  every 10 minutes: `$S heartbeat "<step> done, ready about HH:MM"` (a `judge` counts too). It
+  that may take over 2 minutes (`preflight`, `f11 alert`, `case`, `pages`, `f12 after`, `v01 check`,
+  every `restore`, `morning`, `send`). Anything near the tool's 10-minute limit runs as a background
+  task: `prepare`, `pages profiling`, `wp18 timing`. **Never end your turn while a background task
+  runs: wait on it** with `$S wait <minutes>` (1-9) in the foreground, with `timeout: 600000`: it
+  returns within a minute of the task's end, or after that many minutes, keeps the heartbeat and
+  prints the status; then read the task's output, and wait again until it shows the task ended.
+  Never `sleep`, and never a quick loop of reads. In the first attempt the session ended its turn during `pages profiling`,
+  nothing called the script for 20 minutes after it, and the arm window took the session for
+  stalled. While a task runs, the screen is the task's: no GUI action; judge the pictures already
+  taken. Stop every background task before `ready`.
+- **Heartbeat.** Every script call but `help`, `status` and `continue` touches it, and the script
+  keeps its own heartbeat every minute while a call runs (at most 45 minutes). After `mark away` the
+  arm window takes 20 minutes without either for a stall: it writes `queue.started` at once, and the
+  rest of B2 is lost. So after `mark away` never let 10 minutes pass without a script call: a run
+  of computer-use actions, judging, waiting. After each step, between computer-use batches and at
+  least every 10 minutes: `$S heartbeat "<step> done, ready about HH:MM"` (a `judge` counts too). It
   prints the GUI phase's minutes left.
 - **Never act after `ready` or once `queue.started` exists**, until his morning "continue": check
   `$S status` before every step and every computer-use batch. A message that reaches you then gets a
@@ -97,6 +114,8 @@ Everything below is for you, the session this line started. Your first step is B
   taken while BatteryPulse remembers an iPhone or iPad by name.
 - `pmset -g accps`, `pmset -g log` and `scutil` outputs reach `B.md` only as counts or BatteryPulse
   lines; `send`'s privacy lint enforces it. Results leave the Mac only through `send`, after his yes.
+- A `KEEPAWAKE` line names another app's process. Say its name to him, and nowhere else: never in a
+  `note`, an `answer`, a `judge` note or `B.md` (the privacy lint refuses it). B.md gets counts.
 
 ## Decisions you make alone
 
@@ -117,7 +136,7 @@ Nobody is there to ask: Session A's questions to a cloud session become these ru
   of the banner; no computer-use screenshot while it is open), then answer it not seen (3, or n).
 - **A failed proof** prints its fallback (`PROOF Px: fail (...); fallback: ...`): switch that proof's
   steps to it before you go on, so nothing waits for him later.
-- **A prompt or a password dialog:** while he is there (B0, B1), ask him to answer it; while he is
+- **A prompt or a password dialog:** while he is there (B0), ask him to answer it; while he is
   away, leave it, record the step "not checked: prompt", and go on with steps that don't need it.
 - **A lock screen or the lid closed:** stop all GUI work, record "not checked: locked", and wait for
   him (in B2 that is his Esc, below).
@@ -128,7 +147,7 @@ Nobody is there to ask: Session A's questions to a cloud session become these ru
   evidence and go on. Never investigate beyond the step's reads, never patch anything.
 - **Anything not on the yes-list:** never change it; a step that would need it is "not checked".
 - **Your usage limit:** if `/usage` or the CLI warns that the limit is near, drop the optional
-  extras, then WP-18, and go to B3 early, so the queue starts on `ready`, not on a stale heartbeat.
+  cases, then WP-18, and go to B3 early, so the queue starts on `ready`, not on a stale heartbeat.
 - **Anything this file doesn't cover:** do what changes nothing, record "not checked" with the
   reason, and go on.
 
@@ -160,60 +179,75 @@ item goes to his morning batch. Never guess: unsure is `--unsure`.
 | `F9-<page>` | no truncation or overlap, no English left but names and units, the terms System Settings → Battery uses | `--unsure` |
 | `F12-widget` | before against after: 1 same, 2 blank or grey, 3 gone, 4 different | `--unsure` |
 | `fill-<case>` | over the frame sheet and the darkest frame's luminance: 1 like the window, or an even graphite grey (about RGB 49,49,49), in every frame; 2 a black frame or rectangle in any frame; 3 something else | 3, with a note |
-| `shot-<style>-...` | readable, no black, grey or missing parts; History's readout under the pointer | `--unsure` |
-| `grad-<style>-...`, `grad-clear-light-settings`, `grad-frosted-*-gallery` | looks right: text readable, controls and bars visible, nothing black, grey or missing | `--unsure` |
-| `audit-<style>-<look>-<page>` | 1 no failure, 2 a failure (note it), 3 not run or an estimate only | 3 (that style stays beta) |
-| `V1b` | the script's pixel comparison inside the outline is identical | n |
 | `SUI-17` | Xcode's canvas renders a preview, not an error | n |
-| `energy-setup` | 1 only if brightness about half, auto-brightness and True Tone off, his apps quit and a Focus on are each confirmed by a read or a shot | 2 |
-| `B-*`, `grad-*-sheet`, `graduate-*`, `SZ-10` | his answers | `B-bedtime` 4 hours after the start; `B-charge-capture`, `B-keep-ax` n; `B-slider-auth` 2; the rest n (a style stays beta, SZ-10 waits for 0.7, nothing is sent) |
+| `B-*` | his answers | `B-bedtime` 4 hours after the start; `B-keep-ax` n; `B-send` n (nothing is sent) |
 
-Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.md §7.1).
+Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.md §7.1). G-13b's
+evidence (the style shots, the graduation shots, the contrast audit, V1b) isn't gathered in this
+attempt: both beta styles stay beta. Not run either: the burst (S8), memory, WP-23's device check,
+the optional extras and the morning-away block.
 
 ## B0a: the start (he is there about a minute)
 
-1. **The worktree.** If `~/bp-062/B/run` exists, this is a restart: don't create it, read
-   `~/bp-062/B/run/docs/plans/0.6.2/SESSION-B.md` and follow that copy, from "If the session
-   restarts". Otherwise: `git -C ~/BatteryPulse worktree add --detach ~/bp-062/B/run FETCH_HEAD` (the
-   commit you read this file from; no fetch in between). Then `$S help` and `$S status`.
+1. **The worktree.** `git -C ~/BatteryPulse rev-parse FETCH_HEAD` is the commit you read this file
+   from. If `~/bp-062/B/run` exists, read its commit (`git -C ~/bp-062/B/run rev-parse HEAD`):
+   - the same commit: this is a restart. Don't create it; read
+     `~/bp-062/B/run/docs/plans/0.6.2/SESSION-B.md` and follow that copy, from "If the session
+     restarts";
+   - another commit: ask him (one line, in Russian) whether this is a new attempt or the same
+     session restarted. A restart: as above. A new attempt (the first attempt's worktree is one):
+     `git -C ~/BatteryPulse worktree move ~/bp-062/B/run ~/bp-062/B/run-<its first 7 characters>`.
+
+   Then `git -C ~/BatteryPulse worktree add --detach ~/bp-062/B/run FETCH_HEAD` (no fetch in
+   between), and **`$S prepare attempt`**, your first script call: a clean start. An earlier
+   attempt's `~/bp-062/B` moves aside to `~/bp-062/B-attempt-<its date>` (nothing is deleted) once
+   every change its `changes.tsv` lists was put back. If it refuses and lists changes not put back,
+   name each to him in the start message (step 2) and ask whether he keeps it as it is; after his
+   answer, before step 3: one he keeps as it is, `$S prepare attempt --kept
+   <setting>[,<setting>...]`; one he says was put back by hand already, `--restored <setting> "his
+   word: <what he said>"` (his word is the only way for a setting whose way back the list gives as
+   the earlier attempt's script: the app, its data, Low Power Mode); any other, put it back by
+   computer use as the list says (original -> new, and the way back), confirm it with a shot, then
+   `$S prepare attempt --restored <setting>[,<setting>...] "<the shot>"`. The options may go in
+   one call; `restored` itself is refused until this call succeeds. If an earlier arm window still runs, ask him to close that
+   Terminal window. Then `$S help` and `$S status`.
 2. **The start message,** one message in Russian, before anything changes:
    - What may change, and is written to `changes.tsv` first and put back: the installed BatteryPulse
-     (his comes back from the backup); the appearance, the wallpaper (to generated bright and busy
-     pictures), Icon & widget style, Dim widgets on desktop, Text size; desktop widgets (a small and
-     a medium added if missing, a blank one removed and added again, a test widget added and
-     removed, Session A's dead Test widget removed for good); Increase Contrast, Reduce Transparency,
-     Reduce Motion, Prefer Cross-Fade Transitions, Show Borders and the Liquid Glass slider for the
-     optional passes; brightness, auto-brightness and True Tone for the energy runs; Low Power Mode
-     for one run; BatteryPulse's settings and data, the widget's included, and his remembered iPhones
-     and iPads, removed for the session so no picture shows their names.
+     (his comes back from the backup); the appearance, the wallpaper (to a generated bright picture),
+     Icon & widget style, Dim widgets on desktop, Text size; desktop widgets (a small and a medium
+     added if missing, a blank one removed and added again, a test widget added and removed, Session
+     A's dead Test widget removed for good); Low Power Mode for one run; BatteryPulse's settings and
+     data, the widget's included, and his remembered iPhones and iPads, removed for the session so
+     no picture shows their names.
    - Never: a VPN, undocumented system keys, anything in Privacy & Security, Users & Groups or
-     Passwords.
-   - The questions: may the Charge Limit go 80 → 100 → 80 in the morning, at most 10 minutes at
-     100 %? Keep Terminal's Accessibility until 0.7's Session R (else he turns it off in the
-     morning)? His bedtime (else 4 hours from now)? In Session A, did the Charge Limit slider ask for
-     a password or Touch ID? And: "Please type /usage now and tell me what it shows."
+     Passwords, the brightness (his, at bedtime).
+   - The questions: his bedtime (else 4 hours from now)? Keep Terminal's Accessibility until 0.7's
+     Session R (else he turns it off in the morning)? And: "Please type /usage now and tell me what
+     it shows."
    - Privacy: the pictures go to the model and stay on the Mac; his other desktop widgets appear in
      them; at the beep he quits his own apps.
-   - Times: about 10 minutes of building, then a beep and about 5 minutes with him; an optional 5-minute
-     burst; then the GUI phase on its own until 10 minutes before bedtime; at bedtime the arm window
-     asks for Return, his password and the unplug; the queue then runs about 3 hours (give the
-     expected end, bedtime plus about 3 h 15 min); the lid stays open until then; in the morning: the
-     lid closed for a minute, opened, log in, plug in, write "continue" and keep off the Mac for
-     about 3 minutes; then a few questions and his yes before anything is sent.
+   - Times: about 10 minutes of building, then a beep and about 10-15 minutes with him (his apps
+     quit, any utility that keeps the Mac awake among them; the approvals; the first 5 minutes
+     without touching the Mac, and hands off whenever you ask until you say he may go); then he
+     may go. The GUI phase runs on its own, about 1-1.5 hours, ending 10 minutes
+     before his bedtime at the latest. At bedtime the arm window asks for Return, his password, the
+     brightness at about half with the keys, a Focus on, and the unplug; the queue then runs about 3
+     hours (give the expected end, bedtime plus about 3 h 15 min) and the lid stays open until
+     then. In the morning: the lid closed for a minute, opened, log in, plug in, write "continue"
+     and keep off the Mac for about 3 minutes; then his yes before anything is sent.
    - End your turn and wait for his answer.
 3. **Record** (only on an explicit yes; anything else changes nothing, and you end):
-   `$S answer --by person B-yes y`; `B-bedtime HH:MM` if he gave one; `B-charge-capture y|n`;
-   `B-keep-ax y|n`; `B-slider-auth 1|2`; `B-usage "<what /usage showed, or what he said>"`. And
-   `$S answer --by claude B-keep-widgets n "not asked: the RC's widget offers only small and medium"`.
+   `$S answer --by person B-yes y`; `B-bedtime HH:MM` if he gave one; `B-keep-ax y|n`; `B-usage
+   "<what /usage showed, or what he said>"`.
 4. **`$S prepare`** as a background task (about 10 minutes): the backup, the builds and tools, his
    remembered devices removed for the session, the RC installed. It ends with `BEEP (B0a is done)`.
-   If it fails, run it once more; if it fails again, tell him why, run `$S restore gui` and `$S
-   restore morning` if `changes.tsv` lists anything, and end. Never `--fresh-backup` unless the
-   script asks for it.
-5. At the beep, say: "The build is done. Please quit your own apps (Terminal stays), then write me
-   that you are back." End your turn.
+   Wait on it with `$S wait 9` (never end your turn while it runs). If it fails, run it once more; if it fails
+   again, tell him why, run `$S restore gui` and `$S restore morning` if `changes.tsv` lists
+   anything, and end. Never `--fresh-backup` unless the script asks for it.
+5. At the beep, say: "The build is done. Please quit your own apps (Terminal stays), any utility
+   that keeps the Mac awake among them, then write me that you are back." End your turn.
 
-## B0b: at the beep (he is there, 4-6 minutes)
+## B0b: at the beep (he is there, about 10-15 minutes)
 
 1. First `$S ui access`: prepare's reads and P1 use AX before preflight would ask. If it says
    `ax_trusted=no`, ask him to turn Terminal on under System Settings → Privacy & Security →
@@ -227,89 +261,62 @@ Every item left "not checked" or "not run" takes its gate's default in D3 (PLAN.
    pixels); then `$S widget small <x> <y> <w> <h>` and `$S widget medium ...` in points from P1's
    frames (no large or extra-large: the RC has none), and `$S desktop-spot --image <shot> <x> <y>` on
    empty desktop, away from icons and widgets.
-3. Say: "For the next two minutes please don't touch the keyboard or the trackpad; answer any macOS
-   prompt that appears." Then `$S preflight` (P2, P6-P9, P11 and the reads). He answers what comes
-   up: Accessibility for Terminal if he revoked it (the switch, then `$S preflight` again), the
-   developer tools, other apps' data.
+3. Say: "For the next five minutes please don't touch the keyboard or the trackpad; answer any macOS
+   prompt that appears." Then `$S preflight` (P2, P6-P9, P11, the reads, the keep-awake read and a
+   150-second quiet check, last). He answers what comes up: Accessibility for Terminal if he revoked
+   it (the switch, then `$S preflight` again), the developer tools, other apps' data. **A
+   `KEEPAWAKE` line, or a failed quiet check:** say its `DO` line to him in Russian with the process
+   name (the name only to him, never recorded), and on his word say: "Please don't touch the Mac for
+   about three minutes", then `$S preflight quiet` (twice at most;
+   if it still fails, `$S note "quiet check failed twice"` and go on: the arm window won't start the
+   queue while another process holds a keep-awake assertion, and says so to him at bedtime).
 4. Your proofs: `$S proof P3`, then `$S proof P3 <1|2>` from its pictures; `$S proof P4` (it runs P5
-   too), then `$S judge P4-frames <1-3>`; **P10:** one computer-use access request for the whole
-   batch (BatteryPulse, System Settings, Finder, Notification Center, the widget host P1 named,
-   TextEdit, Accessibility Inspector, Xcode; not Numbers: the CSV check isn't run, B7), one widget
-   click-to-add in the gallery and its removal (`$S change p10-widget none "added"` first, `$S
-   restored p10-widget "<the shot that shows it gone>"` after), a screenshot right after the first
-   action (where
-   computer use's own notification lands), one System Settings click; then `$S proof P10 pass|fail
-   "<what it showed>"`. An app it refuses: that app's steps go to scripting, else "not checked"; a
-   failed gallery click: ask him to add or remove that widget now. Then each command family once,
-   as preflight's `RUN` lines say (`ui idle`, `ui guard`, `shot`, `heartbeat`, one `measure` and
+   too), then `$S judge P4-frames <1-3>`. P3-P5 now pass over the Dock's full-display window
+   (macOS 27.2); a "didn't pass the occlusion check" names what covered the window. **P10:** one
+   computer-use access request for the whole batch (BatteryPulse, System Settings, Finder,
+   Notification Center, the widget host P1 named, TextEdit, Xcode), one widget click-to-add in the
+   gallery and its removal (`$S change p10-widget none "added"` first, `$S restored p10-widget "<the
+   shot that shows it gone>"` after), a screenshot right after the first action (where computer
+   use's own notification lands), one System Settings click; then `$S proof P10 pass|fail "<what it
+   showed>"`. An app it refuses: that app's steps go to scripting, else "not checked"; a failed
+   gallery click: ask him to add or remove that widget now. Then each command family once, as
+   preflight's `RUN` lines say (`ui idle`, `ui guard`, `shot`, `heartbeat`, one `measure` and
    `judge`, `status`), so every prompt comes now.
-5. **The banners, before the Focus:** `ui banner` finds each banner by its English body, only
-   inside a BatteryPulse banner, and presses it within 10 s: "This is how battery alerts will look"
-   for V-01, "You can unplug the power adapter" for F11. `$S v01 notify`, then `$S v01 notify
-   front`; answer `V01-notification` and `V01-notification-front`. `$S f11 alert` (it may wait up to
-   6 minutes); answer `F11-alert`.
-6. **WP-23's device check,** only if he has an iPhone or iPad and its cable at hand: he plugs it in;
-   turn Read iPhone and iPad batteries on in BatteryPulse's Settings → General by `ui press`; once
-   its page shows values, say "Please pull the cable now"; press Refresh on its page and read whether
-   it says "Connected over Wi-Fi" (`$S ui tree --app BatteryPulse --match Connected`); `$S note
-   "WP-23: <what the page said>"`. Then `$S devices forget`. No picture is attached until it has run.
-   Without a device: `$S note "WP-23 device check not run: no device at hand"`.
-7. `$S arm open`. Say: "A Terminal window named BatteryPulse arm opened. Leave it open; at bedtime it
-   tells you what to do."
+5. **The banners:** `ui banner` finds each banner by its English body, only inside a BatteryPulse
+   banner, and presses it within 10 s: "This is how battery alerts will look" for V-01, "You can
+   unplug the power adapter" for F11. `$S v01 notify`, then `$S v01 notify front`; answer
+   `V01-notification` and `V01-notification-front`. `$S f11 alert` (it may wait up to 6 minutes);
+   answer `F11-alert`.
+6. `$S arm open`, then `$S mark away` (no sound, speech or question from here until his
+   "continue"). Say: "A Terminal window named BatteryPulse arm opened; leave it open and the Mac on
+   the adapter with the lid open. You may go. At bedtime that window asks for Return and your
+   password, then the brightness at about half with the brightness keys, a Focus on, and the
+   unplug; wait until it says 'Nothing to do' before you go." Then go straight on to B2, in the same turn: it needs nobody.
 
-## B1: the burst (optional; he is there about 5 minutes)
-
-Ask: "Now the optional burst, 5 minutes: at each beep unplug the adapter, at the next plug it in, three
-times, a minute apart; it ends plugged in. Shall we, or skip?" On yes, `$S burst` (P12 runs at the
-first unplug). On skip, `$S note "S8 not run: the burst was skipped"`. Then say: "Please turn a Focus
-on in Control Center now, leave the Mac on the adapter with the lid open, and write me when the Focus
-is on." On his word, `$S mark away`: no sound, speech or question from here until his "continue". It
-warns if BatteryPulse still remembers a device by name (`$S devices forget` first).
-
-## B2: the GUI phase (he is away, about 2.5-3.5 hours)
+## B2: the GUI phase (he is away, about 1-1.5 hours)
 
 It stops 10 minutes before his bedtime, or 4 hours after the start (`heartbeat` shows the minutes
-left). Whatever is left then is `$S note "<item> not run (time)"`, or moves to the morning-away
-block. In this order:
+left). Whatever is left then is `$S note "<item> not run (time)"`. In this order:
 
-1. **Memory:** `$S memory` (History → 7 d three times, `phys_footprint` before and after).
-2. **The placed widgets:** `$S shot widgets-placed`. Session A's dead Test widget: one shot, then
-   `$S change test-widget "placed" "removed"` and remove it by computer use; it isn't put back. A
-   blank or grey widget anywhere: shoot it, answer, then `$S change <family>-widget "blank" "added
-   again"`, remove it and add it again by computer use, `$S restored <family>-widget "<the shot>"`,
-   and note that.
-3. **V-01's other half:** `$S v01 menubar`, answer `V01-menubar`; then Raw Data, History, Demo Mode
+1. **The placed widgets:** `$S shot widgets-placed`. Session A's dead Test widget, if still there:
+   one shot, then `$S change test-widget "placed" "removed"` and remove it by computer use; it isn't
+   put back. A blank or grey widget anywhere: shoot it, answer, then `$S change <family>-widget
+   "blank" "added again"`, remove it and add it again by computer use, `$S restored <family>-widget
+   "<the shot>"`, and note that.
+2. **V-01's other half:** `$S v01 menubar`, answer `V01-menubar`; then Raw Data, History, Demo Mode
    on and off, Check Now (close its offer by its own button) by `ui press`, `ui select-row` and `ui
-   click`, computer use as the fallback. Clear History comes in item 5.
-4. **F6, F8, F9, F11's login item:** `$S f6 overview`, `power`, `history`, `health`, `raw`, each
+   click`, computer use as the fallback.
+3. **F6, F8, F9, F11's login item:** `$S f6 overview`, `power`, `history`, `health`, `raw`, each
    answered against the `bpulse --json` it prints; `$S f8`, `$S f8 ru on`, `$S f8 ru`, `$S f8 ru off`
    (small and medium in English and Russian; large and extra large are "not checked": no such
    family); `$S f9`, answer `F9-*`, then `$S relaunch` (English again); `$S f11 login`, turn Open at
    login off by `ui press` as it says, `$S f11 listed`, answer `F11-login`. If none of F8's Russian
-   ways works, F8-ru is "not checked".
-5. **The beta styles:**
-   - The 10 minimize cases: `$S case translucent-light-main`, and the same for `translucent-dark`,
-     `clear-light`, `clear-dark` (`-main` and `-compact` each), `standard-light-main` and
-     `frosted-light-main`; read each frame sheet beside the darkest frame's luminance and answer
-     `fill-*`. A clip that missed the animation: once more, then 3.
-   - The 24 shots: `$S styleshot <translucent|clear> <bright|busy> <light|dark>
-     <overview|history|settings>`, each answered `shot-*`.
-   - The 19 graduation shots: `$S gradshot <translucent|clear> <light|dark>
-     <raw|demo|history|fullscreen>`, doing what its `DO` line says and then the same command with
-     `--ready`; `$S gradshot clear light settings`; `$S gradshot frosted <light|dark> gallery`. Answer
-     each `grad-*`.
-   - The contrast audit: `$S open-app "Accessibility Inspector"`, its audit by computer use (clicks
-     only) for each beta style, appearance and page (Overview, History, Settings), each right after
-     the `styleshot <style> bright <look> <page>` that left the window so (the script sets the
-     style, the look and the page; you change none of them otherwise); answer `audit-*`.
-     Without the Inspector: `$S audit estimate <style> <look> <page>`, answered 3.
-   - V1b: `$S v1b <x> <y> <w> <h>` with the Clear tile's frame in Settings → General; answer `V1b`.
-   - Then Clear History by `ui press` (`V01-pages` is answered at item 10).
-   - A style with a shot missing or not answered y stays beta; so does one whose audit didn't run.
-6. **Page switches:** `$S pages`; then `$S pages profiling` as a background task (`xctrace` with a
-   watchdog, then 2 minutes of Clear), judging the backlog while it runs. Without the profiling RC,
-   or with P9 failed, it records "not run" itself.
-7. **F12:** `$S f12 rate` (at least 10 requests left, else try again later in B2, then in the
+   ways works, F8-ru is "not checked". Then Clear History by `ui press` (`V01-pages` is answered at
+   item 7).
+4. **Page switches:** `$S pages`; then `$S pages profiling` as a background task you wait on
+   (`xctrace` with a watchdog, about 10 minutes), judging the backlog meanwhile. Without the
+   profiling RC, or with P9 failed, it records "not run" itself.
+5. **F12:** `$S f12 rate` (at least 10 requests left, else try again later in B2, then in the
    morning: "not run: rate-limited"); `$S f12 before`; Check for Updates, then Install and Relaunch,
    by `ui press`; `$S f12 after`, which prints the verdict lines: every extension process the
    installer found ended within 1,500 ms; no `BatteryPulseWidget` process started before the swap;
@@ -317,32 +324,34 @@ block. In this order:
    Finder's on-screen windows during the install (more than before means a window opened). With no
    extension running before Install, item 6 is "not exercised". Answer `F12-widget`, then `$S
    install C`: the rest runs on the RC.
-8. **WP-18:** `$S wp18 previews`, resume the canvas in Xcode by computer use, answer `SUI-17`;
-   `$S wp18 timing` as a background task; SZ-10 only if the frozen worktree holds an `.icon` source
-   under `Resources/`: `$S wp18 icon <path>`, the four Icon & widget styles by computer use (each
-   `change` first, `restored` after), its shots for his morning batch; else `$S note "SZ-10 not run:
-   no icon source in the frozen worktree"`.
-9. **The optional extras,** while time allows, each setting `change`d first and `restored` after:
-   `$S menu-bar-shots <tag>` with Increase Contrast and with Reduce Transparency (set by computer use;
-   the plug state from the burst's stamps; Demo Mode for 100 % on power and one, two and three
-   digits); Stage 1.4's pass (the Liquid Glass slider at both ends, Reduce Motion, Prefer Cross-Fade
-   Transitions, Reduce Transparency, Increase Contrast, Show Borders), judged from shots and noted.
-10. `$S v01 check` (the RC window's "executor" lines and crash reports); answer `V01-pages`.
+6. **WP-18,** without his hand: `$S wp18 previews`, resume the canvas in Xcode by computer use,
+   answer `SUI-17`; `$S wp18 timing` as a background task you wait on. SZ-10 needs an `.icon`
+   source under `Resources/`, which the frozen worktree doesn't hold: `$S note "SZ-10 not run: no
+   icon source in the frozen worktree"`.
+7. `$S v01 check` (the RC window's "executor" lines and crash reports); answer `V01-pages`.
+8. **Optional, while time allows (about 25 minutes): the 8 glass-sheet cases,** which confirm G-13a
+   on the RC: `$S case translucent-light-main`, and the same for `translucent-dark`, `clear-light`,
+   `clear-dark` (`-main` and `-compact` each); read each frame sheet beside the darkest frame's
+   luminance and answer `fill-*`. A clip that missed the animation: once more, then 3. A case not
+   reached: `$S note "fill-<case> not run (time)"`; G-13a then rests on Session A.
 
-## B3: the hand-over (about 5 minutes)
+## B3: the hand-over (about 3 minutes)
 
 1. `$S restore gui`; do the items it lists for you by AX, System Events or computer use, each
    confirmed by a read or a shot and recorded with `restored`. It quits what the script opened
-   (TextEdit, System Settings, Accessibility Inspector, Xcode); name any other open app in a note.
-2. The energy setup: `$S pane displays`; by computer use (no key press): brightness about half,
-   auto-brightness off, True Tone off, each `change`d first; a shot; then `$S answer --by claude
-   energy-setup <1|2>`.
-3. Stop every background task; schedule nothing.
-4. `$S ready`, your last call. End your turn. From here only text answers until his "continue".
+   (TextEdit, System Settings, Xcode); name any other open app in a note.
+2. Stop every background task; schedule nothing. The brightness and the Focus are his, at the arm
+   window's bedtime prompt: no computer use touches them.
+3. `$S ready`, your last call. End your turn. From here only text answers until his "continue".
 
-**B4-B6 run without you:** his Return, password and unplug in the arm window; the queue (a discarded
-warm-up, S2 and S1 three pairs each, S2 with Low Power Mode, S4w, S5, S10, S7, S3 and the minimized
-run, the retries, S6 last); `restore night`; the night's sleep on the RC.
+**B4-B6 run without you:** in the arm window, his Return and password, the brightness at about half
+by the keys, a Focus on, and the unplug; the arm waits while another process holds a keep-awake
+assertion (it names it to him there, at his Return already), then for 70 quiet seconds, then the
+cooldown, which counts holders and HIDIdleTime's drops for the queue's section; its status line
+says "On battery since HH:MM; cooling down until about HH:MM; the queue then runs until about
+HH:MM. Nothing to do; don't press keys here." The queue (a discarded warm-up, S2 and S1 three pairs
+each, S2 with Low Power Mode, S4w, S5, S10, S7, S3 and the minimized run, the retries, S6 last);
+`restore night`; the night's sleep on the RC.
 
 ## B7: the morning, on his "continue"
 
@@ -351,40 +360,30 @@ run, the retries, S6 last); `restore night`; the night's sleep on the RC.
 2. `$S continue`. Without a lid line it refuses: say "Please close the lid for a minute once more,
    open it, log in, then write continue again."
 3. `$S v01 morning`, answer `V01-lid`; `$S morning` (sleep hygiene, the overnight log stream).
-4. **The morning-away block,** only if he says he leaves the Mac on the adapter for about an hour:
-   the Charge Limit capture if `B-charge-capture` is y and `B-slider-auth` is 1 (`$S charge-limit
-   record start`; `$S change charge-limit <his value> 100`; the slider to 100 % by computer use for
-   at most 10 minutes; back to his value; `$S restored charge-limit "pmset -g battlimit"`; `$S
-   charge-limit record stop`) and whatever B2 moved here. The exported CSV in Numbers isn't run:
-   nothing through the frozen script opens Numbers with a region, and the save and open panels would
-   need typing or file browsing; `$S note "Stage 6 CSV in Numbers not run: no route through the
-   script"`. Last, `$S charge-limit check`: if the limit isn't back, that is the report's first
-   line, and say so.
-5. `$S restore morning`; do the GUI items it lists (brightness, auto-brightness, True Tone, Open at
-   login as prepare found it), each `restored`. Anything you can't put back heads the report, for his
-   hand.
-6. Ask: "Did you add any allow rule beyond the start line's? Which?" Then `$S note "allow rules he
-   added: <his answer>"`, for him to remove after Session R.
-7. `$S batch`: give him each `SHEET`'s full path to open himself (he types `! open <path>` at your
-   prompt, or uses Finder; you never open a file by computer use, which would mean file browsing or
-   typing), and ask its questions: per beta style its contact sheet (`grad-translucent-sheet`, `grad-clear-sheet`), "From
-   0.6.2 on, offer Translucent without the Beta window styles setting? y/n." "And Clear? y/n."
-   (`graduate-translucent`, `graduate-clear`), `SZ-10`'s y if it ran, and every item you answered 3
-   or unsure. Record each with `--by person`.
-8. `$S send --dry-run`; give him its `SHEET` (every attached image) the same way and summarize `~/bp-062/B/B.md` in
-   Russian; on his yes, `$S answer --by person B-send y`, then `$S send`. A lint refusal names a line:
-   drop it (`unattach`, or leave the note out), tell him, `send --dry-run` and his yes again. A failed
+4. `$S charge-limit check` (nothing changed it; a read for the report).
+5. `$S restore morning`; do the GUI items it lists (Open at login as prepare found it, and any
+   other), each `restored`. Anything you can't put back heads the report, for his hand.
+6. `$S batch`: if it lists items you answered 3 or unsure, offer them in one line ("N items I
+   wasn't sure about: look now, or skip and they keep their defaults?"); on "look", give each
+   picture's full path (he types `! open <path>` at your prompt, or uses Finder; you never open a
+   file by computer use) and record each with `--by person`.
+7. `$S send --dry-run`; give him its `SHEET` (every attached image) the same way, summarize
+   `~/bp-062/B/B.md` in Russian, and add: "If you added any allow rule beyond the start line's,
+   tell me which." Record that with `$S note "allow rules he added: <his answer, or none named>"`.
+   On his yes, `$S answer --by person B-send y`, then `$S send`. A lint refusal names a line: drop
+   it (`unattach`, or leave the note out), tell him, `send --dry-run` and his yes again. A failed
    push keeps everything in `~/bp-062/B`; `send` can run again later on the same yes.
-9. Say: "Please turn the Focus off" and, unless `B-keep-ax` is y, "and turn Terminal off in System
-   Settings → Privacy & Security → Accessibility." Then end.
+8. Say: "Please turn the Focus off and set the brightness as you like it" and, unless `B-keep-ax`
+   is y, "and turn Terminal off in System Settings → Privacy & Security → Accessibility." Then end.
 
 ## If the session restarts or compacts
 
 - After a compaction or a restart, first `$S charge-limit check` (unless `ready` is up), then read
   this file again from `~/bp-062/B/run`, `$S status`, and `~/bp-062/B/answers.tsv` and
-  `changes.tsv`, and go on from the first step not done. If `ready` is up or `queue.started` exists,
-  only text answers until "continue".
-- If he starts the start line again, B0a's step 1 sends the new session here.
+  `changes.tsv`, and go on from the first step not done (a step that ran as the old session's
+  background task: run it once more). If `ready` is up or `queue.started` exists, only text answers
+  until "continue".
+- If he starts the launcher again, B0a's step 1 sends the new session here (the same commit).
 
 ## After publishing (D3's short session)
 
