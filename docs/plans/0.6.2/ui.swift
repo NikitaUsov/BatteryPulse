@@ -31,7 +31,7 @@
 // tests, the occlusion check, the desktop check and `recheck`; every other window at layer 20 or
 // above still counts. The Dock stays unclickable but for the minimized window's own tile: under the
 // overlay AX must still find the expected app at the point, and by the window list alone a point
-// on the Dock's bar (its AX frame) is refused.
+// on the Dock's bar (its AX frame), or any point while the Dock shows a menu, is refused.
 //
 // Actions (each passes the safety rules below first):
 //   click <point> --expect … [--shift | --control] [--double] [--cg-only] [--probe]
@@ -783,6 +783,19 @@ enum Dock {
         return frames.isEmpty ? nil : frames
     }
 
+    /// A menu the Dock shows (its own, or a tile's), which it may draw in its full-display overlay
+    /// over any point: while one is open, nothing is clicked there by the window list alone
+    /// (`Safety.checkClearOfDockBar`). Only menus: the idle Dock's other AX children aren't known
+    /// on macOS 27.2, and a rule on them could refuse every such click.
+    static func menuOpen() -> Bool {
+        guard let dock = try? Processes.app(Rules.dock) else { return true }
+        let top = AX.children(AX.application(dock))
+        if top.contains(where: { AX.role($0) == "AXMenu" }) { return true }
+        return top.filter { AX.role($0) == "AXList" }.flatMap { AX.children($0) }.contains { tile in
+            AX.children(tile).contains { AX.role($0) == "AXMenu" }
+        }
+    }
+
     /// The hashes a `frame --dock --list` file holds.
     static func listed(_ path: String) throws -> [String] {
         guard let text = try? String(contentsOfFile: path, encoding: .utf8) else {
@@ -1217,8 +1230,12 @@ enum Safety {
     }
 
     /// A point by the window list alone, under the Dock's full-display overlay: outside the Dock's
-    /// bar by its AX frames (8 points of margin), and refused when they can't be read.
+    /// bar by its AX frames (8 points of margin), and refused when they can't be read or while the
+    /// Dock shows a menu (`Dock.menuOpen`), which the overlay may draw over the point.
     static func checkClearOfDockBar(_ point: CGPoint) throws {
+        if Dock.menuOpen() {
+            throw Refusal(description: "the Dock shows a menu, which its full-display window may draw over that point: nothing is clicked there by the window list alone")
+        }
         guard let bars = Dock.barFrames() else {
             throw Refusal(description: "the Dock's bar can't be located under its full-display window: nothing is clicked there by the window list alone")
         }
