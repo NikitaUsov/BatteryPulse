@@ -1763,7 +1763,8 @@ and acts again only on his "continue".
   [estimate], plus about 25 minutes for the optional cases). It stops 10 minutes before his
   bedtime, or 4 hours after the start. What is left then becomes "not run (time)". The session
   calls the script after each step and between computer-use batches, and the script keeps its own
-  heartbeat while a call runs; the session never ends its turn while a background task runs:
+  heartbeat while a call runs; the session never ends its turn while a background task runs (it
+  waits with the script's `wait <minutes>`, which ends with the task and keeps the heartbeat):
   1. the placed widgets: a shot; the dead Test widget shot once, then removed;
   2. V-01's other half (step 2), without Clear History;
   3. F6, F8, F9 and F11's login item (step 4), on the real history; then Clear History (step 2's
@@ -2029,7 +2030,9 @@ Preflight also checks, without a proof's fallback:
   - A call that may take over 2 minutes (F11's wait, `pages`, `case`) passes the Bash tool a
     `timeout` of 600000 ms, as Session A's runbook does; anything near the tool's 10-minute limit
     (`prepare`, the `xctrace` pass, SUI-19's timing) runs as a background task the session waits
-    on: it never ends its turn while one runs.
+    on with the script's `wait <minutes>` (1-9, in the foreground: it ends within a minute of the
+    task's end, so no `sleep` is needed outside the allow rule): it never ends its turn while one
+    runs.
   - The heartbeat: every script call touches it, and the script keeps its own every minute while a
     call runs (at most 45 minutes, so a hung call still lets the stale path start the queue); the
     arm window takes 20 minutes without either for a stall.

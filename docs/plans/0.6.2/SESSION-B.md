@@ -73,8 +73,10 @@ Your first step is B0a.
   that may take over 2 minutes (`preflight`, `f11 alert`, `case`, `pages`, `f12 after`, `v01 check`,
   every `restore`, `morning`, `send`). Anything near the tool's 10-minute limit runs as a background
   task: `prepare`, `pages profiling`, `wp18 timing`. **Never end your turn while a background task
-  runs: wait on it** (read its output every few minutes, with a `heartbeat` call between), and go on
-  only when it has ended. In the first attempt the session ended its turn during `pages profiling`,
+  runs: wait on it** with `$S wait <minutes>` (1-9) in the foreground, with `timeout: 600000`: it
+  returns within a minute of the task's end, or after that many minutes, keeps the heartbeat and
+  prints the status; then read the task's output, and wait again until it shows the task ended.
+  Never `sleep`, and never a quick loop of reads. In the first attempt the session ended its turn during `pages profiling`,
   nothing called the script for 20 minutes after it, and the arm window took the session for
   stalled. While a task runs, the screen is the task's: no GUI action; judge the pictures already
   taken. Stop every background task before `ready`.
@@ -239,7 +241,7 @@ the optional extras and the morning-away block.
    "<what /usage showed, or what he said>"`.
 4. **`$S prepare`** as a background task (about 10 minutes): the backup, the builds and tools, his
    remembered devices removed for the session, the RC installed. It ends with `BEEP (B0a is done)`.
-   Wait on it (never end your turn while it runs). If it fails, run it once more; if it fails
+   Wait on it with `$S wait 9` (never end your turn while it runs). If it fails, run it once more; if it fails
    again, tell him why, run `$S restore gui` and `$S restore morning` if `changes.tsv` lists
    anything, and end. Never `--fresh-backup` unless the script asks for it.
 5. At the beep, say: "The build is done. Please quit your own apps (Terminal stays), any utility

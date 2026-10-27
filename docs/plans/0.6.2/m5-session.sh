@@ -3014,6 +3014,42 @@ step_heartbeat() {
   echo "heartbeat $(clock); GUI phase: $(gui_minutes_left) minutes left (it stops at $(epoch_hm "$(gui_end_epoch)"))"
 }
 
+# other_calls: the pids of the other Session B script calls running now (not the arm window, not
+# a wait). A call's heartbeat keeper carries its arguments and outlives it by at most a minute. The
+# pattern's backslash keeps this awk's own arguments from matching it.
+other_calls() {
+  ps -A -o pid= -o args= 2>/dev/null | awk -v me="$$" '
+    $1 != me && match($0, /m5-session\.sh [a-z]/) {
+      split(substr($0, RSTART + 14), w, " ")
+      if (w[1] != "arm" && w[1] != "wait") print $1
+    }' || true
+}
+
+# wait [<minutes>] (1-9, 5 by default): the session's wait on its background task (prepare, pages
+# profiling, wp18 timing), in the foreground under the start line's one allow rule, which no sleep
+# of the session's own passes. It ends within a minute of the task's end (no other script call
+# runs), or after that many minutes, then prints the status. Like every call it touches the
+# heartbeat and keeps the script's own while it waits, so waiting never looks like a stall; ending
+# the turn instead did, in the first attempt.
+step_wait() {
+  b_only wait
+  local minutes="${1:-5}" until others=""
+  case "$minutes" in [1-9]) ;; *) fail "usage: $SCRIPT wait [<minutes, 1-9>]" ;; esac
+  until=$(($(date +%s) + minutes * 60))
+  while :; do
+    others="$(other_calls)"
+    [ -n "$others" ] || break
+    [ "$(date +%s)" -lt "$until" ] || break
+    sleep 15
+  done
+  if [ -n "$others" ]; then
+    echo "wait: $minutes minutes passed and another script call still runs (pid $(tr '\n' ' ' <<<"$others" | sed 's/ $//')): read the task's output, then $SCRIPT wait again"
+  else
+    echo "wait: no other script call runs: the background task has ended; read its output"
+  fi
+  step_status_b
+}
+
 # heartbeat_keeper: the script's own heartbeat while this call runs: heartbeat.script touched every
 # minute until the call ends (cleanup ends it too), so pages profiling, xctrace, the installs, burst,
 # memory, f11 alert's wait or a case's recordings never look like a stall to the arm window (the
@@ -7204,6 +7240,7 @@ B4-B5 (the arm window, no session): his Return, password, brightness, Focus and 
 B7 (on his continue):
   continue; v01 morning; morning; restore morning; batch (optional); send [--dry-run] (after answer --by person B-send y)
 Not in this attempt (PLAN.md §6): styleshot, gradshot, audit, v1b, burst, memory, the extras, the morning-away block.
+While a background task runs (prepare, pages profiling, wp18 timing): wait [<minutes, 1-9>] in the foreground, again until it ended.
 Any time: status, note, shot, crop, attach, unattach, charge-limit check, help; queue --dry-run [default|low|late] anywhere.
 EOF
 }
@@ -7289,6 +7326,7 @@ case "$COMMAND" in
     ;;
   send) step_send "$@" ;;
   heartbeat) b_run step_heartbeat "$@" ;;
+  wait) b_run step_wait "$@" ;;
   change) b_run step_change "$@" ;;
   restored) b_run step_restored "$@" ;;
   measure) b_run step_measure "$@" ;;
