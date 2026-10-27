@@ -3836,35 +3836,45 @@ state_seconds() { ui_run idle 2>/dev/null | sed -n 's/.* hid_state_s=\([0-9.-]*\
 # lower <a> <b>: a is below b by more than half a second (HIDIdleTime went back: an event).
 lower() { awk -v a="${1:-0}" -v b="${2:-0}" 'BEGIN { exit !(a + 0.5 < b) }'; }
 
-# The assertions that declare a person at the Mac or keep it or its display awake. Another app
-# holding one spoils every energy run: in the first attempt a keep-awake utility in the menu bar
-# declared user activity all evening, HIDIdleTime never passed 95 s, and every run was "touched".
-KEEPAWAKE_TYPES="UserIsActive PreventUserIdleDisplaySleep PreventUserIdleSystemSleep NoIdleSleepAssertion NoDisplaySleepAssertion"
+# The assertions that declare a person at the Mac or keep its display awake. Another app holding
+# one spoils every energy run (user activity resets HIDIdleTime, so every run is "touched"; a lit
+# display spoils S6): in the first attempt a keep-awake utility in the menu bar declared user
+# activity all evening, HIDIdleTime never passed 95 s, and every run was "touched".
+KEEPAWAKE_TYPES="UserIsActive PreventUserIdleDisplaySleep NoDisplaySleepAssertion"
+# The ones that only keep the system awake change no run (the arm's own caffeinate -i holds one for
+# the whole queue), so they never hold the queue up: a sync or backup agent may hold one all night.
+# They are counted and recorded, nothing more.
+SYSTEM_SLEEP_TYPES="PreventUserIdleSystemSleep NoIdleSleepAssertion"
 
-# holder_is_ours <pid> <name>: an assertion holder that doesn't count: the system's own (an
-# executable under /System, /usr, /bin, /sbin or /Library/Apple, or inside an app whose bundle
-# identifier is Apple's), BatteryPulse, the Claude CLI, or a caffeinate that this script, the arm
-# window or the Claude CLI started (an ancestor of it is one of them; the queue's Claude detector
-# covers the CLI). Any other caffeinate counts (a utility may run one, or he did).
+# holder_is_ours <pid> <name> <type>: an assertion holder that doesn't count: one this script or
+# the arm window started (an ancestor runs m5-session.sh: their caffeinate), the Claude CLI or a
+# process it started (a caffeinate, an MCP server such as computer use's helper), except one that
+# declares user activity, which spoils the runs whoever started it; then the system's own (an
+# executable under /System, /usr but /usr/local, /bin, /sbin or /Library/Apple, or inside an app
+# whose bundle identifier is Apple's) and BatteryPulse. Any other caffeinate counts (a utility may
+# run one, or he did).
 holder_is_ours() {
-  local pid="$1" name="$2" path parent app bundle claude hops=0
+  local pid="$1" name="$2" type="${3:-}" path parent app bundle claude hops=0
   path="$(ps -o comm= -p "$pid" 2>/dev/null || true)"
   # Gone since pmset listed it: its assertion went with it.
   [ -n "$path" ] || return 0
   claude="$(claude_pids)"
   if grep -qx -- "$pid" <<<"$claude"; then return 0; fi
-  if [ "$name" = caffeinate ] || [ "${path##*/}" = caffeinate ]; then
-    parent="$pid"
-    while [ "$hops" -lt 12 ]; do
-      parent="$(ps -o ppid= -p "$parent" 2>/dev/null | tr -d ' ' || true)"
-      case "$parent" in "" | 0 | 1) return 1 ;; esac
-      if ps -o args= -p "$parent" 2>/dev/null | grep -q -F 'm5-session.sh'; then return 0; fi
-      if grep -qx -- "$parent" <<<"$claude"; then return 0; fi
-      hops=$((hops + 1))
-    done
-    return 1
-  fi
+  parent="$pid"
+  while [ "$hops" -lt 12 ]; do
+    parent="$(ps -o ppid= -p "$parent" 2>/dev/null | tr -d ' ' || true)"
+    case "$parent" in "" | 0 | 1) break ;; esac
+    # The CLI first: its own arguments name m5-session.sh (the start line's allow rule).
+    if grep -qx -- "$parent" <<<"$claude"; then
+      if [ "$type" = UserIsActive ]; then return 1; fi
+      return 0
+    fi
+    if ps -o args= -p "$parent" 2>/dev/null | grep -q -F 'm5-session.sh'; then return 0; fi
+    hops=$((hops + 1))
+  done
+  if [ "$name" = caffeinate ] || [ "${path##*/}" = caffeinate ]; then return 1; fi
   case "$path" in
+    /usr/local/*) return 1 ;;
     /System/* | /usr/* | /bin/* | /sbin/* | /Library/Apple/*) return 0 ;;
     */BatteryPulse.app/* | */BatteryPulseWidget.appex/*) return 0 ;;
   esac
@@ -3876,22 +3886,28 @@ holder_is_ours() {
   return 1
 }
 
-# keepawake_holders: "<pid>\t<name>\t<assertion>" for each such assertion another process holds
-# (pmset -g assertions' per-process lines). The names are for the session and the arm window only.
+# keepawake_holders [<types>]: "<pid>\t<name>\t<assertion>" for each such assertion another process
+# holds (pmset -g assertions' per-process lines; KEEPAWAKE_TYPES by default). The line is cut at
+# its first "): [0x", so a process name with parentheses or an assertion name with brackets parses.
+# The names are for the session and the arm window only.
 keepawake_holders() {
   local pid name type
-  pmset -g assertions 2>/dev/null | awk -v types=" $KEEPAWAKE_TYPES " '
+  pmset -g assertions 2>/dev/null | awk -v types=" ${1:-$KEEPAWAKE_TYPES} " '
     /^ *pid [0-9]+\(/ {
       line = $0
       sub(/^ *pid /, "", line)
-      pid = line; sub(/\(.*/, "", pid)
-      name = line; sub(/^[0-9]+\(/, "", name); sub(/\): \[.*/, "", name)
-      rest = line; sub(/.*\] [0-9:]+ /, "", rest)
+      lp = index(line, "(")
+      cut = index(line, "): [0x")
+      if (cut <= lp) next
+      pid = substr(line, 1, lp - 1)
+      name = substr(line, lp + 1, cut - lp - 1)
+      rest = substr(line, cut + 3)
+      if (!sub(/^\[0x[0-9A-Fa-f]+\] [0-9:]+ /, "", rest)) next
       split(rest, w, " ")
       if (index(types, " " w[1] " ") > 0) printf "%s\t%s\t%s\n", pid, name, w[1]
     }' |
     while IFS="$TAB" read -r pid name type; do
-      holder_is_ours "$pid" "$name" || printf '%s\t%s\t%s\n' "$pid" "$name" "$type"
+      holder_is_ours "$pid" "$name" "$type" || printf '%s\t%s\t%s\n' "$pid" "$name" "$type"
     done
 }
 
@@ -3905,42 +3921,56 @@ keepawake_record() {
   awk -F '\t' -v at="$(clock)" -v where="$1" 'NF { print at "\t" where "\t" $1 "\t" $2 "\t" $3 }' <<<"$2" >>"$KEEPAWAKE_LOCAL"
 }
 
+# keepawake_say <holders>: the KEEPAWAKE lines, for the session only.
+keepawake_say() {
+  awk -F '\t' '{ print "KEEPAWAKE (local only: never in a note, an answer or B.md): " $2 " (pid " $1 ") holds " $3 }' <<<"$1"
+}
+
 # keepawake_check: preflight's read of the keep-awake assertions. The names go to the session (a
-# KEEPAWAKE line) and keepawake.local; B.md gets the count.
+# KEEPAWAKE line) and keepawake.local; B.md gets the counts. A system-sleep holder is only counted.
 keepawake_check() {
-  local holders
+  local holders system
   holders="$(keepawake_holders)"
+  system="$(keepawake_holders "$SYSTEM_SLEEP_TYPES")"
   keepawake_record preflight "$holders"
-  out "- keep-awake assertions of other processes (user activity, display or idle sleep): $(grep -c . <<<"$holders" || true) (names stay on the Mac)"
+  keepawake_record preflight-system-sleep "$system"
+  out "- keep-awake assertions of other processes (user activity or display sleep): $(grep -c . <<<"$holders" || true); system sleep only (no run changes): $(grep -c . <<<"$system" || true) (names stay on the Mac)"
   if [ -n "$holders" ]; then
-    awk -F '\t' '{ print "KEEPAWAKE (local only: never in a note, an answer or B.md): " $2 " (pid " $1 ") holds " $3 }' <<<"$holders"
-    echo "DO (person): quit $(keepawake_names "$holders") now (its menu bar icon or its Dock icon, Quit); then: $SCRIPT preflight quiet"
+    keepawake_say "$holders"
+    echo "DO (person): quit $(keepawake_names "$holders") now (its menu bar icon or its Dock icon, Quit); then: $SCRIPT preflight quiet (say first: please don't touch the Mac for about three minutes)"
     return 1
   fi
 }
 
-# quiet_check: HIDIdleTime must grow while nobody touches the Mac and nothing posts an event: 70 s.
-# Below 65 s at the end, something declares user activity (a keep-awake holder, named locally) or
+# quiet_check: HIDIdleTime must grow while nobody touches the Mac and nothing posts an event, over
+# 150 s, with the keep-awake assertions read every 10 s (one that declares user activity may hold
+# its assertion only for a moment). The first attempt's utility let HIDIdleTime reach 95 s, so a
+# shorter check could fall between two of its resets: 145 s or more at the end, and no holder at
+# any read, passes. Else something declares user activity (a keep-awake holder, named locally) or
 # posts input events (a mouse mover holds no assertion), or he touched it.
 quiet_check() {
-  local start end holders
-  echo "DO (person): please don't touch the Mac for 70 seconds (the quiet check)."
+  local start end holders="" reads=0
+  echo "DO (person): please don't touch the Mac for about 150 seconds (the quiet check)."
   start="$(idle_seconds)"
-  sleep 70
+  while [ "$reads" -lt 15 ]; do
+    sleep 10
+    reads=$((reads + 1))
+    holders="$(keepawake_holders)"
+    [ -z "$holders" ] || break
+  done
   end="$(idle_seconds)"
-  if awk -v e="$end" 'BEGIN { exit !(e != "" && e + 0 >= 65) }'; then
-    proof_record quiet pass "HIDIdleTime grew from ${start:-unread} to $end s over 70 quiet seconds"
+  if [ -z "$holders" ] && awk -v e="$end" 'BEGIN { exit !(e != "" && e + 0 >= 145) }'; then
+    proof_record quiet pass "HIDIdleTime grew from ${start:-unread} to $end s over 150 quiet seconds; no keep-awake holder at any of $reads reads"
     return 0
   fi
-  holders="$(keepawake_holders)"
   keepawake_record quiet "$holders"
-  proof_record quiet fail "HIDIdleTime was ${end:-unread} s after 70 quiet seconds (from ${start:-unread}); keep-awake holders: $(grep -c . <<<"$holders" || true)" \
+  proof_record quiet fail "HIDIdleTime was ${end:-unread} s after $((reads * 10)) quiet seconds (from ${start:-unread}); keep-awake holders at read $reads: $(grep -c . <<<"$holders" || true)" \
     "he quits what holds it, then $SCRIPT preflight quiet"
   if [ -n "$holders" ]; then
-    awk -F '\t' '{ print "KEEPAWAKE (local only: never in a note, an answer or B.md): " $2 " (pid " $1 ") holds " $3 }' <<<"$holders"
-    echo "DO (person): quit $(keepawake_names "$holders") (its menu bar icon or its Dock icon, Quit); then: $SCRIPT preflight quiet"
+    keepawake_say "$holders"
+    echo "DO (person): quit $(keepawake_names "$holders") (its menu bar icon or its Dock icon, Quit); then: $SCRIPT preflight quiet (say first: please don't touch the Mac for about three minutes)"
   else
-    echo "DO (person): no other process holds an assertion, so something posts input events (a utility that moves the pointer to keep the Mac awake), or the Mac was touched: quit such a utility; then: $SCRIPT preflight quiet"
+    echo "DO (person): no other process holds an assertion, so something posts input events (a utility that moves the pointer to keep the Mac awake), or the Mac was touched: quit such a utility; then: $SCRIPT preflight quiet (say first: please don't touch the Mac for about three minutes)"
   fi
   return 1
 }
@@ -4240,7 +4270,7 @@ tell_targets() {
 }
 
 # preflight_quiet (preflight's last part, and `preflight quiet` after he quit what it named): the
-# keep-awake assertions of other processes, then the 70-second quiet check.
+# keep-awake assertions of other processes, then the 150-second quiet check.
 preflight_quiet() {
   use_section 02-preflight "Preflight (B0b)"
   if ! keepawake_check; then
@@ -4253,7 +4283,7 @@ preflight_quiet() {
 
 # preflight [quiet] (B0b): the reads and checks of §6 "Preflight also checks", the proofs that need
 # no answer from the session first, the keep-awake read and the quiet check, and one run of every
-# command family, while he is there (about 4 minutes without a touch).
+# command family, while he is there (about 5 minutes without a touch).
 step_preflight() {
   b_only preflight
   b_fence
@@ -5742,7 +5772,8 @@ queue_run() {
   if [ -z "$DRY_RUN" ]; then
     pmset -g assertions >"$LOGS/queue-assertions-start.txt" 2>&1 || true
     out "- pmset -g assertions at the start: $(grep -c BatteryPulse "$LOGS/queue-assertions-start.txt" || true) BatteryPulse lines (the full list stays on the Mac)"
-    out "- keep-awake assertions of other processes at the start (user activity, display or idle sleep): $(keepawake_holders | grep -c . || true) (names stay on the Mac)"
+    out "- keep-awake assertions of other processes at the start (user activity or display sleep): $(keepawake_holders | grep -c . || true) (names stay on the Mac)"
+    out "- over the cooldown: a keep-awake holder at ${Q_COOL_HOLDERS:-0} of ${Q_COOL_READS:-0} reads (names stay on the Mac); HIDIdleTime went back ${Q_COOL_DROPS:-0} times (an event: a touch, or a utility that posts input)"
     out "- the energy setup: his, at the arm window's bedtime prompt (the brightness about half by the keys, a Focus on), not read back; auto-brightness and True Tone as he keeps them"
     start_pslog
     q_sampler &
@@ -5886,7 +5917,7 @@ ARM_SHOWN=""
 ARM_TOLD=""
 # What he does at bedtime, besides his password: the energy setup is his, by the keys (no computer
 # use touches the brightness), and the Focus keeps banners off the runs.
-ARM_BEDTIME="set the brightness to about half with the brightness keys, turn a Focus on (Control Center), then unplug the adapter and leave the lid open"
+ARM_BEDTIME="set the brightness to about half with the brightness keys, turn a Focus on (Control Center), then unplug the adapter and leave the lid open; wait until this window says \"Nothing to do\" before you go"
 
 # arm open: writes ~/bp-062/B/arm.command and opens it in a new Terminal window (open -a
 # Terminal: no Automation needed). The window runs the frozen worktree's script.
@@ -6091,9 +6122,12 @@ arm_decide() {
 }
 
 # arm_cooldown <unplug epoch>: at least 10 minutes on battery, longer until the pack is within
-# 2 °C of Session A's first run, at most 20 minutes, ending with HIDIdleTime of 60 s or more.
+# 2 °C of Session A's first run, at most 20 minutes, ending with HIDIdleTime of 60 s or more. Each
+# pass also reads the keep-awake holders (one that declares user activity may hold its assertion
+# only for a moment) and whether HIDIdleTime went back (an event), for the queue's section, so the
+# morning report explains touched runs.
 arm_cooldown() {
-  local from="$1" target temp now claude0 claude1 at0 times
+  local from="$1" target temp now claude0 claude1 at0 times holders idle last="" last_at=0
   # The Claude CLI's own CPU while the session sits idle at ready: the detector's baseline.
   claude0="$(q_claude)"
   at0="$(date +%s)"
@@ -6104,14 +6138,32 @@ arm_cooldown() {
   ARM_COOL_END=$((from + 600))
   times="$(queue_expected "$ARM_COOL_END")"
   ARM_QUEUE_END="${times##* }"
+  Q_COOL_READS=0
+  Q_COOL_HOLDERS=0
+  Q_COOL_DROPS=0
   while :; do
     now="$(date +%s)"
     [ "$now" -lt $((from + 1200)) ] || break
+    idle="$(idle_seconds)"
     temp="$(q_pack_temp)"
+    holders="$(keepawake_holders)"
+    Q_COOL_READS=$((Q_COOL_READS + 1))
+    if [ -n "$holders" ]; then
+      Q_COOL_HOLDERS=$((Q_COOL_HOLDERS + 1))
+      keepawake_record cooldown "$holders"
+    fi
+    # HIDIdleTime grows by the time between two reads unless an event came (2 s of margin).
+    if [ -n "$last" ] && [ -n "$idle" ] && awk -v i="$idle" -v l="$last" -v d=$((now - last_at)) 'BEGIN { exit !(i + 2 < l + d) }'; then
+      Q_COOL_DROPS=$((Q_COOL_DROPS + 1))
+    fi
+    if [ -n "$idle" ]; then
+      last="$idle"
+      last_at="$now"
+    fi
     if [ "$now" -ge $((from + 600)) ]; then
       # Only a warmer pack waits: a colder one starts at 10 minutes.
       if [ -z "$target" ] || awk -v t="$temp" -v g="$target" 'BEGIN { exit !(t != "-" && t - g <= 200) }'; then
-        if awk -v i="$(idle_seconds)" 'BEGIN { exit !(i + 0 >= 60) }'; then break; fi
+        if awk -v i="$idle" 'BEGIN { exit !(i != "" && i + 0 >= 60) }'; then break; fi
       fi
     fi
     if arm_wait 30; then arm_return; fi
@@ -6119,7 +6171,7 @@ arm_cooldown() {
   claude1="$(q_claude)"
   Q_CLAUDE_RATE="$(awk -v x="${claude0##* }" -v y="${claude1##* }" -v d=$(($(date +%s) - at0)) 'BEGIN { r = (d > 0 && y > x) ? (y - x) / d : 0; printf "%.5f", r }')"
   echo "$Q_CLAUDE_RATE" >"$WORK/claude-rate"
-  arm_say "cooldown done: the pack at $(q_pack_temp) (hundredths of °C), HIDIdleTime $(idle_seconds) s; the Claude CLI's background CPU $Q_CLAUDE_RATE s a second"
+  arm_say "cooldown done: the pack at $(q_pack_temp) (hundredths of °C), HIDIdleTime $(idle_seconds) s; the Claude CLI's background CPU $Q_CLAUDE_RATE s a second; a keep-awake holder at $Q_COOL_HOLDERS of $Q_COOL_READS reads, HIDIdleTime went back $Q_COOL_DROPS times"
 }
 
 # arm_after_queue (B5): Low Power Mode back, the sampler and the pslog stopped, restore night,
@@ -6239,7 +6291,15 @@ step_arm() {
       arm_no_unplug
       return 0
     fi
-    if arm_wait 60; then arm_return; fi
+    if arm_wait 60; then
+      arm_return
+      # His Return at bedtime, once the session is done: a keep-awake holder is named while he is
+      # there, not only after the unplug.
+      if [ -f "$READY_FILE" ]; then arm_keepawake || true; fi
+    elif [ -n "$ARM_HOLDERS" ] && [ "$unplugged" = 0 ]; then
+      # One named before the unplug: read again, so the status line shows when it has gone.
+      arm_keepawake || true
+    fi
   done
   if [ "$unplugged" = 0 ]; then unplugged="$(date +%s)"; fi
   ARM_UNPLUG="$unplugged"
@@ -7124,7 +7184,7 @@ B0b (at the beep, he is there):
   prepare reads              the Charge Limit, the style keys, Open at login, the hot corners, the screen saver,
                              the wallpaper, the generated wallpapers, the shots Claude reads
   proof P1 --image <png> <x> <y> | P2 | P3 [1|2] | P4 | P6 | P7 | P8 | P9 | P11 | <P#> pass|fail <note>
-  preflight [quiet]          the checks, P2 P6 P7 P8 P9 P11, the keep-awake read and the 70-second quiet check
+  preflight [quiet]          the checks, P2 P6 P7 P8 P9 P11, the keep-awake read and the 150-second quiet check
                              (quiet: those two again, after he quit what it named)
   widget <family> <x> <y> <w> <h>; desktop-spot <x> <y> | --image <png> <x> <y>
   v01 notify [front]; f11 alert   the banners

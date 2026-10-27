@@ -1668,8 +1668,8 @@ hands-on, 3 on the restore list), plus WP-18's hour.
 | When | What he does | Time |
 |---|---|---|
 | Once, any day before | Quit Session A's Claude session (one Claude session at a time on the Mac). In Terminal: `claude update`; in `~/BatteryPulse`, `claude`, then `/mcp` → `computer-use` → Enable (kept per project; interactive sessions only); `/status` shows a plan that includes computer use. In the same session he asks Claude to check the start line's flags (below) against `claude --help` and the CLI's documentation | 2 min |
-| The start, in the evening, on the adapter | In Terminal, from any folder, the launcher's two commands (below; no agent sets a permission mode or adds a rule), `/usage` when the session asks, and one yes to the list of changes, with his bedtime. He may then leave for about 10 minutes while the session builds (B0a). At its beep: he quits his own apps (a utility that keeps the Mac awake among them: preflight names any it finds, and the queue won't start while one runs), approves the app list (one prompt), allows Accessibility for Terminal again if he revoked it after Session A (one prompt, from preflight), answers any other first-time prompt preflight brings up, and keeps off the Mac for about 4 minutes (the quiet check); then he may go | 5-7 min (about 1, then 4-6 at the beep) |
-| Bedtime | In the Terminal window "BatteryPulse arm": if it says ready, press Return and type his password; then the brightness to about half with the brightness keys, a Focus on in Control Center, and the unplug, leaving the lid open. If it says the session is still working, he skips the password (the Low Power Mode run is then "not run"). The window then says "On battery since HH:MM; cooling down until about HH:MM; the queue then runs until about HH:MM. Nothing to do; don't press keys here." | 1-2 min |
+| The start, in the evening, on the adapter | In Terminal, from any folder, the launcher's two commands (below; no agent sets a permission mode or adds a rule), `/usage` when the session asks, and one yes to the list of changes, with his bedtime. He may then leave for about 10 minutes while the session builds (B0a). At its beep: he quits his own apps (a utility that keeps the Mac awake among them: preflight names any it finds, and the queue won't start while one runs), approves the app list (one prompt), allows Accessibility for Terminal again if he revoked it after Session A (one prompt, from preflight), answers any other first-time prompt preflight brings up, and keeps off the Mac for about 5 minutes (preflight and its quiet check), then hands off whenever the session asks, until it says he may go | 11-16 min (about 1, then 10-15 at the beep) |
+| Bedtime | In the Terminal window "BatteryPulse arm": if it says ready, press Return and type his password; then the brightness to about half with the brightness keys, a Focus on in Control Center, and the unplug, leaving the lid open; he waits until it says "Nothing to do" (it names any keep-awake holder at his Return). If it says the session is still working, he skips the password (the Low Power Mode run is then "not run"). The window then says "On battery since HH:MM; cooling down until about HH:MM; the queue then runs until about HH:MM. Nothing to do; don't press keys here." | 1-2 min |
 | Morning | Close the lid for a minute, open it and log in (V-01's lid and wake, and the evidence "continue" needs, B7), plug in, write "continue" and keep off the Mac for about 3 minutes. Then his yes to `send`, after the session's summary of `B.md` and one contact sheet of every attached image (the items the session left unsure are offered, and skipped by default). Last, the Focus off and, unless he keeps it for Session R, Terminal's Accessibility off (10 s) | about 5 min |
 
 The launcher's two commands, from any folder (`start-session-b.sh` changes to `~/BatteryPulse` and
@@ -1745,9 +1745,10 @@ and acts again only on his "continue".
     the Mac awake.
   - Step 1's second half: prepare's reads and shots.
   - Preflight (WP-21): the proofs below, one run of every command family, the keep-awake read
-    (`pmset -g assertions`: another process's user-activity, display or idle sleep assertion; the
-    name goes to the session only, which asks him to quit it) and a 70-second quiet check
-    (HIDIdleTime must grow while nobody touches the Mac).
+    (`pmset -g assertions`: another process's user-activity or display sleep assertion; the name
+    goes to the session only, which asks him to quit it; a system-sleep holder is only counted)
+    and a 150-second quiet check (HIDIdleTime must grow while nobody touches the Mac, and no holder
+    shows at any of its 15 reads).
   - The computer-use app batch, in one request: BatteryPulse, System Settings, Finder (for the
     desktop and the Dock), Notification Center, the widget gallery's host (P1 names it), TextEdit
     and Xcode. The session opens each surface once, so a surprise approval comes now. Control
@@ -1785,7 +1786,8 @@ and acts again only on his "continue".
 - **B4, bedtime and the queue** (script only, about 171 minutes by the script's plan, with S6 starting about 147 minutes in, plus the cooldown and any retries; about 100 before the warm-up and the extra pairs of 2026-10-24): his Return
   and password, the brightness to about half by the keys and a Focus on (the arm window asks for
   both), and the unplug. The queue (step 8) starts only while no other process holds a keep-awake
-  assertion (the arm window names it to him and waits), after 70 quiet seconds, the cooldown and a
+  assertion (the arm window names it to him at his Return, and waits), after 70 quiet seconds, the
+  cooldown and a
   quiet minute per run. `queue.started` is already up: arm writes it as soon as it decides to
   start, here at `ready` (WP-21). After the unplug its status line says "On battery since HH:MM;
   cooling down until about HH:MM; the queue then runs until about HH:MM. Nothing to do; don't press
@@ -1924,10 +1926,13 @@ Numbers are "not run").
 8. **Energy** (B4; WP-21):
    - The queue and its detectors, in WP-21's order: a discarded warm-up, S2 B C B C B C, S1 B C B C B C, S2 with Low Power Mode B C, S4w,
      S5, S10, S7, S3 and the minimized run, the retries, then S6 B C last; medians per scenario and build.
-   - The queue starts only while no other process holds a keep-awake assertion (user activity,
-     display or idle sleep; `pmset -g assertions`, the system's own, BatteryPulse's and the
-     script's `caffeinate` excepted), after 70 quiet seconds and the cooldown. Its start line in
-     `B.md` gives the count; the names stay on the Mac.
+   - The queue starts only while no other process holds a keep-awake assertion (user activity or
+     display sleep; `pmset -g assertions`, the system's own, BatteryPulse's, the script's
+     `caffeinate` and the Claude CLI's processes excepted, though not one of the CLI's that
+     declares user activity), after 70 quiet seconds and the cooldown. A system-sleep assertion
+     changes no run (the queue's own `caffeinate -i` holds one), so it never holds the queue up.
+     Its start line in `B.md` gives the count, and the cooldown's holders and HIDIdleTime drops;
+     the names stay on the Mac.
    - Each run starts only on battery, at 50 % or more, after a quiet minute, at a nominal thermal
      state, with the screen unlocked and the main window uncovered (except in S5).
    - S9 isn't run by default; S10 runs if `pmset -g accps` lists accessories.
@@ -2001,12 +2006,14 @@ Preflight also checks, without a proof's fallback:
 - whether a VPN is active, and the charge;
 - `screencapture -v`'s frame rate;
 - the keep-awake read: `pmset -g assertions` for another process's UserIsActive,
-  PreventUserIdleDisplaySleep, PreventUserIdleSystemSleep, NoIdleSleepAssertion or
-  NoDisplaySleepAssertion (the system's own, BatteryPulse's and the script's `caffeinate`
-  excepted). The process's name goes to the session only, which asks him to quit it; `B.md` gets
+  PreventUserIdleDisplaySleep or NoDisplaySleepAssertion (the system's own, BatteryPulse's, the
+  script's `caffeinate` and the Claude CLI's processes excepted, though not one of the CLI's that
+  declares user activity); PreventUserIdleSystemSleep and NoIdleSleepAssertion are only counted
+  (no run changes). The process's name goes to the session only, which asks him to quit it; `B.md` gets
   the count, and the privacy lint refuses the name;
-- the quiet check, last: HIDIdleTime must reach 65 s over 70 quiet seconds; else the session tells
-  him what holds it (a keep-awake holder, or a utility that posts input events) and runs it again.
+- the quiet check, last: HIDIdleTime must reach 145 s over 150 quiet seconds, with no keep-awake
+  holder at any of 15 reads, 10 s apart (the first attempt's utility let HIDIdleTime reach 95 s, so
+  a 70-second check could fall between two of its resets); else the session tells him what holds it (a keep-awake holder, or a utility that posts input events) and runs it again.
 
 **Rules in the runbook** (so no cloud session is needed mid-run; `SESSION-B.md` holds them all):
 - **Frozen:** the runbook, the script and `ui` are fixed at B0. The session never edits them and

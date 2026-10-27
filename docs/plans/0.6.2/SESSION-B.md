@@ -224,9 +224,10 @@ the optional extras and the morning-away block.
      it shows."
    - Privacy: the pictures go to the model and stay on the Mac; his other desktop widgets appear in
      them; at the beep he quits his own apps.
-   - Times: about 10 minutes of building, then a beep and about 5 minutes with him (his apps quit,
-     any utility that keeps the Mac awake among them; the approvals; 4 minutes without touching the
-     Mac); then he may go. The GUI phase runs on its own, about 1-1.5 hours, ending 10 minutes
+   - Times: about 10 minutes of building, then a beep and about 10-15 minutes with him (his apps
+     quit, any utility that keeps the Mac awake among them; the approvals; the first 5 minutes
+     without touching the Mac, and hands off whenever you ask until you say he may go); then he
+     may go. The GUI phase runs on its own, about 1-1.5 hours, ending 10 minutes
      before his bedtime at the latest. At bedtime the arm window asks for Return, his password, the
      brightness at about half with the keys, a Focus on, and the unplug; the queue then runs about 3
      hours (give the expected end, bedtime plus about 3 h 15 min) and the lid stays open until
@@ -244,7 +245,7 @@ the optional extras and the morning-away block.
 5. At the beep, say: "The build is done. Please quit your own apps (Terminal stays), any utility
    that keeps the Mac awake among them, then write me that you are back." End your turn.
 
-## B0b: at the beep (he is there, 4-6 minutes)
+## B0b: at the beep (he is there, about 10-15 minutes)
 
 1. First `$S ui access`: prepare's reads and P1 use AX before preflight would ask. If it says
    `ax_trusted=no`, ask him to turn Terminal on under System Settings → Privacy & Security →
@@ -258,12 +259,13 @@ the optional extras and the morning-away block.
    pixels); then `$S widget small <x> <y> <w> <h>` and `$S widget medium ...` in points from P1's
    frames (no large or extra-large: the RC has none), and `$S desktop-spot --image <shot> <x> <y>` on
    empty desktop, away from icons and widgets.
-3. Say: "For the next four minutes please don't touch the keyboard or the trackpad; answer any macOS
+3. Say: "For the next five minutes please don't touch the keyboard or the trackpad; answer any macOS
    prompt that appears." Then `$S preflight` (P2, P6-P9, P11, the reads, the keep-awake read and a
-   70-second quiet check, last). He answers what comes up: Accessibility for Terminal if he revoked
+   150-second quiet check, last). He answers what comes up: Accessibility for Terminal if he revoked
    it (the switch, then `$S preflight` again), the developer tools, other apps' data. **A
    `KEEPAWAKE` line, or a failed quiet check:** say its `DO` line to him in Russian with the process
-   name (the name only to him, never recorded), and on his word `$S preflight quiet` (twice at most;
+   name (the name only to him, never recorded), and on his word say: "Please don't touch the Mac for
+   about three minutes", then `$S preflight quiet` (twice at most;
    if it still fails, `$S note "quiet check failed twice"` and go on: the arm window won't start the
    queue while another process holds a keep-awake assertion, and says so to him at bedtime).
 4. Your proofs: `$S proof P3`, then `$S proof P3 <1|2>` from its pictures; `$S proof P4` (it runs P5
@@ -287,7 +289,7 @@ the optional extras and the morning-away block.
    "continue"). Say: "A Terminal window named BatteryPulse arm opened; leave it open and the Mac on
    the adapter with the lid open. You may go. At bedtime that window asks for Return and your
    password, then the brightness at about half with the brightness keys, a Focus on, and the
-   unplug." Then go straight on to B2, in the same turn: it needs nobody.
+   unplug; wait until it says 'Nothing to do' before you go." Then go straight on to B2, in the same turn: it needs nobody.
 
 ## B2: the GUI phase (he is away, about 1-1.5 hours)
 
@@ -342,7 +344,8 @@ left). Whatever is left then is `$S note "<item> not run (time)"`. In this order
 
 **B4-B6 run without you:** in the arm window, his Return and password, the brightness at about half
 by the keys, a Focus on, and the unplug; the arm waits while another process holds a keep-awake
-assertion (it names it to him there), then for 70 quiet seconds, then the cooldown; its status line
+assertion (it names it to him there, at his Return already), then for 70 quiet seconds, then the
+cooldown, which counts holders and HIDIdleTime's drops for the queue's section; its status line
 says "On battery since HH:MM; cooling down until about HH:MM; the queue then runs until about
 HH:MM. Nothing to do; don't press keys here." The queue (a discarded warm-up, S2 and S1 three pairs
 each, S2 with Low Power Mode, S4w, S5, S10, S7, S3 and the minimized run, the retries, S6 last);
