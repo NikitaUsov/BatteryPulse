@@ -186,6 +186,7 @@ jobs:
           # The 0.6.2 M5 session's script and its helpers (PLAN.md §6, WP-21), until D3 removes
           # the folder.
           bash -n docs/plans/0.6.2/m5-session.sh
+          bash -n docs/plans/0.6.2/start-session-b.sh
           swiftc -typecheck docs/plans/0.6.2/swap.swift
           swiftc -typecheck docs/plans/0.6.2/frames.swift
           swiftc -typecheck docs/plans/0.6.2/ui.swift
