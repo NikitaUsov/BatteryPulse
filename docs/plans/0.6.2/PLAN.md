@@ -1170,8 +1170,8 @@ never merged, and writes its answer to Appendix C. §8.16 says what 0.7 ships wh
       trap puts it back); without it, those runs are "LPM (not valid)";
     - **occlusion:** `ui windows` (CGWindowList only) before S4w: the main window on screen,
       inside the display, not covered (except by S5's TextEdit window) and not full screen.
-  - **`preflight`** (the start, while he is there): the proofs of §6 ("Proofs"; P12 waits for the
-    burst), one run of every command family through Claude's Bash in auto mode (so every
+  - **`preflight`** (the start, while he is there): the proofs of §6 ("Proofs"; P12 ran at the burst's
+    first unplug, so the second attempt doesn't run it), one run of every command family through Claude's Bash in auto mode (so every
     permission prompt and every auto-mode block comes now), the reads that replace prepare's
     questions, and a refusal of any `tell application` in the B scripts other than System Events
     and BatteryPulse (another target would raise an Automation prompt at night). `/usage` is a
@@ -1372,13 +1372,14 @@ As PLAN §3.5.
     (`m5-session.sh:70-72`) to the RC's and the profiling RC's run and artifacts, or leaves them
     empty and relies on `rc_locate` (the newest successful CI run of the integration branch whose
     code equals the frozen worktree's, preferring the 0.5.99 artifact). `SESSION-B.md` uses the
-    script's command names (`prepare`, `prepare reads`, `proof`, `preflight`, `widget`,
-    `desktop-spot`, `v01`, `f11 alert`, `devices forget`, `arm open`, `burst`, `mark away`,
-    `heartbeat`, `memory`, `f6`, `f8`, `f9`, `relaunch`, `f11 login|listed`,
-    `f12 rate|before|after`, `install C`, `case`, `styleshot`, `gradshot`, `audit estimate`, `v1b`,
-    `pages`, `pane`, `open-app`, `measure`, `judge`, `change`, `restored`, `ui …`,
-    `restore gui|morning`, `ready`, `continue`, `morning`, `batch`, `send`, `charge-limit`,
-    `menu-bar-shots`, `wp18`; any time `status`, `note`, `shot`, `crop`, `attach`, `unattach`), the
+    script's command names (`prepare attempt`, `prepare`, `prepare reads`, `proof`, `preflight`,
+    `widget`, `desktop-spot`, `v01`, `f11 alert`, `arm open`, `mark away`, `heartbeat`, `wait`,
+    `f6`, `f8`, `f9`, `relaunch`, `f11 login|listed`, `f12 rate|before|after`, `install C`, `case`,
+    `pages`, `measure`, `judge`, `change`, `restored`, `ui …`, `restore gui|morning`, `ready`,
+    `continue`, `morning`, `batch`, `send`, `charge-limit`, `wp18`; any time `status`, `note`,
+    `shot`, `crop`, `attach`, `unattach`; `burst`, `memory`, `devices forget`, `styleshot`,
+    `gradshot`, `audit estimate`, `v1b`, `menu-bar-shots`, `pane` and `open-app` left it in its
+    second attempt), the
     banner texts `ui banner` looks for ("This is how battery alerts will look" for V-01, "You can
     unplug the power adapter" for F11), F12's verdict lines (every extension process ended within
     1,500 ms; no `BatteryPulseWidget` started before the swap; no eject-failure line; Finder's
