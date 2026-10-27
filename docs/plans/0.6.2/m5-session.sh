@@ -3533,15 +3533,19 @@ attempt_fence() {
   fail "$WORK isn't this attempt's yet (no attempt file for $(attempt_head | cut -c1-7)): $SCRIPT prepare attempt first, B0a's first call; nothing was done"
 }
 
-# prepare attempt [--kept <setting>[,<setting>...]] (B0a's first call, right after the worktree): a
-# clean start. A ~/bp-062/B that holds an earlier attempt's files (no attempt file, or another
-# commit's) moves aside to ~/bp-062/B-attempt-<that attempt's date>, never deleted, once no arm
-# window of that attempt runs and every change its changes.tsv lists was put back (restored.tsv);
-# --kept records his word that he keeps a setting as that attempt left it. That attempt's fences
+# prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"] (B0a's first call,
+# right after the worktree): a clean start. A ~/bp-062/B that holds an earlier attempt's files (no
+# attempt file, or another commit's) moves aside to ~/bp-062/B-attempt-<that attempt's date>, never
+# deleted, once no arm window of that attempt runs and every change its changes.tsv lists was put
+# back (restored.tsv). Until then attempt_fence refuses `restored`, so the two options record it
+# here: --restored, the session put a setting back at the new start and confirmed it (how: the
+# shot); --kept, his word that he keeps a setting as that attempt left it. That attempt's fences
 # (ready, queue.started) go with it, so this runs before them. Its worktree, which B0a moved to
-# run-<commit>, goes along, and git is told where it went.
+# run-<commit>, goes along, and git is told where it went. Nothing is written to the attempt file
+# unless everything moved.
 step_attempt_b() {
-  local head old file pid start setting missing="" epoch when dest n=1 entry last
+  local head old file pid start setting missing="" epoch when dest n=1 entry last how left usage way
+  usage="usage: $SCRIPT prepare attempt [--kept <setting>[,<setting>...]] [--restored <setting>[,<setting>...] \"<how it was confirmed>\"]"
   head="$(attempt_head)"
   mkdir -p "$WORK"
   if attempt_current; then
@@ -3558,26 +3562,41 @@ step_attempt_b() {
         fail "an earlier attempt's arm window still runs (pid $pid): he closes that Terminal window first; nothing moved"
       fi
     done
-    case "${1:-}" in
-      "") ;;
-      --kept)
-        [ -n "${2:-}" ] || fail "usage: $SCRIPT prepare attempt [--kept <setting>[,<setting>...]]"
-        for setting in $(tr ',' ' ' <<<"$2"); do
-          changed_settings | grep -qx -- "$setting" || fail "$setting isn't in the earlier attempt's changes.tsv; nothing moved"
-          is_restored "$setting" || mark_restored "$setting" "kept by him as the earlier attempt left it (his word at the new start)"
-        done
-        ;;
-      *) fail "usage: $SCRIPT prepare attempt [--kept <setting>[,<setting>...]]" ;;
-    esac
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --kept)
+          [ -n "${2:-}" ] || fail "$usage"
+          for setting in $(tr ',' ' ' <<<"$2"); do
+            changed_settings | grep -qx -- "$setting" || fail "$setting isn't in the earlier attempt's changes.tsv; nothing moved"
+            is_restored "$setting" || mark_restored "$setting" "kept by him as the earlier attempt left it (his word at the new start)"
+          done
+          shift 2
+          ;;
+        --restored)
+          [ -n "${2:-}" ] && [ -n "${3:-}" ] || fail "$usage"
+          english_only "$3"
+          how="$(printf '%s' "$3" | tr '\t\n' '  ')"
+          for setting in $(tr ',' ' ' <<<"$2"); do
+            changed_settings | grep -qx -- "$setting" || fail "$setting isn't in the earlier attempt's changes.tsv; nothing moved"
+            is_restored "$setting" || mark_restored "$setting" "put back by the session at the new start: $how"
+          done
+          shift 3
+          ;;
+        *) fail "$usage" ;;
+      esac
+    done
     for setting in $(changed_settings); do
       is_restored "$setting" && continue
       last="$(awk -F '\t' -v s="$setting" '$1 == s { v = $3 } END { print v }' "$CHANGES")"
+      way="$(restore_how "$setting")"
+      # The earlier attempt's script put these back; at the new start only his word keeps them.
+      [ "$way" != script ] || way="the earlier attempt's script; now only his word: --kept, or --restored if he says it was put back by hand"
       missing="$missing
-- $setting: $(original_of "$setting") -> $last"
+- $setting: $(original_of "$setting") -> $last (the way back: $way)"
     done
     if [ -n "$missing" ]; then
       echo "NOT PUT BACK by the earlier attempt ($CHANGES; restored.tsv has no later line):$missing"
-      fail "an earlier attempt's changes aren't all put back: tell him which; put each back (then $SCRIPT prepare attempt again), or on his word that he keeps one as it is: $SCRIPT prepare attempt --kept <setting>[,<setting>...]; nothing moved"
+      fail "an earlier attempt's changes aren't all put back: tell him which. One with a GUI way back: put it back by computer use, confirm it with a shot, then $SCRIPT prepare attempt --restored <setting>[,<setting>...] \"<the shot>\". One he says was put back by hand already: --restored <setting> \"his word: <what he said>\". One he keeps as it is (his word): $SCRIPT prepare attempt --kept <setting>[,<setting>...]. Both options may go in one call; nothing moved"
     fi
     epoch="$(cat "$WORK/prepare.epoch" 2>/dev/null || mtime_of "$old")"
     when="$(date -r "$epoch" '+%Y-%m-%d' 2>/dev/null || date -d "@$epoch" '+%Y-%m-%d')"
@@ -3587,7 +3606,15 @@ step_attempt_b() {
       dest="$ACCOUNT_HOME/bp-062/B-attempt-$when-$n"
     done
     mkdir -p "$dest"
-    find "$WORK" -mindepth 1 -maxdepth 1 ! -name run -exec mv {} "$dest/" \;
+    # seal_tools left bin read-only (restore morning unseals it), and a directory moves to another
+    # parent only when it is writable (its .. entry changes).
+    chmod -R u+w "$WORK/bin" 2>/dev/null || true
+    while IFS= read -r entry; do
+      mv "$entry" "$dest/" || warn "$entry couldn't move to $dest"
+    done < <(find "$WORK" -mindepth 1 -maxdepth 1 ! -name run)
+    left="$(find "$WORK" -mindepth 1 -maxdepth 1 ! -name run 2>/dev/null | head -1 || true)"
+    # A part that stayed would be taken for this attempt's (prepare keeps an existing backup).
+    [ -z "$left" ] || fail "$left couldn't move to $dest: no attempt file was written; tell him, and move nothing by hand"
     for entry in "$dest"/run-*; do
       [ -d "$entry" ] || continue
       git -C "$ROOT" worktree repair "$entry" >/dev/null 2>&1 || warn "git worktree repair $entry failed: that copy stays as an archive"
@@ -7089,7 +7116,8 @@ step_help_b() {
 usage: $SCRIPT <command> [arguments]          (Session B, hands-free; SESSION-B.md is the runbook)
 
 B0a (on the adapter, he is there):
-  prepare attempt [--kept <setting>[,...]]  first: a clean start (an earlier attempt's ~/bp-062/B moves aside)
+  prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]
+                             first: a clean start (an earlier attempt's ~/bp-062/B moves aside)
   answer --by person B-yes y (and B-bedtime, B-keep-ax, B-usage)
   prepare [--fresh-backup]   the backup into ~/bp-062/B, the builds (B, C = the RC, CP), the tools, the RC; a beep
 B0b (at the beep, he is there):

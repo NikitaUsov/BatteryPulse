@@ -1734,8 +1734,10 @@ and acts again only on his "continue".
     the runbook was read from (a later fix goes to the next session, never into a running one),
     and first `prepare attempt`, a clean start: an earlier attempt's `~/bp-062/B` moves aside to
     `~/bp-062/B-attempt-<date>` (never deleted) once every change its `changes.tsv` lists was put
-    back, or he says he keeps one as it is; its worktree, moved to `run-<commit>` by the session,
-    goes along. Then the fetches, the builds (`bpulse`, `ui`, `frames`, `perf-stats`, `rusage`), the
+    back (`restored` is refused until then, so `prepare attempt --restored` records a setting the
+    session put back by computer use, or one he says he put back by hand), or he says he keeps one
+    as it is (`--kept`); its worktree, moved to `run-<commit>` by the session, goes along, and
+    nothing is recorded as this attempt's unless everything moved. Then the fetches, the builds (`bpulse`, `ui`, `frames`, `perf-stats`, `rusage`), the
     backup, his remembered iPhones and iPads removed for the session, and the RC installed.
   - Then a beep.
 - **B0b, at the beep** (he is there; 4-6 min):

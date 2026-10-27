@@ -200,11 +200,15 @@ the optional extras and the morning-away block.
    between), and **`$S prepare attempt`**, your first script call: a clean start. An earlier
    attempt's `~/bp-062/B` moves aside to `~/bp-062/B-attempt-<its date>` (nothing is deleted) once
    every change its `changes.tsv` lists was put back. If it refuses and lists changes not put back,
-   name each to him in the start message (step 2) and ask whether he keeps it as it is; on his
-   word, `$S prepare attempt --kept <setting>[,<setting>...]`; otherwise put it back as the list
-   says (`restore_how`'s way: computer use for a GUI setting), then `$S prepare attempt` again. If
-   an earlier arm window still runs, ask him to close that Terminal window. Then `$S help` and
-   `$S status`.
+   name each to him in the start message (step 2) and ask whether he keeps it as it is; after his
+   answer, before step 3: one he keeps as it is, `$S prepare attempt --kept
+   <setting>[,<setting>...]`; one he says was put back by hand already, `--restored <setting> "his
+   word: <what he said>"` (his word is the only way for a setting whose way back the list gives as
+   the earlier attempt's script: the app, its data, Low Power Mode); any other, put it back by
+   computer use as the list says (original -> new, and the way back), confirm it with a shot, then
+   `$S prepare attempt --restored <setting>[,<setting>...] "<the shot>"`. The options may go in
+   one call; `restored` itself is refused until this call succeeds. If an earlier arm window still runs, ask him to close that
+   Terminal window. Then `$S help` and `$S status`.
 2. **The start message,** one message in Russian, before anything changes:
    - What may change, and is written to `changes.tsv` first and put back: the installed BatteryPulse
      (his comes back from the backup); the appearance, the wallpaper (to a generated bright picture),
