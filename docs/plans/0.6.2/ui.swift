@@ -24,6 +24,15 @@
 //   --expect dock-tile (--new-since <file> | --dock-title <title>)   click only: the minimized
 //                                                    window's own Dock tile (see frame --dock)
 //
+// One window is never the topmost and never covers anything: the Dock's full-display overlay
+// (`Rules.isDockOverlay`). On macOS 27.2 the Dock owns a window at layer 20 whose bounds equal a
+// display's, on screen all the time; it lets clicks through. Only that exact window is passed over
+// (its owner name and the Dock's own pid, layer 20, a display's bounds, any alpha), by the hit
+// tests, the occlusion check, the desktop check and `recheck`; every other window at layer 20 or
+// above still counts. The Dock stays unclickable but for the minimized window's own tile: under the
+// overlay AX must still find the expected app at the point, and by the window list alone a point
+// on the Dock's bar (its AX frame) is refused.
+//
 // Actions (each passes the safety rules below first):
 //   click <point> --expect … [--shift | --control] [--double] [--cg-only] [--probe]
 //                                                    a left click; the modifier as flagsChanged;
@@ -241,6 +250,23 @@ enum Rules {
     static func isDesktopWindow(_ window: Window, _ owner: RunningProcess) -> Bool {
         guard window.layer < 0 else { return false }
         return isDesktopOwner(owner) || (owner.bundle == dock && window.layer < -1_000_000)
+    }
+
+    /// The Dock's own window level (kCGDockWindowLevel).
+    static let dockLevel = 20
+
+    /// The Dock's full-display overlay, the one window the topmost-window and occlusion tests pass
+    /// over (the header's exception). Session B's first attempt (2026-10-27, macOS 27.2 26B123,
+    /// PLAN.md Appendix C) met it: CGWindowList listed a window of the Dock at layer 20 with bounds
+    /// 0 0 1710 1107 (the M5's whole display) and alpha 1 all evening, while every window below it
+    /// showed and took clicks, so every occlusion and desktop check failed on it. Exact: the owner
+    /// name "Dock", a pid that is the Dock's own process (com.apple.dock), layer 20 and bounds equal
+    /// to an active display's; any alpha. Anything else at layer 20 or above still counts.
+    static func isDockOverlay(_ window: Window, displays: [CGRect]) -> Bool {
+        guard window.owner == "Dock", window.layer == dockLevel,
+            displays.contains(where: { $0.equalTo(window.bounds) })
+        else { return false }
+        return Processes.process(window.pid).bundle == dock
     }
 
     static func isWidgetHostCandidate(_ bundle: String) -> Bool {
@@ -748,6 +774,15 @@ enum Dock {
         }
     }
 
+    /// The Dock's bar: the frames of the Dock's AXList elements (its tiles' containers), nil when
+    /// AX can't read them. By the window list alone, a point under the Dock's full-display overlay
+    /// must lie outside them (`Safety.checkClearOfDockBar`).
+    static func barFrames() -> [CGRect]? {
+        guard let dock = try? Processes.app(Rules.dock) else { return nil }
+        let frames = AX.children(AX.application(dock)).filter { AX.role($0) == "AXList" }.compactMap(AX.frame)
+        return frames.isEmpty ? nil : frames
+    }
+
     /// The hashes a `frame --dock --list` file holds.
     static func listed(_ path: String) throws -> [String] {
         guard let text = try? String(contentsOfFile: path, encoding: .utf8) else {
@@ -828,9 +863,14 @@ enum Screen {
     }
 
     /// The frontmost visible window that contains the point, at any level (the screen saver and a
-    /// lock shield included); only the window server's own windows are passed over.
+    /// lock shield included); only the window server's own windows and the Dock's full-display
+    /// overlay (`Rules.isDockOverlay`) are passed over.
     static func topWindow(at point: CGPoint, in list: [Window]) -> Window? {
-        list.first { $0.bounds.contains(point) && $0.alpha > 0.01 && !Rules.windowServer.contains($0.owner) }
+        let screens = displays()
+        return list.first {
+            $0.bounds.contains(point) && $0.alpha > 0.01 && !Rules.windowServer.contains($0.owner)
+                && !Rules.isDockOverlay($0, displays: screens)
+        }
     }
 
     /// Windows that count for the safety scans: visible and larger than a few points.
@@ -902,11 +942,13 @@ struct AXHit {
     let owner: RunningProcess
 }
 
-/// What lies at a point by the window list: the topmost window, its owner, and the list it came from.
+/// What lies at a point by the window list: the topmost window, its owner, the list it came from,
+/// and the Dock's full-display overlay when one lay above the topmost window there (passed over).
 struct WindowHit {
     let top: Window
     let owner: RunningProcess
     let list: [Window]
+    let dockOverlay: Window?
 }
 
 enum Safety {
@@ -1013,8 +1055,9 @@ enum Safety {
     }
 
     /// The point by a fresh window list: no refused process, screen saver or lock window anywhere
-    /// under it (Terminal's only as the topmost), then the topmost window. With `skippingHosts`, the
-    /// topmost that isn't a widget host's (a dragged widget's own image is one).
+    /// under it (Terminal's only as the topmost), then the topmost window, the Dock's full-display
+    /// overlay passed over (`Rules.isDockOverlay`). With `skippingHosts`, the topmost that isn't a
+    /// widget host's (a dragged widget's own image is one).
     static func windowHit(_ point: CGPoint, skippingHosts: Bool = false) throws -> WindowHit {
         let list = Screen.windows()
         for window in list where window.bounds.contains(point) && window.alpha > 0.01 {
@@ -1025,10 +1068,15 @@ enum Safety {
             }
         }
         let hosts: Set<String> = skippingHosts ? Rules.widgetHosts() : []
+        let displays = Screen.displays()
+        var overlay: Window?
         let found = list.first { window in
-            guard window.bounds.contains(point), window.alpha > 0.01, !Rules.windowServer.contains(window.owner) else {
+            guard window.bounds.contains(point) else { return false }
+            if Rules.isDockOverlay(window, displays: displays) {
+                if overlay == nil { overlay = window }
                 return false
             }
+            guard window.alpha > 0.01, !Rules.windowServer.contains(window.owner) else { return false }
             return !skippingHosts || !hosts.contains(Processes.process(window.pid).bundle)
         }
         guard let top = found else {
@@ -1036,7 +1084,7 @@ enum Safety {
         }
         let owner = Processes.process(top.pid)
         if Rules.isRefused(owner) { throw Refusal(description: "\(owner.publicName) is at that point: never acted on") }
-        return WindowHit(top: top, owner: owner, list: list)
+        return WindowHit(top: top, owner: owner, list: list, dockOverlay: overlay)
     }
 
     /// Just before a posted button, wheel or move event: a fresh window list still shows `expected`
@@ -1138,6 +1186,9 @@ enum Safety {
             guard hit.owner.bundle == bundle else {
                 throw Refusal(description: "\(hit.owner.publicName) has the topmost window there, not the expected app")
             }
+            // By the window list alone, a point under the Dock's overlay must be off its bar, which
+            // the overlay may draw (AX finds the Dock there otherwise).
+            if !byAX, hit.dockOverlay != nil { try checkClearOfDockBar(point) }
             // By the window list alone a recorded frame counts only at the desktop's widget layer,
             // below level 0: the Notification Center panel and a banner sit above it.
             if !byAX, Rules.widgetHosts().contains(bundle), hit.top.layer >= 0 {
@@ -1156,9 +1207,23 @@ enum Safety {
             }
             try checkNoMenuBar(point, hit.list)
         case .dockTile:
-            guard hit.owner.bundle == Rules.dock else {
+            // The tile may be drawn in the Dock's full-display overlay itself, which the hit test
+            // passes over: then the overlay must lie over the point, and AX found the tile there
+            // (checkElement).
+            guard hit.owner.bundle == Rules.dock || hit.dockOverlay != nil else {
                 throw Refusal(description: "the Dock isn't the topmost window at the tile's centre")
             }
+        }
+    }
+
+    /// A point by the window list alone, under the Dock's full-display overlay: outside the Dock's
+    /// bar by its AX frames (8 points of margin), and refused when they can't be read.
+    static func checkClearOfDockBar(_ point: CGPoint) throws {
+        guard let bars = Dock.barFrames() else {
+            throw Refusal(description: "the Dock's bar can't be located under its full-display window: nothing is clicked there by the window list alone")
+        }
+        if bars.contains(where: { $0.insetBy(dx: -8, dy: -8).contains(point) }) {
+            throw Refusal(description: "the Dock's bar is at that point")
         }
     }
 
@@ -2000,9 +2065,11 @@ enum Command {
             try mainWindowCheck(all, allowCover: options.value("--allow-cover"))
             return
         }
+        let displays = Screen.displays()
         for window in all where filter.map({ $0.pid == window.pid }) ?? true {
             let owner = Processes.process(window.pid)
-            let name = owner.bundle == Rules.batteryPulse ? " \"\(window.name)\"" : ""
+            var name = owner.bundle == Rules.batteryPulse ? " \"\(window.name)\"" : ""
+            if Rules.isDockOverlay(window, displays: displays) { name = " (the Dock's full-display overlay: passed over)" }
             print(
                 "\(window.id)\tlayer \(window.layer)\t\(owner.publicName)\t\(describe(window.bounds))\talpha \(window.alpha)\(name)"
             )
@@ -2024,8 +2091,11 @@ enum Command {
         if displays.contains(where: { $0.equalTo(main.bounds) }) { problems.append("full screen") }
         let allowed = try allowCover.map { try Processes.app($0).pid }
         if let index = all.firstIndex(where: { $0.id == main.id }) {
+            // The Dock's full-display overlay covers nothing (Rules.isDockOverlay).
             for window in all[..<index]
-            where window.alpha > 0.01 && window.bounds.intersects(main.bounds) && window.pid != app.pid {
+            where window.alpha > 0.01 && window.bounds.intersects(main.bounds) && window.pid != app.pid
+                && !Rules.isDockOverlay(window, displays: displays)
+            {
                 if let allowed, window.pid == allowed { continue }
                 problems.append("covered by \(Processes.process(window.pid).publicName) (layer \(window.layer))")
             }
