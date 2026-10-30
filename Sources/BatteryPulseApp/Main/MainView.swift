@@ -30,6 +30,16 @@ enum SidebarItem: Hashable, Identifiable {
         }
     }
 
+    /// How the page comes and goes in a page switch, which the detail column's `quickFade` times:
+    /// every page fades in, and every page but Raw Data fades out. Raw Data's table and inspector
+    /// are AppKit views, and after a switch from it with no pointer movement (by an accessibility
+    /// client) History's title, toolbar and sidebar selection showed over Raw Data's table for
+    /// seconds, most likely because the table's fade-out waited for the next window update. Removed
+    /// at once, it leaves nothing to wait for, whatever moves next.
+    var switchTransition: AnyTransition {
+        self == .developer ? .asymmetric(insertion: .opacity, removal: .identity) : .opacity
+    }
+
     /// A `var` with literal cases: the catalog test finds the keys here. A device page shows the
     /// device's name instead (`MainView.navigationTitle`).
     var title: LocalizedStringKey {
@@ -189,7 +199,7 @@ struct MainView: View {
         } detail: {
             // Switching pages is the most frequent action here, so it gets the least motion: a
             // 0.15 s fade, no slide. The ZStack keeps the old and the new page on top of each
-            // other while they fade.
+            // other while they fade; Raw Data goes at once (`switchTransition`).
             ZStack {
                 MainDetail(
                     monitor: monitor, accessories: accessories, selection: selection,
@@ -197,7 +207,8 @@ struct MainView: View {
                 )
                 .onAppear { Diagnostics.pageAppeared(selection) }
                 .id(selection)
-                .transition(.opacity)
+                // A page goes with the transition it was shown with: its own.
+                .transition(selection.switchTransition)
             }
             .animation(motion.quickFade, value: selection)
             .navigationTitle(navigationTitle)
