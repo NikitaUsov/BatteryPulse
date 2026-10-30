@@ -569,7 +569,10 @@ same baseline.
 
 A second maintenance and foundation release with no new features: 0.6.1's deferred backlog, the
 beta window styles' known bug, the energy measurements 0.6.1's session skipped, and the size and
-read-path groundwork that widget customization (0.7) needs. The plan: `docs/plans/0.6.2/PLAN.md`.
+read-path groundwork that widget customization (0.7) needs. The plan, removed at the release, is
+readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`); its widget design
+moved to `docs/plans/0.7.0/widgets.md`, and its Appendix C, session tools and Session A's report
+were copied to `docs/plans/0.7.0/`.
 Two sittings on the M5, an early one (about 65 minutes plus 3 hours unattended) and one on the
 release candidate (about 95 minutes plus about 70 unattended), and WP-18's Xcode items (about an
 hour) whenever Xcode is open.

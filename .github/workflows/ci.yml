@@ -14,7 +14,7 @@ on:
         default: ""
       profiling:
         # Also a profiling build of the same commit, with the same version and build number, for
-        # Instruments (the 0.6.2 release candidate's page switches under xctrace; PLAN.md D1).
+        # Instruments (0.6.2's release candidate's page switches under xctrace, its plan's D1).
         description: Also build and upload a profiling DMG (get-task-allow, unstripped)
         type: boolean
         required: false
@@ -73,11 +73,12 @@ jobs:
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
       - name: Check Session B's energy queue (dry run)
-        # The 0.6.2 M5 session's queue with the world stubbed (PLAN.md WP-21): its order, its
-        # retries and its thresholds in three scenarios. Removed with the folder in D3.
+        # 0.6.2's M5 session script, copied to docs/plans/0.7.0/ as W-12's starting point
+        # (plan-0.7.0 D-11): Session B's queue with the world stubbed, its order, its retries and its
+        # thresholds in three scenarios. Removed with that folder in 0.7's D3.
         run: |
           for scenario in default low late; do
-            bash docs/plans/0.6.2/m5-session.sh queue --dry-run "$scenario"
+            bash docs/plans/0.7.0/m5-session.sh queue --dry-run "$scenario"
           done
 
   macos:
@@ -183,13 +184,15 @@ jobs:
           swift scripts/release-stats.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
-          # The 0.6.2 M5 session's script and its helpers (PLAN.md §6, WP-21), until D3 removes
-          # the folder.
-          bash -n docs/plans/0.6.2/m5-session.sh
-          bash -n docs/plans/0.6.2/start-session-b.sh
-          swiftc -typecheck docs/plans/0.6.2/swap.swift
-          swiftc -typecheck docs/plans/0.6.2/frames.swift
-          swiftc -typecheck docs/plans/0.6.2/ui.swift
+          # 0.6.2's M5 session script and its helpers, copied to docs/plans/0.7.0/ for W-12
+          # (plan-0.7.0 D-11), and the launcher of 0.6.2's after-publishing check, until 0.7's D3
+          # removes the folder.
+          bash -n docs/plans/0.7.0/m5-session.sh
+          bash -n docs/plans/0.7.0/start-session-b.sh
+          bash -n docs/plans/0.7.0/start-after-publishing.sh
+          swiftc -typecheck docs/plans/0.7.0/swap.swift
+          swiftc -typecheck docs/plans/0.7.0/frames.swift
+          swiftc -typecheck docs/plans/0.7.0/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)

@@ -1981,8 +1981,10 @@ As P1 §3.5 and P2 D1-D3, with 0.7's differences.
   ROADMAP's 1.1 entry, as 0.6.2's D3 did for 0.7 (RD §1.2 item 9): `widgets.md`'s §8.3 (the feed),
   §8.5's History and iPhone & iPad parts, §8.8's feed hardening, W-5 to W-7, W-9, and the Q-W
   answers.
-- Remove `docs/plans/0.7.0/` and its `bash -n` line, noting the last commit that still holds it
-  (`<keep>`) for §6.4's start line.
+- Remove `docs/plans/0.7.0/` and the ci.yml lines that name it (the Linux job's queue dry run, and
+  the `bash -n` lines and the helpers' type-checks in "Check the verification scripts", which 0.6.2's
+  D3 pointed at this folder's copies), noting the last commit that still holds it (`<keep>`) for
+  §6.4's start line.
 - Release (§13), then the after-publishing check (§6.4), started by the line D3 posts on the
   release PR with `<n>` and `<keep>` filled in (§6.2, "The short sessions").
 - A week after publishing: the download counts into ROADMAP's Releases table (§13 step 8,
@@ -2961,8 +2963,8 @@ USER_GUIDE):
 3. **ROADMAP:** a Releases row `| 0.7.0 | <date> | … |` (R:691-699), its download counts, Count
    included, left for step 8; §12's changes.
 4. **Remove `docs/plans/0.7.0/`** in the last commit, after ROADMAP holds the lasting decisions and
-   `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). Its `bash -n` line goes with it
-   (P2 D3). The commit before it is `<keep>`, from which §6.4's short session reads its runbook
+   `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). The ci.yml lines that name it (the
+   queue dry run, `bash -n`, the helpers' type-checks) go with it (P2 D3). The commit before it is `<keep>`, from which §6.4's short session reads its runbook
    and script (§6.2, "The short sessions").
 5. **The PR** `claude/070-integration` → `main`: the D1 draft is marked ready, with the numbers,
    Appendix C and the session results. Both jobs green with 0 warnings. Merged after the
