@@ -6,7 +6,9 @@ charging state.
 ## Decisions
 
 - **Platforms:** macOS 27 minimum; BatteryKit still builds for iOS 27 (PLT-05). macOS 27 means
-  Apple Silicon only, since it no longer runs on Intel Macs. No Intel code paths.
+  Apple Silicon only, since it no longer runs on Intel Macs. No Intel code paths. CI's macOS job
+  keeps building BatteryKit for iOS, as cheap insurance, until that first costs time (decided with
+  M-2 on 2026-10-22).
 - **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
   are possible. A notarized DMG needs a paid Apple Developer account, and there won't be one: on
   2026-10-22 the maintainer decided against it, not now and
