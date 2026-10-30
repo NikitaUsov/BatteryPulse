@@ -23,7 +23,6 @@
 # serial number. It changes nothing and needs no password. macOS only; bash 3.2.
 set -euo pipefail
 
-BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 APP="/Applications/BatteryPulse.app"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BPULSE="$ROOT/.build/release/bpulse"
@@ -148,7 +147,11 @@ limit="$(sed -n 's/.*chargeSocLimitSoc[^0-9]*\([0-9][0-9]*\).*/\1/p' "$WORK/batt
 out ""
 out "## The Charge Limit's bit"
 out ""
-out "- pmset -g battlimit: ${limit:+$limit % (chargeSocLimitSoc)}${limit:-none ($(head -1 "$WORK/battlimit.txt" | cut -c1-60))}"
+if [ -n "$limit" ]; then
+  out "- pmset -g battlimit: $limit % (chargeSocLimitSoc)"
+else
+  out "- pmset -g battlimit: none ($(head -1 "$WORK/battlimit.txt" | cut -c1-60))"
+fi
 if [ ! -x "$BPULSE" ]; then
   out "- bpulse isn't built: \`swift build -c release --product bpulse\` in $(basename "$ROOT"), then run this again for NotChargingReason and the accessories' counts"
 else
@@ -174,8 +177,10 @@ else
       out "- consistent: bit 24 at the ${limit} % limit"
     elif [ -n "$limit" ]; then
       out "- not at the limit's hold now (${charge:--} %, $state): bit 24 can't be checked; run this again on the adapter at ${limit} %"
+    elif [ "$external" != true ]; then
+      out "- on battery: battlimit shows a Charge Limit only on the adapter, so bit 24 can't be checked; run this again on the adapter"
     else
-      out "- no Charge Limit set: bit 24 can't be checked"
+      out "- no Charge Limit set (100 %): bit 24 can't be checked"
     fi
   fi
 fi
