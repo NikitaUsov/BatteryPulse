@@ -2801,14 +2801,19 @@ step_edit_shot() {
 # session sets BatteryPulse's language in System Settings → General → Language & Region →
 # Applications by computer use first (`change app-language <his> ru`), then this relaunches
 # BatteryPulse in the language his settings give it, waits up to 90 s for a widget reload notice
-# (a widget.reload line) and a new widget extension process, and only then crops every widget.
-# No reload in time is "not checked: no redraw", never "n". --extension also sets the extension's
-# own AppleLanguages (D-8's method, Session A), for the tree in step 7. back: the same after the
-# session put his language back.
+# (a `perf event widget.reload` line) and a new widget extension process, and only then crops every
+# widget. The perf lines are debug messages, which the log store never keeps (`log show` finds
+# none), so the step reads its own `log stream`, started before the relaunch. No reload in time is
+# "not checked: no redraw", never "n". --extension also sets the extension's own AppleLanguages
+# (D-8's method, Session A), for the tree in step 7: the app's language didn't change then, so it
+# may see no reload, recorded under its own id. back: the same after the session put his language
+# back.
 step_language() {
   r_only language
-  local lang="${1:-}" before since waited=0 reload="" fresh="" pid
+  local lang="${1:-}" tag before since waited=0 reload="" fresh="" pid capture stream
   case "$lang" in ru | back) ;; *) fail "usage: $SCRIPT language ru [--extension] | back" ;; esac
+  case "${2:-}" in "" | --extension) ;; *) fail "usage: $SCRIPT language ru [--extension] | back" ;; esac
+  tag="$lang${2:+-extension}"
   use_section 20-language "Step 4.3: the language, the way a user sets it"
   if [ "${2:-}" = --extension ]; then
     [ -n "$(original_of widget-languages)" ] ||
@@ -2820,6 +2825,12 @@ step_language() {
     if put_widget_languages_back; then mark_restored widget-languages "script, read back"; fi
   fi
   out "- BatteryPulse's AppleLanguages now: $(defaults read "$BUNDLE_ID" AppleLanguages 2>/dev/null | tr -d ' \n' || echo none)"
+  mkdir -p "$LOGS"
+  capture="$LOGS/language-$tag.ndjson"
+  /usr/bin/log stream --level debug --style ndjson --predicate "$STREAM_PREDICATE" >"$capture" 2>"$capture.err" </dev/null &
+  stream=$!
+  STREAMS="$STREAMS $stream"
+  sleep 2
   before=" $(widget_pids | tr '\n' ' ') "
   since="$(clock)"
   quit_app
@@ -2827,23 +2838,23 @@ step_language() {
   while [ "$waited" -lt 90 ]; do
     sleep 5
     waited=$((waited + 5))
-    log_since "$since" "$PERF_PREDICATE AND eventMessage BEGINSWITH \"perf event widget.reload\"" "$LOGS/language-reload.ndjson" >/dev/null
-    reload="$(messages "$LOGS/language-reload.ndjson" | head -1 || true)"
+    reload="$(messages "$capture" | grep -F 'perf event widget.reload' | head -1 || true)"
     fresh=""
     for pid in $(widget_pids); do
       case "$before" in *" $pid "*) ;; *) fresh="$pid" ;; esac
     done
     if [ -n "$reload" ] && [ -n "$fresh" ]; then break; fi
   done
-  out "- $lang ($since): after ${waited} s, the reload notice: ${reload:-none}; a new extension process: ${fresh:-none}"
+  perf_stop "$stream"
+  out "- $tag ($since): after ${waited} s, the reload notice: ${reload:-none}; a new extension process: ${fresh:-none}"
   if [ -z "$reload" ] || [ -z "$fresh" ]; then
-    not_checked "R4-3-widgets-$lang" "no redraw: no widget reload notice or no new extension process within 90 s of the relaunch"
+    not_checked "R4-3-widgets-$tag" "no redraw: no widget reload notice or no new extension process within 90 s of the relaunch"
     return 0
   fi
   sleep 5
   click_desktop || true
-  crop_widgets "$SHOTS/language" "$lang"
-  if [ "$lang" = ru ]; then ask R4-3-widgets; fi
+  crop_widgets "$SHOTS/language" "$tag"
+  if [ "$tag" = ru ]; then ask R4-3-widgets; fi
 }
 
 # MARK: - Session R: step 5, rendering modes and places (G7-4)
