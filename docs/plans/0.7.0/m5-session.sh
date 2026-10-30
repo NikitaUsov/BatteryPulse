@@ -1235,6 +1235,10 @@ stop_leftovers() {
   local name
   for name in ${*:-$LEFTOVERS}; do
     if leftover_running "$name"; then
+      # The recording's pid is caffeinate's: its child, bpulse --record, is ended first, since a
+      # signal to caffeinate alone may leave bpulse recording on (a terminal's Control-C reaches
+      # both, as their process group).
+      if [ "$name" = record ]; then pkill -INT -P "$(cat "$WORK/$name.pid")" 2>/dev/null || true; fi
       kill -INT "$(cat "$WORK/$name.pid")" 2>/dev/null || true
       sleep 1
       if leftover_running "$name"; then kill -TERM "$(cat "$WORK/$name.pid")" 2>/dev/null || true; fi
