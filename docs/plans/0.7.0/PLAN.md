@@ -522,14 +522,14 @@ guards; acceptance; effort; risk; rollback.
        pointer moves [inferred]. Session R compares 0.6.1 and the RC with a pointer-free switch,
        and **W-3c**, which owns `MainView.swift`, fixes it if it reproduces.
      - **The session script (W-12):** macOS 27.2 lists no menu bar item window in CGWindowList
-       (P11), so S3 and the menu bar crop need another way; System Settings panes by URL open the
-       wrong pane for appearance, desktop and displays (P8); P6, P3 and P5 as recorded; the
-       script's desktop clicks leave the click-wallpaper-to-show-desktop state on, and computer
-       use leaves a 28×40 pointer overlay at its last click that fails the occlusion check, each
-       ended by a click or a move on bare desktop; banners at layer 23 (the Claude desktop app's
-       permission banner, a macOS Software Update banner) refused the desktop click and blocked
-       five runs, so preflight asks him to quit the Claude desktop app and to postpone pending
-       macOS updates before the queue; F8 gets its own redraw (item 8).
+       (P11), so S3 and V01-menubar's dark bar and pixel diff need another way; System Settings
+       panes by URL open the wrong pane for appearance, desktop and displays (P8); P6, P3 and P5 as
+       recorded; the script's desktop clicks leave the click-wallpaper-to-show-desktop state on, and
+       computer use leaves a 28×40 pointer overlay at its last click that fails the occlusion check,
+       each ended by a click or a move on bare desktop; banners at layer 23 (the Claude desktop
+       app's permission banner, a macOS Software Update banner) refused the desktop click and
+       blocked five runs, so preflight asks him to quit the Claude desktop app and to postpone
+       pending macOS updates before the queue; F8 gets its own redraw (item 8).
      - **WP-18's Xcode items** (SUI-17, SUI-19's timing, SZ-10's icon) didn't run: Xcode asked to
        install system components after the macOS 27.2 update, and the frozen worktree had no
        icon source. **C-1**, in Session R's GUI phase.

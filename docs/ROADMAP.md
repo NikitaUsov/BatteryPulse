@@ -589,8 +589,9 @@ run.
   against the 0.6.0 baseline in the first session, the release candidate against 0.6.1 in the
   second (three valid runs each, the table below). With the icon and charge in the menu bar the
   release candidate uses 137.4 against 277.0 mJ an hour (processor time 0.59 of 0.6.1's), with
-  power in the menu bar too 905.5 against 1,175.4 (0.79). Not measured: Translucent and Frosted,
-  a covered or minimized window, the popover, a burst of plug changes, memory and devices
+  power in the menu bar too 905.5 against 1,175.4 (processor time 0.79). Not measured: Translucent
+  and Frosted, a covered or minimized window, the popover, a burst of plug changes, memory and
+  devices
 - [x] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
   table per release of DMG downloads, signature downloads (each in-app install fetches the
   signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
