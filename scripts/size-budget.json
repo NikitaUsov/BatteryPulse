@@ -9,6 +9,7 @@
     "widget_binary_bytes": 818000,
     "widget_text_bytes": 517000,
     "widget_exports": 1,
+    "widget_appintents_bytes": 24000,
     "strings_bytes": 251000,
     "icns_bytes": 226000
   }
