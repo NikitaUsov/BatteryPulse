@@ -50,9 +50,10 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
                 .maximumCapacity, .cycleCount, .temperature, .adapter, .systemLoad, .batteryPower, .lowPowerMode,
                 .remainingCapacity,
             ]
-        // The Battery panel's, then the Power panel's.
+        // The Battery panel's, then the Power panel's, which the widget heads with its first
+        // detail drawn large, as the charge heads the Battery panel.
         case .extraLarge, .extraLargePortrait:
-            automaticBatteryPanel + [.adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode]
+            automaticBatteryPanel + [.batteryPower, .adapter, .systemLoad, .temperature, .lowPowerMode]
         }
     }
 

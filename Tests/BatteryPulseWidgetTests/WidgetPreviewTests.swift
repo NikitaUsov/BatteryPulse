@@ -332,6 +332,7 @@ struct WidgetPreviewTests {
     /// One picture of a sheet, with its caption under it.
     struct Picture {
         var caption: String
+        var width: CGFloat
         var view: AnyView
     }
 
@@ -339,7 +340,7 @@ struct WidgetPreviewTests {
         _ scene: Scene, _ size: WidgetSize, _ language: Language, look: Look = .standard, caption: String? = nil
     ) -> Picture {
         Picture(
-            caption: caption ?? "\(title(size)) · \(scene.title)",
+            caption: caption ?? "\(title(size)) · \(scene.title)", width: points(size).width,
             view: AnyView(widget(scene, size, look, language)))
     }
 
@@ -359,9 +360,12 @@ struct WidgetPreviewTests {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, picture in
                         VStack(alignment: .leading, spacing: 8) {
                             picture.view
+                            // As wide as the picture, so the columns stay aligned.
                             Text(verbatim: picture.caption)
                                 .font(.system(size: 12))
                                 .foregroundStyle(Color(white: 0.25))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(width: picture.width, alignment: .leading)
                         }
                     }
                 }

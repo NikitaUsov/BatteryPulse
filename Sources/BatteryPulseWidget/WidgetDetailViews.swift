@@ -112,7 +112,7 @@ struct WidgetTileGrid: View {
     let tinted: Bool
 
     var body: some View {
-        Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 10) {
+        Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 14) {
             ForEach(Array(stride(from: 0, to: details.count, by: 2)), id: \.self) { start in
                 GridRow {
                     WidgetTile(detail: details[start], tinted: tinted)
@@ -174,11 +174,47 @@ struct WidgetTile: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             value()
-                .font(.body.weight(.medium))
+                .font(.title3.weight(.medium))
                 .monospacedDigit()
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }
+    }
+}
+
+/// Extra large's Power panel opens with its first detail drawn large, as the charge opens the
+/// Battery panel: its label over the number, one VoiceOver element like any row.
+struct WidgetHeroDetail: View {
+    let row: WidgetRow
+    let text: String
+    let tinted: Bool
+    @Environment(\.widgetStrings) private var strings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            widgetText(row.field.label, strings)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(verbatim: text)
+                    .font(.system(size: 40, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if let cue = row.cue {
+                    WidgetCueSymbol(cue: cue, tinted: tinted)
+                }
+            }
+        }
+        .widgetElement(row.spokenLabel, strings: strings)
+    }
+
+    /// The first of `details` drawn large, when it is a number, and the rest.
+    static func split(_ details: [WidgetDetail]) -> (hero: (row: WidgetRow, text: String)?, rest: [WidgetDetail]) {
+        guard case .row(let row)? = details.first, case .text(let text) = row.value else { return (nil, details) }
+        return ((row, text), Array(details.dropFirst()))
     }
 }
 

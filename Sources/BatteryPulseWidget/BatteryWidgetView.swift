@@ -91,9 +91,9 @@ struct WidgetLargeLayout: View {
 }
 
 /// Extra large: two panels side by side. Battery holds the charge block and its details, Power
-/// the rest; both grids of tiles sit at the bottom, level with each other. Automatic names the
-/// panels; Custom's hold whatever was chosen, so they go unnamed, and without details for the
-/// Power panel the Battery panel takes the whole width.
+/// the rest, headed by its first detail drawn large; both grids of tiles sit at the bottom, level
+/// with each other. Automatic names the panels; Custom's hold whatever was chosen, so they go
+/// unnamed, and without details for the Power panel the Battery panel takes the whole width.
 struct WidgetExtraLargeLayout: View {
     let layout: BatteryWidgetLayout
     let size: WidgetSize
@@ -112,13 +112,17 @@ struct WidgetExtraLargeLayout: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             if !layout.powerDetails.isEmpty {
+                let power = WidgetHeroDetail.split(layout.powerDetails)
                 Divider()
                 VStack(alignment: .leading, spacing: 10) {
                     if layout.panelHeadings {
                         WidgetPanelHeading(panel: .power)
                     }
+                    if let hero = power.hero {
+                        WidgetHeroDetail(row: hero.row, text: hero.text, tinted: layout.tinted)
+                    }
                     Spacer(minLength: 0)
-                    WidgetTileGrid(details: layout.powerDetails, tinted: layout.tinted)
+                    WidgetTileGrid(details: power.rest, tinted: layout.tinted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }

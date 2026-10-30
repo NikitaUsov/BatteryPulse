@@ -60,7 +60,7 @@ struct WidgetLayoutPlanTests {
         let automatic = try Self.layout(.extraLarge)
         #expect(automatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .remainingCapacity])
         #expect(
-            automatic.powerDetails.map(\.field) == [.adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode])
+            automatic.powerDetails.map(\.field) == [.batteryPower, .adapter, .systemLoad, .temperature, .lowPowerMode])
         #expect(automatic.panelHeadings)
         // Automatic's details are its panels', in order.
         #expect(
@@ -109,7 +109,7 @@ struct WidgetLayoutPlanTests {
         #expect(hotAutomatic.details.count == 3)
         #expect(
             hotAutomatic.powerDetails.map(\.field) == [
-                .adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode, nil,
+                .batteryPower, .adapter, .systemLoad, .temperature, .lowPowerMode, nil,
             ])
     }
 
