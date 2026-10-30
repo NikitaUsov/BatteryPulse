@@ -28,7 +28,15 @@ struct WidgetRouteTests {
         }
         #expect(
             WidgetRoute(page: .device(Self.key))?.url.absoluteString
-                == "io.github.nikitausov.batterypulse://page/device/0123456789abcdef0123456789abcdef")
+                == "batterypulse://page/device/0123456789abcdef0123456789abcdef")
+    }
+
+    /// The URL a click on the medium widget delivered to the app on the M5, with no scheme
+    /// registered.
+    @Test func theURLAClickDeliveredOpensOverview() throws {
+        let url = try #require(URL(string: "batterypulse://page/overview"))
+        #expect(WidgetRoute(url: url)?.page == .overview)
+        #expect(WidgetRoute(page: .overview)?.url == url)
     }
 
     @Test func widgetsNeverOpenTheDeveloperPagesOrTheDemo() {
@@ -38,23 +46,23 @@ struct WidgetRouteTests {
     }
 
     @Test(arguments: [
-        "io.github.nikitausov.batterypulse://page/developer",
-        "io.github.nikitausov.batterypulse://page/demo",
-        "io.github.nikitausov.batterypulse://page/device/demo",
-        "io.github.nikitausov.batterypulse://page/device/NOT-A-KEY",
-        "io.github.nikitausov.batterypulse://page/device/",
-        "io.github.nikitausov.batterypulse://page/device:0123456789abcdef0123456789abcdef",
-        "io.github.nikitausov.batterypulse://page/settings",
-        "io.github.nikitausov.batterypulse://page/",
-        "io.github.nikitausov.batterypulse://page",
-        "io.github.nikitausov.batterypulse://page/power/extra",
-        "io.github.nikitausov.batterypulse://page/power?action=reset",
-        "io.github.nikitausov.batterypulse://page/power#top",
-        "io.github.nikitausov.batterypulse://user@page/power",
-        "io.github.nikitausov.batterypulse://page:80/power",
-        "io.github.nikitausov.batterypulse://open/power",
-        "io.github.nikitausov.batterypulse:/page/power",
-        "batterypulse://page/power",
+        "batterypulse://page/developer",
+        "batterypulse://page/demo",
+        "batterypulse://page/device/demo",
+        "batterypulse://page/device/NOT-A-KEY",
+        "batterypulse://page/device/",
+        "batterypulse://page/device:0123456789abcdef0123456789abcdef",
+        "batterypulse://page/settings",
+        "batterypulse://page/",
+        "batterypulse://page",
+        "batterypulse://page/power/extra",
+        "batterypulse://page/power?action=reset",
+        "batterypulse://page/power#top",
+        "batterypulse://user@page/power",
+        "batterypulse://page:80/power",
+        "batterypulse://open/power",
+        "batterypulse:/page/power",
+        "io.github.nikitausov.batterypulse://page/power",
         "https://page/power",
         "file:///page/power",
     ])
@@ -65,7 +73,7 @@ struct WidgetRouteTests {
 
     /// Schemes and hosts are case-insensitive, as the system may hand them over either way.
     @Test func schemeAndHostIgnoreCase() throws {
-        let url = try #require(URL(string: "IO.GitHub.NikitaUsov.BatteryPulse://Page/power"))
+        let url = try #require(URL(string: "BatteryPulse://Page/power"))
         #expect(WidgetRoute(url: url)?.page == .power)
     }
 }

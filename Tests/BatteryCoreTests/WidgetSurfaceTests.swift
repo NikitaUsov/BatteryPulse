@@ -49,19 +49,19 @@ struct WidgetSurfaceTests {
     }
 
     @Test func routeURLs() {
-        #expect(WidgetRoute.scheme == "io.github.nikitausov.batterypulse")
+        #expect(WidgetRoute.scheme == "batterypulse")
         let pages: [PageID] = [.overview, .power, .health, .history, .devices, .accessories]
         #expect(
             pages.compactMap { WidgetRoute(page: $0)?.url.absoluteString } == [
-                "io.github.nikitausov.batterypulse://page/overview", "io.github.nikitausov.batterypulse://page/power",
-                "io.github.nikitausov.batterypulse://page/health", "io.github.nikitausov.batterypulse://page/history",
-                "io.github.nikitausov.batterypulse://page/devices",
-                "io.github.nikitausov.batterypulse://page/accessories",
+                "batterypulse://page/overview", "batterypulse://page/power",
+                "batterypulse://page/health", "batterypulse://page/history",
+                "batterypulse://page/devices",
+                "batterypulse://page/accessories",
             ])
         let key = DeviceKey("0123456789abcdef0123456789abcdef")
         #expect(
             key.flatMap { WidgetRoute(page: .device($0)) }?.url.absoluteString
-                == "io.github.nikitausov.batterypulse://page/device/0123456789abcdef0123456789abcdef")
+                == "batterypulse://page/device/0123456789abcdef0123456789abcdef")
     }
 
     /// The manifest as it ships; a widget package that ships a name adds it here and in the type.
