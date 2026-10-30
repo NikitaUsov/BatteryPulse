@@ -98,14 +98,15 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         let attention = WidgetAttention(snapshot)
 
         // The details: in order, each once, without the main value, a status line's duplicate,
-        // an abnormal condition (the attention row's to raise, after any heat), or a value the
-        // reading lacks.
+        // the condition the attention row raises, or a value the reading lacks. Under heat the
+        // attention row says the heat, so a chosen condition row stays: the condition would show
+        // nowhere otherwise.
         let fields = c.layout == .automatic ? automatic(size) : c.details
         var seen: Set<BatteryWidgetField> = []
         if let field = main.kind.field { seen.insert(field) }
         if c.statusLines.contains(.state) { seen.insert(.state) }
         if c.statusLines.contains(.time) { seen.insert(.time) }
-        if WidgetCondition(snapshot.healthCondition) != .normal { seen.insert(.condition) }
+        if case .condition = attention { seen.insert(.condition) }
         let rows = fields.compactMap { field -> WidgetRow? in
             guard seen.insert(field).inserted else { return nil }
             return WidgetRow(field, snapshot: snapshot, time: time, formatter: formatter)
