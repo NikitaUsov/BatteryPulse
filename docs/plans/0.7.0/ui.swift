@@ -1,9 +1,13 @@
-// The hands of the hands-free Session B (docs/plans/0.6.2/PLAN.md §6, WP-21): Accessibility (AX),
-// posted mouse events (CGEvent) and the window list (CGWindowList), with safety rules of its own,
-// so they don't rest on the Claude session alone. The session script builds it beside `frames` and
-// is its only caller (`m5-session.sh ui <command>`):
+// The hands of the hands-free sessions of BatteryPulse 0.7.0 (docs/plans/0.7.0/PLAN.md §6.2;
+// Session R and its short sessions, built on 0.6.2's Session B): Accessibility (AX), posted mouse
+// events (CGEvent) and the window list (CGWindowList), with safety rules of its own, so they don't
+// rest on the Claude session alone. The session script builds it beside `frames` and is its only
+// caller (`m5-session.sh ui <command>`):
 //
-//   xcrun swiftc -O docs/plans/0.6.2/ui.swift -o ~/bp-062/B/bin/ui
+//   xcrun swiftc -O docs/plans/0.7.0/ui.swift -o ~/bp-070/<R|C|H|D3>/bin/ui
+//
+// Its folder is the session's: the folder above the bin/ it runs from, which must be
+// ~/bp-070/R, C, H or D3 of the account's own home; run from anywhere else it refuses everything.
 //
 // A point is global display points, the top left of the main display at 0,0, given as `<x> <y>`,
 // or as `--image <png> <x> <y>`: pixels of a full-screen shot of the main display (the script's
@@ -18,9 +22,11 @@
 //                                                    window of the frozen worktree, a BatteryPulse
 //                                                    widget in its host, Control Center's clock
 //   --expect desktop                                 the bare desktop: a desktop-level window of
-//                                                    Finder, WindowManager or the wallpaper, no
-//                                                    menu bar, and an element under AX that is no
-//                                                    icon, control or menu; one plain click only
+//                                                    Finder, WindowManager or the wallpaper, or
+//                                                    WindowManager's revealed-desktop window
+//                                                    (layer 18, which a click ends), no menu bar,
+//                                                    and an element under AX that is no icon,
+//                                                    control or menu; one plain click only
 //   --expect dock-tile (--new-since <file> | --dock-title <title>)   click only: the minimized
 //                                                    window's own Dock tile (see frame --dock)
 //
@@ -37,9 +43,11 @@
 //   click <point> --expect … [--shift | --control] [--double] [--cg-only] [--probe]
 //                                                    a left click; the modifier as flagsChanged;
 //                                                    --cg-only hit-tests by the window list alone
-//                                                    (the queue's: no AX call into BatteryPulse);
+//                                                    (no AX call into BatteryPulse);
 //                                                    --probe checks the point and clicks nothing
-//   click --ax <app> <text> [--shift | --control]    at the centre of the element that matches
+//   click --ax <app> <text> [--shift | --control]    at the centre of the element that matches;
+//                                                    `click --ax "Control Center" clock` finds the
+//                                                    clock by its identifier (Notification Center)
 //   click --expect dock-tile (--new-since <file> | --dock-title <title>) [--shift]
 //   move <point> --expect … | move --here           --here: a 0-pixel move (proof P6)
 //   drag <point> <point> [--steps n] [--seconds s]   slow, in steps: from a widget in its host to
@@ -65,6 +73,13 @@
 //                                                    (launched.tsv), never his own copy
 // Reads:
 //   frame <app> [--window <title> | --minimize-button | --match <text>]
+//   frame BatteryPulse --status-item                 the menu bar item's frame by AX (the app's
+//                                                    AXExtrasMenuBar): macOS 27.2 lists no window
+//                                                    for it in CGWindowList (0.6.2's P11)
+//   frame --widgets                                  the frames of the BatteryPulse-labelled widget
+//                                                    elements of the widget hosts, on screen now
+//                                                    (desktop or Notification Center), one per
+//                                                    line, no labels
 //   frame --dock --list                              every minimized window's Dock tile: its frame
 //                                                    and a hash of its title (no title printed)
 //   frame --dock (--new-since <file> | --dock-title <title> | <title>)
@@ -83,12 +98,13 @@
 //   idle | locked | thermal | sample | access | screen | guard
 //                                                    sample: idle, locked, the screen saver and
 //                                                    thermal in one line
-//   Options of every command: --tap hid|session (else ~/bp-062/B/ui-tap, proof P6's, else hid).
+//   Options of every command: --tap hid|session (else the folder's ui-tap, proof P6's, else hid).
 //
-// What the script recorded comes from files in ~/bp-062/B, never from the environment: ui-hosts
-// (proof P1's widget hosts), ui-panes (proof P8's panes), widgets.tsv (`widget`'s frames), ui-tap,
-// launched.tsv, arm.pid and queue.started. The home folder is the account's own, from the user
-// database (getpwuid), never HOME; with CFFIXED_USER_HOME set it refuses everything.
+// What the script recorded comes from files in the session's folder, never from the environment:
+// ui-hosts (proof P1's widget hosts), ui-panes (proof P8's panes), widgets.tsv (`widget`'s frames),
+// ui-tap and launched.tsv; the fence from ~/bp-070/R (ready, day-ended, arm.pid). The home folder
+// is the account's own, from the user database (getpwuid), never HOME; with CFFIXED_USER_HOME set
+// it refuses everything.
 //
 // Safety rules (exit status 3 when one refuses):
 //   - no key presses at all: only a Shift or Control modifier, as a flagsChanged event, around a
@@ -98,22 +114,24 @@
 //     killed mid-press);
 //   - a click, move or scroll acts only where its --expect holds (above); AX actions target only
 //     BatteryPulse, System Settings, TextEdit's cover window, Accessibility Inspector and Xcode's
-//     window of ~/bp-062/B/run. Finder is only ever the bare desktop, the Dock only the minimized
-//     window's tile, Control Center only its clock; a widget host only at a BatteryPulse widget (a
-//     BatteryPulse label in the AX chain; by the window list alone, a recorded frame at the
-//     desktop's widget layer); the hosts in ui-hosts count only when they are widget hosts;
+//     window of the session's frozen worktree (<folder>/run). Finder is only ever the bare desktop,
+//     the Dock only the minimized window's tile, Control Center only its clock; a widget host only
+//     at a BatteryPulse widget (a BatteryPulse label in the AX chain; by the window list alone, a
+//     recorded frame at the desktop's widget layer); the hosts in ui-hosts count only when they
+//     are widget hosts;
 //   - it always refuses SecurityAgent, UserNotificationCenter, CoreServicesUIAgent, coreautha,
 //     loginwindow, a TCC prompt and Terminal, and refuses any action while one of them, the screen
 //     saver or loginwindow shows a window (Terminal's own windows aside);
 //   - System Settings: it acts only while every window shows a pane proof P8 confirmed
-//     (ui-panes, and only P8's own panes) or Accessibility → Display, with the sidebar's selection
-//     readable, and never while the sidebar or the title is Privacy & Security, Users & Groups,
-//     Touch ID & Password, Lock Screen, Passwords or Login Password, nor on an element whose label
-//     names one of them;
+//     (ui-panes, and only P8's own panes) or Accessibility → Display, by the sidebar's selection
+//     and the title, or by the title alone where P8 recorded the sidebar as unreadable ("-": macOS
+//     27.2, Session B), and never while the sidebar or the title is Privacy & Security, Users &
+//     Groups, Touch ID & Password, Lock Screen, Passwords or Login Password, nor on an element
+//     whose label names one of them;
 //   - it refuses everything that touches AX or posts an event while the screen is locked or the
-//     lid is closed, while ~/bp-062/B/queue.started exists, and while ~/bp-062/B/ready exists
-//     without a newer ~/bp-062/B/continued, unless the arm window (its pid and start time in
-//     arm.pid or queue.started) is among its own ancestors;
+//     lid is closed, and while ~/bp-070/R/ready exists without a newer ~/bp-070/R/day-ended (the
+//     logged day), unless Session R's arm window (its pid and start time in arm.pid) is among its
+//     own ancestors;
 //   - it refuses any point within 20 points of a hot corner set to Start Screen Saver, Put Display
 //     to Sleep or Lock Screen;
 //   - `guard` exits 3 when any of these holds now, or System Settings shows a pane it never acts in.
@@ -252,6 +270,16 @@ enum Rules {
         return isDesktopOwner(owner) || (owner.bundle == dock && window.layer < -1_000_000)
     }
 
+    /// The layer of the window WindowManager shows while a click on the wallpaper has revealed the
+    /// desktop (macOS 27.2: Session B's desktop clicks left it on, over the windows they pushed
+    /// aside). A click on the bare desktop under it ends that state, so a desktop click may land on
+    /// it; nothing else treats it as the desktop.
+    static let revealDesktopLevel = 18
+
+    static func isRevealDesktopWindow(_ window: Window, _ owner: RunningProcess) -> Bool {
+        owner.bundle == "com.apple.WindowManager" && window.layer == revealDesktopLevel
+    }
+
     /// The Dock's own window level (kCGDockWindowLevel).
     static let dockLevel = 20
 
@@ -292,12 +320,17 @@ enum Rules {
         "large": CGSize(width: 440, height: 460), "xlarge": CGSize(width: 880, height: 460),
     ]
 
-    /// The widget frames the script recorded (widgets.tsv: "<family>\t<x> <y> <w> <h>" per line), in
+    /// A recorded widget's family: its name, or the part after the last "-" ("accessories-small").
+    static func family(_ name: String) -> String {
+        name.split(separator: "-").last.map(String.init) ?? name
+    }
+
+    /// The widget frames the script recorded (widgets.tsv: "<name>\t<x> <y> <w> <h>" per line), in
     /// points; a frame larger than its family's widget is ignored.
     static func widgetFrames() -> [CGRect] {
         Files.text("widgets.tsv").split(separator: "\n").compactMap { line in
             let fields = line.split(separator: "\t").map(String.init)
-            guard fields.count == 2, let limit = widgetLimits[fields[0]] else { return nil }
+            guard fields.count == 2, let limit = widgetLimits[family(fields[0])] else { return nil }
             let numbers = fields[1].split(whereSeparator: { $0.isWhitespace }).compactMap { Double(String($0)) }
             guard numbers.count == 4, numbers[2] >= 20, numbers[3] >= 20, numbers[2] <= Double(limit.width),
                 numbers[3] <= Double(limit.height)
@@ -332,7 +365,7 @@ enum Account {
     }()
 }
 
-/// What the script recorded in ~/bp-062/B: ui-hosts, ui-panes, widgets.tsv, ui-tap and
+/// What the script recorded in the session's folder: ui-hosts, ui-panes, widgets.tsv, ui-tap and
 /// launched.tsv. A missing file reads as empty.
 enum Files {
     static func text(_ name: String) -> String {
@@ -624,7 +657,7 @@ enum OwnWindows {
     static func allows(_ window: AXUIElement, of process: RunningProcess) -> Bool {
         switch process.bundle {
         case Rules.textEdit:
-            return document(window) == resolved(Safety.home + "/bp-062-cover.txt")
+            return document(window) == resolved(Safety.home + "/bp-070-cover.txt")
         case Rules.xcode:
             guard let path = document(window) else { return false }
             let run = resolved(Safety.home + "/run")
@@ -675,6 +708,8 @@ enum Panes {
         "battery": ["battery", "\u{0430}\u{043A}\u{043A}\u{0443}\u{043C}\u{0443}\u{043B}\u{044F}\u{0442}\u{043E}\u{0440}"],
         "date-time": ["date", "\u{0434}\u{0430}\u{0442}\u{0430}"],
         "wallpaper": ["wallpaper", "\u{043E}\u{0431}\u{043E}\u{0438}"],
+        // Step 9's accessory disconnect (Session R): the pane's name is the same in Russian.
+        "bluetooth": ["bluetooth"],
     ]
     /// Accessibility → Display (Text size, Increase Contrast, Reduce Transparency, motion), the one
     /// subpane allowed beyond P8's list.
@@ -707,6 +742,15 @@ enum Panes {
         }
     }
 
+    /// By the title alone, for a pane P8 confirmed while the sidebar's selection was unreadable
+    /// (its ui-panes line has "-" for the sidebar): macOS 27.2 reads no selection (Session B).
+    static func isAllowed(title: String) -> Bool {
+        allowed().contains { pane in
+            guard pane.sidebar == "-" else { return false }
+            return pane.title == title || (pane.name == "accessibility" && accessibilityDisplay.contains(title.lowercased()))
+        }
+    }
+
     /// The sidebar's selected row (the first AXOutline's AXSelectedRows): its label and texts.
     static func sidebarSelection(_ window: AXUIElement) -> String? {
         guard let outline = AX.find(in: window, text: nil, role: "AXOutline", depth: 12).first,
@@ -717,7 +761,8 @@ enum Panes {
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
-    /// Every System Settings window: a pane P8 confirmed, its sidebar readable, nothing refused.
+    /// Every System Settings window: a pane P8 confirmed (by its sidebar and title, or by its title
+    /// where P8 found the sidebar unreadable), nothing refused.
     static func check(_ settings: RunningProcess) throws {
         for window in AX.windows(settings) {
             let title = AX.string(window, "AXTitle") ?? ""
@@ -726,7 +771,12 @@ enum Panes {
                 throw Refusal(description: "System Settings shows a pane it never acts in")
             }
             guard let sidebar else {
-                throw Refusal(description: "System Settings' sidebar selection can't be read: it isn't acted in")
+                guard isAllowed(title: title) else {
+                    throw Refusal(
+                        description: "System Settings' sidebar selection can't be read, and its title isn't a pane proof P8 confirmed by its title"
+                    )
+                }
+                continue
             }
             guard isAllowed(sidebar: sidebar, title: title) else {
                 throw Refusal(description: "System Settings shows a pane outside proof P8's list (\(title))")
@@ -965,15 +1015,34 @@ struct WindowHit {
 }
 
 enum Safety {
-    /// ~/bp-062/B of the account's own home (`run` refuses when it can't be read).
-    static let home = (Account.home ?? "/var/empty") + "/bp-062/B"
+    /// The sessions' folders, ~/bp-070/<name> of the account's own home.
+    static let sessions = ["R", "C", "H", "D3"]
+
+    /// The session's folder: the one above the bin/ this executable runs from, when that is
+    /// ~/bp-070/R, C, H or D3 of the account's own home; nil otherwise (`run` refuses then).
+    static let folder: String? = {
+        guard let home = Account.home, let executable = Processes.path(getpid()) else { return nil }
+        let bin = URL(fileURLWithPath: executable).resolvingSymlinksInPath().deletingLastPathComponent()
+        let session = bin.deletingLastPathComponent()
+        let root = URL(fileURLWithPath: home + "/bp-070").resolvingSymlinksInPath().path
+        guard bin.lastPathComponent == "bin", session.deletingLastPathComponent().path == root,
+            Safety.sessions.contains(session.lastPathComponent)
+        else { return nil }
+        return session.path
+    }()
+
+    /// The session's folder (`run` refuses everything without one).
+    static let home = folder ?? "/var/empty"
+
+    /// Session R's folder, whose ready and day-ended fence every session.
+    static let sessionR = (Account.home ?? "/var/empty") + "/bp-070/R"
 
     static func modified(_ path: String) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
     }
 
-    /// The arm window's process as arm.pid or queue.started records it: its pid and its start time,
-    /// the first two fields, so a later process that got the same pid isn't taken for it.
+    /// The arm window's process as arm.pid records it: its pid and its start time, the first two
+    /// fields, so a later process that got the same pid isn't taken for it.
     static func armProcess(in path: String) -> (pid: pid_t, start: Int)? {
         let text = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
         let fields = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
@@ -986,22 +1055,21 @@ enum Safety {
         Processes.ancestors().contains(arm.pid) && Processes.startTime(arm.pid) == arm.start
     }
 
-    /// The arm window's process (arm.pid, or queue.started) is an ancestor.
+    /// Session R's arm window (its arm.pid) is an ancestor.
     static func callerIsArm() -> Bool {
-        [home + "/arm.pid", home + "/queue.started"].compactMap(armProcess).contains(where: isAncestor)
+        armProcess(in: sessionR + "/arm.pid").map(isAncestor) ?? false
     }
 
-    /// Refuses while the queue runs, and from `ready` until a newer `continue`, unless the arm
-    /// window's own process is an ancestor.
+    /// Refuses from Session R's `ready` until a newer day-ended (the logged day), unless Session
+    /// R's arm window is an ancestor; and always without a session folder.
     static func checkFence() throws {
-        let fence = home + "/queue.started"
-        if FileManager.default.fileExists(atPath: fence), !(armProcess(in: fence).map(isAncestor) ?? false) {
-            throw Refusal(description: "the energy queue runs (\(fence) exists): nothing may act until the morning")
+        guard folder != nil else {
+            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-070/R, C, H or D3)")
         }
-        if let readyAt = modified(home + "/ready") {
-            let continued = modified(home + "/continued").map { $0 > readyAt } ?? false
-            if !continued, !callerIsArm() {
-                throw Refusal(description: "ready is up (\(home)/ready): nothing acts until his morning continue")
+        if let readyAt = modified(sessionR + "/ready") {
+            let ended = modified(sessionR + "/day-ended").map { $0 > readyAt } ?? false
+            if !ended, !callerIsArm() {
+                throw Refusal(description: "Session R's ready is up (\(sessionR)/ready): nothing acts until his day-end")
             }
         }
     }
@@ -1214,7 +1282,7 @@ enum Safety {
                 throw Refusal(description: "the banner isn't the topmost window at that point")
             }
         case .desktop:
-            guard Rules.isDesktopWindow(hit.top, hit.owner) else {
+            guard Rules.isDesktopWindow(hit.top, hit.owner) || Rules.isRevealDesktopWindow(hit.top, hit.owner) else {
                 throw Refusal(
                     description: "the topmost window there isn't the desktop (\(hit.owner.publicName), layer \(hit.top.layer))")
             }
@@ -1451,7 +1519,7 @@ struct Options {
         let takesFour: Set<String> = ["--inside"]
         let switches: Set<String> = [
             "--shift", "--control", "--double", "--here", "--probe", "--main", "--minimize-button", "--status-item",
-            "--cg-only", "--dock", "--list",
+            "--cg-only", "--dock", "--list", "--widgets",
         ]
         var rest: [String] = []
         var index = 0
@@ -1607,7 +1675,18 @@ enum Command {
             guard let text = options.words.dropFirst().first else {
                 throw UsageError(description: "click --ax <app> <text>")
             }
-            let element = try match(process, text, options)
+            let element: AXUIElement
+            if process.bundle == Rules.controlCenter, text == "clock" {
+                // The clock's label is the time; its identifier is fixed (it opens Notification Center).
+                guard
+                    let clock = AX.find(in: AX.application(process), text: nil, role: nil, depth: 8).first(where: {
+                        AX.string($0, "AXIdentifier") == Rules.clockIdentifier
+                    })
+                else { throw NotFound(description: "Control Center's clock isn't in AX") }
+                element = clock
+            } else {
+                element = try match(process, text, options)
+            }
             guard let frame = AX.frame(element) else { throw Failure(description: "the element has no frame") }
             point = CGPoint(x: frame.midX, y: frame.midY)
             expect = .app(process.bundle)
@@ -1939,6 +2018,18 @@ enum Command {
 
     static func frame(_ options: Options) throws {
         try Safety.checkAll()
+        if options.has("--widgets") {
+            try widgetFrames()
+            return
+        }
+        if options.has("--status-item") {
+            let process = try Processes.app(Rules.batteryPulse)
+            guard let bar = AX.element(AX.attribute(AX.application(process), "AXExtrasMenuBar")),
+                let item = AX.children(bar).first, let rect = AX.frame(item)
+            else { throw NotFound(description: "BatteryPulse has no menu bar item in AX (AXExtrasMenuBar)") }
+            print(describe(rect))
+            return
+        }
         if options.has("--dock") {
             if options.has("--list") {
                 for tile in try Dock.minimizedTiles() { print("\(describe(tile.frame))\t\(tile.hash)") }
@@ -1963,6 +2054,36 @@ enum Command {
         }
         guard let rect else { throw Failure(description: "no frame") }
         print(describe(rect))
+    }
+
+    /// The frames of the widget hosts' elements labelled BatteryPulse, on screen now (the desktop's
+    /// widgets, or Notification Center's while it is open), each once and at least 20 points wide
+    /// and high; an element inside another one listed is left out. Frames only: his other widgets
+    /// and their labels are never read out.
+    static func widgetFrames() throws {
+        let hosts = Rules.widgetHosts()
+        let displays = Screen.displays()
+        var frames: [CGRect] = []
+        for pid in Processes.all() {
+            let process = Processes.process(pid)
+            guard hosts.contains(process.bundle) else { continue }
+            for element in AX.find(in: AX.application(process), text: nil, role: nil, depth: 14)
+            where AX.isBatteryPulseLabelled(element) {
+                guard let rect = AX.frame(element), rect.width >= 20, rect.height >= 20,
+                    displays.contains(where: { $0.intersects(rect) })
+                else { continue }
+                frames.append(rect)
+            }
+        }
+        let outer = frames.filter { rect in
+            !frames.contains { other in other != rect && other.contains(rect) }
+        }
+        var printed: [CGRect] = []
+        for rect in outer where !printed.contains(rect) {
+            printed.append(rect)
+            print(describe(rect))
+        }
+        if printed.isEmpty { throw NotFound(description: "no BatteryPulse-labelled widget element on screen") }
     }
 
     /// The focused (else main) window's title of BatteryPulse or System Settings (a pane's name);
@@ -2068,7 +2189,7 @@ enum Command {
     }
 
     static func windows(_ options: Options) throws {
-        // CGWindowList only: no AX into any process, so the queue may call it during a run.
+        // CGWindowList only: no AX into any process.
         let all = Screen.windows()
         let filter = try options.value("--app").map { try Processes.app($0) }
         if options.has("--status-item") {
@@ -2151,7 +2272,7 @@ enum Command {
         print("thermal=\(thermalState()) lowpower=\(ProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0) hid_idle_s=\(hid)")
     }
 
-    /// The queue sampler's one line: HIDIdleTime, the lock and the lid, the screen saver's window,
+    /// The sampler's one line: HIDIdleTime, the lock and the lid, the screen saver's window,
     /// the thermal state and Low Power Mode, with no AX call.
     static func sample() {
         let hid = Screen.hidIdleSeconds().map { String(format: "%.1f", $0) } ?? "unknown"
