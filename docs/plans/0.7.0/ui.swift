@@ -57,6 +57,9 @@
 //   press <app> <text> [--role r] [--within role] [--index n] [--action AXPress]
 //   press <app> --menu-cmd <char>                    the menu item with that Command key and no other
 //                                                    modifier (Settings… is ",", Close "W")
+//   press BatteryPulse --status-item                 an AX press on the menu bar item (its popover
+//                                                    opens or closes): macOS 27.2 lists no window
+//                                                    for it, so no click there passes the checks
 //   select-row <app> <text>                          AXSelected on the matching row
 //   minimize on|off <app> [--window <title>]         AXMinimized
 //   fullscreen on|off <app> [--window <title>]       AXFullScreen (no keystroke)
@@ -1809,6 +1812,14 @@ enum Command {
         let process = try appArgument(options, 1)
         try Safety.checkTarget(process)
         let inSettings = process.bundle == Rules.settings
+        if options.has("--status-item") {
+            guard process.bundle == Rules.batteryPulse else {
+                throw UsageError(description: "press --status-item is BatteryPulse's alone")
+            }
+            try AX.perform(statusItem(process), "AXPress")
+            print("pressed BatteryPulse's menu bar item")
+            return
+        }
         if let character = options.value("--menu-cmd") {
             // A menu command acts on the front window.
             try OwnWindows.check(AX.frontWindow(process), of: process)
@@ -1835,6 +1846,15 @@ enum Command {
         }
         try AX.perform(element, action)
         print("\(action) on \(AX.role(element)) in \(process.publicName)")
+    }
+
+    /// BatteryPulse's menu bar item: the first child of the app's AXExtrasMenuBar (macOS 27.2 lists
+    /// no window for it in CGWindowList, 0.6.2's P11).
+    static func statusItem(_ process: RunningProcess) throws -> AXUIElement {
+        guard let bar = AX.element(AX.attribute(AX.application(process), "AXExtrasMenuBar")),
+            let item = AX.children(bar).first
+        else { throw NotFound(description: "BatteryPulse has no menu bar item in AX (AXExtrasMenuBar)") }
+        return item
     }
 
     /// A menu bar item by its Command-key equivalent, with no other modifier (so the same in every
@@ -2023,10 +2043,8 @@ enum Command {
             return
         }
         if options.has("--status-item") {
-            let process = try Processes.app(Rules.batteryPulse)
-            guard let bar = AX.element(AX.attribute(AX.application(process), "AXExtrasMenuBar")),
-                let item = AX.children(bar).first, let rect = AX.frame(item)
-            else { throw NotFound(description: "BatteryPulse has no menu bar item in AX (AXExtrasMenuBar)") }
+            let item = try statusItem(Processes.app(Rules.batteryPulse))
+            guard let rect = AX.frame(item) else { throw Failure(description: "BatteryPulse's menu bar item has no frame") }
             print(describe(rect))
             return
         }

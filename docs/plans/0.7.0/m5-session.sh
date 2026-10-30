@@ -2728,6 +2728,28 @@ lowest_contrast() {
   [ -z "$best" ] || echo "$best $low"
 }
 
+# popover_shot <file>: the menu bar popover by an AX press on the menu bar item (ui press
+# --status-item: macOS 27.2 lists no window for it, so a click there never passes ui's checks),
+# shot by its AX frame, and closed by a second press. BatteryPulse's other windows are closed first
+# (Command-W, by AX), so the front window is the popover; nothing is shot when the press fails.
+popover_shot() {
+  local tries=0
+  while ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 && [ "$tries" -lt 3 ]; do
+    tries=$((tries + 1))
+    sleep 1
+  done
+  ui_run press BatteryPulse --status-item >/dev/null 2>&1 || {
+    echo "the menu bar item's AX press failed (ui press BatteryPulse --status-item)" >&2
+    return 1
+  }
+  sleep 2
+  front_shot "$1" || {
+    ui_run press BatteryPulse --status-item >/dev/null 2>&1 || true
+    return 1
+  }
+  ui_run press BatteryPulse --status-item >/dev/null 2>&1 || true
+}
+
 # front_shot <file>: BatteryPulse's front window (Settings, the compact window), by its AX frame.
 front_shot() {
   local rect
@@ -3155,16 +3177,7 @@ step_demo_shots() {
     sleep 2
     window_shot "$SHOTS/demo/$(tr '[:upper:]' '[:lower:]' <<<"$item")-$lang.png" || not_checked "R9b-$lang" "no shot of $item"
   done
-  if [ -s "$WORK/status-item" ]; then
-    # shellcheck disable=SC2046
-    ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' "$WORK/status-item") --expect BatteryPulse >/dev/null 2>&1 || true
-    sleep 2
-    front_shot "$SHOTS/demo/popover-$lang.png" || not_checked "R9b-$lang" "no shot of the popover"
-    # shellcheck disable=SC2046
-    ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' "$WORK/status-item") --expect BatteryPulse >/dev/null 2>&1 || true
-  else
-    not_checked "R9b-popover-$lang" "no menu bar item frame (P11)"
-  fi
+  popover_shot "$SHOTS/demo/popover-$lang.png" || not_checked "R9b-popover-$lang" "no shot of the popover"
   park_pointer
   use_section 55-limit "Step 9b: the Charge Limit (W-14, G7-18)"
   out "- Demo Mode's Charge limit scene, $lang ($(clock)): Overview, Power, the popover"
@@ -4303,20 +4316,11 @@ step_after() {
       ask D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications
       ;;
     popover)
-      [ -s "$WORK/status-item" ] || proof_p11 >/dev/null
       click_desktop || true
       crop_widgets "$SHOTS/after" first-day
-      if [ -s "$WORK/status-item" ]; then
-        # shellcheck disable=SC2046
-        ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' "$WORK/status-item") --expect BatteryPulse >/dev/null 2>&1 || true
-        sleep 2
-        front_shot "$SHOTS/after/popover.png" || not_checked D3-first-day "no shot of the popover"
-        # shellcheck disable=SC2046
-        ui_run click $(awk '{ printf "%d %d", $1 + $3 / 2, $2 + $4 / 2 }' "$WORK/status-item") --expect BatteryPulse >/dev/null 2>&1 || true
-        park_pointer
-      else
-        not_checked D3-first-day "no menu bar item frame (P11): computer use opens the popover"
-      fi
+      popover_shot "$SHOTS/after/popover.png" ||
+        not_checked D3-first-day "no shot of the popover: computer use opens it from the menu bar item"
+      park_pointer
       ask D3-first-day
       ;;
     *) fail "usage: $SCRIPT after before | after | popover" ;;
