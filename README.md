@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
-![Platforms](https://img.shields.io/badge/platforms-macOS%2027%2B%20%7C%20iOS%2027%2B-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%2027%2B-lightgrey)
 ![Apple Silicon](https://img.shields.io/badge/Mac-Apple%20Silicon-black?logo=apple)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
@@ -11,8 +11,8 @@ capacity in mAh, temperature and cell voltages, live power flow, history, and po
 details down to its USB Power Delivery profiles. Built with SwiftUI and Liquid Glass, in English and Russian, with no third-party
 dependencies.
 
-> **Status: early development**, verified on a MacBook Air M5 with macOS 27. The iOS app comes
-> later. See the [roadmap](docs/ROADMAP.md) and the [User Guide](docs/USER_GUIDE.md).
+> **Status: early development**, verified on a MacBook Air M5 with macOS 27. See the
+> [roadmap](docs/ROADMAP.md) and the [User Guide](docs/USER_GUIDE.md).
 
 ## Download
 
@@ -189,21 +189,18 @@ current and marks it with `≈`.
 
 Building requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 
-## What each platform exposes
+## What macOS exposes
 
-| Data                                   | macOS | iOS                     |
-|----------------------------------------|:-----:|:-----------------------:|
-| Charge level and charging state        | ✅    | ✅                      |
-| Time to empty / full                   | ✅    | estimated by the app    |
-| Health, cycle count, capacity (mAh)    | ✅    | via analytics import*   |
-| Voltage, current, battery power        | ✅    | —                       |
-| System input, load, adapter loss       | ✅    | —                       |
-| Cell voltages, battery temperature     | ✅†   | via analytics import*   |
-| Power adapter details                  | ✅    | —                       |
-| Low Power Mode, thermal state          | ✅    | ✅                      |
-
-\* iOS doesn't expose these to App Store apps. The planned workaround is to import the
-analytics file that iOS lets you export from Settings. No private APIs are involved.
+| Data                                   | macOS |
+|----------------------------------------|:-----:|
+| Charge level and charging state        | ✅    |
+| Time to empty / full                   | ✅    |
+| Health, cycle count, capacity (mAh)    | ✅    |
+| Voltage, current, battery power        | ✅    |
+| System input, load, adapter loss       | ✅    |
+| Cell voltages, battery temperature     | ✅†   |
+| Power adapter details                  | ✅    |
+| Low Power Mode, thermal state          | ✅    |
 
 † macOS 27 moved them from `AppleSmartBattery` to the registry entries below it (the pack and
 one bank per cell). BatteryPulse reads those, and the SMC's battery keys as a second source for
