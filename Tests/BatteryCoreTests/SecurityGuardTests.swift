@@ -14,7 +14,12 @@ import Testing
 ///   registry write anywhere;
 /// - starting a process outside the installer, or signalling one outside the widget refresher;
 /// - in the widget, any file API, dynamic loading, URL session or Network framework
-///   (``widgetForbidden``): the widget reads no file of ours and makes no request.
+///   (``widgetForbidden``): the widget reads no file of ours and makes no request;
+/// - a handler of URLs or activities outside the app delegate's two widget-click handlers: no
+///   `onOpenURL`, `handlesExternalEvents` or `onContinueUserActivity`, and no other delegate
+///   method that opens something. The app's Info.plist registers no URL scheme either
+///   (``noURLSchemeIsRegistered()``): the widget's URL reaches the app without one, and no web
+///   page's link opens it.
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
@@ -116,6 +121,15 @@ import Testing
                     "BatterySource/MacAccessoryProvider.swift": 1,
                 ],
                 message: "@safe; mark each unsafe use `unsafe` with its reason instead"),
+            // A click on a widget reaches the app delegate, by URL or by activity, never a scene
+            // modifier: BatteryPulse usually has no window when one arrives.
+            Placement(
+                literals: ["application", "onOpenURL", "handlesExternalEvents", "onContinueUserActivity"],
+                pattern: words(
+                    #/\bfunc\s+application\s*\([^,)]*,\s*(?:open\w*|continue)\b|\bonOpenURL\b|\bhandlesExternalEvents\b|\bonContinueUserActivity\b/#
+                ),
+                allowed: [Self.clickHandlers: 2],
+                message: "a URL or activity handler only in the app delegate's two widget-click handlers"),
             Placement(
                 literals: ["StrictMemorySafety"],
                 pattern: words(#/\bStrictMemorySafety\b/#),
@@ -132,6 +146,10 @@ import Testing
             #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
         )
     }
+
+    /// The app delegate's file, with `application(_:open:)` and
+    /// `application(_:continue:restorationHandler:)`.
+    static let clickHandlers = "BatteryPulseApp/App/BatteryPulseApp.swift"
 
     static let widgetFolder = "BatteryPulseWidget/"
     static let widgetMessage = "the widget reads no file of ours and makes no request"
@@ -259,6 +277,12 @@ import Testing
         "unowned(unsafe) let owner: Owner",
         "@safe final class Box { private var pointer: UnsafeMutableRawPointer? }",
         "@diagnose(StrictMemorySafety, as: ignored, reason: \"audited\") func read() {}",
+        "func application(_ application: NSApplication, open urls: [URL]) {}",
+        "func application(_ sender: NSApplication, openFile filename: String) -> Bool { true }",
+        "func application(\n    _ app: NSApplication, continue userActivity: NSUserActivity,\n    restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void\n) -> Bool { false }",
+        "MainView().onOpenURL { url in show(url) }",
+        "WindowGroup { MainView() }.handlesExternalEvents(matching: [\"page\"])",
+        "MainView().onContinueUserActivity(\"BatteryWidgetIntent\") { _ in }",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -280,6 +304,9 @@ import Testing
         "let name = unsafe String(cString: pointer)",
         "nonisolated let safeArea = 1",
         "@safeAreaPadding var inset = 0",
+        "func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool { true }",
+        "func applicationDockMenu(_ sender: NSApplication) -> NSMenu? { nil }",
+        "NSWorkspace.shared.open(AppLinks.help)",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -297,6 +324,32 @@ import Testing
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))
         #expect(flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        let open = "func application(_ application: NSApplication, open urls: [URL]) {}\n"
+        #expect(!flags(open + open, path: Self.clickHandlers))
+        #expect(flags(open + open + open, path: Self.clickHandlers))
+        #expect(flags(open, path: "BatteryPulseApp/App/WidgetRefresher.swift"))
+        #expect(flags("MainView().onOpenURL { url in show(url) }", path: "BatteryPulseApp/Main/MainView.swift"))
+    }
+
+    /// Both click routes are handled, in the app delegate: the `widgetURL` and the activity of a
+    /// click without one.
+    @Test func theAppDelegateHandlesBothClickRoutes() throws {
+        let code = try SourceScanner.file(Self.clickHandlers).code
+        #expect(
+            code.contains(Self.words(#/\bfunc\s+application\s*\(\s*_\s+\w+\s*:\s*NSApplication\s*,\s*open\s+urls\b/#)))
+        #expect(code.contains(Self.words(#/\bfunc\s+application\s*\([^,)]*,\s*continue\s+userActivity\b/#)))
+    }
+
+    /// No URL scheme in the app's Info.plist, which `build-app.sh` writes: the widget's
+    /// `batterypulse` URL reaches the app without one, and no web page's link reaches it at all.
+    /// A plain-text read, since the scan covers only Swift files.
+    @Test func noURLSchemeIsRegistered() throws {
+        let script = SourceScanner.sources.deletingLastPathComponent().appendingPathComponent("scripts/build-app.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+        // The Info.plist is still written there.
+        #expect(text.contains("<key>CFBundleIdentifier</key>"))
+        #expect(!text.contains("CFBundleURLTypes"))
+        #expect(!text.contains("CFBundleURLSchemes"))
     }
 
     /// The widget has no file or network API, wherever else the app may use one.
