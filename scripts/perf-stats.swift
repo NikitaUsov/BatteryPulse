@@ -80,7 +80,7 @@ func daysSince1970(year: Int, month: Int, day: Int) -> Int {
     return era * 146_097 + dayOfEra - 719_468
 }
 
-/// Parses `log`'s timestamp, such as `2026-10-29 10:00:00.123456+0300`, into seconds since 1970.
+/// Parses `log`'s timestamp, such as `2026-10-29 16:00:00.123456+0900`, into seconds since 1970.
 func parseTimestamp(_ text: String) -> Double? {
     let parts = text.split(separator: " ")
     guard parts.count == 2 else { return nil }

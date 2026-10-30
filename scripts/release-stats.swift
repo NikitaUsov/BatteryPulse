@@ -13,7 +13,7 @@
 // total counts it.
 //
 // The request is unauthenticated: it sends no token and reads none. GitHub allows 60 such requests
-// an hour per address, and an address shared through a VPN can use them up, so a run makes one
+// an hour per address, and an address shared with other users can use them up, so a run makes one
 // (one more per 100 releases past the first 100) and prints the requests left to stderr. When
 // GitHub is limiting requests the script says until when and exits 2, without retrying. The
 // authenticated route (5,000 requests an hour) saves the response first:

@@ -242,8 +242,8 @@ Readings by Minute:
 
 | Column | Meaning |
 |---|---|
-| `time` | The moment of the reading, ISO 8601 with its offset from UTC: `2026-10-14T13:25:00+03:00` |
-| `localTime` | The same moment as a local date and time that spreadsheets read as a date: `2026-10-14 13:25:00` |
+| `time` | The moment of the reading, ISO 8601 with its offset from UTC: `2026-10-14T19:25:00+09:00` |
+| `localTime` | The same moment as a local date and time that spreadsheets read as a date: `2026-10-14 19:25:00` |
 | `event` | `launch` on the first reading after BatteryPulse started, `wake` on the first after the Mac woke; empty otherwise |
 | `chargePercent` | Charge, % |
 | `chargeState` | `charging`, `discharging`, `charged` (full on the adapter), `notCharging` (held below full on the adapter) or `unknown` |

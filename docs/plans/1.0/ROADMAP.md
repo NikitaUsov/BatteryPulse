@@ -1395,7 +1395,7 @@ signed off in its sitting.
 | Q-B4 | by delegation | Both styles stay beta until you sign one off in Session B (= P2's default, G-13b) |
 | Q-B5 | by delegation | Release notes only; What's New stays at 0.6.0 (= P2's default, D3) |
 | Q-B6 | by delegation | The sessions as written, every energy scenario as planned |
-| Q-B9 | settled | GitHub's rate limit behind a VPN, seen in the session; Session B checks the remaining requests before F12 |
+| Q-B9 | settled | GitHub's rate limit on an address shared with other users, seen in the session; Session B checks the remaining requests before F12 |
 | Q-B10 | by delegation | No Low Power Mode fallback (= P2's default, G-13c). FEA-23 is not built |
 | Q-B7 | the maintainer, 2026-10-22 | Xcode is already installed on the M5. WP-18 and the contrast audits run, since 2026-10-23 inside the hands-free Session B, by the local Claude with computer use where Xcode needs it (§3.1 item 4; SUI-18 dropped). The Icon Composer icon ships only on your y to its screenshots (by delegation) |
 | Q-B8 | by delegation | No (= P2's default; §3.1). Enhanced Security is not planned (§4.2) |

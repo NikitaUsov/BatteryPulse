@@ -46,7 +46,7 @@ import Testing
         #expect(buds.parts.map(\.percent) == [64, 61, 90])
         #expect(buds.parts.last?.isCharging == true)
         #expect(buds.symbolName == "airpods")
-        // Product names only: no "Anna's AirPods".
+        // Product names only: no "Owner's AirPods".
         #expect(!accessories.contains { $0.name.contains("'") || $0.name.contains("\u{2019}") })
     }
 

@@ -129,8 +129,8 @@ import Testing
 
     @Test func dayKeysAndDates() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try #require(TimeZone(identifier: "Europe/Moscow"))
-        // 1_800_000_000 is 2027-01-15 08:00 UTC, 11:00 in Moscow.
+        calendar.timeZone = try #require(TimeZone(identifier: "Asia/Tokyo"))
+        // 1_800_000_000 is 2027-01-15 08:00 UTC, 17:00 in Tokyo.
         #expect(HistoryDay.key(for: start, calendar: calendar) == "2027-01-15")
         let noon = try #require(HistoryDay(day: "2027-01-15").date(calendar: calendar))
         #expect(calendar.component(.hour, from: noon) == 12)

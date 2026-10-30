@@ -309,7 +309,7 @@ import Testing
             CaptureRecorder.fileName(number: 7, reason: .change, date: date) == "0007-20261015T183005Z-change.plist")
         #expect(CaptureRecorder.fileName(number: 12_345, reason: .before, date: date).hasPrefix("12345-"))
         let reading = try Fixture.m5OnBattery.reading()
-        for identifier in ["Europe/Moscow", "America/Los_Angeles", "UTC"] {
+        for identifier in ["Asia/Tokyo", "America/Los_Angeles", "UTC"] {
             var recorder = CaptureRecorder(timeZone: try #require(TimeZone(identifier: identifier)))
             let step = recorder.record(reading, at: date)
             #expect(step.captures.map(\.fileName) == ["0001-20261015T183005Z-start.plist"], "\(identifier)")
@@ -319,11 +319,11 @@ import Testing
     @Test func timelineRowFormat() throws {
         let reading = try Fixture.m5Charging.reading()
         let snapshot = reading.snapshot
-        var recorder = CaptureRecorder(timeZone: try #require(TimeZone(identifier: "Europe/Moscow")))
+        var recorder = CaptureRecorder(timeZone: try #require(TimeZone(identifier: "Asia/Tokyo")))
         let row = recorder.record(reading, at: Date(timeIntervalSince1970: 1_792_089_005)).timelineRow
         let fields = row.components(separatedBy: "\t")
         #expect(fields.count == 15)
-        #expect(fields[0] == "2026-10-15T21:30:05+03:00")
+        #expect(fields[0] == "2026-10-16T03:30:05+09:00")
         #expect(fields[2] == snapshot.chargeState.rawValue)
         #expect(fields[13] == "0001")
         #expect(fields[14] == "-")
@@ -343,7 +343,7 @@ import Testing
         }
         if let percent = snapshot.chargePercent { #expect(fields[1] == String(Int(percent.rounded()))) }
         if let current = snapshot.amperageMA { #expect(fields[7] == String(current)) }
-        if snapshot.gaugeUpdatedAt != nil { #expect(fields[12].hasSuffix("+03:00")) }
+        if snapshot.gaugeUpdatedAt != nil { #expect(fields[12].hasSuffix("+09:00")) }
     }
 
     @Test func valuesStayOnOneLine() throws {
