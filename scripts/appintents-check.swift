@@ -692,6 +692,12 @@ do {
     fail("can't read the String Catalog \(arguments[1]): \(error)")
 }
 let resources = URL(fileURLWithPath: arguments[2], isDirectory: true)
+// A wrong path would otherwise read as a widget without metadata, which passes while the manifest
+// lists no intent.
+var isFolder: ObjCBool = false
+guard FileManager.default.fileExists(atPath: resources.path, isDirectory: &isFolder), isFolder.boolValue else {
+    fail("\(arguments[2]) is not a folder; pass the widget bundle's Contents/Resources")
+}
 
 /// The widget bundle's compiled tables, each read once.
 final class Tables {
