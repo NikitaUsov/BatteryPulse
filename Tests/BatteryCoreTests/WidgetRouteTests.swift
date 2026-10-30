@@ -99,6 +99,19 @@ struct WidgetRouteTests {
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent")?.page == .overview)
     }
 
+    /// The app's route names the intents the manifest ships, kind by kind, so it opens a page for
+    /// exactly the activities the manifest's route does. A widget package that ships an intent
+    /// adds its type name to both.
+    @Test func theIntentTypesAreTheShippingManifests() throws {
+        for kind in WidgetKindID.allCases {
+            let declared = WidgetIntentManifest.shipping.kinds.first { $0.kind == kind.rawValue }
+            #expect(kind.intentType == declared?.intent?.type, "\(kind)")
+            if let type = kind.intentType {
+                #expect(WidgetRoute(activityType: type) == WidgetRoute(activityType: type, manifest: .shipping))
+            }
+        }
+    }
+
     /// Only an intent's own type name opens a page: not another app's, not a kind string, not a
     /// near miss.
     @Test(arguments: [

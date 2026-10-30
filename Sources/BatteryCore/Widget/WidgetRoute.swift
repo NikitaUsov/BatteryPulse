@@ -97,13 +97,16 @@ public struct WidgetRoute: Hashable, Sendable {
 
     /// The route of a click that carries no URL: macOS hands the app an `NSUserActivity` whose
     /// type is the clicked widget's configuration intent type name, with no configuration the app
-    /// reads. An intent that ships opens its kind's page (``WidgetKindID/page``); any other
-    /// activity type is `nil`, so the app ignores it. The activity's user info isn't read.
+    /// reads. An intent that ships (``WidgetKindID/intentType``) opens its kind's page
+    /// (``WidgetKindID/page``); any other activity type is `nil`, so the app ignores it. The
+    /// activity's user info isn't read.
     public init?(activityType: String) {
-        self.init(activityType: activityType, manifest: .shipping)
+        guard let kind = WidgetKindID.allCases.first(where: { $0.intentType == activityType }) else { return nil }
+        self.init(page: kind.page)
     }
 
-    /// ``init(activityType:)`` for the intents of `manifest`.
+    /// ``init(activityType:)`` over the intents of `manifest`, which the tests also hold to the
+    /// kinds and intents planned.
     init?(activityType: String, manifest: WidgetIntentManifest) {
         guard let declared = manifest.kinds.first(where: { $0.intent?.type == activityType }),
             let kind = WidgetKindID(rawValue: declared.kind)
@@ -126,6 +129,17 @@ public struct WidgetRoute: Hashable, Sendable {
 }
 
 extension WidgetKindID {
+    /// The type name of the kind's configuration intent as it ships, which the activity of a click
+    /// without a URL carries; `nil` while the kind has none. ``WidgetIntentManifest/shipping``
+    /// names the same, and a test keeps the two equal: the route reads this list, so the app
+    /// doesn't carry the manifest and its coding.
+    var intentType: String? {
+        switch self {
+        case .battery: "BatteryWidgetIntent"
+        case .accessories: nil
+        }
+    }
+
     /// The page a click on the kind's widget opens when it names none: the kind's own subject.
     var page: PageID {
         switch self {
