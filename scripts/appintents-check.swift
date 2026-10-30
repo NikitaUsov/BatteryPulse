@@ -1,13 +1,17 @@
 // Checks the App Intents metadata that scripts/build-app.sh extracted into the widget against
-// scripts/widget-manifest.json (the 0.7 plan's W-2):
+// scripts/widget-manifest.json and the string tables (the 0.7 plan's W-2):
 //
-//   swift scripts/appintents-check.swift <widget-manifest.json> <widget Resources folder>
+//   swift scripts/appintents-check.swift <widget-manifest.json> <catalog>.xcstrings <widget Resources folder>
 //   swift scripts/appintents-check.swift --self-test
 //
 // The system shows a widget's edit sheet from Metadata.appintents/extract.actionsdata alone, and
 // the processor can exit with 0 without writing it. So the check fails unless every intent,
 // parameter and AppEnum case of the manifest is in the file, and it prints the keys of each
-// ParameterSummary, which the String Catalog needs (the 0.6.2 widget spike's W0-1 (d)). While the
+// ParameterSummary (the 0.6.2 widget spike's W0-1 (d)). Then it lists every string of the edit
+// sheet with the key and table the file records: each configuration intent's title, description,
+// parameters and summaries, and the type names and cases of the AppEnums and entities they use.
+// Each must be a catalog key with its translation in the widget bundle's compiled table of every
+// language of the catalog; a string recorded as resolved text instead of a key fails. While the
 // manifest lists no intent and the widget has no metadata, there is nothing to check.
 //
 // extract.actionsdata is an undocumented Apple format that may change with Xcode, so the check
@@ -19,7 +23,7 @@
 import Foundation
 
 let usage = """
-    usage: swift scripts/appintents-check.swift <widget-manifest.json> <widget Resources folder>
+    usage: swift scripts/appintents-check.swift <widget-manifest.json> <catalog>.xcstrings <widget Resources folder>
            swift scripts/appintents-check.swift --self-test
     """
 
@@ -67,6 +71,15 @@ struct Manifest: Decodable {
 struct Report {
     var lines: [String] = []
     var problems: [String] = []
+}
+
+/// The members the format nests values in, left out of the field names the check prints.
+let wrapperFields: Set = ["wrapper", "actionConfiguration", "actionSummary"]
+
+/// A path of fields as the check prints it: `whenClause when summary`.
+func fieldName(_ path: [String]) -> String {
+    path.filter { !wrapperFields.contains($0) }.map { $0 == "summaryString" ? "summary" : $0 }
+        .joined(separator: " ")
 }
 
 /// "1 intent", "2 intents".
@@ -245,11 +258,10 @@ func listSummaries(_ metadata: Metadata, _ report: inout Report) {
         guard let object = value as? [String: Any] else { return }
         for (key, member) in object.sorted(by: { $0.key < $1.key }) {
             guard key == "summaryString" else {
-                let skipped: Set = ["wrapper", "actionConfiguration", "actionSummary"]
-                visit(member, intent: intent, path: skipped.contains(key) ? path : path + [key])
+                visit(member, intent: intent, path: path + [key])
                 continue
             }
-            let place = ([intent] + path).joined(separator: " ")
+            let place = "\(intent) \(fieldName(path + [key]))"
             guard let summary = member as? [String: Any], let format = summary["formatString"] as? String else {
                 report.problems.append(
                     "\(place): a summaryString without a formatString, \(kind(of: member)): \(knownFormat)")
@@ -267,9 +279,202 @@ func listSummaries(_ metadata: Metadata, _ report: inout Report) {
     report.lines += lines
 }
 
+/// A localized string as the metadata records it: the key the system looks up, in `table`.
+struct LocalizedKey: Hashable {
+    var key: String
+    var table: String
+    /// Whether the metadata names the table; without one the lookup uses Localizable.
+    var tableRecorded: Bool
+}
+
+/// A key's entry in a compiled string table.
+enum Lookup {
+    /// The bundle has no such table for the language.
+    case noTable
+    case missing
+    case found(String)
+}
+
+/// What the check needs of the String Catalog and of the widget bundle's compiled tables.
+struct Translations {
+    /// The catalog's languages other than its source language.
+    var languages: [String]
+    /// The catalog's entry for a key; nil when it isn't a key.
+    var entry: (_ key: String) -> [String: Any]?
+    /// The compiled table's entry for a key, in `<language>.lproj/<table>.strings` (or `.stringsdict`).
+    var lookup: (_ language: String, _ table: String, _ key: String) -> Lookup
+}
+
+/// The localized strings under `value` (but not under its members named in `skipping`), each with
+/// the path of fields that leads to it: every object with a `key` string and an `alternatives` array,
+/// which the system looks up in the table it names (Localizable when it names none), and every
+/// ParameterSummary's `formatString`.
+func localizedStrings(
+    in value: Any?, skipping: Set<String> = [], at place: String, _ problems: inout [String]
+) -> [(field: String, string: LocalizedKey)] {
+    var found: [(field: String, string: LocalizedKey)] = []
+    var shapeProblems: [String] = []
+    func visit(_ value: Any?, _ path: [String]) {
+        if let array = value as? [Any] {
+            array.forEach { visit($0, path) }
+            return
+        }
+        guard let object = value as? [String: Any] else { return }
+        if let key = object["key"] as? String, object["alternatives"] is [Any] {
+            let unknown = Set(object.keys).subtracting(["key", "table", "alternatives"]).sorted()
+            let table = object["table"]
+            if !unknown.isEmpty || (table != nil && !(table is String)) {
+                let fields = unknown.isEmpty ? "a table that isn't a string" : unknown.joined(separator: ", ")
+                shapeProblems.append(
+                    "\(place) \(fieldName(path)): a localized string with fields the check doesn't know (\(fields)): "
+                        + knownFormat)
+            }
+            let string = LocalizedKey(
+                key: key, table: table as? String ?? "Localizable", tableRecorded: table is String)
+            found.append((fieldName(path), string))
+            visit(object["alternatives"], path + ["alternatives"])
+            return
+        }
+        for (key, member) in object.sorted(by: { $0.key < $1.key }) where !(path.isEmpty && skipping.contains(key)) {
+            if key == "summaryString", let format = (member as? [String: Any])?["formatString"] as? String {
+                found.append(
+                    (fieldName(path + [key]), LocalizedKey(key: format, table: "Localizable", tableRecorded: false)))
+                continue
+            }
+            visit(member, path + [key])
+        }
+    }
+    visit(value, [])
+    problems += shapeProblems
+    return found
+}
+
+/// A field the edit sheet shows must be a localized string; resolved text or another shape fails.
+func requireLocalized(_ value: Any?, at place: String, _ problems: inout [String]) {
+    if let text = value as? String {
+        problems.append(
+            "\(place): the metadata records the resolved text \"\(text)\" instead of a key and table, so the "
+                + "edit sheet can't show it in another language")
+    } else if (value as? [String: Any])?["key"] as? String == nil {
+        problems.append("\(place) is \(kind(of: value)), not a localized string: \(knownFormat)")
+    }
+}
+
+/// Every string of the edit sheet, with the key and table the metadata records, must be a catalog
+/// key with its translation in the widget's compiled table of every language.
+func checkSheetStrings(
+    _ manifest: Manifest, _ metadata: Metadata, _ translations: Translations, _ report: inout Report
+) {
+    // The manifest's intents and every other intent that configures a widget.
+    let configuration = "com.apple.link.systemProtocol.WidgetConfiguration"
+    var intents = Set(manifest.intents.compactMap { metadata.action(of: $0.type)?.name })
+    for (name, action) in metadata.actions
+    where (action["systemProtocols"] as? [Any] ?? []).contains(where: { $0 as? String == configuration }) {
+        intents.insert(name)
+    }
+    var strings: [(owner: String, field: String, string: LocalizedKey)] = []
+    func collect(_ value: Any?, skipping: Set<String> = [], owner: String) {
+        strings += localizedStrings(in: value, skipping: skipping, at: owner, &report.problems).map {
+            (owner, $0.field, $0.string)
+        }
+    }
+    var enums: [String] = []
+    var entities: [String] = []
+    for name in intents.sorted() {
+        guard let action = metadata.actions[name] else { continue }
+        requireLocalized(action["title"], at: "\(name) title", &report.problems)
+        collect(action, skipping: ["parameters"], owner: name)
+        let parameters = arrayOfObjects(action["parameters"], at: "actions.\(name).parameters", &report.problems)
+        for (index, parameter) in parameters.enumerated() {
+            let owner = "\(name).\(parameter["name"] as? String ?? "parameters[\(index)]")"
+            requireLocalized(parameter["title"], at: "\(owner) title", &report.problems)
+            collect(parameter, owner: owner)
+            let types = valueTypes(in: parameter["valueType"])
+            enums += types.enums.filter { !enums.contains($0) }
+            entities += types.entities.filter { !entities.contains($0) }
+        }
+    }
+    for identifier in enums {
+        guard let appEnum = metadata.enums[identifier] else {
+            report.problems.append("the metadata lacks the AppEnum \(identifier), which an edit sheet uses")
+            continue
+        }
+        requireLocalized(appEnum["displayTypeName"], at: "\(identifier) displayTypeName", &report.problems)
+        collect(appEnum, skipping: ["cases"], owner: identifier)
+        let cases = arrayOfObjects(appEnum["cases"], at: "enums[\(identifier)].cases", &report.problems)
+        for (index, appCase) in cases.enumerated() {
+            let owner = "\(identifier).\(appCase["identifier"] as? String ?? "cases[\(index)]")"
+            let representation = appCase["displayRepresentation"] as? [String: Any]
+            requireLocalized(representation?["title"], at: "\(owner) displayRepresentation title", &report.problems)
+            collect(appCase, owner: owner)
+        }
+    }
+    for typeName in entities {
+        guard let entity = metadata.entities[typeName] else {
+            report.problems.append("the metadata lacks the entity \(typeName), which an edit sheet uses")
+            continue
+        }
+        requireLocalized(entity["displayTypeName"], at: "\(typeName) displayTypeName", &report.problems)
+        collect(entity, owner: typeName)
+    }
+
+    // One line per owner and string, with the fields that hold it.
+    var groups: [(owner: String, string: LocalizedKey, fields: [String])] = []
+    for (owner, field, string) in strings {
+        if let index = groups.firstIndex(where: { $0.owner == owner && $0.string == string }) {
+            groups[index].fields.append(field)
+        } else {
+            groups.append((owner, string, [field]))
+        }
+    }
+    let languages = translations.languages.joined(separator: ", ")
+    var missingTables: Set<String> = []
+    report.lines.append(
+        groups.isEmpty
+            ? "The edit sheet's strings: none, as no intent configures a widget"
+            : "The edit sheet's strings: the key and table the metadata records, and the widget's \(languages):")
+    for group in groups {
+        let place = "\(group.owner) \(group.fields.joined(separator: ", "))"
+        let key = group.string.key
+        var line =
+            "  \(place): \"\(key)\", table \(group.string.table)\(group.string.tableRecorded ? "" : " (none recorded)")"
+        defer { report.lines.append(line) }
+        guard let entry = translations.entry(key) else {
+            line += " → not a catalog key"
+            report.problems.append("\(place): \"\(key)\" isn't a key of the String Catalog")
+            continue
+        }
+        if entry["shouldTranslate"] as? Bool == false {
+            line += " → not translated (shouldTranslate is false)"
+            continue
+        }
+        for language in translations.languages {
+            let localization = (entry["localizations"] as? [String: Any])?[language] as? [String: Any]
+            let value = (localization?["stringUnit"] as? [String: Any])?["value"] as? String
+            if value?.isEmpty ?? (localization?["variations"] == nil) {
+                report.problems.append("\(place): \"\(key)\" has no \(language) translation in the String Catalog")
+            }
+            switch translations.lookup(language, group.string.table, key) {
+            case .noTable:
+                let table = "\(language).lproj/\(group.string.table)"
+                line += " → no \(table) table"
+                if missingTables.insert(table).inserted {
+                    report.problems.append("the widget bundle has no \(table) table, which \(place) names")
+                }
+            case .missing:
+                line += " → missing from \(language)"
+                report.problems.append(
+                    "\(place): the widget's \(language).lproj/\(group.string.table) table lacks \"\(key)\"")
+            case .found(let text):
+                line += " → \(language) \"\(text)\""
+            }
+        }
+    }
+}
+
 /// The check of one widget build: `metadata` is extract.actionsdata's JSON, nil when the widget has
 /// none.
-func check(manifest: Manifest, metadata root: Any?) -> Report {
+func check(manifest: Manifest, metadata root: Any?, translations: Translations) -> Report {
     var report = Report()
     guard let root else {
         if manifest.intents.isEmpty {
@@ -289,6 +494,7 @@ func check(manifest: Manifest, metadata root: Any?) -> Report {
             + metadata.actions.keys.sorted().joined(separator: ", "))
     checkManifest(manifest, metadata, &report)
     listSummaries(metadata, &report)
+    checkSheetStrings(manifest, metadata, translations, &report)
     return report
 }
 
@@ -318,8 +524,24 @@ func selfTest() -> [String] {
         return ["can't read the sample or its manifest: \(error)"]
     }
     let noIntents = Manifest(kinds: [Manifest.Kind(kind: "io.github.nikitausov.BatteryPulse.battery")])
-    func run(_ text: String?, _ manifest: Manifest) throws -> Report {
-        try check(manifest: manifest, metadata: text.map { try JSONSerialization.jsonObject(with: Data($0.utf8)) })
+    // A catalog and a compiled Russian table that translate every key, but `missing`; `lacking`
+    // isn't a key at all.
+    func standIns(missing: String? = nil, lacking: String? = nil) -> Translations {
+        Translations(
+            languages: ["ru"],
+            entry: { key in
+                key == lacking
+                    ? nil : ["localizations": ["ru": ["stringUnit": ["state": "translated", "value": "ru \(key)"]]]]
+            },
+            lookup: { _, table, key in
+                guard table == "Localizable" else { return .noTable }
+                return key == missing ? .missing : .found("ru \(key)")
+            })
+    }
+    func run(_ text: String?, _ manifest: Manifest, _ translations: Translations = standIns()) throws -> Report {
+        try check(
+            manifest: manifest, metadata: text.map { try JSONSerialization.jsonObject(with: Data($0.utf8)) },
+            translations: translations)
     }
 
     // The sample passes.
@@ -330,12 +552,18 @@ func selfTest() -> [String] {
         }
         for expected in [
             "1 intent, 4 parameters, 8 cases",
-            "BatteryWidgetIntent whenClause when: \"${layout}\" (parameters: layout)",
-            "SpikeWidgetIntent: \"Show ${mainValue}\"",
+            "BatteryWidgetIntent whenClause when summary: \"${layout}\" (parameters: layout)",
+            "SpikeWidgetIntent summary: \"Show ${mainValue}\"",
+            "BatteryWidgetIntent title: \"Battery\", table Localizable (none recorded) → ru \"ru Battery\"",
+            "BatteryWidgetIntent.layout title: \"Layout\"",
+            "SpikeLayout.custom displayRepresentation title: \"Custom\"",
+            "SpikeLayout displayTypeName, numericFormatTypeName: \"Layout\"",
+            "SpikeDetail displayTypeName, numericFormatTypeName: \"Details\"",
+            "SpikeWidgetIntent summary: \"Show ${mainValue}\", table Localizable (none recorded)",
         ] where !report.lines.contains(where: { $0.contains(expected) }) {
             failures.append("the sample's report lacks \"\(expected)\":\n\(report.lines.joined(separator: "\n"))")
         }
-        say("The sample's report:")
+        say("The sample's report, with a stand-in catalog and table that translate each key as \"ru <key>\":")
         report.lines.forEach { say("  \($0)") }
     } catch {
         failures.append("the sample isn't JSON: \(error)")
@@ -352,21 +580,41 @@ func selfTest() -> [String] {
         return sample.replacingOccurrences(of: target, with: replacement)
     }
     let customCase = #",{"displayRepresentation":{"title":{"alternatives":[],"key":"Custom"}},"identifier":"custom"}"#
-    let copies: [(name: String, text: String?, names: String)] = [
-        ("a copy without the case custom", doctored(customCase, ""), "case custom"),
-        ("a copy without the parameter time", doctored(#""name":"time""#, #""name":"clock""#), "parameter time"),
+    let layoutTitle = #""title":{"alternatives":[],"key":"Layout"}"#
+    let clockTime = #"{"alternatives":[],"key":"Clock time"}"#
+    let copies: [(name: String, text: String?, translations: Translations, names: String)] = [
+        ("a copy without the case custom", doctored(customCase, ""), standIns(), "case custom"),
+        (
+            "a copy without the parameter time", doctored(#""name":"time""#, #""name":"clock""#), standIns(),
+            "parameter time"
+        ),
         (
             "a copy without the intent", doctored("BatteryWidgetIntent", "BatteryIntent", everywhere: true),
-            "intent BatteryWidgetIntent"
+            standIns(), "intent BatteryWidgetIntent"
         ),
-        ("a top-level array", "[\(sample)]", "top level"),
-        ("actions as an array", #"{"actions": [], "enums": [], "entities": {}}"#, "actions"),
-        ("no enums", #"{"actions": {}, "entities": {}}"#, "enums"),
-        ("no metadata for the manifest's intent", nil, "Metadata.appintents"),
+        ("a top-level array", "[\(sample)]", standIns(), "top level"),
+        ("actions as an array", #"{"actions": [], "enums": [], "entities": {}}"#, standIns(), "actions"),
+        ("no enums", #"{"actions": {}, "entities": {}}"#, standIns(), "enums"),
+        ("no metadata for the manifest's intent", nil, standIns(), "Metadata.appintents"),
+        (
+            "a title recorded as resolved text", doctored(layoutTitle, #""title":"Layout""#), standIns(),
+            "resolved text \"Layout\""
+        ),
+        (
+            "a string with an unknown field",
+            doctored(clockTime, #"{"alternatives":[],"bundleURL":"x","key":"Clock time"}"#), standIns(),
+            "bundleURL"
+        ),
+        (
+            "a string in another table", doctored(#""key":"Time left"}"#, #""key":"Time left","table":"Widget"}"#),
+            standIns(), "ru.lproj/Widget"
+        ),
+        ("a Russian table without a key", sample, standIns(missing: "Clock time"), "lacks \"Clock time\""),
+        ("a catalog without a key", sample, standIns(lacking: "Main value"), "\"Main value\" isn't a key"),
     ]
     for copy in copies {
         do {
-            let report = try run(copy.text, manifest)
+            let report = try run(copy.text, manifest, copy.translations)
             if report.problems.isEmpty {
                 failures.append("\(copy.name) passes")
             } else if !report.problems.contains(where: { $0.contains(copy.names) }) {
@@ -398,7 +646,7 @@ if arguments == ["--self-test"] {
     guard failures.isEmpty else { fail("the self-test failed:\n" + failures.joined(separator: "\n")) }
     exit(0)
 }
-guard arguments.count == 2 else {
+guard arguments.count == 3 else {
     fail(usage)
 }
 let manifest: Manifest
@@ -407,8 +655,60 @@ do {
 } catch {
     fail("can't read the manifest \(arguments[0]): \(error)")
 }
-let metadataFolder = URL(fileURLWithPath: arguments[1], isDirectory: true)
-    .appendingPathComponent("Metadata.appintents", isDirectory: true)
+let catalogStrings: [String: Any]
+let sourceLanguage: String
+do {
+    let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: arguments[1])))
+    guard let catalog = catalog as? [String: Any], let strings = catalog["strings"] as? [String: Any],
+        let source = catalog["sourceLanguage"] as? String
+    else {
+        fail("\(arguments[1]) is not a String Catalog")
+    }
+    catalogStrings = strings
+    sourceLanguage = source
+} catch {
+    fail("can't read the String Catalog \(arguments[1]): \(error)")
+}
+let resources = URL(fileURLWithPath: arguments[2], isDirectory: true)
+
+/// The widget bundle's compiled tables, each read once.
+final class Tables {
+    private var tables: [String: [String: Any]?] = [:]
+
+    /// `<language>.lproj/<table>.strings` and `.stringsdict` as one dictionary; nil when neither exists.
+    func table(_ language: String, _ name: String) -> [String: Any]? {
+        let id = "\(language).lproj/\(name)"
+        if let table = tables[id] { return table }
+        var entries: [String: Any]?
+        for suffix in ["strings", "stringsdict"] {
+            let url = resources.appendingPathComponent("\(id).\(suffix)")
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            do {
+                let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
+                guard let dictionary = plist as? [String: Any] else { fail("\(url.path) is not a string table") }
+                entries = (entries ?? [:]).merging(dictionary) { first, _ in first }
+            } catch {
+                fail("can't read \(url.path): \(error)")
+            }
+        }
+        tables[id] = .some(entries)
+        return entries
+    }
+}
+let tables = Tables()
+let languages = Set(
+    catalogStrings.values.flatMap { (($0 as? [String: Any])?["localizations"] as? [String: Any] ?? [:]).keys }
+)
+.subtracting([sourceLanguage]).sorted()
+let translations = Translations(
+    languages: languages,
+    entry: { catalogStrings[$0] as? [String: Any] },
+    lookup: { language, table, key in
+        guard let entries = tables.table(language, table) else { return .noTable }
+        guard let entry = entries[key] else { return .missing }
+        return .found(entry as? String ?? "(plural variations)")
+    })
+let metadataFolder = resources.appendingPathComponent("Metadata.appintents", isDirectory: true)
 let actionsData = metadataFolder.appendingPathComponent("extract.actionsdata")
 var metadata: Any?
 if FileManager.default.fileExists(atPath: actionsData.path) {
@@ -425,7 +725,7 @@ if FileManager.default.fileExists(atPath: actionsData.path) {
         say("Metadata.appintents/version.json: \(fields.joined(separator: ", "))")
     }
 }
-let report = check(manifest: manifest, metadata: metadata)
+let report = check(manifest: manifest, metadata: metadata, translations: translations)
 report.lines.forEach(say)
 guard report.problems.isEmpty else {
     fail("the App Intents metadata fails its check:\n" + report.problems.joined(separator: "\n"))
