@@ -30,7 +30,7 @@ enum SourceScanner {
         .appendingPathComponent("Sources")
 
     /// The targets whose code only compiles on macOS.
-    static let targets = ["BatteryPulseApp", "BatteryPulseWidget"]
+    static let targets = ["BatteryPulseApp", "BatteryPulseWidget", "BatteryArt"]
 
     /// The other targets: Linux compiles them, but their `#if os(macOS)` blocks only CI does.
     static let otherTargets = ["BatteryCore", "BatterySource", "BatteryKit", "bpulse"]

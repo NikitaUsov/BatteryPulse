@@ -4,8 +4,8 @@ import Testing
 /// Keeps motion and Liquid Glass within the rules in CLAUDE.md, for code that only compiles on
 /// macOS.
 ///
-/// Scans `Sources/BatteryPulseApp` and `Sources/BatteryPulseWidget` with comments and string
-/// literals blanked out. It fails on:
+/// Scans `Sources/BatteryPulseApp`, `Sources/BatteryPulseWidget` and `Sources/BatteryArt` with
+/// comments and string literals blanked out. It fails on:
 /// - continuous animation: `repeatForever`, `TimelineView(.animation…)`, a phase or keyframe
 ///   animator without `trigger:`, a symbol effect repeating indefinitely, and an indefinite
 ///   `symbolEffect` modifier (`isActive:`, or no `value:`);
@@ -49,6 +49,8 @@ import Testing
     static let menuBarLabelFiles: Set<String> = [
         "BatteryPulseApp/MenuBar/MenuBarLabel.swift",
         "BatteryPulseApp/MenuBar/BatteryIconView.swift",
+        // The painter, shared with the widget: the icon it draws is the menu bar label's.
+        "BatteryArt/BatteryIconPainter.swift",
     ]
 
     /// Where the `\.motion` presets are built from concrete animations.
@@ -556,6 +558,8 @@ import Testing
         #expect(flags("withAnimation(motion.change) { on.toggle() }", path: path))
         #expect(flags("Text(\"x\").animation(motion.change, value: key)", path: path))
         #expect(!flags("withAnimation(motion.change) { on.toggle() }", path: "BatteryPulseApp/Main/DemoView.swift"))
+        // The painter draws the label's icon from its own target.
+        #expect(flags("withAnimation(motion.change) { on.toggle() }", path: "BatteryArt/BatteryIconPainter.swift"))
         // Explaining the rule in a comment is fine.
         #expect(!flags("// No withAnimation here: every frame renders an image.", path: path))
     }

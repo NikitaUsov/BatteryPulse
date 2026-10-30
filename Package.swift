@@ -22,7 +22,7 @@ let package = Package(
         // Platform-independent models, parsing and metrics. Builds and tests on Linux.
         .library(name: "BatteryCore", targets: ["BatteryCore"]),
         // The battery and accessory reads: IOKit and the SMC on macOS, UIDevice on iOS, with their
-        // loggers and signposts. The widget links it and BatteryCore alone.
+        // loggers and signposts. The widget links it, BatteryCore and BatteryArt alone.
         .library(name: "BatterySource", targets: ["BatterySource"]),
         // OS integration on top of BatterySource: the observable monitors, iPhone and iPad reads,
         // and the CryptoKit code (device keys, update signatures).
@@ -48,6 +48,12 @@ let package = Package(
         .target(
             name: "BatteryKit", dependencies: ["BatteryCore", "BatterySource"],
             swiftSettings: strict + [.strictMemorySafety()]),
+        // The drawn battery of the menu bar icon, which the widget draws too: SwiftUI and Core Text
+        // only, so it stays safe in an app extension. One painter keeps the two identical, on the
+        // one geometry in BatteryCore. Neither a parser of untrusted input nor a system binding, it
+        // builds without strict memory safety like the app, so its Core Text glyph calls, which
+        // pass arrays as pointers, stay unmarked.
+        .target(name: "BatteryArt", dependencies: ["BatteryCore"], swiftSettings: strict),
         // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
         // a pointer, and the macOS-only SMC listing's `String(format:)`.
         .executableTarget(
@@ -60,12 +66,12 @@ let package = Package(
         // timeline provider on threads of its own.
         .executableTarget(
             name: "BatteryPulseApp",
-            dependencies: ["BatteryCore", "BatterySource", "BatteryKit"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryKit", "BatteryArt"],
             swiftSettings: strict + [.defaultIsolation(MainActor.self)]
         ),
         .executableTarget(
             name: "BatteryPulseWidget",
-            dependencies: ["BatteryCore", "BatterySource"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryArt"],
             swiftSettings: strict + [
                 // Allow only the APIs an app extension may use, as Xcode does for extension targets.
                 .unsafeFlags(["-application-extension"], .when(platforms: [.macOS]))
