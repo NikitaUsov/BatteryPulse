@@ -30,7 +30,7 @@ import Testing
             reason: "Copy Report's \"Copied\" label, once per click"),
         OneShot(
             path: "BatteryPulseApp/App/WidgetRefresher.swift", interval: ".seconds(1)",
-            reason: "the wait after ending the previous version's widget extension, once after an update"),
+            reason: "the wait after ending the previous widget extension, once after an update or a language change"),
         OneShot(
             path: "bpulse/main.swift", interval: ".seconds(interval)",
             reason: "bpulse --watch: the interval the user typed, while it runs in a terminal"),

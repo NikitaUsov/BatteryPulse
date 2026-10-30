@@ -56,9 +56,8 @@ final class WidgetRefresher {
 
     /// The app's effective language at its last launch (the first of
     /// `Bundle.main.preferredLocalizations`, "en" or "ru"), so a launch in another language
-    /// reloads the widgets. A settings key
-    /// of the app's domain since 0.7, whose name, type and meaning stay (RD C14 item 1); missing
-    /// before the first launch of 0.7, which only stores it.
+    /// reloads the widgets. A settings key of the app's domain since 0.7, whose name, type and
+    /// meaning stay (RD C14 item 1); missing before the first launch of 0.7, which only stores it.
     static let lastSeenLanguageKey = "lastSeenLanguage"
 
     /// At a launch of another version or in another language, ends the widget extension a
@@ -73,9 +72,10 @@ final class WidgetRefresher {
     /// usually ended it already, and this finds nothing, or the new extension WidgetKit started
     /// meanwhile, which a reload brings back.
     ///
-    /// A language chosen for BatteryPulse alone (Settings → General → Language) applies at the next
-    /// launch, and every placed widget keeps its render in the previous language until it
-    /// reloads, so a language change reloads every kind even when no extension was running.
+    /// A language chosen for BatteryPulse alone (System Settings → General → Language & Region →
+    /// Applications) applies at the next launch, and every placed widget keeps its render in the
+    /// previous language until it reloads, so a language change reloads every kind even when no
+    /// extension was running.
     static func endPreviousExtension(versionChanged: Bool) {
         let defaults = UserDefaults.standard
         let lastLanguage = defaults.string(forKey: lastSeenLanguageKey)
