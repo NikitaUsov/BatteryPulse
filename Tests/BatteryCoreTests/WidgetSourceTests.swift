@@ -49,6 +49,40 @@ struct WidgetSourceTests {
                 == nil)
     }
 
+    /// VoiceOver never reads a symbol's name (0.6.1's level symbol read "Three-Quarter-Charged
+    /// Battery" at 80 %): the widget draws SF Symbols only through `decorativeSymbol(_:)`, which
+    /// hides them, and names no symbol for a label to show.
+    @Test func symbolsAreDrawnOnlyAsDecoration() throws {
+        var helpers = 0
+        for file in try Self.widgetCode() {
+            let helper = file.code.firstMatch(of: #/func decorativeSymbol\([^{]*\{([\s\S]*?)\n\}/#)
+            if let helper {
+                helpers += 1
+                #expect(helper.output.1.contains(".accessibilityHidden(true)"), "\(file.path)")
+            }
+            for symbol in file.code.matches(of: #/\bImage\s*\(\s*systemName\s*:|\bsystemImage\s*:/#) {
+                #expect(
+                    helper?.range.contains(symbol.range.lowerBound) == true,
+                    "\(file.path): a symbol outside decorativeSymbol(_:)")
+            }
+        }
+        #expect(helpers == 1)
+    }
+
+    @Test func theSymbolGuardSeesASymbolOutsideTheHelper() {
+        let code = SourceScanner.codeOnly(
+            """
+            func decorativeSymbol(_ name: String) -> some View {
+                Image(systemName: name).accessibilityHidden(true)
+            }
+            let shown = Image(systemName: "battery.100percent")
+            """)
+        let helper = code.firstMatch(of: #/func decorativeSymbol\([^{]*\{([\s\S]*?)\n\}/#)
+        let symbols = code.matches(of: #/\bImage\s*\(\s*systemName\s*:/#)
+        #expect(symbols.count == 2)
+        #expect(symbols.filter { helper?.range.contains($0.range.lowerBound) != true }.count == 1)
+    }
+
     /// Each widget choice's BatteryCore mirror, by parameter name.
     static let mirrors: [String: [String]] = [
         "layout": WidgetLayoutMode.allCases.map(\.rawValue),
