@@ -194,7 +194,7 @@ Every item left "not checked" or "not run" takes its gate's default (PLAN.md §7
      extension's; the edit sheet's choices on the medium widget (back to Automatic); the gallery's new
      widgets (removed at the end unless he keeps them); a Bluetooth accessory disconnected and
      reconnected by an AX press; the appearance and a plain wallpaper for the menu bar shots
-     (put back by the tool itself).
+     (put back by the tool, read back by the script).
    - Never: the Charge Limit (Session R doesn't need it), a VPN, anything in Privacy & Security, Users
      & Groups or Passwords.
    - The questions: when is he back at the Mac (else 4 hours from now; the GUI phase ends 10 minutes

@@ -509,6 +509,18 @@ is_dark() {
   osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode' 2>/dev/null || echo unknown
 }
 
+# wallpapers: each desktop's picture, one path per line, by System Events (the paths stay on the
+# Mac: in the backup, never in a report); nothing when it can't be read.
+wallpapers() {
+  osascript -e 'tell application "System Events"
+    set out to ""
+    repeat with d in desktops
+      set out to out & (picture of d) & linefeed
+    end repeat
+    return out
+  end tell' 2>/dev/null || true
+}
+
 # The widget extension's processes, by their executable's path at the start of the argument list
 # (so no shell whose command line names it): pgrep -x and pkill -x match macOS's p_comm, cut to 16
 # characters, which "BatteryPulseWidget" (18) never equals.
@@ -1083,6 +1095,7 @@ backup() {
   defaults read -g AppleInterfaceStyleSwitchesAutomatically >"$BACKUP/auto-appearance" 2>/dev/null ||
     echo 0 >"$BACKUP/auto-appearance"
   defaults read -g AppleICUForce24HourTime >"$BACKUP/24-hour" 2>/dev/null || echo unset >"$BACKUP/24-hour"
+  wallpapers >"$BACKUP/wallpapers"
   if defaults read "$WIDGET_PREFS" AppleLanguages >"$BACKUP/widget-languages" 2>/dev/null; then :; else
     rm -f "$BACKUP/widget-languages"
   fi
@@ -2201,7 +2214,7 @@ step_prepare_reads() {
   out "- BatteryPulse's own languages (its AppleLanguages): $(if [ -f "$BACKUP/app-languages" ]; then tr -s ' \n' ' ' <"$BACKUP/app-languages"; else echo "none (the system's)"; fi)"
   out "- the widget extension's languages: $(if [ -f "$BACKUP/widget-languages" ]; then tr -s ' \n' ' ' <"$BACKUP/widget-languages"; else echo "none (the system's)"; fi)"
   out "- the system's first language: $(defaults read -g AppleLanguages 2>/dev/null | tr -d ' \n()"' | cut -d, -f1 || echo unknown)"
-  out "- appearance: dark mode $(cat "$BACKUP/dark-mode"), automatic $(cat "$BACKUP/auto-appearance")"
+  out "- appearance: dark mode $(cat "$BACKUP/dark-mode"), automatic $(cat "$BACKUP/auto-appearance"); the wallpaper: $(grep -c . "$BACKUP/wallpapers" 2>/dev/null || echo 0) desktops read (paths kept on the Mac)"
   # Candidates for the two style keys, kept on the Mac: the pane's shot decides.
   keys="$(defaults read -g 2>/dev/null | grep -i -E 'icon|widget|tint' | head -10 || true)"
   printf '%s\n' "$keys" >"$LOGS/style-keys.txt"
@@ -3204,9 +3217,8 @@ step_menubar() {
   r_only menubar
   local screen width scale file rect x y w h
   [ -s "$WORK/status-item" ] || fail "no menu bar item frame (proof P11): V01-menubar is not checked"
-  mkdir -p "$SHOTS/menubar"
-  bash "$ROOT/scripts/menu-bar-shots.sh" "$SHOTS/menubar" v01 --looks light,dark >"$LOGS/menubar.txt" 2>&1 ||
-    not_checked V01-menubar "menu-bar-shots.sh: $(tail -1 "$LOGS/menubar.txt")"
+  run_menu_bar_shots v01 --looks light,dark ||
+    not_checked V01-menubar "menu-bar-shots.sh didn't finish (logs/menubar-v01.txt on the Mac), or prepare didn't read the appearance or the wallpaper"
   relaunch_r
   screen="$(ui_run screen 2>/dev/null || true)"
   width="$(sed -n 's/^main=[-0-9]* [-0-9]* \([0-9]*\) .*/\1/p' <<<"$screen")"
@@ -3234,8 +3246,49 @@ step_menubar() {
 step_menu_bar_shots() {
   r_only menu-bar-shots
   [ $# -ge 1 ] || fail "usage: $SCRIPT menu-bar-shots <tag> [--charge] [--looks <list>]"
-  mkdir -p "$SHOTS/menubar"
-  bash "$ROOT/scripts/menu-bar-shots.sh" "$SHOTS/menubar" "$@"
+  run_menu_bar_shots "$@" || fail "menu-bar-shots.sh didn't finish (logs/menubar-$1.txt), or prepare didn't read the appearance or the wallpaper"
+  relaunch_r
+}
+
+# run_menu_bar_shots <tag> [arguments]: scripts/menu-bar-shots.sh into shots/menubar. Per look it
+# sets the appearance and a plain wallpaper, and puts both back itself when it ends; both are his
+# settings, so each goes into changes.tsv first, and only when prepare read it (an unread one is
+# never changed). After the run each is read back against the backup and marked restored, else
+# restore gui lists it for the session: Auto appearance comes back only by hand (the tool says so),
+# and a dynamic wallpaper may come back as a still picture, which the restored line says for his
+# summary.
+run_menu_bar_shots() {
+  local dark auto now_auto status=0
+  dark="$(cat "$BACKUP/dark-mode" 2>/dev/null || echo unknown)"
+  auto="$(cat "$BACKUP/auto-appearance" 2>/dev/null || echo 0)"
+  case "$dark" in
+    true | false) ;;
+    *)
+      echo "the appearance wasn't read at prepare: never changed" >&2
+      return 1
+      ;;
+  esac
+  if [ ! -s "$BACKUP/wallpapers" ]; then
+    echo "the wallpaper wasn't read at prepare: never changed" >&2
+    return 1
+  fi
+  record_change appearance "dark mode $dark, automatic $auto" "the light and dark looks of menu-bar-shots.sh"
+  record_change wallpaper "his ($(grep -c . "$BACKUP/wallpapers" || true) desktops, the paths in the backup)" \
+    "plain light and dark wallpapers of menu-bar-shots.sh"
+  mkdir -p "$SHOTS/menubar" "$LOGS"
+  bash "$ROOT/scripts/menu-bar-shots.sh" "$SHOTS/menubar" "$@" >"$LOGS/menubar-$1.txt" 2>&1 </dev/null || status=$?
+  now_auto="$(defaults read -g AppleInterfaceStyleSwitchesAutomatically 2>/dev/null || echo 0)"
+  if [ "$(is_dark)" = "$dark" ] && [ "$now_auto" = "$auto" ]; then
+    mark_restored appearance "script: menu-bar-shots.sh put it back, read back by System Events"
+  else
+    warn "the appearance isn't as prepare read it (dark mode $(is_dark), automatic $now_auto): restore gui lists it"
+  fi
+  if [ "$(wallpapers)" = "$(cat "$BACKUP/wallpapers")" ]; then
+    mark_restored wallpaper "script: menu-bar-shots.sh put the pictures back, read back by System Events (a dynamic wallpaper may stay still until he picks it again)"
+  else
+    warn "the wallpaper isn't as prepare read it: restore gui lists it"
+  fi
+  return "$status"
 }
 
 # wp18 previews | timing: WP-18's items 0.6.2 left (C-1), through the script's one prefix: the
@@ -3544,6 +3597,8 @@ restore_how() {
     widget-choices) echo "computer use (Edit Widget: back to Automatic)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
     desktop-widgets) echo "computer use (the widgets he didn't keep removed)" ;;
+    appearance) echo "computer use (System Settings → Appearance: Light, Dark or Auto, as prepare read it)" ;;
+    wallpaper) echo "computer use (System Settings → Wallpaper: his picture, as prepare's desktop shot shows it)" ;;
     *) echo "computer use, confirmed by a read or a shot" ;;
   esac
 }
@@ -4348,7 +4403,7 @@ dry_run() {
       check fail "$setting should come back by the script"
   done
   for setting in app-language widget-style dim-widgets text-size increase-contrast reduce-transparency 24-hour \
-    open-at-login bluetooth-accessory widget-choices charge-limit desktop-widgets; do
+    open-at-login bluetooth-accessory widget-choices charge-limit desktop-widgets appearance wallpaper; do
     [ "$(restore_how "$setting")" != script ] && check ok "$setting comes back by the session ($(restore_phase "$setting"))" ||
       check fail "$setting has no way back for the session"
   done
