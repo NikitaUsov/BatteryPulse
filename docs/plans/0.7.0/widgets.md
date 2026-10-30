@@ -711,6 +711,7 @@ reload planner, routing, tests and guards, and size sequencing.
 The W0 rows of 0.6.2's Appendix C, with the two rows they lean on: the spike builds Session A
 installed, and Session A's swaps. A row marked "final" comes from Session A's final report
 (`sessions/A.md` beside this file, 2026-10-24), which replaced its interim report of 2026-10-23.
+A row they name that isn't here (W0-5's "P1 … its row below", for one) is in `0.6.2-appendix-c.md`.
 
 | Fact | Shown by | Decides |
 |---|---|---|

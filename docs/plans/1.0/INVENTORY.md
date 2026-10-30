@@ -60,7 +60,7 @@ at 100 % (bit 24 clears and returns). The counts include FEA-35.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | RN:n | `.github/release-notes.md`, line n |
-| P2 | the verified 0.6.2 plan (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
+| P2 | the verified 0.6.2 plan (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | P1 | the 0.6.1 plan, `6aec4d2:docs/plans/0.6.1/PLAN.md` (in PR 11's history) (§6 deferred table at line 1372, Appendix A, Appendix B, Appendix C) |
 | PB | `6aec4d2:docs/plans/0.6.1/playbook.md` |
 | AUD-x | `6aec4d2:docs/plans/0.6.1/audit-x-verified.md` |

@@ -104,7 +104,7 @@ interim report:
 | UG:n, RM:n | `docs/USER_GUIDE.md`, `README.md`, line n |
 | file:line | a file in `Sources`, `Tests`, `scripts`, `Resources` or `.github` |
 | CL | `CLAUDE.md` (it wins over every other source) |
-| P2 | the verified 0.6.2 plan, its plan folder's `PLAN.md`, removed at 0.6.2's release: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`). Its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
+| P2 | the verified 0.6.2 plan, its plan folder's `PLAN.md`, removed at 0.6.2's release: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`). Its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | RD | the roadmap to 1.0, `docs/plans/1.0/ROADMAP.md`: section, criterion (`C…`), decision (`M-…`) or new item (`NEW-…`) |
 | INV | `docs/plans/1.0/INVENTORY.md`, by row ID (`FEA-06` …) |
 | P1, PB | the 0.6.1 plan and playbook, `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
@@ -2974,8 +2974,9 @@ USER_GUIDE):
    included, left for step 8; §12's changes.
 4. **Remove `docs/plans/0.7.0/`** in the last commit, after ROADMAP holds the lasting decisions and
    `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). The ci.yml lines that name it (the
-   queue dry run, `bash -n`, the helpers' type-checks) go with it (P2 D3). The commit before it is `<keep>`, from which §6.4's short session reads its runbook
-   and script (§6.2, "The short sessions").
+   queue dry run, `bash -n`, the helpers' type-checks) go with it (P2 D3). The commit before it is
+   `<keep>`, from which §6.4's short session reads its runbook and script (§6.2, "The short
+   sessions").
 5. **The PR** `claude/070-integration` → `main`: the D1 draft is marked ready, with the numbers,
    Appendix C and the session results. Both jobs green with 0 warnings. Merged after the
    maintainer's OK.
@@ -3224,9 +3225,10 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 
 **Sources:**
 - R at `eebf748`;
-- P2 (0.6.2's plan: its §8, §9, Q-W answers and W0 rows in `docs/plans/0.7.0/widgets.md`, the
-  rest in the history of the 0.6.2 release PR's head, `refs/pull/<n>/head`), RD
-  (`docs/plans/1.0/ROADMAP.md`), INV (`docs/plans/1.0/INVENTORY.md`);
+- P2 (0.6.2's plan: its §8, §9, Q-W answers and W0 rows in `docs/plans/0.7.0/widgets.md`, its
+  whole Appendix C in `docs/plans/0.7.0/0.6.2-appendix-c.md`, the rest in the history of the 0.6.2
+  release PR's head, `refs/pull/<n>/head`), RD (`docs/plans/1.0/ROADMAP.md`), INV
+  (`docs/plans/1.0/INVENTORY.md`);
 - P1 and PB at `6aec4d2:docs/plans/0.6.1/` (in PR 11's history).
 
 | Item | Source | 0.7 package or status |
