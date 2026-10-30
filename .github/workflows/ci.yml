@@ -72,14 +72,11 @@ jobs:
           docc convert --additional-symbol-graph-dir "$RUNNER_TEMP/symbol-graphs" --warnings-as-errors \
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
-      - name: Check Session B's energy queue (dry run)
-        # 0.6.2's M5 session script, copied to docs/plans/0.7.0/ as W-12's starting point
-        # (plan-0.7.0 D-11): Session B's queue with the world stubbed, its order, its retries and its
-        # thresholds in three scenarios. Removed with that folder in 0.7's D3.
-        run: |
-          for scenario in default low late; do
-            bash docs/plans/0.7.0/m5-session.sh queue --dry-run "$scenario"
-          done
+      - name: Check Session R's bookkeeping (dry run)
+        # 0.7's M5 session script (plan-0.7.0 W-12), built from 0.6.2's: its questions, the change
+        # record and its restored lines, the logged day's fence, the summary's alerts, the report and
+        # its privacy lint, with nothing of the Mac. Removed with that folder in 0.7's D3.
+        run: bash docs/plans/0.7.0/m5-session.sh dry-run
 
   macos:
     name: macOS · build & test
@@ -198,10 +195,12 @@ jobs:
           swift scripts/appintents-check.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
-          # 0.6.2's M5 session script and its helpers, copied to docs/plans/0.7.0/ for W-12
-          # (plan-0.7.0 D-11), and the launcher of 0.6.2's after-publishing check, until 0.7's D3
-          # removes the folder.
+          # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's
+          # copies in the same folder, whose launchers stay as they were), until 0.7's D3 removes the
+          # folder.
           bash -n docs/plans/0.7.0/m5-session.sh
+          bash -n docs/plans/0.7.0/start-session-r.sh
+          bash -n docs/plans/0.7.0/start-short-session.sh
           bash -n docs/plans/0.7.0/start-session-b.sh
           bash -n docs/plans/0.7.0/start-after-publishing.sh
           swiftc -typecheck docs/plans/0.7.0/swap.swift
