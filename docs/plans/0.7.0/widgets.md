@@ -4,7 +4,7 @@ This file holds §8, §9 with §9.1, §10's widget answers (Q-W1 to Q-W13) and A
 BatteryPulse 0.6.2's plan, moved here at 0.6.2's release (its D3) with their section, row and
 question numbers kept, so a reference such as "P2 §8.5" or "Q-W4" still finds its text. Any other
 reference in them (§3, §6, §7, WP-…, Appendix B, "PLAN") is to that plan, readable in the history of
-the 0.6.2 release PR's head (`refs/pull/<n>/head`), and its whole Appendix C is in
+the 0.6.2 release PR's head (`refs/pull/12/head`), and its whole Appendix C is in
 `0.6.2-appendix-c.md` beside this file.
 
 ---

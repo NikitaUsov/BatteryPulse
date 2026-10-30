@@ -104,7 +104,7 @@ interim report:
 | UG:n, RM:n | `docs/USER_GUIDE.md`, `README.md`, line n |
 | file:line | a file in `Sources`, `Tests`, `scripts`, `Resources` or `.github` |
 | CL | `CLAUDE.md` (it wins over every other source) |
-| P2 | the verified 0.6.2 plan, its plan folder's `PLAN.md`, removed at 0.6.2's release: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`). Its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
+| P2 | the verified 0.6.2 plan, its plan folder's `PLAN.md`, removed at 0.6.2's release: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`). Its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
 | RD | the roadmap to 1.0, `docs/plans/1.0/ROADMAP.md`: section, criterion (`C…`), decision (`M-…`) or new item (`NEW-…`) |
 | INV | `docs/plans/1.0/INVENTORY.md`, by row ID (`FEA-06` …) |
 | P1, PB | the 0.6.1 plan and playbook, `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
@@ -260,7 +260,7 @@ Contents:
 
 | # | 0.6.2 item (P2) | What 0.7 needs from it | If it failed, was cut or never ran |
 |---|---|---|---|
-| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **Copied at 0.6.2's D3:** main receives only squash merges, so only what the release PR's last commit holds reaches main (through 0.6.1 no plan folder did: `git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So, as this plan asked, 0.6.2's D3 copied into `docs/plans/0.7.0/`, ahead of deleting 0.6.2's branches (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper (`swap.swift`), the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the whole of P2 Appendix C as `0.6.2-appendix-c.md` (not only the W0 rows, which `widgets.md` also holds) and Session A's report (`sessions/A.md` with its files in `sessions/A/`). They reach main with 0.6.2's squash merge, and the release PR's `refs/pull/<n>/head` keeps 0.6.2's whole plan reachable in its history (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its final answers (`docs/plans/0.7.0/sessions/A.md`, 2026-10-24) are in §2.2 and Appendix C |
+| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **Copied at 0.6.2's D3:** main receives only squash merges, so only what the release PR's last commit holds reaches main (through 0.6.1 no plan folder did: `git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So, as this plan asked, 0.6.2's D3 copied into `docs/plans/0.7.0/`, ahead of deleting 0.6.2's branches (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper (`swap.swift`), the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the whole of P2 Appendix C as `0.6.2-appendix-c.md` (not only the W0 rows, which `widgets.md` also holds) and Session A's report (`sessions/A.md` with its files in `sessions/A/`). They reach main with 0.6.2's squash merge, and the release PR's `refs/pull/12/head` keeps 0.6.2's whole plan reachable in its history (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its final answers (`docs/plans/0.7.0/sessions/A.md`, 2026-10-24) are in §2.2 and Appendix C |
 | D-2 | K-03, the `BatterySource` target (WP-15 item 1, G-15) | CryptoKit and the device stack out of the widget (about 187 KB, P2 §2.3). `MacAccessoryProvider` sits in the lower target, so W-8 needs no second split (P2 WP-15) | **Nothing blocks.** `MacAccessoryProvider` is in BatteryKit today (`BatteryKit/MacAccessoryProvider.swift`), and the widget can log through its own `Signposts(subsystem:log:)`, which is public (`BatteryKit/Diagnostics.swift`, `public struct Signposts`). **Only size suffers:** G7-10 decides, and if the widget would cross 0.6.1's ceilings, K-03 runs as written in P2 WP-15 before W-3a ("W-0K") |
 | D-3 | `-internalize-at-link` on the widget (WP-15 item 2) | About −27 % of the widget's `__text` (P2 WP-15, measured in a native build) | **Less headroom.** G7-10's cut order applies: `Path` instead of Swift Charts, SIZ-07, W-11 cut first |
 | D-4 | WP-14a, the nonisolated read (E20) | The widget's async provider reads without the `Task { @MainActor in … }` hops of today (`BatteryPulseWidget.swift:50, 56`; P2 §8.10). WP-14a covers the battery read only: `MacAccessoryProvider` stays `@MainActor` (`BatteryKit/MacAccessoryProvider.swift:14-15`), so W-8's read hops once (W-8 item 4) | **Reverted:** the provider keeps one hop around the synchronous `read()`. `WidgetReadCache` still makes it one read per burst. No blocker |
@@ -478,7 +478,7 @@ guards; acceptance; effort; risk; rollback.
      hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the
      whole P2 Appendix C (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its
      files in `sessions/A/`; D-1, D-11), as 0.6.2's D3 copied them. If
-     not, read them from the 0.6.2 release PR's `refs/pull/<n>/head` (Q7-8).
+     not, read them from the 0.6.2 release PR's `refs/pull/12/head` (Q7-8).
   7. **CI moves to Xcode 27.2 at 0.7's start,** once the `xcode-27` runner image carries it: one
      commit sets `DEVELOPER_DIR` to Xcode 27.2 in `ci.yml` and `release.yml` (both name
      `/Applications/Xcode_27.1.app` today) and fixes any new warning, since both jobs treat
@@ -3232,7 +3232,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 - **Q7-8 (settled, an engineering call).** 0.6.2's D3 copies its session script, swap helper, the
   hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), Appendix C
   (as `0.6.2-appendix-c.md`) and Session A's report into `docs/plans/0.7.0/` (D-1), and they reach
-  main with 0.6.2's squash merge; the release PR's `refs/pull/<n>/head` keeps 0.6.2's whole plan
+  main with 0.6.2's squash merge; the release PR's `refs/pull/12/head` keeps 0.6.2's whole plan
   reachable either way, so no branch has to be kept for 0.7. 0.6.2's after-publishing check needs
   neither the script nor a worktree: he runs `git -C ~/BatteryPulse fetch origin main` and `bash
   <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-after-publishing.sh)`, and the
@@ -3277,7 +3277,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 - R at `eebf748`;
 - P2 (0.6.2's plan: its §8, §9, Q-W answers and W0 rows in `docs/plans/0.7.0/widgets.md`, its
   whole Appendix C in `docs/plans/0.7.0/0.6.2-appendix-c.md`, the rest in the history of the 0.6.2
-  release PR's head, `refs/pull/<n>/head`), RD (`docs/plans/1.0/ROADMAP.md`), INV
+  release PR's head, `refs/pull/12/head`), RD (`docs/plans/1.0/ROADMAP.md`), INV
   (`docs/plans/1.0/INVENTORY.md`);
 - P1 and PB at `6aec4d2:docs/plans/0.6.1/` (in PR 11's history).
 
