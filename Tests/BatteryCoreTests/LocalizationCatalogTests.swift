@@ -39,8 +39,9 @@ import Testing
         #/\.\w+:\s*"((?:[^"\\]|\\.)*)"/#
     }
 
-    /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches and
-    /// `("Label", value, color)` rows.
+    /// Literal cases of `var title: LocalizedStringKey` (or `subtitle`, …) switches, and of
+    /// `LocalizedStringResource` ones such as the widget's detail labels, and `("Label", value,
+    /// color)` rows.
     private static var caseLiteral: Regex<(Substring, Substring)> {
         #/case \.\w+:\s*"((?:[^"\\]|\\.)*)"/#
     }
@@ -98,7 +99,9 @@ import Testing
     static func localizedLiterals(in source: String) -> [String] {
         var literals = source.matches(of: localizingCall).map { String($0.output.1) }
         literals += source.matches(of: tupleLiteral).map { String($0.output.1) }
-        for block in source.matches(of: #/var \w+: LocalizedStringKey \{(?<body>[\s\S]*?)\n    \}/#) {
+        for block in source.matches(
+            of: #/var \w+: (?:LocalizedStringKey|LocalizedStringResource) \{(?<body>[\s\S]*?)\n    \}/#)
+        {
             literals += block.output.body.matches(of: caseLiteral).map { String($0.output.1) }
         }
         literals += source.matches(of: intentCall).map { String($0.output.1) }
@@ -184,6 +187,18 @@ import Testing
         LiteralVector(
             #"static let caseDisplayRepresentations: [Colors: DisplayRepresentation] = [.level: "Level colors"]"#,
             ["Level colors"]),
+        // A detail's label, which its entity's `DisplayRepresentation(title:)` and the widget's row share.
+        LiteralVector(
+            """
+            extension BatteryWidgetField {
+                var label: LocalizedStringResource {
+                    switch self {
+                    case .state: "State"
+                    case .maximumCapacity: "Maximum capacity"
+                    }
+                }
+            }
+            """, ["State", "Maximum capacity"]),
     ]
 
     @Test(arguments: intentVectors)

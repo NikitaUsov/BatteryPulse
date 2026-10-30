@@ -34,7 +34,7 @@ public enum WidgetKindID: String, Sendable, CaseIterable {
 }
 
 /// A detail the Battery widget can show.
-enum BatteryWidgetField: String, Sendable, CaseIterable {
+public enum BatteryWidgetField: String, Sendable, CaseIterable {
     /// Charging, On battery, Fully charged, Charging on hold or Not charging.
     case state
     /// The time to full or to empty.
@@ -65,12 +65,12 @@ enum BatteryWidgetField: String, Sendable, CaseIterable {
 }
 
 /// The value the Battery widget shows large.
-enum BatteryWidgetMain: String, Sendable, CaseIterable {
+public enum BatteryWidgetMain: String, Sendable, CaseIterable {
     case charge, maximumCapacity, temperature, batteryPower
 }
 
 /// How the main value is drawn.
-enum BatteryWidgetVisual: String, Sendable, CaseIterable {
+public enum BatteryWidgetVisual: String, Sendable, CaseIterable {
     /// The number with the level symbol, as in 0.6.x.
     case symbol
     /// The number inside a ring.
@@ -81,17 +81,17 @@ enum BatteryWidgetVisual: String, Sendable, CaseIterable {
 
 /// Automatic shows a size's own details (``WidgetLayoutPlan/automatic(_:)``); Custom shows the
 /// chosen ones.
-enum WidgetLayoutMode: String, Sendable, CaseIterable {
+public enum WidgetLayoutMode: String, Sendable, CaseIterable {
     case automatic, custom
 }
 
 /// A line under the main value.
-enum WidgetStatusLine: String, Sendable, CaseIterable {
+public enum WidgetStatusLine: String, Sendable, CaseIterable {
     case state, time
 }
 
 /// How the time to full or empty reads.
-enum WidgetTimeStyle: String, Sendable, CaseIterable {
+public enum WidgetTimeStyle: String, Sendable, CaseIterable {
     /// "Lasts until about 16:39".
     case clockTime
     /// "2 hours, 13 minutes", counting down without reloads.
@@ -100,12 +100,12 @@ enum WidgetTimeStyle: String, Sendable, CaseIterable {
 
 /// Whether tiers show in colour: level colours as in 0.6.x, or none. A tier that isn't normal
 /// also carries a ``WidgetCue`` in either style.
-enum WidgetColorStyle: String, Sendable, CaseIterable {
+public enum WidgetColorStyle: String, Sendable, CaseIterable {
     case levelColors, monochrome
 }
 
 /// When the reading's time ("Updated 14:05") shows.
-enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
+public enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
     /// Once the reading is old: from the timeline's stale entry on.
     case whenOld
     case always
