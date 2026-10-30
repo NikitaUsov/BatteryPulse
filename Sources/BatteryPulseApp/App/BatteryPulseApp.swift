@@ -40,7 +40,7 @@ struct BatteryPulseApp: App {
         AppDevices.start()
         notifier = BatteryNotifier(monitor: monitor, accessories: accessories)
         notifier.start()
-        widgetRefresher = WidgetRefresher(monitor: monitor)
+        widgetRefresher = WidgetRefresher(monitor: monitor, accessories: accessories)
         widgetRefresher.start()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.

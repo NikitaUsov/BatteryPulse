@@ -9,10 +9,10 @@ import Foundation
 ///
 /// 0.6.x's policy for the Battery kind, kept whole inside ``WidgetReloadPlanner``, which adds its
 /// other reasons and kinds.
-public struct WidgetReloadPolicy: Sendable {
-    public static let percentStep = 3
-    public static let estimateShift: TimeInterval = 15 * 60
-    public static let minimumInterval: TimeInterval = 15 * 60
+struct WidgetReloadPolicy: Sendable {
+    static let percentStep = 3
+    static let estimateShift: TimeInterval = 15 * 60
+    static let minimumInterval: TimeInterval = 15 * 60
 
     private struct Shown: Equatable {
         var state: ChargeState
@@ -32,10 +32,10 @@ public struct WidgetReloadPolicy: Sendable {
     private var shown: Shown?
     private var lastReload: Date?
 
-    public init() {}
+    init() {}
 
     /// Whether `snapshot` warrants a reload now; records it as shown when it does.
-    public mutating func shouldReload(for snapshot: BatterySnapshot, at date: Date) -> Bool {
+    mutating func shouldReload(for snapshot: BatterySnapshot, at date: Date) -> Bool {
         let next = Shown(snapshot, at: date)
         guard let shown else {
             record(next, at: date)

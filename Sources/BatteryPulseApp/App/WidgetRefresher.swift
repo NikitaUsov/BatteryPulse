@@ -6,33 +6,52 @@ import Observation
 import WidgetKit
 import os
 
-/// Asks WidgetKit to reload the battery widget when the battery changes enough to matter
-/// (``WidgetReloadPolicy``). The widget reads the battery itself; this only says when. Demo
-/// Mode never reaches the widget.
+/// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
+/// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
+/// read the battery and the accessories themselves; this only says when. Demo Mode never reaches
+/// the widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
-    private var policy = WidgetReloadPolicy()
-    private var observation: Task<Void, Never>?
+    private let accessories: AccessoryMonitor
+    private var planner = WidgetReloadPlanner()
+    private var placements = WidgetPlacements()
+    private var batteryObservation: Task<Void, Never>?
+    private var accessoryObservation: Task<Void, Never>?
 
-    init(monitor: BatteryMonitor) {
+    init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
         self.monitor = monitor
+        self.accessories = accessories
     }
 
-    /// Evaluates every change of the monitor's snapshot. The snapshot at the start is no change,
-    /// so a launch doesn't reload the widget.
+    /// Evaluates every change of the battery and of the accessory list. The values at the start
+    /// are no change: the planner records them as what the widgets show, so a launch reloads
+    /// nothing.
     func start() {
-        guard observation == nil else { return }
-        observation = Task(name: "WidgetRefresher.observation") { [weak self, monitor] in
+        guard batteryObservation == nil else { return }
+        if !isDemo {
+            let now = Date.now
+            if let snapshot = monitor.snapshot { _ = planner.battery(snapshot, at: now) }
+            _ = planner.accessories(accessories.accessories, at: now)
+        }
+        batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
-                self.evaluate()
+                await self.evaluateBattery()
+            }
+        }
+        accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
+            for await _ in Observations({ accessories.accessories }).dropFirst() {
+                guard let self else { return }
+                await self.evaluateAccessories()
             }
         }
     }
 
     func stop() {
-        observation?.cancel()
-        observation = nil
+        batteryObservation?.cancel()
+        batteryObservation = nil
+        accessoryObservation?.cancel()
+        accessoryObservation = nil
     }
 
     /// Ends the widget extension left running by the previous version. After the app is replaced
@@ -131,16 +150,65 @@ final class WidgetRefresher {
     /// `CFBundleExecutable` of `BatteryPulseWidget.appex` (scripts/build-app.sh).
     private nonisolated static let extensionExecutable = "BatteryPulseWidget"
 
-    private func evaluate() {
-        guard !monitor.isOverridden, let snapshot = monitor.snapshot,
-            policy.shouldReload(for: snapshot, at: .now)
+    /// Demo Mode overrides one monitor or both; its readings never reach the widgets.
+    private var isDemo: Bool {
+        monitor.isOverridden || accessories.isOverridden
+    }
+
+    private func evaluateBattery() async {
+        guard !isDemo, let snapshot = monitor.snapshot, let reason = planner.battery(snapshot, at: .now),
+            await isPlaced(.battery)
         else { return }
-        WidgetCenter.shared.reloadTimelines(ofKind: BatteryWidgetKind.battery)
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.battery.rawValue)
+        // The Battery kind keeps 0.6.x's trigger, so its counts compare with earlier versions'.
         Diagnostics.event("widget.reload", trigger: "policy")
         // One line per reload, so `log show` counts a day's reloads against WidgetKit's budget.
         let percent = snapshot.chargePercent.map { String(Int($0.rounded())) } ?? "-"
         Diagnostics.widget.notice(
-            "Reloading the widget: \(snapshot.chargeState.rawValue, privacy: .public), \(percent, privacy: .public)%")
+            "Reloading the widget: \(snapshot.chargeState.rawValue, privacy: .public), \(percent, privacy: .public)%, \(reason.rawValue, privacy: .public)"
+        )
+    }
+
+    private func evaluateAccessories() async {
+        let list = accessories.accessories
+        guard !isDemo, let reason = planner.accessories(list, at: .now), await isPlaced(.accessories) else { return }
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.accessories.rawValue)
+        Diagnostics.event("widget.reload", trigger: "policy.accessories")
+        Diagnostics.widget.notice(
+            "Reloading the Accessories widget: \(list.count, privacy: .public) accessories, \(reason.rawValue, privacy: .public)"
+        )
+    }
+
+    /// Whether `kind` is placed, asking WidgetKit first when the answer in memory can't tell
+    /// (``WidgetPlacements``). Only at a reload moment, so it adds no wake-up. Each answer logs
+    /// its count per kind; a failure counts as every kind placed.
+    private func isPlaced(_ kind: WidgetKindID) async -> Bool {
+        if placements.needsAnswer(toReload: kind, at: .now) {
+            do {
+                let kinds = try await PlacedWidgets.kinds()
+                placements.record(answer: kinds, at: .now)
+                let counts = WidgetPlacements.counts(in: kinds)
+                Diagnostics.widget.notice(
+                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories"
+                )
+            } catch {
+                placements.recordFailure(at: .now)
+                let error = error as NSError
+                Diagnostics.widget.error(
+                    "Asking WidgetKit for the placed widgets failed (\(error.domain, privacy: .public) \(error.code)); every kind counts as placed: \(error.localizedDescription)"
+                )
+            }
+        }
+        return placements.isPlaced(kind)
+    }
+}
+
+/// WidgetKit's list of the placed widgets, as their kind strings. Nonisolated: `WidgetCenter`
+/// declares no `Sendable` conformance, so it is asked off the main actor, and only the strings
+/// come back.
+private nonisolated enum PlacedWidgets {
+    @concurrent static func kinds() async throws -> [String] {
+        try await WidgetCenter.shared.currentConfigurations().map(\.kind)
     }
 }
 #endif
