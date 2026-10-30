@@ -226,37 +226,40 @@ extension WidgetReloadPlanner {
 /// otherwise stop every reload the app asks for.
 ///
 /// The answer is asked for only at a reload moment, never on a schedule of its own: before the
-/// first reload, and again when the answer would skip the kind that is due and is
-/// ``maximumAge`` old, so a widget placed since is reloaded within that time while the app runs.
+/// first reload, and again while the answer lists no widget of the kind that is due (an empty or
+/// failed answer included) once it is ``maximumAge`` old. So a widget placed since is reloaded
+/// within that time while the app runs, and the counts the app logs follow it. A kind the answer
+/// lists stays placed until the app quits.
 public struct WidgetPlacements: Sendable {
     static let maximumAge: TimeInterval = 15 * 60
 
-    /// The kind strings of the last non-empty answer; `nil` for every kind placed.
-    private var placed: Set<String>?
+    /// The kind strings of the last answer; empty before the first, after a failed one and after
+    /// an empty one, which all count as every kind placed.
+    private var listed: Set<String> = []
     private var answeredAt: Date?
 
     public init() {}
 
     /// Records WidgetKit's answer: the kind string of every placed widget, one per widget.
     public mutating func record(answer kinds: [String], at date: Date) {
-        placed = kinds.isEmpty ? nil : Set(kinds)
+        listed = Set(kinds)
         answeredAt = date
     }
 
     /// Records a failed answer, which counts as every kind placed.
     public mutating func recordFailure(at date: Date) {
-        placed = nil
+        listed = []
         answeredAt = date
     }
 
     public func isPlaced(_ kind: WidgetKindID) -> Bool {
-        placed?.contains(kind.rawValue) ?? true
+        listed.isEmpty || listed.contains(kind.rawValue)
     }
 
     /// Whether to ask WidgetKit before reloading `kind` at `date`.
     public func needsAnswer(toReload kind: WidgetKindID, at date: Date) -> Bool {
         guard let answeredAt else { return true }
-        guard !isPlaced(kind) else { return false }
+        guard !listed.contains(kind.rawValue) else { return false }
         // A clock set back before the answer can't tell its age.
         return date < answeredAt || date.timeIntervalSince(answeredAt) >= Self.maximumAge
     }

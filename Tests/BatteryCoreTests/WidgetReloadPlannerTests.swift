@@ -388,9 +388,9 @@ struct WidgetReloadPlannerTests {
         #expect(placements.isPlaced(.accessories))
     }
 
-    /// WidgetKit is asked before the first reload, and again only when the answer would skip the
-    /// kind that is due and is 15 minutes old.
-    @Test func theAnswerIsAskedAgainOnlyWhenItSkipsAndIsOld() {
+    /// WidgetKit is asked before the first reload, and again only while the answer lists no
+    /// widget of the kind that is due and is 15 minutes old.
+    @Test func theAnswerIsAskedAgainOnlyWhileItListsNoneOfTheKindAndIsOld() {
         var placements = WidgetPlacements()
         #expect(placements.needsAnswer(toReload: .battery, at: Self.start))
         placements.record(answer: [WidgetKindID.battery.rawValue], at: Self.start)
@@ -399,10 +399,25 @@ struct WidgetReloadPlannerTests {
         #expect(placements.needsAnswer(toReload: .accessories, at: Self.at(minutes: 15)))
         // A clock set back can't tell the answer's age.
         #expect(placements.needsAnswer(toReload: .accessories, at: Self.at(minutes: -1)))
-        placements.recordFailure(at: Self.start)
-        #expect(!placements.needsAnswer(toReload: .accessories, at: Self.at(minutes: 600)))
-        placements.record(answer: [], at: Self.start)
-        #expect(!placements.needsAnswer(toReload: .accessories, at: Self.at(minutes: 600)))
+    }
+
+    /// An empty or failed answer lists no widget at all: every kind counts as placed and reloads,
+    /// and WidgetKit is asked again at a reload moment once the answer is 15 minutes old, so the
+    /// logged counts follow widgets placed since.
+    @Test func anEmptyOrFailedAnswerIsAskedAgainOnceOld() {
+        var empty = WidgetPlacements()
+        empty.record(answer: [WidgetKindID.battery.rawValue], at: Self.start)
+        empty.record(answer: [], at: Self.start)
+        var failed = WidgetPlacements()
+        failed.record(answer: [WidgetKindID.battery.rawValue], at: Self.start)
+        failed.recordFailure(at: Self.start)
+        for placements in [empty, failed] {
+            for kind in WidgetKindID.allCases {
+                #expect(placements.isPlaced(kind))
+                #expect(!placements.needsAnswer(toReload: kind, at: Self.at(minutes: 14)))
+                #expect(placements.needsAnswer(toReload: kind, at: Self.at(minutes: 15)))
+            }
+        }
     }
 
     @Test func countsPerKind() {
