@@ -5,14 +5,15 @@ import Foundation
 ///   can't mix days up. Old days are dropped by deleting their file; nothing is rewritten.
 /// - `days.jsonl`: one summary per local day, kept for good.
 ///
+/// A `samples.jsonl` in the folder, the single file of development builds before 0.3 (no release
+/// wrote one), is neither read nor removed.
+///
 /// Past days' files never change, so each is decoded once per session and kept in memory; a file
 /// that grew (today's) is read on from where the last read ended.
 public actor HistoryStore {
     public let directory: URL
     private var samplesDirectory: URL { directory.appendingPathComponent("samples") }
     private var daysURL: URL { directory.appendingPathComponent("days.jsonl") }
-    /// The single file used before samples were split by day.
-    private var legacySamplesURL: URL { directory.appendingPathComponent("samples.jsonl") }
 
     private var lastSample: HistorySample?
     private var hasLoadedLastSample = false
@@ -21,9 +22,6 @@ public actor HistoryStore {
     /// What `days.jsonl` holds, to tell whether a summary changed enough to write right away.
     private var writtenDays: [String: HistoryDay] = [:]
     private var lastDaysWrite: Date?
-    /// Whether this session has looked for the legacy samples file. No version since writes
-    /// it, so it is split at the session's first call and not looked for again.
-    private var hasCheckedLegacySamples = false
     /// One encoder for every line this store writes: sorted keys keep the files stable.
     private let encoder: JSONEncoder
     private let decoder = JSONDecoder()
@@ -38,8 +36,6 @@ public actor HistoryStore {
         var appends = 0
         /// Rewrites of `days.jsonl`.
         var daysWrites = 0
-        /// Looks for the legacy samples file.
-        var legacyChecks = 0
         /// Lines of day files handed to the decoder.
         var decodedSampleLines = 0
     }
@@ -95,9 +91,8 @@ public actor HistoryStore {
     /// Records `sample` if ``HistoryPolicy`` says it adds something; returns whether it did.
     @discardableResult
     public func record(_ sample: HistorySample) throws -> Bool {
-        // Only the session's first call looks for the legacy file and the last sample; after
-        // that, the policy check comes before anything touches the disk.
-        try migrateLegacySamples()
+        // Only the session's first call looks for the last sample; after that, the policy check
+        // comes before anything touches the disk.
         if !hasLoadedLastSample {
             lastSample = try latestSample()
             hasLoadedLastSample = true
@@ -118,7 +113,6 @@ public actor HistoryStore {
 
     /// Samples from `start` up to `end`, oldest first. Reads only the days in that range.
     public func samples(from start: Date, to end: Date = .distantFuture) throws -> [HistorySample] {
-        try migrateLegacySamples()
         let first = Self.fileDay(for: start)
         let last = end == .distantFuture ? "9999-12-31" : Self.fileDay(for: end)
         return try sampleDays().filter { $0 >= first && $0 <= last }
@@ -144,8 +138,7 @@ public actor HistoryStore {
     /// The time of the newest sample, ignoring days after tomorrow; `nil` without samples. The
     /// History page ends a device's time axis there.
     public func latestSampleTime() throws -> Date? {
-        try migrateLegacySamples()
-        return try latestSample()?.time
+        try latestSample()?.time
     }
 
     /// The newest sample, ignoring days after tomorrow: those come from a clock that was set ahead.
@@ -171,24 +164,6 @@ public actor HistoryStore {
             try FileManager.default.removeItem(at: sampleURL(old))
             decodedDays[old] = nil
         }
-    }
-
-    /// Splits the old single samples file into day files, at the session's first call. A failed
-    /// split is tried again at the next call.
-    private func migrateLegacySamples() throws {
-        guard !hasCheckedLegacySamples else { return }
-        activity.legacyChecks += 1
-        if FileManager.default.fileExists(atPath: legacySamplesURL.path) {
-            let samples = try readLines(HistorySample.self, from: legacySamplesURL)
-            try FileManager.default.createDirectory(at: samplesDirectory, withIntermediateDirectories: true)
-            for (day, group) in Dictionary(grouping: samples, by: { Self.fileDay(for: $0.time) }) {
-                try writeLines(group.sorted { $0.time < $1.time }, to: sampleURL(day))
-            }
-            try FileManager.default.removeItem(at: legacySamplesURL)
-            // The split rewrote whole day files.
-            decodedDays = [:]
-        }
-        hasCheckedLegacySamples = true
     }
 
     // MARK: - Daily summaries
@@ -243,8 +218,7 @@ public actor HistoryStore {
         // The cache goes first: a removal that fails part way (the app ignores the error) must
         // not keep the samples of files it did delete, which a re-created file would extend.
         decodedDays = [:]
-        for url in [samplesDirectory, daysURL, legacySamplesURL] where FileManager.default.fileExists(atPath: url.path)
-        {
+        for url in [samplesDirectory, daysURL] where FileManager.default.fileExists(atPath: url.path) {
             try FileManager.default.removeItem(at: url)
         }
         lastSample = nil

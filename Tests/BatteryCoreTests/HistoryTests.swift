@@ -231,21 +231,22 @@ import Testing
         try await store.flush()
     }
 
-    @Test func legacySingleFileIsSplitByDay() async throws {
+    /// Clearing removes the day files and the summaries, and nothing the store doesn't write: a
+    /// `samples.jsonl` of development builds before 0.3 stays (QUA-15).
+    @Test func clearRemovesOnlyTheStoresFiles() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let encoder = JSONEncoder()
-        let lines = try [sample(0, 90), sample(24 * 60, 80)].map {
-            String(decoding: try encoder.encode($0), as: UTF8.self)
-        }
-        try (lines.joined(separator: "\n") + "\n").write(
-            to: directory.appendingPathComponent("samples.jsonl"), atomically: true, encoding: .utf8)
-        let store = HistoryStore(directory: directory)
-        #expect(try await store.samples(from: .distantPast).count == 2)
-        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples.jsonl").path))
-        #expect(
-            FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples/2027-01-16.jsonl").path))
+        let store = HistoryStore(directory: directory, now: { .distantFuture })
+        #expect(try await store.record(sample(0, 90)))
+        try await store.record(HistoryDay(day: "2027-01-15", healthPercent: 100, cycleCount: 48), at: start)
+        let legacy = directory.appendingPathComponent("samples.jsonl")
+        try Data("{}\n".utf8).write(to: legacy)
+        try await store.clear()
+        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("samples").path))
+        #expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("days.jsonl").path))
+        #expect(FileManager.default.fileExists(atPath: legacy.path))
+        #expect(try await store.samples(from: .distantPast).isEmpty)
+        #expect(try await store.dailySummaries().isEmpty)
     }
 
     @Test func appBundleIdentifierMatchesBuildScript() throws {
