@@ -4316,7 +4316,7 @@ step_after() {
       out "- codesign: ${flags:-no flags line} (expected flags=0x10002(adhoc,runtime)); quarantine lines: $quarantine (expected 0)"
       click_desktop || true
       crop_widgets "$SHOTS/after" after
-      echo "Read About, What's New, History, the settings and Login Items by computer use (shots), then answer:"
+      echo "Read About, What's New, History and the settings by computer use (shots), and Login Items only by $SCRIPT pane login-items and $SCRIPT ui tree \"System Settings\" --match BatteryPulse (no shot of that pane), then answer:"
       ask D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications
       ;;
     popover)

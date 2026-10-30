@@ -403,8 +403,10 @@ wait. Never `gh`, `sudo`, `killall`, an install or a copy outside the script.
 3. Read BatteryPulse's Settings (General, Menu Bar, Notifications) by computer use, a shot each: the
    before set. `$S after before`.
 4. Check for Updates, then Install and Relaunch to 0.7.0, by `$S ui press BatteryPulse ...`; `$S after
-   after`; read About, What's New, History, the settings, the menu bar and System Settings → General →
-   Login Items by computer use; answer each `D3-*` it asks.
+   after`; read About, What's New, History, the settings and the menu bar by computer use. Login Items
+   only by `$S pane login-items` and `$S ui tree "System Settings" --match BatteryPulse`, which says
+   only whether the row exists: no screenshot of that pane, which lists his other apps. Answer each
+   `D3-*` it asks.
 5. **A 2 or 4 for `D3-widgets`, or any other failure:** say in Russian that the cloud session will, on
    his yes, mark v0.7.0 a prerelease; nothing on this Mac does that. A 3: the notes say "add it again".
 6. **The version count:** with Check for updates on anything but Never, `$S count-check`; on `counted`,
