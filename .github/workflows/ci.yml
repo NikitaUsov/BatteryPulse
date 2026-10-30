@@ -183,11 +183,13 @@ jobs:
           echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
         # Nothing else builds or runs them. The menu bar shots and their display metrics need a Mac
-        # with a display, rusage a running BatteryPulse; perf-stats and release-stats run here on
-        # their samples, offline. appintents-check's self-test runs it on the 0.6.2 widget spike's
-        # metadata and on doctored copies, which must fail.
+        # with a display, rusage a running BatteryPulse, the quick check after a macOS update a
+        # person at the Mac; perf-stats and release-stats run here on their samples, offline.
+        # appintents-check's self-test runs it on the 0.6.2 widget spike's metadata and on doctored
+        # copies, which must fail.
         run: |
           bash -n scripts/menu-bar-shots.sh
+          bash -n scripts/quick-check.sh
           swiftc -typecheck scripts/display-metrics.swift
           swiftc -typecheck scripts/rusage.swift
           swiftc -typecheck scripts/perf-stats.swift
