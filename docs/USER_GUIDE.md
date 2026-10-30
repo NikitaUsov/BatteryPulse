@@ -573,8 +573,8 @@ line), and `bpulse --device <n> --json` the battery of an iPhone or iPad. Each o
 `formatVersion` (1) among its keys, which are sorted. Units are in the key names
 (`currentCapacityMAh`, `voltageMV`, `systemLoadMW`), the current is negative while discharging,
 dates are ISO 8601 strings in UTC (`"2025-10-02T00:00:00Z"`), and a value that isn't reported is
-left out rather than written as `null`. **Copy JSON** in Raw Data copies the same object, with
-the serial numbers removed.
+left out rather than written as `null`; a list that isn't reported, such as `cellVoltagesMV`,
+is empty. **Copy JSON** in Raw Data copies the object of `bpulse --json`, serial numbers removed.
 
 Keys are only ever added. If a key is renamed or removed, or its meaning changes,
 `formatVersion` goes up and the release notes say so; scripts should ignore the keys they don't
