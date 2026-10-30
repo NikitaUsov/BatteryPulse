@@ -5,7 +5,9 @@ import SwiftUI
 import WidgetKit
 
 /// A line under the main value: one line that shrinks a little before it is cut off, and a
-/// VoiceOver element of its own, except the state, which the charge's element reads.
+/// VoiceOver element of its own, except the state, which the charge's element reads. A value is
+/// never cut: small's detail cuts its label instead, and small's attention row takes a second line
+/// for its words rather than lose them (Service Recommended, in Russian).
 struct WidgetLineView: View {
     let line: WidgetLine
     let tinted: Bool
@@ -16,13 +18,17 @@ struct WidgetLineView: View {
             content
             .font(.caption)
             .foregroundStyle(.secondary)
-            .lineLimit(1)
+            .lineLimit(lineLimit)
             .minimumScaleFactor(0.8)
         if let label = line.spokenLabel {
             text.widgetElement(label, strings: strings)
         } else {
             text.accessibilityHidden(true)
         }
+    }
+
+    private var lineLimit: Int {
+        if case .attention = line { 2 } else { 1 }
     }
 
     @ViewBuilder private var content: some View {
@@ -42,6 +48,7 @@ struct WidgetLineView: View {
                 HStack(spacing: 4) {
                     widgetText(row.field.label, strings)
                     WidgetValueLabel(row: row, tinted: tinted)
+                        .fixedSize()
                 }
             }
         case .attention(let attention):
