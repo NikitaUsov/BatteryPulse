@@ -1499,13 +1499,14 @@
         }
       }
     },
-    "Charge, time remaining and battery health.": {
+    "Charge, time remaining and the details you choose.": {
       "extractionState": "manual",
+      "comment": "Widget gallery: the Battery widget's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, оставшееся время и состояние аккумулятора."
+            "value": "Заряд, оставшееся время и выбранные подробности."
           }
         }
       }
@@ -3012,6 +3013,18 @@
         }
       }
     },
+    "Full at %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time charging ends, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полная зарядка к %@ завтра"
+          }
+        }
+      }
+    },
     "Full charge": {
       "extractionState": "manual",
       "localizations": {
@@ -3920,6 +3933,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Последнее подключение: %@"
+          }
+        }
+      }
+    },
+    "Lasts until %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time the battery runs out, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хватит до %@ завтра"
           }
         }
       }

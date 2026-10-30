@@ -8,16 +8,16 @@ import Foundation
 /// every entry of a timeline shows the same end. Whether it falls today or tomorrow is decided at
 /// the entry's date, in the widget's time zone. An end beyond tomorrow shows nothing: macOS's
 /// estimates run up to 65,534 minutes, and a weekday ("Lasts until about Friday") says little.
-struct WidgetTimeText: Sendable, Equatable {
+public struct WidgetTimeText: Sendable, Equatable {
     /// Which phrase the widget uses.
-    enum Direction: Sendable, Equatable {
+    public enum Direction: Sendable, Equatable {
         /// "Full at %@": while charging.
         case full
         /// "Lasts until about %@": on battery.
         case empty
     }
 
-    enum Form: Sendable, Equatable {
+    public enum Form: Sendable, Equatable {
         /// The end's clock time in the widget's locale, and whether it falls on the next local day
         /// ("Full at %@ tomorrow").
         case clock(String, tomorrow: Bool)
@@ -25,9 +25,9 @@ struct WidgetTimeText: Sendable, Equatable {
         case timeLeft
     }
 
-    var direction: Direction
-    var end: Date
-    var form: Form
+    public var direction: Direction
+    public var end: Date
+    public var form: Form
 
     init(direction: Direction, end: Date, form: Form) {
         self.direction = direction

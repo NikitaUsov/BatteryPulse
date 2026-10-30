@@ -13,7 +13,7 @@
 // nothing uses is left out of a release build; the tests see it through `@testable import`.
 
 /// A widget family, by its size.
-enum WidgetSize: String, Sendable, CaseIterable {
+public enum WidgetSize: String, Sendable, CaseIterable {
     case small, medium, large, extraLarge, extraLargePortrait
 }
 
