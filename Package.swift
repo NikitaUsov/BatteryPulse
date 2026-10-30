@@ -78,8 +78,12 @@ let package = Package(
             ],
             linkerSettings: [
                 // Start the way Xcode links app extensions. `@main` on the WidgetBundle keeps the
-                // widgets in the binary; each is useless without the other.
-                .unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"], .when(platforms: [.macOS]))
+                // widgets in the binary; each is useless without the other. Release builds only,
+                // which scripts/build-app.sh packages: a debug build also links the widget into
+                // BatteryPulseWidgetTests' bundle, where ld ignores -e with a warning.
+                .unsafeFlags(
+                    ["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"],
+                    .when(platforms: [.macOS], configuration: .release))
             ]
         ),
         .testTarget(
