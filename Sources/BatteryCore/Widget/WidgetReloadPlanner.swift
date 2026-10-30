@@ -186,6 +186,33 @@ public struct WidgetReloadPlanner: Sendable {
     }
 }
 
+// MARK: Launch
+
+extension WidgetReloadPlanner {
+    /// Why a launch ends the widget extension and reloads.
+    public enum LaunchReason: String, Sendable {
+        /// Another version runs: WidgetKit refuses the timelines of the previous version's
+        /// extension while it still runs, so it is ended, and every kind reloads if it was running.
+        case update
+        /// The app's language changed since its last launch: every placed widget keeps the
+        /// previous language's render until it reloads, so the extension is ended and every kind
+        /// reloads, whether it was running or not.
+        case language
+
+        /// Whether every kind reloads even when no extension was running.
+        public var reloadsAnyway: Bool { self == .language }
+    }
+
+    /// Why this launch ends the widget extension and reloads, or `nil`. `language` is the app's
+    /// effective language now (its first preferred localization) and `lastLanguage` the one it
+    /// stored at its last launch; without either, as at the first launch that stores one, only the
+    /// version decides. A changed language includes what a changed version does.
+    public static func launchReason(versionChanged: Bool, lastLanguage: String?, language: String?) -> LaunchReason? {
+        if let lastLanguage, let language, lastLanguage != language { return .language }
+        return versionChanged ? .update : nil
+    }
+}
+
 // MARK: Placements
 
 /// Which widget kinds someone placed, from WidgetKit's last answer to `currentConfigurations()`,

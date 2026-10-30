@@ -338,6 +338,22 @@ struct WidgetReloadPlannerTests {
         #expect(batteryCount + accessoryCount < 100)
     }
 
+    // MARK: Launch
+
+    @Test func aLanguageChangeReloadsAtLaunch() {
+        let reason = WidgetReloadPlanner.launchReason
+        #expect(reason(false, "en", "en") == nil)
+        #expect(reason(true, "en", "en") == .update)
+        #expect(reason(false, "en", "ru") == .language)
+        #expect(reason(true, "ru", "en") == .language)
+        // The first launch that stores the language: only the version decides.
+        #expect(reason(true, nil, "ru") == .update)
+        #expect(reason(false, nil, "ru") == nil)
+        #expect(reason(false, "ru", nil) == nil)
+        #expect(WidgetReloadPlanner.LaunchReason.language.reloadsAnyway)
+        #expect(!WidgetReloadPlanner.LaunchReason.update.reloadsAnyway)
+    }
+
     // MARK: Placements
 
     /// Nothing is reloaded for a kind a non-empty answer leaves out; an empty answer, a failure and

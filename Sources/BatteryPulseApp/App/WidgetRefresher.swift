@@ -54,29 +54,62 @@ final class WidgetRefresher {
         accessoryObservation = nil
     }
 
-    /// Ends the widget extension left running by the previous version. After the app is replaced
-    /// (Install and Relaunch, or a new copy from the DMG), WidgetKit keeps sending requests to the
-    /// extension process that is already running and rejects every timeline it returns, because
-    /// its bundle version no longer matches the installed one: the widget stays frozen, then goes
-    /// blank. WidgetKit starts the new extension on the next request, which follows here. After an
-    /// in-app install, ``endExtensionBeforeSwap()`` has usually ended it already, and this finds
-    /// nothing, or the new extension WidgetKit started meanwhile, which a reload brings back.
-    static func endPreviousExtension() {
-        guard let processes = extensionProcesses() else {
-            Diagnostics.widget.error("Listing the processes failed; the previous widget extension may still run")
-            return
+    /// The app's effective language at its last launch (the first of
+    /// `Bundle.main.preferredLocalizations`, "en" or "ru"), so a launch in another language
+    /// reloads the widgets. A settings key
+    /// of the app's domain since 0.7, whose name, type and meaning stay (RD C14 item 1); missing
+    /// before the first launch of 0.7, which only stores it.
+    static let lastSeenLanguageKey = "lastSeenLanguage"
+
+    /// At a launch of another version or in another language, ends the widget extension a
+    /// previous launch left running and reloads every kind, as
+    /// ``WidgetReloadPlanner/launchReason(versionChanged:lastLanguage:language:)`` decides.
+    ///
+    /// After the app is replaced (Install and Relaunch, or a new copy from the DMG), WidgetKit keeps
+    /// sending requests to the extension process that is already running and rejects every
+    /// timeline it returns, because its bundle version no longer matches the installed one: the
+    /// widget stays frozen, then goes blank. WidgetKit starts the new extension on the next
+    /// request, which follows here. After an in-app install, ``endExtensionBeforeSwap()`` has
+    /// usually ended it already, and this finds nothing, or the new extension WidgetKit started
+    /// meanwhile, which a reload brings back.
+    ///
+    /// A language chosen for BatteryPulse alone (Settings → General → Language) applies at the next
+    /// launch, and every placed widget keeps its render in the previous language until it
+    /// reloads, so a language change reloads every kind even when no extension was running.
+    static func endPreviousExtension(versionChanged: Bool) {
+        let defaults = UserDefaults.standard
+        let lastLanguage = defaults.string(forKey: lastSeenLanguageKey)
+        let language = Bundle.main.preferredLocalizations.first
+        if let language, language != lastLanguage {
+            defaults.set(language, forKey: lastSeenLanguageKey)
         }
+        guard
+            let reason = WidgetReloadPlanner.launchReason(
+                versionChanged: versionChanged, lastLanguage: lastLanguage, language: language)
+        else { return }
         var ended = false
-        // Another user's copy can't be signalled anyway.
-        for pid in processes where kill(pid, SIGTERM) == 0 { ended = true }
-        guard ended else { return }
-        Diagnostics.widget.notice("Ended the previous version's widget extension")
+        if let processes = extensionProcesses() {
+            // Another user's copy can't be signalled anyway.
+            for pid in processes where kill(pid, SIGTERM) == 0 { ended = true }
+        } else {
+            Diagnostics.widget.error("Listing the processes failed; the previous widget extension may still run")
+        }
+        if ended {
+            Diagnostics.widget.notice("Ended the previous widget extension: \(reason.rawValue, privacy: .public)")
+        }
+        guard ended || reason.reloadsAnyway else { return }
         // On the main actor, like the rest of the app.
         Task {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
-            Diagnostics.event("widget.reload", trigger: "update")
-            Diagnostics.widget.notice("Reloading the widget after an update")
+            switch reason {
+            case .update:
+                Diagnostics.event("widget.reload", trigger: "update")
+                Diagnostics.widget.notice("Reloading the widget after an update")
+            case .language:
+                Diagnostics.event("widget.reload", trigger: "language")
+                Diagnostics.widget.notice("Reloading the widgets after a language change")
+            }
         }
     }
 
@@ -84,7 +117,8 @@ final class WidgetRefresher {
     /// change WidgetKit fetches the widget descriptors again within milliseconds, and an
     /// extension of the previous version still running answers with the previous descriptor,
     /// which WidgetKit then keeps: when the update changes the descriptor, every placed widget
-    /// greys out. ``endPreviousExtension()`` runs only at the new version's launch, too late.
+    /// greys out. ``endPreviousExtension(versionChanged:)`` runs only at the new version's
+    /// launch, too late.
     ///
     /// Sends SIGTERM to every extension process, polls every 50 ms, sends SIGKILL to one still
     /// there 0.5 s after its SIGTERM (a process started meanwhile gets its own SIGTERM at the next
