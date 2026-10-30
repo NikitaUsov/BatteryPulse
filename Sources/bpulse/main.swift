@@ -159,10 +159,7 @@ func render(_ reading: BatteryReading, as format: OutputFormat, compact: Bool) t
     case .text:
         return BatteryReport.text(for: reading.snapshot)
     case .json:
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = compact ? [.sortedKeys] : [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        return String(decoding: try encoder.encode(reading.snapshot), as: UTF8.self)
+        return try MachineJSON.snapshot(reading.snapshot, compact: compact)
     case .raw:
         return try xmlPropertyList(reading.redactedRawCapture)
     case .smc:
@@ -172,6 +169,20 @@ func render(_ reading: BatteryReading, as format: OutputFormat, compact: Bool) t
 
 func xmlPropertyList(_ dictionary: PropertyDictionary) throws -> String {
     String(decoding: try PropertyValue.xmlPropertyListData(dictionary), as: UTF8.self)
+}
+
+/// The parsed battery of a device capture as JSON, with ISO 8601 dates and `formatVersion`; `nil`
+/// when the capture has no battery entry with capacity values.
+func deviceJSON(_ capture: IDeviceCapture) throws -> String? {
+    try IDeviceBatteryParser.battery(in: capture).map(MachineJSON.deviceBattery)
+}
+
+/// The accessory list as JSON: a bare array, the shape scripts have read since 0.6.0, so it has no
+/// `formatVersion`.
+func accessoriesJSON(_ accessories: [AccessoryBattery]) throws -> String {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    return String(decoding: try encoder.encode(accessories), as: UTF8.self)
 }
 
 /// A device read: the report, the parsed battery as JSON, or the redacted capture. Device
@@ -184,12 +195,10 @@ func renderDevice(_ capture: IDeviceCapture, as format: OutputFormat) throws -> 
         print(IDeviceReport.text(for: capture))
         exit(problem == nil && IDeviceBatteryParser.battery(in: capture) != nil ? 0 : 2)
     case .json:
-        guard let battery = IDeviceBatteryParser.battery(in: capture) else {
+        guard let json = try deviceJSON(capture) else {
             fail("bpulse: " + (problem?.description ?? "the battery entry has no capacity values."), code: 2)
         }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        print(String(decoding: try encoder.encode(battery), as: UTF8.self))
+        print(json)
         exit(0)
     case .raw:
         print(try xmlPropertyList(capture.redactedRawCapture), terminator: "")
@@ -207,9 +216,7 @@ func renderAccessories(_ reading: AccessoryReading, as format: OutputFormat) thr
         print(AccessoryReport.text(for: reading.accessories))
         exit(reading.accessories.isEmpty ? 2 : 0)
     case .json:
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        print(String(decoding: try encoder.encode(reading.accessories), as: UTF8.self))
+        print(try accessoriesJSON(reading.accessories))
         exit(0)
     case .raw:
         print(try xmlPropertyList(reading.redactedRawCapture), terminator: "")

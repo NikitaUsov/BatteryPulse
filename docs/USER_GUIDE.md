@@ -566,6 +566,22 @@ language. To use a different language for BatteryPulse only:
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
 
+### JSON for scripts
+
+`bpulse --json` prints this Mac's battery as one JSON object (with `--watch`, one object per
+line), and `bpulse --device <n> --json` the battery of an iPhone or iPad. Each object has
+`formatVersion` (1) among its keys, which are sorted. Units are in the key names
+(`currentCapacityMAh`, `voltageMV`, `systemLoadMW`), the current is negative while discharging,
+dates are ISO 8601 strings in UTC (`"2025-10-02T00:00:00Z"`), and a value that isn't reported is
+left out rather than written as `null`; a list that isn't reported, such as `cellVoltagesMV`,
+is empty. **Copy JSON** in Raw Data copies the object of `bpulse --json`, serial numbers removed.
+
+Keys are only ever added. If a key is renamed or removed, or its meaning changes,
+`formatVersion` goes up and the release notes say so; scripts should ignore the keys they don't
+know. Output without `formatVersion` comes from a `bpulse` before 0.7, which wrote an iPhone's or
+iPad's `firstUseDate` as seconds since 1 January 2001. `--accessories --json` prints a plain
+array, without `formatVersion`, and [`--export json`](#history-export) has its own.
+
 ### Recording charging changes
 
 `bpulse --record <folder>` watches the battery until you press Control-C and keeps the moments
@@ -620,7 +636,8 @@ the setting, and saves what a device returned for a bug report.
    never pairs with a device by itself.
 2. Run `bpulse --devices` to list the devices, then `bpulse --device 1` for the first one:
    charge, state, design, nominal and full-charge capacity with their share of the design,
-   cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON.
+   cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON
+   ([JSON for scripts](#json-for-scripts)).
    Devices are numbered by their identifier, so the numbers stay the same between runs, and
    the report's Device line ends with the same short ID (`ID …801C`) as the list. If a device
    doesn't answer within 10 s, the list doesn't wait for it: that device and the ones not read
@@ -648,8 +665,8 @@ Magic Keyboard (keyboard, Bluetooth): 76 %
 AirPods Pro (headphones, Bluetooth): left 64 %, right 61 %, case 90 % charging
 ```
 
-`--json` prints the list as JSON. `bpulse --accessories --raw > accessories.xml` saves what macOS
-reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identifiers
+`--json` prints the list as a JSON array. `bpulse --accessories --raw > accessories.xml` saves
+what macOS reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identifiers
 *group-1*, *accessory-1*, consistently, so the parts of an accessory still belong together;
 serial numbers and addresses are removed. `bpulse --input accessories.xml` shows a saved capture
 again, on any computer. When no accessory reports a battery, the list says so and `bpulse` exits
