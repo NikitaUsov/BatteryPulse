@@ -452,7 +452,8 @@ guards; acceptance; effort; risk; rollback.
 - **Source:** P2 D3; P2 Appendix C; RD §3.2 "Before code"; §2 above.
 - **Items:**
   1. Read 0.6.2's Appendix C (`docs/plans/0.7.0/0.6.2-appendix-c.md`, D-1; its W0 rows are also in
-     `widgets.md`). Session B's results are recorded in that copy, at 0.6.2's D3.
+     `widgets.md`). Session B's results are in that copy, in the rows marked "Session B, second
+     attempt, 2026-10-30 (final)", from its report `docs/plans/0.7.0/sessions/B.md`.
      Fill this plan's Appendix C table "From 0.6.2" with each D-row and each W0 row. Session A's
      final answers are already there (2026-10-24, from `docs/plans/0.7.0/sessions/A.md`, merged at
      `5849d01`), and D-13's redacted capture came with them; this item checks that D-17's installer
@@ -513,10 +514,33 @@ guards; acceptance; effort; risk; rollback.
        waits for the reload notice and a new extension process, and only then takes its shots.
        No reload within its timeout is "not checked", never "n".
      - **W-10:** USER_GUIDE § Language says what the widget follows.
+  9. **Session B's findings** (0.6.2, 2026-10-30; the findings row of the Appendix C copy):
+     - **History over Raw Data's table:** after an AX switch from Raw Data, History showed its
+       title, picker and sidebar selection over Raw Data's table for a few seconds. Not a 0.6.2
+       regression (`MainView`'s ZStack, `.id(selection)` and opacity transition date from 0.5.0);
+       most likely the AppKit-backed table's removal waits for the next window update when no
+       pointer moves [inferred]. Session R compares 0.6.1 and the RC with a pointer-free switch,
+       and **W-3c**, which owns `MainView.swift`, fixes it if it reproduces.
+     - **The session script (W-12):** macOS 27.2 lists no menu bar item window in CGWindowList
+       (P11), so S3 and the menu bar crop need another way; System Settings panes by URL open the
+       wrong pane for appearance, desktop and displays (P8); P6, P3 and P5 as recorded; the
+       script's desktop clicks leave the click-wallpaper-to-show-desktop state on, and computer
+       use leaves a 28×40 pointer overlay at its last click that fails the occlusion check, each
+       ended by a click or a move on bare desktop; banners at layer 23 (the Claude desktop app's
+       permission banner, a macOS Software Update banner) refused the desktop click and blocked
+       five runs, so preflight asks him to quit the Claude desktop app and to postpone pending
+       macOS updates before the queue; F8 gets its own redraw (item 8).
+     - **WP-18's Xcode items** (SUI-17, SUI-19's timing, SZ-10's icon) didn't run: Xcode asked to
+       install system components after the macOS 27.2 update, and the frozen worktree had no
+       icon source. **C-1**, in Session R's GUI phase.
+     - **The menu bar item on a dark bar** wasn't checked on the RC (P11; the light bar read
+       right): **C-1**, Session R's GUI phase, by another way than CGWindowList (W-12).
+     - **The hands-free cost** held: about the planned 13-15 minutes of his, plus closing one
+       banner (§6.2's estimates stand).
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
 - **Effort:** none in runs, but item 7's commit (and any warning 27.2 adds); item 8's work lands
-  in W-4, W-3b, W-12 and W-10.
+  in W-4, W-3b, W-12 and W-10, and item 9's in W-3c, W-12 and C-1.
 
 ### S-1: `bpulse`'s JSON for scripts: ISO 8601 device dates and `formatVersion` (P1)
 
