@@ -181,6 +181,14 @@ public enum WidgetAttention: Sendable, Equatable {
         }
     }
 
+    var isHeat: Bool {
+        if case .heat = self { true } else { false }
+    }
+
+    var isCondition: Bool {
+        if case .condition = self { true } else { false }
+    }
+
     /// The tier its symbol's colour says: critical heat is critical, serious heat low, and a
     /// condition has its own tier.
     public var tier: BatteryPresentation.LevelTier {

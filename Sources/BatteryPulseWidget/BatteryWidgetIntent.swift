@@ -126,19 +126,23 @@ enum BatteryMainValueChoice: String, AppEnum {
     }
 }
 
-/// ``BatteryWidgetVisual``: the number with the level symbol, as in 0.6.x. The ring and the
-/// drawn battery come with the views that draw them.
+/// ``BatteryWidgetVisual``: the number with the level symbol, as in 0.6.x; the number inside a
+/// ring of the charge; or the menu bar's Modern battery, drawn.
 enum BatteryMainVisualChoice: String, AppEnum {
-    case symbol
+    case symbol, ring, drawnBattery
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Main visual"
     static let caseDisplayRepresentations: [BatteryMainVisualChoice: DisplayRepresentation] = [
-        .symbol: "Number and symbol"
+        .symbol: "Number and symbol",
+        .ring: "Ring",
+        .drawnBattery: "Drawn battery",
     ]
 
     var visual: BatteryWidgetVisual {
         switch self {
         case .symbol: .symbol
+        case .ring: .ring
+        case .drawnBattery: .drawnBattery
         }
     }
 }
@@ -234,16 +238,16 @@ struct BatteryWidgetDetail: AppEntity {
         DisplayRepresentation(title: field.label)
     }
 
-    /// The details the chooser offers, in the catalogue's order.
-    static let offered = BatteryWidgetField.allCases.filter(\.isOffered).map(BatteryWidgetDetail.init(field:))
+    /// The details the chooser offers: every field, in the catalogue's order.
+    static let offered = BatteryWidgetField.allCases.map(BatteryWidgetDetail.init(field:))
 
     init(field: BatteryWidgetField) {
         self.field = field
     }
 
-    /// A stored id's detail; `nil` for an id no field has or the chooser doesn't offer.
+    /// A stored id's detail; `nil` for an id no field has.
     init?(id: String) {
-        guard let field = BatteryWidgetField(rawValue: id), field.isOffered else { return nil }
+        guard let field = BatteryWidgetField(rawValue: id) else { return nil }
         self.field = field
     }
 }
@@ -281,16 +285,8 @@ extension BatteryWidgetField {
         case .lowPowerMode: "Low Power Mode"
         case .remainingCapacity: "Remaining capacity"
         case .voltage: "Voltage"
-        // Offered with their catalog keys by the package that adds the large widget.
-        case .cycleLifeUsed, .cellBalance: LocalizedStringResource(stringLiteral: rawValue)
-        }
-    }
-
-    /// Whether the Details chooser offers the field: every field with a catalog label.
-    var isOffered: Bool {
-        switch self {
-        case .cycleLifeUsed, .cellBalance: false
-        default: true
+        case .cycleLifeUsed: "Cycle life used"
+        case .cellBalance: "Cell balance"
         }
     }
 }

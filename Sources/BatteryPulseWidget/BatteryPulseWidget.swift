@@ -5,7 +5,7 @@ import WidgetKit
 
 /// The widget extension. SwiftPM builds it as a plain executable that `scripts/build-app.sh`
 /// wraps into `BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex`. It is linked with
-/// `-e _NSExtensionMain` (see Package.swift); `@main` keeps the bundle in the binary.
+/// `-e _NSExtensionMain` (see scripts/build-app.sh); `@main` keeps the bundle in the binary.
 @main
 struct BatteryPulseWidgets: WidgetBundle {
     var body: some Widget {
@@ -27,7 +27,9 @@ struct BatteryWidget: Widget {
         }
         .configurationDisplayName("Battery")
         .description("Charge, time remaining and the details you choose.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        // Extra large has its layout, drawn for the look check, and is declared only on the
+        // maintainer's explicit yes there: a family can be added later but never removed.
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 #else

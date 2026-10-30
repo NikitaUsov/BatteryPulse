@@ -72,11 +72,11 @@ struct WidgetSurfaceTests {
     /// The manifest as it ships; a widget package that ships a name adds it here and in the type.
     @Test func manifest() throws {
         let json = """
-            {"kinds": [{"kind": "io.github.nikitausov.BatteryPulse.battery", "families": ["small", "medium"],
+            {"kinds": [{"kind": "io.github.nikitausov.BatteryPulse.battery", "families": ["small", "medium", "large"],
               "intent": {"type": "BatteryWidgetIntent", "parameters": [
                 {"name": "layout", "values": ["automatic", "custom"]},
                 {"name": "mainValue", "values": ["charge", "maximumCapacity", "temperature", "batteryPower"]},
-                {"name": "mainVisual", "values": ["symbol"]},
+                {"name": "mainVisual", "values": ["symbol", "ring", "drawnBattery"]},
                 {"name": "statusLines", "values": ["state", "time"]},
                 {"name": "details"},
                 {"name": "time", "values": ["clockTime", "timeLeft"]},

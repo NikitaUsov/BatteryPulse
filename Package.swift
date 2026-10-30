@@ -2,7 +2,8 @@
 import PackageDescription
 
 // The language policy, in one place: every target, tests included, builds with these settings,
-// and no target passes compiler flags of its own (the widget's two flags only shape the extension).
+// and no target passes compiler flags of its own (the widget's one flag only shapes the
+// extension; its entry point is a link flag of scripts/build-app.sh).
 let strict: [SwiftSetting] = [
     .enableUpcomingFeature("ExistentialAny"),
     .enableUpcomingFeature("MemberImportVisibility"),
@@ -75,11 +76,6 @@ let package = Package(
             swiftSettings: strict + [
                 // Allow only the APIs an app extension may use, as Xcode does for extension targets.
                 .unsafeFlags(["-application-extension"], .when(platforms: [.macOS]))
-            ],
-            linkerSettings: [
-                // Start the way Xcode links app extensions. `@main` on the WidgetBundle keeps the
-                // widgets in the binary; each is useless without the other.
-                .unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"], .when(platforms: [.macOS]))
             ]
         ),
         .testTarget(
