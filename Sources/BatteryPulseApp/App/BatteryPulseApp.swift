@@ -4,6 +4,7 @@ import BatteryCore
 import BatteryKit
 import BatterySource
 import SwiftUI
+import os
 
 @main
 struct BatteryPulseApp: App {
@@ -230,6 +231,51 @@ final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
 
     @objc private func openMainWindow() {
         WindowOpener.showMainWindow()
+    }
+
+    // MARK: Clicks on widgets
+
+    // The delegate takes both routes, never a scene modifier: BatteryPulse usually has no window
+    // when a click arrives, often isn't even running, and the app never imports App Intents.
+
+    /// A click on a widget that sets a `widgetURL`: WidgetKit hands BatteryPulse its
+    /// `batterypulse://page/…` URL with no scheme registered, so no web page's link finds
+    /// BatteryPulse by it. Whatever sends one, a URL that names no page is ignored, and a link
+    /// only ever shows a page.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        openWidgetPage(urls.compactMap(WidgetRoute.init(url:)).last, arrivedBy: "url")
+    }
+
+    /// A click that misses the `widgetURL`: an activity whose type is the clicked widget's intent
+    /// type name. It carries no configuration BatteryPulse reads, so it opens the kind's own
+    /// page; any other activity isn't a widget's.
+    func application(
+        _ application: NSApplication, continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
+    ) -> Bool {
+        let route = WidgetRoute(activityType: userActivity.activityType)
+        openWidgetPage(route, arrivedBy: "activity")
+        return route != nil
+    }
+
+    /// Opens the main window at the route's page. The log says how the click arrived and the
+    /// page's case name; a device page's key only hashed, and never the URL or the activity.
+    private func openWidgetPage(_ route: WidgetRoute?, arrivedBy: StaticString) {
+        let via = arrivedBy.description
+        guard let route else {
+            Diagnostics.widget.notice("No page for an open by \(via, privacy: .public): ignored")
+            return
+        }
+        let page = SidebarItem(page: route.page)
+        let name = page.signpostName.description
+        if case .device(let key) = route.page {
+            Diagnostics.widget.notice(
+                "Widget click by \(via, privacy: .public) opens \(name, privacy: .public) \(key.rawValue, privacy: .private(mask: .hash))"
+            )
+        } else {
+            Diagnostics.widget.notice("Widget click by \(via, privacy: .public) opens \(name, privacy: .public)")
+        }
+        WindowOpener.showMainWindow(page: page)
     }
 }
 #else
