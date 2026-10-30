@@ -18,7 +18,20 @@
 //   - per process: its reads, the reads before its first menuBarReady, its widget reloads, and the
 //     reads of each notify burst. A burst is a run of `refresh trigger=notify` lines less than 1 s
 //     apart; its reads are the `read` lines logged between the start of its first refresh and the
-//     end of its last.
+//     end of its last;
+//   - the widget's timelines (`widget.timeline`, whose trigger is the kind) per process and kind:
+//     the count, p50 and p95;
+//   - the widget's reloads (`widget.reload` events) per trigger, with the kinds each requests:
+//     `policy` is the Battery kind's (and `-`, from a build that logged no trigger), `policy.<kind>`
+//     another kind's, and every other trigger (`update`) reloads every kind of the log;
+//   - delivered against requested per kind: a request is delivered when a timeline of its kind
+//     starts after it and before the kind's next request. WidgetKit may postpone the reload of a
+//     widget nobody can see until it becomes visible, so a delay isn't a refusal: the median delay
+//     is printed beside the share;
+//   - the widget extension's reads (the `read` intervals of BatteryPulseWidget processes) and
+//     their total time;
+//   - the stream: its first and last line, and its gaps of 10 minutes or more (the Mac asleep, or
+//     the stream stopped), each with its start as the log wrote it.
 // Lines that aren't JSON, and messages that aren't perf lines, are skipped.
 import Foundation
 
@@ -49,6 +62,8 @@ struct PerfLine {
     let time: Double
     let processID: Int
     let image: String
+    /// The timestamp as the log wrote it.
+    let stamp: String
 
     /// The interval's start, or the event's time.
     var start: Double { time - (milliseconds ?? 0) / 1000 }
@@ -113,7 +128,7 @@ func parsePerfLine(_ entry: LogEntry) -> PerfLine? {
     let image = entry.processImagePath?.split(separator: "/").last.map(String.init) ?? "?"
     return PerfLine(
         kind: kind, name: words[2], trigger: fields["trigger"] ?? "-", milliseconds: milliseconds, time: time,
-        processID: processID, image: image)
+        processID: processID, image: image, stamp: stamp)
 }
 
 /// The nearest-rank percentile of sorted values.
@@ -228,3 +243,88 @@ for processID in processIDs {
 print("intervals (ms)\n\(table(intervalRows))\n")
 print("events\n\(table(eventRows))\n")
 print("processes\n\(table(processRows))")
+
+// MARK: - The widget
+
+/// The widget extension's executable (`CFBundleExecutable` of `BatteryPulseWidget.appex`).
+let widgetImage = "BatteryPulseWidget"
+
+/// The timelines, by kind: `widget.timeline`'s trigger is the kind's short name.
+let timelines = lines.filter { $0.kind == .interval && $0.name == "widget.timeline" }
+let requests = lines.filter { $0.kind == .event && $0.name == "widget.reload" }
+
+/// The kind a `policy` trigger reloads, and the prefix of another kind's.
+let batteryKind = "battery"
+let policyPrefix = "policy."
+
+/// The one kind a reload with this trigger requests, or nil for every kind.
+func ownKind(_ trigger: String) -> String? {
+    if trigger == "policy" || trigger == "-" { return batteryKind }
+    if trigger.hasPrefix(policyPrefix) { return String(trigger.dropFirst(policyPrefix.count)) }
+    return nil
+}
+
+/// Every kind of the log: those with a timeline or a request of their own, else the Battery kind,
+/// which every build has.
+let kinds: [String] = {
+    let found = Set(timelines.map(\.trigger)).union(requests.compactMap { ownKind($0.trigger) })
+    return found.isEmpty ? [batteryKind] : found.sorted()
+}()
+
+/// The kinds a reload with this trigger requests.
+func requestedKinds(_ trigger: String) -> [String] {
+    ownKind(trigger).map { [$0] } ?? kinds
+}
+
+var timelineRows = [["pid", "image", "kind", "count", "p50", "p95"]]
+for processID in processIDs {
+    let own = timelines.filter { $0.processID == processID }
+    for kind in Set(own.map(\.trigger)).sorted() {
+        let sorted = own.filter { $0.trigger == kind }.compactMap(\.milliseconds).sorted()
+        timelineRows.append([
+            "\(processID)", own[0].image, kind, "\(sorted.count)", String(format: "%.3f", percentile(sorted, 0.5)),
+            String(format: "%.3f", percentile(sorted, 0.95)),
+        ])
+    }
+}
+
+var reloadRows = [["trigger", "kinds", "count"]]
+for trigger in Set(requests.map(\.trigger)).sorted() {
+    reloadRows.append([
+        trigger, requestedKinds(trigger).joined(separator: ","), "\(requests.filter { $0.trigger == trigger }.count)",
+    ])
+}
+
+var deliveryRows = [["kind", "requested", "delivered", "share", "median delay s", "timelines"]]
+for kind in kinds {
+    let asked = requests.filter { requestedKinds($0.trigger).contains(kind) }.map(\.time)
+    let starts = timelines.filter { $0.trigger == kind }.map(\.start).sorted()
+    var delays: [Double] = []
+    for (index, time) in asked.enumerated() {
+        let next = index + 1 < asked.count ? asked[index + 1] : .infinity
+        if let start = starts.first(where: { $0 >= time && $0 < next }) { delays.append(start - time) }
+    }
+    let share = asked.isEmpty ? "-" : String(format: "%.1f %%", Double(delays.count) * 100 / Double(asked.count))
+    let delay = delays.isEmpty ? "-" : String(format: "%.1f", percentile(delays.sorted(), 0.5))
+    deliveryRows.append([kind, "\(asked.count)", "\(delays.count)", share, delay, "\(starts.count)"])
+}
+
+let widgetReads = lines.filter { $0.kind == .interval && $0.name == "read" && $0.image == widgetImage }
+let widgetReadTime = widgetReads.compactMap(\.milliseconds).reduce(0, +)
+
+/// The gaps of 10 minutes or more between two lines in a row.
+let gapSeconds = 600.0
+var gaps: [(from: PerfLine, minutes: Double)] = []
+for (earlier, later) in zip(lines, lines.dropFirst()) where later.time - earlier.time >= gapSeconds {
+    gaps.append((earlier, (later.time - earlier.time) / 60))
+}
+var gapRows = [["after", "minutes"]]
+for gap in gaps { gapRows.append([gap.from.stamp, String(format: "%.1f", gap.minutes)]) }
+
+print("\nwidget timelines\n\(table(timelineRows))\n")
+print("widget reloads\n\(table(reloadRows))\n")
+print("widget delivery\n\(table(deliveryRows))\n")
+let readTime = String(format: "%.3f", widgetReadTime)
+print("widget extension reads: \(widgetReads.count), \(readTime) ms in all\n")
+print("stream: \(lines.count) perf lines, from \(lines[0].stamp) to \(lines[lines.count - 1].stamp)")
+print("gaps of 10 minutes or more: \(gaps.count)\(gaps.isEmpty ? "" : "\n\(table(gapRows))")")

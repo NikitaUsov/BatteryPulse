@@ -2,8 +2,8 @@
 // (`Updates/UpdateInstaller.swift`, `renamex_np` with `RENAME_SWAP`). The session script builds it
 // once and calls it for every install:
 //
-//   xcrun swiftc -O docs/plans/0.6.2/swap.swift -o ~/bp-062/A/bin/swap
-//   ~/bp-062/A/bin/swap <staged copy> /Applications/BatteryPulse.app
+//   xcrun swiftc -O docs/plans/0.7.0/swap.swift -o ~/bp-070/R/bin/swap
+//   ~/bp-070/R/bin/swap <staged copy> /Applications/BatteryPulse.app
 //
 // Both paths must exist on the same volume. Exit status 0 on success, 1 with the reason on
 // standard error otherwise, 2 for a wrong call.

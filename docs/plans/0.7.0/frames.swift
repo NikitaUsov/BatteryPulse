@@ -1,8 +1,9 @@
 // Turns the sessions' screen recordings into pictures and numbers a reviewer can check, and measures
-// screenshots for the hands-free Session B's judgments (PLAN.md §6, WP-21: every judgment pairs the
-// session's reading of a picture with a pixel measurement). The session script builds it once:
+// screenshots for the hands-free sessions' judgments (0.6.2's Session B, 0.7.0's Session R: every
+// judgment pairs the session's reading of a picture with a pixel measurement). The session script
+// builds it once:
 //
-//   xcrun swiftc -O docs/plans/0.6.2/frames.swift -o ~/bp-062/B/bin/frames
+//   xcrun swiftc -O docs/plans/0.7.0/frames.swift -o ~/bp-070/<R|C|H|D3>/bin/frames
 //
 //   frames dump <movie> <folder> [interval s, default 0.2] [width px, default 1280]
 //               [--rect <x> <y> <width> <height> --screen <display width in points>]
