@@ -6,6 +6,9 @@ import Foundation
 /// time ("Lasts until about 16:39") moved ``estimateShift``, waits until ``minimumInterval`` has
 /// passed since the last reload: at most four such reloads an hour, so the widget never shows a
 /// reading much older than a quarter of an hour while the battery changes.
+///
+/// 0.6.x's policy for the Battery kind, kept whole inside ``WidgetReloadPlanner``, which adds its
+/// other reasons and kinds.
 public struct WidgetReloadPolicy: Sendable {
     public static let percentStep = 3
     public static let estimateShift: TimeInterval = 15 * 60
@@ -17,6 +20,13 @@ public struct WidgetReloadPolicy: Sendable {
         var percent: Int?
         /// When the shown estimate runs out; `nil` without one.
         var estimateEnd: Date?
+
+        init(_ snapshot: BatterySnapshot, at date: Date) {
+            state = snapshot.chargeState
+            isExternalPowerConnected = snapshot.isExternalPowerConnected
+            percent = snapshot.chargePercent.map { Int($0.rounded()) }
+            estimateEnd = WidgetTimelinePlan.estimateMinutes(snapshot).map { date.addingTimeInterval(Double($0) * 60) }
+        }
     }
 
     private var shown: Shown?
@@ -26,11 +36,7 @@ public struct WidgetReloadPolicy: Sendable {
 
     /// Whether `snapshot` warrants a reload now; records it as shown when it does.
     public mutating func shouldReload(for snapshot: BatterySnapshot, at date: Date) -> Bool {
-        let next = Shown(
-            state: snapshot.chargeState,
-            isExternalPowerConnected: snapshot.isExternalPowerConnected,
-            percent: snapshot.chargePercent.map { Int($0.rounded()) },
-            estimateEnd: WidgetTimelinePlan.estimateMinutes(snapshot).map { date.addingTimeInterval(Double($0) * 60) })
+        let next = Shown(snapshot, at: date)
         guard let shown else {
             record(next, at: date)
             return true
@@ -54,6 +60,14 @@ public struct WidgetReloadPolicy: Sendable {
         }
         record(next, at: date)
         return true
+    }
+
+    /// Records `snapshot` as shown without deciding: the widget reloaded at `date` for another
+    /// reason, or, with `reloaded` false, the app found the widget showing it at launch, reloaded
+    /// at a time it doesn't know.
+    mutating func record(_ snapshot: BatterySnapshot, at date: Date, reloaded: Bool = true) {
+        shown = Shown(snapshot, at: date)
+        if reloaded { lastReload = date }
     }
 
     private mutating func record(_ next: Shown, at date: Date) {
