@@ -55,32 +55,57 @@ struct WidgetSourceTests {
     @Test func symbolsAreDrawnOnlyAsDecoration() throws {
         var helpers = 0
         for file in try Self.widgetCode() {
-            let helper = file.code.firstMatch(of: #/func decorativeSymbol\([^{]*\{([\s\S]*?)\n\}/#)
-            if let helper {
+            let scan = Self.symbolScan(file.code)
+            if scan.definesHelper {
                 helpers += 1
-                #expect(helper.output.1.contains(".accessibilityHidden(true)"), "\(file.path)")
+                #expect(scan.helperHides, "\(file.path)")
             }
-            for symbol in file.code.matches(of: #/\bImage\s*\(\s*systemName\s*:|\bsystemImage\s*:/#) {
-                #expect(
-                    helper?.range.contains(symbol.range.lowerBound) == true,
-                    "\(file.path): a symbol outside decorativeSymbol(_:)")
-            }
+            #expect(scan.symbolsOutside == 0, "\(file.path): a symbol outside decorativeSymbol(_:)")
         }
         #expect(helpers == 1)
     }
 
-    @Test func theSymbolGuardSeesASymbolOutsideTheHelper() {
-        let code = SourceScanner.codeOnly(
-            """
+    /// What the symbol guard sees in one file's code.
+    struct SymbolScan: Equatable {
+        /// The file defines `decorativeSymbol(_:)`.
+        var definesHelper: Bool
+        /// Its body hides the symbol from VoiceOver.
+        var helperHides: Bool
+        /// SF Symbols drawn outside it, as an image or a label's icon.
+        var symbolsOutside: Int
+    }
+
+    static func symbolScan(_ code: String) -> SymbolScan {
+        let helper = code.firstMatch(of: #/func decorativeSymbol\([^{]*\{([\s\S]*?)\n\}/#)
+        let outside = code.matches(of: #/\bImage\s*\(\s*systemName\s*:|\bsystemImage\s*:/#)
+            .filter { helper?.range.contains($0.range.lowerBound) != true }
+        return SymbolScan(
+            definesHelper: helper != nil, helperHides: helper?.output.1.contains(".accessibilityHidden(true)") == true,
+            symbolsOutside: outside.count)
+    }
+
+    /// The guard fails on a symbol drawn outside the helper and on a helper that doesn't hide it.
+    @Test func theSymbolGuardFailsOnBadCode() {
+        func scan(_ text: String) -> SymbolScan { Self.symbolScan(SourceScanner.codeOnly(text)) }
+        let helper = """
             func decorativeSymbol(_ name: String) -> some View {
                 Image(systemName: name).accessibilityHidden(true)
             }
-            let shown = Image(systemName: "battery.100percent")
-            """)
-        let helper = code.firstMatch(of: #/func decorativeSymbol\([^{]*\{([\s\S]*?)\n\}/#)
-        let symbols = code.matches(of: #/\bImage\s*\(\s*systemName\s*:/#)
-        #expect(symbols.count == 2)
-        #expect(symbols.filter { helper?.range.contains($0.range.lowerBound) != true }.count == 1)
+
+            """
+        #expect(scan(helper) == SymbolScan(definesHelper: true, helperHides: true, symbolsOutside: 0))
+        #expect(scan(helper + "let shown = Image(systemName: \"battery.100percent\")").symbolsOutside == 1)
+        #expect(scan(helper + "let spaced = Image ( systemName : name)").symbolsOutside == 1)
+        #expect(scan(helper + "let label = Label(\"Battery\", systemImage: \"bolt\")").symbolsOutside == 1)
+        // A comment doesn't hide the symbol, and without the helper every symbol is outside it.
+        let commented = """
+            func decorativeSymbol(_ name: String) -> some View {
+                Image(systemName: name)  // .accessibilityHidden(true)
+            }
+            """
+        #expect(scan(commented) == SymbolScan(definesHelper: true, helperHides: false, symbolsOutside: 0))
+        let bare = SymbolScan(definesHelper: false, helperHides: false, symbolsOutside: 1)
+        #expect(scan("let a = Image(systemName: name)") == bare)
     }
 
     /// Each widget choice's BatteryCore mirror, by parameter name.
