@@ -34,7 +34,8 @@ struct WidgetPreviewTests {
         var configuration = BatteryWidgetConfiguration()
     }
 
-    static let date = Date(timeIntervalSince1970: 1_800_000_000)
+    /// The reading's time: now, as the time left counts from the moment the view draws.
+    static let date = Date.now
 
     static func battery(_ scenario: DemoScenario) -> BatterySnapshot? {
         scenario.battery?.reading(at: date).snapshot
@@ -64,6 +65,9 @@ struct WidgetPreviewTests {
             configuration: BatteryWidgetConfiguration(
                 layout: .custom, statusLines: [.state], details: [.time, .lowPowerMode], colors: .monochrome,
                 updateTime: .always)),
+        Scene(
+            name: "custom-time-detail", snapshot: battery(.charging),
+            configuration: BatteryWidgetConfiguration(layout: .custom, statusLines: [.state], details: [.time])),
         Scene(
             name: "custom-empty", snapshot: battery(.onBattery),
             configuration: BatteryWidgetConfiguration(layout: .custom)),

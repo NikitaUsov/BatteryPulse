@@ -128,10 +128,15 @@ struct WidgetLineView: View {
         case .updated(let clock):
             Text("Updated \(clock)")
         case .detail(let row):
-            // Small's one detail, in the time line's place.
-            HStack(spacing: 4) {
-                Text(row.field.label)
-                WidgetValueLabel(row: row, tinted: tinted)
+            // Small's one detail, in the time line's place: a label and its value, or a time's
+            // phrase alone.
+            if case .time(let time) = row.value {
+                WidgetTimeLabel(time: time)
+            } else {
+                HStack(spacing: 4) {
+                    Text(row.field.label)
+                    WidgetValueLabel(row: row, tinted: tinted)
+                }
             }
         case .attention(let attention):
             WidgetAttentionLabel(attention: attention, tinted: tinted)
