@@ -165,7 +165,8 @@ struct WidgetTile: View {
     }
 
     /// A label over its value. Labels shrink a little before they would be cut off; a value takes
-    /// a second line rather than be cut (a condition's words in Russian).
+    /// a second line rather than be cut (a condition's words in Russian). The tile keeps its own
+    /// height: a symbol taller than the text (heat's thermometer) made the grid squeeze its label.
     private func tile<Value: View>(label: Text, @ViewBuilder value: () -> Value) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             label
@@ -179,6 +180,7 @@ struct WidgetTile: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
