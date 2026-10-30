@@ -54,7 +54,7 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
     /// entity, whose ids are ``BatteryWidgetField``'s raw values.
     static let shipping = WidgetIntentManifest(kinds: [
         Kind(
-            .battery, families: [.small, .medium],
+            .battery, families: [.small, .medium, .large],
             intent: Intent(
                 type: "BatteryWidgetIntent",
                 parameters: [

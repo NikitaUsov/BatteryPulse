@@ -3,7 +3,8 @@
     {
       "families" : [
         "small",
-        "medium"
+        "medium",
+        "large"
       ],
       "intent" : {
         "parameters" : [
