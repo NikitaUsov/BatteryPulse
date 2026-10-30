@@ -1,6 +1,7 @@
 #if os(macOS)
 import AppKit
 import BatteryCore
+import CoreGraphics
 import Foundation
 import SwiftUI
 import Testing
@@ -16,6 +17,10 @@ import WidgetKit
 /// - `battery-<family>-<scene>[-<mode>][-dark][-ru].png` are the single widgets: full colour, light
 ///   and English unless the name says otherwise. English, light and full colour keep W-3a's names,
 ///   so two runs can be compared file by file.
+/// - `battery-0.6.1-<family>-<scene>[-ru].png` are 0.6.1's widget from the same reading
+///   (``Widget061View``), and `diff-0.6.1-to-0.7-<family>-<scene>[-ru].png` mark in red each pixel
+///   0.7's small and medium Automatic changed, for the look check's first question; the log lists
+///   the share of pixels that changed.
 ///
 /// Approximate: WidgetKit's container, its margins and the desktop aren't simulated. In the
 /// accented and vibrant modes the views take their own branches (no colours, the glyph in the
@@ -253,25 +258,47 @@ struct WidgetPreviewTests {
 
     // MARK: Drawing
 
-    /// The widget as it draws `scene` in `size`, `look` and `language`, in its place.
-    static func widget(_ scene: Scene, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
-        let frame = points(size)
-        let moment =
-            scene.stale
+    /// The pictures' time zone.
+    static let timeZone = TimeZone(identifier: "UTC") ?? .gmt
+
+    /// The timeline entry a scene shows.
+    static func moment(_ scene: Scene) -> WidgetTimelinePlan.Entry {
+        scene.stale
             ? WidgetTimelinePlan.Entry(date: date, showsEstimate: false, isStale: true)
             : WidgetTimelinePlan.Entry(date: date, showsEstimate: true)
-        let entry = BatteryEntry(snapshot: scene.snapshot, moment: moment, configuration: scene.configuration)
-        return BatteryWidgetView(
-            entry: entry, size: size, formatter: language.formatter, timeZone: TimeZone(identifier: "UTC") ?? .gmt
-        )
-        .padding(16)
-        .frame(width: frame.width, height: frame.height)
-        .background { backdrop(look) }
-        .clipShape(.rect(cornerRadius: 22, style: .continuous))
-        .environment(\.widgetRenderingMode, look.mode)
-        .environment(\.colorScheme, look.dark ? .dark : .light)
-        .environment(\.locale, language.locale)
-        .environment(\.widgetStrings, language.bundle)
+    }
+
+    /// The widget as it draws `scene` in `size`, `look` and `language`, in its place.
+    static func widget(_ scene: Scene, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
+        let entry = BatteryEntry(snapshot: scene.snapshot, moment: moment(scene), configuration: scene.configuration)
+        return framed(
+            BatteryWidgetView(entry: entry, size: size, formatter: language.formatter, timeZone: timeZone), size, look,
+            language)
+    }
+
+    /// 0.6.1's widget as it drew `scene`'s battery in `size`, small or medium, in full colour and
+    /// light, in its place.
+    static func widget061(_ scene: Scene, _ size: WidgetSize, _ language: Language) -> some View {
+        framed(
+            Widget061View(
+                snapshot: scene.snapshot, date: date, showsEstimate: moment(scene).showsEstimate, size: size,
+                locale: language.locale, timeZone: timeZone),
+            size, .standard, language)
+    }
+
+    /// `content` in a widget's place: its margins, size and container, in `look` and `language`.
+    static func framed(_ content: some View, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
+        let frame = points(size)
+        return
+            content
+            .padding(16)
+            .frame(width: frame.width, height: frame.height)
+            .background { backdrop(look) }
+            .clipShape(.rect(cornerRadius: 22, style: .continuous))
+            .environment(\.widgetRenderingMode, look.mode)
+            .environment(\.colorScheme, look.dark ? .dark : .light)
+            .environment(\.locale, language.locale)
+            .environment(\.widgetStrings, language.bundle)
     }
 
     /// Full colour: the widget's container fill over the appearance's background. The other modes
@@ -288,13 +315,21 @@ struct WidgetPreviewTests {
         }
     }
 
-    static func write(_ view: some View, _ name: String) throws {
-        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+    /// `view` at twice its size in points.
+    static func render(_ view: some View, _ name: String) throws -> CGImage {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
-        let image = try #require(renderer.cgImage, "\(name)")
+        return try #require(renderer.cgImage, "\(name)")
+    }
+
+    static func writePNG(_ image: CGImage, _ name: String) throws {
+        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         let png = try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))
         try png.write(to: output.appendingPathComponent("\(name).png"))
+    }
+
+    static func write(_ view: some View, _ name: String) throws {
+        try writePNG(render(view, name), name)
     }
 
     // MARK: Single widgets
@@ -344,6 +379,16 @@ struct WidgetPreviewTests {
             view: AnyView(widget(scene, size, look, language)))
     }
 
+    /// 0.6.1's widget, then 0.7's, for `scene` in `size`.
+    static func pair(_ scene: Scene, _ size: WidgetSize, _ language: Language) -> [Picture] {
+        [
+            Picture(
+                caption: "0.6.1 · \(title(size)) · \(scene.title)", width: points(size).width,
+                view: AnyView(widget061(scene, size, language))),
+            picture(scene, size, language, caption: "0.7 · \(title(size)) · \(scene.title)"),
+        ]
+    }
+
     /// `scenes` as rows, each in `sizes`.
     static func rows(_ scenes: [Scene], _ sizes: [WidgetSize], _ language: Language) -> [[Picture]] {
         scenes.map { scene in sizes.map { picture(scene, $0, language) } }
@@ -380,8 +425,8 @@ struct WidgetPreviewTests {
     static func lookCheckSheets(_ l: Language) -> [(name: String, heading: String, rows: [[Picture]])] {
         [
             (
-                "1-small-and-medium-automatic", "1. Small and medium, Automatic (0.6.x's look)",
-                rows([onBattery, charging, low, full, onHold, old], [.small, .medium], l)
+                "1-small-and-medium-automatic", "1. Small and medium, Automatic: 0.6.1 on the left, 0.7 on the right",
+                questionOneScenes.map { scene in [WidgetSize.small, .medium].flatMap { pair(scene, $0, l) } }
             ),
             (
                 "2-large-automatic", "2. Large, Automatic: the eight details",
@@ -461,6 +506,40 @@ struct WidgetPreviewTests {
         }
     }
 
+    // MARK: Against 0.6.1
+
+    /// The look check's first question: small and medium Automatic, which keep 0.6.1's look but
+    /// for the plan's intended changes (§7.3: "tomorrow", the attention row, "Updated", the empty
+    /// state's words, the symbol beside a low charge).
+    static let questionOneScenes: [Scene] = [
+        onBattery, charging, low, critical, full, onHold, old, serviced, hot, noBattery,
+    ]
+
+    /// 0.6.1's small and medium widget beside 0.7's Automatic, and where their pixels differ.
+    @Test(arguments: Language.allCases)
+    func rendersTheChangesSince061(_ language: Language) throws {
+        guard Self.languages.contains(language) else { return }
+        var rows: [[Picture]] = []
+        for scene in Self.questionOneScenes {
+            var row: [Picture] = []
+            for size in [WidgetSize.small, .medium] {
+                let name = "\(Self.fileName(size))-\(scene.name)\(language.suffix)"
+                let old = try Self.render(Self.widget061(scene, size, language), "battery-0.6.1-\(name)")
+                let new = try Self.render(Self.widget(scene, size, .standard, language), "battery-\(name)")
+                try Self.writePNG(old, "battery-0.6.1-\(name)")
+                let diff = try #require(PixelDiff(old, new), "\(name): the two pictures' pixels aren't comparable")
+                try Self.write(diff.view, "diff-0.6.1-to-0.7-\(name)")
+                let caption = "\(Self.title(size)) · \(scene.title): \(diff.summary)"
+                print("Look check question 1, \(language.name): \(caption)")
+                row.append(Picture(caption: caption, width: Self.points(size).width, view: AnyView(diff.view)))
+            }
+            rows.append(row)
+        }
+        try Self.write(
+            Self.sheet("1. Where 0.7 differs from 0.6.1, in red — \(language.name)", rows),
+            "sheet-1b-pixel-diff-against-0.6.1\(language.suffix)")
+    }
+
     /// CI compiles the Russian table before the tests; when it's there, it must translate, or the
     /// Russian pictures would silently show English.
     @Test func theRussianTableTranslates() throws {
@@ -468,6 +547,67 @@ struct WidgetPreviewTests {
         let russian = try #require(Self.russian, "build/widget-strings has no ru.lproj")
         #expect(russian.localizedString(forKey: "Charging", value: nil, table: nil) != "Charging")
         #expect(russian.localizedString(forKey: "Maximum capacity", value: nil, table: nil) != "Maximum capacity")
+    }
+}
+
+/// Where two pictures of the same size differ: the newer one faded, with each pixel that differs
+/// in red. A pixel differs when any of its channels is off by more than 2 of 255.
+struct PixelDiff {
+    let changed: Int
+    let total: Int
+    let view: AnyView
+
+    /// `nil` when the pictures' sizes or pixel formats differ.
+    @MainActor init?(_ old: CGImage, _ new: CGImage) {
+        let width = old.width
+        let height = old.height
+        let bytesPerPixel = old.bitsPerPixel / 8
+        guard width == new.width, height == new.height, old.bitsPerPixel == new.bitsPerPixel,
+            old.bytesPerRow == new.bytesPerRow, old.bitmapInfo == new.bitmapInfo, old.bitsPerComponent == 8,
+            new.bitsPerComponent == 8, bytesPerPixel > 0,
+            let oldData = old.dataProvider?.data, let newData = new.dataProvider?.data
+        else { return nil }
+        let a = [UInt8](oldData as Data)
+        let b = [UInt8](newData as Data)
+        guard a.count >= height * old.bytesPerRow, b.count >= height * old.bytesPerRow else { return nil }
+        var mask = [UInt8](repeating: 0, count: width * height * 4)
+        var changed = 0
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = y * old.bytesPerRow + x * bytesPerPixel
+                let differs = (offset..<offset + bytesPerPixel).contains { abs(Int(a[$0]) - Int(b[$0])) > 2 }
+                guard differs else { continue }
+                changed += 1
+                // Opaque red, premultiplied RGBA.
+                let pixel = (y * width + x) * 4
+                mask[pixel] = 255
+                mask[pixel + 3] = 255
+            }
+        }
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+            let provider = CGDataProvider(data: Data(mask) as CFData),
+            let marks = CGImage(
+                width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
+                space: space, bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+        else { return nil }
+        self.changed = changed
+        self.total = width * height
+        self.view = AnyView(
+            ZStack {
+                Color.white
+                Image(decorative: new, scale: 2).interpolation(.none).opacity(0.3)
+                Image(decorative: marks, scale: 2).interpolation(.none)
+            }
+            .frame(width: CGFloat(width) / 2, height: CGFloat(height) / 2))
+    }
+
+    /// "1.2 % of the pixels differ", or "the same pixels".
+    var summary: String {
+        guard changed > 0 else { return "the same pixels" }
+        let share = (Double(changed) / Double(total) * 100).formatted(
+            .number.precision(.fractionLength(1)).locale(Locale(identifier: "en_US")))
+        return "\(share) % of the pixels differ"
     }
 }
 #endif
