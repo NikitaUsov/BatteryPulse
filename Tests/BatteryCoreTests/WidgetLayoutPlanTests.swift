@@ -40,8 +40,11 @@ struct WidgetLayoutPlanTests {
             #expect(layout.lines.count == 2)
             #expect(layout.lines.last.map { if case .detail = $0 { true } else { false } } == true)
         } else {
-            #expect(layout.details.count == min(WidgetLayoutPlan.detailSlots(size), Self.everyField.count))
+            let shown = layout.details.count + layout.powerDetails.count
+            #expect(shown == min(WidgetLayoutPlan.detailSlots(size), Self.everyField.count))
         }
+        let panels = size == .extraLarge || size == .extraLargePortrait
+        #expect(layout.powerDetails.isEmpty == !panels)
         #expect(layout.lines.count <= WidgetLayoutPlan.lineSlots(size))
         #expect(WidgetLayoutPlan.automatic(size).count <= WidgetLayoutPlan.detailSlots(size))
     }
@@ -50,6 +53,82 @@ struct WidgetLayoutPlanTests {
         #expect(WidgetSize.allCases.map(WidgetLayoutPlan.detailSlots) == [1, 4, 8, 12, 12])
         #expect(WidgetSize.allCases.map(WidgetLayoutPlan.lineSlots) == [2, 2, 3, 3, 3])
         #expect(WidgetLayoutPlan.automatic(.large).count == 8)
+    }
+
+    /// Extra large is two panels, Battery and Power, with up to half the slots each.
+    @Test func extraLargeIsTwoPanels() throws {
+        let automatic = try Self.layout(.extraLarge)
+        #expect(automatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .remainingCapacity])
+        #expect(
+            automatic.powerDetails.map(\.field) == [.adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode])
+        #expect(automatic.panelHeadings)
+        // Automatic's details are its panels', in order.
+        #expect(
+            WidgetLayoutPlan.automatic(.extraLarge)
+                == WidgetLayoutPlan.automaticBatteryPanel + automatic.powerDetails.compactMap(\.field))
+        // Custom fills the Battery panel first, then the Power panel, in the chosen order, and its
+        // panels have no names: they hold whatever was chosen.
+        let custom = try Self.layout(.extraLarge, Self.custom(Self.everyField))
+        #expect(custom.details.map(\.field) == Array(Self.everyField.prefix(6)))
+        #expect(custom.powerDetails.map(\.field) == Array(Self.everyField.dropFirst(6).prefix(6)))
+        #expect(!custom.panelHeadings)
+        let few = try Self.layout(.extraLarge, Self.custom([.voltage, .adapter]))
+        #expect(few.details.map(\.field) == [.voltage, .adapter])
+        #expect(few.powerDetails.isEmpty)
+        // The other sizes have one list and no headings.
+        for size in [WidgetSize.small, .medium, .large] {
+            let layout = try Self.layout(size, Self.custom(Self.everyField))
+            #expect(layout.powerDetails.isEmpty && !layout.panelHeadings)
+            #expect(try !Self.layout(size).panelHeadings)
+        }
+    }
+
+    /// In extra large the attention row takes the last slot of its own panel: a condition the
+    /// Battery panel's, heat the Power panel's.
+    @Test func inExtraLargeTheAttentionRowJoinsItsPanel() throws {
+        var s = WidgetRowTests.full
+        s.healthCondition = "Service Recommended"
+        let condition = try Self.layout(.extraLarge, Self.custom(Self.everyField), s)
+        #expect(condition.details.count == 6)
+        #expect(condition.details.last == .attention(.condition(.serviceRecommended)))
+        // The row it displaces moves on to the Power panel, which stays full.
+        let fields = Self.everyField.filter { $0 != .condition }
+        #expect(condition.details.dropLast().map(\.field) == Array(fields.prefix(5)))
+        #expect(condition.powerDetails.map(\.field) == Array(fields.dropFirst(5).prefix(6)))
+        let automatic = try Self.layout(.extraLarge, BatteryWidgetConfiguration(), s)
+        #expect(automatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .remainingCapacity, nil])
+        #expect(automatic.powerDetails.count == 5)
+
+        s.healthCondition = nil
+        s.thermalState = .serious
+        let hot = try Self.layout(.extraLarge, Self.custom(Self.everyField), s)
+        #expect(hot.details.count == 6)
+        #expect(hot.powerDetails.count == 6)
+        #expect(hot.powerDetails.last == .attention(.heat(.serious)))
+        let hotAutomatic = try Self.layout(.extraLarge, BatteryWidgetConfiguration(), s)
+        #expect(hotAutomatic.details.count == 3)
+        #expect(
+            hotAutomatic.powerDetails.map(\.field) == [
+                .adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode, nil,
+            ])
+    }
+
+    /// The level carries what the visuals and VoiceOver need beside the main value.
+    @Test func theLevelSaysTheChargeWhateverTheMainValue() throws {
+        let layout = try Self.layout(.medium, BatteryWidgetConfiguration(main: .temperature))
+        #expect(layout.main.kind == .temperature)
+        #expect(layout.level.text == "62%")
+        #expect(layout.level.state == .charging)
+        #expect(layout.level.icon == BatteryIconState(level: 0.62, percent: 62, glyph: .bolt))
+        var low = WidgetRowTests.full
+        low.chargeState = .discharging
+        low.isExternalPowerConnected = false
+        low.chargePercent = 8
+        low.isLowPowerModeEnabled = true
+        // The menu bar would fill it yellow in Low Power Mode; the widget colours it by its tier.
+        let lowLayout = try Self.layout(.small, BatteryWidgetConfiguration(), low)
+        #expect(lowLayout.level.icon == BatteryIconState(level: 0.08, percent: 8, glyph: .none, tint: .monochrome))
+        #expect(lowLayout.level.tier == .critical)
     }
 
     @Test func orderIsKeptAndDuplicatesAndTheMainValueDropped() throws {
@@ -254,7 +333,7 @@ extension BatteryWidgetLayout {
             case .state, .time, .updated: break
             }
         }
-        for detail in details {
+        for detail in details + powerDetails {
             switch detail {
             case .row(let row): symbols += [row.cue?.symbolName].compactMap { $0 }
             case .attention(let attention): symbols.append(attention.symbolName)

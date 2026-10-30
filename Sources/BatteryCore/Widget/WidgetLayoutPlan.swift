@@ -52,15 +52,16 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
             ]
         // The Battery panel's, then the Power panel's.
         case .extraLarge, .extraLargePortrait:
-            [
-                .maximumCapacity, .cycleCount, .remainingCapacity, .adapter, .batteryPower, .systemLoad, .temperature,
-                .lowPowerMode,
-            ]
+            automaticBatteryPanel + [.adapter, .batteryPower, .systemLoad, .temperature, .lowPowerMode]
         }
     }
 
+    /// Extra large's Battery panel in Automatic, under the charge block: the battery's health and
+    /// what it holds. The rest of Automatic's details make the Power panel.
+    static let automaticBatteryPanel: [BatteryWidgetField] = [.maximumCapacity, .cycleCount, .remainingCapacity]
+
     /// The most details a size shows, the attention row included. Small has one, which takes the
-    /// time line's place.
+    /// time line's place; extra large has half of its slots in each panel.
     static func detailSlots(_ size: WidgetSize) -> Int {
         switch size {
         case .small: 1
@@ -113,16 +114,31 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         }
 
         let slots = detailSlots(size)
-        let shownRows: [WidgetRow] =
-            if size == .small {
-                Array(rows.prefix(slots))
+        let panels = size == .extraLarge || size == .extraLargePortrait
+        let shownRows: [WidgetRow]
+        var powerRows: [WidgetRow] = []
+        if size == .small {
+            shownRows = Array(rows.prefix(slots))
+        } else if panels {
+            // Each panel has half the slots, and the attention row takes the last of its own
+            // panel's: a condition the Battery panel's, heat the Power panel's. Automatic puts each
+            // detail in its panel; Custom fills the Battery panel first, then the Power panel.
+            let batterySlots = slots / 2 - (attention?.isCondition == true ? 1 : 0)
+            let powerSlots = slots / 2 - (attention?.isHeat == true ? 1 : 0)
+            if c.layout == .automatic {
+                shownRows = Array(rows.filter { automaticBatteryPanel.contains($0.field) }.prefix(batterySlots))
+                powerRows = Array(rows.filter { !automaticBatteryPanel.contains($0.field) }.prefix(powerSlots))
             } else {
-                Array(rows.prefix(attention == nil ? slots : slots - 1))
+                shownRows = Array(rows.prefix(batterySlots))
+                powerRows = Array(rows.dropFirst(shownRows.count).prefix(powerSlots))
             }
+        } else {
+            shownRows = Array(rows.prefix(attention == nil ? slots : slots - 1))
+        }
         // Battery power is stale between reloads, so it always comes with the reading's time.
         let showsUpdate =
             c.updateTime == .always || entry.isStale || main.kind == .batteryPower
-            || shownRows.contains { $0.field == .batteryPower }
+            || (shownRows + powerRows).contains { $0.field == .batteryPower }
 
         // The lines: the chosen status lines, then what takes the last one's place when there is
         // no room: small's detail, the reading's time, and small's attention row, which comes last.
@@ -146,15 +162,25 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         lines = Array(lines.prefix(lineSlots - keptExtras.count)) + keptExtras
 
         var details: [WidgetDetail] = []
+        var powerDetails: [WidgetDetail] = []
         if size != .small {
             details = shownRows.map(WidgetDetail.row)
-            if let attention { details.append(.attention(attention)) }
+            powerDetails = powerRows.map(WidgetDetail.row)
+            if let attention {
+                if panels && attention.isHeat {
+                    powerDetails.append(.attention(attention))
+                } else {
+                    details.append(.attention(attention))
+                }
+            }
         }
 
         return .battery(
             BatteryWidgetLayout(
-                visual: c.visual, level: WidgetLevel(percent: percent, snapshot: snapshot), main: main, lines: lines,
-                details: details, tinted: c.colors == .levelColors))
+                visual: c.visual, level: WidgetLevel(percent: percent, snapshot: snapshot, formatter: formatter),
+                main: main, lines: lines, details: details, powerDetails: powerDetails,
+                // Custom's panels hold whatever was chosen, which their names wouldn't fit.
+                panelHeadings: panels && c.layout == .automatic, tinted: c.colors == .levelColors))
     }
 
     /// The page a click opens: the one about the main value, or the one that fixes an empty state.
@@ -196,8 +222,13 @@ public struct BatteryWidgetLayout: Sendable, Equatable {
     /// Under the main value, in order.
     public var lines: [WidgetLine]
     /// In order; the attention row, if any, is last. Small has none: its detail and attention row
-    /// are lines.
+    /// are lines. In extra large, the Battery panel's, under the charge block.
     public var details: [WidgetDetail]
+    /// Extra large's Power panel, in order, with heat's attention row last; empty in the other sizes.
+    public var powerDetails: [WidgetDetail]
+    /// Whether extra large's panels show their names, "Battery" and "Power": in Automatic, whose
+    /// panels hold the battery's and the power's details.
+    public var panelHeadings: Bool
     /// Level colours on; tiers still carry their ``WidgetCue`` when off.
     public var tinted: Bool
 }
@@ -205,16 +236,28 @@ public struct BatteryWidgetLayout: Sendable, Equatable {
 /// The charge, as the level symbol, a ring or the drawn battery shows it.
 public struct WidgetLevel: Sendable, Equatable {
     public var percent: Double
+    /// The charge, formatted: what VoiceOver reads for the visual, whatever the main value.
+    public var text: String
+    /// The battery's state, which VoiceOver reads with the charge.
+    public var state: WidgetStateWord
     public var isCharging: Bool
     /// ``BatteryPresentation/symbolName(for:)``.
     public var symbolName: String
     public var tier: BatteryPresentation.LevelTier
+    /// The drawn battery: the menu bar's fill, bolt and plug, in the one colour the widget gives
+    /// it, so its colours follow the widget's colour style rather than the menu bar's.
+    public var icon: BatteryIconState
 
-    init(percent: Double, snapshot: BatterySnapshot) {
+    init(percent: Double, snapshot: BatterySnapshot, formatter: BatteryFormatter) {
         self.percent = percent
+        self.text = formatter.percent(percent)
+        self.state = WidgetStateWord(snapshot)
         self.isCharging = snapshot.chargeState == .charging
         self.symbolName = BatteryPresentation.symbolName(for: snapshot)
         self.tier = BatteryPresentation.levelTier(for: snapshot)
+        var icon = BatteryIconState(snapshot: snapshot)
+        icon.tint = .monochrome
+        self.icon = icon
     }
 
     public var cue: WidgetCue? { WidgetCue(tier) }
