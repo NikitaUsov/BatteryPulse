@@ -94,6 +94,17 @@ struct WidgetRoute: Hashable, Sendable {
         self.init(page: page)
     }
 
+    /// The route of a click that carries no URL: macOS hands the app an `NSUserActivity` whose
+    /// type is the clicked widget's configuration intent type name, with no configuration the app
+    /// reads. An intent of `manifest` opens its kind's page (``WidgetKindID/page``); any other
+    /// activity type is `nil`, so the app ignores it. The activity's user info isn't read.
+    init?(activityType: String, manifest: WidgetIntentManifest = .shipping) {
+        guard let declared = manifest.kinds.first(where: { $0.intent?.type == activityType }),
+            let kind = WidgetKindID(rawValue: declared.kind)
+        else { return nil }
+        self.init(page: kind.page)
+    }
+
     var url: URL {
         switch page {
         case .device(let key): Self.url("\(Self.scheme)://\(Self.host)/device/\(key.rawValue)")
@@ -105,5 +116,15 @@ struct WidgetRoute: Hashable, Sendable {
     // swift-format-ignore: NeverForceUnwrap
     private static func url(_ string: String) -> URL {
         URL(string: string)!
+    }
+}
+
+extension WidgetKindID {
+    /// The page a click on the kind's widget opens when it names none: the kind's own subject.
+    var page: PageID {
+        switch self {
+        case .battery: .overview
+        case .accessories: .accessories
+        }
     }
 }

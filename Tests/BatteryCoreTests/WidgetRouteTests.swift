@@ -71,6 +71,50 @@ struct WidgetRouteTests {
         #expect(WidgetRoute(url: url) == nil)
     }
 
+    /// The manifest once both kinds take a configuration intent.
+    static let configurable = WidgetIntentManifest(kinds: [
+        .init(.battery, families: [.small, .medium], intent: .init(type: "BatteryWidgetIntent", parameters: [])),
+        .init(
+            .accessories, families: [.small, .medium, .large],
+            intent: .init(type: "AccessoriesWidgetIntent", parameters: [])),
+    ])
+
+    /// A click without a URL opens the clicked kind's page, for every intent that ships and every
+    /// one planned.
+    @Test(arguments: [WidgetIntentManifest.shipping, configurable])
+    func eachIntentOpensItsKindsPage(_ manifest: WidgetIntentManifest) throws {
+        for declared in manifest.kinds {
+            guard let intent = declared.intent else { continue }
+            let kind = try #require(WidgetKindID(rawValue: declared.kind))
+            #expect(WidgetRoute(activityType: intent.type, manifest: manifest)?.page == kind.page)
+        }
+    }
+
+    @Test func theKindsPages() {
+        #expect(WidgetRoute(activityType: "BatteryWidgetIntent", manifest: Self.configurable)?.page == .overview)
+        #expect(
+            WidgetRoute(activityType: "AccessoriesWidgetIntent", manifest: Self.configurable)?.page == .accessories)
+        #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories])
+    }
+
+    /// Only an intent's own type name opens a page: not another app's, not a kind string, not a
+    /// near miss.
+    @Test(arguments: [
+        "", "SpikeWidgetIntent", "batterywidgetintent", "BatteryWidgetIntent ",
+        "BatteryPulseWidget.BatteryWidgetIntent",
+        "io.github.nikitausov.BatteryPulse.battery", "NSUserActivityTypeBrowsingWeb",
+    ])
+    func otherActivityTypesAreRejected(_ type: String) {
+        #expect(WidgetRoute(activityType: type, manifest: Self.configurable) == nil)
+        #expect(WidgetRoute(activityType: type) == nil)
+    }
+
+    /// A static widget has no intent, so no activity type opens its page.
+    @Test func aStaticKindHasNoActivityRoute() {
+        let manifest = WidgetIntentManifest(kinds: [.init(.battery, families: [.small, .medium])])
+        #expect(WidgetRoute(activityType: "BatteryWidgetIntent", manifest: manifest) == nil)
+    }
+
     /// Schemes and hosts are case-insensitive, as the system may hand them over either way.
     @Test func schemeAndHostIgnoreCase() throws {
         let url = try #require(URL(string: "BatteryPulse://Page/power"))
