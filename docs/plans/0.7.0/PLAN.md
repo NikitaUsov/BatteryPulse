@@ -65,8 +65,9 @@ Appendix C):
   itself. His part of Session R, its day's end and the after-publishing check drops from about
   106 minutes to about 12-15 (§6.2-§6.4).
 
-**Updated 2026-10-24 with Session A's final report** (`docs/plans/0.6.2/sessions/A.md`, merged
-into the integration branch at `5849d01` with the redacted Charge Limit capture). §2.2 and
+**Updated 2026-10-24 with Session A's final report** (`sessions/A.md`, merged into the integration
+branch at `5849d01` with the redacted Charge Limit capture; copied to
+`docs/plans/0.7.0/sessions/A.md` at 0.6.2's D3). §2.2 and
 Appendix C now hold its final answers, and Appendix C notes each place where it differs from the
 interim report:
 - **Clicks take two routes** (W0-4 (4)): a `widgetURL` still arrives as a URL, but two clicks on
@@ -103,7 +104,7 @@ interim report:
 | UG:n, RM:n | `docs/USER_GUIDE.md`, `README.md`, line n |
 | file:line | a file in `Sources`, `Tests`, `scripts`, `Resources` or `.github` |
 | CL | `CLAUDE.md` (it wins over every other source) |
-| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md`: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`) |
+| P2 | the verified 0.6.2 plan, its plan folder's `PLAN.md`, removed at 0.6.2's release: section, package (`WP-…`), spike (`W0-…`), widget package (`W-…`) or question (`Q-…`). Its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | RD | the roadmap to 1.0, `docs/plans/1.0/ROADMAP.md`: section, criterion (`C…`), decision (`M-…`) or new item (`NEW-…`) |
 | INV | `docs/plans/1.0/INVENTORY.md`, by row ID (`FEA-06` …) |
 | P1, PB | the 0.6.1 plan and playbook, `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
@@ -259,7 +260,7 @@ Contents:
 
 | # | 0.6.2 item (P2) | What 0.7 needs from it | If it failed, was cut or never ran |
 |---|---|---|---|
-| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **File missing:** main receives only squash merges, so `docs/plans/` never enters main's history (`git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So 0.6.2's D3 is asked, as a request from this plan, to copy into `docs/plans/0.7.0/` before 0.6.2's branches are deleted (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper, the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`), the whole of P2 Appendix C (not only the W0 rows) and Session A's report (`sessions/A.md` with its files). Either way the release PR's `refs/pull/<n>/head` keeps them reachable (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its final answers (`docs/plans/0.6.2/sessions/A.md`, 2026-10-24) are in §2.2 and Appendix C |
+| D-1 | WP-W0's answers. D3 moves them, with §8, §9.1 and the Q-W block, to `docs/plans/0.7.0/widgets.md` (P2 D3) | The row of P2 §8.16 that applies to each spike (§2.2) | **Copied at 0.6.2's D3:** main receives only squash merges, so only what the release PR's last commit holds reaches main (through 0.6.1 no plan folder did: `git log 7622373 -- docs/plans` is empty), and P1 §8 deletes `claude/*` branches after a release. So, as this plan asked, 0.6.2's D3 copied into `docs/plans/0.7.0/`, ahead of deleting 0.6.2's branches (the integration branch `claude/nice-faraday-k08mhb`, `claude/062-<pkg>` and `claude/062-spike-widget`): `m5-session.sh`, its swap helper (`swap.swift`), the hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the whole of P2 Appendix C as `0.6.2-appendix-c.md` (not only the W0 rows, which `widgets.md` also holds) and Session A's report (`sessions/A.md` with its files in `sessions/A/`). They reach main with 0.6.2's squash merge, and the release PR's `refs/pull/<n>/head` keeps 0.6.2's whole plan reachable in its history (§14, Q7-8). **Spikes:** they ran in Session A (2026-10-23); its final answers (`docs/plans/0.7.0/sessions/A.md`, 2026-10-24) are in §2.2 and Appendix C |
 | D-2 | K-03, the `BatterySource` target (WP-15 item 1, G-15) | CryptoKit and the device stack out of the widget (about 187 KB, P2 §2.3). `MacAccessoryProvider` sits in the lower target, so W-8 needs no second split (P2 WP-15) | **Nothing blocks.** `MacAccessoryProvider` is in BatteryKit today (`BatteryKit/MacAccessoryProvider.swift`), and the widget can log through its own `Signposts(subsystem:log:)`, which is public (`BatteryKit/Diagnostics.swift`, `public struct Signposts`). **Only size suffers:** G7-10 decides, and if the widget would cross 0.6.1's ceilings, K-03 runs as written in P2 WP-15 before W-3a ("W-0K") |
 | D-3 | `-internalize-at-link` on the widget (WP-15 item 2) | About −27 % of the widget's `__text` (P2 WP-15, measured in a native build) | **Less headroom.** G7-10's cut order applies: `Path` instead of Swift Charts, SIZ-07, W-11 cut first |
 | D-4 | WP-14a, the nonisolated read (E20) | The widget's async provider reads without the `Task { @MainActor in … }` hops of today (`BatteryPulseWidget.swift:50, 56`; P2 §8.10). WP-14a covers the battery read only: `MacAccessoryProvider` stays `@MainActor` (`BatteryKit/MacAccessoryProvider.swift:14-15`), so W-8's read hops once (W-8 item 4) | **Reverted:** the provider keeps one hop around the synchronous `read()`. `WidgetReadCache` still makes it one read per burst. No blocker |
@@ -267,11 +268,11 @@ Contents:
 | D-6 | WP-10, main actor by default for the app | 0.7's edits to `WidgetRefresher` and `AppDelegate` are written in the default-isolation style. The widget stays nonisolated (REJ-30; P2 WP-10) | **Reverted:** 0.7's app edits keep explicit `@MainActor`, as v0.6.1 does |
 | D-7 | SIZ-04: widget ceilings lowered to the RC plus about 5 % (WP-15 item 4) | 0.7's growth shows in CI, and every raise is a commit of its own (`size-budget.json` "about") | **Not lowered:** 0.6.1's ceilings stand (`scripts/size-budget.json`), with the same rule |
 | D-8 | L10N-03: a way to show the widget in Russian (Session A step 3.3) | Session R checks the Russian edit sheet and widgets (§6). **Answered by the final `A.md`** (W0-2-W-ru: 2, only the widgets; Appendix C row 10): with `AppleLanguages` (ru) in the extension's container preferences and the extension ended, the widgets turned Russian once they redrew (a widget not yet redrawn kept its English, its live minutes too), while the edit sheet stayed English. So the method shows the widgets in Russian, not the sheet: W-2 item 5 checks the sheet's strings, and Session R step 4.3 tries the sheet again (G7-13) | **No method found:** the Russian half is recorded "not checked", never "n". `WidgetTextBudget` (W-1) checks lengths on Linux |
-| D-9 | DIS-06: did the 0.6.1 → 0.6.2 in-app update keep placed widgets? (D3's after-publishing check) | The baseline for "placed widgets survive" (G7-2). 0.6.2's A0 already saw one in-app update keep them: 0.6.0 → 0.6.1 through Install and Relaunch kept the desktop widget, which shows the current charge (2026-10-22, Appendix C). Session A suggests why a static-to-static update keeps them: a descriptor fetched from the old extension is the same static one [inference]; the change to a configurable kind is what needs the old extension ended before the swap (D-17) | **Lost in 0.6.2 too:** the loss comes from the update, not from configuration. The notes then say "add it again if it's gone" |
+| D-9 | DIS-06: did the 0.6.1 → 0.6.2 in-app update keep placed widgets? (D3's after-publishing check: the section After publishing of `docs/plans/0.7.0/SESSION-B.md`, started from `main` by `start-after-publishing.sh`, Q7-8) | The baseline for "placed widgets survive" (G7-2). 0.6.2's A0 already saw one in-app update keep them: 0.6.0 → 0.6.1 through Install and Relaunch kept the desktop widget, which shows the current charge (2026-10-22, Appendix C). Session A suggests why a static-to-static update keeps them: a descriptor fetched from the old extension is the same static one [inference]; the change to a configurable kind is what needs the old extension ended before the swap (D-17) | **Lost in 0.6.2 too:** the loss comes from the update, not from configuration. The notes then say "add it again if it's gone" |
 | D-10 | WP-21's energy numbers (S1, S2, S6, S7) | The baseline for 0.7's widget runs (§10) | **Missing:** 0.7 measures the widget's reads and reloads alone, and the comparison waits for the final 0.9.x energy run (RD C5) |
-| D-11 | The 0.6.2 session script: prepare, backup, restore, the swap helper, `send` (P2 §6, WP-21), and its hands-free mode (`ui.swift`, `frames.swift`, `preflight`, `arm`, the split `restore`, the detectors, `SESSION-B.md`; 2026-10-23) | W-12 builds 0.7's script from it, with Session A's fixes: the log count without ndjson's summary line (`9a32e57`) and the widget extension ended before each swap (`56702f9`); W-12 item 1 lists the issues Session A left open. Session R runs hands-free on the same helpers (§6.2) | **Removed with the plan folder in D3:** the copy D-1 asks for in `docs/plans/0.7.0/`, or 0.6.2's integration branch, `claude/nice-faraday-k08mhb`, if it was kept. If neither exists, W-12 rebuilds the script from 0.6.1's (`6aec4d2:docs/plans/0.6.1/m5-session.sh`) and P2 §6's text (+1 run), and the hands-free helpers from P2 WP-21's text (+1 run); without them, Session R's steps need his hands again (about 83 minutes, as before the hands-free mode) |
+| D-11 | The 0.6.2 session script: prepare, backup, restore, the swap helper, `send` (P2 §6, WP-21), and its hands-free mode (`ui.swift`, `frames.swift`, `preflight`, `arm`, the split `restore`, the detectors, `SESSION-B.md`; 2026-10-23) | W-12 builds 0.7's script from it, with Session A's fixes: the log count without ndjson's summary line (`9a32e57`) and the widget extension ended before each swap (`56702f9`); W-12 item 1 lists the issues Session A left open. Session R runs hands-free on the same helpers (§6.2) | **Removed with the plan folder in D3, after the copy D-1 names:** `docs/plans/0.7.0/m5-session.sh`, `swap.swift`, `ui.swift`, `frames.swift`, `SESSION-B.md` and `start-session-b.sh` are W-12's starting point, and CI keeps checking them (the queue's dry run, `bash -n`, the helpers' type-checks). If neither that copy nor the 0.6.2 release PR's history (Q7-8) held them, W-12 would rebuild the script from 0.6.1's (`6aec4d2:docs/plans/0.6.1/m5-session.sh`) and P2 §6's text (+1 run), and the hands-free helpers from P2 WP-21's text (+1 run); without them, Session R's steps need his hands again (about 83 minutes, as before the hands-free mode) |
 | D-12 | WP-16, the `diskutil` installer (G-16) | F12 (at the logged day's end, §6.3) tests whichever installer the RC carries | **Reverted to `hdiutil`:** F12 runs as in 0.6.1 |
-| D-13 | QUA-05, the Charge Limit capture (optional in 0.6.2) | **Done in Session A** (2026-10-23, Appendix C finding 7): with the limit at 80 %, `NotChargingReason` gained bit 24 (0x01000000), and the configured 80 is in no key. **The final `A.md` brought** the redacted `bpulse --raw` capture of the hold (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, on the maintainer's approval; W-14's fixture) and the 80 → 100 → 80 reads, a minute after each change: the 100 % diff (bit 24 clears at 100 % and returns at 80 %; Appendix C finding 9; W-14). They are reads rather than the timeline rows this plan asked for, and they settle the same questions. **Not brought:** a screenshot of System Settings → Battery's Charge Limit in Russian, for W-10's terminology pass. The other captures stay on the Mac | **Both came,** so W-12's `charge-limit` step doesn't run for W-14 (§6.2 step 11), and W-14 moves to 0.8 only if its review rejects the capture (G7-18). **No Russian screenshot:** W-10 follows Apple's Russian article, and Session R step 9b confirms |
+| D-13 | QUA-05, the Charge Limit capture (optional in 0.6.2) | **Done in Session A** (2026-10-23, Appendix C finding 7): with the limit at 80 %, `NotChargingReason` gained bit 24 (0x01000000), and the configured 80 is in no key. **The final `A.md` brought** the redacted `bpulse --raw` capture of the hold (`docs/plans/0.7.0/sessions/A/charge-limit-80.plist`, on the maintainer's approval; W-14's fixture) and the 80 → 100 → 80 reads, a minute after each change: the 100 % diff (bit 24 clears at 100 % and returns at 80 %; Appendix C finding 9; W-14). They are reads rather than the timeline rows this plan asked for, and they settle the same questions. **Not brought:** a screenshot of System Settings → Battery's Charge Limit in Russian, for W-10's terminology pass. The other captures stay on the Mac | **Both came,** so W-12's `charge-limit` step doesn't run for W-14 (§6.2 step 11), and W-14 moves to 0.8 only if its review rejects the capture (G7-18). **No Russian screenshot:** W-10 follows Apple's Russian article, and Session R step 9b confirms |
 | D-14 | 0.6.2's cut list (P2 §7.2: "a cut item moves to 0.7") | — | **Without M5 time:** C-1, the Linux-only lane. **With M5 time:** Session R's optional steps, or the verification matrix (RD §3.2) |
 | D-15 | P2 §7.3's frozen list ("Widget. Same kind, look and reload policy.") | 0.7 changes the kind's configuration, its families and the reload policy on purpose (§7.3) | — |
 | D-16 | NEW-23: 0.6.2's D3 adds download columns to ROADMAP's Releases table and, a week after publishing, records v0.6.2's DMG and `.sig` counts, printed by 0.6.2's new `scripts/release-stats.swift` (P2 D3; RD §1.2 item 6) | The columns 0.7.0's counts go into (§13 step 8), and the script that prints them. It already looks for `BatteryPulse-count.txt` and prints "—" before v0.7.0 | **Columns missing:** §13 step 8 adds them and fills the earlier releases from the same releases API call (RD §3.1 item 7). **Script missing:** step 8's `gh api` call, once per release |
@@ -281,7 +282,7 @@ Contents:
 ### 2.2 The spike answers and what 0.7 ships for each
 
 0.6.2's Session A ran every spike on 2026-10-23, and its final report
-(`docs/plans/0.6.2/sessions/A.md`, 2026-10-24) gives the answers below; Appendix C notes where it
+(`docs/plans/0.7.0/sessions/A.md`, 2026-10-24) gives the answers below; Appendix C notes where it
 differs from the interim report this table first held. P2 §8.16 held a fallback for each failed
 spike; the answers made those fallbacks unnecessary, so this table keeps only what 0.7 ships and
 what is still open. The final report reversed one finding, that no `NSUserActivity` arrives (W0-4
@@ -450,9 +451,11 @@ guards; acceptance; effort; risk; rollback.
 
 - **Source:** P2 D3; P2 Appendix C; RD §3.2 "Before code"; §2 above.
 - **Items:**
-  1. Read 0.6.2's Appendix C (in `docs/plans/0.7.0/widgets.md`, or the copy or kept branch of D-1).
+  1. Read 0.6.2's Appendix C (`docs/plans/0.7.0/0.6.2-appendix-c.md`, D-1; its W0 rows are also in
+     `widgets.md`). Session B's results are in that copy, in the rows marked "Session B, second
+     attempt, 2026-10-30 (final)", from its report `docs/plans/0.7.0/sessions/B.md`.
      Fill this plan's Appendix C table "From 0.6.2" with each D-row and each W0 row. Session A's
-     final answers are already there (2026-10-24, from `docs/plans/0.6.2/sessions/A.md`, merged at
+     final answers are already there (2026-10-24, from `docs/plans/0.7.0/sessions/A.md`, merged at
      `5849d01`), and D-13's redacted capture came with them; this item checks that D-17's installer
      fix arrived. **What the final `A.md` brought of what this plan asked:** SPIKE-C's and SPIKE-I's
      W0-2 answers (passed), the offset text in Russian (passed, W0-6), the 80 → 100 → 80 reads (the
@@ -471,13 +474,73 @@ guards; acceptance; effort; risk; rollback.
   5. Decide W-0K (D-2). W-0S isn't needed: the spikes ran (§2.3).
   6. **Before 0.6.2's branches are deleted** (the integration branch `claude/nice-faraday-k08mhb`,
      and `claude/062-*`; this is asked of 0.6.2's D3 too): check that
-     `docs/plans/0.7.0/` holds 0.6.2's `m5-session.sh`, its swap helper, the hands-free helpers
-     (`ui.swift`, `frames.swift`, `SESSION-B.md`), the whole P2 Appendix C and Session A's report
-     (`sessions/A.md` with its files; D-1, D-11). If
+     `docs/plans/0.7.0/` holds 0.6.2's `m5-session.sh`, its swap helper (`swap.swift`), the
+     hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the
+     whole P2 Appendix C (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its
+     files in `sessions/A/`; D-1, D-11), as 0.6.2's D3 copied them. If
      not, read them from the 0.6.2 release PR's `refs/pull/<n>/head` (Q7-8).
+  7. **CI moves to Xcode 27.2 at 0.7's start,** once the `xcode-27` runner image carries it: one
+     commit sets `DEVELOPER_DIR` to Xcode 27.2 in `ci.yml` and `release.yml` (both name
+     `/Applications/Xcode_27.1.app` today) and fixes any new warning, since both jobs treat
+     warnings as errors. 0.6.2 shipped on Xcode 27.1, so its release matched its tested RC.
+     - Swift stays 6.4: Xcode 27.2 includes Swift 6.4 and the macOS 27.2 SDK (Apple's Xcode 27.2
+       release notes).
+     - The 27.2 SDKs for macOS, watchOS, tvOS and visionOS incorrectly report 27.1 as a valid
+       deployment target, a known issue (187160501; Apple's Xcode 27.2 release notes). That is
+       harmless here: the package targets macOS 27 (`.macOS(.v27)` in `Package.swift`), not 27.1.
+     - Session R's RC is the first build on 27.2, so the RC tests the toolchain 0.7.0 ships with.
+     - The cloud sessions' Linux toolchain moves with it: `SWIFT_VERSION` in
+       `.claude/hooks/session-start.sh` goes from 6.4.1 to 6.4.2 (swift.org publishes 6.4.2 for
+       Ubuntu 24.04), in the same commit.
+  8. **The widget's language** (0.6.2 Session B's F8-ru). The widget showed English after its
+     extension's container `AppleLanguages` was set to Russian and the extension was ended,
+     because nothing redrew it: WidgetKit keeps the saved render until a reload, and the step
+     took its shots 5 s later. The RC's widget code and its Russian tables equal 0.6.1's, so this
+     is a test artifact, recorded "not checked: no redraw". It points at a gap that predates
+     0.6.2 [unverified on a Mac]: a language chosen for BatteryPulse alone (Settings → General →
+     Language, which writes the app's own domain) most likely never reaches the sandboxed
+     widget, and the app never reloads the widget when its language changes. So:
+     - **W-4:** the reload planner gains a reason "the app's language changed". The app keeps
+       its effective language (`Bundle.main.preferredLocalizations.first`) in its defaults, and
+       at a launch where it differs it ends the extension and reloads every placed kind, as a
+       version change does (`WidgetRefresher.endPreviousExtension()`). The decision lives in
+       BatteryCore with its Linux test.
+     - **W-3b, with W-5's feed (or the shared-preference read of the app's `AppleLanguages`
+       alone, if W-5 is cut):** the widget picks its `.lproj` from the app's language list at
+       each render. That changes the widget's reads or entitlements, so it goes through the
+       posture check and Session R.
+     - **W-12:** Session R's Russian step switches the language the way a user does (the app's
+       language in System Settings → Language & Region → Applications), relaunches the app,
+       waits for the reload notice and a new extension process, and only then takes its shots.
+       No reload within its timeout is "not checked", never "n".
+     - **W-10:** USER_GUIDE § Language says what the widget follows.
+  9. **Session B's findings** (0.6.2, 2026-10-30; the findings row of the Appendix C copy):
+     - **History over Raw Data's table:** after an AX switch from Raw Data, History showed its
+       title, picker and sidebar selection over Raw Data's table for a few seconds. Not a 0.6.2
+       regression (`MainView`'s ZStack, `.id(selection)` and opacity transition date from 0.5.0);
+       most likely the AppKit-backed table's removal waits for the next window update when no
+       pointer moves [inferred]. Session R compares 0.6.1 and the RC with a pointer-free switch,
+       and **W-3c**, which owns `MainView.swift`, fixes it if it reproduces.
+     - **The session script (W-12):** macOS 27.2 lists no menu bar item window in CGWindowList
+       (P11), so S3 and V01-menubar's dark bar and pixel diff need another way; System Settings
+       panes by URL open the wrong pane for appearance, desktop and displays (P8); P6, P3 and P5 as
+       recorded; the script's desktop clicks leave the click-wallpaper-to-show-desktop state on, and
+       computer use leaves a 28×40 pointer overlay at its last click that fails the occlusion check,
+       each ended by a click or a move on bare desktop; banners at layer 23 (the Claude desktop
+       app's permission banner, a macOS Software Update banner) refused the desktop click and
+       blocked five runs, so preflight asks him to quit the Claude desktop app and to postpone
+       pending macOS updates before the queue; F8 gets its own redraw (item 8).
+     - **WP-18's Xcode items** (SUI-17, SUI-19's timing, SZ-10's icon) didn't run: Xcode asked to
+       install system components after the macOS 27.2 update, and the frozen worktree had no
+       icon source. **C-1**, in Session R's GUI phase.
+     - **The menu bar item on a dark bar** wasn't checked on the RC (P11; the light bar read
+       right): **C-1**, Session R's GUI phase, by another way than CGWindowList (W-12).
+     - **The hands-free cost** held: about the planned 13-15 minutes of his, plus closing one
+       banner (§6.2's estimates stand).
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
-- **Effort:** none in runs.
+- **Effort:** none in runs, but item 7's commit (and any warning 27.2 adds); item 8's work lands
+  in W-4, W-3b, W-12 and W-10, and item 9's in W-3c, W-12 and C-1.
 
 ### S-1: `bpulse`'s JSON for scripts: ISO 8601 device dates and `formatVersion` (P1)
 
@@ -1230,8 +1293,8 @@ guards; acceptance; effort; risk; rollback.
 
 - **Source:** P2 WP-21 and §6 (the script's structure); RD NEW-22; INV ENG-17, QUA-16.
 - **Items:**
-  1. **`docs/plans/0.7.0/m5-session.sh`,** built from 0.6.2's script (D-11: the copy in
-     `docs/plans/0.7.0/`, or the kept branch): `prepare`, `backup`, `restore`, the swap helper,
+  1. **`docs/plans/0.7.0/m5-session.sh`,** built from 0.6.2's script (D-11: its copy at this very
+     path, or the 0.6.2 release PR's history): `prepare`, `backup`, `restore`, the swap helper,
      `send`, `day-start`, `day-end`, and the steps of §6.
      - **0.6.2's hands-free mode, reused** (P2 WP-21; the maintainer's request of 2026-10-23):
        `ui.swift` with its safety rules, `frames.swift`, `preflight` and its proofs, the `arm`
@@ -1456,10 +1519,10 @@ guards; acceptance; effort; risk; rollback.
      `SystemChargeLimit`; W-10 checks both against the code.
 - **The fixture:** `Tests/BatteryCoreTests/Fixtures/m5-macos27-charge-limit.plist`, from the
   session's `bpulse --raw` capture at the 80 % hold, which came with the final `A.md` on the
-  maintainer's approval (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, 21:37; serials,
+  maintainer's approval (`docs/plans/0.7.0/sessions/A/charge-limit-80.plist`, 21:37; serials,
   manufacturer data and `MfgData` read REDACTED; no UDID or device name). W-14 checks it against
   the Fixtures README and commits it under that name, with a row in the README and a case in
-  `Fixture.swift` (D-13); `docs/plans/` never reaches main (D-1), so the fixture's copy is what
+  `Fixture.swift` (D-13); a plan folder goes at its release (D-1), so the fixture's copy is what
   ships. With the real capture in hand, no hand-edited stand-in is needed (NEW-01's rule). Only a
   capture that fails the README's check would move W-14 whole to 0.8 (G7-18).
 - **BatteryCore decisions and Linux tests** (`Tests/BatteryCoreTests/SystemChargeLimitTests.swift`):
@@ -1978,8 +2041,10 @@ As P1 §3.5 and P2 D1-D3, with 0.7's differences.
   ROADMAP's 1.1 entry, as 0.6.2's D3 did for 0.7 (RD §1.2 item 9): `widgets.md`'s §8.3 (the feed),
   §8.5's History and iPhone & iPad parts, §8.8's feed hardening, W-5 to W-7, W-9, and the Q-W
   answers.
-- Remove `docs/plans/0.7.0/` and its `bash -n` line, noting the last commit that still holds it
-  (`<keep>`) for §6.4's start line.
+- Remove `docs/plans/0.7.0/` and the ci.yml lines that name it (the Linux job's queue dry run, and
+  the `bash -n` lines and the helpers' type-checks in "Check the verification scripts", which 0.6.2's
+  D3 pointed at this folder's copies), noting the last commit that still holds it (`<keep>`) for
+  §6.4's start line.
 - Release (§13), then the after-publishing check (§6.4), started by the line D3 posts on the
   release PR with `<n>` and `<keep>` filled in (§6.2, "The short sessions").
 - A week after publishing: the download counts into ROADMAP's Releases table (§13 step 8,
@@ -2537,7 +2602,7 @@ approvals and, at its end, his yes before `send`: about 2 minutes. A second yes 
 | **G7-15** update path | the release | F12 (at the logged day's end, §6.3); §6.4 | F12 fails: as 0.6.2's G-16 (the installer's last good code). §6.4 step 3 shows 2 or 4: `--prerelease`, fix forward |
 | **G7-16** crashes and faults | whether the RC can ship | Session R and the logged day's `day-end` count (§6.3) | Any BatteryPulse or BatteryPulseWidget crash report, or any `fault` in the subsystem: no D3. Fix forward, build a new RC and repeat the Session R steps the fix touches |
 | **G7-17** placed kinds | whether W-4 filters reloads by `currentConfigurations()` | Session R step 9's per-kind counts (W-4 item 3) | Not shown to match: an empty answer keeps counting as "placed" for Battery |
-| **G7-18** Charge Limit | W-14 in 0.7 | **Answered: both came with the final `A.md`** (D-13): the redacted capture (`docs/plans/0.6.2/sessions/A/charge-limit-80.plist`, which becomes `m5-macos27-charge-limit.plist`) and the 100 % diff (bit 24 clears at 100 % and returns at 80 %; W-14 "Settled by the 100 % diff"); Session R step 9b | No fixture by C1 (a capture that fails the Fixtures README's check): W-14 moves whole to 0.8 (FEA-35, beside NEW-01), before anything frozen ships |
+| **G7-18** Charge Limit | W-14 in 0.7 | **Answered: both came with the final `A.md`** (D-13): the redacted capture (`docs/plans/0.7.0/sessions/A/charge-limit-80.plist`, which becomes `m5-macos27-charge-limit.plist`) and the 100 % diff (bit 24 clears at 100 % and returns at 80 %; W-14 "Settled by the 100 % diff"); Session R step 9b | No fixture by C1 (a capture that fails the Fixtures README's check): W-14 moves whole to 0.8 (FEA-35, beside NEW-01), before anything frozen ships |
 
 ### 7.2 Cut line
 
@@ -2958,9 +3023,10 @@ USER_GUIDE):
 3. **ROADMAP:** a Releases row `| 0.7.0 | <date> | … |` (R:691-699), its download counts, Count
    included, left for step 8; §12's changes.
 4. **Remove `docs/plans/0.7.0/`** in the last commit, after ROADMAP holds the lasting decisions and
-   `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). Its `bash -n` line goes with it
-   (P2 D3). The commit before it is `<keep>`, from which §6.4's short session reads its runbook
-   and script (§6.2, "The short sessions").
+   `docs/plans/1.1/widgets.md` holds what 0.7 didn't build (D3). The ci.yml lines that name it (the
+   queue dry run, `bash -n`, the helpers' type-checks) go with it (P2 D3). The commit before it is
+   `<keep>`, from which §6.4's short session reads its runbook and script (§6.2, "The short
+   sessions").
 5. **The PR** `claude/070-integration` → `main`: the D1 draft is marked ready, with the numbers,
    Appendix C and the session results. Both jobs green with 0 warnings. Merged after the
    maintainer's OK.
@@ -3164,9 +3230,18 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
   the time line (P2 §8.5), because a small widget has room for one more line only. The alternative
   kept the time line and offered no detail in small.
 - **Q7-8 (settled, an engineering call).** 0.6.2's D3 copies its session script, swap helper, the
-  hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`) and Appendix C into
-  `docs/plans/0.7.0/` (D-1); the release PR's `refs/pull/<n>/head` keeps them
-  reachable either way, so no branch has to be kept for 0.7.
+  hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), Appendix C
+  (as `0.6.2-appendix-c.md`) and Session A's report into `docs/plans/0.7.0/` (D-1), and they reach
+  main with 0.6.2's squash merge; the release PR's `refs/pull/<n>/head` keeps 0.6.2's whole plan
+  reachable either way, so no branch has to be kept for 0.7. 0.6.2's after-publishing check needs
+  neither the script nor a worktree: he runs `git -C ~/BatteryPulse fetch origin main` and `bash
+  <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-after-publishing.sh)`, and the
+  short local session it starts (auto mode, no allow rule) follows the section After publishing of
+  the copy of `SESSION-B.md`, read from `main`: computer use for the GUI checks, `codesign` and
+  `xattr` as its only commands, nothing recorded in git, and a Russian summary he forwards to the
+  cloud session, which marks v0.6.2 a prerelease on his yes if a check failed. The copied script
+  couldn't run it: outside Session B's worktree it runs as Session A, and `ui` is a Session B
+  command.
 - **Q7-9 (an anonymous version count). Decided by the maintainer (2026-10-22): yes, on by default,
   announced honestly.** He wants to know how many people use which version. W-13 is the verified
   design:
@@ -3200,7 +3275,9 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 
 **Sources:**
 - R at `eebf748`;
-- P2 (`docs/plans/0.6.2/PLAN.md`), RD (`docs/plans/1.0/ROADMAP.md`), INV
+- P2 (0.6.2's plan: its §8, §9, Q-W answers and W0 rows in `docs/plans/0.7.0/widgets.md`, its
+  whole Appendix C in `docs/plans/0.7.0/0.6.2-appendix-c.md`, the rest in the history of the 0.6.2
+  release PR's head, `refs/pull/<n>/head`), RD (`docs/plans/1.0/ROADMAP.md`), INV
   (`docs/plans/1.0/INVENTORY.md`);
 - P1 and PB at `6aec4d2:docs/plans/0.6.1/` (in PR 11's history).
 
@@ -3262,7 +3339,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 | The build-number risk | ci.yml:135; `release.yml:109`; `build-app.sh:112-113` | Fixed in D1: one growing clock in both workflows (§6.5; this plan's addition) |
 | A parameter added to a shipped intent (1.1's History chart, FEA-19) | P2 §8.13; RD C14 item 5 | Session R step 4.4 (RC-P), recorded in Appendix C |
 | FEA-35 the Charge Limit shown, read-only, in the app, the menu bar and the widget (the maintainer's request, 2026-10-23) | §14 Q7-10; INV FEA-35; RD §3.2, §3.3; Session A findings 7 and 9; the Charge Limit research (Appendix C); RD NEW-01, FEA-20 | W-14: the "at limit" state in 0.7 (G7-18); the configured percentage in 0.8 (FEA-35's second half, beside NEW-01, with W-14's candidates) |
-| Session A's W0 answers (final, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24) | P2 Appendix C; Appendix C here | §2.2; G7-1 to G7-5, G7-8, G7-9, G7-12, G7-13 |
+| Session A's W0 answers (final, `docs/plans/0.7.0/sessions/A.md`, 2026-10-24) | P2 Appendix C; Appendix C here | §2.2; G7-1 to G7-5, G7-8, G7-9, G7-12, G7-13 |
 | The widget extension ended before the swap | Session A's W0-2; P2 WP-16 item 6 | D-17; W-3a item 10; Session R step 2, §6.4 |
 | The iPad's connection label after unplugging | Session A's F5; P2 WP-23 | D-18; C-1 if 0.6.2 didn't fix it |
 | Session A's script lessons | P2 Appendix C | W-12 item 1 |
@@ -3455,6 +3532,11 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 - **NOTES27:** 161835690 (other teams' containers are denied without a prompt), 178668601 (files
   created by other teams' apps may be denied), 184660124 (a process without a bundle ID can't be
   granted access).
+- **Apple's Xcode 27.2 release notes**
+  (https://developer.apple.com/documentation/xcode-release-notes/xcode-27_2-release-notes,
+  fetched 2026-10-30; W-0 item 7): Xcode 27.2 includes Swift 6.4 and SDKs for macOS 27.2 and the
+  other 27.2 platforms; a known issue, 187160501: the macOS, watchOS, tvOS and visionOS SDKs in
+  Xcode 27.2 incorrectly report 27.1 as a valid deployment target.
 
 **Conflicts between Apple's sources** [conflict]:
 - **Extra-large portrait on the Mac.** The `WidgetFamily` page lists macOS 27.0, "on the Desktop on
@@ -3467,7 +3549,7 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
   only screenshots), so W-3b designs for all three modes and Session R step 5's screenshots
   decide.
 
-**Answered by 0.6.2's Session A** (final, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24; §2.2,
+**Answered by 0.6.2's Session A** (final, `docs/plans/0.7.0/sessions/A.md`, 2026-10-24; §2.2,
 Appendix C): the processor step under SwiftPM (W0-1); the per-family `size:` overload, for entity
 arrays only (W0-1 (a)); placed static widgets surviving the change to `AppIntentConfiguration`,
 once the old extension is ended before the swap (W0-2); accessory reads from the sandbox (W0-4
@@ -3521,7 +3603,7 @@ raised to 100 % and returns at 80 % (W-14).
 
 | Fact | Shown by | Decides |
 |---|---|---|
-| D-1, D-11: where the W0 answers, the whole Appendix C, the session script and its hands-free helpers are (the copy in `docs/plans/0.7.0/`, or the kept branch, Q7-8) | 0.6.2 D3 | W-0, W-12 |
+| D-1, D-11: where the W0 answers, the whole Appendix C, the session script and its hands-free helpers are (the copies in `docs/plans/0.7.0/`: `widgets.md`, `0.6.2-appendix-c.md`, `m5-session.sh` with its helpers, `sessions/A.md`; else the 0.6.2 release PR's history, Q7-8) | 0.6.2 D3 | W-0, W-12 |
 | D-2, D-3: K-03 and internalize shipped; the widget's `__text` and binary at v0.6.2 | 0.6.2 CI | G7-10; W-0K |
 | D-4: WP-14a's shape (a nonisolated protocol, or `readNonisolated(scope:)`) | 0.6.2 code | W-3a |
 | D-4, answered 2026-10-22: shape B. `MacBatteryProvider.readNonisolated(scope:)` through `BatteryProvider.nonisolatedReader`; the protocol stays `@MainActor` (0.6.2 plan Appendix C, WP-14a) | 0.6.2 WP-14a | W-3a |
@@ -3530,17 +3612,17 @@ raised to 100 % and returns at 80 % (W-14).
 | D-8: the Russian method for the widget: **the extension's `AppleLanguages` reached the widgets, not the edit sheet** (the final `A.md`, W0-2-W-ru: 2; row 10 below) | 0.6.2 Session A step 3.3 | Session R step 4.3; W-2 item 5; G7-13 |
 | D-9: placed widgets after 0.6.1 → 0.6.2 in-app | 0.6.2 D3 | G7-2, Q7-4 |
 | D-12: the installer 0.6.2 shipped | 0.6.2 G-16 | F12 at the logged day's end (§6.3) |
-| D-13: the Charge Limit capture: **done in Session A** (finding 7 below). **The final `A.md` brought** the redacted `charge-limit-80.plist` (`docs/plans/0.6.2/sessions/A/`, on the maintainer's approval) and the 80 → 100 → 80 reads (finding 9); **not** the Russian Charge Limit screenshot | 0.6.2 Session A | G7-18; W-14's fixture; W-10 item 1 (Apple's Russian article stands) |
+| D-13: the Charge Limit capture: **done in Session A** (finding 7 below). **The final `A.md` brought** the redacted `charge-limit-80.plist` (`docs/plans/0.7.0/sessions/A/`, on the maintainer's approval) and the 80 → 100 → 80 reads (finding 9); **not** the Russian Charge Limit screenshot | 0.6.2 Session A | G7-18; W-14's fixture; W-10 item 1 (Apple's Russian article stands) |
 | D-16: ROADMAP's Releases table has download columns, with v0.6.2's counts; `scripts/release-stats.swift` exists and looks for `BatteryPulse-count.txt` | 0.6.2 D3 | §13 step 8 |
 | D-17: 0.6.2's installer ends the widget extension before the swap (WP-16 item 6), with its source test | 0.6.2 code; §6.4 step 3's log | G7-2; W-3a item 10 |
 | D-18: the iPad's connection label follows the transport (WP-23) | 0.6.2 | C-1 if not |
-| W0-1 to W0-6: each answer, and §2.2's row: **final**, from `docs/plans/0.6.2/sessions/A.md` (2026-10-24), below, with notes where the interim report differed (W-0 item 1) | 0.6.2 Appendix C; Session A | every package |
+| W0-1 to W0-6: each answer, and §2.2's row: **final**, from `docs/plans/0.7.0/sessions/A.md` (2026-10-24), below, with notes where the interim report differed (W-0 item 1) | 0.6.2 Appendix C; Session A | every package |
 | 0.6.2's A0, the 0.6.1 after-publishing intake: **passed** (recorded 2026-10-22). 0.6.0 → 0.6.1 through Install and Relaunch kept the desktop widget, which shows the current charge, and Open at login kept its state | the maintainer; P2 Appendix C | D-9's baseline; C-1 (WP-16 item 5 has no cause); §7.3 |
 | WP-18's Xcode items: what 0.6.2 ran and what it left | 0.6.2 Appendix C | C-1; Session R step 11 |
 | M-5's answer: **approved as written, with no dates** (recorded 2026-10-22; every decision is in §14) | the maintainer | R-1 |
 
 **0.6.2's Session A** (2026-10-23 and 24; the local Claude session on the MacBook Air M5). Final,
-from its `A.md` (`docs/plans/0.6.2/sessions/A.md`, merged at `5849d01`). The rows first held its
+from its `A.md` (`docs/plans/0.7.0/sessions/A.md`, merged at `5849d01`). The rows first held its
 interim report of 2026-10-23, and each says where the final report differs; row 10 is new:
 
 | Fact | Shown by | Decides |
@@ -3551,7 +3633,7 @@ interim report of 2026-10-23, and each says where the final report differs; row 
 | 4. W0-4: the sandboxed widget reads accessory batteries itself (sources=2 accessories=1). The four Icon & widget styles redraw per style (screenshots, on the desktop and in Notification Center), but no render log line reached the log from any process, so rendering-mode data comes from screenshots only. The Refresh button's `perform` ran in the widget extension (3 times). Clicks take two routes, with no scheme registered: the Battery widget's `widgetURL` arrived as `batterypulse://page/overview` through `application(_:open:)`, with no window open and with the main window open (its line counted 1 window both times), and two clicks on the body of the Test widget, which sets no `widgetURL`, arrived as an `NSUserActivity` of the intent's type (`SpikeWidgetIntent`), with `WGWidgetUserInfoKeyFamily` and `WGWidgetUserInfoKeyKind` in its user info, no `webpageURL` and no window open. **Differs from the interim report,** which saw no `NSUserActivity` | Session A | W-8 (G7-8); W-3b item 6 (G7-4); W-9; W-1 item 8, W-3c item 2 (G7-9) |
 | 5. W0-6: the offset format counts down without a reload, with `sign: .never`. At 21:17 variant a (the default sign) read "-2 hours, 0 minutes" (an offset to a later date is signed) and variant b "2 hours, 0 minutes"; 65 s later "-1 hour, 59 minutes" and "1 hour, 59 minutes" on the same entry. Earlier frames read "2 hours, 10 minutes" and "2 hours, 6 minutes", and a later tree read "10 minutes": a zero minutes field shows, and the hours field drops under an hour. No seconds. In Russian, once redrawn, b read the Russian for "2 hours 12 minutes" without the comma, and a the same with a minus sign; a widget not yet redrawn kept its English text and English minutes. The interim report's "6 minutes" (the maintainer's photo) and the "0 minutes" of 0.6.2's Appendix C at `0a4580e` are two readings of the same countdown, as the interim note said; the final report has both. The finding, `sign: .never`, stands, and Russian passed | Session A | G7-3; W-1 item 4; W-10's guard; D-8 |
 | 6. F5, iPad: the connection label doesn't follow the transport (0.6.2's WP-23, P2, fixes it; else C-1, D-18) | Session A | D-18 |
-| 7. Charge Limit (the maintainer set System Settings' Charge Limit to 80 %; read-only captures, files kept on the Mac except the redacted `bpulse --raw` capture of the hold, `charge-limit-80.plist`, which came with the final report on his approval, `docs/plans/0.6.2/sessions/A/`): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset -g` and `pmset -g batt`). When the limit engaged at 80 %: `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" exists only in the AirPods' entries. The final report adds, at the hold (21:37): `pmset -g batt` "AC attached; not charging"; in the charger child `ChargingVoltage` 4296 (4314 while charging), `ChargerInhibitReason` 0 and `ChargerHwIlimBackoffReason` 16 (unchanged); pmset's internal battery "Is Charging" false and "Time to Full Charge" 0; the SMC's `B0UC` and `SBAS` at 80, the charge; `bpulse --smc` lists 43 `CH*` keys with types but no values; below the limit (21:33-21:34) no SMC value was 80 but `B0FI`'s raw bytes (8000). The maintainer explicitly asked to show the Charge Limit in the app, the menu bar and the widget | Session A | W-14; Q7-10; G7-18; D-13 |
+| 7. Charge Limit (the maintainer set System Settings' Charge Limit to 80 %; read-only captures, files kept on the Mac except the redacted `bpulse --raw` capture of the hold, `charge-limit-80.plist`, which came with the final report on his approval, `docs/plans/0.7.0/sessions/A/`): no `ChargeLimit` or `OptimizedCharging` key for the Mac's battery anywhere (`bpulse --raw`, three `ioreg` dumps, `pmset -g` and `pmset -g batt`). When the limit engaged at 80 %: `ChargerData.NotChargingReason` 0 → 16777216 (0x01000000, bit 24) in AppleSmartBattery and in its child AppleChargerData; `ChargingCurrent` 2626 → 0; `IsCharging` 1 → 0; `ExternalConnected` Yes; `FullyCharged` No; SMC `B0AC` and `B0AP` → 0. The configured 80 appears in no key. "Optimized Battery Charging Engaged" exists only in the AirPods' entries. The final report adds, at the hold (21:37): `pmset -g batt` "AC attached; not charging"; in the charger child `ChargingVoltage` 4296 (4314 while charging), `ChargerInhibitReason` 0 and `ChargerHwIlimBackoffReason` 16 (unchanged); pmset's internal battery "Is Charging" false and "Time to Full Charge" 0; the SMC's `B0UC` and `SBAS` at 80, the charge; `bpulse --smc` lists 43 `CH*` keys with types but no values; below the limit (21:33-21:34) no SMC value was 80 but `B0FI`'s raw bytes (8000). The maintainer explicitly asked to show the Charge Limit in the app, the menu bar and the widget | Session A | W-14; Q7-10; G7-18; D-13 |
 | 8. W0-5, VoiceOver (from the maintainer's phone photos, the test widget on the desktop, in English): focusing the widget reads "In BatteryPulse, widget, 9 items", then "Three-Quarter-Charged Battery, image"; one step inside, "In Three-Quarter-Charged Battery, image, content is empty". So VoiceOver walks the widget as 9 separate items, reads the SF Symbol by its own name (the 75 % bucket, at 80 %) instead of the charge, and announces an empty group. **The tree** (the final report), read through System Events: Finder's desktop group holds one group per desktop widget, described "widget", with flat children. The medium widget: an image described "image" with no label or value, then 8 texts ("83%", "Not charging", "Maximum capacity", "100%", "Cycle count", "51", "Temperature", "37.8 °C"), the 9 elements VoiceOver counted; the small one: the image, "83%", "Not charging"; the Test widget: 8 texts and a button, each time-left letter apart from its value. No element pairs a label with its value. **Text size** at 17 pt changed nothing: the widgets stayed pixel-identical to a shot at the usual size (answer 2). Russian VoiceOver and the rotor weren't done: driving VoiceOver was too hard for the maintainer | Session A | W-3b item 5 (decorative symbols hidden, the charge labelled with its value, one element per row, a button its own element, `WidgetAccessibility` tested on Linux); Session R step 7 (a tree read, not VoiceOver, under Finder's desktop group); Text size decided (§2.2 W0-5); G7-12 |
 | 9. Charge Limit's number and the 100 % diff (read-only reads, exact values). **At the 80 % hold, on AC** (21:37-22:18): `pmset -g battlimit` (no privileges) prints two entries, `chargeSocLimitSoc` 80, `chargeSocLimitReason` `manualChargeLimit`, `chargeSocLimitDrain` 1, `chargeSocLimitIsEOC` 1, `chargeSocLimitNoChargeToFull` 0, `Terminated` 0; `/Library/Preferences/com.apple.powerd.charging.plist` (root's, readable by everyone) holds `bootSessionUUID` and `policies`, an `NSKeyedArchiver` archive of `ChargeCtrlPolicy` objects with `soclimit` 80, `reason` `manualChargeLimit`, `drain`, `isEndOfCharge`, `noChargeToFull`, `owner`, `terminated` and `token` (an `NSUUID`); `com.apple.batteryui.charging.mac` has one key, `…prior.limit` = 80; `notifyutil -g com.apple.system.powersources.chargingtofulloverride` reads 0; the SMC lists `CHLT` (3 `hex_` bytes) and `CHNC` (8), no `CHLS`, values unread; `NotChargingReason` 16777216, `ChargerInhibitReason` 0, `IPDChargingAllowed` 0. **80 → 100 → 80** (23:44-23:47, a minute after each change): at 100 %, battlimit "No battery level limits set", the plist rewritten with no policy, `prior.limit` still 80, `NotChargingReason` 0 in both places, `IsCharging` 1, `ChargingCurrent` 2626, `IPDChargingAllowed` 1, the charge rising 80 → 83 %; back at 80 %, battlimit and the policy as before (the plist rewritten at 23:47:18), bit 24 again, `IsCharging` 0, `ChargingCurrent` 0, `IPDChargingAllowed` 0 and `ChargerInhibitReason` 268439552 (0x10001000), with the charge above the limit. **On battery** (read 1 h 58 min into the energy window): battlimit "No battery level limits set" and no policy in the plist, which had changed about 5 minutes after unplugging (00:01:28); `prior.limit` 80. **After plug-in** (the adapter logged at 01:56:51, read 5 s later): the plist had changed at 01:56:48, with the policy it had before; battlimit 80 again; `prior.limit` 80; `NotChargingReason` 128 (bit 7, not 24), `IsCharging` false, `ChargingCurrent` 0, `IPDChargingAllowed` 0, which was transient: the gauge's next update (01:57:41) was charging, and from 02:15 the charge held at 80 %. So powerd keeps the limit's policy only while on AC, and the setting survives unplugging. **Differs from the interim report,** which had the file as an archive whose `policies` is an embedded property list (the file is a property list, and `policies` holds the archive), and the charger's inhibit key showing charging inhibited at the hold (`ChargerInhibitReason` read 0 at exactly 80 %; `IPDChargingAllowed` 0 is the key that follows the hold) | Session A | W-14's 0.8 candidates, reordered (the plist on AC, then `prior.limit` on battery with its caveat, then `CHLT`, then `battlimit`); W-14 "Settled by the 100 % diff" and item 6; FEA-35's 0.8 half (RD §3.3); W-12's `prepare`; M-3 unchanged (no PowerUI) |
 | 10. The widgets in Russian (W0-2-W-ru: 2), new in the final report: with `AppleLanguages` (ru) in the extension's container preferences and the extension ended, the Battery widgets turned Russian (the Russian words for Not charging, Maximum capacity, Cycle count and Temperature), and the Test widgets once Refresh redrew them; the edit sheet stayed English (Battery, Layout, Main value, Time, Details). The spike's strings have their Russian in its catalog (`claude/062-spike-widget`). So D-8's method reaches the widgets, not the sheet, which the system draws from `Metadata.appintents` | Session A | D-8; W-2 item 5 (the check and the fix); W-10 item 2; Session R step 4.3; G7-13 |

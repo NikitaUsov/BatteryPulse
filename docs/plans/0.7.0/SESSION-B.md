@@ -387,25 +387,97 @@ each, S2 with Low Power Mode, S4w, S5, S10, S7, S3 and the minimized run, the re
 
 ## After publishing (D3's short session)
 
-D3 gives him a start line that reads this file's copy, `docs/plans/0.7.0/SESSION-B.md`, from the
-release PR's head and points here. Rules, language and privacy as above, with `$D` for `bash
-~/bp-062/D3/run/docs/plans/0.7.0/m5-session.sh`, the start line's one allow rule; about 2 minutes of
-his time. What the copy of the script offers goes through `$D`; the two reads in step 4 (`codesign`,
-`xattr`) and step 6's `gh` run as plain commands under auto mode, `gh` only on his yes.
+```
+git -C ~/BatteryPulse fetch origin main
+bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-after-publishing.sh)
+```
 
-1. `git -C ~/BatteryPulse worktree add --detach ~/bp-062/D3/run FETCH_HEAD` (the commit you read
-   this from), then work from the copies in `docs/plans/0.7.0/` there.
-2. Say what follows, and that on any failure you will ask his yes to mark v0.6.2 a prerelease. Note
-   whether Open at login is on (BatteryPulse's Settings → General, by AX) and the widget's charge and
-   "Lasts until".
-3. Check for Updates, then Install and Relaunch, by AX press or computer use.
-4. Then check: About shows 0.6.2; History shows the past days; the settings and the menu bar look are
-   unchanged; the widget shows a current value and reloaded after the update (V-01's post-update
-   half); `codesign -dv --verbose=4 /Applications/BatteryPulse.app` shows `flags=0x10002(adhoc,runtime)`;
-   `xattr -l /Applications/BatteryPulse.app` shows no quarantine; the login item is still listed if it
-   was on (`ui tree` of System Settings → Login Items, never `sfltool`); notification permission is
-   kept.
-5. Open the popover by a click and compare the widget's charge and "Lasts until" with the popover's:
-   within 2 points and about 15 minutes. His everyday use on the first day is the second look.
-6. Tell him the result in Russian. On any failure, and only on his yes: `gh release edit v0.6.2
-   --prerelease`, which serves 0.6.1 as the latest again.
+He types these two lines in Terminal, from any folder, once v0.6.2 is published. The launcher,
+`start-after-publishing.sh` beside this file, changes to `~/BatteryPulse` and starts Claude Code
+there in auto mode with no allow rule; its sentence has you fetch `main` and read this section. His
+part is the two lines and any dialog you ask him to answer: about 2 minutes. This section stands
+alone: nothing above it applies (no script, no `$S`, no worktree, no heartbeat, no fence, no
+`send`), and everything you need is below.
+
+**Where you run.** In `~/BatteryPulse`, with computer use enabled (`/mcp` lists `computer-use`; if
+it doesn't, ask him to enable it there, `/mcp` → `computer-use` → Enable, and go on when he says
+so), in permission mode auto, with no allow rule.
+
+**Rules.**
+- Talk to him in Russian, always. The quoted phrases below are what to say, in Russian.
+- Record nothing and push nothing: no commit, no branch, no push, no pull request, no file written
+  in `~/BatteryPulse` or anywhere else. The start sentence's `git fetch` and `git show` are your
+  only git commands.
+- The only other commands are step 4's two reads, `codesign -dv --verbose=4
+  /Applications/BatteryPulse.app` and `xattr -l /Applications/BatteryPulse.app`, each as written, one
+  per Bash call. Never `gh` (it isn't on his Mac), `sudo`, `defaults`, `killall`, `sfltool`, an
+  install or a copy. If auto mode blocks a command, don't retry it: its check is "not checked:
+  blocked".
+- Everything else is computer use: screenshots and clicks in BatteryPulse and System Settings.
+  Your first computer-use call asks him, in Claude Code, to let you use apps: ask once for
+  BatteryPulse, System Settings, Finder and Notification Center (the last two show the desktop and
+  its widgets; asking for them opens nothing). Checks in an app he doesn't allow are "not checked:
+  no access". BatteryPulse and System Settings may show their Russian names; the English ones are
+  given here. Never send Esc (it would end your turn): close a window with its close button, the
+  popover by a second click on the menu bar item.
+- Read settings, never change them: in BatteryPulse's Settings and in System Settings (open it from
+  the Apple menu), click only the tabs, sidebar items and rows that open a page (General → Login
+  Items & Extensions, Notifications → BatteryPulse), never a switch, menu or button on a page.
+  Close each window you opened when you are done with it.
+- A check that fails to run, or a screen you can't read: try once more only if the cause was passing
+  (a window not up yet); otherwise it is "not checked", with the reason. Go on either way.
+
+**Privacy.**
+- Screenshots go to the model only: never save one, and never put one in the repository.
+- No screenshot while Notification Center or Control Center is open.
+- Never type his password, never approve a permission or authorization dialog, and never open or
+  touch Privacy & Security, Users & Groups or Passwords in System Settings. If a dialog asks for any
+  of that, ask him to answer it; if he doesn't, that check is "not checked: dialog".
+- His other windows, apps and widgets may show in screenshots: never name or describe them, in the
+  summary or anywhere else.
+
+**Steps.**
+1. Say: "This is the check after the 0.6.2 update, about 5 minutes. Please keep off the Mac until I
+   say so. First Claude Code asks you to let me use BatteryPulse, System Settings, Finder and
+   Notification Center: please allow it. After that, answer a dialog only if I ask. At the end you
+   get a short summary to forward to the cloud session. If something fails, the cloud session will,
+   on your yes, mark v0.6.2 a prerelease." Go on without waiting.
+2. **Before the update** (0.6.1 installed and running): open BatteryPulse's Settings (the popover's
+   Settings button, or BatteryPulse's menu) and note:
+   - General: whether Open at login is on;
+   - Menu Bar: the icon style and what the item shows; and look at BatteryPulse's menu bar item;
+   - Notifications: whether it offers Send Test Notification or says "Notifications are turned off
+     for BatteryPulse in System Settings.";
+   - the desktop widget: its charge and its "Lasts until" time (or the time it shows while
+     charging), with the clock time you read it. With no BatteryPulse widget on the desktop, the
+     widget checks are "not checked: no widget".
+3. **The update:** Check for Updates… (in About BatteryPulse, which the popover's About button
+   opens, or in BatteryPulse's menu); in the update window that offers 0.6.2, Install and Relaunch.
+   Wait until BatteryPulse is back in the menu bar (about a minute, at most 3). If no update is
+   offered, or the install shows an error, note its message: the update failed.
+4. **After the update:**
+   - About BatteryPulse shows version 0.6.2;
+   - the main window's History page (the popover's Open BatteryPulse button opens the window) shows
+     the past days (its chart reaches back before today), not an empty page;
+   - Settings: General's Open at login, Menu Bar's choices and Notifications' line are as in step 2,
+     and the menu bar item looks as it did;
+   - the widget shows a current value: a charge, not blank or grey (give it up to 2 minutes after
+     the relaunch); note which it is: still placed with a current value, blank or grey, or gone;
+   - Login Items: if Open at login was on in step 2, System Settings → General → Login Items &
+     Extensions still lists BatteryPulse under Open at Login;
+   - notification permission is kept: Settings → Notifications as in step 2 (if unsure, System
+     Settings → Notifications → BatteryPulse shows its notifications allowed);
+   - `codesign -dv --verbose=4 /Applications/BatteryPulse.app` prints
+     `flags=0x10002(adhoc,runtime)` (it writes to stderr: read all of its output);
+   - `xattr -l /Applications/BatteryPulse.app` prints no `com.apple.quarantine` line.
+5. **The popover:** click BatteryPulse's menu bar item and compare its charge and time with the
+   widget's: they agree within 2 points and about 15 minutes. The popover shows the time as a
+   duration ("… left", or "Full in …" while charging): add it to the clock time you read it, and
+   compare that with the widget's "Lasts until about …" (or "Full at …"). His everyday use on the
+   first day is the second look. Close the popover with a second click.
+6. **The end:** say "Done, you can use the Mac again. Please forward this to the cloud session:",
+   then a short summary in Russian: each check of steps 3 to 5 as passed, failed or not checked
+   (with the reason), and the values read (the version in About, the `flags=` line, whether a
+   quarantine line was there, Open at login before and after, the widget's state after the update,
+   the widget's and the popover's charge and times). On any failure, add: "On your yes, the cloud session marks v0.6.2 a prerelease, so
+   0.6.1 is served as the latest again; nothing on this Mac does that." Then end your turn.

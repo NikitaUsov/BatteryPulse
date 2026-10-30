@@ -34,7 +34,7 @@ charging state.
   what they cost in Settings, apply only to the main and compact windows and give way to
   Standard under Reduce Transparency or Increase Contrast. The sidebar stays the system's in
   every style; Frosted stays frosted in inactive windows; no Low Power Mode fallback (decided on
-  2026-10-22; 0.6.2 measures each style's energy).
+  2026-10-22; 0.6.2 measured Standard and Clear once each, Stage 1.7).
 - **Languages:** English (source) and Russian, in a String Catalog. The language is chosen per
   app in System Settings, like any Mac app. Repository text stays English; the catalog is the only
   place with Russian.
@@ -565,25 +565,33 @@ both built with Xcode 27.1 on the CI runner; the published 0.6.0 DMG was 3,670,7
 Energy and launch weren't measured in the session; they move to the 0.6.2 session, against the
 same baseline.
 
-### Stage 1.7: 0.6.2 (next)
+### Stage 1.7: Maintenance and foundation (0.6.2)
 
 A second maintenance and foundation release with no new features: 0.6.1's deferred backlog, the
 beta window styles' known bug, the energy measurements 0.6.1's session skipped, and the size and
-read-path groundwork that widget customization (0.7) needs. The plan: `docs/plans/0.6.2/PLAN.md`.
-Two sittings on the M5, an early one (about 65 minutes plus 3 hours unattended) and one on the
-release candidate (about 95 minutes plus about 70 unattended), and WP-18's Xcode items (about an
-hour) whenever Xcode is open.
+read-path groundwork that widget customization (0.7) needs. The plan, removed at the release, is
+readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`); its widget design
+moved to `docs/plans/0.7.0/widgets.md`, and its Appendix C, session tools and both sessions'
+reports were copied to `docs/plans/0.7.0/`.
+Two sittings on the M5: an early one (about 65 minutes plus 3 hours unattended, 2026-10-23/24) and
+one on the release candidate, run hands-free on 2026-10-30 with about the planned 13-15 minutes of
+the maintainer's time (a first attempt on 2026-10-27 was cancelled). WP-18's Xcode items didn't
+run.
 
-- [ ] Clear minimizes without a black frame: an opaque graphite fill (fill (b), the maintainer's
-  choice, 2026-10-22) while the window minimizes and comes back; the Clear tile's preview looks
-  the same selected or not; the evidence (screenshots in every style, energy) that decides
-  whether Translucent and Clear leave beta
-- [ ] Energy, measured on the M5: 0.6.1 against the 0.6.0 baseline in the first session, and the
-  release candidate against 0.6.1 in the second. There, power in the menu bar and the icon and
-  charge alone each run in alternated 5-minute runs of the two builds, three pairs after a
-  discarded warm-up, compared by their medians (in the first session two identical runs of one
-  build differed by almost 2×, so one pair can't settle it); each window style, the displays
-  asleep, a burst of plug changes, memory, devices and accessories
+- [x] Clear minimizes without a black frame: an opaque graphite fill (fill (b), the maintainer's
+  choice, 2026-10-22) while the window minimizes and comes back, on Clear and on Translucent in
+  the dark appearance. On the release candidate all 8 cases (Translucent and Clear, light and
+  dark, the main and the compact window) showed the window or an even graphite grey, never a
+  black frame. The tile pickers' footer keeps its height, so the Clear tile's preview should look
+  the same selected or not (not checked on the M5). The evidence for leaving beta (screenshots in
+  every style, the contrast audit, each style's energy) wasn't gathered, so both stay beta
+- [x] Energy, measured on the M5 on battery in alternated runs compared by their medians: 0.6.1
+  against the 0.6.0 baseline in the first session, the release candidate against 0.6.1 in the
+  second (three valid runs each, the table below). With the icon and charge in the menu bar the
+  release candidate uses 137.4 against 277.0 mJ an hour (processor time 0.59 of 0.6.1's), with
+  power in the menu bar too 905.5 against 1,175.4 (processor time 0.79). Not measured: Translucent
+  and Frosted, a covered or minimized window, the popover, a burst of plug changes, memory and
+  devices
 - [x] Release statistics (tooling, no app change): `swift scripts/release-stats.swift` prints a
   table per release of DMG downloads, signature downloads (each in-app install fetches the
   signature, so they count in-app updates) and, from 0.7.0, the version count's downloads
@@ -598,7 +606,7 @@ Deferred from 0.6.1, each for the reason given:
   to 4, the code that runs off the main actor marked `nonisolated` and pinned by a guard test.
   What it breaks shows only at runtime, so it went first to the M5: the first session's
   notifications, pages, Demo Mode, Check Now and lid close showed no executor trap or crash, and
-  the release candidate's session repeats them with an install
+  the release candidate's session repeated them, with an install, and found none either
 - [x] The read path, which the M5 numbers now gate in: a full read takes 6.3 ms at p50 and 8.8 ms
   at p95, 72 % of it the registry.
   - Read the registry only when it changes (E4b): a poll reuses the last read's registry unless
@@ -609,26 +617,34 @@ Deferred from 0.6.1, each for the reason given:
     711 of 712 reads, all but the launch's.
   - One notify key (E3b): `com.apple.system.powersources.timeremaining` dropped, since each one
     came with the "any power source" key within 10 ms.
-  - The release candidate's session checks a cached read's time and the missed updates an hour.
-- [ ] SwiftUI instrument work on the pages, which switch in 21–54 ms (Session A, 2026-10-23): 0.6.2
-  rebuilds only the Raw Data sections that changed and keeps that page's body off the reading
-  (E19, SUI-07, SUI-11); the other pages' cost is the framework's geometry, and the charts stay
-  (SUI-12 not needed). Ticked when the release candidate's session measures the after
-- [ ] Xcode on the Mac (installed on the M5; run inside the release candidate's hands-free session):
-  SUI-17, SUI-18 and SUI-19; the Icon Composer icon (SZ-10), shipped only on the maintainer's yes
-  to its screenshots
+  - The release candidate's session measured a cached read at 0.971 ms (p50, 409 reads) and no
+    missed update in 62 minutes.
+- [x] SwiftUI instrument work on the pages, which switched in 21–54 ms (Session A, 2026-10-23):
+  0.6.2 rebuilds only the Raw Data sections that changed and keeps that page's body off the
+  reading (E19, SUI-07, SUI-11); the other pages' cost is the framework's geometry, and the charts
+  stay (SUI-12 not needed). After, on the release candidate: 18–52 ms at p50 (30.4 ms over all 69
+  switches, p95 53.3 ms), close to the before on every page; the profiling build's pass under the
+  SwiftUI instrument is 0.7's before
+- [ ] Xcode on the Mac (installed on the M5): SUI-17 and SUI-19 (SUI-18 dropped on 2026-10-23);
+  the Icon Composer icon (SZ-10), shipped only on the maintainer's yes to its screenshots. Not run
+  in the release candidate's session: after the macOS 27.2 update Xcode asked to install system
+  components, which the hands-free session left alone, and the frozen worktree had no icon
+  source. They move to 0.7, into Session R's GUI phase
 - [x] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
   on alone, besides BatteryCore; with `-internalize-at-link` on the widget's and the app's link
   lines, the size headroom 0.7's widget work needs. In CI, against the build before: the widget
-  binary −45 % (778,640 B, its `__text` −50 %), the app −3 %, the DMG −15 %. The flag ships only
-  if the release candidate's widget, in both sizes and languages, and pages look right on the M5
-- [ ] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
+  binary −45 % (778,640 B, its `__text` −50 %), the app −3 %, the DMG −15 %. The flag shipped on
+  both lines: on the M5 the release candidate's small and medium widgets read right in English
+  and its pages worked; the Russian widget wasn't redrawn during the check, a test artifact that
+  0.7 covers
+- [x] The installer mounts and ejects with `diskutil image attach` and `diskutil eject`;
   `hdiutil attach`, `detach` and `imageinfo` are deprecated in macOS 27 but still work. Built:
   `diskutil image attach --readOnly --mountPoint <folder> --mountOptions nobrowse`, then
   `diskutil eject`, and by force `unmountDisk force` and `eject` of the image's own disk, which
   `diskutil info -plist` names; CI installs both ways. The update from 0.6.1 to 0.6.2 still runs
-  0.6.1's installer. The release candidate's in-app install on the M5 decides; unless it passes,
-  0.6.1's `hdiutil` code comes back
+  0.6.1's installer. The release candidate's in-app install on the M5 passed (the widget
+  extension ended 55 ms before the swap, no eject failure, no Finder window, the widget
+  reloaded), so `diskutil` stays
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
@@ -649,14 +665,38 @@ Deferred from 0.6.1, each for the reason given:
   screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
   1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
   on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,
-  unless the session's optional device step runs (Stages 5 and 6); exported files in spreadsheet
+  as the session's optional device step didn't run (Stages 5 and 6); exported files in spreadsheet
   apps (Stage 6). Widgets kept on the desktop across an in-app update, seen across 0.6.0 → 0.6.1
   on 2026-10-22, are ticked in Stage 1.2
+
+#### Energy and speed on the M5 (0.6.1 → 0.6.2)
+
+Before is the 0.6.1 release (build 7), after the release candidate (0.5.99, build 373), on the
+MacBook Air M5 with macOS 27.2, on battery, in alternated runs on 2026-10-30. Energy and processor
+time are medians of the valid runs (`scripts/rusage.swift`); the reads and page switches are
+`scripts/perf-stats.swift` over the release candidate's `perf` lines.
+
+| MacBook Air M5, on battery | 0.6.1 | 0.6.2 | 0.6.2 ÷ 0.6.1 |
+|---|---|---|---|
+| Energy, the icon and charge in the menu bar, every window closed (3 runs each) | 277.0 mJ/h | 137.4 mJ/h | 0.50 |
+| Processor time, the same | 2.277 s/h | 1.333 s/h | 0.59 |
+| Energy, power in the menu bar too (3 runs each) | 1,175.4 mJ/h | 905.5 mJ/h | 0.77 |
+| Processor time, the same | 7.735 s/h | 6.127 s/h | 0.79 |
+| Cold launch to the menu bar item (5 launches) | 157–167 ms | 157–166 ms | unchanged |
+| Page switch, p50 / p95 (69 switches) | — | 30.4 ms / 53.3 ms | |
+| Cached read, p50 | — | 0.971 ms (409 reads) | |
+| Registry updates no notification announced | — | 0 an hour (62 minutes) | |
+
+In Low Power Mode, and with the displays asleep, one pair each came out about equal (0.6.2 ÷ 0.6.1
+1.03 in energy both times). With the main window open on Overview the release candidate used
+4,248.4 mJ/h in Standard and 4,335.8 in Clear, one run each; Translucent and Frosted weren't
+measured.
 
 ### 0.7
 
 Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's
-Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`.
+Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`. The widget design it builds on, moved
+from 0.6.2's plan at 0.6.2's release: `docs/plans/0.7.0/widgets.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
   defaults that keep a placed widget looking as it does today: the main value and visual, the
@@ -891,16 +931,15 @@ the account on 2026-10-22 (not before 1.0), so the items that need it are not pl
 | 0.5.0   | 2026-10-15 | Liquid Glass and motion: rolling numbers, filling gauges, the bolt drawing in, glass toolbar switches and demo bar, Reduce Motion and hidden-window rules that save energy; iPhone health as iOS Settings shows it in `bpulse` |
 | 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
 | 0.6.1   | 2026-10-22 | Optimization and foundation: a 61 % smaller download, one read per power event, a minute's pace for the SMC's other keys, slower polls in Low Power Mode and none while the displays sleep, faster History and Raw Data, updates that are never offered unverified; Translucent and Clear become beta styles; accent-outline tile pickers |
+| 0.6.2   | 2026-10-30 | Maintenance and foundation: about 40 % less processor time in the background with the icon and charge in the menu bar (about 20 % with power shown too), Clear and dark Translucent windows that no longer turn black on their way to the Dock, Check Now that takes over a running automatic check, iPhone and iPad pages that name the connection their values came over, a smaller widget extension without CryptoKit, the installer on `diskutil`; main actor by default and battery reads off the main actor |
 
-Next: **0.6.2**, a second maintenance and foundation release (Stage 1.7): main actor by default,
-the read path the M5 numbers call for, Clear's minimize fix and the evidence for taking the beta
-window styles out of beta, the widget's size headroom, the installer on `diskutil`, and the
-energy measurements, plus a release-statistics script. Then **0.7**: widget customization, the
-device JSON's dates, the anonymous version count and the Charge Limit shown; **0.8**: answers in
-the app; **0.9**: ready for others; **1.0.0**: the last 0.9.x renamed
-(`docs/plans/1.0/ROADMAP.md`). This is the order, not a schedule: each release ships when there
-is time and desire. Not planned: an iOS app, charge limiting (setting a limit), and Developer ID
-signing and notarization (no paid developer account, decided on 2026-10-22: not before 1.0).
+Next: **0.7**, widget customization (the 0.7 stage, `docs/plans/0.7.0/PLAN.md`): widgets you
+configure in their own edit sheet, the device JSON's dates, the anonymous version count and macOS's
+Charge Limit shown. Then **0.8**: answers in the app; **0.9**: ready for others; **1.0.0**: the
+last 0.9.x renamed (`docs/plans/1.0/ROADMAP.md`). This is the order, not a schedule: each release
+ships when there is time and desire. Not planned: an iOS app, charge limiting (setting a limit),
+and Developer ID signing and notarization (no paid developer account, decided on 2026-10-22: not
+before 1.0).
 
 ## Development environment
 

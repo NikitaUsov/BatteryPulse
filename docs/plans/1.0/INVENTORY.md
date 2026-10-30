@@ -60,7 +60,7 @@ at 100 % (bit 24 clears and returns). The counts include FEA-35.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | RN:n | `.github/release-notes.md`, line n |
-| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md` (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`) |
+| P2 | the verified 0.6.2 plan (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | P1 | the 0.6.1 plan, `6aec4d2:docs/plans/0.6.1/PLAN.md` (in PR 11's history) (§6 deferred table at line 1372, Appendix A, Appendix B, Appendix C) |
 | PB | `6aec4d2:docs/plans/0.6.1/playbook.md` |
 | AUD-x | `6aec4d2:docs/plans/0.6.1/audit-x-verified.md` |
@@ -286,7 +286,7 @@ Enhanced Security spike.
 | DOC-02 | User Guide for 0.6.2 | Clear's known issue removed (UG:162-163); graduated styles without "beta"; a refresh sentence if E4b lands (UG:124-132); installer text | P2 WP-22 | yes | S | QUA-01, FEA-22, ENG-09 | none | 0.6.2 |
 | DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65) and Session B's (hands-free since 2026-10-23: about 18-22 minutes of the maintainer's time, P2 §1); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
 | DOC-04 | 0.6.2 release notes | `## What's new in 0.6.2` (checked by CB-06); only user-visible items that landed; the energy line; "Updating from 0.6.1" | P2 D1 | yes | S | DIS-08 | none | 0.6.2 |
-| DOC-05 | Plan files | Commit the 0.6.2 plan under `docs/plans/0.6.2/`; at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
+| DOC-05 | Plan files | Commit the 0.6.2 plan under a plan folder of its own (removed at the release; readable in the history of the 0.6.2 release PR's head, `refs/pull/<n>/head`); at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
 | DOC-07 | Widget docs for 0.7 | Rewrite the guide's Widget section (W-10); it still says a DMG replacement removes placed widgets (UG:425), which R:202-203 contradicts for 0.3.1 → 0.4.0, and calls the widget new (UG:428, RM:84) | P2 W-10 | yes | S | FEA-06 | none | 0.7 |
 | DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7 (with W-5) |
@@ -297,7 +297,7 @@ Enhanced Security spike.
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| TCI-01 | The 0.6.2 session script | `docs/plans/0.6.2/m5-session.sh`: fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
+| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |

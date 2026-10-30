@@ -45,8 +45,8 @@ include FEA-35.
 | R:n | `docs/ROADMAP.md` as v0.6.1 shipped it (unchanged at `eebf748`), line n |
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
-| file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus `docs/plans/0.6.2/PLAN.md`, so these lines are v0.6.1's |
-| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md` (section, package `WP-…`/`W-…`, or question `Q-…`) |
+| file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus 0.6.2's plan, so these lines are v0.6.1's |
+| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | INV | `docs/plans/1.0/INVENTORY.md`; its row IDs (`FEA-01` …) are used throughout |
 | P1, PB, RES-x | the 0.6.1 plan, playbook and research files in `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
 | V, Q, D | the three independent proposals for 1.0 this roadmap judged: user value (V), quality and trust (Q), distribution and platform (D); working notes, not in the repository |
@@ -589,7 +589,7 @@ optional steps.
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
   2. **The optional Charge Limit capture (QUA-05): run in Session A** (2026-10-23, the limit at
-     80 %; P2 Appendix C; its final report, `docs/plans/0.6.2/sessions/A.md`, 2026-10-24). The
+     80 %; P2 Appendix C; its final report, `docs/plans/0.7.0/sessions/A.md`, 2026-10-24). The
      pause set bit 24 (0x01000000) of `NotChargingReason`; no registry key holds the configured
      80. The redacted capture of the hold came with the report, on the maintainer's approval, and
      becomes FEA-35's fixture. The local session also read the number's candidates, read-only. At
@@ -632,12 +632,15 @@ optional steps.
      package goes on `claude/062-<pkg>` and the widget spikes on `claude/062-spike-widget` (P2
      §3). `claude/baseline-0.6.0` stays until 0.6.2's D3; the 0.6.1 integration history stays
      reachable as `refs/pull/11/head`, which GitHub keeps.
-  6. **A step of 0.6.2's D3:** `main` gets only squash merges, so `docs/plans/` never enters its
-     history. Before the package branches (`claude/062-*`) and the integration branch
-     `claude/nice-faraday-k08mhb` are deleted, D3 copies `m5-session.sh`, its swap helper, the
-     hands-free helpers (`ui.swift`, `frames.swift`, `SESSION-B.md`) and the whole of Appendix C
-     into `docs/plans/0.7.0/`, beside `widgets.md`; the release PR's `refs/pull/<n>/head` keeps
-     them reachable either way (plan-0.7.0 D-1, D-11).
+  6. **A step of 0.6.2's D3:** `main` gets only squash merges, so only what the release PR's last
+     commit holds enters its history, and 0.6.2's own plan folder goes at D3. Before the package
+     branches (`claude/062-*`) and the integration branch `claude/nice-faraday-k08mhb` are deleted,
+     D3 copies `m5-session.sh`, its swap helper, the hands-free helpers (`ui.swift`,
+     `frames.swift`, `SESSION-B.md`, `start-session-b.sh`), the whole of Appendix C
+     (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its files) into
+     `docs/plans/0.7.0/`, beside `widgets.md`, which reach main with 0.6.2's squash merge; the
+     release PR's `refs/pull/<n>/head` keeps 0.6.2's whole plan reachable either way (plan-0.7.0
+     D-1, D-11).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
      run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
      0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from
