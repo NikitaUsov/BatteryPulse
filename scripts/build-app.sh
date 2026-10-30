@@ -185,8 +185,9 @@ if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null
   echo "error: the WidgetBundle is missing from the widget binary" >&2
   exit 1
 fi
-# The widget depends on BatterySource and BatteryCore alone, so CryptoKit, which only BatteryKit's
-# device keys and update signatures use, stays out of it: a dependency on BatteryKit fails here.
+# The widget depends on BatterySource, BatteryCore and BatteryArt alone, so CryptoKit, which only
+# BatteryKit's device keys and update signatures use, stays out of it: a dependency on BatteryKit
+# fails here.
 LINKED="$(otool -L "$BIN_PATH/BatteryPulseWidget")"
 if grep -F "CryptoKit" <<<"$LINKED" >/dev/null; then
   echo "error: the widget links CryptoKit; it must not depend on BatteryKit" >&2
