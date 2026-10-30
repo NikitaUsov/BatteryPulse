@@ -10,6 +10,26 @@ body:
     validations:
       required: true
   - type: input
+    id: version
+    attributes:
+      label: BatteryPulse version
+      description: >-
+        In BatteryPulse → About BatteryPulse, or Settings → Advanced → Version. A copy you built
+        yourself shows "Development build"; then give the commit if you know it.
+      placeholder: 0.6.1 (7)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - From the DMG
+        - In-app update (Install and Relaunch)
+        - Built from source
+    validations:
+      required: true
+  - type: input
     id: device
     attributes:
       label: Device
