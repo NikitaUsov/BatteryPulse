@@ -488,9 +488,35 @@ guards; acceptance; effort; risk; rollback.
        deployment target, a known issue (187160501; Apple's Xcode 27.2 release notes). That is
        harmless here: the package targets macOS 27 (`.macOS(.v27)` in `Package.swift`), not 27.1.
      - Session R's RC is the first build on 27.2, so the RC tests the toolchain 0.7.0 ships with.
+     - The cloud sessions' Linux toolchain moves with it: `SWIFT_VERSION` in
+       `.claude/hooks/session-start.sh` goes from 6.4.1 to 6.4.2 (swift.org publishes 6.4.2 for
+       Ubuntu 24.04), in the same commit.
+  8. **The widget's language** (0.6.2 Session B's F8-ru). The widget showed English after its
+     extension's container `AppleLanguages` was set to Russian and the extension was ended,
+     because nothing redrew it: WidgetKit keeps the saved render until a reload, and the step
+     took its shots 5 s later. The RC's widget code and its Russian tables equal 0.6.1's, so this
+     is a test artifact, recorded "not checked: no redraw". It points at a gap that predates
+     0.6.2 [unverified on a Mac]: a language chosen for BatteryPulse alone (Settings → General →
+     Language, which writes the app's own domain) most likely never reaches the sandboxed
+     widget, and the app never reloads the widget when its language changes. So:
+     - **W-4:** the reload planner gains a reason "the app's language changed". The app keeps
+       its effective language (`Bundle.main.preferredLocalizations.first`) in its defaults, and
+       at a launch where it differs it ends the extension and reloads every placed kind, as a
+       version change does (`WidgetRefresher.endPreviousExtension()`). The decision lives in
+       BatteryCore with its Linux test.
+     - **W-3b, with W-5's feed (or the shared-preference read of the app's `AppleLanguages`
+       alone, if W-5 is cut):** the widget picks its `.lproj` from the app's language list at
+       each render. That changes the widget's reads or entitlements, so it goes through the
+       posture check and Session R.
+     - **W-12:** Session R's Russian step switches the language the way a user does (the app's
+       language in System Settings → Language & Region → Applications), relaunches the app,
+       waits for the reload notice and a new extension process, and only then takes its shots.
+       No reload within its timeout is "not checked", never "n".
+     - **W-10:** USER_GUIDE § Language says what the widget follows.
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
-- **Effort:** none in runs, but item 7's commit (and any warning 27.2 adds).
+- **Effort:** none in runs, but item 7's commit (and any warning 27.2 adds); item 8's work lands
+  in W-4, W-3b, W-12 and W-10.
 
 ### S-1: `bpulse`'s JSON for scripts: ISO 8601 device dates and `formatVersion` (P1)
 
