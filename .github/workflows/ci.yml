@@ -97,13 +97,22 @@ jobs:
           persist-credentials: false
       - name: Toolchain
         run: xcodebuild -version && swift --version
+      - name: Compile the string tables for the widget previews
+        # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
+        # build-app.sh compiles it: each language's table is a bundle of its own.
+        run: |
+          mkdir -p build/widget-strings
+          xcrun xcstringstool compile --output-directory build/widget-strings Resources/Localizable.xcstrings
+          ls build/widget-strings
       - name: Test
         # The warning gate, as in the Linux job.
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Upload the widget previews
-        # The widget's sizes as BatteryPulseWidgetTests rendered them, for the review: approximate,
-        # in English, without WidgetKit's container. build-app.sh empties build/, so they go up
-        # before the packaging.
+        # The widget as BatteryPulseWidgetTests rendered it, for the look check: every family,
+        # scene and rendering mode, light and dark, English and Russian, with a contact sheet per
+        # question. Approximate: no WidgetKit container, and the accented and vibrant modes
+        # without the system's tint. build-app.sh empties build/, so they go up before the
+        # packaging.
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: widget-previews-${{ github.sha }}
