@@ -14,7 +14,7 @@ body:
     attributes:
       label: Platform
       multiple: true
-      options: [macOS, iOS]
+      options: [macOS]
   - type: textarea
     id: notes
     attributes:
