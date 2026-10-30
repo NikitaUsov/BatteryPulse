@@ -112,7 +112,7 @@ struct WidgetTileGrid: View {
     let tinted: Bool
 
     var body: some View {
-        Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 14) {
+        Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
             ForEach(Array(stride(from: 0, to: details.count, by: 2)), id: \.self) { start in
                 GridRow {
                     WidgetTile(detail: details[start], tinted: tinted)

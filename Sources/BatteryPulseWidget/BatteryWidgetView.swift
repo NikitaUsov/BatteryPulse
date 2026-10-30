@@ -78,7 +78,7 @@ struct WidgetLargeLayout: View {
     let layout: BatteryWidgetLayout
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             WidgetChargeBlock(layout: layout, size: .large, fills: layout.details.isEmpty)
             if !layout.details.isEmpty {
                 Spacer(minLength: 0)
