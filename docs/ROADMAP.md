@@ -84,6 +84,125 @@ charging state.
   are the only usage numbers the maintainer gets. Reading an iPhone or iPad over Wi-Fi stays on
   the local network.
 
+## Road to 1.0
+
+1.0.0 is the first release meant for people other than the maintainer. What it means was approved
+by him as written on 2026-10-22; the full plan, with how each criterion is checked, is
+`docs/plans/1.0/ROADMAP.md` (§2), and everything still open, each item placed in a version, is in
+`docs/plans/1.0/INVENTORY.md`.
+
+**Five promises:**
+
+1. **Seen working.** What the User Guide says works was seen working on the M5 in a packaged
+   build.
+2. **A week without a crash.** The final 0.9.x runs in daily use for seven days without a crash.
+3. **In-app updates from older versions.** Install and Relaunch reaches 1.0 from older versions,
+   with data and settings kept.
+4. **Nothing breaks through 1.x.** Scripts, settings, stored data, placed widgets and the update
+   path keep working.
+5. **Usable by a non-expert.** Someone who isn't an expert can install BatteryPulse, understand
+   what it shows and report a problem without developer tools.
+
+1.0.0 is the last 0.9.x renamed, with no new code.
+
+**The criteria,** each checked by a Linux or CI test, a scripted step on the M5 or a document that
+exists:
+
+- **C1 Contents:** everything 0.6.1 ships; 0.7's configurable Battery widget (small, medium and
+  large, and extra large if its layout is approved) and the Accessories widget; macOS's Charge
+  Limit, read-only (its number only if 0.8 proves a source, else a known limitation); 0.8's
+  answers.
+- **C2 Every feature seen in a packaged build:** `docs/VERIFICATION.md` maps each User Guide
+  feature to the session and the evidence from a DMG build, and every open "Check on the M5" line
+  here is ticked or listed under Known limitations in the guide and in 1.0's notes.
+- **C3 No known issue in anything on by default:** the guide's known issues list only the beta
+  styles, the Developer options and what C7 allows; Open Anyway on each DMG install, and a
+  permission or placed widget lost when a DMG replaces the app, are documented known limitations.
+- **C4 Seven-day soak:** the final 0.9.x on the M5 for 7 days, nights included: no crash report
+  for the app or the widget, no fault message, memory on day 7 within 10 % of day 1, and every
+  History gap explained by a launch, a wake or a sleep.
+- **C5 Energy within budgets:** on one day, the final 0.9.x no more than 15 % above 0.6.2's DMG
+  in wake-ups, energy with power in the menu bar, CPU with the displays asleep, launch to the menu
+  bar (with exactly one read before it) and idle memory; an attached iPhone with every window
+  closed under 1 ms/s.
+- **C6 Resource targets:** the app binary under 5 MB, idle CPU within C5's comparison at about one
+  read a minute, and idle memory with no window open under 30 MB (or the measured number, with the
+  maintainer's yes).
+- **C7 Upgrade matrix:** Install and Relaunch reaches the final 0.9.x from 0.4.0, 0.6.1, the last
+  0.7.x and the last 0.8.x, plus one install over the old copy from the DMG; History, devices and
+  settings survive, and the guide names any permission or widget to set up again.
+- **C8 No update leaves an app that can't launch:** the installer refuses a bundle that needs a
+  newer macOS, and the old copy comes back if the new one fails to open.
+- **C9 Robustness pinned by tests:** every storage format decodes and a future file loses
+  nothing; a capture with a key removed, a type swapped or an extreme value never crashes and
+  shows "—" or "Unavailable", never a wrong number; a missing source gives an explanation.
+- **C10 Accessibility:** VoiceOver reaches and names every control on every page, the menu bar
+  panel, every Settings pane and every widget size, in English and Russian; every chart has a
+  descriptor; the keyboard works without a pointer; contrast passes in Standard and Frosted, light
+  and dark, and with Increase Contrast.
+- **C11 Russian:** the maintainer signs off a screenshot set of every screen, alert, notification
+  and error message, and the catalog stays complete.
+- **C12 Engineering gates:** no compiler warnings, the strict lint, every guard suite green and a
+  test count that only grows, plus new guards for explanations, log privacy and frozen surfaces.
+- **C13 Release health:** no open issue about a crash or data loss, and the last two releases
+  before 1.0 needed no rollback.
+- **C14 Stability for 1.x:** the promises below.
+- **C15 Releases and keys:** the DMG, its signature and the debug symbols on GitHub Releases, with
+  in-app updates; two signing keys, today's and an offline backup; the `release` environment's
+  reviewer confirmed.
+- **C16 First install, ad-hoc:** README and the guide show Open Anyway with screenshots from the
+  current macOS 27.x, and say that every install from the DMG needs it and in-app updates don't.
+- **C17 The documentation matches the product:** README without iOS promises or "early
+  development", with screenshots and an honest hardware claim; the guide with a Compatibility
+  section, Uninstall and Troubleshooting, and every file BatteryPulse writes and every request it
+  makes; Help opening the guide at the release's tag; `SECURITY.md`; a bug template that asks for
+  the version and the install; no `swift run` in user-facing text.
+
+**The 1.x promises (C14).** Within 1.x a change may only add; breaking one waits for 2.0.
+
+1. **Settings keys** of the `io.github.nikitausov.BatteryPulse` domain: names, types and defaults,
+   and the legacy migrations. 0.7's anonymous version count adds three keys (Decisions).
+2. **Storage** under Application Support (`History/`, `Devices/`): files only gain fields, readers
+   ignore unknown ones, and a newer devices file makes the store read-only, never lossy.
+3. **The capture format** of `bpulse --raw` and Export Capture.
+4. **`bpulse`'s machine outputs:** `--json`, `--raw`, `--device <n> --json|--raw`,
+   `--accessories --json|--raw`, `--export csv|json`, the `--record` folder, the options and the
+   exit codes 0, 1 and 2; fields and options are only added. The text report, `--help`, the text
+   of `--smc` and `--watch`, and stderr may change, with a line in the release notes.
+5. **Widgets:** kind strings; the intent, entity and query type names, parameter names, option
+   raw values and entity ID formats; the sizes offered, which are only added to; what Automatic
+   shows in each size; the page and route strings, and the URL scheme if there is one.
+6. **The update contract:** `BatteryPulse.dmg` and `BatteryPulse.dmg.sig` on GitHub Releases,
+   read through `releases/latest`; signing keys are only added (a compromised key is removed in a
+   release whose notes say why); the bundle IDs and the log subsystem; every 1.x version installs
+   the next one in-app. 0.7's version count adds `BatteryPulse-count.txt` to every release
+   (Decisions).
+7. **Platform:** macOS 27 or later on Apple silicon throughout 1.x; the floor rises only in 2.0.
+8. **Privacy:** the app reaches the internet only to talk to GitHub, through ephemeral sessions:
+   the update check and a download the user chose, and from 0.7 the anonymous version count
+   (Decisions). No identifier and nothing about the Mac, its battery or its settings is sent, and
+   within 1.x nothing is added to what is sent.
+
+Not promised: readings macOS stops providing, looks and wording, the beta window styles' look
+(their stored values keep decoding), the Developer options, energy beyond C5's budgets, and the
+signpost names.
+
+**The order of the versions,** with their effort [estimate]; an order, not a schedule:
+
+| Version | What it brings | The maintainer's time | Runs |
+|---------|----------------|-----------------------|------|
+| 0.7 | Widgets you configure (Battery in small, medium and large, extra large on the look check's yes, and Accessories), device JSON dates, the anonymous version count, the Charge Limit's paused state | about 31-34 minutes: the look check and a second look (about 19), Session R hands-free, the logged day's end and the after-publishing check (about 12-15); the backup key (about 5) | about 31-34, plus 3 in reserve; the stretch adds 8-9 |
+| 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | a look sitting of about 40 minutes and a release-candidate sitting of about 85 | 30-38 |
+| 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
+| 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
+| 1.0.0 | The promise: the last 0.9.x renamed | the after-publishing check, about 10 minutes | 1-2 |
+| 1.1 | macOS 28 compatibility once macOS 28 ships (an event, not a date), and the widgets that waited | — | — |
+
+**No dates.** "This is a hobby project; we release when there is time and desire" (the
+maintainer, 2026-10-22). No version has a target date, a calendar or an outer bound; the order
+and the estimates stay. If 1.0 isn't out when macOS 28's betas arrive, it still ships on macOS 27,
+checked there.
+
 ## What the platforms expose
 
 | Reading                                      | macOS 27 | iOS 27                |
