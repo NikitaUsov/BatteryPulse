@@ -22,6 +22,7 @@ JSON="build/size.json"
 BUDGET="scripts/size-budget.json"
 APP_BINARY="$APP/Contents/MacOS/BatteryPulse"
 WIDGET_BINARY="$APP/Contents/PlugIns/BatteryPulseWidget.appex/Contents/MacOS/BatteryPulseWidget"
+WIDGET_METADATA="$APP/Contents/PlugIns/BatteryPulseWidget.appex/Contents/Resources/Metadata.appintents"
 ICNS="$APP/Contents/Resources/AppIcon.icns"
 for path in "$DMG" "$APP_BINARY" "$WIDGET_BINARY" "$ICNS"; do
   if [ ! -e "$path" ]; then
@@ -110,6 +111,14 @@ while IFS= read -r file; do
   strings_bytes=$((strings_bytes + $(bytes "$file")))
 done < <(find "$APP" -path '*.lproj/*' -type f)
 icns_bytes="$(bytes "$ICNS")"
+# The widget's App Intents metadata, which build-app.sh extracts: the bytes of the files in
+# Metadata.appintents, 0 while the widget declares no App Intents type. app_kb counts it too.
+widget_appintents_bytes=0
+if [ -d "$WIDGET_METADATA" ]; then
+  while IFS= read -r file; do
+    widget_appintents_bytes=$((widget_appintents_bytes + $(bytes "$file")))
+  done < <(find "$WIDGET_METADATA" -type f)
+fi
 
 hygiene_rpath_libswift=$(($(rpath_libswift "$APP_BINARY") + $(rpath_libswift "$WIDGET_BINARY")))
 hygiene_frameworks="$(find "$APP" -type d -path '*/Contents/Frameworks' | wc -l | tr -d ' ')"
@@ -128,6 +137,7 @@ app_exports $app_exports
 widget_binary_bytes $widget_binary_bytes
 widget_text_bytes $widget_text_bytes
 widget_exports $widget_exports
+widget_appintents_bytes $widget_appintents_bytes
 strings_bytes $strings_bytes
 icns_bytes $icns_bytes"
 
@@ -199,6 +209,7 @@ report="$(
   echo "| Widget binary | $widget_binary_bytes B |"
   echo "| Widget \`__TEXT,__text\` | $widget_text_bytes B |"
   echo "| Widget exports | $widget_exports |"
+  echo "| Widget \`Metadata.appintents\` | $widget_appintents_bytes B |"
   echo "| Localized strings (\`.lproj\`), app and widget | $strings_bytes B |"
   echo "| \`AppIcon.icns\` | $icns_bytes B |"
   echo
