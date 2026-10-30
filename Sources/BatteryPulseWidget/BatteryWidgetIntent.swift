@@ -126,19 +126,23 @@ enum BatteryMainValueChoice: String, AppEnum {
     }
 }
 
-/// ``BatteryWidgetVisual``: the number with the level symbol, as in 0.6.x. The ring and the
-/// drawn battery come with the views that draw them.
+/// ``BatteryWidgetVisual``: the number with the level symbol, as in 0.6.x; the number inside a
+/// ring of the charge; or the menu bar's Modern battery, drawn.
 enum BatteryMainVisualChoice: String, AppEnum {
-    case symbol
+    case symbol, ring, drawnBattery
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Main visual"
     static let caseDisplayRepresentations: [BatteryMainVisualChoice: DisplayRepresentation] = [
-        .symbol: "Number and symbol"
+        .symbol: "Number and symbol",
+        .ring: "Ring",
+        .drawnBattery: "Drawn battery",
     ]
 
     var visual: BatteryWidgetVisual {
         switch self {
         case .symbol: .symbol
+        case .ring: .ring
+        case .drawnBattery: .drawnBattery
         }
     }
 }

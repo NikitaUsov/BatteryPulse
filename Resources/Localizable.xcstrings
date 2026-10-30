@@ -2606,6 +2606,18 @@
         }
       }
     },
+    "Drawn battery": {
+      "extractionState": "manual",
+      "comment": "Widget main visual: a battery drawn like the menu bar's Modern icon style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рисунок аккумулятора"
+          }
+        }
+      }
+    },
     "Driver time estimate: time to empty on battery, time to full on power.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",

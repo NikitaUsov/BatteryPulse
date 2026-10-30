@@ -76,7 +76,7 @@ struct WidgetSurfaceTests {
               "intent": {"type": "BatteryWidgetIntent", "parameters": [
                 {"name": "layout", "values": ["automatic", "custom"]},
                 {"name": "mainValue", "values": ["charge", "maximumCapacity", "temperature", "batteryPower"]},
-                {"name": "mainVisual", "values": ["symbol"]},
+                {"name": "mainVisual", "values": ["symbol", "ring", "drawnBattery"]},
                 {"name": "statusLines", "values": ["state", "time"]},
                 {"name": "details"},
                 {"name": "time", "values": ["clockTime", "timeLeft"]},

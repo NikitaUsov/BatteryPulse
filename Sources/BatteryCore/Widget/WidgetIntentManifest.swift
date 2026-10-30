@@ -50,9 +50,8 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
         self.kinds = kinds
     }
 
-    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable. Main visual
-    /// lists only the number and symbol until the views that draw the ring and the drawn battery
-    /// exist; Details is an entity, whose ids are ``BatteryWidgetField``'s raw values.
+    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable. Details is an
+    /// entity, whose ids are ``BatteryWidgetField``'s raw values.
     static let shipping = WidgetIntentManifest(kinds: [
         Kind(
             .battery, families: [.small, .medium],
@@ -61,7 +60,7 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
                 parameters: [
                     Parameter(name: "layout", values: WidgetLayoutMode.allCases.map(\.rawValue)),
                     Parameter(name: "mainValue", values: BatteryWidgetMain.allCases.map(\.rawValue)),
-                    Parameter(name: "mainVisual", values: [BatteryWidgetVisual.symbol.rawValue]),
+                    Parameter(name: "mainVisual", values: BatteryWidgetVisual.allCases.map(\.rawValue)),
                     Parameter(name: "statusLines", values: WidgetStatusLine.allCases.map(\.rawValue)),
                     Parameter(name: "details"),
                     Parameter(name: "time", values: WidgetTimeStyle.allCases.map(\.rawValue)),

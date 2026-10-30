@@ -96,10 +96,7 @@ struct WidgetSourceTests {
 
     /// A mirror's cases that the widget doesn't offer yet, each with its reason. Removing a case
     /// from here is the commit that offers it.
-    static let notOfferedYet: [String: [String]] = [
-        // The ring and the drawn battery come with the views that draw them.
-        "mainVisual": ["ring", "drawnBattery"]
-    ]
+    static let notOfferedYet: [String: [String]] = [:]
 
     /// Each `AppEnum` of the widget maps one to one to its BatteryCore mirror, with equal raw
     /// values: its cases are the manifest's values, which are the mirror's cases in order (less
