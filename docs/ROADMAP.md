@@ -773,8 +773,11 @@ Deferred from 0.6.1, each for the reason given:
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
+- [x] Check Now takes over a running automatic check (E10): it cancels the automatic one and
+  checks at once on any network, instead of waiting for a check that Low Data Mode could refuse;
+  `UpdatePolicy.checkNow(during:)` decides, tested on Linux
 - [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
-  Check Now cancels a waiting automatic check (E10); SEC-18's research
+  SEC-18's research
 - [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
   unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
   of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
@@ -1070,7 +1073,7 @@ before 1.0).
 
 - **Claude cloud sessions** (Linux, Swift 6.4): `swift build`, `swift test`. Everything builds
   and tests except code under `#if os(macOS)` / `#if os(iOS)`.
-- **CI** (`xcode-27` runner: macOS 27, Xcode 27.1): builds and tests the Darwin code, builds
+- **CI** (`xcode-27` runner: macOS 27, Xcode 27.2): builds and tests the Darwin code, builds
   `BatteryKit` for iOS, packages the app, reports its size and launches it once.
 - **The maintainer's Mac:** running the tools and the UI: `swift run BatteryPulse`,
   `swift run bpulse`, or `scripts/build-app.sh` for the packaged app.
