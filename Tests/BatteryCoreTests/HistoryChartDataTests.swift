@@ -101,15 +101,15 @@ import Testing
     }
 
     @Test func daysSitAtNoonWithOneCalendar() throws {
-        let moscow = try #require(TimeZone(identifier: "Europe/Moscow"))
+        let tokyo = try #require(TimeZone(identifier: "Asia/Tokyo"))
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = moscow
+        calendar.timeZone = tokyo
         let days = [
             HistoryDay(day: "2027-01-14", capacityToDesignPercent: 101.2, cycleCount: 3),
             HistoryDay(day: "garbage"),
             HistoryDay(day: "2027-01-15", capacityToDesignPercent: 101, cycleCount: 4),
         ]
-        let points = HistoryDayPoint.points(from: days, timeZone: moscow)
+        let points = HistoryDayPoint.points(from: days, timeZone: tokyo)
         #expect(points.map(\.id) == ["2027-01-14", "2027-01-15"])
         #expect(points.map(\.day) == [days[0], days[2]])
         // The same dates as one day at a time.
