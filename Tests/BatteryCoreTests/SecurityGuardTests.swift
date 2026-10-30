@@ -12,7 +12,9 @@ import Testing
 ///   MobileDevice framework and the accessory power sources;
 /// - an IOKit user-client call (`IOServiceOpen`, `IOConnect…`) outside the SMC client, and a
 ///   registry write anywhere;
-/// - starting a process outside the installer, or signalling one outside the widget refresher.
+/// - starting a process outside the installer, or signalling one outside the widget refresher;
+/// - in the widget, any file API, dynamic loading, URL session or Network framework
+///   (``widgetForbidden``): the widget reads no file of ours and makes no request.
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
@@ -122,6 +124,18 @@ import Testing
         ]
     }
 
+    /// The widget's own target, which reads the battery and nothing else of ours (P2 §8.8): no file
+    /// API, no `dlopen` or `dlsym`, no `URLSession` and no Network framework (REJ-57). The battery
+    /// and accessory reads it links live in BatterySource.
+    static var widgetForbidden: Regex<Substring> {
+        words(
+            #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
+        )
+    }
+
+    static let widgetFolder = "BatteryPulseWidget/"
+    static let widgetMessage = "the widget reads no file of ours and makes no request"
+
     /// The targets that build with strict memory safety: the parsers of untrusted input
     /// (BatteryCore, bpulse) and the system bindings (BatterySource, BatteryKit).
     static let strictMemorySafetyTargets = ["BatteryCore", "BatterySource", "BatteryKit", "bpulse"]
@@ -140,6 +154,11 @@ import Testing
             guard matches.count > allowed else { continue }
             for match in matches.dropFirst(allowed) {
                 found.append((match.range.lowerBound, placement.message))
+            }
+        }
+        if path.hasPrefix(widgetFolder) {
+            for match in code.matches(of: widgetForbidden) {
+                found.append((match.range.lowerBound, widgetMessage))
             }
         }
         return found.sorted { $0.0 < $1.0 }.map { index, message in
@@ -278,6 +297,30 @@ import Testing
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))
         #expect(flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+    }
+
+    /// The widget has no file or network API, wherever else the app may use one.
+    @Test(arguments: [
+        "let data = try Data(contentsOf: url)",
+        "let entries = try FileManager.default.contentsOfDirectory(atPath: path)",
+        "let handle = FileHandle(forReadingAtPath: path)",
+        "let text = try String(contentsOfFile: path, encoding: .utf8)",
+        "let file = fopen(path, mode)",
+        "let session = URLSession(configuration: .ephemeral)",
+        "import Network",
+        "let connection = NWConnection(host: host, port: port, using: .tcp)",
+    ])
+    func theWidgetHasNoFileOrNetworkAPI(source: String) {
+        let widget = "BatteryPulseWidget/BatteryTimelineProvider.swift"
+        #expect(Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetMessage) }, "\(source)")
+        let app = "BatteryPulseApp/Updates/UpdateNetwork.swift"
+        #expect(!Self.violations(in: source, path: app).contains { $0.hasSuffix(Self.widgetMessage) })
+    }
+
+    @Test func theWidgetMayNameFilesInText() {
+        let widget = "BatteryPulseWidget/BatteryTimelineProvider.swift"
+        #expect(!flags("// Reads no file: no FileManager, no URLSession.\nlet name = \"Network\"", path: widget))
+        #expect(!flags("let reading = await WidgetReadCache.battery.snapshot()", path: widget))
     }
 
     /// SW-R6: four `@unchecked Sendable` types, one in each listed file.
