@@ -383,6 +383,12 @@ func checkSheetStrings(
     for name in intents.sorted() {
         guard let action = metadata.actions[name] else { continue }
         requireLocalized(action["title"], at: "\(name) title", &report.problems)
+        // Xcode 27.1 records an IntentDescription as the descriptionText of descriptionMetadata.
+        if let description = action["descriptionMetadata"], !(description is NSNull) {
+            requireLocalized(
+                (description as? [String: Any])?["descriptionText"], at: "\(name) descriptionMetadata descriptionText",
+                &report.problems)
+        }
         collect(action, skipping: ["parameters"], owner: name)
         let parameters = arrayOfObjects(action["parameters"], at: "actions.\(name).parameters", &report.problems)
         for (index, parameter) in parameters.enumerated() {
@@ -582,6 +588,14 @@ func selfTest() -> [String] {
     let customCase = #",{"displayRepresentation":{"title":{"alternatives":[],"key":"Custom"}},"identifier":"custom"}"#
     let layoutTitle = #""title":{"alternatives":[],"key":"Layout"}"#
     let clockTime = #"{"alternatives":[],"key":"Clock time"}"#
+    // The sample's intents have no description, so these copies give BatteryWidgetIntent one the way
+    // Xcode 27.1 records it, with its text resolved or as a key.
+    let intentType = #""fullyQualifiedTypeName":"BatteryPulseWidget.BatteryWidgetIntent""#
+    let gallery = "Charge, time remaining and battery health."
+    func described(_ text: String) -> String {
+        doctored(
+            intentType, #""descriptionMetadata":{"descriptionText":"# + text + #","searchKeywords":[]},"# + intentType)
+    }
     let copies: [(name: String, text: String?, translations: Translations, names: String)] = [
         ("a copy without the case custom", doctored(customCase, ""), standIns(), "case custom"),
         (
@@ -608,6 +622,14 @@ func selfTest() -> [String] {
         (
             "a string in another table", doctored(#""key":"Time left"}"#, #""key":"Time left","table":"Widget"}"#),
             standIns(), "ru.lproj/Widget"
+        ),
+        (
+            "a description recorded as resolved text", described("\"\(gallery)\""), standIns(),
+            "descriptionText: the metadata records the resolved text"
+        ),
+        (
+            "a description that isn't a catalog key", described(#"{"alternatives":[],"key":""# + gallery + #""}"#),
+            standIns(lacking: gallery), "\"\(gallery)\" isn't a key"
         ),
         ("a Russian table without a key", sample, standIns(missing: "Clock time"), "lacks \"Clock time\""),
         ("a catalog without a key", sample, standIns(lacking: "Main value"), "\"Main value\" isn't a key"),
