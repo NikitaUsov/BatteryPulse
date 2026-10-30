@@ -30,15 +30,14 @@ enum SidebarItem: Hashable, Identifiable {
         }
     }
 
-    /// How the page comes and goes in a page switch, which the detail column's `quickFade` times:
-    /// every page fades in, and every page but Raw Data fades out. Raw Data's table and inspector
-    /// are AppKit views, and after a switch from it with no pointer movement (by an accessibility
-    /// client) History's title, toolbar and sidebar selection showed over Raw Data's table for
-    /// seconds, most likely because the table's fade-out waited for the next window update. Removed
-    /// at once, it leaves nothing to wait for, whatever moves next.
-    var switchTransition: AnyTransition {
-        self == .developer ? .asymmetric(insertion: .opacity, removal: .identity) : .opacity
-    }
+    /// Whether a switch away from the page is instant: no fade out and no fade in. Raw Data's
+    /// table and inspector are AppKit views. After a switch from it with no pointer movement (by an
+    /// accessibility client), History's title, toolbar and sidebar selection showed over Raw Data's
+    /// table, not faded at all, and History's charts only in a shot 8 s later: most likely the fade
+    /// stood still at its start until the next window update, so a fade-in alone would stand still
+    /// too. With no animation, the old page goes and the new one shows in the same update as the
+    /// title and the sidebar.
+    var leavesAtOnce: Bool { self == .developer }
 
     /// A `var` with literal cases: the catalog test finds the keys here. A device page shows the
     /// device's name instead (`MainView.navigationTitle`).
@@ -144,9 +143,21 @@ struct MainView: View {
     private var selection: SidebarItem {
         get { SidebarItem(storageKey: storedSelection) ?? .overview }
         nonmutating set {
-            if newValue != selection { Diagnostics.pageWillSwitch() }
-            storedSelection = newValue.storageKey
+            let shown = selection
+            if newValue != shown { Diagnostics.pageWillSwitch() }
+            if newValue != shown, shown.leavesAtOnce {
+                withoutAnimation { storedSelection = newValue.storageKey }
+            } else {
+                storedSelection = newValue.storageKey
+            }
         }
+    }
+
+    /// Runs `body` with no animation: neither the detail's `quickFade` nor one of the caller's.
+    private func withoutAnimation(_ body: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, body)
     }
 
     /// The row the sidebar highlights. A restored device page with no device listed shows the
@@ -199,7 +210,7 @@ struct MainView: View {
         } detail: {
             // Switching pages is the most frequent action here, so it gets the least motion: a
             // 0.15 s fade, no slide. The ZStack keeps the old and the new page on top of each
-            // other while they fade; Raw Data goes at once (`switchTransition`).
+            // other while they fade. A switch away from Raw Data doesn't fade (`leavesAtOnce`).
             ZStack {
                 MainDetail(
                     monitor: monitor, accessories: accessories, selection: selection,
@@ -207,8 +218,7 @@ struct MainView: View {
                 )
                 .onAppear { Diagnostics.pageAppeared(selection) }
                 .id(selection)
-                // A page goes with the transition it was shown with: its own.
-                .transition(selection.switchTransition)
+                .transition(.opacity)
             }
             .animation(motion.quickFade, value: selection)
             .navigationTitle(navigationTitle)
@@ -268,10 +278,7 @@ struct MainView: View {
             WindowOpener.pageRequest.clear()
             let target = shownPage(forRequest: page)
             if old == page {
-                var transaction = Transaction()
-                transaction.animation = nil
-                transaction.disablesAnimations = true
-                withTransaction(transaction) { selection = target }
+                withoutAnimation { selection = target }
             } else {
                 selection = target
             }
