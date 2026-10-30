@@ -217,6 +217,14 @@ struct WidgetLayoutPlanTests {
         }
     }
 
+    /// The attention row's symbol is tinted by how serious its cause is.
+    @Test func attentionTiers() {
+        #expect(WidgetAttention.heat(.serious).tier == .low)
+        #expect(WidgetAttention.heat(.critical).tier == .critical)
+        #expect(WidgetAttention.condition(.serviceRecommended).tier == .low)
+        #expect(WidgetAttention.condition(.checkBattery).tier == .critical)
+    }
+
     @Test func cuesFollowTheirTiers() {
         #expect(WidgetCue(.normal) == nil)
         #expect(WidgetCue(.low)?.symbolName == "exclamationmark.circle")

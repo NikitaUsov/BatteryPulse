@@ -3,11 +3,11 @@ import Foundation
 /// One detail as the widget shows it. The value is pre-formatted, or a word the widget maps to
 /// its catalog key; the label stays the field, which the widget maps to its `LocalizedStringKey`,
 /// so every widget string is a literal the localization test sees.
-struct WidgetRow: Sendable, Equatable {
-    var field: BatteryWidgetField
-    var value: WidgetValue
+public struct WidgetRow: Sendable, Equatable {
+    public var field: BatteryWidgetField
+    public var value: WidgetValue
     /// Maximum capacity and condition warn as they do in the app; the other fields are normal.
-    var tier: BatteryPresentation.LevelTier
+    public var tier: BatteryPresentation.LevelTier
 
     init(field: BatteryWidgetField, value: WidgetValue, tier: BatteryPresentation.LevelTier = .normal) {
         self.field = field
@@ -16,7 +16,7 @@ struct WidgetRow: Sendable, Equatable {
     }
 
     /// The symbol that says what the tier's colour says, so colour is never the only signal.
-    var cue: WidgetCue? { WidgetCue(tier) }
+    public var cue: WidgetCue? { WidgetCue(tier) }
 
     /// `field`'s row for `snapshot`, or `nil` when the reading doesn't have it: a Mac without a
     /// pack temperature, an adapter while on battery. `time` is the entry's time text, which only
@@ -81,7 +81,7 @@ struct WidgetRow: Sendable, Equatable {
 }
 
 /// A row's value.
-enum WidgetValue: Sendable, Equatable {
+public enum WidgetValue: Sendable, Equatable {
     /// Numbers and units, shown verbatim.
     case text(String)
     case state(WidgetStateWord)
@@ -92,7 +92,7 @@ enum WidgetValue: Sendable, Equatable {
 }
 
 /// The battery's state in the words the widget and the app use.
-enum WidgetStateWord: Sendable, Equatable, CaseIterable {
+public enum WidgetStateWord: Sendable, Equatable, CaseIterable {
     case charging, onBattery, fullyCharged, chargingOnHold, notCharging, unknown
 
     init(_ s: BatterySnapshot) {
@@ -108,7 +108,7 @@ enum WidgetStateWord: Sendable, Equatable, CaseIterable {
 }
 
 /// The condition macOS reports, as the app words it; no condition (or an empty one) is Normal.
-enum WidgetCondition: Sendable, Equatable {
+public enum WidgetCondition: Sendable, Equatable {
     case normal, fair, poor, checkBattery, serviceRecommended
     /// A condition the app has no words for, shown as macOS reports it.
     case other(String)
@@ -138,7 +138,7 @@ enum WidgetCondition: Sendable, Equatable {
 
 /// A symbol beside a value whose tier isn't normal, in every colour style and rendering mode
 /// (HIG: convey meaning without relying on colour alone).
-enum WidgetCue: String, Sendable, CaseIterable {
+public enum WidgetCue: String, Sendable, CaseIterable {
     case low, critical
 
     init?(_ tier: BatteryPresentation.LevelTier) {
@@ -149,7 +149,7 @@ enum WidgetCue: String, Sendable, CaseIterable {
         }
     }
 
-    var symbolName: String {
+    public var symbolName: String {
         switch self {
         case .low: "exclamationmark.circle"
         case .critical: "exclamationmark.triangle.fill"
@@ -160,7 +160,7 @@ enum WidgetCue: String, Sendable, CaseIterable {
 /// What the widget raises in every size and layout, with a symbol and words: a condition other
 /// than Normal, or a thermal state of serious or worse ("High", "Critical" in the app's words).
 /// Heat comes first: it is the one to act on now.
-enum WidgetAttention: Sendable, Equatable {
+public enum WidgetAttention: Sendable, Equatable {
     case heat(ThermalState)
     case condition(WidgetCondition)
 
@@ -174,10 +174,19 @@ enum WidgetAttention: Sendable, Equatable {
         self = .condition(condition)
     }
 
-    var symbolName: String {
+    public var symbolName: String {
         switch self {
         case .heat: "thermometer.high"
         case .condition: "exclamationmark.triangle"
+        }
+    }
+
+    /// The tier its symbol's colour says: critical heat is critical, serious heat low, and a
+    /// condition has its own tier.
+    public var tier: BatteryPresentation.LevelTier {
+        switch self {
+        case .heat(let state): state == .critical ? .critical : .low
+        case .condition(let condition): condition.tier
         }
     }
 }
