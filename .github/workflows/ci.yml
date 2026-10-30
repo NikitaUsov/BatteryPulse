@@ -103,6 +103,15 @@ jobs:
       - name: Test
         # The warning gate, as in the Linux job.
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
+      - name: Upload the widget previews
+        # The widget's sizes as BatteryPulseWidgetTests rendered them, for the review: approximate,
+        # in English, without WidgetKit's container. build-app.sh empties build/, so they go up
+        # before the packaging.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: widget-previews-${{ github.sha }}
+          path: build/widget-previews/*.png
+          if-no-files-found: error
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Peak memory of the parser
@@ -212,8 +221,7 @@ jobs:
         # build-app.sh extracts the widget's App Intents metadata by hand, and the system shows the
         # widget's edit sheet from it alone: every intent, parameter and AppEnum case of the manifest
         # must be in it, and every string of the sheet must be a catalog key that the widget's
-        # compiled Russian table translates. While the widget declares no App Intents type there is
-        # no metadata, and the check says it skipped.
+        # compiled Russian table translates.
         run: >-
           swift scripts/appintents-check.swift scripts/widget-manifest.json Resources/Localizable.xcstrings
           build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex/Contents/Resources

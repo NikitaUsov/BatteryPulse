@@ -440,6 +440,18 @@
         }
       }
     },
+    "Always": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Update time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Всегда"
+          }
+        }
+      }
+    },
     "Animations": {
       "extractionState": "manual",
       "comment": "Demo Mode section",
@@ -472,6 +484,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расширенный %@"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Layout, each size's own details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически"
+          }
+        }
+      }
+    },
+    "Automatic layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the summary of the Automatic layout",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматический макет"
           }
         }
       }
@@ -1463,13 +1499,14 @@
         }
       }
     },
-    "Charge, time remaining and battery health.": {
+    "Charge, time remaining and the details you choose.": {
       "extractionState": "manual",
+      "comment": "Widget gallery: the Battery widget's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, оставшееся время и состояние аккумулятора."
+            "value": "Заряд, оставшееся время и выбранные подробности."
           }
         }
       }
@@ -1667,6 +1704,18 @@
         }
       }
     },
+    "Choose Battery Details": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Battery widget configuration's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать подробности об аккумуляторе"
+          }
+        }
+      }
+    },
     "Choose BatteryPulse under Applications in Language & Region.": {
       "extractionState": "manual",
       "localizations": {
@@ -1685,6 +1734,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите стиль «Матовый» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол. «Полупрозрачный» и «Прозрачный» — бета-стили: включите «Бета-стили окон» в разделе «Настройки» → «Дополнения»."
+          }
+        }
+      }
+    },
+    "Choose what the Battery widget shows.": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Battery widget configuration's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, что показывает виджет «Аккумулятор»."
           }
         }
       }
@@ -1745,6 +1806,18 @@
         }
       }
     },
+    "Clock time": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Time, the clock time the charge ends or the battery runs out",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время окончания"
+          }
+        }
+      }
+    },
     "Close": {
       "extractionState": "manual",
       "localizations": {
@@ -1764,6 +1837,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Грубая оценка состояния аккумулятора: Good, Fair, Poor или Check Battery."
+          }
+        }
+      }
+    },
+    "Colors": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: level colours or monochrome",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цвета"
           }
         }
       }
@@ -2154,6 +2239,30 @@
         }
       }
     },
+    "Custom": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Layout, the chosen details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вручную"
+          }
+        }
+      }
+    },
+    "Custom layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the summary of the Custom layout",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Свой макет"
+          }
+        }
+      }
+    },
     "Cycle count": {
       "extractionState": "manual",
       "localizations": {
@@ -2334,6 +2443,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расчётная ёмкость"
+          }
+        }
+      }
+    },
+    "Detail": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: one of the Battery widget's details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показатель"
           }
         }
       }
@@ -2888,6 +3009,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Полная зарядка к %@"
+          }
+        }
+      }
+    },
+    "Full at %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time charging ends, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полная зарядка к %@ завтра"
           }
         }
       }
@@ -3804,6 +3937,18 @@
         }
       }
     },
+    "Lasts until %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time the battery runs out, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хватит до %@ завтра"
+          }
+        }
+      }
+    },
     "Lasts until about %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3811,6 +3956,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
+    "Layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Automatic or Custom details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Макет"
           }
         }
       }
@@ -3835,6 +3992,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Устаревшее поле сведений об адаптере в IOPMPowerSource; на Mac с чипом Apple всегда 0."
+          }
+        }
+      }
+    },
+    "Level colors": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Colors, green, orange and red by level",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цвета уровня заряда"
           }
         }
       }
@@ -4024,6 +4193,30 @@
         }
       }
     },
+    "Main value": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the value the Battery widget shows large",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основное значение"
+          }
+        }
+      }
+    },
+    "Main visual": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: how the main value is drawn",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вид значения"
+          }
+        }
+      }
+    },
     "Manufacture date: on TI bq gauges, six ASCII digits that read backwards as YYMMDD, years from 1992.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4170,6 +4363,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Современный"
+          }
+        }
+      }
+    },
+    "Monochrome": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Colors, no level colours",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Монохромные"
           }
         }
       }
@@ -4552,6 +4757,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Уведомлять"
+          }
+        }
+      }
+    },
+    "Number and symbol": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Main visual, the number with the level symbol",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число и значок"
           }
         }
       }
@@ -6759,6 +6976,18 @@
         }
       }
     },
+    "Status lines": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the lines under the main value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строки состояния"
+          }
+        }
+      }
+    },
     "Stop Demo": {
       "extractionState": "manual",
       "localizations": {
@@ -7068,6 +7297,18 @@
         }
       }
     },
+    "Time left": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Time, a countdown",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшееся время"
+          }
+        }
+      }
+    },
     "Time remaining": {
       "extractionState": "manual",
       "localizations": {
@@ -7075,6 +7316,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшееся время"
+          }
+        }
+      }
+    },
+    "Time to full or empty": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: a status line or detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время до зарядки или разрядки"
           }
         }
       }
@@ -7500,6 +7753,18 @@
         }
       }
     },
+    "Update time": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: when the reading's time shows",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время обновления"
+          }
+        }
+      }
+    },
     "Updated %@": {
       "extractionState": "manual",
       "localizations": {
@@ -7898,6 +8163,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "При зарядке до"
+          }
+        }
+      }
+    },
+    "When old": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Update time, only once the reading is old",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если данные устарели"
           }
         }
       }

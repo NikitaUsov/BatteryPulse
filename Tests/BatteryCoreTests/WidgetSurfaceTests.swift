@@ -15,6 +15,11 @@ struct WidgetSurfaceTests {
             ])
     }
 
+    /// The `widget.timeline` signpost's triggers, which measurements compare by name.
+    @Test func timelineSignpostTriggers() {
+        #expect(WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories"])
+    }
+
     @Test func sizes() {
         #expect(
             WidgetSize.allCases.map(\.rawValue) == ["small", "medium", "large", "extraLarge", "extraLargePortrait"])
@@ -67,7 +72,16 @@ struct WidgetSurfaceTests {
     /// The manifest as it ships; a widget package that ships a name adds it here and in the type.
     @Test func manifest() throws {
         let json = """
-            {"kinds": [{"kind": "io.github.nikitausov.BatteryPulse.battery", "families": ["small", "medium"]}]}
+            {"kinds": [{"kind": "io.github.nikitausov.BatteryPulse.battery", "families": ["small", "medium"],
+              "intent": {"type": "BatteryWidgetIntent", "parameters": [
+                {"name": "layout", "values": ["automatic", "custom"]},
+                {"name": "mainValue", "values": ["charge", "maximumCapacity", "temperature", "batteryPower"]},
+                {"name": "mainVisual", "values": ["symbol"]},
+                {"name": "statusLines", "values": ["state", "time"]},
+                {"name": "details"},
+                {"name": "time", "values": ["clockTime", "timeLeft"]},
+                {"name": "colors", "values": ["levelColors", "monochrome"]},
+                {"name": "updateTime", "values": ["whenOld", "always"]}]}}]}
             """
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }

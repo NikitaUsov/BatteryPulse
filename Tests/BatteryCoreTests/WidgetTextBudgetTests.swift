@@ -28,12 +28,10 @@ struct WidgetTextBudgetTests {
         return try JSONDecoder().decode(Catalog.self, from: Data(contentsOf: url))
     }
 
-    /// Keys the widget will add with the packages that use them (the "tomorrow" phrases with the
-    /// configurable widget, two field names with the large size). Their English is checked now,
-    /// their Russian once they are in the catalog, which moves them out of this list.
-    static let pendingKeys: Set<String> = [
-        "Full at %@ tomorrow", "Lasts until %@ tomorrow", "Cycle life used", "Cell balance",
-    ]
+    /// Keys the widget will add with the packages that use them (two field names with the large
+    /// size). Their English is checked now, their Russian once they are in the catalog, which moves
+    /// them out of this list.
+    static let pendingKeys: Set<String> = ["Cycle life used", "Cell balance"]
 
     enum Language: String, CaseIterable {
         case english, russian

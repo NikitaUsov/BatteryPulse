@@ -96,12 +96,17 @@ struct WidgetLayoutPlanTests {
         // Automatic medium has room for it after its three details.
         let automatic = try Self.layout(.medium, BatteryWidgetConfiguration(), s)
         #expect(automatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .temperature, nil])
-        // Heat comes first; the abnormal condition waits for the attention row rather than show
-        // as a row.
+        // Heat comes first in the attention row, so a chosen condition row stays and the condition
+        // still shows. Automatic chooses no condition row; its attention row says the condition
+        // again once the heat passes.
         s.thermalState = .critical
         let hot = try Self.layout(.large, Self.custom(Self.everyField), s)
         #expect(hot.details.last == .attention(.heat(.critical)))
-        #expect(!hot.details.contains { $0.field == .condition })
+        #expect(hot.details.contains { $0.field == .condition })
+        let hotMedium = try Self.layout(.medium, Self.custom([.condition, .cycleCount]), s)
+        #expect(hotMedium.details.map(\.field) == [.condition, .cycleCount, nil])
+        let hotAutomatic = try Self.layout(.medium, BatteryWidgetConfiguration(), s)
+        #expect(hotAutomatic.details.map(\.field) == [.maximumCapacity, .cycleCount, .temperature, nil])
     }
 
     /// Small has no detail slot: the attention row takes the time line's place, in Automatic too.
@@ -215,6 +220,14 @@ struct WidgetLayoutPlanTests {
         for size in WidgetSize.allCases {
             #expect(try Self.layout(size, Self.custom(Self.everyField)).cues.isEmpty)
         }
+    }
+
+    /// The attention row's symbol is tinted by how serious its cause is.
+    @Test func attentionTiers() {
+        #expect(WidgetAttention.heat(.serious).tier == .low)
+        #expect(WidgetAttention.heat(.critical).tier == .critical)
+        #expect(WidgetAttention.condition(.serviceRecommended).tier == .low)
+        #expect(WidgetAttention.condition(.checkBattery).tier == .critical)
     }
 
     @Test func cuesFollowTheirTiers() {

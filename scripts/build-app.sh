@@ -271,9 +271,7 @@ extract_app_intents_metadata() {
   fi
   ls -l "$METADATA"
 }
-# While the widget declares no App Intents type there is nothing to extract; the 0.7 plan's W-3a
-# makes the step unconditional.
-if grep -rqsE --include='*.swift' '(^|[[:space:]])import[[:space:]]+AppIntents([[:space:]]|$)' Sources/BatteryPulseWidget; then extract_app_intents_metadata; else echo "App Intents metadata: skipped (no intents): no widget source imports AppIntents"; fi
+extract_app_intents_metadata
 
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
