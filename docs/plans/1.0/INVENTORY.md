@@ -297,7 +297,7 @@ Enhanced Security spike.
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| TCI-01 | The 0.6.2 session script | `docs/plans/0.6.2/m5-session.sh`: fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
+| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |
