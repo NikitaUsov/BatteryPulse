@@ -54,22 +54,16 @@ public struct WidgetReloadPlanner: Sendable {
         var adapterWatts: Int?
         var adapterIsWireless: Bool?
         var condition: WidgetCondition
-        /// Serious or critical; fair keeps the previous answer, so only nominal ends it.
+        /// The planner's heat as of the reload.
         var isHot: Bool
         var temperature: Double?
 
-        /// `previous` carries the heat across fair and an unknown state.
-        init(_ snapshot: BatterySnapshot, previous: BatteryShown?) {
+        init(_ snapshot: BatterySnapshot, isHot: Bool) {
             isLowPowerModeEnabled = snapshot.isLowPowerModeEnabled ?? false
             adapterWatts = snapshot.adapter?.watts
             adapterIsWireless = snapshot.adapter?.isWireless
             condition = WidgetCondition(snapshot.healthCondition)
-            isHot =
-                switch snapshot.thermalState {
-                case .serious?, .critical?: true
-                case .nominal?: false
-                case .fair?, nil: previous?.isHot ?? false
-                }
+            self.isHot = isHot
             temperature = snapshot.temperatureCelsius
         }
 
@@ -118,6 +112,10 @@ public struct WidgetReloadPlanner: Sendable {
 
     private var policy = WidgetReloadPolicy()
     private var batteryShown: BatteryShown?
+    /// Whether the Mac runs hot, with the heat alert's hysteresis over every evaluation, reloaded
+    /// or not: serious or critical turn it on, only nominal turns it off, and fair or an unknown
+    /// state keep it. So a change that waited out ``immediateInterval`` still reloads afterwards.
+    private var isHot = false
     private var lastBatteryReload: Date?
     private var lastImmediateReload: Date?
     private var accessoriesShown: AccessoriesShown?
@@ -128,12 +126,18 @@ public struct WidgetReloadPlanner: Sendable {
     /// Why the Battery kind reloads for `snapshot` now, or `nil` when it waits; records the reload.
     /// The first evaluation records `snapshot` and returns `nil`.
     public mutating func battery(_ snapshot: BatterySnapshot, at date: Date) -> Reason? {
+        isHot =
+            switch snapshot.thermalState {
+            case .serious?, .critical?: true
+            case .nominal?: false
+            case .fair?, nil: isHot
+            }
+        let next = BatteryShown(snapshot, isHot: isHot)
         guard let shown = batteryShown else {
             policy.record(snapshot, at: date, reloaded: false)
-            batteryShown = BatteryShown(snapshot, previous: nil)
+            batteryShown = next
             return nil
         }
-        let next = BatteryShown(snapshot, previous: shown)
         let reason: Reason
         if policy.shouldReload(for: snapshot, at: date) {
             reason = .policy

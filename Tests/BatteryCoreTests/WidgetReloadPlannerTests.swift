@@ -93,6 +93,18 @@ struct WidgetReloadPlannerTests {
         #expect(Self.battery(steps) == [nil, nil, .heat, nil, nil, nil, nil, nil, nil, .heat])
     }
 
+    /// The heat follows every reading, so a change that waited for the 5 minutes still reloads
+    /// once they have passed, even with the state at fair by then.
+    @Test func aHeatChangeThatWaitedStillReloads() {
+        let result = Self.battery([
+            (0, Self.snapshot()), (1, Self.snapshot(lowPower: true)),
+            (2, Self.snapshot(lowPower: true, thermal: .serious)), (4, Self.snapshot(lowPower: true, thermal: .fair)),
+            (6, Self.snapshot(lowPower: true, thermal: .fair)), (7, Self.snapshot(lowPower: true, thermal: .fair)),
+            (20, Self.snapshot(lowPower: true, thermal: .nominal)),
+        ])
+        #expect(result == [nil, .lowPowerMode, nil, nil, .heat, nil, .heat])
+    }
+
     /// A Mac that starts hot shows it already; an unknown state changes nothing.
     @Test func startingHotReloadsOnlyAtNominal() {
         var cooling = Self.snapshot()
