@@ -40,7 +40,7 @@ struct BatteryPulseApp: App {
         AppDevices.start()
         notifier = BatteryNotifier(monitor: monitor, accessories: accessories)
         notifier.start()
-        widgetRefresher = WidgetRefresher(monitor: monitor)
+        widgetRefresher = WidgetRefresher(monitor: monitor, accessories: accessories)
         widgetRefresher.start()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
@@ -52,11 +52,11 @@ struct BatteryPulseApp: App {
         // A fresh install has no last-seen version, so What's New only follows a real update, even
         // when the welcome window opens at every launch by choice.
         showsWhatsNew = WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
-        // The first launch of another version: the previous version's widget extension may still
-        // be running, and WidgetKit refuses its timelines.
-        if WhatsNewPolicy.lastLaunched != updater.currentVersion {
-            WidgetRefresher.endPreviousExtension()
-        }
+        // The first launch of another version, or in another language: the previous widget
+        // extension may still be running, and WidgetKit refuses a previous version's timelines;
+        // the placed widgets keep the previous language's render until they reload.
+        let versionChanged = WhatsNewPolicy.lastLaunched != updater.currentVersion
+        WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)
         WhatsNewPolicy.markSeen(updater.currentVersion)
         updater.showWindow = { WindowOpener.show(WindowID.update) }
         updater.startAutomaticChecks()

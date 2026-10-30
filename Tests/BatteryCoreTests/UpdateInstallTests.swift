@@ -342,7 +342,7 @@ import Testing
             #expect(!body.contains(call), "\(call)")
         }
         let launch = try SourceScanner.file("BatteryPulseApp/App/BatteryPulseApp.swift").code
-        #expect(launch.contains("WidgetRefresher.endPreviousExtension()"))
+        #expect(launch.contains("WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)"))
     }
 
     /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a
