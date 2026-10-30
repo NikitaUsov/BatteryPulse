@@ -368,11 +368,15 @@ bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-short-sessio
 ```
 
 After publishing, D3 posts the line with the release PR's number and the last commit that holds this
-folder (`after-publishing <n> <keep>`). Each section stands alone: Session R's Rules, Privacy and
-Decisions hold, with `$S` standing for its own worktree's script (`~/bp-070/C/run`, `~/bp-070/H/run`,
-`~/bp-070/D3/run`), and its results leave the Mac only through `$S send` after his yes. First, in each:
-`git -C ~/BatteryPulse worktree add --detach ~/bp-070/<C|H|D3>/run <the commit you read this from>`
-(if it exists at another commit, move it aside to `run-<its first 7 characters>` first), then `$S help`.
+folder (`after-publishing <n> <keep>`). Each section stands alone: Session R's Rules, Privacy,
+Decisions you make alone and Answers hold, with `$S` standing for its own worktree's script
+(`~/bp-070/C/run`, `~/bp-070/H/run`, `~/bp-070/D3/run`), and its results leave the Mac only through
+`$S send` after his yes. The start printed only this part, so first, in each: `git -C ~/BatteryPulse
+worktree add --detach ~/bp-070/<C|H|D3>/run <the commit you read this from>` (if it exists at another
+commit, move it aside to `run-<its first 7 characters>` first); then read those four sections in
+`~/bp-070/<C|H|D3>/run/docs/plans/0.7.0/SESSION-R.md` with your file-reading tool; then `$S tools`
+(ui and frames from this worktree, about a minute; the After publishing check clicks and crops
+through them) and `$S help`.
 
 ## Charge limit
 
@@ -415,7 +419,8 @@ wait. Never `gh`, `sudo`, `killall`, an install or a copy outside the script.
 
 1. Say in Russian: "This is the check after the 0.7.0 update, about 15 minutes. Please keep off the
    Mac until I say so; answer a dialog only if I ask." On his yes: `$S answer --by person D3-yes y`.
-2. `$S main` (computer use finds BatteryPulse only once it has a window), `$S ui access`, `$S proof P1
+2. `$S tools` must have built ui and frames (else every step below is "not checked"). `$S main`
+   (computer use finds BatteryPulse only once it has a window), `$S ui access`, `$S proof P1
    --image <shot> <x> <y>`, `$S widget small ...`, `$S widget medium ...` (`$S ui frame --widgets`), `$S
    desktop-spot ...`, `$S proof P11`. Notification Center can't be granted to computer use: the widgets
    are the script's crops. If a widget is blank or gone now, add it again from 0.6.2's gallery by

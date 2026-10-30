@@ -801,6 +801,15 @@ build_tools() {
     xcrun swiftc -O "$HERE/swap.swift" -o "$BIN/swap" 2>"$BIN/swap.log" ||
       fail "can't build swap.swift, which every install needs; see $BIN/swap.log"
   fi
+  build_gui_tools
+  build_bpulse
+}
+
+# build_gui_tools: frames (the pixel measures, the crops' stats, the contact sheet) and ui (the
+# hands), which every session that clicks or crops needs: Session R's prepare builds them with the
+# rest, a short session by its `tools` call.
+build_gui_tools() {
+  mkdir -p "$BIN"
   if tools_need_build frames "$HERE/frames.swift"; then
     echo "building frames.swift..."
     if ! xcrun swiftc -O "$HERE/frames.swift" -o "$BIN/frames" 2>"$BIN/frames.log"; then
@@ -815,7 +824,19 @@ build_tools() {
       warn "ui.swift didn't build (see $BIN/ui.log): every ui step is not checked"
     fi
   fi
-  build_bpulse
+}
+
+# tools: a short session's first script call: ui and frames built from its own frozen worktree
+# into ~/bp-070/<C|H|D3>/bin, where ui finds its session's folder (Session R's prepare builds
+# them in ~/bp-070/R/bin). The After publishing check clicks, crops and reads AX through them.
+step_tools() {
+  [ "$(uname -s)" = Darwin ] || fail "this runs on the Mac"
+  xcode-select -p >/dev/null 2>&1 ||
+    fail "Xcode or the Command Line Tools are missing (xcode-select --install), then $SCRIPT tools again"
+  mkdir -p "$WORK" "$LOGS" "$SECTIONS" "$SHOTS"
+  build_gui_tools
+  echo "tools in $BIN: ui $(if [ -x "$BIN/ui" ]; then echo built; else echo "not built (see $BIN/ui.log)"; fi), frames $(if [ -x "$BIN/frames" ]; then echo built; else echo "not built (see $BIN/frames.log)"; fi)"
+  [ -x "$BIN/ui" ] && [ -x "$BIN/frames" ]
 }
 
 # build_bpulse: bpulse from the frozen worktree (xcrun swift build -c release --product bpulse;
@@ -4404,7 +4425,8 @@ usage: $SCRIPT <command> [arguments]          (the Charge limit capture; SESSION
   charge-limit hold (a background task: wait 9 until it ends); change charge-limit <n> 100, then the slider
   by computer use (or --his-hand); charge-limit full; charge-limit wait100 (a background task);
   the slider back; charge-limit back; restored charge-limit "<how>"; charge-limit stop; charge-limit check
-  then batch, send --dry-run, his C-send, send. Any time: status, note, shot, crop, attach, ui, judge, wait, help.
+  then batch, send --dry-run, his C-send, send. Any time: status, note, shot, crop, attach, ui, judge, wait, help
+  (tools first builds ui and frames, which crop, attach, ui and judge need).
 EOF
       ;;
     H)
@@ -4419,7 +4441,8 @@ EOF
       cat <<EOF
 usage: $SCRIPT <command> [arguments]          (after publishing; SESSION-R.md, "After publishing")
 
-  answer --by person D3-yes y; ui access; proof P1 --image <png> <x> <y>; widget <name> x y w h; desktop-spot ...;
+  tools (ui and frames, first); answer --by person D3-yes y; main; ui access; proof P1 --image <png> <x> <y>;
+  widget <name> x y w h; desktop-spot ...;
   proof P11; after before; Check for Updates, Install and Relaunch (ui press); after after (then judge each D3-*);
   count-check; count-check stats (10 minutes later: wait in the background); after popover;
   then batch, send --dry-run, his D3-send, send. Any time: status, note, shot, crop, attach, ui, judge, wait, help.
@@ -4553,6 +4576,7 @@ case "$COMMAND" in
   menubar) run_step step_menubar ;;
   menu-bar-shots) run_step step_menu_bar_shots "$@" ;;
   wp18) run_step step_wp18 "$@" ;;
+  tools) run_step step_tools ;;
   arm) run_step step_arm "$@" ;;
   ready) run_step step_ready ;;
   summary) run_step step_summary "$@" ;;
