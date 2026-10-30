@@ -656,7 +656,8 @@ Deferred from 0.6.1, each for the reason given:
 ### 0.7
 
 Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's
-Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`.
+Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`. The widget design it builds on, moved
+from 0.6.2's plan at 0.6.2's release: `docs/plans/0.7.0/widgets.md`.
 
 - [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
   defaults that keep a placed widget looking as it does today: the main value and visual, the

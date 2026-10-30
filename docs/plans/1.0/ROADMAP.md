@@ -46,7 +46,7 @@ include FEA-35.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus `docs/plans/0.6.2/PLAN.md`, so these lines are v0.6.1's |
-| P2 | the verified 0.6.2 plan, `docs/plans/0.6.2/PLAN.md` (section, package `WP-…`/`W-…`, or question `Q-…`) |
+| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/<n>/head`), in the commit before the one that removed the folder |
 | INV | `docs/plans/1.0/INVENTORY.md`; its row IDs (`FEA-01` …) are used throughout |
 | P1, PB, RES-x | the 0.6.1 plan, playbook and research files in `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
 | V, Q, D | the three independent proposals for 1.0 this roadmap judged: user value (V), quality and trust (Q), distribution and platform (D); working notes, not in the repository |
