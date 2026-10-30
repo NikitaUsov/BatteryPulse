@@ -275,12 +275,13 @@ left). Whatever is left then is `$S note "<item> not run (time)"`. In this order
    to maximum capacity in Edit Widget (`change widget-choices Automatic "main value maximum capacity"`
    first), `$S click-widget health`, answer, then back to Automatic and `restored`.
 8. **Step 9's accessories half:** `$S change bluetooth-accessory connected disconnected`; in System
-   Settings → Bluetooth (opened by computer use; no screenshot of it), the connected accessory's
-   Disconnect by `$S ui press "System Settings" <its button>` (P8 confirmed the pane by its title; its
-   (i) button or its row's menu; never type its name into a note); `$S accessories-watch disconnect`;
-   connect it again the same way; `$S accessories-watch reconnect`; answer `R9-accessory`; `restored
-   bluetooth-accessory "connected again, pmset -g accps counts it"`. If the press can't reach it:
-   "not checked", and the earbuds in their case at the day's end (optional).
+   Settings → Bluetooth (`$S pane bluetooth`: a computer-use action would bring a screenshot of it),
+   the connected accessory's Disconnect by `$S ui press "System Settings" <its button>` (P8 confirmed
+   the pane by its title; its (i) button or its row's menu; never type its name into a note); `$S
+   accessories-watch disconnect`; connect it again the same way; `$S accessories-watch reconnect`;
+   answer `R9-accessory`; `restored bluetooth-accessory "connected again, pmset -g accps counts it"`.
+   If the press can't reach it: "not checked", and the earbuds in their case at the day's end
+   (optional).
 9. **Step 9b:** `$S main`; the Developer section's Demo Mode by `$S ui select-row BatteryPulse "Demo
    Mode"`, its Charge limit scene by `$S ui press BatteryPulse "Charge limit"`; `$S demo-shots`; the
    compact window as its DO line says; answer `R9b-demo`; `$S demo-shots ru`, answer `R9b-demo-ru`;
