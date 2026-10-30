@@ -1346,6 +1346,18 @@
         }
       }
     },
+    "Cell balance": {
+      "extractionState": "manual",
+      "comment": "Widget detail: the spread between the highest and lowest cell voltage, in mV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс элементов"
+          }
+        }
+      }
+    },
     "Cell impedance at depth-of-discharge grid points 0-9, in units of 1/1024 ohm.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -2306,6 +2318,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расчётное число циклов перезарядки аккумулятора (регистр контроллера 0x9C)."
+          }
+        }
+      }
+    },
+    "Cycle life used": {
+      "extractionState": "manual",
+      "comment": "Widget detail: the share of the battery's rated cycle count used, in percent",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Израсходовано циклов"
           }
         }
       }

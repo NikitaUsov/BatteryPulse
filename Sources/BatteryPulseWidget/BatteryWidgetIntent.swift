@@ -234,16 +234,16 @@ struct BatteryWidgetDetail: AppEntity {
         DisplayRepresentation(title: field.label)
     }
 
-    /// The details the chooser offers, in the catalogue's order.
-    static let offered = BatteryWidgetField.allCases.filter(\.isOffered).map(BatteryWidgetDetail.init(field:))
+    /// The details the chooser offers: every field, in the catalogue's order.
+    static let offered = BatteryWidgetField.allCases.map(BatteryWidgetDetail.init(field:))
 
     init(field: BatteryWidgetField) {
         self.field = field
     }
 
-    /// A stored id's detail; `nil` for an id no field has or the chooser doesn't offer.
+    /// A stored id's detail; `nil` for an id no field has.
     init?(id: String) {
-        guard let field = BatteryWidgetField(rawValue: id), field.isOffered else { return nil }
+        guard let field = BatteryWidgetField(rawValue: id) else { return nil }
         self.field = field
     }
 }
@@ -281,16 +281,8 @@ extension BatteryWidgetField {
         case .lowPowerMode: "Low Power Mode"
         case .remainingCapacity: "Remaining capacity"
         case .voltage: "Voltage"
-        // Offered with their catalog keys by the package that adds the large widget.
-        case .cycleLifeUsed, .cellBalance: LocalizedStringResource(stringLiteral: rawValue)
-        }
-    }
-
-    /// Whether the Details chooser offers the field: every field with a catalog label.
-    var isOffered: Bool {
-        switch self {
-        case .cycleLifeUsed, .cellBalance: false
-        default: true
+        case .cycleLifeUsed: "Cycle life used"
+        case .cellBalance: "Cell balance"
         }
     }
 }
