@@ -45,14 +45,15 @@ enum PageID: Hashable, Sendable, RawRepresentable {
     }
 }
 
-/// The page a widget's click opens, and the URL that carries it:
-/// `io.github.nikitausov.batterypulse://page/<page>`, or `…://page/device/<key>` for an iPhone or
-/// iPad. Navigation only: a link never acts, and any app or web page that opens one can do no more
-/// than show a page. A widget never opens Raw Data, Demo Mode or Demo Mode's iPhone, so those
+/// The page a widget's click opens, and the URL that carries it: `batterypulse://page/<page>`, or
+/// `batterypulse://page/device/<key>` for an iPhone or iPad. Navigation only: a link never acts,
+/// it only shows a page. A widget never opens Raw Data, Demo Mode or Demo Mode's iPhone, so those
 /// pages have no route.
 struct WidgetRoute: Hashable, Sendable {
-    /// Derived from the bundle identifier, so no other app's links collide with it.
-    static let scheme = "io.github.nikitausov.batterypulse"
+    /// Not registered with Launch Services: WidgetKit hands a widget's URL to the widget's own app
+    /// without it, as a click on the M5 showed (`batterypulse://page/overview` reached the app
+    /// delegate with no scheme registered), so no other app or web page opens a page with it.
+    static let scheme = "batterypulse"
     static let host = "page"
 
     let page: PageID
