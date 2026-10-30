@@ -2,8 +2,9 @@ import Foundation
 
 /// A page of the main window, as `@SceneStorage("mainSelection")` keeps it: a name, or `device:`
 /// and the device's key. The strings are frozen: a window restores its page from them, and a
-/// widget's click names its page with them.
-enum PageID: Hashable, Sendable, RawRepresentable {
+/// widget's click names its page with them. The app's `SidebarItem` maps to and from it, one case
+/// to one case.
+public enum PageID: Hashable, Sendable, RawRepresentable {
     case overview, power, health, history, developer, demo
     /// The Devices section's introduction.
     case devices
@@ -18,7 +19,7 @@ enum PageID: Hashable, Sendable, RawRepresentable {
 
     static let devicePrefix = "device:"
 
-    init?(rawValue: String) {
+    public init?(rawValue: String) {
         if rawValue.hasPrefix(Self.devicePrefix) {
             guard let key = DeviceKey(rawValue: String(rawValue.dropFirst(Self.devicePrefix.count))) else {
                 return nil
@@ -30,7 +31,7 @@ enum PageID: Hashable, Sendable, RawRepresentable {
         self = page
     }
 
-    var rawValue: String {
+    public var rawValue: String {
         switch self {
         case .overview: "overview"
         case .power: "power"
@@ -56,7 +57,7 @@ public struct WidgetRoute: Hashable, Sendable {
     static let scheme = "batterypulse"
     static let host = "page"
 
-    let page: PageID
+    public let page: PageID
 
     init?(page: PageID) {
         switch page {
@@ -73,7 +74,7 @@ public struct WidgetRoute: Hashable, Sendable {
     }
 
     /// The route a widget's URL names; `nil` for any other URL, so the app ignores it.
-    init?(url: URL) {
+    public init?(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
             components.scheme?.lowercased() == Self.scheme, components.host?.lowercased() == Self.host,
             components.user == nil, components.password == nil, components.port == nil,
@@ -96,9 +97,14 @@ public struct WidgetRoute: Hashable, Sendable {
 
     /// The route of a click that carries no URL: macOS hands the app an `NSUserActivity` whose
     /// type is the clicked widget's configuration intent type name, with no configuration the app
-    /// reads. An intent of `manifest` opens its kind's page (``WidgetKindID/page``); any other
+    /// reads. An intent that ships opens its kind's page (``WidgetKindID/page``); any other
     /// activity type is `nil`, so the app ignores it. The activity's user info isn't read.
-    init?(activityType: String, manifest: WidgetIntentManifest = .shipping) {
+    public init?(activityType: String) {
+        self.init(activityType: activityType, manifest: .shipping)
+    }
+
+    /// ``init(activityType:)`` for the intents of `manifest`.
+    init?(activityType: String, manifest: WidgetIntentManifest) {
         guard let declared = manifest.kinds.first(where: { $0.intent?.type == activityType }),
             let kind = WidgetKindID(rawValue: declared.kind)
         else { return nil }

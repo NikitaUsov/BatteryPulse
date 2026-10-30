@@ -60,35 +60,43 @@ enum SidebarItem: Hashable, Identifiable {
         }
     }
 
-    /// The page as scene storage keeps it: a name, or `device:` and the device's key.
-    var storageKey: String {
+    /// The page's frozen identifier, which scene storage keeps and a widget's click names. One
+    /// case each, so a page can't lose its string.
+    var page: PageID {
         switch self {
-        case .overview: "overview"
-        case .power: "power"
-        case .health: "health"
-        case .history: "history"
-        case .developer: "developer"
-        case .demo: "demo"
-        case .devicesIntro: "devices"
-        case .accessories: "accessories"
-        case .device(let key): Self.devicePrefix + key.rawValue
+        case .overview: .overview
+        case .power: .power
+        case .health: .health
+        case .history: .history
+        case .developer: .developer
+        case .demo: .demo
+        case .devicesIntro: .devices
+        case .accessories: .accessories
+        case .device(let key): .device(key)
         }
     }
+
+    init(page: PageID) {
+        switch page {
+        case .overview: self = .overview
+        case .power: self = .power
+        case .health: self = .health
+        case .history: self = .history
+        case .developer: self = .developer
+        case .demo: self = .demo
+        case .devices: self = .devicesIntro
+        case .accessories: self = .accessories
+        case .device(let key): self = .device(key)
+        }
+    }
+
+    /// The page as scene storage keeps it: a name, or `device:` and the device's key.
+    var storageKey: String { page.rawValue }
 
     init?(storageKey: String) {
-        if storageKey.hasPrefix(Self.devicePrefix) {
-            guard let key = DeviceKey(rawValue: String(storageKey.dropFirst(Self.devicePrefix.count))) else {
-                return nil
-            }
-            self = .device(key)
-            return
-        }
-        let named: [SidebarItem] = Self.pages + Self.developerPages + [.devicesIntro, .accessories]
-        guard let item = named.first(where: { $0.storageKey == storageKey }) else { return nil }
-        self = item
+        guard let page = PageID(rawValue: storageKey) else { return nil }
+        self.init(page: page)
     }
-
-    private static let devicePrefix = "device:"
 }
 
 /// The main window: a sidebar of sections and their content.

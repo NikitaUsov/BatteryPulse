@@ -96,16 +96,26 @@ struct WidgetSurfaceTests {
         #expect(PropertyValue(any: sandbox) == .bool(true))
     }
 
-    /// `SidebarItem.storageKey`'s strings are `PageID`'s, so the two can't drift apart.
+    /// `SidebarItem` maps to and from `PageID` one case to one case, and `storageKey` is the
+    /// page's raw value, so scene storage keeps `PageID`'s strings and the two can't drift apart.
     @Test func sidebarStorageKeysArePageIDs() throws {
-        let source = try SourceScanner.file("BatteryPulseApp/Main/MainView.swift").text
-        let block = try #require(
-            source.firstMatch(of: #/var storageKey: String \{(?<body>[\s\S]*?)\n    \}/#)?.output.body)
-        let names = block.matches(of: #/case \.\w+: "([^"]*)"/#).map { String($0.output.1) }
-        #expect(names == PageID.named.map(\.rawValue))
-        #expect(block.contains("case .device(let key): Self.devicePrefix + key.rawValue"))
-        let prefix = try #require(source.firstMatch(of: #/static let devicePrefix = "([^"]*)"/#)?.output.1)
-        #expect(String(prefix) == PageID.devicePrefix)
+        let source = try SourceScanner.file("BatteryPulseApp/Main/MainView.swift").code
+        let toPage = try #require(
+            source.firstMatch(of: #/var page: PageID \{(?<body>[\s\S]*?)\n    \}/#)?.output.body)
+        let fromPage = try #require(
+            source.firstMatch(of: #/init\(page: PageID\) \{(?<body>[\s\S]*?)\n    \}/#)?.output.body)
+        // "row->page" per case; `PageID`'s case names are its strings (`pageStrings()`).
+        let pairs = toPage.matches(of: #/case \.(\w+)(?:\(let key\))?: \.(\w+)/#).map {
+            "\($0.output.1)->\($0.output.2)"
+        }
+        let inverse = fromPage.matches(of: #/case \.(\w+)(?:\(let key\))?: self = \.(\w+)/#).map {
+            "\($0.output.2)->\($0.output.1)"
+        }
+        let rows = PageID.named.map { page in "\(page == .devices ? "devicesIntro" : page.rawValue)->\(page.rawValue)" }
+        #expect(pairs.sorted() == (rows + ["device->device"]).sorted())
+        #expect(inverse.sorted() == pairs.sorted())
+        #expect(source.contains("var storageKey: String { page.rawValue }"))
+        #expect(source.contains("guard let page = PageID(rawValue: storageKey) else { return nil }"))
     }
 
     static let repository = URL(fileURLWithPath: #filePath)

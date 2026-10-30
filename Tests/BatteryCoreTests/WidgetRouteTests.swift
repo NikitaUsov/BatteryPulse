@@ -95,6 +95,8 @@ struct WidgetRouteTests {
         #expect(
             WidgetRoute(activityType: "AccessoriesWidgetIntent", manifest: Self.configurable)?.page == .accessories)
         #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories])
+        // The app's route, over the intents that ship.
+        #expect(WidgetRoute(activityType: "BatteryWidgetIntent")?.page == .overview)
     }
 
     /// Only an intent's own type name opens a page: not another app's, not a kind string, not a
