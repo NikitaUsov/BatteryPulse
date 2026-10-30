@@ -212,8 +212,7 @@ jobs:
         # build-app.sh extracts the widget's App Intents metadata by hand, and the system shows the
         # widget's edit sheet from it alone: every intent, parameter and AppEnum case of the manifest
         # must be in it, and every string of the sheet must be a catalog key that the widget's
-        # compiled Russian table translates. While the widget declares no App Intents type there is
-        # no metadata, and the check says it skipped.
+        # compiled Russian table translates.
         run: >-
           swift scripts/appintents-check.swift scripts/widget-manifest.json Resources/Localizable.xcstrings
           build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex/Contents/Resources
