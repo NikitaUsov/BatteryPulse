@@ -15,6 +15,11 @@ struct WidgetSurfaceTests {
             ])
     }
 
+    /// The `widget.timeline` signpost's triggers, which measurements compare by name.
+    @Test func timelineSignpostTriggers() {
+        #expect(WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories"])
+    }
+
     @Test func sizes() {
         #expect(
             WidgetSize.allCases.map(\.rawValue) == ["small", "medium", "large", "extraLarge", "extraLargePortrait"])

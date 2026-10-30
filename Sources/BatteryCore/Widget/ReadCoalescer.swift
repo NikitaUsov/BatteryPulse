@@ -6,12 +6,12 @@ import Foundation
 ///
 /// A plain value with the caller's clock: the widget keeps it behind a `Mutex`, with `Pending` an
 /// in-flight `Task` that joining requests await; the tests pass their own times.
-struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
+public struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
     /// How long a read answers later requests.
-    static var window: TimeInterval { 5 }
+    public static var window: TimeInterval { 5 }
 
     /// What a request does.
-    enum Step: Sendable {
+    public enum Step: Sendable {
         /// Use a read that finished within the window.
         case cached(Value)
         /// Wait for the read that is running.
@@ -26,11 +26,11 @@ struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
     private var since = Date.distantPast
     private var lastID = 0
 
-    init() {}
+    public init() {}
 
     /// The step for a request at `now`. `start` makes the new read's pending handle; it is called
     /// only when a read starts, while the caller holds its lock.
-    mutating func request(at now: Date, start: () -> Pending) -> Step {
+    public mutating func request(at now: Date, start: () -> Pending) -> Step {
         // A read that never reported back stops answering after the window too.
         if now.timeIntervalSince(since) < Self.window {
             if let value { return .cached(value) }
@@ -44,7 +44,7 @@ struct ReadCoalescer<Value: Sendable, Pending: Sendable>: Sendable {
 
     /// Reports the read `id` started; `nil` means it failed, which is never cached, so the next
     /// request reads again. A report from a read already replaced is ignored.
-    mutating func finish(_ id: Int, with value: Value?) {
+    public mutating func finish(_ id: Int, with value: Value?) {
         guard id == lastID, pending != nil else { return }
         pending = nil
         self.value = value
