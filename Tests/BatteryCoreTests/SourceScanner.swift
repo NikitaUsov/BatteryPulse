@@ -3,9 +3,9 @@ import Testing
 
 /// The sources of the code that only compiles on macOS, for the suites that guard its rules on
 /// Linux (``MotionGuardTests``, ``LocalizationCatalogTests``), every target's sources for the
-/// rules that hold everywhere (``SecurityGuardTests``, ``EnergyGuardTests``), and the helpers
-/// that scan them: code with comments and string literals blanked out, and calls with their
-/// argument text.
+/// rules that hold everywhere (``SecurityGuardTests``, ``EnergyGuardTests``,
+/// ``LogPrivacyGuardTests``), and the helpers that scan them: code with comments and string
+/// literals blanked out, and calls with their argument text.
 ///
 /// Every Swift file of `Sources` is read and blanked once per test process (``files``,
 /// ``allFiles``), however many suites and tests look at it.
