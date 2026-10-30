@@ -2668,7 +2668,7 @@ PB §3.4's list and P2 §7.3's additions hold, except these intended changes:
 | **The reload policy** | `WidgetReloadPolicy` (`BatteryPresentation.swift:126-180`) | `WidgetReloadPlanner`: also on Low Power Mode, adapter, condition and thermal changes; only for placed kinds | No line (behaviour inside the budget) |
 | **`bpulse --device <n> --json`**, and `--input` of a device capture with `--json` | `firstUseDate` in seconds since 2001 (`main.swift:190-191`) | ISO 8601 strings, like `--json` | "For scripts: `bpulse --device <n> --json` writes dates as ISO 8601 strings, like `bpulse --json`; every JSON object `bpulse` prints now has a `formatVersion` field. `--accessories --json` is unchanged" |
 | **`bpulse --json`, `--watch --json`** | No version field | `formatVersion: 1` | (the same line) |
-| **Settings keys** (RD C14 item 1) | PB §3.4's list, plus `betaWindowStyles`, plus `openAtLogin` only if 0.6.2 added it (not expected: 0.6.2's A0 saw the login item kept, so WP-16 item 5 has no cause) | **Three added (W-13):** `anonymousVersionCount` (Bool; a missing key means on, and only the toggle writes it), `lastCountedVersion` (String `x.y.z`) and `versionFirstLaunch` (Date). None is changed. Widget configuration lives in macOS's widget configuration, not in our domain | W-13's "Anonymous version count" line (§13 step 2) |
+| **Settings keys** (RD C14 item 1) | PB §3.4's list, plus `betaWindowStyles`, plus `openAtLogin` only if 0.6.2 added it (not expected: 0.6.2's A0 saw the login item kept, so WP-16 item 5 has no cause) | **Three added (W-13):** `anonymousVersionCount` (Bool; a missing key means on, and only the toggle writes it), `lastCountedVersion` (String `x.y.z`) and `versionFirstLaunch` (Date). **One added (W-4):** `lastSeenLanguage` (String, a localization identifier such as `en` or `ru`; absent until 0.7's first launch, written only when the app's effective language changes, so a launch in another language reloads every placed widget). None is changed. Widget configuration lives in macOS's widget configuration, not in our domain | W-13's "Anonymous version count" line (§13 step 2) |
 | **Release assets** (RD C14 item 6, the update contract) | `BatteryPulse.dmg`, `BatteryPulse.dmg.sig` and `BatteryPulse-dSYMs.zip` (`release.yml:151`) | Plus `BatteryPulse-count.txt` on every release from v0.7.0, never removed from a published release (W-13) | (the same line) |
 | **Update traffic** (`UpdateNetwork`) | Ephemeral sessions without a URL cache; cookies kept in memory while the app runs (VC-5) | No cookies stored or sent (W-13 decision 6) | — |
 | **Internet requests** (RD C14 item 8; UG:502-509; RM:120-125) | The update check, and a download the user chose | Plus the version count: once per version, at least 24 h after it first ran, on an automatic check that reached GitHub; never under Never or with the toggle off (W-13) | (the same line) |
@@ -2692,7 +2692,7 @@ PB §3.4's list and P2 §7.3's additions hold, except these intended changes:
 - Automatic's meaning in each family;
 - the `PageID` and `WidgetRoute` strings, with the `batterypulse` scheme (unregistered unless G7-9
   registers it);
-- W-13's three settings keys, with their meaning (RD C14 item 1);
+- W-13's three settings keys and W-4's `lastSeenLanguage`, with their meaning (RD C14 item 1);
 - the release asset `BatteryPulse-count.txt` on every release from v0.7.0 (RD C14 item 6).
 
 W-1's `WidgetSurfaceTests` pins the widget's surfaces, W-13's tests pin the asset's name and
