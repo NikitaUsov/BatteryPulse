@@ -325,7 +325,7 @@ makes the Details choice before its merge (§2.2).
 |---|---|---|---|
 | M-1: buy the paid account? | before W-0 ends | **No** (the maintainer): not now, and not planned before 1.0. The stretch rests on W0-3 alone (G7-5), and nothing in 0.7 waits for a signed build (§14) | RD §6 M-1 |
 | M-2: an iOS app? | R-1 | **Not in 1.x** (by delegation). R-1 removes the iOS promises (RM:5, RM:14-15, RM:192-206; both issue templates) and updates ROADMAP's Decisions | RD M-2; R:704-706 |
-| M-3: charge limiting? | R-1 (one ROADMAP Decisions line) | **Not in 1.x** (by delegation) | RD M-3 |
+| M-3: charge limiting? | R-1 (one ROADMAP Decisions line) | **Not in 1.x** (by delegation; clarified 2026-10-23, §14) | RD M-3 |
 | M-5: what 1.0 means | R-1 | **Approved as written** (the maintainer, 2026-10-22). Five promises: seen working on the M5 in a packaged build; a week of daily use without a crash; in-app updates from older versions; nothing breaks through 1.x; usable by a non-expert. **No dates:** "this is a hobby project; we release when there is time and desire". No target date, calendar or outer bound; the order of versions and the effort estimates stay, and 1.1 (macOS 28 compatibility) comes after macOS 28 ships, an event, not a date. R-1 condenses it into ROADMAP | RD M-5 |
 | M-9: the backup key | K-1 | **Yes** (by delegation). K-1 runs once the maintainer has generated the key; if it doesn't exist by C1, K-1 moves to 0.8 | RD M-9 |
 | Q-W1 | W-0 | **Yes** (the maintainer): widgets in 0.7, no 0.6.3 | P2 §10; RD §5.3 |
@@ -3118,7 +3118,12 @@ URL scheme, tests and guards, the build step and the size sequencing.
   promises from README (with the iOS column of "What each platform exposes") and both issue
   templates, and ROADMAP's Decisions say "Not in 1.x".
 - **M-3, charge limiting. Decided by delegation (2026-10-22): not in 1.x.** R-1 drops "(and later
-  charge limiting)" from ROADMAP's Decisions.
+  charge limiting)" from ROADMAP's Decisions. **Clarified 2026-10-23, by delegation (RD M-3; W-0
+  found it on 2026-10-30):** "no private reading of the limit" means no private framework loaded
+  into BatteryPulse. A read-only, undocumented source that loads no private code (a registry key, a
+  read-only SMC key, a preferences file readable without root, a system command's output) is
+  allowed for the display, each with its guard exception and its caveats recorded. W-14's
+  candidates for 0.8 already follow it.
 - **M-5, what 1.0 means. Approved by the maintainer (2026-10-22), as written** (RD M-5). 1.0 means
   "ready for people other than you":
   - **The five promises:** seen working on the M5 in a packaged build; a week of daily use without
