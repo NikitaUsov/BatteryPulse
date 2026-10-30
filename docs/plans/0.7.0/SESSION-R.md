@@ -238,7 +238,8 @@ left). Whatever is left then is `$S note "<item> not run (time)"`. In this order
    1. On the medium Battery widget: Edit Widget from its context menu; Layout Custom; the first four
       details in the list; Time set to time left (if offered); Colours monochrome; Update time always;
       Done. `$S edit-shot custom`; answer `R4-1-shows`.
-   2. Edit Widget again: answer `R4-2-kept`; Done.
+   2. Edit Widget again: answer `R4-2-kept`; Done. While it shows time left (if offered): step 6's
+      `$S tick`, answer `R6-tick` (back on Automatic it shows clock time).
    3. **Russian, the way a user does it:** `$S change app-language "<his, from prepare reads>" ru`,
       then System Settings → General → Language & Region → Applications by computer use: add
       BatteryPulse with Russian (recorded as `ru`). `$S language ru`
@@ -263,7 +264,7 @@ left). Whatever is left then is `$S note "<item> not run (time)"`. In this order
    values, each `restored` with the pane's shot.
 5. **Step 6, time:** 24-hour time off by computer use (System Settings → General → Date & Time; `change
    24-hour on off` first), `$S look 12-hour`, answer; back, `restored 24-hour "AppleICUForce24HourTime
-   reads 1"` after `$S status`. If time left shipped: `$S tick`, answer `R6-tick`. Then `$S count-toggle`,
+   reads 1"` after `$S status`. (`tick` ran in step 4.2.) Then `$S count-toggle`,
    answer `R6-count-toggle` from its four shots.
 6. **Step 7, the trees:** `$S tree`, answer `R7-tree` by W-3b item 5's rules. If the tree can't be read:
    `$S open-app "Accessibility Inspector"`, point it at each widget by computer use, a shot each; else
