@@ -7,7 +7,7 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-SWIFT_VERSION="6.4.1"
+SWIFT_VERSION="6.4.2"
 INSTALL_ROOT="/opt/swift"
 
 . /etc/os-release
