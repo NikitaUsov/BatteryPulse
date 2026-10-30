@@ -75,7 +75,7 @@ struct BatteryWidgetView: View {
     @Environment(\.widgetFamily) private var family
     @Environment(\.widgetRenderingMode) private var renderingMode
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private let formatter = BatteryFormatter()
+    private let formatter = BatteryFormatter.widget
 
     var body: some View {
         if let snapshot = entry.snapshot, let percent = snapshot.chargePercent {
