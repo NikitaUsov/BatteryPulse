@@ -381,7 +381,6 @@ struct WhatsNewView: View {
 }
 
 /// The features of this version, for What's New.
-@MainActor
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.

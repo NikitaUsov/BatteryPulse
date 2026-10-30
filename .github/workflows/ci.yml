@@ -12,6 +12,13 @@ on:
         description: Version to build into the app, without the v (for example 0.5.99); empty for 0.0.0
         required: false
         default: ""
+      profiling:
+        # Also a profiling build of the same commit, with the same version and build number, for
+        # Instruments (0.6.2's release candidate's page switches under xctrace, its plan's D1).
+        description: Also build and upload a profiling DMG (get-task-allow, unstripped)
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -31,7 +38,7 @@ jobs:
     # minutes.
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
           persist-credentials: false
@@ -49,6 +56,30 @@ jobs:
           -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Test
         run: swift test --skip-build
+      - name: Check the documentation links
+        # DocC resolves every ``Symbol`` link in BatteryCore's comments, internal symbols included,
+        # and fails on a broken or ambiguous one. The other targets link across modules, which DocC
+        # resolves only within one, so they aren't checked. With the build's flags the symbol graphs
+        # come from its products, without a rebuild; the step takes seconds.
+        run: |
+          swift package -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration \
+            dump-symbol-graph --minimum-access-level internal
+          mkdir -p "$RUNNER_TEMP/symbol-graphs"
+          find .build -path '*/symbolgraph/*' \( -name BatteryCore.symbols.json -o -name 'BatteryCore@*.symbols.json' \) \
+            -exec cp {} "$RUNNER_TEMP/symbol-graphs/" \;
+          # Without the graph, docc would check nothing and pass.
+          [ -s "$RUNNER_TEMP/symbol-graphs/BatteryCore.symbols.json" ] || { echo "error: no BatteryCore symbol graph" >&2; exit 1; }
+          docc convert --additional-symbol-graph-dir "$RUNNER_TEMP/symbol-graphs" --warnings-as-errors \
+            --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
+            --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
+      - name: Check Session B's energy queue (dry run)
+        # 0.6.2's M5 session script, copied to docs/plans/0.7.0/ as W-12's starting point
+        # (plan-0.7.0 D-11): Session B's queue with the world stubbed, its order, its retries and its
+        # thresholds in three scenarios. Removed with that folder in 0.7's D3.
+        run: |
+          for scenario in default low late; do
+            bash docs/plans/0.7.0/m5-session.sh queue --dry-run "$scenario"
+          done
 
   macos:
     name: macOS · build & test
@@ -62,7 +93,7 @@ jobs:
       # beside it. Use the newest release, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
           persist-credentials: false
@@ -73,6 +104,28 @@ jobs:
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
+      - name: Peak memory of the parser
+        # C2: the release bpulse's peak memory footprint while it renders each fixture, with
+        # --help's for the start-up share, in the step summary; no budget. On this runner, a
+        # virtual machine, /usr/bin/time -l prints no instruction or cycle counts, so the footprint
+        # is the one figure left. Three runs varied by a 16 KB page or two.
+        run: |
+          {
+            echo "### Peak memory footprint of the release bpulse"
+            echo
+            echo "| Input | Bytes |"
+            echo "|---|---:|"
+            for input in --help Tests/BatteryCoreTests/Fixtures/*.plist; do
+              if [ "$input" = --help ]; then
+                /usr/bin/time -l .build/release/bpulse --help > /dev/null 2> "$RUNNER_TEMP/time.txt"
+                name="--help (start-up)"
+              else
+                /usr/bin/time -l .build/release/bpulse --input "$input" > /dev/null 2> "$RUNNER_TEMP/time.txt"
+                name="$(basename "$input")"
+              fi
+              echo "| $name | $(awk '/peak memory footprint/ {print $1}' "$RUNNER_TEMP/time.txt") |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Smoke-run bpulse
         # Hosted runners are VMs without a battery, so exit status 2 ("no battery") is expected.
         run: |
@@ -119,14 +172,27 @@ jobs:
           done
           echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
-        # None of them is built or run anywhere else: the first two need a Mac with a display, the
-        # others a running BatteryPulse.
+        # Nothing else builds or runs them. The menu bar shots and their display metrics need a Mac
+        # with a display, rusage a running BatteryPulse; perf-stats and release-stats run here on
+        # their samples, offline.
         run: |
           bash -n scripts/menu-bar-shots.sh
           swiftc -typecheck scripts/display-metrics.swift
           swiftc -typecheck scripts/rusage.swift
           swiftc -typecheck scripts/perf-stats.swift
+          swiftc -typecheck scripts/release-stats.swift
+          swift scripts/release-stats.swift --self-test
+          swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
+          # 0.6.2's M5 session script and its helpers, copied to docs/plans/0.7.0/ for W-12
+          # (plan-0.7.0 D-11), and the launcher of 0.6.2's after-publishing check, until 0.7's D3
+          # removes the folder.
+          bash -n docs/plans/0.7.0/m5-session.sh
+          bash -n docs/plans/0.7.0/start-session-b.sh
+          bash -n docs/plans/0.7.0/start-after-publishing.sh
+          swiftc -typecheck docs/plans/0.7.0/swap.swift
+          swiftc -typecheck docs/plans/0.7.0/frames.swift
+          swiftc -typecheck docs/plans/0.7.0/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
@@ -163,14 +229,14 @@ jobs:
           fi
           rm build/tampered.dmg build/tampered.dmg.sig build/BatteryPulse.dmg.sig
       - name: Upload DMG
-        # Pinned to the commit of the v6.0.0 tag: v4 and v5 run on the deprecated Node.js 20.
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        # Pinned to the commit of the v7.0.2 tag; v4 and v5 run on the deprecated Node.js 20.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: BatteryPulse-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse.dmg
           if-no-files-found: error
       - name: Upload the size report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: size-${{ github.sha }}
           path: build/size.json
@@ -178,7 +244,7 @@ jobs:
       - name: Upload the link maps
         # For size attribution: which object file and symbol each byte of the shipped binaries
         # comes from.
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: link-maps-${{ github.sha }}
           path: build/maps/
@@ -186,19 +252,27 @@ jobs:
       - name: Upload the dSYMs
         # The debug information stripped from the shipped binaries, for symbolicating a crash
         # report of this build.
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: BatteryPulse-dSYMs-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
           path: build/BatteryPulse-dSYMs.zip
           if-no-files-found: error
-      - name: Install the way 0.6.0 does, then launch
+      - name: Install the way 0.6.1 does, then launch
         # The update to this version runs the installed version's installer, so do with this DMG
-        # what 0.6.0's does: attach it with its hdiutil arguments (UpdateInstallPolicy
-        # .attachArguments), copy the app out, check its identifier and version, check its code
-        # signature with the flags of checkCodeSignature (strict, every architecture, nested code),
-        # and detach. These stay 0.6.0's even if this version's installer changes. Then launch the
-        # copy: after 30 s it must still run, have logged menuBarReady (its menu bar item
-        # appeared) and left no crash report, and it must quit when asked.
+        # what 0.6.1's does: attach it with its hdiutil arguments, copy the app out, check its
+        # identifier and version, check its code signature with the flags of checkCodeSignature
+        # (strict, every architecture, nested code), and detach. These stay 0.6.1's although this
+        # version's installer mounts with diskutil.
+        # Then a second pass mounts the way this version's installer does (UpdateInstallPolicy; a
+        # Linux test compares these diskutil lines with it), at a mount point in the user's
+        # temporary folder under /var/folders, as the app's: attach, check that diskutil info shows
+        # the disk image mounted exactly there (as UpdateInstallPolicy.imageDisk requires, /var and
+        # /private/var counting as one), read the image's disk from it, eject the mount point; then
+        # again with a file held open on the volume, so the eject fails and the forced path runs
+        # (unmountDisk force, then eject of the disk). After each, the image's disk and its volume
+        # must be gone from diskutil list.
+        # Then launch the copy: after 30 s it must still run, have logged menuBarReady (its menu
+        # bar item appeared) and left no crash report, and it must quit when asked.
         # It takes about a minute; a hung attach, open or quit ends here, not at the job's limit.
         timeout-minutes: 5
         env:
@@ -219,6 +293,61 @@ jobs:
           fi
           codesign --verify --strict --deep --all-architectures "$app"
           hdiutil detach "$mount_point"
+
+          # The second pass. First the usage of the commands, for the record.
+          echo "::group::diskutil usage"
+          /usr/sbin/diskutil image attach 2>&1 || true
+          /usr/sbin/diskutil eject 2>&1 || true
+          /usr/sbin/diskutil unmountDisk 2>&1 || true
+          echo "::endgroup::"
+          # Where the app mounts: FileManager's temporary directory, the user's folder under
+          # /var/folders, which the system reports resolved, under /private/var.
+          mount_point="$(getconf DARWIN_USER_TEMP_DIR)BatteryPulse-update"
+          echo "The diskutil passes mount at $mount_point"
+          for pass in plain forced; do
+            mkdir -p "$mount_point"
+            /usr/sbin/diskutil image attach --readOnly --mountPoint "$mount_point" --mountOptions nobrowse build/BatteryPulse.dmg
+            /usr/sbin/diskutil info -plist "$mount_point" > "$RUNNER_TEMP/info.plist"
+            if [ "$pass" = plain ]; then
+              echo "::group::diskutil info -plist of the mounted image"
+              cat "$RUNNER_TEMP/info.plist"
+              echo "::endgroup::"
+              /usr/sbin/diskutil list
+            fi
+            mounted="$(plutil -extract MountPoint raw -o - "$RUNNER_TEMP/info.plist")"
+            bus="$(plutil -extract BusProtocol raw -o - "$RUNNER_TEMP/info.plist")"
+            echo "Pass $pass: diskutil info shows $bus at $mounted"
+            if [ "${mounted#/private}" != "${mount_point#/private}" ] || [ "$bus" != "Disk Image" ]; then
+              echo "error: diskutil info doesn't show the disk image mounted at $mount_point" >&2
+              exit 1
+            fi
+            # The image's own disk: an APFS volume sits on a synthesized container whose physical
+            # store is a partition of the image's disk.
+            store="$(plutil -extract APFSPhysicalStores.0.APFSPhysicalStore raw -o - "$RUNNER_TEMP/info.plist" 2> /dev/null \
+              || plutil -extract ParentWholeDisk raw -o - "$RUNNER_TEMP/info.plist")"
+            disk="$(printf '%s' "$store" | sed -E 's/^(disk[0-9]+)s[0-9]+$/\1/')"
+            echo "Pass $pass: the image's disk is $disk"
+            [ -d "$mount_point/BatteryPulse.app" ] || { echo "error: no BatteryPulse.app on the volume" >&2; exit 1; }
+            if [ "$pass" = forced ]; then
+              exec 3< "$mount_point/BatteryPulse.app/Contents/Info.plist"
+              if /usr/sbin/diskutil eject "$mount_point"; then
+                echo "error: the eject succeeded with a file open, so the forced path didn't run" >&2
+                exit 1
+              fi
+              /usr/sbin/diskutil unmountDisk force "$disk"
+              /usr/sbin/diskutil eject "$disk"
+              exec 3<&-
+            else
+              /usr/sbin/diskutil eject "$mount_point"
+            fi
+            listing="$(/usr/sbin/diskutil list)"
+            if printf '%s\n' "$listing" | grep -E "^/dev/$disk |BatteryPulse"; then
+              echo "error: pass $pass left the disk image attached" >&2
+              exit 1
+            fi
+            echo "Pass $pass: the image is detached"
+            rmdir "$mount_point" 2> /dev/null || true
+          done
 
           log stream --level debug --style compact --predicate 'subsystem == "io.github.nikitausov.BatteryPulse"' > "$RUNNER_TEMP/launch.log" 2>&1 &
           log_pid=$!
@@ -268,3 +397,19 @@ jobs:
           echo "Last lines of the app's log:"
           tail -20 "$RUNNER_TEMP/launch.log"
           exit "$status"
+      - name: Package the profiling build
+        # Only on a dispatch that asks for it. Last, because build-app.sh starts by removing build/,
+        # which every step above reads; the same version and build number as the DMG above, so a
+        # release candidate and its profiling build come from one run.
+        if: inputs.profiling
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: PROFILING=1 scripts/build-app.sh
+      - name: Upload the profiling DMG
+        if: inputs.profiling
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BatteryPulse-profiling-${{ inputs.version && format('{0}-', inputs.version) || '' }}${{ github.sha }}
+          path: build/BatteryPulse-profiling.dmg
+          if-no-files-found: error

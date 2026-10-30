@@ -196,9 +196,10 @@ import Testing
         #expect(contrast(secondary, window) >= 3)
     }
 
-    /// While a window minimizes, sits in the Dock and is restored, the sheet's place is a plain
-    /// fill of the same tint: the animation shows only the window's own layers, without the
-    /// desktop the glass samples.
+    /// While a window minimizes, sits in the Dock and is restored, the sheet's place is a still
+    /// fill: the animation shows only the window's own layers, without the desktop the glass
+    /// samples. Clear's and Translucent Dark's is the opaque graphite; Translucent Light's is its
+    /// own wash.
     @Test(arguments: [false, true])
     func minimizingSwapsTheGlassForAStillFill(systemDark: Bool) throws {
         typealias Surface = WindowLookPolicy.SheetSurface
@@ -206,17 +207,88 @@ import Testing
             let policy = policy(look)
             let tint = try #require(policy.sheetTint(systemDark: systemDark))
             #expect(policy.sheetSurface(systemDark: systemDark, isMinimized: false) == Surface.glass(tint: tint))
-            #expect(policy.sheetSurface(systemDark: systemDark, isMinimized: true) == Surface.fill(tint))
-            // Never an opaque frame, and never nothing: the desktop shows through a dimmed sheet.
-            #expect(tint.opacity > 0 && tint.opacity < 1)
+            let fill = try #require(policy.minimizeFill(systemDark: systemDark))
+            #expect(policy.sheetSurface(systemDark: systemDark, isMinimized: true) == Surface.fill(fill))
+            // Never nothing: the window keeps its shape while it shrinks.
+            #expect(fill.opacity > 0)
         }
         // Standard and Frosted have no sheet, so minimizing changes nothing.
         for look in [WindowLook.standard, .frosted] {
+            #expect(policy(look).minimizeFill(systemDark: systemDark) == nil)
             for minimized in [false, true] {
                 #expect(policy(look).sheetSurface(systemDark: systemDark, isMinimized: minimized) == nil)
             }
         }
+        #expect(policy(.clear, reduceTransparency: true).minimizeFill(systemDark: systemDark) == nil)
         #expect(policy(.clear, reduceTransparency: true).sheetSurface(systemDark: systemDark, isMinimized: true) == nil)
+    }
+
+    /// Clear's minimize fill is fill (b), the graphite composite: its tint over a mid grey, opaque
+    /// in Light and Dark, so nothing behind the window darkens it, and white text on it clears
+    /// WCAG's 4.5:1 (about 12.9:1).
+    @Test(arguments: [false, true])
+    func clearMinimizesToAnOpaqueGraphite(systemDark: Bool) throws {
+        let clear = policy(.clear)
+        let tint = try #require(clear.sheetTint(systemDark: systemDark))
+        let fill = try #require(clear.minimizeFill(systemDark: systemDark))
+        #expect(fill == WindowLookPolicy.graphiteMinimizeFill)
+        #expect(fill.opacity == 1)
+        #expect(abs(fill.white - 0.1945) < 1e-12)
+        #expect(abs(fill.white - (tint.white * tint.opacity + 0.5 * (1 - tint.opacity))) < 1e-12)
+        func luminance(_ srgb: Double) -> Double {
+            srgb <= 0.04045 ? srgb / 12.92 : pow((srgb + 0.055) / 1.055, 2.4)
+        }
+        let contrast = (luminance(1) + 0.05) / (luminance(fill.white) + 0.05)
+        #expect(contrast >= 4.5)
+        #expect(abs(contrast - 12.9) < 0.05)
+    }
+
+    /// Which sheets take the graphite while their window minimizes: Clear, in Light and Dark, and
+    /// Translucent in Dark, whose black dimming showed the frame too (Session A). Translucent
+    /// Light keeps its see-through fill, the sheet's own wash at the wash's opacity.
+    @Test(arguments: [false, true])
+    func whichSheetsMinimizeToGraphite(systemDark: Bool) throws {
+        for look in [WindowLook.translucent, .clear] {
+            let policy = policy(look)
+            let tint = try #require(policy.sheetTint(systemDark: systemDark))
+            let graphite = look == .clear || systemDark
+            let expected = graphite ? WindowLookPolicy.graphiteMinimizeFill : tint
+            #expect(policy.minimizeFill(systemDark: systemDark) == expected, "\(look)")
+        }
+    }
+
+    /// Settings → General's note under the picker: what the choice costs, or that an
+    /// accessibility setting keeps the windows Standard; none for Standard.
+    @Test func notePerChoice() {
+        #expect(WindowLook.allCases.map { policy($0).note } == [nil, .frosted, .translucent, .clear])
+        for look in [WindowLook.frosted, .translucent, .clear] {
+            #expect(policy(look, reduceTransparency: true).note == .overridden)
+            #expect(policy(look, increaseContrast: true).note == .overridden)
+        }
+        #expect(policy(.standard, reduceTransparency: true).note == nil)
+    }
+
+    /// V1b: the footer lays out every note the offered tiles lead to and shows one, so its height,
+    /// and with it the Settings window's, stays the same whichever tile is selected, and the tiles
+    /// never move under the pointer.
+    @Test(arguments: [false, true])
+    func theFooterHoldsEveryNoteTheTilesLeadTo(betaStyles: Bool) {
+        let offered = WindowLook.offered(betaStyles: betaStyles)
+        for (reduce, contrast) in [(false, false), (true, false), (false, true), (true, true)] {
+            let notes = WindowLookPolicy.notes(
+                offered: offered, reduceTransparency: reduce, increaseContrast: contrast)
+            #expect(Set(notes).count == notes.count)
+            for look in offered {
+                if let note = policy(look, reduceTransparency: reduce, increaseContrast: contrast).note {
+                    #expect(notes.contains(note), "\(look)")
+                }
+            }
+        }
+        let plain = WindowLookPolicy.notes(offered: offered, reduceTransparency: false, increaseContrast: false)
+        #expect(plain == (betaStyles ? [.frosted, .translucent, .clear] : [.frosted]))
+        #expect(
+            WindowLookPolicy.notes(offered: offered, reduceTransparency: true, increaseContrast: false) == [.overridden]
+        )
     }
 
     @Test func onlyClearTreatsItsContent() throws {

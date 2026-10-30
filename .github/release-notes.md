@@ -1,3 +1,20 @@
+## What's new in 0.6.2
+
+- **Window styles:** a Clear window, and a Translucent one in the dark appearance, no longer
+  turn black while they shrink into the Dock and come back: they show an even graphite grey on
+  the way. Translucent and Clear stay in beta (Settings → Advanced → Beta window styles).
+- **Check Now** no longer fails while an automatic update check is running: it takes over and
+  checks right away, on any network.
+- **iPhone and iPad:** a device's page names the connection its values came over, *Connected by
+  cable* or *Connected over Wi-Fi*, also after you unplug the cable and the device is read over
+  Wi-Fi.
+- **Lighter in the background:** with the battery icon and charge in the menu bar, BatteryPulse
+  now uses about 40 % less processor time than 0.6.1, and about 20 % less with battery power
+  shown too (measured on a MacBook Air M5).
+
+Updating from 0.6.1: **Install and Relaunch** in the update window installs 0.6.2 from inside
+the app.
+
 ## What's new in 0.6.1
 
 - **Smaller and lighter:** the download shrinks from 3.7 MB to 1.4 MB (−61 %), and the

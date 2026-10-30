@@ -13,7 +13,6 @@ struct AccessorySymbol: View {
 }
 
 /// Which symbol names this macOS has, each checked once.
-@MainActor
 enum AccessorySymbols {
     private static var known: [String: Bool] = [:]
 

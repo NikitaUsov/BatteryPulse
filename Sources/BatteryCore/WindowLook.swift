@@ -100,6 +100,12 @@ public struct WindowLookPolicy: Equatable, Sendable {
         }
     }
 
+    /// The graphite composite (fill (b), the maintainer's choice), the opaque minimize fill of the
+    /// sheets ``minimizeFill(systemDark:)`` gives it to: Clear's tint (white 0.03 at 65 %) over a
+    /// mid grey (0.5). 0.03 × 0.65 + 0.5 × 0.35 = 0.1945, about 19 % white in the sRGB-encoded
+    /// values `Color(white:opacity:)` takes; white text on it has a contrast of about 12.9:1.
+    public static let graphiteMinimizeFill = Tint(white: 0.1945, opacity: 1)
+
     /// The stored choice.
     public let setting: WindowLook
     /// What the window draws.
@@ -208,19 +214,34 @@ public struct WindowLookPolicy: Equatable, Sendable {
         }
     }
 
+    /// What the glass sheet's place draws while the window minimizes, sits in the Dock and is
+    /// restored: for Clear and for Translucent in Dark, the opaque ``graphiteMinimizeFill``; for
+    /// Translucent in Light, its own white wash at the wash's opacity, the sheet without its blur.
+    /// `nil` without a sheet.
+    ///
+    /// With a see-through fill of its near-black tint, a Clear window turned black while it
+    /// minimized and came back (the 0.6.1 M5 session), and Session A's recordings showed
+    /// Translucent Dark's black dimming do the same in its title bar. The opaque fill keeps the
+    /// window's shape in an even graphite instead, whatever the animation shows behind it.
+    public func minimizeFill(systemDark: Bool) -> Tint? {
+        guard let tint = sheetTint(systemDark: systemDark) else { return nil }
+        let graphite = effective == .clear || (effective == .translucent && systemDark)
+        return graphite ? Self.graphiteMinimizeFill : tint
+    }
+
     /// What the glass sheet's place draws: the tinted glass, or, while the window minimizes, sits
-    /// in the Dock and is restored, a plain fill of the same tint at the tint's own opacity over
-    /// the still see-through window.
+    /// in the Dock and is restored, a still, plain fill, ``minimizeFill(systemDark:)``.
     ///
     /// The minimize animation and the Dock show the window's own layers, and the desktop that the
-    /// glass samples behind the window isn't one of them, so the sheet would turn near-black for
-    /// the whole animation. The fill is the sheet without its blur, and never opaque, so the
-    /// desktop still shows through it. The swap is not a motion event and never animates; the
-    /// glass comes back once the window is restored. `nil` without a sheet: Standard and Frosted
-    /// draw as always.
+    /// glass samples behind the window isn't one of them, so the glass would turn near-black for
+    /// the whole animation. Translucent Light's fill is see-through like its glass; the others
+    /// are opaque, so nothing behind the window can darken them. The swap is not a motion event
+    /// and never animates; the glass comes back once the window is restored. `nil` without a
+    /// sheet: Standard and Frosted draw as always.
     public func sheetSurface(systemDark: Bool, isMinimized: Bool) -> SheetSurface? {
         guard let tint = sheetTint(systemDark: systemDark) else { return nil }
-        return isMinimized ? .fill(tint) : .glass(tint: tint)
+        guard isMinimized else { return .glass(tint: tint) }
+        return minimizeFill(systemDark: systemDark).map(SheetSurface.fill)
     }
 
     /// Clear's treatment under each group of white content, for the system appearance: a tight
@@ -229,6 +250,41 @@ public struct WindowLookPolicy: Equatable, Sendable {
     public func contentTreatment(systemDark: Bool) -> ContentTreatment? {
         guard shadowsContent else { return nil }
         return ContentTreatment(haloOpacity: systemDark ? 0.44 : 0.55)
+    }
+}
+
+// Settings → General's note under the window style picker.
+extension WindowLookPolicy {
+    /// What Settings → General says under the window style picker: what the chosen style costs,
+    /// or that an accessibility setting keeps the windows Standard.
+    public enum Note: Sendable, Hashable {
+        case overridden, frosted, translucent, clear
+    }
+
+    /// The note for this choice; `nil` for Standard, which costs nothing.
+    public var note: Note? {
+        if override != nil { return .overridden }
+        switch setting {
+        case .standard: return nil
+        case .frosted: return .frosted
+        case .translucent: return .translucent
+        case .clear: return .clear
+        }
+    }
+
+    /// Every note the picker can lead to while these styles are offered and the accessibility
+    /// settings stay as they are, in the picker's order. The footer lays them all out and shows
+    /// one, so it keeps the height of the longest whatever is chosen: Settings sizes its window to
+    /// its content, and a footer that grew or shrank with the choice would resize the window and
+    /// could move the tiles on screen, so a tile would look different once selected.
+    public static func notes(offered: [WindowLook], reduceTransparency: Bool, increaseContrast: Bool) -> [Note] {
+        var notes: [Note] = []
+        for look in offered {
+            let policy = WindowLookPolicy(
+                setting: look, reduceTransparency: reduceTransparency, increaseContrast: increaseContrast)
+            if let note = policy.note, !notes.contains(note) { notes.append(note) }
+        }
+        return notes
     }
 }
 

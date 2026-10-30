@@ -1,4 +1,5 @@
 import BatteryCore
+import BatterySource
 import Foundation
 import Observation
 
@@ -106,9 +107,14 @@ public final class IDeviceMonitor {
     @ObservationIgnored private var terminationPending = false
     /// Attached over USB but missing from one list that followed no termination.
     @ObservationIgnored private var unconfirmedMisses: Set<DeviceKey> = []
+    /// USB dropped by a read over another interface, with no list since: the latest list still
+    /// has it.
+    @ObservationIgnored private var usbLeftByRead: Set<DeviceKey> = []
     @ObservationIgnored private var attachTask: Task<Void, Never>?
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     @ObservationIgnored private var debounceSawArrival = false
+    /// The latest USB termination since the debounce started.
+    @ObservationIgnored private var debounceTermination: Date?
     @ObservationIgnored private var confirmTask: Task<Void, Never>?
     @ObservationIgnored private var scheduleTask: Task<Void, Never>?
     /// Registry saves and history records, in order.
@@ -183,6 +189,7 @@ public final class IDeviceMonitor {
             for task in [attachTask, debounceTask, confirmTask, scheduleTask] { task?.cancel() }
             attachTask = nil
             debounceTask = nil
+            debounceTermination = nil
             confirmTask = nil
             scheduleTask = nil
             pendingList = nil
@@ -190,6 +197,7 @@ public final class IDeviceMonitor {
             userReads = []
             terminationPending = false
             unconfirmedMisses = []
+            usbLeftByRead = []
             sessions = [:]
             udids = [:]
             captures = [:]
@@ -254,6 +262,8 @@ public final class IDeviceMonitor {
             hidden.insert(id)
             var cleared = IDeviceSession()
             cleared.connections = session.connections
+            // Forgotten while the list has USB: a list that has it again is no reconnect.
+            if usbLeftByRead.remove(id) != nil { cleared.connections.insert(.usb, at: 0) }
             cleared.listedAt = session.listedAt
             sessions[id] = cleared
         } else {
@@ -482,6 +492,7 @@ public final class IDeviceMonitor {
             session.listedAt = now
             sessions[key] = session
             unconfirmedMisses.remove(key)
+            usbLeftByRead.remove(key)
         }
 
         var needsConfirmation = request.afterArrival && newlyOnUSB.isEmpty
@@ -558,6 +569,20 @@ public final class IDeviceMonitor {
             if let battery {
                 session.battery = battery
                 session.readAt = now
+                session.readConnection = capture.connection
+                if capture.connection == .usb {
+                    // By cable after the termination: it wasn't this device's, so a later read that
+                    // falls back to Wi-Fi (the cable attempt failed) doesn't say the cable left.
+                    session.usbTerminatedAt = nil
+                } else if let read = capture.connection, session.connections.contains(.usb),
+                    !IDeviceRoster.isOnUSB(session)
+                {
+                    // Over another interface after a USB termination: this device's cable left. A
+                    // list that has USB again is then a new attachment, read at once.
+                    session.connections.removeAll { $0 == .usb }
+                    if !session.connections.contains(read) { session.connections.append(read) }
+                    usbLeftByRead.insert(key)
+                }
                 session.problem = nil
                 session.consecutiveFailures = 0
                 sessions[key] = session
@@ -621,6 +646,7 @@ public final class IDeviceMonitor {
         captures[key] = nil
         hidden.remove(key)
         unconfirmedMisses.remove(key)
+        usbLeftByRead.remove(key)
         pendingReads.removeAll { $0 == key }
         userReads.remove(key)
         if let index = remembered.firstIndex(where: { $0.id == key }) {
@@ -694,7 +720,9 @@ public final class IDeviceMonitor {
         guard isEnabled else { return }
         switch change {
         case .arrived: debounceSawArrival = true
-        case .terminated: terminationPending = true
+        case .terminated:
+            terminationPending = true
+            debounceTermination = clock.now()
         }
         debounceTask?.cancel()
         let until = clock.now().addingTimeInterval(IDeviceReadPolicy.attachDebounce)
@@ -704,10 +732,20 @@ public final class IDeviceMonitor {
         }
     }
 
+    /// A termination that no arrival followed within the wait is the latest USB termination of
+    /// every session (IOKit doesn't say which device left): USB listed before it no longer counts
+    /// (``IDeviceRoster/isOnUSB(_:)``), and the list that follows decides again. While stalled, or
+    /// while devices can't be listed, no list follows, so the rows change at once.
     private func debounceEnded() {
         debounceTask = nil
         let afterArrival = debounceSawArrival
+        let termination = debounceTermination
         debounceSawArrival = false
+        debounceTermination = nil
+        if let termination, !afterArrival {
+            for key in sessions.keys { sessions[key]?.usbTerminatedAt = termination }
+            if isStalled || unavailable != nil { recomputeEntries() }
+        }
         requestList(ListRequest(afterArrival: afterArrival))
     }
 
@@ -746,8 +784,10 @@ public final class IDeviceMonitor {
         guard isEnabled, !isStalled, unavailable == nil else { return }
         let now = clock.now()
         for (key, session) in sessions
-        where !session.connections.isEmpty && IDeviceRoster.connection(of: session, now: now) == nil {
-            // A Wi-Fi sighting expired.
+        where !session.connections.isEmpty && !session.connections.contains(.usb)
+            && IDeviceRoster.connection(of: session, now: now) == nil
+        {
+            // A Wi-Fi sighting expired. USB that a termination discounts waits for its list.
             detach(key, at: now)
         }
         let history = recordsHistory()

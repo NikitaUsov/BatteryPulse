@@ -12,7 +12,7 @@ struct HealthView: View {
     @State private var ringsFilled = false
     /// The rings fill from zero once per launch, on the first visit to this page. Pages switch
     /// often, so not on every visit; and only where one-off extras are allowed.
-    @MainActor private static var ringsHaveFilledThisLaunch = false
+    private static var ringsHaveFilledThisLaunch = false
 
     var body: some View {
         LookForm {

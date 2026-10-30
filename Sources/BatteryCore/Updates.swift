@@ -208,8 +208,37 @@ public enum UpdateFrequency: String, Sendable, CaseIterable {
     }
 }
 
+/// Which kind of update check runs. Each has its own network session in the app.
+public enum UpdateCheckKind: Sendable, Equatable {
+    /// On the schedule: never over Low Data Mode or an expensive network.
+    case automatic
+    /// Check Now: over any network.
+    case user
+}
+
+/// What Check Now does about the check under way.
+public enum CheckNowAction: Sendable, Equatable {
+    /// No check runs: the user's starts.
+    case start
+    /// An automatic check runs: it is cancelled and the user's starts. The automatic one's session
+    /// refuses Low Data Mode and an expensive network at once, so its answer could be a failure
+    /// that the user's own check, allowed any network, wouldn't have had.
+    case takeOver
+    /// The user's own check runs: its answer is the one they asked for.
+    case wait
+}
+
 /// When to check for updates and what to tell the user.
 public enum UpdatePolicy {
+    /// What Check Now does while the check `running` is under way, or none (`nil`).
+    public static func checkNow(during running: UpdateCheckKind?) -> CheckNowAction {
+        switch running {
+        case nil: .start
+        case .automatic: .takeOver
+        case .user: .wait
+        }
+    }
+
     public static func isCheckDue(lastCheck: Date?, now: Date, frequency: UpdateFrequency) -> Bool {
         guard let interval = frequency.interval else { return false }
         guard let lastCheck else { return true }

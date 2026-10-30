@@ -529,6 +529,28 @@ import Testing
         #expect(compact.firstMatch(of: look) == nil)
     }
 
+    /// The tile pickers mark the choice with the accent outline alone (V1b): the selection reaches
+    /// only the outline's colour and the selected trait VoiceOver reads, never the preview, the
+    /// tile's fill or its padding, so a preview looks the same selected or not.
+    @Test func tileSelectionChangesOnlyTheOutline() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/Settings/PreviewTilePicker.swift").code
+        let allowed = [
+            Self.words(#/\blet\s+isSelected\s*=\s*value\s*==\s*selection\b/#),
+            Self.words(#/\bstrokeBorder\s*\(\s*isSelected\s*\?\s*Color\.accentColor\s*:\s*\.clear\s*,/#),
+            Self.words(#/\baccessibilityAddTraits\s*\(\s*isSelected\s*\?\s*\.isSelected\s*:\s*\[\s*\]\s*\)/#),
+        ]
+        let uses = code.split(separator: "\n").filter { $0.contains(Self.words(#/\bisSelected\b/#)) }
+        #expect(uses.count == allowed.count)
+        for use in uses {
+            #expect(allowed.contains { use.contains($0) }, "\(use)")
+        }
+        for pattern in allowed {
+            #expect(code.matches(of: pattern).count == 1)
+        }
+        // The choice is compared in that one place only.
+        #expect(code.matches(of: Self.words(#/==\s*selection\b|\bselection\s*[!=]=/#)).count == 1)
+    }
+
     @Test func menuBarLabelNeverAnimates() {
         let path = "BatteryPulseApp/MenuBar/MenuBarLabel.swift"
         #expect(flags("withAnimation(motion.change) { on.toggle() }", path: path))

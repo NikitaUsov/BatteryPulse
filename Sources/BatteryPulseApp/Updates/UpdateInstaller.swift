@@ -21,7 +21,6 @@ import os
 ///
 /// Every failure leaves the installed app untouched. The window then offers the browser download,
 /// or only the release page after a failed integrity check (``UpdateFallback``).
-@MainActor
 @Observable
 final class UpdateInstaller {
     enum Phase: Equatable {
@@ -314,8 +313,8 @@ extension UpdateInstallError {
 }
 
 /// Hands the progress of a download made with `URLSession.download(for:delegate:)` to the main
-/// actor, which polls it.
-private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
+/// actor, which polls it. Nonisolated: URLSession calls it on its delegate queue.
+private nonisolated final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable {
     private let task = Mutex<URLSessionTask?>(nil)
 
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
@@ -335,8 +334,9 @@ private final class DownloadWatcher: NSObject, URLSessionTaskDelegate, Sendable 
 /// The installation steps that touch the disk. `verify`, `replace` and `removeLeftovers` run off
 /// the main actor; preparing and emptying the downloads folder is quick and runs on the caller's.
 /// The steps that can fail throw only an ``UpdateInstallError``; cancellation is checked between
-/// them, in the installer's `run`.
-enum UpdateInstallSteps {
+/// them, in the installer's `run`. Nonisolated, unlike the rest of the app, so no step (mounting,
+/// the code signature check, the tools' termination handlers) drifts onto the main actor.
+nonisolated enum UpdateInstallSteps {
     /// ~/Library/Caches/<bundle id>/Updates, emptied for a new download.
     static func prepareDownloadFolder(bundleIdentifier: String) throws(UpdateInstallError) -> URL {
         do {
@@ -382,9 +382,10 @@ enum UpdateInstallSteps {
     }
 
     /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
-    /// volume), checks the copy and swaps it with `target` in one rename. Returns where the
-    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
-    /// code signature check are synchronous work that must not hold the caller's actor.
+    /// volume), checks the copy, ends the widget extension and swaps the copy with `target` in one
+    /// rename. Returns where the previous version is now. `@concurrent`: the copy, the quarantine
+    /// clearing and the strict code signature check are synchronous work that must not hold the
+    /// caller's actor.
     @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
     ) async throws(UpdateInstallError) -> URL {
@@ -419,6 +420,10 @@ enum UpdateInstallSteps {
         try checkBundle(staged, identifier: identifier, release: release, current: current)
         try checkCodeSignature(staged)
 
+        // At the version change WidgetKit asks the widget extension for its descriptors again, so
+        // the previous version's extension must be gone by then; an update that failed a check
+        // leaves it running.
+        await WidgetRefresher.endExtensionBeforeSwap()
         guard renamex_np(staged.path, target.path, UInt32(RENAME_SWAP)) == 0 else {
             let reason = String(cString: strerror(errno))
             Diagnostics.update.error("Swapping the app failed: \(reason, privacy: .public)")
@@ -440,34 +445,51 @@ enum UpdateInstallSteps {
             throw UpdateInstallError.mountFailed
         }
         let arguments = UpdateInstallPolicy.attachArguments(image: image.path, mountPoint: mountPoint.path)
-        let status = try? await run(hdiutil, arguments)
+        let status = try? await run(UpdateInstallPolicy.diskutil, arguments)
+        // The image's own disk, for a forced eject; `nil` when no disk image is mounted there.
+        let disk = await imageDisk(mountedAt: mountPoint)
         guard status == 0 else {
             // In case it mounted anyway.
-            await detach(mountPoint)
+            if disk != nil { await detach(mountPoint, disk: disk) } else { _ = rmdir(mountPoint.path) }
             throw UpdateInstallError.mountFailed
+        }
+        if disk == nil {
+            Diagnostics.update.error("The update's disk image isn't in diskutil info; it can't be ejected by force")
         }
         do {
             try body(mountPoint)
         } catch {
-            await detach(mountPoint)
+            await detach(mountPoint, disk: disk)
             throw error
         }
-        await detach(mountPoint)
+        await detach(mountPoint, disk: disk)
     }
 
-    /// macOS 27 marks `hdiutil attach` and `detach` deprecated in favour of `diskutil image attach`
-    /// and `diskutil eject`. They still work, and 0.6.0's installer and the CI install-path step use
-    /// them, so they stay; the move to `diskutil image` is 0.6.2 work, with its own test.
-    private static let hdiutil = "/usr/bin/hdiutil"
-
-    private static func detach(_ mountPoint: URL) async {
+    /// Ejects the image at `mountPoint`. When that fails, because a file on the volume is still
+    /// open, its volumes are unmounted by force and `disk`, the image's own disk, is ejected.
+    private static func detach(_ mountPoint: URL, disk: String?) async {
         let path = mountPoint.path
-        let status = try? await run(hdiutil, UpdateInstallPolicy.detachArguments(mountPoint: path, force: false))
+        let tool = UpdateInstallPolicy.diskutil
+        var status = try? await run(tool, UpdateInstallPolicy.detachArguments(mountPoint: path))
+        if status != 0, let disk {
+            for arguments in UpdateInstallPolicy.forcedDetachArguments(disk: disk) {
+                status = try? await run(tool, arguments)
+            }
+        }
         if status != 0 {
-            _ = try? await run(hdiutil, UpdateInstallPolicy.detachArguments(mountPoint: path, force: true))
+            // -1: diskutil didn't start.
+            Diagnostics.update.error("Ejecting the update's disk image failed: \(status ?? -1, privacy: .public)")
         }
         // Only an empty folder: never anything still mounted there.
         _ = rmdir(path)
+    }
+
+    /// The image's own disk (``UpdateInstallPolicy/imageDisk(info:mountPoint:)``), or `nil` when
+    /// no disk image is mounted at `mountPoint`.
+    private static func imageDisk(mountedAt mountPoint: URL) async -> String? {
+        let arguments = UpdateInstallPolicy.infoArguments(mountPoint: mountPoint.path)
+        guard let info = await output(of: UpdateInstallPolicy.diskutil, arguments) else { return nil }
+        return UpdateInstallPolicy.imageDisk(info: info, mountPoint: mountPoint.path)
     }
 
     /// Runs a tool without input or output and returns its exit status.
@@ -489,6 +511,34 @@ enum UpdateInstallSteps {
                 continuation.resume(throwing: error)
             }
         }
+    }
+
+    /// Runs a tool without input and returns what it wrote to standard output, or `nil` when it
+    /// couldn't start or exited with an error.
+    private static func output(of tool: String, _ arguments: [String]) async -> Data? {
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        let (exits, exited) = AsyncStream.makeStream(of: Int32.self)
+        process.terminationHandler = { finished in
+            exited.yield(finished.terminationStatus)
+            exited.finish()
+        }
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        // Read while the tool runs, so a full pipe can't stall it; the read ends when it exits,
+        // since launching closed this process's end of the pipe for writing.
+        let data = try? pipe.fileHandleForReading.readToEnd()
+        var status: Int32?
+        for await code in exits { status = code }
+        return status == 0 ? data ?? Data() : nil
     }
 
     /// Disk images can mount with quarantine applied to what they contain; the copy must open

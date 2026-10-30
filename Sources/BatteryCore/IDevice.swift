@@ -91,7 +91,7 @@ public enum IDeviceList {
         .joined(separator: "\n")
     }
 
-    /// "Nikita's iPhone · iPhone18,2 · iOS 27.0.1 · USB + Wi-Fi · ID …801C".
+    /// "Owner's iPhone · iPhone18,2 · iOS 27.0.1 · USB + Wi-Fi · ID …801C".
     public static func line(for device: IDeviceInfo) -> String {
         var parts = [nonEmpty(device.name) ?? "Unknown device"]
         if let model = nonEmpty(device.productType) { parts.append(model) }

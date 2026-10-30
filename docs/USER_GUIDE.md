@@ -125,7 +125,9 @@ Live values refresh every 2 seconds while a window or the menu bar popover is op
 seen (not on the History, Devices and Demo Mode pages, and not while the window is minimized, covered
 or on another Space), and every 10 seconds when the menu bar shows power. In Low Power Mode,
 when macOS asks apps to save resources, or when the Mac runs hot, they refresh less often: every
-5 seconds in windows and every 30 seconds in the menu bar. While the displays sleep or the Mac
+5 seconds in windows and every 30 seconds in the menu bar. Capacities, temperature, cell voltages
+and adapter details update when macOS reports new battery data, and at least every 5 minutes;
+Power and Raw Data read them on every refresh. While the displays sleep or the Mac
 is switched to another user, the menu bar stops refreshing power and catches up once you're
 back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
 the history while recording is on (the default; turn it off in Settings → Advanced), so it uses
@@ -159,8 +161,9 @@ The change applies at once to both windows. Settings, the menu bar popover, the 
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
 The see-through styles redraw when something behind the window changes, so Translucent and
 Clear use more energy than Standard; Clear is also the hardest to read over a bright or busy
-wallpaper, and Translucent is the better choice there. A known issue of the beta: a window in
-Clear turns black while it minimizes to the Dock and while it comes back.
+wallpaper, and Translucent is the better choice there. While a window in Clear, or in
+Translucent in Dark Mode, minimizes to the Dock and comes back, its glass gives way to an even
+graphite grey instead of turning black; in Light Mode a Translucent window keeps its white wash.
 
 With **Reduce transparency** or **Increase contrast** on (System Settings → Accessibility →
 Display), both windows use Standard whatever the choice, and Settings says so under the picker.

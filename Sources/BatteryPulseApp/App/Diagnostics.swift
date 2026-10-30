@@ -1,13 +1,14 @@
 #if os(macOS)
-import BatteryKit
+import BatterySource
 import Synchronization
 import os
 
 /// The app's loggers, one per area, and its signposts: Points of Interest intervals for
-/// Instruments and the `perf` lines that `log stream` shows (``Signposts``). BatteryKit has a
-/// twin for the reads it makes. Error descriptions, paths, device names, serials and UDIDs never
-/// log as public.
-enum Diagnostics {
+/// Instruments and the `perf` lines that `log stream` shows (``Signposts``). BatterySource has a
+/// twin for the reads and BatteryKit's monitors. Error descriptions, paths, device names, serials
+/// and UDIDs never log as public. Nonisolated, unlike the rest of the app: the work off the main
+/// actor logs and measures too.
+nonisolated enum Diagnostics {
     static let subsystem = "io.github.nikitausov.BatteryPulse"
 
     static let monitor = Logger(subsystem: subsystem, category: "monitor")
@@ -72,7 +73,8 @@ enum Diagnostics {
 
 extension SidebarItem {
     /// The page in a `page.switch` interval: a static name, so no device key reaches the log.
-    var signpostName: StaticString {
+    /// Nonisolated, like ``Diagnostics/pageAppeared(_:)``.
+    nonisolated var signpostName: StaticString {
         switch self {
         case .overview: "overview"
         case .power: "power"

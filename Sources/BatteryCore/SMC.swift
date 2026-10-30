@@ -1,8 +1,8 @@
 import Foundation
 
 // The platform-independent half of the read-only SMC client: the wire format, value decoding and
-// the battery plausibility checks. The IOKit calls live in BatteryKit; everything here is tested
-// on Linux against byte captures.
+// the battery plausibility checks. The IOKit calls live in BatterySource; everything here is
+// tested on Linux against byte captures.
 
 /// A four-character SMC key or type code, held the way the SMC wants it: an integer whose most
 /// significant byte is the first character (`TB0T` is 0x5442_3054). On a little-endian host the

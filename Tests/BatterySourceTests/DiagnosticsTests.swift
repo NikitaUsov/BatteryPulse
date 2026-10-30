@@ -1,6 +1,6 @@
 import Testing
 
-@testable import BatteryKit
+@testable import BatterySource
 
 /// The `perf` lines are parsed by `scripts/perf-stats.swift`, so their format is fixed.
 @Suite struct DiagnosticsTests {
@@ -39,6 +39,14 @@ import Testing
             RefreshTrigger.allCases.map(\.name.description) == [
                 "notify", "poll", "followUp", "launch", "history", "demo", "manual",
             ])
+    }
+
+    /// The `read` interval's trigger names its two decisions: the registry, and the SMC's keys.
+    @Test func readScopeNames() {
+        let scopes: [BatteryReadScope] = [.full, .live, .cached, .cachedSlow]
+        #expect(scopes.map(\.signpostName.description) == ["full", "live", "cached", "cached.slow"])
+        #expect(scopes.map(\.rereadsRegistry) == [true, true, false, false])
+        #expect(scopes.map(\.readsAllSMCKeys) == [true, false, false, true])
     }
 
     @Test func measureReturnsTheBodysValueAndRethrows() {

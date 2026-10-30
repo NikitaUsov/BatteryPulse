@@ -84,14 +84,14 @@ extension MotionPolicy {
     /// A view that comes with an event (the adapter when plugging in) slides in from `edge`.
     /// Under Reduce Motion it fades with an animation of its own while the views around it snap
     /// into place. Main actor, like the views that use it.
-    @MainActor func insertion(edge: Edge) -> AnyTransition {
+    func insertion(edge: Edge) -> AnyTransition {
         allowsMovement ? .move(edge: edge).combined(with: .opacity) : AnyTransition.opacity.animation(crossfade)
     }
 
     /// A view that appears or goes with an event while the layout around it changes, such as the
     /// hero's time line: it fades with an animation of its own, so it still fades under Reduce
     /// Motion, where the change around it is not animated.
-    @MainActor var fadeTransition: AnyTransition {
+    var fadeTransition: AnyTransition {
         AnyTransition.opacity.animation(crossfade)
     }
 
@@ -99,7 +99,7 @@ extension MotionPolicy {
     /// Update): the old content goes at once and the new one fades in where it lands. Nothing is
     /// laid out twice, so the window resizes once and the buttons below don't move back and
     /// forth.
-    @MainActor var replacement: AnyTransition {
+    var replacement: AnyTransition {
         .asymmetric(insertion: AnyTransition.opacity.animation(crossfade), removal: .identity)
     }
 
@@ -113,7 +113,7 @@ extension MotionPolicy {
     }
 
     /// The charging bolt appearing and disappearing. Main actor, like the symbol effect it builds.
-    @MainActor var boltTransition: AnyTransition {
+    var boltTransition: AnyTransition {
         // If Draw On turns out not to suit `bolt.fill`, `.symbolEffect(.appear)` is the fallback.
         level == .full ? AnyTransition(.symbolEffect(.drawOn)) : .opacity
     }
@@ -231,7 +231,6 @@ private struct LiveRefreshModifier: ViewModifier {
 /// Low Power Mode and the thermal state as macOS reports them. Read from `ProcessInfo` rather
 /// than the snapshot, so a Demo Mode scene that simulates them changes neither how the app
 /// animates nor how often it reads the battery.
-@MainActor
 @Observable
 final class SystemPowerState {
     static let shared = SystemPowerState()
@@ -278,7 +277,6 @@ extension ThermalState {
 /// Whether the user can see the screens: not while the displays sleep, nor while the session is
 /// switched out (fast user switching). Windows learn this from their occlusion state; the menu
 /// bar label, which counts as on screen all the time, learns it here.
-@MainActor
 @Observable
 final class ScreenActivity {
     static let shared = ScreenActivity()
@@ -359,7 +357,7 @@ private struct WindowVisibilityReader: NSViewRepresentable {
             observedWindow = window
             guard let window else { return }
             // Selector-based, so the observer goes away with the view. AppKit posts window
-            // notifications on the main thread.
+            // notifications on the main thread, so the handler stays on the main actor.
             center.addObserver(
                 self, selector: #selector(occlusionStateDidChange(_:)),
                 name: NSWindow.didChangeOcclusionStateNotification, object: window)

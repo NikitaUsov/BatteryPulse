@@ -104,7 +104,8 @@ private struct GroupRule: ViewModifier {
 }
 
 /// The coordinate space a ``CardGroup`` names, so its groups know which one is at the top.
-private enum CardGroupSpace {
+/// Nonisolated: the geometry transform that reads it is a `@Sendable` closure.
+private nonisolated enum CardGroupSpace {
     static let name = "cardGroup"
 }
 

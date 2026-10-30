@@ -40,9 +40,10 @@ DMG="$BUILD_DIR/$NAME.dmg"
 # build don't get them, and Package.swift holds only the language policy.
 # - Export only _main. An executable without plug-ins that link back to it needs no exported
 #   symbols; the export list makes every other global private, so each binary exports one name
-#   instead of the about 4,200 public names of BatteryCore and BatteryKit. It doesn't shrink the
-#   code: what -dead_strip keeps doesn't depend on the exports. The widget keeps _main too,
-#   though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
+#   instead of the public names of BatteryCore, BatterySource and BatteryKit. On its own it
+#   doesn't shrink the code: what -dead_strip keeps doesn't depend on the exports. It is what
+#   lets -internalize-at-link (below) drop the public code nothing calls. The widget keeps _main
+#   too, though it starts in _NSExtensionMain. Taking the list off the widget's line means taking
 #   widget_other_exports out of size-report.sh's hygiene checks too.
 # - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
 #   and the History store ran no slower with it.
@@ -52,10 +53,33 @@ RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
 # so a link that is up to date keeps a map that matches its binary.
 MAPS="$PWD/.build/link-maps"
 mkdir -p "$MAPS"
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
-swift build -c release "${RELEASE_FLAGS[@]}" --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+# timed_build <label> <swift build arguments>: one build, followed by the seconds it took, so a CI
+# log shows what a build setting costs.
+timed_build() {
+  local label="$1" start="$SECONDS"
+  shift
+  swift build "$@"
+  echo "Built $label in $((SECONDS - start)) s"
+}
+# The UUIDs of a Mach-O file or dSYM, one per architecture, sorted, on one line.
+uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
+# Both lines add -internalize-at-link, a hidden frontend flag of Swift 6.4: with _main the only
+# export, every public symbol is taken as internal to the link, so the linker drops the public code
+# of the libraries that the binary never calls. Code that only the runtime reaches must survive it,
+# which only the running app and a rendered widget show: on the release candidate, Session B's
+# pages check the app and its F8 the widget in every family. A page that fails drops the flag from
+# the app's line, a blank widget from the widget's line (PLAN G-15).
+timed_build "the app" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulse -Xlinker -map -Xlinker "$MAPS/BatteryPulse.map"
 BIN_PATH="$(swift build -c release --product BatteryPulse --show-bin-path)"
 BINARY="$BIN_PATH/BatteryPulse"
+APP_UUIDS="$(uuids "$BINARY")"
+# With the app's flags, the widget's line reuses the modules the app's line compiled; with others
+# it rebuilds them. Either way the app, linked above, stays as it is (checked below).
+timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+if [ "$(uuids "$BINARY")" != "$APP_UUIDS" ]; then
+  echo "error: the widget's build relinked the app (UUID $APP_UUIDS before, $(uuids "$BINARY")after)" >&2
+  exit 1
+fi
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD_DIR/maps"
@@ -161,6 +185,17 @@ if ! grep -F "BatteryPulseWidget.BatteryPulseWidgets" <<<"$DEMANGLED" >/dev/null
   echo "error: the WidgetBundle is missing from the widget binary" >&2
   exit 1
 fi
+# The widget depends on BatterySource and BatteryCore alone, so CryptoKit, which only BatteryKit's
+# device keys and update signatures use, stays out of it: a dependency on BatteryKit fails here.
+LINKED="$(otool -L "$BIN_PATH/BatteryPulseWidget")"
+if grep -F "CryptoKit" <<<"$LINKED" >/dev/null; then
+  echo "error: the widget links CryptoKit; it must not depend on BatteryKit" >&2
+  exit 1
+fi
+# For the record only: whether dead stripping left the widget dlopen and dlsym, which it never
+# calls (MacAccessoryProvider does).
+DL_IMPORTS="$(nm -u "$BIN_PATH/BatteryPulseWidget" | grep -E '^_dl(open|sym|close|error)$' | tr '\n' ' ' || true)"
+echo "The widget's dl imports: ${DL_IMPORTS:-none}"
 
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
@@ -170,7 +205,6 @@ fi
 # build keeps its symbols for Instruments and the memory tools.
 DSYMS="$BUILD_DIR/dSYMs"
 mkdir -p "$DSYMS"
-uuids() { xcrun dwarfdump --uuid "$1" | awk '{ print $2 }' | sort | tr '\n' ' '; }
 for product in BatteryPulse BatteryPulseWidget; do
   # Swift Build writes a dSYM next to each release product; dsymutil makes one if that is missing
   # or belongs to an older link.
@@ -315,8 +349,9 @@ fi
 echo "Signing posture: hardened runtime, the expected entitlements, no quarantine or ATS keys"
 
 # Drag-to-install DMG: the app next to a link to /Applications. It is ULMO (LZMA), the smallest
-# compressed format hdiutil makes, which macOS 10.15 and later attach; every BatteryPulse updater
-# attaches it with /usr/bin/hdiutil, and the signature covers the file's bytes whatever the format.
+# compressed format hdiutil makes, which macOS 10.15 and later attach; BatteryPulse's updaters
+# attach it with /usr/bin/hdiutil up to 0.6.1 and with diskutil image attach from 0.6.2 on, and the
+# signature covers the file's bytes whatever the format.
 # It is made the space-optimal way hdiutil(1) documents: a read/write image of the folder, then a
 # conversion, so the compressed image holds no unused space.
 STAGING="$BUILD_DIR/dmg"

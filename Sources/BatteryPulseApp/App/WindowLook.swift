@@ -94,8 +94,9 @@ private struct WindowBackground: ViewModifier {
         case .glassSheet:
             // Translucent and Clear: one sheet of clear glass behind the sidebar, the toolbar and
             // the content, tinted with Translucent's dimming layer or Clear's dark dimming. While
-            // the window minimizes, sits in the Dock and is restored, a still fill of the same
-            // tint takes its place: the animation doesn't show the desktop the glass samples.
+            // the window minimizes, sits in the Dock and is restored, a still fill takes its place
+            // (an opaque graphite, or Translucent Light's own wash): the animation doesn't show
+            // the desktop the glass samples.
             content.containerBackground(for: .window) {
                 switch policy.sheetSurface(systemDark: systemDark, isMinimized: isMinimized) {
                 case .glass(let tint): GlassSheet(tint: Color(tint))
@@ -155,7 +156,7 @@ private struct WindowMinimizeReader: NSViewRepresentable {
             observedWindow = window
             guard let window else { return }
             // Selector-based, so the observers go away with the view. AppKit posts window
-            // notifications on the main thread.
+            // notifications on the main thread, so the handlers stay on the main actor.
             center.addObserver(
                 self, selector: #selector(windowWillMinimize(_:)),
                 name: NSWindow.willMiniaturizeNotification, object: window)
@@ -239,7 +240,6 @@ extension Color {
 /// The system's appearance, Light or Dark, read from the app rather than from a window: a Clear
 /// window is in the dark appearance whatever the system's, while its glass tone follows the
 /// system's (Light, Dark or Auto, as the system's own Clear style).
-@MainActor
 @Observable
 final class SystemAppearance {
     static let shared = SystemAppearance()
@@ -249,7 +249,9 @@ final class SystemAppearance {
 
     private init() {
         isDark = Self.readIsDark()
-        // The app keeps one observation for its whole life.
+        // The app keeps one observation for its whole life. The task names the main actor: the
+        // change handler is a `@Sendable` closure, and a task started in one doesn't inherit the
+        // app's default isolation.
         observation = NSApp.observe(\.effectiveAppearance) { _, _ in
             Task { @MainActor in SystemAppearance.shared.update() }
         }

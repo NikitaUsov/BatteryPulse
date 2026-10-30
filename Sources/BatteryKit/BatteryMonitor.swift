@@ -1,4 +1,5 @@
 import BatteryCore
+import BatterySource
 import Foundation
 import Observation
 
@@ -12,9 +13,21 @@ import os
 /// nothing while idle, and a burst of such notifications is one read (``requestRefresh()``).
 /// Views that show fast-moving values (current, power) request polling with
 /// ``setLiveRefreshInterval(_:for:)`` and withdraw it with `nil`; the shortest active request
-/// wins. Polls fetch only what changes from poll to poll: the values that change slowly are read
-/// at most once a minute (``smcPolicy``), on every read while a view that shows them asks for
-/// it with ``setShowsSlowValues(_:for:)``, and on a ``RefreshTrigger/manual`` read.
+/// wins. Polls fetch only what changes from poll to poll, in two separate decisions
+/// (``BatteryReadScope``):
+/// - The registry, which has new data when the OS posts a change, is fetched by every read but a
+///   poll; a poll reuses the last read's while ``registryPolicy`` allows, at most 5 minutes.
+/// - The SMC's slow values are read at most once a minute (``smcPolicy``) and on a
+///   ``RefreshTrigger/manual`` read.
+///
+/// Both are fetched on every read while a view that shows them asks for it with
+/// ``setShowsSlowValues(_:for:)``.
+///
+/// The reads themselves leave the main actor where the provider allows it
+/// (``BatteryProvider/nonisolatedReader``): every trigger but the launch, Demo Mode and a manual
+/// read (``readsOnMainActor(_:)``) reads in a `@concurrent` function, and the result is assigned
+/// in one step when it lands. One such read runs at a time; the requests that arrive meanwhile make
+/// one follow-on read.
 @MainActor
 @Observable
 public final class BatteryMonitor {
@@ -44,8 +57,26 @@ public final class BatteryMonitor {
     @ObservationIgnored private var liveRefreshRequests: [String: Duration] = [:]
     @ObservationIgnored private var followUpTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+    /// Runs the reads off the main actor, one at a time, while any is requested.
+    @ObservationIgnored private var readLoop: Task<Void, Never>?
+    /// What the next read off the main actor is for: the first request since the last one began.
+    @ObservationIgnored private(set) var requestedTrigger: RefreshTrigger?
+    /// Whether every request since the last read off the main actor began was a poll. One that
+    /// wasn't, such as a notification's, makes the next read fetch the registry.
+    @ObservationIgnored private var requestedPollsOnly = true
+    /// Advanced by ``setOverride(_:)``, ``stop()`` and every read on the main actor. A read off the
+    /// main actor is dropped when it lands in a later generation than it started in: it belongs to
+    /// the device after Demo Mode started, to a stopped monitor, or is older than a read that landed
+    /// first.
+    @ObservationIgnored private var generation = 0
     /// When a read last fetched the slow values, on ``clock``.
     @ObservationIgnored private var slowValuesReadAt: ContinuousClock.Instant?
+    /// When a read last fetched the registry, on ``clock``.
+    @ObservationIgnored private var registryReadAt: ContinuousClock.Instant?
+    /// Spots the registry updates that came without a notification (``RegistryUpdateWatch``).
+    @ObservationIgnored private var registryWatch = RegistryUpdateWatch()
+    /// How many reads found such an update; each logged a `registry.missed` event.
+    @ObservationIgnored private(set) var missedRegistryUpdates = 0
     @ObservationIgnored private var slowValueClients: Set<String> = []
 
     /// How often reads fetch the values that change slowly, such as the SMC's cell voltages and
@@ -53,10 +84,15 @@ public final class BatteryMonitor {
     /// fetches them every time.
     static let smcPolicy = SMCReadPolicy.everyMinute
 
+    /// When polls may reuse the registry: ``RegistryReadPolicy/app`` in the app, whose reuse
+    /// ``RegistryReadPolicy/cachesOnPolls`` switches off.
+    let registryPolicy: RegistryReadPolicy
+
     /// How long a burst of change notifications may last: one read follows the first of them
     /// after this window, give or take ``coalescingTolerance``, which lets the OS fold the wake-up
-    /// into another. powerd posts two notifications for one battery update, and Low Power Mode and
-    /// thermal changes post their own. Together they delay a plug or unplug by at most 250 ms.
+    /// into another. Besides powerd's, Low Power Mode and thermal changes post their own
+    /// notifications. Together the window and its tolerance delay a plug or unplug by at most
+    /// 250 ms.
     static let coalescingWindow: Duration = .milliseconds(150)
     static let coalescingTolerance: Duration = .milliseconds(100)
 
@@ -75,9 +111,12 @@ public final class BatteryMonitor {
     ///   - provider: Reads the device's battery.
     ///   - clock: Times the polls, the follow-ups and the coalescing window, and stamps
     ///     ``lastReadAt``. Tests pass one they advance by hand.
-    init(provider: any BatteryProvider, clock: any MonitorClock) {
+    ///   - registryPolicy: When polls may reuse the registry. Tests pass both settings of the
+    ///     switch.
+    init(provider: any BatteryProvider, clock: any MonitorClock, registryPolicy: RegistryReadPolicy = .app) {
         self.provider = provider
         self.clock = clock
+        self.registryPolicy = registryPolicy
     }
 
     public func start() {
@@ -93,8 +132,15 @@ public final class BatteryMonitor {
     public func setOverride(_ provider: (any BatteryProvider)?) {
         overrideProvider = provider
         isOverridden = provider != nil
-        // The device's slow values are as old as the demo: read them with the device's first.
+        // The device's registry and slow values are as old as the demo: read them with the
+        // device's first.
+        registryReadAt = nil
         slowValuesReadAt = nil
+        // The device's notifications pause meanwhile.
+        registryWatch.reset()
+        // A read in flight belongs to the provider shown until now.
+        generation += 1
+        requestedTrigger = nil
         guard isRunning else { return }
         observation?.cancel()
         observation = activeProvider.observeChanges { [weak self] in self?.providerChanged() }
@@ -109,6 +155,7 @@ public final class BatteryMonitor {
     /// shown at once.
     private func providerChanged() {
         if overrideProvider == nil {
+            registryWatch.notificationArrived()
             requestRefresh()
         } else {
             refresh(trigger: .demo)
@@ -117,6 +164,11 @@ public final class BatteryMonitor {
 
     public func stop() {
         isRunning = false
+        // A read in flight can't be stopped, but its result is dropped.
+        generation += 1
+        requestedTrigger = nil
+        // No notification is heard until the next start.
+        registryWatch.reset()
         observation?.cancel()
         observation = nil
         liveRefreshTask?.cancel()
@@ -153,9 +205,10 @@ public final class BatteryMonitor {
         scheduleLiveRefresh()
     }
 
-    /// Asks for the values that change slowly, such as the SMC's cell voltages and temperatures, to
-    /// be read on every read while `client` (e.g. "main") shows them; `false` withdraws the request.
-    /// Without requests they are read at most once a minute.
+    /// Asks for the values that change slowly, the registry's and the SMC's slow keys such as its
+    /// cell voltages and temperatures, to be read on every read while `client` (e.g. "main") shows
+    /// them; `false` withdraws the request. Without requests polls reuse the registry for up to
+    /// 5 minutes and read the SMC's slow keys at most once a minute.
     public func setShowsSlowValues(_ shows: Bool, for client: String = "default") {
         guard shows != slowValueClients.contains(client) else { return }
         if shows {
@@ -196,20 +249,124 @@ public final class BatteryMonitor {
     }
 
     /// Reads the battery now; a read that a notification scheduled is no longer needed. `trigger`
-    /// only labels the `refresh` interval.
+    /// labels the `refresh` interval and decides where the read runs: the launch, Demo Mode and a
+    /// manual read (``readsOnMainActor(_:)``) are done when this returns. The other triggers read
+    /// off the main actor when the provider can, and ``snapshot`` changes when the read lands; to
+    /// wait for it, use ``refreshAndWait(trigger:)``.
     public func refresh(trigger: RefreshTrigger = .manual) {
-        let interval = Diagnostics.begin("refresh", trigger: trigger.name)
-        defer { interval.end() }
         pendingRefresh?.cancel()
         pendingRefresh = nil
+        if Self.readsOnMainActor(trigger) || activeProvider.nonisolatedReader == nil {
+            readOnMainActor(trigger)
+        } else {
+            requestReadOffMainActor(trigger)
+        }
+    }
+
+    /// ``refresh(trigger:)``, returning once ``snapshot`` holds what the read found, or what a
+    /// newer read did.
+    public func refreshAndWait(trigger: RefreshTrigger) async {
+        refresh(trigger: trigger)
+        await readLoop?.value
+    }
+
+    /// The reads that stay on the main actor whatever the provider: the launch read, which is the
+    /// one read before `menuBarReady`; Demo Mode's, which `DemoController` animates in one
+    /// transaction with its own changes; and a manual read, whose caller reads ``snapshot``
+    /// straight after (Copy Report).
+    static func readsOnMainActor(_ trigger: RefreshTrigger) -> Bool {
+        switch trigger {
+        case .launch, .demo, .manual: true
+        case .notify, .poll, .followUp, .history: false
+        }
+    }
+
+    /// Whether a read off the main actor is in flight or requested.
+    var isReadingOffMainActor: Bool {
+        readLoop != nil
+    }
+
+    private func readOnMainActor(_ trigger: RefreshTrigger) {
+        let interval = Diagnostics.begin("refresh", trigger: trigger.name)
+        defer { interval.end() }
+        // Newer than a read in flight, which is dropped when it lands; it serves the requests that
+        // wait for a follow-on read too.
+        generation += 1
+        requestedTrigger = nil
+        let scope = readScope(for: trigger, isPoll: trigger == .poll)
+        let mark = registryWatch.mark
+        apply(activeProvider.read(scope: scope), scope: scope, trigger: trigger, mark: mark)
+    }
+
+    /// Starts a read off the main actor or, while one is in flight, asks for one after it: any
+    /// number of requests meanwhile make one follow-on read, labelled with the first. It fetches
+    /// what the requests need together: the registry, unless all of them were polls.
+    private func requestReadOffMainActor(_ trigger: RefreshTrigger) {
+        if requestedTrigger == nil {
+            requestedTrigger = trigger
+            requestedPollsOnly = trigger == .poll
+        } else if trigger != .poll {
+            requestedPollsOnly = false
+        }
+        guard readLoop == nil else { return }
+        readLoop = Task(name: "BatteryMonitor.read") { [weak self] in
+            await self?.readOffMainActor()
+        }
+    }
+
+    /// Runs the requested reads one after another until none is left, each assigned in one step
+    /// unless its ``generation`` has passed.
+    private func readOffMainActor() async {
+        while let trigger = requestedTrigger.take(), let reader = activeProvider.nonisolatedReader {
+            let interval = Diagnostics.begin("refresh", trigger: trigger.name)
+            let generation = generation
+            let scope = readScope(for: trigger, isPoll: requestedPollsOnly)
+            let mark = registryWatch.mark
+            let new = await Self.read(reader, scope: scope)
+            if generation == self.generation {
+                apply(new, scope: scope, trigger: trigger, mark: mark)
+            } else {
+                #if canImport(os)
+                Diagnostics.monitor.debug("A read that Demo Mode, stop() or a newer read superseded is dropped")
+                #endif
+            }
+            interval.end()
+        }
+        readLoop = nil
+    }
+
+    /// Reads through `reader` on the global concurrent executor, so IOKit and the SMC never hold
+    /// the main actor; only the result comes back.
+    @concurrent
+    private static func read(_ reader: any NonisolatedBatteryReader, scope: BatteryReadScope) async
+        -> BatteryReading?
+    {
+        await reader.readNonisolated(scope: scope)
+    }
+
+    /// The two decisions of a read for `trigger`: the registry unless the read serves only polls
+    /// (`isPoll`) and ``registryPolicy`` lets them reuse it, and every SMC key when the slow values
+    /// are due (``smcPolicy``) or the caller needs every value now.
+    private func readScope(for trigger: RefreshTrigger, isPoll: Bool) -> BatteryReadScope {
+        let isShown = !slowValueClients.isEmpty
+        let rereadsRegistry = registryPolicy.rereadsRegistry(
+            isPoll: isPoll, age: registryReadAt.map { clock.now - $0 }, isShown: isShown)
         // A caller that needs a value now, such as Copy Report, gets the slow values fresh too.
-        let readsSlowValues =
+        let readsAllSMCKeys =
             trigger == .manual
-            || Self.smcPolicy.readsOtherKeys(
-                age: slowValuesReadAt.map { clock.now - $0 }, isShown: !slowValueClients.isEmpty)
-        let new = activeProvider.read(scope: readsSlowValues ? .full : .live)
+            || Self.smcPolicy.readsOtherKeys(age: slowValuesReadAt.map { clock.now - $0 }, isShown: isShown)
+        return BatteryReadScope(rereadsRegistry: rereadsRegistry, readsAllSMCKeys: readsAllSMCKeys)
+    }
+
+    /// Takes what a read found. ``snapshot`` and ``reading`` are reassigned only when they change.
+    /// `mark` is ``registryWatch``'s when the read began.
+    private func apply(_ new: BatteryReading?, scope: BatteryReadScope, trigger: RefreshTrigger, mark: Int) {
         lastReadAt = clock.now
-        if readsSlowValues { slowValuesReadAt = lastReadAt }
+        if scope.rereadsRegistry {
+            registryReadAt = lastReadAt
+            if overrideProvider == nil, let new { checkRegistryUpdate(new, mark: mark, trigger: trigger) }
+        }
+        if scope.readsAllSMCKeys { slowValuesReadAt = lastReadAt }
         let wasConnected = snapshot?.isExternalPowerConnected
         if hasBattery != (new != nil) {
             logBatteryChange(found: new != nil, trigger: trigger)
@@ -224,6 +381,15 @@ public final class BatteryMonitor {
             #endif
             scheduleFollowUps()
         }
+    }
+
+    /// Logs the `registry.missed` event, with the trigger of the read that found it, when a read that
+    /// fetched the device's registry found an update that no notification announced: E4b's field
+    /// signal, which a poll that reuses the registry would have missed.
+    private func checkRegistryUpdate(_ new: BatteryReading, mark: Int, trigger: RefreshTrigger) {
+        guard registryWatch.fetched(updated: new.snapshot.gaugeUpdatedAt, mark: mark) else { return }
+        missedRegistryUpdates += 1
+        Diagnostics.event("registry.missed", trigger: trigger.name)
     }
 
     /// A read found a battery where the previous one found none, or the other way around.

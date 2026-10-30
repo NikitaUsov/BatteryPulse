@@ -1,11 +1,13 @@
 #if os(macOS)
 import BatteryCore
 import BatteryKit
+import BatterySource
 import SwiftUI
 import os
 
 /// Whose history the History page shows: this Mac's, or a remembered iPhone's or iPad's.
-enum HistorySource: Hashable {
+/// Nonisolated: the load off the main actor compares it (``HistoryLoad``).
+nonisolated enum HistorySource: Hashable {
     case mac
     case device(DeviceKey)
 }
@@ -296,7 +298,8 @@ struct HistoryView: View {
 }
 
 /// One load of the History page: the period's charts and figures, and the daily summaries.
-private struct HistoryLoad: Sendable {
+/// Nonisolated: it reads and builds off the main actor.
+private nonisolated struct HistoryLoad: Sendable {
     var chart: HistoryChartData
     var days: [HistoryDayPoint]
 

@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import BatterySource
 import Foundation
 import Observation
 
@@ -11,7 +12,6 @@ import Observation
 /// the user chose to install (``UpdateInstaller``). It asks GitHub for the latest release and
 /// sends nothing about the Mac beyond a User-Agent with the app's version (URLSession adds the
 /// language). Builds without a version (CI, `swift run`) never check on their own.
-@MainActor
 @Observable
 final class UpdateChecker {
     enum Status: Equatable {
@@ -42,8 +42,8 @@ final class UpdateChecker {
     /// Opens the Software Update window; set by the app.
     @ObservationIgnored var showWindow: (() -> Void)?
     @ObservationIgnored private var schedule: Task<Void, Never>?
-    /// The user asked while an automatic check was running; its result is theirs.
-    @ObservationIgnored private var userIsWaiting = false
+    /// The check under way, so Check Now can cancel an automatic one and ask on its own session.
+    @ObservationIgnored private var running: (kind: UpdateCheckKind, task: Task<Void, Never>)?
     /// Only the first automatic check after launch may open the window; later ones just show
     /// the update in the menu bar popover, so the app never jumps in front of other work.
     @ObservationIgnored private var mayOpenWindow = true
@@ -80,11 +80,13 @@ final class UpdateChecker {
         showWindow?()
         // The window shows the installation in progress instead.
         guard !installer.isBusy else { return }
-        if status == .checking {
-            userIsWaiting = true
-            return
+        switch UpdatePolicy.checkNow(during: running?.kind) {
+        case .start: break
+        case .takeOver: running?.task.cancel()
+        case .wait: return
         }
-        Task(name: "UpdateChecker.checkNow") { await check(userInitiated: true) }
+        let task = Task(name: "UpdateChecker.checkNow") { await check(.user) }
+        running = (.user, task)
     }
 
     func skip(_ release: ReleaseInfo) {
@@ -116,43 +118,58 @@ final class UpdateChecker {
     private func checkIfDue() async {
         // Only the first scheduled tick may open the window, whether or not it checks.
         defer { mayOpenWindow = false }
-        guard UpdatePolicy.isCheckDue(lastCheck: lastCheck, now: Date(), frequency: AppSettings.updateFrequency),
+        // Check Now's check is under way.
+        guard running == nil,
+            UpdatePolicy.isCheckDue(lastCheck: lastCheck, now: Date(), frequency: AppSettings.updateFrequency),
             rateLimitedUntil.map({ Date() >= $0 }) ?? true
         else { return }
-        await check(userInitiated: false)
+        // In a task of its own, so Check Now can cancel it without ending the schedule.
+        let task = Task(name: "UpdateChecker.automaticCheck") { await check(.automatic) }
+        running = (.automatic, task)
+        await task.value
     }
 
-    private func check(userInitiated: Bool) async {
+    private func check(_ kind: UpdateCheckKind) async {
+        // After Check Now took over, `running` is its check.
+        defer { if running?.kind == kind { running = nil } }
         // A check would replace the release being installed in the window.
-        guard status != .checking, !installer.isBusy else { return }
+        guard !installer.isBusy else { return }
+        let userInitiated = kind == .user
         let interval = Diagnostics.begin("update.check", trigger: userInitiated ? "user" : "automatic")
         defer { interval.end() }
         installer.reset()
         status = .checking
-        userIsWaiting = userIsWaiting || userInitiated
-        defer { userIsWaiting = false }
+        let session = userInitiated ? UpdateNetwork.user : UpdateNetwork.automatic
+        let release: ReleaseInfo
         do {
-            let session = userInitiated ? UpdateNetwork.user : UpdateNetwork.automatic
-            let release = try await Self.fetchLatest(currentVersion: currentVersion, session: session)
-            recordCheck()
-            let skipped = UserDefaults.standard.string(forKey: AppSettings.skippedVersionKey).flatMap(AppVersion.init)
-            if UpdatePolicy.shouldOffer(
-                release, current: currentVersion, skipped: skipped, userInitiated: userIsWaiting)
-            {
-                status = .available(release)
-                pendingRelease = release
-                if !userIsWaiting, mayOpenWindow { showWindow?() }
-            } else {
-                status = userIsWaiting ? .upToDate : .idle
-            }
-        } catch CheckError.noReleases {
-            recordCheck()
-            status = userIsWaiting ? .upToDate : .idle
-        } catch CheckError.rateLimited(let until) {
-            rateLimitedUntil = until ?? Date().addingTimeInterval(60 * 60)
-            status = userIsWaiting ? .rateLimited : .idle
+            release = try await Self.fetchLatest(currentVersion: currentVersion, session: session)
         } catch {
-            status = userIsWaiting ? .failed : .idle
+            // A cancelled check was taken over by Check Now, whose own check reports.
+            if !Task.isCancelled { failed(error, userInitiated: userInitiated) }
+            return
+        }
+        guard !Task.isCancelled else { return }
+        recordCheck()
+        let skipped = UserDefaults.standard.string(forKey: AppSettings.skippedVersionKey).flatMap(AppVersion.init)
+        if UpdatePolicy.shouldOffer(release, current: currentVersion, skipped: skipped, userInitiated: userInitiated) {
+            status = .available(release)
+            pendingRelease = release
+            if !userInitiated, mayOpenWindow { showWindow?() }
+        } else {
+            status = userInitiated ? .upToDate : .idle
+        }
+    }
+
+    private func failed(_ error: any Error, userInitiated: Bool) {
+        switch error {
+        case CheckError.noReleases:
+            recordCheck()
+            status = userInitiated ? .upToDate : .idle
+        case CheckError.rateLimited(let until):
+            rateLimitedUntil = until ?? Date().addingTimeInterval(60 * 60)
+            status = userInitiated ? .rateLimited : .idle
+        default:
+            status = userInitiated ? .failed : .idle
         }
     }
 
@@ -195,6 +212,7 @@ final class UpdateChecker {
 /// a download leaves nothing on disk but the files the installer moves into place itself.
 enum UpdateNetwork {
     /// Check Now, the release's signature and its DMG: the user asked, so any network will do.
+    /// Check Now during an automatic check cancels it and asks here instead.
     static let user = URLSession(configuration: configuration(automatic: false))
     /// The automatic checks: never over Low Data Mode or an expensive network, such as a phone's
     /// hotspot. Such a check fails at once without counting as done, so the next tick tries again.
@@ -203,8 +221,8 @@ enum UpdateNetwork {
     private static func configuration(automatic: Bool) -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
-        // Check Now during an automatic check waits for that check's answer, so a check that
-        // waited for connectivity would keep the user waiting too.
+        // Without a connection a check fails at once instead of keeping the window waiting; the
+        // next tick or Check Now asks again.
         configuration.waitsForConnectivity = false
         if automatic {
             configuration.allowsConstrainedNetworkAccess = false

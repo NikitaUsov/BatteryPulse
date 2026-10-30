@@ -16,6 +16,12 @@ import Testing
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
+///
+/// The escapes from the compiler's checks are listed too, each where it is today: the
+/// `@unchecked Sendable` types, `nonisolated(unsafe)`, and strict memory safety's `@safe`, which
+/// vouches for a type that keeps a pointer. The targets built with strict memory safety mark
+/// every other unsafe use `unsafe`, and nothing silences the check
+/// (``strictMemorySafetyTargets``).
 @Suite struct SecurityGuardTests {
     /// An API that may appear only in the listed files, each holding at most so many matches.
     struct Placement {
@@ -41,7 +47,7 @@ import Testing
                 pattern: words(#/\bdl(?:open|sym|close)\b/#),
                 allowed: [
                     "BatteryKit/MobileDevice/MobileDeviceLibrary.swift": .max,
-                    "BatteryKit/MacAccessoryProvider.swift": .max,
+                    "BatterySource/MacAccessoryProvider.swift": .max,
                 ],
                 message: "dlopen/dlsym only for MobileDevice and the accessory power sources"),
             // SEC-03: the update traffic goes through `UpdateNetwork`'s ephemeral sessions, which
@@ -54,7 +60,7 @@ import Testing
             Placement(
                 literals: ["IOServiceOpen", "IOConnect"],
                 pattern: words(#/\bIOServiceOpen\b|\bIOConnect\w+/#),
-                allowed: ["BatteryKit/SMCClient.swift": .max],
+                allowed: ["BatterySource/SMCClient.swift": .max],
                 message: "an IOKit user client only in the SMC client"),
             Placement(
                 literals: ["IORegistryEntrySetCFPropert"],
@@ -90,8 +96,35 @@ import Testing
                     "BatteryPulseApp/MenuBar/BatteryIconView.swift": 1,
                 ],
                 message: "@unchecked Sendable; use a checked Sendable (Mutex, a let) or an actor"),
+            // The observers' tokens, which the remover reads from any thread (SystemNotifications).
+            Placement(
+                literals: ["nonisolated", "unowned"],
+                pattern: words(#/\b(?:nonisolated|unowned)\s*\(\s*unsafe\s*\)/#),
+                allowed: ["BatterySource/SystemNotifications.swift": 1],
+                message: "nonisolated(unsafe) or unowned(unsafe); use a Mutex, a Sendable value or an actor"),
+            // SW-13: the types that keep a C function address or a pointer behind a safe
+            // interface, each saying why.
+            Placement(
+                literals: ["@safe"],
+                pattern: words(#/@safe\b/#),
+                allowed: [
+                    "BatteryKit/MobileDevice/MobileDeviceLibrary.swift": 1,
+                    "BatteryKit/MobileDevice/MobileDeviceTransport.swift": 1,
+                    "BatteryKit/MobileDevice/USBDeviceWatcher.swift": 1,
+                    "BatterySource/MacAccessoryProvider.swift": 1,
+                ],
+                message: "@safe; mark each unsafe use `unsafe` with its reason instead"),
+            Placement(
+                literals: ["StrictMemorySafety"],
+                pattern: words(#/\bStrictMemorySafety\b/#),
+                allowed: [:],
+                message: "StrictMemorySafety silenced; mark each unsafe use `unsafe` with its reason"),
         ]
     }
+
+    /// The targets that build with strict memory safety: the parsers of untrusted input
+    /// (BatteryCore, bpulse) and the system bindings (BatterySource, BatteryKit).
+    static let strictMemorySafetyTargets = ["BatteryCore", "BatterySource", "BatteryKit", "bpulse"]
 
     /// Every rule broken in `source`, as "path:line: message".
     static func violations(in source: String, path: String) -> [String] {
@@ -134,6 +167,17 @@ import Testing
         #expect(paths.count > appAndWidget.count)
     }
 
+    /// Every folder of `Sources` is a target the scan lists, so a new target can't escape the
+    /// guards: ``scansEveryTarget()`` only checks the listed ones.
+    @Test func everySourceFolderIsAListedTarget() throws {
+        let folders = try FileManager.default.contentsOfDirectory(
+            at: SourceScanner.sources, includingPropertiesForKeys: [.isDirectoryKey]
+        )
+        .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+        .map(\.lastPathComponent)
+        #expect(folders.sorted() == (SourceScanner.targets + SourceScanner.otherTargets).sorted())
+    }
+
     @Test func allowListedFilesExist() {
         for path in Self.placements.flatMap(\.allowed.keys) {
             #expect(
@@ -154,7 +198,7 @@ import Testing
     /// (`kSMCHandleYPCEvent`), which carries the read commands that `SMCTests` pins.
     @Test func smcClientCallsOnlySelectorTwo() throws {
         let code = try #require(
-            try SourceScanner.allFiles.get().first { $0.path == "BatteryKit/SMCClient.swift" }
+            try SourceScanner.allFiles.get().first { $0.path == "BatterySource/SMCClient.swift" }
         ).code
         let calls = SourceScanner.calls(named: Self.words(#/\bIOConnect\w+/#), in: code)
         #expect(calls.map(\.name) == ["IOConnectCallStructMethod"])
@@ -172,7 +216,7 @@ import Testing
         #expect(!flags("Task(name: \"x\") { await work() }", path: "BatteryPulseApp/Main/MainView.swift"))
     }
 
-    private static let somewhere = "BatteryKit/MacBatteryProvider.swift"
+    private static let somewhere = "BatterySource/MacBatteryProvider.swift"
 
     private func flags(_ source: String, path: String = somewhere) -> Bool {
         !Self.violations(in: source, path: path).isEmpty
@@ -192,6 +236,10 @@ import Testing
         "execv(path, argv)",
         "kill(pid, SIGKILL)",
         "killpg(group, SIGTERM)",
+        "nonisolated(unsafe) let tokens = names.map { $0 }",
+        "unowned(unsafe) let owner: Owner",
+        "@safe final class Box { private var pointer: UnsafeMutableRawPointer? }",
+        "@diagnose(StrictMemorySafety, as: ignored, reason: \"audited\") func read() {}",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -210,6 +258,9 @@ import Testing
         "let service = IOServiceGetMatchingService(kIOMainPortDefault, matching)",
         "IORegistryEntryCreateCFProperties(entry, &properties, kCFAllocatorDefault, 0)",
         "let skill = killSwitch(on)",
+        "let name = unsafe String(cString: pointer)",
+        "nonisolated let safeArea = 1",
+        "@safeAreaPadding var inset = 0",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -217,11 +268,12 @@ import Testing
 
     @Test func eachAPIIsAllowedOnlyWhereItIsToday() {
         #expect(!flags("dlsym(handle, name)", path: "BatteryKit/MobileDevice/MobileDeviceLibrary.swift"))
-        #expect(!flags("dlopen(path, RTLD_NOW)", path: "BatteryKit/MacAccessoryProvider.swift"))
-        #expect(flags("dlopen(path, RTLD_NOW)", path: "BatteryKit/SMCClient.swift"))
-        #expect(!flags("IOServiceOpen(service, task, 0, &port)", path: "BatteryKit/SMCClient.swift"))
+        #expect(!flags("dlopen(path, RTLD_NOW)", path: "BatterySource/MacAccessoryProvider.swift"))
+        #expect(flags("dlopen(path, RTLD_NOW)", path: "BatterySource/SMCClient.swift"))
+        #expect(!flags("IOServiceOpen(service, task, 0, &port)", path: "BatterySource/SMCClient.swift"))
         #expect(flags("IOServiceOpen(service, task, 0, &port)", path: "BatteryKit/MobileDevice/USBDeviceWatcher.swift"))
-        #expect(flags("IORegistryEntrySetCFProperty(entry, key, value)", path: "BatteryKit/SMCClient.swift"))
+        #expect(flags("IOServiceOpen(service, task, 0, &port)", path: "BatterySource/MacBatteryProvider.swift"))
+        #expect(flags("IORegistryEntrySetCFProperty(entry, key, value)", path: "BatterySource/SMCClient.swift"))
         #expect(!flags("let process = Process()", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))
@@ -238,6 +290,37 @@ import Testing
         #expect(!flags(sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
         #expect(flags(sink + sink, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
         #expect(!flags("final class DownloadWatcher: Sendable {}"))
+    }
+
+    /// SW-13: four `@safe` types, one in each listed file: the accessory function's address, the
+    /// MobileDevice function table, a device link's service connection and the USB watch's port.
+    @Test func fourSafeTypes() {
+        let allowed = Self.placements.first { $0.message.hasPrefix("@safe") }?.allowed ?? [:]
+        #expect(allowed.values.reduce(0, +) == 4)
+        let link = "@safe\nfinal class MobileDeviceLink {}\n"
+        #expect(!flags(link, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(flags(link + link, path: "BatteryKit/MobileDevice/MobileDeviceTransport.swift"))
+        #expect(flags(link, path: "BatteryKit/IDeviceMonitor.swift"))
+    }
+
+    /// SW-13: the targets that build with strict memory safety are exactly the listed ones, so a
+    /// target can't lose the check unnoticed.
+    @Test func strictMemorySafetyTargetsAreTheListedOnes() throws {
+        let manifest = SourceScanner.sources.deletingLastPathComponent().appendingPathComponent("Package.swift")
+        let text = try String(contentsOf: manifest, encoding: .utf8)
+        // `codeOnly` blanks string literals, so a target's name is read from `text` at the same
+        // offsets (as in `IsolationGuardTests`).
+        let code = SourceScanner.codeOnly(text)
+        let targets = SourceScanner.calls(named: Self.words(#/\.(?:executableTarget|testTarget|target)\b/#), in: code)
+        var strict: [String] = []
+        for target in targets where target.arguments.contains(".strictMemorySafety()") {
+            let offset = code.distance(from: code.startIndex, to: target.arguments.startIndex)
+            let start = text.index(text.startIndex, offsetBy: offset)
+            let arguments = text[start...].prefix(target.arguments.count)
+            strict.append(arguments.firstMatch(of: #/name:\s*"(\w+)"/#).map { String($0.output.1) } ?? "?")
+        }
+        #expect(targets.count >= 8)
+        #expect(strict.sorted() == Self.strictMemorySafetyTargets.sorted())
     }
 
     @Test func reportsLineNumbers() {

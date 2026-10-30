@@ -18,8 +18,8 @@ struct DeveloperView: View {
     /// The table for the current reading, with every cell's text and each row's search text.
     /// Built off the main actor when the reading changes, not on every body evaluation: showing
     /// the inspector, selecting or typing in the filter re-evaluates the body, and the main window
-    /// reads the battery every 2 s.
-    @State private var allSections: [RawDisplaySection] = []
+    /// reads the battery every 2 s. A reading builds only the sections whose dictionary changed.
+    @State private var table = RawDisplayTable()
     /// The capture Export Capture hands to the system's Save panel, and why saving it failed.
     @State private var capture: CaptureFile?
     @State private var exportsCapture = false
@@ -118,8 +118,8 @@ struct DeveloperView: View {
                 // The switch then shows All selected, as the table does.
                 if let source, !groups.contains(source) { self.source = nil }
             }
-            .disabled(monitor.reading == nil)
-            .task(id: monitor.reading) { await rebuild() }
+            // Disables the page without a reading and builds the table for each new one.
+            .modifier(RawTableUpdates(monitor: monitor, table: $table))
             // On the page rather than in the toolbar item, where presentations are unreliable on
             // macOS, and after `disabled`, so the alert's button works without a reading.
             .fileExporter(
@@ -155,17 +155,9 @@ struct DeveloperView: View {
         }
     }
 
-    private func rebuild() async {
-        guard let reading = monitor.reading else {
-            allSections = []
-            return
-        }
-        let sections = await RawValueText.sections(for: reading)
-        // Identical readings leave the table alone. Assigned after an `await`, so outside any
-        // animation, Demo Mode's included: hundreds of rows change with every reading and must
-        // never animate.
-        guard !Task.isCancelled, sections != allSections else { return }
-        allSections = sections
+    /// Every section of the table, in order.
+    private var allSections: [RawDisplaySection] {
+        table.sections
     }
 
     /// A Table rather than a List: fixed-height rows keep live updates and window resizing cheap.
@@ -208,9 +200,8 @@ struct DeveloperView: View {
         } rows: {
             ForEach(sections) { section in
                 Section {
-                    ForEach(section.rows) { row in
-                        TableRow(row)
-                    }
+                    // A `TableRow` per row, identified by the row's id.
+                    ForEach(section.rows)
                 } header: {
                     Text(verbatim: section.title)
                 }
@@ -287,6 +278,33 @@ struct DeveloperView: View {
         } catch {
             exportFailure = error.localizedDescription
         }
+    }
+}
+
+/// Keeps the Raw Data table on the monitor's reading, and disables the page without one. The page's
+/// own body never reads the reading: a new reading re-evaluates only this modifier, and the page
+/// once its table's text changed, rather than once for the reading and again for the table.
+private struct RawTableUpdates: ViewModifier {
+    let monitor: BatteryMonitor
+    @Binding var table: RawDisplayTable
+
+    func body(content: Content) -> some View {
+        content
+            .disabled(monitor.reading == nil)
+            .task(id: monitor.reading, name: "RawTableUpdates.rebuild") { await rebuild() }
+    }
+
+    private func rebuild() async {
+        guard let reading = monitor.reading else {
+            table = RawDisplayTable()
+            return
+        }
+        let (updated, changed) = await RawValueText.table(updating: table, for: reading)
+        // A reading that changes no text leaves the table alone. Assigned after an `await`, so
+        // outside any animation, Demo Mode's included: hundreds of rows change with every reading
+        // and must never animate.
+        guard !Task.isCancelled, changed else { return }
+        table = updated
     }
 }
 

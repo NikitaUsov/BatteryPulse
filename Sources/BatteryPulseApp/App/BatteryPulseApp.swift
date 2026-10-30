@@ -2,6 +2,7 @@
 import AppKit
 import BatteryCore
 import BatteryKit
+import BatterySource
 import SwiftUI
 
 @main
@@ -170,7 +171,6 @@ enum WindowID {
     static let about = "about"
 }
 
-@MainActor
 final class AppDelegate: NSObject, nonisolated NSApplicationDelegate {
     private var defaultsObserver: (any NSObjectProtocol)?
 

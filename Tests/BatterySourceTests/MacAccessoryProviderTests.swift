@@ -1,7 +1,7 @@
 #if os(macOS)
 import Testing
 
-@testable import BatteryKit
+@testable import BatterySource
 
 /// Runs on CI's macOS: the runner has no accessories, so only the plumbing is checked.
 @MainActor

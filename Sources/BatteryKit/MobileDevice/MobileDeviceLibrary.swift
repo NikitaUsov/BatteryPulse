@@ -1,5 +1,6 @@
 #if os(macOS)
 import BatteryCore
+import BatterySource
 import Foundation
 import os
 
@@ -11,6 +12,10 @@ import os
 /// hardened runtime's library validation accepts it. A missing symbol is detected; a changed
 /// signature is not, which is why every call goes through ``IDeviceLink`` and the bindings below
 /// stay minimal. Return values are `mach_error_t` codes (``IDeviceStatus``).
+///
+/// `@safe`: the table only holds the addresses; each call through one is marked `unsafe` where it
+/// is made.
+@safe
 struct MobileDeviceLibrary: @unchecked Sendable {
     // `@unchecked`: C function pointers are immutable addresses, safe to share between threads.
 
@@ -121,69 +126,83 @@ struct MobileDeviceLibrary: @unchecked Sendable {
         for path in paths {
             // Local: its symbols don't join the global namespace. First: lookups through the
             // handle search this image only; a function that leaves it shows up as missing.
-            if let handle = dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_FIRST) {
-                found = (handle, path)
+            // Unsafe: the path as a C string, the handle as a raw pointer, and dlerror's C string,
+            // copied before the next dl call can replace it.
+            if let handle = unsafe dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_FIRST) {
+                unsafe found = (handle, path)
                 break
             }
-            errors.append(dlerror().map { String(cString: $0) } ?? path)
+            unsafe errors.append(dlerror().map { unsafe String(cString: $0) } ?? path)
         }
-        guard let opened = found else { return .failure(.frameworkUnavailable(errors.joined(separator: "; "))) }
+        guard let opened = unsafe found else { return .failure(.frameworkUnavailable(errors.joined(separator: "; "))) }
 
         var missing: [String] = []
+        // Unsafe, here and in the lookups below: the name as a C string, the address as a raw
+        // pointer, and a cast that trusts the signature its typealias declares, which nothing
+        // checks (see above).
         func symbol<T>(_ name: String, _ type: T.Type, required: Bool = true) -> T? {
-            guard let pointer = dlsym(opened.handle, name) else {
+            guard let pointer = unsafe dlsym(opened.handle, name) else {
                 if required { missing.append(name) }
                 return nil
             }
-            return unsafeBitCast(pointer, to: type)
+            return unsafe unsafeBitCast(pointer, to: type)
         }
 
-        let subscribe = symbol("AMDeviceNotificationSubscribe", Subscribe.self)
-        let unsubscribe = symbol("AMDeviceNotificationUnsubscribe", PointerCall.self)
-        let createDeviceList = symbol("AMDCreateDeviceList", CreateDeviceList.self, required: false)
-        let copyDeviceIdentifier = symbol("AMDeviceCopyDeviceIdentifier", CopyIdentifier.self)
-        let getInterfaceType = symbol("AMDeviceGetInterfaceType", PointerCall.self)
-        let connect = symbol("AMDeviceConnect", PointerCall.self)
-        let disconnect = symbol("AMDeviceDisconnect", PointerCall.self)
-        let isPaired = symbol("AMDeviceIsPaired", PointerCall.self, required: false)
-        let validatePairing = symbol("AMDeviceValidatePairing", PointerCall.self)
-        let startSession = symbol("AMDeviceStartSession", PointerCall.self)
-        let stopSession = symbol("AMDeviceStopSession", PointerCall.self)
-        let copyValue = symbol("AMDeviceCopyValue", CopyValue.self)
-        let secureStartService = symbol("AMDeviceSecureStartService", SecureStartService.self)
-        let sendMessage = symbol("AMDServiceConnectionSendMessage", SendMessage.self)
-        let receiveMessage = symbol("AMDServiceConnectionReceiveMessage", ReceiveMessage.self)
-        let getSocket = symbol("AMDServiceConnectionGetSocket", PointerCall.self)
-        let invalidate = symbol("AMDServiceConnectionInvalidate", Invalidate.self)
+        let subscribe = unsafe symbol("AMDeviceNotificationSubscribe", Subscribe.self)
+        let unsubscribe = unsafe symbol("AMDeviceNotificationUnsubscribe", PointerCall.self)
+        let createDeviceList = unsafe symbol("AMDCreateDeviceList", CreateDeviceList.self, required: false)
+        let copyDeviceIdentifier = unsafe symbol("AMDeviceCopyDeviceIdentifier", CopyIdentifier.self)
+        let getInterfaceType = unsafe symbol("AMDeviceGetInterfaceType", PointerCall.self)
+        let connect = unsafe symbol("AMDeviceConnect", PointerCall.self)
+        let disconnect = unsafe symbol("AMDeviceDisconnect", PointerCall.self)
+        let isPaired = unsafe symbol("AMDeviceIsPaired", PointerCall.self, required: false)
+        let validatePairing = unsafe symbol("AMDeviceValidatePairing", PointerCall.self)
+        let startSession = unsafe symbol("AMDeviceStartSession", PointerCall.self)
+        let stopSession = unsafe symbol("AMDeviceStopSession", PointerCall.self)
+        let copyValue = unsafe symbol("AMDeviceCopyValue", CopyValue.self)
+        let secureStartService = unsafe symbol("AMDeviceSecureStartService", SecureStartService.self)
+        let sendMessage = unsafe symbol("AMDServiceConnectionSendMessage", SendMessage.self)
+        let receiveMessage = unsafe symbol("AMDServiceConnectionReceiveMessage", ReceiveMessage.self)
+        let getSocket = unsafe symbol("AMDServiceConnectionGetSocket", PointerCall.self)
+        let invalidate = unsafe symbol("AMDServiceConnectionInvalidate", Invalidate.self)
 
-        guard let subscribe, let unsubscribe, let copyDeviceIdentifier, let getInterfaceType, let connect,
-            let disconnect, let validatePairing, let startSession, let stopSession, let copyValue,
-            let secureStartService, let sendMessage, let receiveMessage, let getSocket, let invalidate
+        // Unsafe: the looked-up addresses are only unwrapped here, none of them called.
+        guard let subscribe = unsafe subscribe, let unsubscribe = unsafe unsubscribe,
+            let copyDeviceIdentifier = unsafe copyDeviceIdentifier, let getInterfaceType = unsafe getInterfaceType,
+            let connect = unsafe connect, let disconnect = unsafe disconnect,
+            let validatePairing = unsafe validatePairing, let startSession = unsafe startSession,
+            let stopSession = unsafe stopSession, let copyValue = unsafe copyValue,
+            let secureStartService = unsafe secureStartService, let sendMessage = unsafe sendMessage,
+            let receiveMessage = unsafe receiveMessage, let getSocket = unsafe getSocket,
+            let invalidate = unsafe invalidate
         else {
-            dlclose(opened.handle)
+            // Unsafe: the handle, closed once, on the only path that drops it.
+            unsafe dlclose(opened.handle)
             return .failure(.frameworkUnavailable("missing " + missing.joined(separator: ", ")))
         }
-        return .success(
-            MobileDeviceLibrary(
-                path: opened.path,
-                notificationSubscribe: subscribe,
-                notificationUnsubscribe: unsubscribe,
-                createDeviceList: createDeviceList,
-                copyDeviceIdentifier: copyDeviceIdentifier,
-                getInterfaceType: getInterfaceType,
-                connect: connect,
-                disconnect: disconnect,
-                isPaired: isPaired,
-                validatePairing: validatePairing,
-                startSession: startSession,
-                stopSession: stopSession,
-                copyValue: copyValue,
-                secureStartService: secureStartService,
-                sendMessage: sendMessage,
-                receiveMessage: receiveMessage,
-                getSocket: getSocket,
-                invalidate: invalidate
-            ))
+        // Unsafe: the table stores the addresses as they are; each call through one is marked
+        // where it is made.
+        let library = unsafe MobileDeviceLibrary(
+            path: opened.path,
+            notificationSubscribe: subscribe,
+            notificationUnsubscribe: unsubscribe,
+            createDeviceList: createDeviceList,
+            copyDeviceIdentifier: copyDeviceIdentifier,
+            getInterfaceType: getInterfaceType,
+            connect: connect,
+            disconnect: disconnect,
+            isPaired: isPaired,
+            validatePairing: validatePairing,
+            startSession: startSession,
+            stopSession: stopSession,
+            copyValue: copyValue,
+            secureStartService: secureStartService,
+            sendMessage: sendMessage,
+            receiveMessage: receiveMessage,
+            getSocket: getSocket,
+            invalidate: invalidate
+        )
+        return .success(library)
     }
 }
 #endif

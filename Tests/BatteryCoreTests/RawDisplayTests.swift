@@ -154,4 +154,88 @@ import Testing
                     == RawSectionGroup.sections(sections, in: group).map(\.id))
         }
     }
+
+    // MARK: - The kept table (E19)
+
+    private static func update(
+        _ table: inout RawDisplayTable, _ capture: PropertyDictionary, wording: String = "en_US UTC"
+    ) -> Int {
+        table.update(for: capture, wording: wording, decoded: decodedText, summary: localizedSummary)
+    }
+
+    /// Whatever reading came before, the kept table is the table a fresh build makes: every pair
+    /// of captures, real and synthetic, in both orders.
+    @Test func keptTableMatchesAFreshBuild() throws {
+        let captures = try Fixture.allCases.map { try $0.reading().redactedRawCapture }
+        for before in captures {
+            for capture in captures {
+                var table = RawDisplayTable()
+                _ = Self.update(&table, before)
+                _ = Self.update(&table, capture)
+                #expect(
+                    table.sections
+                        == RawDisplaySection.sections(
+                            for: capture, decoded: Self.decodedText, summary: Self.localizedSummary))
+            }
+        }
+    }
+
+    /// The same capture builds nothing again; a changed value builds its section alone.
+    @Test func onlyChangedSectionsAreBuiltAgain() throws {
+        let capture = try Fixture.m5OnBatterySMC.reading().redactedRawCapture
+        let sectionCount = RawSection.sections(for: capture).count
+        var table = RawDisplayTable()
+        #expect(Self.update(&table, capture) == sectionCount)
+        let first = table.sections
+        #expect(Self.update(&table, capture) == 0)
+        #expect(table.sections == first)
+
+        var changed = capture
+        var powerSource = try #require(changed[BatteryReading.CaptureKey.powerSource]?.dictionaryValue)
+        powerSource["Current Capacity"] = .int(42)
+        changed[BatteryReading.CaptureKey.powerSource] = .dictionary(powerSource)
+        #expect(Self.update(&table, changed) == 1)
+        let fresh = RawDisplaySection.sections(for: changed, decoded: Self.decodedText, summary: Self.localizedSummary)
+        #expect(table.sections == fresh)
+        #expect(table.sections.filter { !first.contains($0) }.map(\.id) == [BatteryReading.CaptureKey.powerSource])
+    }
+
+    /// A new wording, such as another region, builds every section again.
+    @Test func newWordingBuildsEverythingAgain() throws {
+        let capture = try Fixture.m5PluggedIn10s.reading().redactedRawCapture
+        let sectionCount = RawSection.sections(for: capture).count
+        var table = RawDisplayTable()
+        #expect(Self.update(&table, capture) == sectionCount)
+        #expect(Self.update(&table, capture, wording: "ru_RU UTC") == sectionCount)
+        #expect(Self.update(&table, capture, wording: "ru_RU UTC") == 0)
+    }
+
+    /// A second entry of a class renumbers the first one's title, so that section is built again
+    /// even though its dictionary stayed; a dictionary that empties leaves the table.
+    @Test func titlesAndEmptyDictionariesFollowTheCapture() {
+        func bank(_ voltage: Int64) -> PropertyValue {
+            .dictionary([RegistryChildren.classKey: .string(RegistryChildren.bankClass), "Voltage": .int(voltage)])
+        }
+        func capture(banks: [PropertyValue], adapter: PropertyDictionary) -> PropertyDictionary {
+            [
+                BatteryReading.CaptureKey.smartBattery: .dictionary([
+                    "Voltage": .int(12_000), RegistryChildren.childrenKey: .array(banks),
+                ]),
+                BatteryReading.CaptureKey.adapterDetails: .dictionary(adapter),
+            ]
+        }
+        let captures = [
+            capture(banks: [bank(4_000)], adapter: ["Watts": .int(70)]),
+            capture(banks: [bank(4_000), bank(4_001)], adapter: ["Watts": .int(70)]),
+            capture(banks: [bank(4_000)], adapter: [:]),
+        ]
+        var table = RawDisplayTable()
+        for capture in captures {
+            _ = Self.update(&table, capture)
+            let fresh = RawDisplaySection.sections(
+                for: capture, decoded: Self.decodedText, summary: Self.localizedSummary)
+            #expect(table.sections == fresh)
+        }
+        #expect(table.sections.map(\.title) == ["AppleSmartBattery", RegistryChildren.bankClass])
+    }
 }

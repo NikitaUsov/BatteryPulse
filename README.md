@@ -218,7 +218,10 @@ needed.
 ```text
 BatteryCore   platform-independent models, parsing, metrics, raw-value decoding, demo data,
               text report (tested on Linux)
-BatteryKit    IOKit (macOS) / UIDevice (iOS) / demo providers + an @Observable BatteryMonitor
+BatterySource the battery and accessory reads: IOKit and the read-only SMC (macOS) / UIDevice
+              (iOS), with their loggers and signposts; the widget needs nothing more
+BatteryKit    on top of BatterySource: demo providers, an @Observable BatteryMonitor, iPhone and
+              iPad reads, update signatures
 BatteryPulse  SwiftUI app: main and compact windows, menu bar item, history, notifications,
               update check, settings (Sources/BatteryPulseApp)
 BatteryPulseWidget  WidgetKit extension, wrapped into the app as an .appex by build-app.sh
