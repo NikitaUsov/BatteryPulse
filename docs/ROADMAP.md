@@ -5,18 +5,21 @@ charging state.
 
 ## Decisions
 
-- **Platforms:** macOS 27 and iOS 27 minimum. On the Mac this means Apple Silicon only, since
-  macOS 27 no longer runs on Intel Macs. No Intel code paths.
+- **Platforms:** macOS 27 minimum; BatteryKit still builds for iOS 27 (PLT-05). macOS 27 means
+  Apple Silicon only, since it no longer runs on Intel Macs. No Intel code paths.
 - **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
-  (and later charge limiting) are possible. A notarized DMG needs a paid Apple Developer
-  account, and there won't be one: on 2026-10-22 the maintainer decided against it, not now and
+  are possible. A notarized DMG needs a paid Apple Developer account, and there won't be one: on
+  2026-10-22 the maintainer decided against it, not now and
   not before 1.0. BatteryPulse is a non-commercial hobby project with about no users, and he
   won't pay for an Apple developer account for this app; he is willing to spend on help with
   development, not on the account. So each install from the DMG needs Open Anyway in Privacy &
   Security, in-app updates don't, and permissions or placed widgets may need setting up again
   after a DMG replaces the app; 1.0 documents these as known limitations.
-- **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
-  (re-signed every 7 days); TestFlight and the App Store need the paid account.
+- **Distribution (iOS):** not in 1.x (M-2 in `docs/plans/1.0/ROADMAP.md`, decided on
+  2026-10-22). Public iOS APIs give only the level and the charging state, personal installs from
+  Xcode have to be re-signed every 7 days, and TestFlight and the App Store need the paid account
+  the maintainer declined; BatteryPulse on the Mac already reads an iPhone's or iPad's battery
+  health (Stage 5).
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
   Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
