@@ -1,3 +1,5 @@
+import BatteryCore
+
 #if canImport(os)
 import os
 #endif
@@ -43,9 +45,14 @@ public enum RefreshTrigger: Sendable, CaseIterable {
 ///
 /// The trigger is the one static detail an interval carries, such as why the battery was read
 /// (``RefreshTrigger``) or which page appeared. Names and triggers are `StaticString`s, so every
-/// part of a line is static text or a number and logs as public. Where there is no `os` module
-/// (Linux), nothing is recorded and ``measure(_:trigger:_:)`` only runs its body.
+/// part of a line is static text or a number and logs as public. Every ended interval and every
+/// event is also counted in a `PerfSummary` (`PerfSummary.session` unless told otherwise), the
+/// in-memory sums a problem report shows, since the app can't read its debug lines back. Where
+/// there is no `os` module (Linux), only that summary is fed, and ``measure(_:trigger:_:)``
+/// otherwise only runs its body.
 public struct Signposts: Sendable {
+    /// Where the intervals and events are counted.
+    let summary: PerfSummary
     #if canImport(os)
     private let signposter: OSSignposter
     private let log: Logger
@@ -53,12 +60,17 @@ public struct Signposts: Sendable {
     /// - Parameters:
     ///   - subsystem: The subsystem of the signposts.
     ///   - log: The logger of the `perf` category, which gets the lines.
-    public init(subsystem: String, log: Logger) {
+    ///   - summary: Where the intervals and events are counted.
+    public init(subsystem: String, log: Logger, summary: PerfSummary = .session) {
         signposter = OSSignposter(subsystem: subsystem, category: .pointsOfInterest)
         self.log = log
+        self.summary = summary
     }
     #else
-    public init() {}
+    /// - Parameter summary: Where the intervals and events are counted.
+    public init(summary: PerfSummary = .session) {
+        self.summary = summary
+    }
     #endif
 
     /// An interval that ``Signposts/begin(_:trigger:)`` started and ``end()`` closes.
@@ -66,19 +78,20 @@ public struct Signposts: Sendable {
         let name: StaticString
         /// Settable until ``end()``, for a trigger that is only known at the end.
         public var trigger: StaticString?
-        #if canImport(os)
         let signposts: Signposts
-        let state: OSSignpostIntervalState
         let start: ContinuousClock.Instant
+        #if canImport(os)
+        let state: OSSignpostIntervalState
         #endif
 
-        /// Ends the signpost interval and logs its `perf` line.
+        /// Ends the signpost interval, counts it in the summary and logs its `perf` line.
         public func end() {
-            #if canImport(os)
             let duration = ContinuousClock.now - start
             let text = PerfLine.trigger(trigger)
-            signposts.signposter.endInterval(name, state, "\(text, privacy: .public)")
             let label = name.description
+            signposts.summary.recordInterval(label, trigger: text, duration: duration)
+            #if canImport(os)
+            signposts.signposter.endInterval(name, state, "\(text, privacy: .public)")
             // Built only when the line is logged: `log stream` or `log config` at the debug level.
             signposts.log.debug("\(PerfLine.interval(label, duration: duration, trigger: text), privacy: .public)")
             #endif
@@ -87,12 +100,12 @@ public struct Signposts: Sendable {
 
     /// Starts an interval; call ``Interval/end()`` on the result, usually in a `defer`.
     public func begin(_ name: StaticString, trigger: StaticString? = nil) -> Interval {
-        #if canImport(os)
         let start = ContinuousClock.now
+        #if canImport(os)
         let state = signposter.beginInterval(name, id: signposter.makeSignpostID())
-        return Interval(name: name, trigger: trigger, signposts: self, state: state, start: start)
+        return Interval(name: name, trigger: trigger, signposts: self, start: start, state: state)
         #else
-        return Interval(name: name, trigger: trigger)
+        return Interval(name: name, trigger: trigger, signposts: self, start: start)
         #endif
     }
 
@@ -103,12 +116,13 @@ public struct Signposts: Sendable {
         return try body()
     }
 
-    /// Marks a moment, such as a widget reload.
+    /// Marks a moment, such as a widget reload, and counts it in the summary.
     public func event(_ name: StaticString, trigger: StaticString? = nil) {
-        #if canImport(os)
         let text = PerfLine.trigger(trigger)
-        signposter.emitEvent(name, "\(text, privacy: .public)")
         let label = name.description
+        summary.recordEvent(label, trigger: text)
+        #if canImport(os)
+        signposter.emitEvent(name, "\(text, privacy: .public)")
         log.debug("\(PerfLine.event(label, trigger: text), privacy: .public)")
         #endif
     }
@@ -129,12 +143,10 @@ enum PerfLine {
         trigger?.description ?? "-"
     }
 
-    /// Milliseconds with three decimals, rounded to the nearest microsecond: `0.412`, `85.000`.
+    /// Milliseconds with three decimals, rounded to the nearest microsecond: `0.412`, `85.000`,
+    /// as the summary writes them.
     static func milliseconds(_ duration: Duration) -> String {
-        let (seconds, attoseconds) = max(duration, .zero).components
-        let microseconds = seconds * 1_000_000 + (attoseconds + 500_000_000_000) / 1_000_000_000_000
-        let fraction = String(microseconds % 1000)
-        return "\(microseconds / 1000)." + String(repeating: "0", count: 3 - fraction.count) + fraction
+        PerfSummary.milliseconds(duration)
     }
 }
 
