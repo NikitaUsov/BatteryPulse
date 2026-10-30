@@ -98,6 +98,39 @@ struct WidgetSourceTests {
         }
     }
 
+    /// The `default:` argument of each of the intent's parameters, as written; "none" without one.
+    static func parameterDefaults() throws -> [String: String] {
+        let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        var defaults: [String: String] = [:]
+        for parameter in WidgetIntentManifest.shipping.kinds.compactMap(\.intent).flatMap(\.parameters) {
+            let declaration = try Regex("@Parameter\\(([^@]*?)\\)\\s*var\\s+\(parameter.name)\\s*:")
+            let arguments = try #require(code.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
+            let value = arguments.firstMatch(of: #/\bdefault\s*:\s*(\[[^\]]*\]|\.\w+)/#)?.output.1
+            defaults[parameter.name] = value.map { String($0.replacing(#/\s+/#, with: " ")) } ?? "none"
+        }
+        return defaults
+    }
+
+    /// Each parameter's default is `BatteryWidgetConfiguration()`'s, which W-1's first test pins to
+    /// 0.6.1's widget: a widget placed before 0.7 gets every default, so changing one would change
+    /// how every placed widget looks. Details has none: an empty Custom list shows no details.
+    @Test func eachDefaultIsTodaysWidget() throws {
+        let c = BatteryWidgetConfiguration()
+        let expected: [String: String] = [
+            "layout": ".\(c.layout.rawValue)",
+            "mainValue": ".\(c.main.rawValue)",
+            "mainVisual": ".\(c.visual.rawValue)",
+            "statusLines": "[" + c.statusLines.map { ".\($0.rawValue)" }.joined(separator: ", ") + "]",
+            "details": "none",
+            "time": ".\(c.time.rawValue)",
+            "colors": ".\(c.colors.rawValue)",
+            "updateTime": ".\(c.updateTime.rawValue)",
+        ]
+        #expect(c.details.isEmpty)
+        let defaults = try Self.parameterDefaults()
+        #expect(defaults == expected)
+    }
+
     /// Details' entity is identified by its field's frozen raw value.
     @Test func eachDetailIsIdentifiedByItsField() throws {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
