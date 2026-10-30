@@ -476,7 +476,8 @@ guards; acceptance; effort; risk; rollback.
      shift most of them.
   4. Check that every decision is still as recorded on 2026-10-22 and 2026-10-23: M-1, M-2, M-3,
      M-5 (approved, no dates), M-9, Q-W1 to Q-W13 and Q7-1 to Q7-10 (§2.4, §14).
-  5. Decide W-0K (D-2). W-0S isn't needed: the spikes ran (§2.3).
+  5. Decide W-0K (D-2). W-0S isn't needed: the spikes ran (§2.3). **Decided 2026-10-30: W-0K isn't
+     needed either:** 0.6.2 shipped K-03 (Appendix C, D-2 and D-3).
   6. **Before 0.6.2's branches are deleted** (the integration branch `claude/nice-faraday-k08mhb`,
      and `claude/062-*`; this is asked of 0.6.2's D3 too): check that
      `docs/plans/0.7.0/` holds 0.6.2's `m5-session.sh`, its swap helper (`swap.swift`), the
@@ -3618,7 +3619,7 @@ file:line at v0.6.2, `0ecca33`):
 | Fact | Shown by | Decides |
 |---|---|---|
 | D-1, D-11: where the W0 answers, the whole Appendix C, the session script and its hands-free helpers are (the copies in `docs/plans/0.7.0/`: `widgets.md`, `0.6.2-appendix-c.md`, `m5-session.sh` with its helpers, `sessions/A.md`; else the 0.6.2 release PR's history, Q7-8) | 0.6.2 D3 | W-0, W-12 |
-| D-2, D-3: K-03 and internalize shipped; the widget's `__text` and binary at v0.6.2: **both shipped** (WP-15 items 1-2; G-15 passed on the RC, Session B's G-15 row below): the widget links BatteryCore and BatterySource only, no CryptoKit (`build-app.sh` fails if it does), and `-internalize-at-link` is on both link lines. **At v0.6.2** (CI run 41078937378, Xcode 27.1, built as 0.0.0): widget binary 778,672 B and `__text` 491,628 B (§9's start: 1,379,808 and 943,096 B), `strings_bytes` 239,574 B, app binary 2,854,688 B and `__text` 1,902,980 B, DMG 1,280,945 B (the published v0.6.2 DMG: 1,280,797 B) | 0.6.2 CI | G7-10: the widget starts at about half of 0.6.1's ceilings (990,000 and 1,450,000 B); W-0K (W-0 item 5) |
+| D-2, D-3: K-03 and internalize shipped; the widget's `__text` and binary at v0.6.2: **both shipped** (WP-15 items 1-2; G-15 passed on the RC, Session B's G-15 row below): the widget links BatteryCore and BatterySource only, no CryptoKit (`build-app.sh` fails if it does), and `-internalize-at-link` is on both link lines. **At v0.6.2** (CI run 41078937378, Xcode 27.1, built as 0.0.0): widget binary 778,672 B and `__text` 491,628 B (§9's start: 1,379,808 and 943,096 B), `strings_bytes` 239,574 B, app binary 2,854,688 B and `__text` 1,902,980 B, DMG 1,280,945 B (the published v0.6.2 DMG: 1,280,797 B) | 0.6.2 CI | G7-10: the widget starts at about half of 0.6.1's ceilings (990,000 and 1,450,000 B); **W-0K: not needed** (decided 2026-10-30, W-0 item 5): K-03 shipped, so D-2's rule never runs it, and §9's fifth cut has nothing left to cut |
 | D-4: WP-14a's shape (a nonisolated protocol, or `readNonisolated(scope:)`): **shipped as shape B** (the next row); G-14a passed on the RC (Session B's G-10 and G-14a row below). `MacAccessoryProvider` stays `@MainActor` (`BatterySource/MacAccessoryProvider.swift:17-19`) | 0.6.2 code; Session B | W-3a; W-8 item 4 (one hop) |
 | D-4, answered 2026-10-22: shape B. `MacBatteryProvider.readNonisolated(scope:)` through `BatteryProvider.nonisolatedReader`; the protocol stays `@MainActor` (0.6.2 plan Appendix C, WP-14a) | 0.6.2 WP-14a | W-3a |
 | D-5: WP-14b (E4b): **shipped** with the 5-minute safety net and `RegistryReadPolicy.cachesOnPolls = true` (G-14b passed: Session A's F13 and E3b, Session B's `read cached` p50 0.971 ms and no `registry.missed` in 62 minutes). The widget still makes a new provider and reads the full scope for each read (`BatteryPulseWidget.swift:68-70`) | 0.6.2 Appendix C (WP-14b; Session B's G-14b row) | W-3a's source test (the widget never passes a cached-registry scope) |
