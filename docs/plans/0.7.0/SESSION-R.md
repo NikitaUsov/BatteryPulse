@@ -11,34 +11,9 @@ permission prompts, the Focus, the adapter at two beeps, the taste questions, hi
 and his yes before `send` (about 6-8 minutes at the start, 3-4 at the day's end).
 
 The short sessions (Charge limit, Hold watch, After publishing) have their own sections at the end;
-each stands alone, with its own launcher argument.
-
-## Once, any day before (him, about 1 minute)
-
-1. Quit any other Claude session on the Mac: one at a time.
-2. Don't install a macOS update or a BatteryPulse update until the series ends: Session R starts from
-   his 0.6.2, and an update banner covers the screen.
-3. In `~/BatteryPulse`: `claude`, then `/mcp`: `computer-use` is enabled (kept per project from
-   Session B; if not, Enable). He asks that session: `Check the launcher docs/plans/0.7.0/start-session-r.sh
-   (git fetch origin claude/070-integration && git show FETCH_HEAD:docs/plans/0.7.0/start-session-r.sh)
-   against claude --help and the Claude Code documentation, and answer me in Russian.` It checks that
-   `--allowedTools`, `--permission-mode auto`, the rule `Bash(<prefix>:*)` with `~` as written, and
-   `DISABLE_AUTOUPDATER=1` are still the documented spellings, and changes nothing; a changed spelling
-   it writes out for him, changing only that spelling.
-
-## The start (him, on the adapter; a daytime session works)
-
-In Terminal, from any folder:
-
-```
-git -C ~/BatteryPulse fetch origin claude/070-integration
-bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-session-r.sh)
-```
-
-The launcher changes to `~/BatteryPulse` and runs the start line of PLAN.md §6.2: one allow rule,
-`Bash(bash ~/bp-070/R/run/docs/plans/0.7.0/m5-session.sh:*)`, auto mode, and a sentence that has you
-fetch `claude/070-integration` and read this file up to "The short sessions". Everything below is for
-you, the session it started. Your first step is R0.
+each stands alone, with its own launcher argument. His own part before and at the start is the last
+section, "Before Session R (him)". The launcher prints this file up to "The short sessions", and the
+session it starts, you, begins at R0.
 
 ## Rules
 
@@ -437,3 +412,33 @@ wait. Never `gh`, `sudo`, `killall`, an install or a copy outside the script.
    `noCounter`, failed or no line: note the printed code for the cloud session.
 7. `$S after popover`; answer `D3-first-day`. Then `$S send --dry-run`, his yes (`D3-send`), `$S send`,
    and a short summary for him in Russian to forward to the cloud session.
+
+## Before Session R (him)
+
+Not printed for the session (its launcher stops at "The short sessions"): what he does himself.
+
+### Once, any day before (about 1 minute)
+
+1. Quit any other Claude session on the Mac: one at a time.
+2. Don't install a macOS update or a BatteryPulse update until the series ends: Session R starts from
+   his 0.6.2, and an update banner covers the screen.
+3. In `~/BatteryPulse`: `claude`, then `/mcp`: `computer-use` is enabled (kept per project from
+   Session B; if not, Enable). He asks that session: `Check the launcher docs/plans/0.7.0/start-session-r.sh
+   (git fetch origin claude/070-integration && git show FETCH_HEAD:docs/plans/0.7.0/start-session-r.sh)
+   against claude --help and the Claude Code documentation, and answer me in Russian.` It checks that
+   `--allowedTools`, `--permission-mode auto`, the rule `Bash(<prefix>:*)` with `~` as written, and
+   `DISABLE_AUTOUPDATER=1` are still the documented spellings, and changes nothing; a changed spelling
+   it writes out for him, changing only that spelling.
+
+### The start (on the adapter; a daytime session works)
+
+In Terminal, from any folder:
+
+```
+git -C ~/BatteryPulse fetch origin claude/070-integration
+bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.0/start-session-r.sh)
+```
+
+The launcher changes to `~/BatteryPulse` and runs the start line of PLAN.md §6.2: one allow rule,
+`Bash(bash ~/bp-070/R/run/docs/plans/0.7.0/m5-session.sh:*)`, auto mode, and a sentence that has the
+session fetch `claude/070-integration` and read this file up to "The short sessions"; it begins at R0.

@@ -4385,7 +4385,7 @@ step_count_check() {
 # the change record and its restored lines; the logged day's fence and its day-end; the summary's
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
-  local problems=0 id session setting report
+  local problems=0 id session setting report printed
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -4464,6 +4464,14 @@ dry_run() {
     check ok "battlimit's chargeSocLimitSoc reads as the limit" || check fail "battlimit's value isn't read"
   [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none" ||
     check fail "no limit didn't read as none"
+  # The start sentence prints SESSION-R.md up to "The short sessions" (start-session-r.sh's sed)
+  # through the Bash tool, which cuts an output past 30,000 characters (a whole runbook printed at
+  # once was too long for 0.6.2's after-publishing check): its bytes, an upper bound of its
+  # characters, stay under 28,500.
+  printed="$(sed "/^## The short sessions/,\$d" "$HERE/SESSION-R.md" 2>/dev/null | wc -c | tr -d ' ')"
+  [ "${printed:-0}" -gt 1000 ] && [ "$printed" -lt 28500 ] &&
+    check ok "Session R's start prints $printed bytes of SESSION-R.md, under 28,500" ||
+    check fail "Session R's start prints ${printed:-no} bytes of SESSION-R.md: keep it under 28,500"
   rm -rf "$WORK"
   if [ "$problems" -gt 0 ]; then
     echo "dry run: $problems broken rule(s)" >&2
