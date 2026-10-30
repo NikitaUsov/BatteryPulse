@@ -197,6 +197,84 @@ fi
 DL_IMPORTS="$(nm -u "$BIN_PATH/BatteryPulseWidget" | grep -E '^_dl(open|sym|close|error)$' | tr '\n' ' ' || true)"
 echo "The widget's dl imports: ${DL_IMPORTS:-none}"
 
+# The widget's App Intents metadata, from which the system builds the widget's edit sheet:
+# $APPEX/Contents/Resources/Metadata.appintents. Xcode extracts it after linking a target that
+# declares App Intents types; swift build never does, because SwiftPM sets
+# LM_SKIP_METADATA_EXTRACTION=YES. So this runs Apple's processor with the options of Xcode's
+# AppIntentsMetadata.xcspec, which the 0.6.2 widget spike's build showed to work with Xcode 27.1, on
+# the inputs Swift Build leaves: the widget module's Swift sources, its const values
+# (*.swiftconstvalues, which the compiler emits for the App Intents protocols) and the unstripped
+# binary in $BIN_PATH (the bundle's copy is stripped below). It runs before the widget is signed,
+# so the signature seals the metadata. The processor can exit with 0 without writing anything, so
+# a missing extract.actionsdata fails the build; CI's scripts/appintents-check.swift then compares
+# the metadata with scripts/widget-manifest.json and the string tables.
+extract_app_intents_metadata() {
+  INTENTS="$PWD/.build/appintents"
+  METADATA="$APPEX/Contents/Resources/Metadata.appintents"
+  DEPLOYMENT_TARGET=27.0
+  rm -rf "$INTENTS"
+  mkdir -p "$INTENTS"
+  # The release intermediates of the widget module:
+  # .build/out/Intermediates.noindex/BatteryPulse.build/Release/BatteryPulseWidget-p.build/Objects-normal/arm64.
+  WIDGET_OBJECTS="$(find "$PWD/.build/out/Intermediates.noindex" -type d \
+    -path '*/Release/BatteryPulseWidget-p.build/Objects-normal/arm64' 2>/dev/null || true)"
+  if [ -z "$WIDGET_OBJECTS" ] || [ "$(wc -l <<<"$WIDGET_OBJECTS" | tr -d ' ')" != 1 ]; then
+    echo "error: expected one folder of the widget module's release intermediates under .build/out, found: ${WIDGET_OBJECTS:-none}" >&2
+    exit 1
+  fi
+  find "$PWD/Sources/BatteryPulseWidget" -name '*.swift' | sort >"$INTENTS/BatteryPulseWidget.SwiftFileList"
+  find "$WIDGET_OBJECTS" -maxdepth 1 -name '*.swiftconstvalues' | sort >"$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+  if [ ! -s "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList" ]; then
+    echo "error: Swift Build left no .swiftconstvalues in $WIDGET_OBJECTS" >&2
+    exit 1
+  fi
+  # No dependency has App Intents metadata of its own: both lists stay empty.
+  : >"$INTENTS/BatteryPulseWidget.DependencyMetadataFileList"
+  : >"$INTENTS/BatteryPulseWidget.DependencyStaticMetadataFileList"
+  echo "App Intents inputs: $(wc -l <"$INTENTS/BatteryPulseWidget.SwiftFileList" | tr -d ' ') sources; const values:"
+  cat "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+  # An empty array expands with the ${a[@]+…} form below: macOS's bash 3.2 calls a plain "${a[@]}"
+  # unbound under set -u.
+  DEPENDENCY_INFO=()
+  if [ -f "$WIDGET_OBJECTS/BatteryPulseWidget_dependency_info.dat" ]; then
+    DEPENDENCY_INFO=(--dependency-file "$WIDGET_OBJECTS/BatteryPulseWidget_dependency_info.dat")
+  fi
+  TOOLCHAIN_DIR="$(cd "$(dirname "$(xcrun --find swiftc)")/../.." && pwd)"
+  XCODE_BUILD_VERSION="$(xcodebuild -version | awk '/^Build version/ { print $3 }')"
+  PROCESSOR=(
+    "$(xcrun --find appintentsmetadataprocessor)"
+    --toolchain-dir "$TOOLCHAIN_DIR"
+    --module-name BatteryPulseWidget
+    --sdk-root "$(xcrun --sdk macosx --show-sdk-path)"
+    --xcode-version "$XCODE_BUILD_VERSION"
+    --platform-family macOS
+    --deployment-target "$DEPLOYMENT_TARGET"
+    --bundle-identifier "$BUNDLE_ID.Widget"
+    --output "$APPEX/Contents/Resources"
+    --target-triple "arm64-apple-macos$DEPLOYMENT_TARGET"
+    --binary-file "$BIN_PATH/BatteryPulseWidget"
+    ${DEPENDENCY_INFO[@]+"${DEPENDENCY_INFO[@]}"}
+    --stringsdata-file "$INTENTS/ExtractedAppShortcutsMetadata.stringsdata"
+    --source-file-list "$INTENTS/BatteryPulseWidget.SwiftFileList"
+    --metadata-file-list "$INTENTS/BatteryPulseWidget.DependencyMetadataFileList"
+    --static-metadata-file-list "$INTENTS/BatteryPulseWidget.DependencyStaticMetadataFileList"
+    --swift-const-vals-list "$INTENTS/BatteryPulseWidget.SwiftConstValuesFileList"
+    --compile-time-extraction
+    --deployment-aware-processing
+    --no-app-shortcuts-localization
+  )
+  echo "App Intents metadata: ${PROCESSOR[*]}"
+  "${PROCESSOR[@]}"
+  if [ ! -s "$METADATA/extract.actionsdata" ]; then
+    echo "error: the App Intents metadata processor wrote no $METADATA/extract.actionsdata" >&2
+    exit 1
+  fi
+  ls -l "$METADATA"
+}
+# While the widget declares no App Intents type there is nothing to extract; the 0.7 plan's W-3a
+# makes the step unconditional.
+if grep -rqsE --include='*.swift' '(^|[[:space:]])import[[:space:]]+AppIntents([[:space:]]|$)' Sources/BatteryPulseWidget; then extract_app_intents_metadata; else echo "App Intents metadata: skipped (no intents): no widget source imports AppIntents"; fi
+
 # Ship stripped executables: the symbol table and the debug map serve debugging and crash
 # symbolication, not the running app, and they carry the build machine's paths. The dSYMs keep
 # them, tied to each binary by its UUID, and go into $NAME-dSYMs.zip (a CI artifact and a release
