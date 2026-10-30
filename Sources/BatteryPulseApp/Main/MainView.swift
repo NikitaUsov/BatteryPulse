@@ -248,6 +248,23 @@ struct MainView: View {
             let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
             withAnimation(motion.change) { selection = isHidden ? .overview : request.page }
         }
+        // A click on a widget asks for its page (`WindowOpener.showMainWindow(page:)`). The request
+        // waits for a main window: one created for the click applies it as it appears, at once and
+        // in place of the page scene storage restored; one already open switches as a sidebar
+        // click does.
+        .onChange(of: WindowOpener.pageRequest.page, initial: true) { old, page in
+            guard let page else { return }
+            WindowOpener.pageRequest.clear()
+            let target = shownPage(forRequest: page)
+            if old == page {
+                var transaction = Transaction()
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { selection = target }
+            } else {
+                selection = target
+            }
+        }
         // The window style. A style change rebuilds everything above; the registrations below
         // stay put, so they are never dropped or repeated by it.
         .windowLook()
@@ -276,6 +293,15 @@ struct MainView: View {
         default:
             break
         }
+    }
+
+    /// The page a click asked for, as this window shows it: a device page whose device was
+    /// forgotten opens the Devices intro, and a page of a hidden Developer section Overview. With
+    /// no device listed yet, the device page waits for the list, as a restored one does.
+    private func shownPage(forRequest page: SidebarItem) -> SidebarItem {
+        if !showsDeveloper, SidebarItem.developerPages.contains(page) { return .overview }
+        if case .device(let key) = page, !deviceRowIDs.isEmpty, !deviceRowIDs.contains(key) { return .devicesIntro }
+        return page
     }
 
     /// A device page is titled with the device's name, which is data, not a catalog key.

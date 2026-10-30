@@ -218,14 +218,40 @@ enum DockIconPolicy {
     }
 }
 
-/// Opens app windows from places that have no SwiftUI environment (the Dock and its menu).
+/// Opens app windows from places that have no SwiftUI environment (the Dock and its menu, a click
+/// on a widget).
 enum WindowOpener {
-    /// Captured from any view that appears; `OpenWindowAction` works from any scene.
-    static var openWindow: OpenWindowAction?
+    /// Captured from any view that appears; `OpenWindowAction` works from any scene. A main
+    /// window that a click asked for before any view appeared opens once the first one does.
+    static var openWindow: OpenWindowAction? {
+        didSet {
+            guard openWindow != nil, opensMainWindowWhenReady else { return }
+            opensMainWindowWhenReady = false
+            show(WindowID.main)
+        }
+    }
+
+    /// The page a click on a widget asked for, until a main window shows it.
+    static let pageRequest = MainPageRequest()
+
+    /// A click that launches BatteryPulse arrives before any view could hand over ``openWindow``.
+    private static var opensMainWindowWhenReady = false
 
     /// The full or the compact window, whichever the user prefers.
     static func showMainWindow() {
         show(AppSettings.prefersCompactWindow ? WindowID.compact : WindowID.main)
+    }
+
+    /// The main window at `page`, for a click on a widget: the main window even when the user
+    /// prefers the compact one, which has no pages. The request waits for the main window that
+    /// shows it (``MainPageRequest``), and the window for ``openWindow``.
+    static func showMainWindow(page: SidebarItem) {
+        pageRequest.request(page)
+        guard openWindow != nil else {
+            opensMainWindowWhenReady = true
+            return
+        }
+        show(WindowID.main)
     }
 
     /// Remembers the choice and opens that window; the caller closes its own.
@@ -238,6 +264,24 @@ enum WindowOpener {
         DockIconPolicy.prepareToShowWindow()
         openWindow?(id: id)
         NSApp.activate()
+    }
+}
+
+/// The page a click on a widget asked the main window to show. It stays until a main window
+/// shows it: the click usually finds BatteryPulse quit or without a main window, and a main window
+/// created later applies it as it appears, in place of the page its scene storage restores
+/// (`MainView`). Clearing it lets the next click ask for the same page again.
+@Observable
+final class MainPageRequest {
+    private(set) var page: SidebarItem?
+
+    func request(_ page: SidebarItem) {
+        self.page = page
+    }
+
+    /// The main window showed the page.
+    func clear() {
+        page = nil
     }
 }
 
