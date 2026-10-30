@@ -5,7 +5,7 @@ import WidgetKit
 
 /// The widget extension. SwiftPM builds it as a plain executable that `scripts/build-app.sh`
 /// wraps into `BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex`. It is linked with
-/// `-e _NSExtensionMain` (see Package.swift); `@main` keeps the bundle in the binary.
+/// `-e _NSExtensionMain` (see scripts/build-app.sh); `@main` keeps the bundle in the binary.
 @main
 struct BatteryPulseWidgets: WidgetBundle {
     var body: some Widget {

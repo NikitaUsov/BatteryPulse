@@ -48,6 +48,12 @@ DMG="$BUILD_DIR/$NAME.dmg"
 # - -Osize: optimize for size. The app's hot paths are small, and the Linux benches of parsing
 #   and the History store ran no slower with it.
 RELEASE_FLAGS=(-Xswiftc -Osize -Xlinker -exported_symbol -Xlinker _main)
+# The widget starts the way Xcode links app extensions, in _NSExtensionMain; @main on its
+# WidgetBundle keeps the widgets in the binary (both checked below). The entry point is a flag of
+# the widget's line, not of Package.swift: SwiftPM hands an executable target's linker flags,
+# whatever their conditions, to the test bundle that links the target (BatteryPulseWidgetTests),
+# where ld warns that a bundle takes no -e.
+WIDGET_ENTRY=(-Xlinker -e -Xlinker _NSExtensionMain)
 # Each link also writes a link map, which attributes every byte of the binary to an object file
 # and a symbol (for size work; build/maps, a CI artifact). They sit next to the build products,
 # so a link that is up to date keeps a map that matches its binary.
@@ -75,7 +81,7 @@ BINARY="$BIN_PATH/BatteryPulse"
 APP_UUIDS="$(uuids "$BINARY")"
 # With the app's flags, the widget's line reuses the modules the app's line compiled; with others
 # it rebuilds them. Either way the app, linked above, stays as it is (checked below).
-timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
+timed_build "the widget" -c release "${RELEASE_FLAGS[@]}" "${WIDGET_ENTRY[@]}" -Xswiftc -Xfrontend -Xswiftc -internalize-at-link --product BatteryPulseWidget -Xlinker -map -Xlinker "$MAPS/BatteryPulseWidget.map"
 if [ "$(uuids "$BINARY")" != "$APP_UUIDS" ]; then
   echo "error: the widget's build relinked the app (UUID $APP_UUIDS before, $(uuids "$BINARY")after)" >&2
   exit 1
