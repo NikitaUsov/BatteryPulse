@@ -452,7 +452,7 @@ guards; acceptance; effort; risk; rollback.
 - **Source:** P2 D3; P2 Appendix C; RD §3.2 "Before code"; §2 above.
 - **Items:**
   1. Read 0.6.2's Appendix C (`docs/plans/0.7.0/0.6.2-appendix-c.md`, D-1; its W0 rows are also in
-     `widgets.md`).
+     `widgets.md`). Session B's results are recorded in that copy, at 0.6.2's D3.
      Fill this plan's Appendix C table "From 0.6.2" with each D-row and each W0 row. Session A's
      final answers are already there (2026-10-24, from `docs/plans/0.7.0/sessions/A.md`, merged at
      `5849d01`), and D-13's redacted capture came with them; this item checks that D-17's installer
@@ -478,9 +478,19 @@ guards; acceptance; effort; risk; rollback.
      whole P2 Appendix C (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its
      files in `sessions/A/`; D-1, D-11), as 0.6.2's D3 copied them. If
      not, read them from the 0.6.2 release PR's `refs/pull/<n>/head` (Q7-8).
+  7. **CI moves to Xcode 27.2 at 0.7's start,** once the `xcode-27` runner image carries it: one
+     commit sets `DEVELOPER_DIR` to Xcode 27.2 in `ci.yml` and `release.yml` (both name
+     `/Applications/Xcode_27.1.app` today) and fixes any new warning, since both jobs treat
+     warnings as errors. 0.6.2 shipped on Xcode 27.1, so its release matched its tested RC.
+     - Swift stays 6.4: Xcode 27.2 includes Swift 6.4 and the macOS 27.2 SDK (Apple's Xcode 27.2
+       release notes).
+     - The 27.2 SDKs for macOS, watchOS, tvOS and visionOS incorrectly report 27.1 as a valid
+       deployment target, a known issue (187160501; Apple's Xcode 27.2 release notes). That is
+       harmless here: the package targets macOS 27 (`.macOS(.v27)` in `Package.swift`), not 27.1.
+     - Session R's RC is the first build on 27.2, so the RC tests the toolchain 0.7.0 ships with.
 - **Acceptance:** Appendix C's "From 0.6.2" table is complete, and every package below names its
   §2.2 row.
-- **Effort:** none in runs.
+- **Effort:** none in runs, but item 7's commit (and any warning 27.2 adds).
 
 ### S-1: `bpulse`'s JSON for scripts: ISO 8601 device dates and `formatVersion` (P1)
 
@@ -3470,6 +3480,11 @@ private PowerUI framework would contradict M-3, so it isn't recommended unless M
 - **NOTES27:** 161835690 (other teams' containers are denied without a prompt), 178668601 (files
   created by other teams' apps may be denied), 184660124 (a process without a bundle ID can't be
   granted access).
+- **Apple's Xcode 27.2 release notes**
+  (https://developer.apple.com/documentation/xcode-release-notes/xcode-27_2-release-notes,
+  fetched 2026-10-30; W-0 item 7): Xcode 27.2 includes Swift 6.4 and SDKs for macOS 27.2 and the
+  other 27.2 platforms; a known issue, 187160501: the macOS, watchOS, tvOS and visionOS SDKs in
+  Xcode 27.2 incorrectly report 27.1 as a valid deployment target.
 
 **Conflicts between Apple's sources** [conflict]:
 - **Extra-large portrait on the Mac.** The `WidgetFamily` page lists macOS 27.0, "on the Desktop on
