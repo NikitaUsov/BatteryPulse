@@ -8,11 +8,9 @@
 - **iPhone and iPad:** a device's page names the connection its values came over, *Connected by
   cable* or *Connected over Wi-Fi*, also after you unplug the cable and the device is read over
   Wi-Fi.
-<!-- TODO(D3): add the energy line from Session B's S1 and S2 medians, 0.6.2 against 0.6.1
-(PLAN.md WP-21 and D1), as one bullet above this comment, and remove this comment. If a beta
-style graduates (Session B's graduate-translucent and graduate-clear answers), rewrite the
-Window styles bullet's last sentence. The update window shows this file as written, comments
-included, so nothing here may ship. -->
+- **Lighter in the background:** with the battery icon and charge in the menu bar, BatteryPulse
+  now uses about 40 % less processor time than 0.6.1, and about 20 % less with battery power
+  shown too (measured on a MacBook Air M5).
 
 Updating from 0.6.1: **Install and Relaunch** in the update window installs 0.6.2 from inside
 the app.
