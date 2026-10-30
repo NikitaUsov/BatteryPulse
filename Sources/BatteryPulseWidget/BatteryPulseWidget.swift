@@ -47,26 +47,25 @@ struct BatteryTimelineProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping @Sendable (BatteryEntry) -> Void) {
-        Task { @MainActor in completion(Self.read()) }
+        Task(name: "BatteryTimelineProvider.snapshot") {
+            completion(BatteryEntry(date: .now, snapshot: await WidgetReadCache.battery.snapshot()))
+        }
     }
 
     /// The app reloads the widget when the battery changes while it runs; the timeline's own
     /// reload keeps it roughly current when it doesn't (``WidgetTimelinePlan``).
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<BatteryEntry>) -> Void) {
-        Task { @MainActor in
-            let reading = Self.read()
-            let plan = WidgetTimelinePlan(snapshot: reading.snapshot, at: reading.date)
+        Task(name: "BatteryTimelineProvider.timeline") {
+            let interval = Diagnostics.begin("widget.timeline", trigger: WidgetKindID.battery.signpostName)
+            defer { interval.end() }
+            let snapshot = await WidgetReadCache.battery.snapshot()
+            let date = Date.now
+            let plan = WidgetTimelinePlan(snapshot: snapshot, at: date)
             let entries = plan.entries.map {
-                BatteryEntry(date: $0.date, snapshot: reading.snapshot, showsEstimate: $0.showsEstimate)
+                BatteryEntry(date: $0.date, snapshot: snapshot, showsEstimate: $0.showsEstimate)
             }
             completion(Timeline(entries: entries, policy: .after(plan.nextReload)))
         }
-    }
-
-    /// Reads IOKit directly: the sandboxed extension has no shared container with the app
-    /// under ad-hoc signing. The SMC can't be opened from the sandbox, so it is skipped.
-    @MainActor static func read() -> BatteryEntry {
-        BatteryEntry(date: .now, snapshot: MacBatteryProvider(readsSMC: false).read()?.snapshot)
     }
 }
 

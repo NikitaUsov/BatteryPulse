@@ -18,10 +18,19 @@ enum WidgetSize: String, Sendable, CaseIterable {
 }
 
 /// A widget kind: the string WidgetKit stores for every placed widget of the kind.
-enum WidgetKindID: String, Sendable, CaseIterable {
+public enum WidgetKindID: String, Sendable, CaseIterable {
     /// Today's kind, so widgets placed by 0.6.x stay.
     case battery = "io.github.nikitausov.BatteryPulse.battery"
     case accessories = "io.github.nikitausov.BatteryPulse.accessories"
+
+    /// The trigger of the widget's `widget.timeline` signpost: the kind's short name, never its
+    /// string, so every part of the `perf` line stays static text.
+    public var signpostName: StaticString {
+        switch self {
+        case .battery: "battery"
+        case .accessories: "accessories"
+        }
+    }
 }
 
 /// A detail the Battery widget can show.
