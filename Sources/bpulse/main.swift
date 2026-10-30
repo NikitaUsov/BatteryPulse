@@ -174,6 +174,16 @@ func xmlPropertyList(_ dictionary: PropertyDictionary) throws -> String {
     String(decoding: try PropertyValue.xmlPropertyListData(dictionary), as: UTF8.self)
 }
 
+/// The parsed battery of a device capture as JSON, with ISO 8601 dates like `--json`; `nil` when
+/// the capture has no battery entry with capacity values.
+func deviceJSON(_ capture: IDeviceCapture) throws -> String? {
+    guard let battery = IDeviceBatteryParser.battery(in: capture) else { return nil }
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    encoder.dateEncodingStrategy = .iso8601
+    return String(decoding: try encoder.encode(battery), as: UTF8.self)
+}
+
 /// A device read: the report, the parsed battery as JSON, or the redacted capture. Device
 /// problems go to standard error and end with status 2; a raw capture is printed anyway, since
 /// its calls and replies show what went wrong.
@@ -184,12 +194,10 @@ func renderDevice(_ capture: IDeviceCapture, as format: OutputFormat) throws -> 
         print(IDeviceReport.text(for: capture))
         exit(problem == nil && IDeviceBatteryParser.battery(in: capture) != nil ? 0 : 2)
     case .json:
-        guard let battery = IDeviceBatteryParser.battery(in: capture) else {
+        guard let json = try deviceJSON(capture) else {
             fail("bpulse: " + (problem?.description ?? "the battery entry has no capacity values."), code: 2)
         }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        print(String(decoding: try encoder.encode(battery), as: UTF8.self))
+        print(json)
         exit(0)
     case .raw:
         print(try xmlPropertyList(capture.redactedRawCapture), terminator: "")
