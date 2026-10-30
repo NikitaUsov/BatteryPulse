@@ -151,7 +151,8 @@ exists:
   in-app updates; two signing keys, today's and an offline backup; the `release` environment's
   reviewer confirmed.
 - **C16 First install, ad-hoc:** README and the guide show Open Anyway with screenshots from the
-  current macOS 27.x, and say that every install from the DMG needs it and in-app updates don't.
+  current macOS 27.x; the guide's Known limitations and 1.0's notes say that every install from
+  the DMG needs it and in-app updates don't.
 - **C17 The documentation matches the product:** README without iOS promises or "early
   development", with screenshots and an honest hardware claim; the guide with a Compatibility
   section, Uninstall and Troubleshooting, and every file BatteryPulse writes and every request it
@@ -191,7 +192,7 @@ signpost names.
 
 | Version | What it brings | The maintainer's time | Runs |
 |---------|----------------|-----------------------|------|
-| 0.7 | Widgets you configure (Battery in small, medium and large, extra large on the look check's yes, and Accessories), device JSON dates, the anonymous version count, the Charge Limit's paused state | about 31-34 minutes: the look check and a second look (about 19), Session R hands-free, the logged day's end and the after-publishing check (about 12-15); the backup key (about 5) | about 31-34, plus 3 in reserve; the stretch adds 8-9 |
+| 0.7 | Widgets you configure (Battery in small, medium and large, extra large on the look check's yes, and Accessories), device JSON dates, the anonymous version count, the Charge Limit's paused state | about 31-34 minutes: the look check and a second look (about 19), Session R hands-free, the logged day's end and the after-publishing check (about 12-15); plus about 5 for the backup key | about 31-34, plus 3 in reserve; the stretch adds 8-9 |
 | 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard | a look sitting of about 40 minutes and a release-candidate sitting of about 85 | 30-38 |
 | 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
 | 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
