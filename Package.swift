@@ -50,8 +50,9 @@ let package = Package(
             swiftSettings: strict + [.strictMemorySafety()]),
         // The drawn battery of the menu bar icon, which the widget draws too: SwiftUI and Core Text
         // only, so it stays safe in an app extension. One painter keeps the two identical, on the
-        // one geometry in BatteryCore. Like the app, it reads no input and builds without strict
-        // memory safety: its Core Text glyph calls pass arrays as pointers.
+        // one geometry in BatteryCore. Neither a parser of untrusted input nor a system binding, it
+        // builds without strict memory safety like the app, so its Core Text glyph calls, which
+        // pass arrays as pointers, stay unmarked.
         .target(name: "BatteryArt", dependencies: ["BatteryCore"], swiftSettings: strict),
         // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
         // a pointer, and the macOS-only SMC listing's `String(format:)`.
