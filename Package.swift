@@ -87,5 +87,8 @@ let package = Package(
         .testTarget(name: "BatteryKitTests", dependencies: ["BatteryKit", "BatterySource"], swiftSettings: strict),
         // The option parser; the output forms are covered by rendering the fixtures (`--input`).
         .testTarget(name: "bpulseTests", dependencies: ["bpulse", "BatteryCore"], swiftSettings: strict),
+        // Renders the widget's sizes into PNGs for review (macOS only; CI uploads them).
+        .testTarget(
+            name: "BatteryPulseWidgetTests", dependencies: ["BatteryPulseWidget", "BatteryCore"], swiftSettings: strict),
     ]
 )
