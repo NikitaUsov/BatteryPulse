@@ -202,14 +202,11 @@ final class UpdateChecker {
         if VersionCounterPolicy.marksCounted(outcome) {
             defaults.set(currentVersion.description, forKey: AppSettings.lastCountedVersionKey)
         }
-        // Only the outcome's case name and the code log as public, never the URL or an error's
-        // description.
-        switch outcome {
-        case .counted:
-            Diagnostics.update.info("Version count: \(outcome.rawValue, privacy: .public), \(code, privacy: .public)")
-        case .noCounter, .failed:
-            Diagnostics.update.debug("Version count: \(outcome.rawValue, privacy: .public), \(code, privacy: .public)")
-        }
+        // One line per try, whatever its outcome, at notice: the lowest level `log show` finds
+        // after the fact (info and debug lines stay in memory), and the after-publishing check
+        // reads it there. Only the outcome's case name and the code log as public, never the URL
+        // or an error's description.
+        Diagnostics.update.notice("Version count: \(outcome.rawValue, privacy: .public), \(code, privacy: .public)")
     }
 
     private func failed(_ error: any Error, userInitiated: Bool) {
