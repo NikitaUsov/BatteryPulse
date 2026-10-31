@@ -112,6 +112,30 @@ import Testing
         #expect(VersionCounterPolicy.headers(for: AppVersion(parts: [1, 2, 3]))["User-Agent"] == "BatteryPulse/1.2.3")
     }
 
+    /// The release workflow attaches the counter file, named after it, to every release, and the
+    /// file is short plain ASCII text. A release without it would answer 404, and no Mac would ever
+    /// count that version.
+    @Test func everyReleaseAttachesTheCounterFile() throws {
+        let root = SourceScanner.sources.deletingLastPathComponent()
+        let workflow = try String(
+            contentsOf: root.appendingPathComponent(".github/workflows/release.yml"), encoding: .utf8)
+        // The command with its continued lines joined; comments name it too.
+        let commands = workflow.replacing("\\\n", with: " ").split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }.filter { $0.hasPrefix("gh release create ") }
+        #expect(commands.count == 1)
+        let command = try #require(commands.first)
+        // The files to attach come before the first option.
+        let files = command.split(separator: " ").prefix { !$0.hasPrefix("--") }.filter { $0.hasPrefix(".github/") }
+        #expect(files == [".github/\(ReleaseChannel.counterAssetName)"], "\(command)")
+        let file = try #require(files.first)
+        #expect(URL(fileURLWithPath: String(file)).lastPathComponent == ReleaseChannel.counterAssetName)
+        let data = try Data(contentsOf: root.appendingPathComponent(String(file)))
+        #expect((1...1024).contains(data.count), "\(data.count) bytes")
+        #expect(data.allSatisfy { $0 < 0x80 }, "ASCII only")
+        // After publishing, the workflow checks the release lists it, and says how to attach it.
+        #expect(workflow.contains("gh release upload \\\"v$VERSION\\\" .github/\(ReleaseChannel.counterAssetName)"))
+    }
+
     @Test func announcedAfterAnUpdateFromBeforeTheCount() {
         #expect(VersionCounterPolicy.introducedIn == v070)
         #expect(!VersionCounterPolicy.showsAnnouncement(previous: nil), "a fresh install")
