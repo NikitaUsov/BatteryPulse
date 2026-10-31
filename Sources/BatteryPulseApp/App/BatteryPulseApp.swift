@@ -23,6 +23,8 @@ struct BatteryPulseApp: App {
     private let showsWelcome: Bool
     private let showsMainWindow: Bool
     private let showsWhatsNew: Bool
+    /// The version that ran before this launch, for What's New's rows.
+    private let previousVersion: AppVersion?
 
     init() {
         UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
@@ -53,11 +55,13 @@ struct BatteryPulseApp: App {
         // A fresh install has no last-seen version, so What's New only follows a real update, even
         // when the welcome window opens at every launch by choice.
         showsWhatsNew = WhatsNewPolicy.showsAtLaunch(current: updater.currentVersion)
+        previousVersion = WhatsNewPolicy.previousVersion
         // The first launch of another version, or in another language: the previous widget
         // extension may still be running, and WidgetKit refuses a previous version's timelines;
         // the placed widgets keep the previous language's render until they reload.
         let versionChanged = WhatsNewPolicy.lastLaunched != updater.currentVersion
         WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)
+        // On a version's first launch, this also starts the version count's day of grace.
         WhatsNewPolicy.markSeen(updater.currentVersion)
         updater.showWindow = { WindowOpener.show(WindowID.update) }
         updater.startAutomaticChecks()
@@ -145,7 +149,7 @@ struct BatteryPulseApp: App {
         .restorationBehavior(.disabled)
 
         Window("What's New", id: WindowID.whatsNew) {
-            WhatsNewView()
+            WhatsNewView(previous: previousVersion)
                 .motionPolicy()
         }
         .windowResizability(.contentSize)

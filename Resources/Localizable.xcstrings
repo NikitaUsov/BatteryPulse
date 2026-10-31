@@ -476,6 +476,17 @@
         }
       }
     },
+    "Anonymous version count": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Анонимный подсчёт версий"
+          }
+        }
+      }
+    },
     "Apple's model ID for the adapter; the Model key shows the same number in hex.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -3763,6 +3774,17 @@
         }
       }
     },
+    "Include this Mac in the anonymous version count": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Учитывать этот Mac в анонимном подсчёте версий"
+          }
+        }
+      }
+    },
     "Index into AppleRawAdapterDetails of the adapter macOS chose; AdapterDetails mirrors it.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5362,6 +5384,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "От адаптера питания"
+          }
+        }
+      }
+    },
+    "Once per version, at least a day after you start using it, an automatic update check also downloads a small file from that version's release on GitHub. Its public download count shows how many Macs use each version. Nothing else is sent: no identifier and nothing about this Mac, its battery or your settings. Nothing is counted when Check for updates is Never.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Один раз для каждой версии, не раньше чем через день после начала работы с ней, автоматическая проверка обновлений также загружает небольшой файл из выпуска этой версии на GitHub. Его общедоступный счётчик загрузок показывает, сколько компьютеров Mac используют каждую версию. Больше ничего не передаётся: ни идентификатора, ни сведений об этом Mac, его аккумуляторе или ваших настройках. Если для параметра «Проверять обновления» выбрано «Никогда», подсчёт не ведётся."
+          }
+        }
+      }
+    },
+    "Once per version, BatteryPulse downloads a tiny file from GitHub, so its download count shows how many Macs use each version. No identifier and nothing about your Mac is sent; GitHub sees only what it sees for the update check. Turn it off in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse один раз для каждой версии загружает с GitHub крошечный файл, и его счётчик загрузок показывает, сколько компьютеров Mac используют каждую версию. Не передаются ни идентификатор, ни сведения о вашем Mac; GitHub видит только то же, что и при проверке обновлений. Подсчёт можно выключить в разделе «Настройки» → «Основные»."
           }
         }
       }

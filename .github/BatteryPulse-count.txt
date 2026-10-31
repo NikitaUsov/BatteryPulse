@@ -1,0 +1,16 @@
+BatteryPulse anonymous version count
+
+Every BatteryPulse release from 0.7.0 attaches this file. Once per version, at
+least a day after you start using it, BatteryPulse's automatic update check
+downloads it from that version's release and ignores it. GitHub's public
+download count of this file then shows how many Macs use each version.
+
+Nothing else is sent: no identifier, no cookie, and nothing about your Mac, its
+battery or your settings. GitHub sees your IP address and the app's version, as
+it does for the update check.
+
+To turn the count off, open BatteryPulse's Settings > General and turn off
+"Include this Mac in the anonymous version count". Nothing is counted when
+Check for updates is Never, and Check Now never counts.
+
+More: https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md#privacy

@@ -6,6 +6,7 @@ a native macOS app with no third-party code; it only reads system data and needs
 administrator rights.
 
 - [Install](#install)
+- [Privacy](#privacy)
 - [Where BatteryPulse lives](#where-batterypulse-lives)
 - [The main window](#the-main-window)
 - [Compact window](#compact-window)
@@ -41,6 +42,28 @@ BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time:
 
 Until BatteryPulse is notarized, you need to do this once for each new version you download. A
 copy you build yourself (see the README) opens without it.
+
+## Privacy
+
+BatteryPulse has no account, no analytics service and no server of its own. Your battery
+readings, history, devices and settings stay on your Mac. It connects to the internet only to
+reach GitHub: to check for updates (daily, weekly, monthly or never, as you choose in Settings →
+General), to download an update you chose to install, and, from 0.7, for an anonymous version
+count. Once per version, at least a day after you start using it, an automatic update check also
+downloads a small file from that version's release on GitHub. GitHub counts downloads, and that
+public count is the only number the developer gets: how many Macs use each version. No
+identifier of any kind is sent, no cookie is kept, and nothing about your Mac, its battery or
+your settings is included. As with any web request, GitHub sees your IP address and the app's
+version, just as it does for the update check, under GitHub's own privacy statement. The
+developer never sees addresses, only totals that anyone can read through GitHub's API. The count
+is on by default, never happens when Check for updates is Never, and turns off with **Include
+this Mac in the anonymous version count** in Settings → General. Reading an iPhone or iPad over
+Wi-Fi (opt-in) stays on your local network.
+
+The count rides on the scheduled update check, so it adds no wake-up of its own, and a check you
+start (**Check Now** or **Check for Updates…**) never counts. While Check for updates is Never,
+the switch is greyed out and keeps its value. [Updates](#updates) lists every request
+BatteryPulse sends.
 
 ## Where BatteryPulse lives
 
@@ -366,7 +389,8 @@ each device's name (as its label), model, OS version, last values and history un
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
 device data are never written. Only your account can read the folder, and BatteryPulse's
 messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
-shows a simulated iPhone in place of your devices.
+shows a simulated iPhone in place of your devices. Nothing about your devices goes to the
+internet; [Privacy](#privacy) lists what does.
 
 ## Accessories
 
@@ -473,7 +497,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 | Tab | What it controls |
 |-----|------------------|
-| General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, language, reading iPhones and iPads |
+| General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, the anonymous version count, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
 | Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), the beta window styles, a link to this guide |
@@ -512,16 +536,19 @@ replace the old copy, and approve the new version once in Privacy & Security (se
 [First launch](#first-launch)). Updating from 0.3 works this way once; from 0.4.0 on, Install
 and Relaunch takes over.
 
-The check and the download of an update you chose to install are the only requests
-BatteryPulse sends to the internet, and their answers aren't kept in a network cache: GitHub
-sees your IP address, the app's version and your language, as with any web request, and nothing
-else about your Mac is sent. The only other
+BatteryPulse sends only these requests to the internet, all to GitHub: the update check, the
+anonymous version count (once per version, at least a day after you start using it, on an
+automatic check; see [Privacy](#privacy)) and the download of an update you chose to install.
+Their answers aren't kept in a network cache, and no cookies are kept or sent: GitHub sees your
+IP address and the app's version, as with any web request, and for the check and the download
+also your language; nothing else about your Mac is sent. The only other
 connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
-symbols that turn a crash report into readable function names; you don't need either.
+`BatteryPulse.dmg.sig`, the signature the app checks, `BatteryPulse-dSYMs.zip`, the debug symbols
+that turn a crash report into readable function names, and, from 0.7.0, `BatteryPulse-count.txt`,
+the file the version count downloads; you don't need any of them.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
