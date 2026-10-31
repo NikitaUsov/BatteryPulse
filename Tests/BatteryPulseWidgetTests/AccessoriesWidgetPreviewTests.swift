@@ -75,6 +75,19 @@ struct AccessoriesWidgetPreviewTests {
     static let earbuds = Scene(
         name: "earbuds-lowest", title: "Lowest only: earbuds", accessories: demo.filter(\.hasParts),
         configuration: AccessoriesWidgetConfiguration(mode: .lowest))
+    /// Out of a full case: three parts at 100 %, wider than small's line, and an old reading under
+    /// them, small's tallest lowest accessory.
+    static let fullEarbuds = Scene(
+        name: "earbuds-full-old", title: "Lowest only: earbuds at 100 %, reading old",
+        accessories: [
+            accessory(
+                "AirPods Pro", .headphones, 100,
+                parts: [
+                    AccessoryPart(role: .left, percent: 100), AccessoryPart(role: .right, percent: 100),
+                    AccessoryPart(role: .case, percent: 100, isOnExternalPower: true),
+                ])
+        ],
+        configuration: AccessoriesWidgetConfiguration(mode: .lowest), stale: true)
     static let charging = Scene(
         name: "charging", title: "Charging", accessories: [accessory("Magic Trackpad", .trackpad, 54, charging: true)])
     static let critical = Scene(
@@ -89,7 +102,9 @@ struct AccessoriesWidgetPreviewTests {
         configuration: AccessoriesWidgetConfiguration(hidesFullyCharged: true))
     static let none = Scene(name: "none-connected", title: "None connected", accessories: [])
 
-    static let scenes: [Scene] = [all, lowest, crowded, hide, earbuds, charging, critical, unnamed, old, allFull, none]
+    static let scenes: [Scene] = [
+        all, lowest, crowded, hide, earbuds, fullEarbuds, charging, critical, unnamed, old, allFull, none,
+    ]
 
     /// The scenes drawn in every rendering mode and appearance.
     static let modeScenes: [Scene] = [all, lowest, crowded, none]

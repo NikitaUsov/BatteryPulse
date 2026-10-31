@@ -86,7 +86,7 @@ struct AccessoryLowestView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if row.hasParts {
-                AccessoryPartsView(parts: row.parts, hasParts: true)
+                AccessoryLowestPartsView(parts: row.parts)
                     .font(.caption)
             } else if let status = row.parts.first?.charge.status {
                 status.text(strings)
@@ -194,6 +194,23 @@ struct AccessoryPartsView: View {
             }
         }
         .fixedSize()
+    }
+}
+
+/// The lowest accessory's parts: on one line where they fit, else the case on a line of its own
+/// under the buds. Small has room for "64 % 61 % 90 %" but not for three parts at 100 % (in Russian
+/// they would run about 15 points past the margin), and a charge is never cut.
+struct AccessoryLowestPartsView: View {
+    let parts: [AccessoryWidgetPart]
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            AccessoryPartsView(parts: parts, hasParts: true)
+            VStack(alignment: .leading, spacing: 2) {
+                AccessoryPartsView(parts: parts.filter { $0.role != .case }, hasParts: true)
+                AccessoryPartsView(parts: parts.filter { $0.role == .case }, hasParts: true)
+            }
+        }
     }
 }
 
