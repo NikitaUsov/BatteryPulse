@@ -157,12 +157,15 @@ enum AppSettings {
 /// What's New appears once after an update. Installs from before 0.3 have no recorded version,
 /// so an earlier welcome window counts as 0.2.
 enum WhatsNewPolicy {
+    /// The version that ran before this launch, as What's New sees it: the recorded one, or 0.2
+    /// after an earlier welcome window; `nil` on a fresh install. Read before ``markSeen(_:)``.
+    static var previousVersion: AppVersion? {
+        lastLaunched
+            ?? (UserDefaults.standard.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
+    }
+
     static func showsAtLaunch(current: AppVersion) -> Bool {
-        let defaults = UserDefaults.standard
-        let lastSeen =
-            defaults.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
-            ?? (defaults.bool(forKey: AppSettings.hasSeenWelcomeKey) ? AppVersion(parts: [0, 2]) : nil)
-        return UpdatePolicy.showsWhatsNew(lastSeen: lastSeen, current: current, features: WhatsNew.version)
+        UpdatePolicy.showsWhatsNew(lastSeen: previousVersion, current: current, features: WhatsNew.version)
     }
 
     /// The version that ran last, before this launch records itself; `nil` on a fresh install.

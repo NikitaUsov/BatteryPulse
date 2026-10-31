@@ -332,6 +332,9 @@ private struct ReleaseNotesText: View {
 
 /// Shown once after an update: what this version adds.
 struct WhatsNewView: View {
+    /// The version that ran before this launch, which decides whether the version count's row
+    /// shows (``WhatsNew/features(after:)``).
+    let previous: AppVersion?
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.motion) private var motion
     /// Set when the window appears: the rows enter, one after another, once.
@@ -346,7 +349,7 @@ struct WhatsNewView: View {
             Text("What's New in BatteryPulse")
                 .font(.title.weight(.semibold))
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(Array(WhatsNew.features.enumerated()), id: \.element.id) { index, feature in
+                ForEach(Array(WhatsNew.features(after: previous).enumerated()), id: \.element.id) { index, feature in
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: feature.symbol)
                             .font(.title2)
@@ -419,5 +422,23 @@ enum WhatsNew {
             detail:
                 "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON."),
     ]
+
+    /// The anonymous version count, which arrived in 0.7.0 (``VersionCounterPolicy/introducedIn``).
+    /// Its id is one no list of features uses.
+    static let versionCount = Feature(
+        id: 100, symbol: "chart.bar", title: "Anonymous version count",
+        detail:
+            "Once per version, BatteryPulse downloads a tiny file from GitHub, so its download count shows how many Macs use each version. No identifier and nothing about your Mac is sent; GitHub sees only what it sees for the update check. Turn it off in Settings → General."
+    )
+
+    /// The rows after an update from `previous`, `nil` when no earlier version ran: ``features``,
+    /// then the version count's row. That row is one of the features while they are 0.7.0's (or
+    /// an earlier list's); a later release keeps it for anyone updating from a version before the
+    /// count, so a jump from 0.6 straight past 0.7 still announces it.
+    static func features(after previous: AppVersion?) -> [Feature] {
+        let announcesCount =
+            version <= VersionCounterPolicy.introducedIn || VersionCounterPolicy.showsAnnouncement(previous: previous)
+        return announcesCount ? features + [versionCount] : features
+    }
 }
 #endif
