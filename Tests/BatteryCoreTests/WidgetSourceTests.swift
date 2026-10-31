@@ -108,17 +108,60 @@ struct WidgetSourceTests {
     @Test func accessoryNamesArePrivacySensitive() throws {
         var namers = 0
         for file in try Self.widgetCode() {
-            let namer = file.code.firstMatch(of: #/struct AccessoryNameText: View \{([\s\S]*?)\n\}/#)
-            if let namer {
-                namers += 1
-                #expect(namer.output.1.contains(".privacySensitive()"), "\(file.path)")
-            }
-            for name in file.code.matches(of: #/\.reported\b/#.wordBoundaryKind(.simple))
-            where namer?.range.contains(name.range.lowerBound) != true {
-                Issue.record("\(file.path): an accessory's name outside AccessoryNameText")
-            }
+            let scan = Self.nameScan(file.code)
+            namers += scan.namers
+            #expect(scan.unmarkedNamers == 0, "\(file.path): AccessoryNameText without .privacySensitive()")
+            #expect(scan.namesOutside == 0, "\(file.path): an accessory's name outside AccessoryNameText")
         }
         #expect(namers == 1)
+    }
+
+    /// What the name guard sees in one file.
+    struct NameScan: Equatable {
+        /// `struct AccessoryNameText`s.
+        var namers = 0
+        /// Of them, the ones that don't apply `.privacySensitive()`.
+        var unmarkedNamers = 0
+        /// `.reported` names outside `AccessoryNameText`.
+        var namesOutside = 0
+    }
+
+    static func nameScan(_ code: String) -> NameScan {
+        var scan = NameScan()
+        let namer = code.firstMatch(of: #/struct AccessoryNameText: View \{([\s\S]*?)\n\}/#)
+        if let namer {
+            scan.namers = 1
+            scan.unmarkedNamers = namer.output.1.contains(".privacySensitive()") ? 0 : 1
+        }
+        scan.namesOutside =
+            code.matches(of: #/\.reported\b/#.wordBoundaryKind(.simple))
+            .filter { namer?.range.contains($0.range.lowerBound) != true }.count
+        return scan
+    }
+
+    /// The name guard fails on a name text that isn't privacy sensitive and on a name shown
+    /// elsewhere.
+    @Test func theNameGuardFailsOnBadCode() {
+        func scan(_ text: String) -> NameScan { Self.nameScan(SourceScanner.codeOnly(text)) }
+        let namer = """
+            struct AccessoryNameText: View {
+                var body: some View {
+                    text.lineLimit(1).privacySensitive()
+                }
+                private var text: Text {
+                    switch name {
+                    case .reported(let name): Text(verbatim: name)
+                    case .kind(let kind): widgetText(kind.title, strings)
+                    }
+                }
+            }
+            """
+        #expect(scan(namer) == NameScan(namers: 1, unmarkedNamers: 0, namesOutside: 0))
+        #expect(scan(namer.replacing(".privacySensitive()", with: "")).unmarkedNamers == 1)
+        let elsewhere = namer + "\nif case .reported(let name) = row.name { Text(verbatim: name) }"
+        #expect(scan(elsewhere).namesOutside == 1)
+        #expect(scan(namer + "\n// never .reported outside it").namesOutside == 0)
+        #expect(scan("Text(verbatim: \"\")").namers == 0)
     }
 
     /// VoiceOver never reads a symbol's name (0.6.1's level symbol read "Three-Quarter-Charged
