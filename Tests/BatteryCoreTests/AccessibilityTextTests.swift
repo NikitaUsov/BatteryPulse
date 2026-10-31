@@ -112,11 +112,17 @@ struct AccessibilityTextTests {
 
     /// The power flow reads each value the card shows, in the card's order, and nothing it hides.
     @Test func thePowerFlowReadsTheCardInOrder() throws {
+        var sawAdapterWithoutInput = false
         for c in try Self.cases() {
             let s = c.snapshot
             let flow = PowerFlowText(s, formatter: c.formatter)
             #expect(flow.showsAdapter == (s.isExternalPowerConnected == true && s.adapter != nil), "\(c)")
             if !flow.showsAdapter { #expect(flow.adapterRating == nil && flow.adapterInput == nil, "\(c)") }
+            // The adapter's arrow shows a value only above 0 W, as the card's does: 0 W just after
+            // plugging in (the m5-macos27-plugged-in-10s capture) leaves it without one.
+            let drawsPower = (s.systemPowerInWatts ?? 0) > 0
+            #expect((flow.adapterInput != nil) == (flow.showsAdapter && drawsPower), "\(c)")
+            if flow.showsAdapter, s.systemPowerInWatts.map({ $0 <= 0 }) == true { sawAdapterWithoutInput = true }
             let shown = [flow.adapterRating, flow.adapterInput, flow.macLoad, flow.batteryPower, flow.charge]
             let text = AccessibilityText.powerFlow(flow).valueText(Self.localize(c.language))
             var rest = Substring(text)
@@ -130,6 +136,7 @@ struct AccessibilityTextTests {
             let phrases = (flow.showsAdapter ? 1 : 0) + arrows + (flow.charge == nil ? 0 : 2)
             #expect(AccessibilityText.powerFlow(flow).value.count == phrases, "\(c): \(text)")
         }
+        #expect(sawAdapterWithoutInput)
     }
 
     /// The battery's arrow says which way the power goes, with the dead band the card uses: no
