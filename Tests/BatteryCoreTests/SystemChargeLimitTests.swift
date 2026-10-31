@@ -137,6 +137,20 @@ import Testing
         #expect(!BatteryMotionKey(nil).isAtSystemChargeLimit)
     }
 
+    /// Raw Data lists bit 24 among the reason's set bits, in AppleSmartBattery and in its charger
+    /// child, and the glossary says what it means.
+    @Test func rawDataExplainsTheBit() throws {
+        let sections = RawSection.sections(for: try Fixture.m5ChargeLimit.reading().rawCapture)
+        let rows = sections.flatMap(\.rows).filter { $0.key.hasSuffix("ChargerData.NotChargingReason") }
+        #expect(rows.count == 2)
+        for row in rows {
+            #expect(row.decoded == .bits(UInt64(Self.held), setBits: [24]), "\(row.key)")
+            let summary = try #require(row.info?.summary)
+            #expect(summary.hasPrefix("Bitfield of reasons the battery is not charging; Apple does not document"))
+            #expect(summary.hasSuffix("Bit 24 (0x01000000) is set while the Charge Limit holds the charge."))
+        }
+    }
+
     // MARK: The widget
 
     static func plan(

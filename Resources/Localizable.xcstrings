@@ -1186,14 +1186,14 @@
         }
       }
     },
-    "Bitfield of reasons the battery is not charging; Apple does not document the bits.": {
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты."
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд."
           }
         }
       }
