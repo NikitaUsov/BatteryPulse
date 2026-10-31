@@ -13,9 +13,10 @@ import Foundation
 /// first save. The registry never holds a UDID, a serial number or a raw capture.
 public actor DeviceStore {
     public let directory: URL
-    /// A newer registry version was found; ``save(_:)`` writes nothing, so this version never
-    /// overwrites what a newer one wrote. Also set when the registry exists but can't be read,
-    /// or can't be set aside.
+    /// A newer registry was found: a higher version, or one with fields or values this version
+    /// doesn't know, which it couldn't write back. ``save(_:)`` writes nothing, so this version
+    /// never overwrites what a newer one wrote. Also set when the registry exists but can't be
+    /// read, or can't be set aside.
     public private(set) var isReadOnly = false
     private var stores: [DeviceKey: HistoryStore] = [:]
     /// The clock of each device's ``HistoryStore``, injectable for tests.
@@ -87,8 +88,10 @@ public actor DeviceStore {
 
     // MARK: - Registry
 
-    /// The remembered devices. A missing file gives none. A newer version gives none and makes
-    /// the store read-only. A file that doesn't decode is set aside as `devices.unreadable.json`
+    /// The remembered devices. A missing file gives none. A newer registry gives none and makes
+    /// the store read-only: a higher version, or one that holds fields or values this version
+    /// doesn't know (a later 1.x adds them in version 1), which a save would drop. A file that
+    /// doesn't decode is set aside as `devices.unreadable.json`
     /// (replacing an older one) and gives none; histories re-attach as devices reconnect, since
     /// their keys don't change. A file that can't be read, or can't be set aside, throws and makes
     /// the store read-only.
@@ -109,7 +112,12 @@ public actor DeviceStore {
             return []
         }
         do {
-            return try decoder.decode(RememberedDeviceFile.self, from: data).devices
+            let file = try decoder.decode(RememberedDeviceFile.self, from: data)
+            guard Self.isWrittenBackUnchanged(file, from: data) else {
+                isReadOnly = true
+                return []
+            }
+            return file.devices
         } catch {
             do {
                 if FileManager.default.fileExists(atPath: unreadableRegistryURL.path) {
@@ -127,6 +135,30 @@ public actor DeviceStore {
 
     private struct Header: Decodable {
         var version: Int
+    }
+
+    /// Whether saving `file` writes what `data`, the registry it was decoded from, says: the same
+    /// keys and values, whatever their order, spacing or number formatting. Anything that can't
+    /// be compared counts as a difference, which only keeps the file as it is.
+    static func isWrittenBackUnchanged(_ file: RememberedDeviceFile, from data: Data) -> Bool {
+        func tree(_ json: Data?) -> PropertyValue? {
+            guard let json, let object = try? JSONSerialization.jsonObject(with: json) else { return nil }
+            return PropertyValue(any: object).map(sameNumbers)
+        }
+        guard let written = tree(try? encoder().encode(file)) else { return false }
+        return written == tree(data)
+    }
+
+    /// `value` with every whole number as an integer, so 95 and 95.0 compare equal.
+    private static func sameNumbers(_ value: PropertyValue) -> PropertyValue {
+        switch value {
+        case .double(let number):
+            if let whole = Int64(exactly: number) { return .int(whole) }
+            return value
+        case .array(let items): return .array(items.map(sameNumbers))
+        case .dictionary(let entries): return .dictionary(entries.mapValues(sameNumbers))
+        default: return value
+        }
     }
 
     /// Writes the registry atomically; a no-op while ``isReadOnly``.

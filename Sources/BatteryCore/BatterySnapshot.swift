@@ -167,6 +167,12 @@ public enum ChargeState: String, Sendable, Codable, CaseIterable {
     /// On external power but held below full (optimized charging, charge limit, heat…).
     case notCharging
     case unknown
+
+    /// A state a later version adds decodes as ``ChargeState/unknown``, so a stored record that holds one
+    /// keeps everything else.
+    public init(from decoder: any Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
 }
 
 public enum ThermalState: String, Sendable, Codable, CaseIterable {
