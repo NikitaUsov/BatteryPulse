@@ -439,7 +439,34 @@ struct JSONMemberCutter {
         let token = bytes[start..<index]
         guard !token.isEmpty else { return false }
         if ["true", "false", "null"].contains(where: { token.elementsEqual($0.utf8) }) { return true }
-        return token.allSatisfy { Self.isNumberByte($0) }
+        return Self.isNumber(token)
+    }
+
+    /// JSON's number: an optional `-`, then `0` or digits that don't start with one, then an
+    /// optional fraction and exponent, each with at least one digit. `e`, `-` or `01` alone isn't.
+    private static func isNumber(_ token: ArraySlice<UInt8>) -> Bool {
+        var rest = token
+        func digits() -> Int {
+            let count = rest.prefix { (UInt8(ascii: "0")...UInt8(ascii: "9")).contains($0) }.count
+            rest = rest.dropFirst(count)
+            return count
+        }
+        if rest.first == UInt8(ascii: "-") { rest = rest.dropFirst() }
+        if rest.first == UInt8(ascii: "0") {
+            rest = rest.dropFirst()
+        } else if digits() == 0 {
+            return false
+        }
+        if rest.first == UInt8(ascii: ".") {
+            rest = rest.dropFirst()
+            guard digits() > 0 else { return false }
+        }
+        if rest.first == UInt8(ascii: "e") || rest.first == UInt8(ascii: "E") {
+            rest = rest.dropFirst()
+            if rest.first == UInt8(ascii: "+") || rest.first == UInt8(ascii: "-") { rest = rest.dropFirst() }
+            guard digits() > 0 else { return false }
+        }
+        return rest.isEmpty
     }
 
     private static func isScalarByte(_ byte: UInt8) -> Bool {
