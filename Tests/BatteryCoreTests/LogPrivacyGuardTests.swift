@@ -340,6 +340,12 @@ import Testing
 
     // MARK: The rules
 
+    /// An error's member that logs as public. `\b` as in most regex engines (see
+    /// `MotionGuardTests`), so `code.rawValue` ends a word at the dot.
+    private static var domainOrCode: Regex<Substring> {
+        #/\.\s*(?:domain|code)\b/#.wordBoundaryKind(.simple)
+    }
+
     /// The words of ``deniedWords`` that `expression`, a value's code, names.
     static func deniedWordsNamed(in expression: String) -> [String] {
         let characters = Array(expression)
@@ -361,14 +367,16 @@ import Testing
             var end = index
             while end < characters.count, continuesIdentifier(characters[end]) { end += 1 }
             let identifier = Array(characters[index..<end])
-            // `error.domain` and `error.code` are a constant and a number.
+            index = end
+            // An error's domain and code (`error.domain`, `urlError.code`) are a constant and a
+            // number, whatever else the error's name says.
             let member = String(characters[end...]).trimmingPrefix(while: \.isWhitespace)
-            let isDomainOrCode = member.prefixMatch(of: #/\.\s*(?:domain|code)\b/#) != nil
+            if Self.identifier(identifier, names: "error"), member.prefixMatch(of: Self.domainOrCode) != nil {
+                continue
+            }
             for (word, _) in Self.deniedWords where !named.contains(word) && Self.identifier(identifier, names: word) {
-                if word == "error", isDomainOrCode { continue }
                 named.append(word)
             }
-            index = end
         }
         return named
     }
@@ -601,6 +609,8 @@ import Testing
     @Test func anErrorsDomainAndCodeDontNameIt() {
         #expect(Self.deniedWordsNamed(in: "error.domain").isEmpty)
         #expect(Self.deniedWordsNamed(in: "error . code").isEmpty)
+        #expect(Self.deniedWordsNamed(in: "urlError.code.rawValue") == [])
+        #expect(Self.deniedWordsNamed(in: "urlError") == ["error", "url"])
         #expect(Self.deniedWordsNamed(in: "error") == ["error"])
         #expect(Self.deniedWordsNamed(in: "error.localizedDescription") == ["error", "localizedDescription"])
         #expect(Self.deniedWordsNamed(in: "error.domainName") == ["error", "name"])
