@@ -59,8 +59,8 @@ public enum UpdateInstallError: Error, Sendable, Hashable {
     public var fallback: UpdateFallback {
         switch self {
         case .relaunchFailed: .none
-        // The update is genuine, but the DMG wouldn't help here: the release page says what the
-        // update needs.
+        // A genuine update that this copy can't take in place. The release page says which macOS
+        // it needs; on a volume that can't swap, its DMG still installs by hand.
         case .needsNewerMacOS, .swapUnsupported: .releasePage
         default: isIntegrityFailure ? .releasePage : .downloadDMG
         }
