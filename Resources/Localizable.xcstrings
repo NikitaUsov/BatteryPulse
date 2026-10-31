@@ -1311,14 +1311,14 @@
         }
       }
     },
-    "Capacity held back below 0 % that is not counted in FullChargeCapacity.": {
+    "Capacity held back below 0% that is not counted in FullChargeCapacity.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ёмкость, резервируемая ниже 0 % и не учитываемая в FullChargeCapacity."
+            "value": "Ёмкость, резервируемая ниже 0% и не учитываемая в FullChargeCapacity."
           }
         }
       }
@@ -5582,14 +5582,14 @@
         }
       }
     },
-    "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100 %.": {
+    "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100%.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Глубина разряда каждого элемента при последнем измерении напряжения в покое, в масштабе 16384 = 100 %."
+            "value": "Глубина разряда каждого элемента при последнем измерении напряжения в покое, в масштабе 16384 = 100%."
           }
         }
       }
@@ -7774,14 +7774,14 @@
         }
       }
     },
-    "True while charging at 99 % or more, when macOS shows \"Finishing Charge\".": {
+    "True while charging at 99% or more, when macOS shows \"Finishing Charge\".": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Да при зарядке от 99 % и выше, когда macOS показывает «Завершение зарядки»."
+            "value": "Да при зарядке от 99% и выше, когда macOS показывает «Завершение зарядки»."
           }
         }
       }
