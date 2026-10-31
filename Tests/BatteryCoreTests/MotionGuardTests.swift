@@ -29,7 +29,15 @@ import Testing
 /// - a see-through window background or an appearance override (`containerBackground(…, for:
 ///   .window)`, visual effect and glass effect views, `materialActiveAppearance`,
 ///   `preferredColorScheme`, assigning `.appearance`) outside `App/WindowLook.swift`, and any
-///   animation in that file: the window style's background never animates.
+///   animation in that file: the window style's background never animates;
+/// - in the widget, time the system updates that would show seconds, a sign or a per-second
+///   countdown: `TimelineView(.periodic…)` and `TimelineView(.everyMinute)`, `Text(…, style:)`
+///   with `.timer`, `.relative` or `.offset`, `Text(timerInterval:…)` and
+///   `ProgressView(timerInterval:…)`, and the timer, stopwatch and reference format styles
+///   (https://developer.apple.com/documentation/widgetkit/displaying-dynamic-dates). The one
+///   self-updating text is the time label's offset (``widgetTimeTextFile``), which allows no
+///   `.second` and passes `sign: .never`: the default sign puts a minus before an end in the
+///   future (REJ-62).
 @Suite struct MotionGuardTests {
     /// Paths relative to `Sources/`.
     static let glassAllowList: Set<String> = [
@@ -61,6 +69,13 @@ import Testing
 
     /// The one file in the app's content that maps tone roles to system colours.
     static let toneMapBridge = "BatteryPulseApp/App/ToneStyle.swift"
+
+    /// The widget's sources, whose time the system updates between reloads.
+    static let widgetFolder = "BatteryPulseWidget/"
+
+    /// The widget's one self-updating text: the time label's time left, which the system counts
+    /// down by the minute without a reload.
+    static let widgetTimeTextFile = "BatteryPulseWidget/WidgetDetailViews.swift"
 
     /// Files whose colours must go through the tone map: the main and compact windows' content,
     /// the level tints and Demo Mode's step tints. Settings, the menu bar and the widget keep the
@@ -144,6 +159,21 @@ import Testing
     /// The identifier that ends right before `index`, such as `motion` in `motion.linear(`.
     private static func identifier(before index: String.Index, in code: String) -> String {
         String(code[..<index].reversed().prefix { $0.isLetter || $0.isNumber || $0 == "_" }.reversed())
+    }
+
+    /// Time in the widget that shows seconds, a signed offset or a per-second countdown: a
+    /// periodic or every-minute timeline, a date's timer, relative or offset style, a timer
+    /// interval's text or progress view, and the counting and reference format styles.
+    private static var widgetCountdown: Regex<Substring> {
+        words(
+            #/\bTimelineView\s*\(\s*(?:\.periodic|\.everyMinute|PeriodicTimelineSchedule|EveryMinuteTimelineSchedule)\b|\bstyle\s*:\s*\.(?:timer|relative|offset)\b|\btimerInterval\s*:|\.(?:timer|stopwatch|reference)\s*\(\s*(?:countingDownIn|countingUpIn|startingAt|to)\s*:/#
+        )
+    }
+
+    /// A date offset format, `.offset(to:…)`; the `.offset(x:y:)` modifier and an `\.offset` key
+    /// path don't count.
+    private static var dateOffset: Regex<Substring> {
+        words(#/\.offset\s*\(\s*to\s*:/#)
     }
 
     /// Phase and keyframe animators, as views or modifiers; without `trigger:` they loop.
@@ -250,6 +280,30 @@ import Testing
         for match in code.matches(of: words(#/\.tint\s*\(\s*(?:Color\s*)?\.white\b/#)) {
             flag(match.range.lowerBound, "a white tint hides white labels on tinted controls")
         }
+        if path.hasPrefix(widgetFolder) {
+            for match in code.matches(of: widgetCountdown) {
+                flag(match.range.lowerBound, "widget time that shows seconds, a sign or a countdown (REJ-62)")
+            }
+            if path != widgetTimeTextFile {
+                for match in code.matches(of: words(#/\.currentDate\b/#)) {
+                    flag(match.range.lowerBound, "self-updating text only in the widget's time label")
+                }
+            }
+            for match in code.matches(of: dateOffset) {
+                guard
+                    let call = SourceScanner.calls(
+                        named: words(#/\.offset/#), in: String(code[match.range.lowerBound...])
+                    ).first
+                else { continue }
+                let fields = call.argument(labeled: "allowedFields")
+                if fields == nil || fields?.contains(words(#/\.second\b/#)) == true {
+                    flag(match.range.lowerBound, "a date offset that may show seconds; allow hours and minutes only")
+                }
+                if call.argument(labeled: "sign")?.replacing(#/\s+/#, with: "") != ".never" {
+                    flag(match.range.lowerBound, "a date offset without sign: .never shows a minus before a later end")
+                }
+            }
+        }
         if colorsGoThroughTheToneMap(path) {
             for match in code.matches(of: systemColor) {
                 flag(match.range.lowerBound, "a system colour bypasses the tone map; ask `tones` for a role")
@@ -281,7 +335,7 @@ import Testing
 
     @Test func allowListedFilesExist() {
         let lists = Self.glassAllowList.union(Self.menuBarLabelFiles).union(Self.motionPresetFiles)
-        for path in lists.union([Self.toneMapBridge, Self.windowLookFile]) {
+        for path in lists.union([Self.toneMapBridge, Self.windowLookFile, Self.widgetTimeTextFile]) {
             #expect(
                 FileManager.default.fileExists(atPath: SourceScanner.sources.appendingPathComponent(path).path),
                 "\(path)")
@@ -551,6 +605,58 @@ import Testing
         }
         // The choice is compared in that one place only.
         #expect(code.matches(of: Self.words(#/==\s*selection\b|\bselection\s*[!=]=/#)).count == 1)
+    }
+
+    private static let widgetView = "BatteryPulseWidget/BatteryWidgetView.swift"
+
+    /// The widget's time never shows seconds, a sign or a per-second countdown (REJ-62), in the
+    /// time label's file too; the app may use them.
+    @Test(arguments: [
+        "TimelineView(.periodic(from: .now, by: 60)) { _ in Text(\"x\") }",
+        "TimelineView(.everyMinute) { context in Text(context.date, style: .time) }",
+        "TimelineView(PeriodicTimelineSchedule(from: start, by: 1)) { _ in Text(\"x\") }",
+        "Text(entry.end, style: .timer)",
+        "Text(entry.end, style: .relative)",
+        "Text(entry.end, style: .offset)",
+        "Text(timerInterval: Date.now...end, countsDown: true)",
+        "ProgressView(timerInterval: start...end) { Text(\"x\") }",
+        "Text(.currentDate, format: .timer(countingDownIn: Date.now..<end))",
+        "Text(.currentDate, format: .stopwatch(startingAt: start))",
+        "Text(.currentDate, format: .reference(to: end, allowedFields: [.hour, .minute]))",
+    ])
+    func catchesWidgetCountdowns(source: String) {
+        #expect(flags(source, path: Self.widgetView), "\(source)")
+        #expect(flags(source, path: Self.widgetTimeTextFile), "\(source)")
+        #expect(!flags(source, path: "BatteryPulseApp/Main/OverviewView.swift"), "\(source)")
+    }
+
+    /// The time label's offset is the widget's one self-updating text: hours and minutes, no sign.
+    @Test func theWidgetsOnlySelfUpdatingTextIsTheTimeLabelsOffset() throws {
+        let offset = "Text(.currentDate, format: .offset(to: time.end, allowedFields: [.hour, .minute], sign: .never))"
+        #expect(!flags(offset, path: Self.widgetTimeTextFile))
+        #expect(flags(offset, path: Self.widgetView))
+        // The default sign puts a minus before an end in the future (W0-6), and the default
+        // fields include seconds.
+        for source in [
+            "Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute]))",
+            "Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute], sign: .always))",
+            "Text(.currentDate, format: .offset(to: end, allowedFields: [.hour, .minute, .second], sign: .never))",
+            "Text(.currentDate, format: .offset(to: end, sign: .never))",
+        ] {
+            #expect(flags(source, path: Self.widgetTimeTextFile), "\(source)")
+        }
+        // Key paths, enumerations and the layout modifier are not dates.
+        for source in [
+            "ForEach(Array(rows.enumerated()), id: \\.offset) { _, row in Text(\"x\") }",
+            "Text(\"x\").offset(x: 1, y: 2)",
+            "Text(clock, style: .time)",
+        ] {
+            #expect(!flags(source, path: Self.widgetView), "\(source)")
+        }
+        // The shipped label is the one self-updating text, and it passes.
+        let code = try SourceScanner.file(Self.widgetTimeTextFile).code
+        #expect(code.matches(of: Self.words(#/\.currentDate\b/#)).count == 1)
+        #expect(code.matches(of: Self.dateOffset).count == 1)
     }
 
     @Test func menuBarLabelNeverAnimates() {
