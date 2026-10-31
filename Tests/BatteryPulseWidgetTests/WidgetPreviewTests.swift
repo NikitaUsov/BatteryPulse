@@ -174,8 +174,8 @@ struct WidgetPreviewTests {
         stale: true)
     // The Charge Limit's hold: "Charged to limit" in the state line, and Custom's "Charge limit"
     // detail.
-    static let chargeLimit = scene("automatic-charged-to-limit", "Charged to limit", .systemChargeLimit)
-    static let customChargeLimit = scene(
+    static let chargedToLimit = scene("automatic-charged-to-limit", "Charged to limit", .systemChargeLimit)
+    static let customSystemChargeLimit = scene(
         "custom-charge-limit", "Custom: the Charge limit detail", .systemChargeLimit,
         BatteryWidgetConfiguration(
             layout: .custom, details: [.systemChargeLimit, .adapter, .systemLoad, .maximumCapacity]))
@@ -255,7 +255,7 @@ struct WidgetPreviewTests {
     }
 
     static let scenes: [Scene] = [
-        onBattery, charging, low, critical, full, onHold, chargeLimit, customChargeLimit, old, serviced, hot,
+        onBattery, charging, low, critical, full, onHold, chargedToLimit, customSystemChargeLimit, old, serviced, hot,
         ring, ringCharging, ringLow, ringHealth, drawn, drawnCharging, drawnLow, drawnFull,
         health, temperature, power, monochromeLow, monochromeCritical, monochromeServiced, timeLeft,
         timeLeftCharging, customPower, customHealth, customMonochrome, customTime, customEvery, customEmpty,
@@ -520,11 +520,11 @@ struct WidgetPreviewTests {
     /// The second look's sheet (plan-0.7.0 §6.1b): small and medium Automatic at the Charge Limit
     /// beside 0.6.1's widget, which said "Not charging", large, and Custom with the "Charge limit"
     /// detail in each declared family.
-    static func chargeLimitRows(_ l: Language) -> [[Picture]] {
+    static func systemChargeLimitRows(_ l: Language) -> [[Picture]] {
         [
-            [WidgetSize.small, .medium].flatMap { pair(chargeLimit, $0, l) },
-            [picture(chargeLimit, .large, l), picture(customChargeLimit, .medium, l)],
-            [picture(customChargeLimit, .small, l), picture(customChargeLimit, .large, l)],
+            [WidgetSize.small, .medium].flatMap { pair(chargedToLimit, $0, l) },
+            [picture(chargedToLimit, .large, l), picture(customSystemChargeLimit, .medium, l)],
+            [picture(customSystemChargeLimit, .small, l), picture(customSystemChargeLimit, .large, l)],
         ]
     }
 
@@ -534,7 +534,7 @@ struct WidgetPreviewTests {
         try Self.write(
             Self.sheet(
                 "The Battery widget at the Charge Limit: Automatic, then Custom's detail — \(language.name)",
-                Self.chargeLimitRows(language)),
+                Self.systemChargeLimitRows(language)),
             "sheet-charge-limit\(language.suffix)")
     }
 
