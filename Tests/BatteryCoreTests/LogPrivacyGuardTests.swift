@@ -16,8 +16,8 @@ import Testing
 ///   four-character code (``PublicValue/overridesName``). An error's `domain` and `code`, a
 ///   constant and a number, don't name the error;
 /// - a privacy this scan can't read: one that isn't written out in the interpolation (`.public`,
-///   `.private`, `.auto`, `.sensitive`), an `OSLogPrivacy` anywhere in the code, and os_log's
-///   `%{public}` format.
+///   `.private`, `.auto`, `.sensitive`), an `OSLogPrivacy` anywhere in the code, os_log's
+///   `%{public}` format, and `NSLog`, which logs its whole message as public.
 ///
 /// A new `.public` value fails with the entry to add. If the value is static text, a number or a
 /// case name, add the entry under its file with its reason; otherwise log the value as
@@ -126,9 +126,9 @@ import Testing
     ]
 
     /// The words a `.public` value may never name, each with why (CL "Logging"). An identifier
-    /// names a word as one of its camel-case words, in the singular or plural: `deviceName` names
-    /// `name`, `fileURL` names `url`, `UDIDs` names `udid`; `rename`, `curl` and `keyboard` name
-    /// none.
+    /// names a word as one of its camel-case words, in the singular or plural, or as one of its
+    /// ``compounds``: `deviceName` names `name`, `fileURL` names `url`, `UDIDs` names `udid`,
+    /// `defaultFilename` names `name`; `rename`, `curl` and `keyboard` name none.
     static let deniedWords: [(word: String, why: String)] = [
         ("error", "an error's description can name a path; its domain and code may log as public"),
         ("localizedDescription", "an error's description can name a path"),
@@ -138,7 +138,14 @@ import Testing
         ("serial", "a serial number identifies the hardware"),
         ("udid", "a UDID identifies an iPhone or iPad"),
         ("uuid", "a UUID can identify a device or a boot"),
-        ("key", "a device key logs as .private(mask: .hash)"),
+        ("key", "a device key stands for one of the user's iPhones or iPads"),
+    ]
+
+    /// Camel-case words that name a denied word with no capital to mark it, by the word they
+    /// name: `filename` is a name, `pathname` a path.
+    static let compounds: [String: [String]] = [
+        "name": ["filename", "basename", "username", "hostname", "nickname"],
+        "path": ["pathname", "filepath", "dirpath", "dirname"],
     ]
 
     // MARK: The scan
@@ -335,7 +342,7 @@ import Testing
 
     /// Whether a file may log at all, read before anything else: most files don't.
     static func mayLog(_ source: String) -> Bool {
-        source.contains("rivacy") || source.contains("%{public")
+        source.contains("rivacy") || source.contains("%{public") || source.contains("NSLog")
     }
 
     // MARK: The rules
@@ -374,8 +381,9 @@ import Testing
             if Self.identifier(identifier, names: "error"), member.prefixMatch(of: Self.domainOrCode) != nil {
                 continue
             }
-            for (word, _) in Self.deniedWords where !named.contains(word) && Self.identifier(identifier, names: word) {
-                named.append(word)
+            for (word, _) in Self.deniedWords where !named.contains(word) {
+                let spellings = [word] + (Self.compounds[word] ?? [])
+                if spellings.contains(where: { Self.identifier(identifier, names: $0) }) { named.append(word) }
             }
         }
         return named
@@ -401,15 +409,24 @@ import Testing
         return false
     }
 
-    /// Every rule `source` breaks as "path:line: message", ordered by position. An entry the file
-    /// logs fewer times than its count is no violation here (``unusedEntries(in:path:)``).
-    static func violations(in source: String, path: String) -> [String] {
+    /// `text` as a Swift string literal, for an entry to paste.
+    static func literal(_ text: String) -> String {
+        "\"" + text.replacing("\\", with: "\\\\").replacing("\"", with: "\\\"") + "\""
+    }
+
+    /// Every rule `source` breaks as "path:line: message", ordered by position, against `list`
+    /// (``allowList`` but in the tests of the rules). An entry the file logs fewer times than its
+    /// count is no violation here (``unusedEntries(in:path:list:)``).
+    static func violations(in source: String, path: String, list: [String: [PublicValue]] = allowList) -> [String] {
         guard mayLog(source) else { return [] }
         let scan = LogScan(source)
-        let entries = allowList[path] ?? []
+        let values = privacyValues(in: scan)
+        let entries = list[path] ?? []
         var found: [(Int, String)] = []
+        var totals: [String: Int] = [:]
+        for value in values where value.privacy == ".public" { totals[value.expression, default: 0] += 1 }
         var logged: [String: Int] = [:]
-        for value in privacyValues(in: scan) {
+        for value in values {
             let expression = value.expression
             guard value.privacy == ".public" else {
                 if value.privacy.wholeMatch(of: #/\.(?:private|auto|sensitive)(?:\(.*\))?/#) == nil {
@@ -423,31 +440,50 @@ import Testing
             }
             logged[expression, default: 0] += 1
             let entry = entries.first { $0.expression == expression }
+            let named = deniedWordsNamed(in: value.expressionCode)
+            let denied = named.filter { $0 != "name" || entry?.overridesName != true }
             if let entry {
                 if logged[expression, default: 0] > entry.count {
+                    let total = totals[expression, default: 0]
                     found.append(
                         (
                             value.offset,
-                            "`\(expression)` logs as .public more often than its entry's count of \(entry.count) in LogPrivacyGuardTests.allowList; raise it if this value is also static text, a number or a case name"
+                            "`\(expression)` logs as .public \(total) times, more than its entry's count of \(entry.count) in LogPrivacyGuardTests.allowList; if each is static text, a number or a case name, raise it to \(total)"
                         ))
                 }
-            } else {
+            } else if denied.allSatisfy({ $0 == "name" }) {
+                // A value an entry may vouch for: the message gives the entry, as the list's tests
+                // want it written.
+                let flag = named.contains("name") ? ", overridesName: true" : ""
+                let line = "PublicValue(\(Self.literal(expression))\(flag), reason: \"…\")"
+                let place =
+                    list[path] == nil ? "\(Self.literal(path)): [\(line)]" : "\(line) under \(Self.literal(path))"
                 found.append(
                     (
                         value.offset,
-                        "`\(expression)` logs as .public but isn't on the file's allow list; if it is static text, a number or a case name, add PublicValue(\"\(expression)\", reason: \"…\") under \"\(path)\" in LogPrivacyGuardTests.allowList"
+                        "`\(expression)` logs as .public but isn't on the file's allow list; if it is static text, a number or a case name, add \(place) to LogPrivacyGuardTests.allowList"
                     ))
             }
-            for word in deniedWordsNamed(in: value.expressionCode)
-            where !(word == "name" && entry?.overridesName == true) {
+            for word in denied {
                 let why = Self.deniedWords.first { $0.word == word }?.why ?? ""
-                found.append((value.offset, "`\(expression)` names `\(word)`, which never logs as .public: \(why)"))
+                let fix =
+                    switch word {
+                    case "name": "only a name from the code may, on an entry with overridesName: true"
+                    case "key": "log it as .private(mask: .hash)"
+                    default: "log it as .private"
+                    }
+                found.append(
+                    (value.offset, "`\(expression)` names `\(word)`, which never logs as .public: \(why); \(fix)"))
             }
         }
         let code = String(scan.code)
         for match in code.matches(of: #/\bOSLogPrivacy\b/#.wordBoundaryKind(.simple)) {
             let offset = code.distance(from: code.startIndex, to: match.range.lowerBound)
             found.append((offset, "an OSLogPrivacy in the code; write the privacy out in the interpolation"))
+        }
+        for match in code.matches(of: #/\bNSLog\s*\(/#.wordBoundaryKind(.simple)) {
+            let offset = code.distance(from: code.startIndex, to: match.range.lowerBound)
+            found.append((offset, "NSLog logs its whole message as public; log through a Diagnostics Logger"))
         }
         let uncommented = String(scan.uncommented)
         for range in uncommented.ranges(of: "%{public") {
@@ -460,10 +496,11 @@ import Testing
         }
     }
 
-    /// The entries of `path` that `source` logs fewer times than their count, as messages.
-    static func unusedEntries(in source: String, path: String) -> [String] {
+    /// The entries of `path` in `list` that `source` logs fewer times than their count, as
+    /// messages.
+    static func unusedEntries(in source: String, path: String, list: [String: [PublicValue]] = allowList) -> [String] {
         let values = mayLog(source) ? privacyValues(in: LogScan(source)).filter { $0.privacy == ".public" } : []
-        return (allowList[path] ?? []).compactMap { entry in
+        return (list[path] ?? []).compactMap { entry in
             let logged = values.count { $0.expression == entry.expression }
             guard logged < entry.count else { return nil }
             let fix = logged == 0 ? "remove the entry" : "lower its count to \(logged)"
@@ -513,14 +550,20 @@ import Testing
         }
     }
 
-    /// The scan finds every `privacy: .public` that the code holds, wherever the interpolation sits,
-    /// so no value is missed by the rules above.
+    /// The scan finds every `privacy: .public` outside the comments, wherever the interpolation
+    /// sits, so no value is missed by the rules above. Counted in the file with only its comments
+    /// blanked, so a string the scan read too far can't hide one either.
     @Test(arguments: (try? SourceScanner.allFiles.get()) ?? [])
     func theScanFindsEveryPublicValue(_ file: SourceScanner.File) {
         guard Self.mayLog(file.text) else { return }
         let scan = LogScan(file.text)
-        let written = String(scan.code).matches(of: #/\bprivacy\s*:\s*\.\s*public\b/#.wordBoundaryKind(.simple)).count
-        #expect(Self.privacyValues(in: scan).count { $0.privacy == ".public" } == written)
+        let pattern = #/\bprivacy\s*:\s*\.\s*public\b/#.wordBoundaryKind(.simple)
+        let written = String(scan.uncommented).matches(of: pattern).count
+        let read = Self.privacyValues(in: scan).count { $0.privacy == ".public" }
+        #expect(
+            read == written,
+            "\(written) privacy: .public outside comments, \(read) read as an interpolation's privacy: one outside an interpolation's arguments, or in a string's text, can't be checked"
+        )
     }
 
     private static let somewhere = "BatteryKit/BatteryMonitor.swift"
@@ -564,6 +607,10 @@ import Testing
         #"log.info("Reading \(path, privacy: OSLogPrivacy.public)")"#,
         "let open: OSLogPrivacy = .public",
         #"os_log("Reading %{public}@", log: log, path)"#,
+        #"NSLog("Reading %@", path)"#,
+        // A name or a path with no capital to mark it.
+        #"log.info("Saving \(defaultFilename, privacy: .public)")"#,
+        #"log.info("Reading \(pathname, privacy: .public)")"#,
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -585,6 +632,7 @@ import Testing
         #"let text = "\\(path, privacy: .public)""#,
         ##"let text = #"\(path, privacy: .public)"#"##,
         #"log.info("\(path) /* \(count) */ // done")"#,
+        "// NSLog(\"Reading %@\", path)",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -633,6 +681,13 @@ import Testing
         for (identifier, word) in others {
             #expect(!Self.identifier(Array(identifier), names: word), "\(identifier) doesn't name \(word)")
         }
+        // The compounds, which have no capital to mark the word.
+        #expect(Self.deniedWordsNamed(in: "defaultFilename") == ["name"])
+        #expect(Self.deniedWordsNamed(in: "userNames") == ["name"])
+        #expect(Self.deniedWordsNamed(in: "hostname") == ["name"])
+        #expect(Self.deniedWordsNamed(in: "pathname") == ["path"])
+        #expect(Self.deniedWordsNamed(in: "bundleFilepath") == ["path"])
+        #expect(Self.deniedWordsNamed(in: "renamed").isEmpty)
     }
 
     @Test func entriesThatNoLongerMatchAreReported() {
@@ -646,11 +701,55 @@ import Testing
     }
 
     @Test func reportsLineNumbers() {
-        let source = "let a = 1\n// \\(path, privacy: .public)\nlog.info(\"\\(path, privacy: .public)\")\n"
+        let source = """
+            let a = 1
+            // \\(count, privacy: .public)
+            log.info("\\(count, privacy: .public)")
+            log.info("\\(path, privacy: .public)")
+
+            """
         #expect(
             Self.violations(in: source, path: "X.swift") == [
-                "X.swift:3: `path` logs as .public but isn't on the file's allow list; if it is static text, a number or a case name, add PublicValue(\"path\", reason: \"…\") under \"X.swift\" in LogPrivacyGuardTests.allowList",
-                "X.swift:3: `path` names `path`, which never logs as .public: a path names the user's folders",
+                "X.swift:3: `count` logs as .public but isn't on the file's allow list; if it is static text, a number or a case name, add \"X.swift\": [PublicValue(\"count\", reason: \"…\")] to LogPrivacyGuardTests.allowList",
+                "X.swift:4: `path` names `path`, which never logs as .public: a path names the user's folders; log it as .private",
             ])
+    }
+
+    /// An entry can't vouch for a denied word, only for a name the code supplies.
+    @Test(arguments: [
+        ("error", "error"), ("failure.localizedDescription", "localizedDescription"), ("url.path", "path"),
+        ("fileURL", "url"), ("device.name", "name"), ("serialNumber", "serial"), ("info.UDID", "udid"),
+        ("bootSessionUUID", "uuid"), ("key.rawValue", "key"), ("defaultFilename", "name"), ("pathname", "path"),
+    ])
+    func anEntryCantAllowADeniedWord(_ expression: String, _ word: String) {
+        let source = "log.info(\"Value \\(\(expression), privacy: .public)\")"
+        let violations = Self.violations(
+            in: source, path: "X.swift", list: ["X.swift": [PublicValue(expression, reason: "a test")]])
+        #expect(violations.contains { $0.contains("`\(expression)` names `\(word)`") }, "\(violations)")
+        #expect(violations.allSatisfy { !$0.contains("add PublicValue") }, "\(violations)")
+        let vouched = Self.violations(
+            in: source, path: "X.swift",
+            list: ["X.swift": [PublicValue(expression, overridesName: true, reason: "a test")]])
+        #expect(vouched.isEmpty == (Self.deniedWordsNamed(in: expression) == ["name"]), "\(vouched)")
+    }
+
+    /// The entry a message asks for is the one that allows the value, pasted as it is.
+    @Test func theMessageGivesTheEntryToAdd() {
+        let source = #"log.info("\(isOn ? "on" : "off", privacy: .public) \(name, privacy: .public)")"#
+        let violations = Self.violations(in: source, path: "X.swift", list: ["X.swift": []])
+        #expect(violations.contains { $0.contains(#"add PublicValue("isOn ? \"on\" : \"off\"", reason: "…")"#) })
+        #expect(violations.contains { $0.contains(#"add PublicValue("name", overridesName: true, reason: "…")"#) })
+        let list = [
+            "X.swift": [
+                PublicValue("isOn ? \"on\" : \"off\"", reason: "a test"),
+                PublicValue("name", overridesName: true, reason: "a test"),
+            ]
+        ]
+        #expect(Self.violations(in: source, path: "X.swift", list: list).isEmpty)
+        // One more than the count names the count it needs.
+        let twice = source + "\n" + source
+        #expect(
+            Self.violations(in: twice, path: "X.swift", list: list).first?.hasSuffix("raise it to 2") == true,
+            "\(Self.violations(in: twice, path: "X.swift", list: list))")
     }
 }
