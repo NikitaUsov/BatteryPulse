@@ -212,4 +212,75 @@ import Testing
         }
         #expect(fields == [.adapter])
     }
+
+    // MARK: Reloads
+
+    /// The held capture, and the same Mac charging below the limit, just plugged in with bit 7, and
+    /// on battery.
+    static func states() throws -> (
+        held: BatterySnapshot, charging: BatterySnapshot, pluggedIn: BatterySnapshot, onBattery: BatterySnapshot
+    ) {
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        var charging = held
+        charging.chargeState = .charging
+        charging.notChargingReason = 0
+        charging.chargePercent = 79
+        var pluggedIn = held
+        pluggedIn.notChargingReason = 0x80
+        pluggedIn.chargePercent = 78
+        var onBattery = pluggedIn
+        onBattery.chargeState = .discharging
+        onBattery.isExternalPowerConnected = false
+        onBattery.adapter = nil
+        #expect(!charging.isAtSystemChargeLimit && !pluggedIn.isAtSystemChargeLimit)
+        #expect(held.chargePercent == 80)
+        return (held, charging, pluggedIn, onBattery)
+    }
+
+    /// Feeds one planner a reading per minute from minute 0, the first its start value.
+    static func reloads(_ snapshots: [BatterySnapshot]) -> [WidgetReloadPlanner.Reason?] {
+        var planner = WidgetReloadPlanner()
+        return snapshots.enumerated().map { minute, snapshot in
+            planner.battery(snapshot, at: WidgetReloadPolicyTests.start.addingTimeInterval(Double(minute) * 60))
+        }
+    }
+
+    /// The hold usually starts with charging → not charging, which the policy reloads for at once:
+    /// one reload, and an hour at the limit adds none.
+    @Test func theHoldStartsWithOneReloadThroughTheStateChange() throws {
+        let s = try Self.states()
+        let result = Self.reloads([s.charging, s.charging] + Array(repeating: s.held, count: 61))
+        #expect(result[2] == .policy)
+        #expect(result.compactMap { $0 } == [.policy])
+    }
+
+    /// Plugged in at 78 % under an 80 % limit: not charging with bit 7, then bit 24 with no state
+    /// change, which is one reload of its own; an hour at the limit adds none.
+    @Test func aHoldWithoutAStateChangeReloadsOnce() throws {
+        let s = try Self.states()
+        #expect(s.pluggedIn.chargeState == s.held.chargeState)
+        let result = Self.reloads([s.onBattery, s.pluggedIn, s.held] + Array(repeating: s.held, count: 60))
+        #expect(Array(result.prefix(3)) == [nil, .policy, .systemChargeLimit])
+        #expect(result.compactMap { $0 } == [.policy, .systemChargeLimit])
+    }
+
+    /// The hold ending without a state change reloads too, within the 5 minutes the immediate
+    /// reasons share.
+    @Test func theHoldsEndSharesTheImmediateInterval() throws {
+        let s = try Self.states()
+        var lowPower = s.pluggedIn
+        lowPower.isLowPowerModeEnabled = true
+        var lowPowerHeld = s.held
+        lowPowerHeld.isLowPowerModeEnabled = true
+        // Low Power Mode at minute 1, the hold at minute 3 (too soon: it waits), then held.
+        let result = Self.reloads([
+            s.pluggedIn, lowPower, lowPower, lowPowerHeld, lowPowerHeld, lowPowerHeld, lowPowerHeld,
+        ])
+        #expect(result == [nil, .lowPowerMode, nil, nil, nil, nil, .systemChargeLimit])
+        // Back to bit 7 alone, with no state change.
+        var planner = WidgetReloadPlanner()
+        let start = WidgetReloadPolicyTests.start
+        #expect(planner.battery(s.held, at: start) == nil)
+        #expect(planner.battery(s.pluggedIn, at: start.addingTimeInterval(60)) == .systemChargeLimit)
+    }
 }
