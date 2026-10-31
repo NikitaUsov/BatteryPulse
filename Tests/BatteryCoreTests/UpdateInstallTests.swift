@@ -420,33 +420,201 @@ import Testing
         #expect(launch.contains("WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)"))
     }
 
-    /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a
-    /// path that would break any quoting.
-    @Test func relaunchPassesThePathUntouched() throws {
-        let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("relaunch-test-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let record = folder.appendingPathComponent("arguments.txt")
-        let opener = folder.appendingPathComponent("open.sh")
-        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"\(record.path)\"\n".utf8).write(to: opener)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: opener.path)
+    /// An update as the relaunch script finds it, in a temporary folder: the new version at the
+    /// app's path, the previous one in the swap's temporary folder under the same name, and the
+    /// downloads folder the launch marker goes in. Each copy holds a file with its version. The
+    /// app's name would break any quoting.
+    private struct Relaunch {
+        let root: URL
+        let app: URL
+        let previous: URL
+        let downloads: URL
+        let marker: URL
+        let record: URL
 
-        let appPath = #"/Applications/My "Battery" $(touch x); Pulse's.app"#
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        // No process has this ID, so the script doesn't wait.
-        var arguments = UpdateInstallPolicy.relaunchArguments(
-            appPath: appPath, processID: Int32.max, opener: opener.path)
-        // The app's script gives the old process a second more; the test runs it without that pause.
-        #expect(arguments[1].contains("sleep 1; exec"))
-        arguments[1] = arguments[1].replacingOccurrences(of: "sleep 1;", with: "sleep 0;")
-        process.arguments = arguments
-        try process.run()
-        process.waitUntilExit()
-        #expect(process.terminationStatus == 0)
-        let recorded = try String(contentsOf: record, encoding: .utf8)
-        #expect(recorded == "-n\n" + appPath + "\n")
+        init() throws {
+            root = FileManager.default.temporaryDirectory
+                .appendingPathComponent("relaunch-test-\(UUID().uuidString)", isDirectory: true)
+            let name = #"My "Battery" $(touch x); Pulse's.app"#
+            app = root.appendingPathComponent("Applications/" + name, isDirectory: true)
+            previous = root.appendingPathComponent("NSIRD_BatteryPulse_1/" + name, isDirectory: true)
+            downloads = root.appendingPathComponent("Caches/Updates", isDirectory: true)
+            marker = downloads.appendingPathComponent(UpdateInstallPolicy.launchMarkerName, isDirectory: true)
+            record = root.appendingPathComponent("opened.txt")
+            try Self.copy(at: app, version: "0.8.0")
+            try Self.copy(at: previous, version: "0.7.1")
+            try FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
+            try Data().write(to: downloads.appendingPathComponent("BatteryPulse.dmg"))
+        }
+
+        private static func copy(at url: URL, version: String) throws {
+            try FileManager.default.createDirectory(
+                at: url.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+            try Data(version.utf8).write(to: url.appendingPathComponent("Contents/version"))
+        }
+
+        /// The version of the copy at `url`, or `nil` when there is none.
+        func version(at url: URL) -> String? {
+            (try? Data(contentsOf: url.appendingPathComponent("Contents/version"))).flatMap {
+                String(data: $0, encoding: .utf8)
+            }
+        }
+
+        /// Runs the app's relaunch script with a stand-in for `open` that records its arguments
+        /// and then runs `launch`, a shell command standing in for the opened version, which finds
+        /// the paths in `$MARKER`, `$PREVIOUS` and `$DOWNLOADS`. No process has the installer's
+        /// ID, so the script doesn't wait for it, and the second it gives it more is left out.
+        /// Returns the script's exit status and the arguments of each opening.
+        func run(launch: String, markerChecks: Int = 1) throws -> (status: Int32, openings: [[String]]) {
+            let opener = root.appendingPathComponent("open.sh")
+            let script = "#!/bin/sh\nprintf '%s\\n' \"$@\" '--' >> \"$RECORD\"\n" + launch + "\n"
+            try Self.writeExecutable(script, to: opener)
+            var arguments = UpdateInstallPolicy.relaunchArguments(
+                appPath: app.path, processID: Int32.max, previousPath: previous.path, launchMarker: marker.path,
+                opener: opener.path, markerChecks: markerChecks)
+            #expect(arguments[1].contains("\nsleep 1\n"))
+            arguments[1] = arguments[1].replacingOccurrences(of: "\nsleep 1\n", with: "\nsleep 0\n")
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = arguments
+            process.environment = ProcessInfo.processInfo.environment.merging([
+                "RECORD": record.path, "MARKER": marker.path, "PREVIOUS": previous.path, "DOWNLOADS": downloads.path,
+            ]) { $1 }
+            try process.run()
+            process.waitUntilExit()
+            let recorded = (try? String(contentsOf: record, encoding: .utf8)) ?? ""
+            let openings = recorded.split(separator: "--\n", omittingEmptySubsequences: true).map {
+                $0.split(separator: "\n").map(String.init)
+            }
+            return (process.terminationStatus, openings)
+        }
+
+        /// Writes an executable script from a shell, so this process never holds the file open for
+        /// writing: a process another test starts meanwhile would inherit that descriptor, and
+        /// running the script would then fail with "Text file busy".
+        private static func writeExecutable(_ script: String, to url: URL) throws {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", #"printf '%s' "$1" > "$2" && chmod 755 "$2""#, "sh", script, url.path]
+            try process.run()
+            process.waitUntilExit()
+            #expect(process.terminationStatus == 0)
+        }
+    }
+
+    /// The new version opens and creates the launch marker: the script stops there and leaves
+    /// both copies, the new one at the app's path, its path passed untouched.
+    @Test func relaunchLeavesAVersionThatOpened() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(launch: #"mkdir "$MARKER""#, markerChecks: UpdateInstallPolicy.launchMarkerChecks)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(update.version(at: update.previous) == "0.7.1")
+        #expect(FileManager.default.fileExists(atPath: update.marker.path), "the new version's, not the script's")
+    }
+
+    /// The new version doesn't open: the script puts the previous one back at the app's path and
+    /// the new one where the previous one was, where the previous version deletes it at launch,
+    /// removes its marker and opens the app again.
+    @Test func relaunchPutsThePreviousVersionBack() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        // `open` itself succeeds; the version it opens just never gets as far as the marker.
+        let result = try update.run(launch: ":")
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path], ["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.7.1")
+        #expect(update.version(at: update.previous) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.previous.path + ".new"))
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+        #expect(FileManager.default.fileExists(atPath: update.downloads.path))
+    }
+
+    /// The new version opened and cleaned up before the script looked: the downloads folder, and
+    /// the marker in it, are gone, so the script stops waiting at once, its own marker can't be
+    /// made, and it ends.
+    @Test func relaunchLeavesAVersionThatAlreadyCleanedUp() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(
+            launch: #"rm -rf "$PREVIOUS" "$DOWNLOADS""#, markerChecks: UpdateInstallPolicy.launchMarkerChecks)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.previous.path))
+    }
+
+    /// The marker is missing but so is the previous version (it was deleted, and the downloads
+    /// stayed): there is nothing to put back, so the script removes its marker and ends.
+    @Test func relaunchPutsNothingBackWithoutAPreviousVersion() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(launch: #"rm -rf "$PREVIOUS""#)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+    }
+
+    /// The move aside can't happen (its place is taken): the app's path keeps the new version, and
+    /// the script doesn't open it again.
+    @Test func relaunchNeverLeavesTheAppsPathEmpty() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let aside = URL(fileURLWithPath: update.previous.path + ".new", isDirectory: true)
+        try FileManager.default.createDirectory(at: aside, withIntermediateDirectories: true)
+        let result = try update.run(launch: ":")
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(update.version(at: update.previous) == "0.7.1")
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+    }
+
+    /// The script waits about 30 seconds for the marker, and a shell script can hold it in single
+    /// quotes.
+    @Test func relaunchScriptsShape() {
+        #expect(UpdateInstallPolicy.launchMarkerChecks == 150)
+        #expect(UpdateInstallPolicy.launchMarkerName == "Launched")
+        #expect(!UpdateInstallPolicy.relaunchScript.contains("'"))
+        let arguments = UpdateInstallPolicy.relaunchArguments(
+            appPath: "/Applications/BatteryPulse.app", processID: 42, previousPath: "/tmp/x/BatteryPulse.app",
+            launchMarker: "/tmp/c/Updates/Launched")
+        #expect(
+            arguments == [
+                "-c", UpdateInstallPolicy.relaunchScript, "sh", "/Applications/BatteryPulse.app", "42", "/usr/bin/open",
+                "/tmp/x/BatteryPulse.app", "/tmp/c/Updates/Launched", "150",
+            ])
+    }
+
+    /// What a launch deletes after an update, by how it found the launch marker.
+    @Test func aLaunchDeletesOnlyWhatTheRelaunchLeftIt() {
+        let previous = "/private/var/folders/ab/T/TemporaryItems/NSIRD_BatteryPulse_x/BatteryPulse.app"
+        #expect(UpdateInstallPolicy.cleansUp(after: .claimed, previousPath: previous))
+        #expect(UpdateInstallPolicy.cleansUp(after: .nothingPending, previousPath: previous))
+        #expect(!UpdateInstallPolicy.cleansUp(after: .taken, previousPath: previous), "the script is putting it back")
+        #expect(UpdateInstallPolicy.cleansUp(after: .taken, previousPath: nil), "a stale marker")
+        #expect(UpdateInstallPolicy.cleansUp(after: .claimed, previousPath: nil))
+        #expect(UpdateInstallPolicy.removesDownloads(previousRemains: false))
+        #expect(!UpdateInstallPolicy.removesDownloads(previousRemains: true))
+
+        let id = "io.github.nikitausov.BatteryPulse"
+        func deletes(_ identifier: String?, _ version: String?, running: String? = "0.8.0", bundle: String = id) -> Bool
+        {
+            UpdateInstallPolicy.deletesPreviousVersion(
+                identifier: identifier, version: version, bundleIdentifier: bundle, runningVersion: running)
+        }
+        #expect(deletes(id, "0.7.1"))
+        #expect(deletes(id, "0.9.0"), "the update that didn't open, after the previous version came back")
+        #expect(deletes(id, nil))
+        #expect(deletes(id, "0.7.1", running: nil))
+        #expect(!deletes(id, "0.8.0"), "the running version itself, moved aside")
+        #expect(!deletes(id, "0.8"))
+        #expect(!deletes(id + ".Widget", "0.7.1"))
+        #expect(!deletes(nil, "0.7.1"))
+        #expect(!deletes("", "0.7.1", bundle: ""))
     }
 
     @Test func deletesOnlyThePreviousVersion() {
