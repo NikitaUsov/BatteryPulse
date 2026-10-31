@@ -331,8 +331,9 @@ system's language.
 through a read-only shared-preference exception for the app's `AppleLanguages` alone. Either changes
 the widget's reads or entitlements, so it goes through the posture check, `SecurityGuardTests` and
 the M5 session, whose Russian step switches the language the way a user does (W-12's part above).
-The guide's Language section then says what the widget follows (W-10's part; 0.7.0's guide doesn't
-say it yet).
+The guide's Language section then says what the widget follows (W-10's part; 0.7.0's guide says only
+that the widgets most likely follow the Mac's language, so a language chosen for BatteryPulse alone
+may not reach them).
 
 ---
 

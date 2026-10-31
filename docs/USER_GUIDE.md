@@ -518,7 +518,7 @@ refresh only the kinds of widget you have placed:
 - **Accessories:** right away when an accessory connects or disconnects, and at most every
   quarter of an hour while a charge moves.
 
-When BatteryPulse opens in another language than the last time, it refreshes every widget, so
+When your Mac's language changes, BatteryPulse refreshes every widget the next time it opens, so
 none keeps the old language's words; after an update, it does the same if the old version's
 widget is still running.
 
@@ -531,7 +531,7 @@ accessory.
 **Install and Relaunch** should keep the widgets you placed: it ends the running widget just before
 it replaces the app, so macOS takes the new version's widgets in their place. Replacing
 BatteryPulse from the DMG by hand may remove them. If a widget is gone or blank after an update,
-add it again from the gallery as above.
+remove the blank one and add it again from the gallery as above.
 
 ## Demo Mode
 
@@ -633,6 +633,9 @@ language. To use a different language for BatteryPulse only:
    System Settings…** takes you there).
 2. Under **Applications**, click **+**, choose BatteryPulse and pick a language.
 3. Quit and reopen BatteryPulse.
+
+The widgets most likely follow your Mac's language, so a language chosen for BatteryPulse alone
+may not reach them.
 
 ## Understanding the numbers
 

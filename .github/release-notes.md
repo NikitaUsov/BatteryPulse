@@ -23,22 +23,22 @@
 - **Percentages** in the app, the menu bar and the widgets have no space before the % sign in
   either language, so Russian shows "80%" too. The text Copy Report and `bpulse` write is
   unchanged.
-- **Anonymous version count.** Once per version, at least a day after you start using it, an
+- **Anonymous version count:** once per version, at least a day after you start using it, an
   automatic update check also downloads a small file, `BatteryPulse-count.txt`, from that
   version's release; its public download count shows how many Macs use each version. Nothing
   else is sent: no identifier, nothing about your Mac, its battery or your settings; GitHub sees
   your IP address, as it does for the update check. It is on by default, never runs when Check
   for updates is Never, and turns off in Settings → General.
-- **Fixes:** switching from Raw Data to another page no longer leaves Raw Data's table under the
-  new page for a few seconds, and in Russian a few labels in the menu bar panel and Settings are
-  shorter, so they keep to one line.
+- **Fixes:** switching from Raw Data to another page should no longer leave Raw Data's table under
+  the new page for a few seconds, and in Russian a few labels in the menu bar panel and Settings
+  are shorter, to keep to one line.
 - **For scripts:** `bpulse --device <n> --json` writes dates as ISO 8601 strings, like `bpulse
   --json`; every JSON object `bpulse` prints now has a `formatVersion` field. `--accessories
   --json` is unchanged.
 
 Updating from 0.6.2: **Install and Relaunch** in the update window installs 0.7.0 from inside
-the app. If a widget is gone or blank after the update, add it again from the gallery:
-Control-click the desktop and choose **Edit Widgets…**.
+the app. If a widget is gone or blank after the update, remove the blank one and add it again
+from the gallery: Control-click the desktop and choose **Edit Widgets…**.
 
 ## What's new in 0.6.2
 
