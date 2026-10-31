@@ -488,9 +488,9 @@ its look until you change something here. The Battery widget offers:
 
 Whatever you choose, a battery condition other than Normal, or a Mac running hot, takes the
 widget's last row (in small, the time line's place), and a value that needs attention, such as a
-maximum capacity that is getting low, has a symbol before it, so the color isn't the only sign. Where a label is too long for its place, the widget
-uses a shorter one, such as *Max capacity*. On a Mac without a battery, the Battery widget says
-so and points you to the Accessories widget.
+maximum capacity that is getting low, has a symbol before it, so the color isn't the only sign.
+Where a label is too long for its place, the widget uses a shorter one, such as *Max capacity*.
+On a Mac without a battery, the Battery widget says so and points you to the Accessories widget.
 
 The Accessories widget offers **Show**, *All* or *Lowest only* (the accessory with the least
 charge), and **Hide fully charged**, which leaves out accessories at 100%. With no accessory to
