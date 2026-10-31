@@ -109,6 +109,7 @@ struct WidgetAutomaticTests {
     func automaticIsV061sWidget(_ size: WidgetSize) throws {
         let snapshots = try Self.snapshots()
         #expect(snapshots.contains { $0.temperatureCelsius == nil })
+        #expect(snapshots.contains { $0.isAtSystemChargeLimit })
         #expect(snapshots.contains { WidgetTimelinePlan.estimateMinutes($0) != nil })
         for (locale, timeZone) in Self.cases {
             let formatter = BatteryFormatter(locale: locale)
@@ -118,7 +119,13 @@ struct WidgetAutomaticTests {
                 let plan = WidgetLayoutPlan.make(
                     size: size, configuration: BatteryWidgetConfiguration(), snapshot: snapshot, entry: entry,
                     formatter: formatter, timeZone: timeZone)
-                let expected = try V061Widget(snapshot, size, entry: entry, formatter: formatter, timeZone: timeZone)
+                var expected = try V061Widget(snapshot, size, entry: entry, formatter: formatter, timeZone: timeZone)
+                // The one intended difference in this state (plan-0.7.0 §7.3, W-14): while the
+                // Charge Limit holds the charge, 0.6.1's "Not charging" reads "Charged to limit".
+                if snapshot.isAtSystemChargeLimit {
+                    #expect(expected.state == "Not charging")
+                    expected.state = "Charged to limit"
+                }
                 #expect(V061Widget(plan) == expected, "\(size) \(locale.identifier) \(snapshot.chargeState)")
                 #expect(plan.route == WidgetRoute(page: .overview))
             }
@@ -156,6 +163,7 @@ enum WidgetKeys {
         case .onBattery: "On battery"
         case .fullyCharged: "Fully charged"
         case .chargingOnHold: "Charging on hold"
+        case .chargedToLimit: "Charged to limit"
         case .notCharging: "Not charging"
         case .unknown: "Unknown"
         }

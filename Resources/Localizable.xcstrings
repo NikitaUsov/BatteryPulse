@@ -1547,6 +1547,18 @@
         }
       }
     },
+    "Charged to limit": {
+      "extractionState": "manual",
+      "comment": "Battery state: macOS's Charge Limit (System Settings → Battery) stopped charging and holds the charge; Apple's battery menu says \"Charged to [%] Limit\"",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряжено до лимита"
+          }
+        }
+      }
+    },
     "Charger": {
       "extractionState": "manual",
       "comment": "Raw Data toolbar switch: the charger controller entry (AppleChargerData). Short for the segmented control; the glossary's longer term is «контроллер зарядки»",

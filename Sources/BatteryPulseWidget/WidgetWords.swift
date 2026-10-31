@@ -59,6 +59,7 @@ extension WidgetStateWord {
         case .onBattery: "On battery"
         case .fullyCharged: "Fully charged"
         case .chargingOnHold: "Charging on hold"
+        case .chargedToLimit: "Charged to limit"
         case .notCharging: "Not charging"
         case .unknown: "Unknown"
         }
