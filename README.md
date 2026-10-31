@@ -81,9 +81,15 @@ dependencies.
   to 10–30 %, when battery service is recommended, when the Mac runs hot, and when an
   accessory falls to 10–30 %.
 
-**Widget** (new in 0.3)
-- Small and medium widgets for the desktop and Notification Center: charge, state, when the
-  battery will be full or empty, maximum capacity, cycles and temperature.
+**Widgets** (configurable from 0.7)
+- A Battery widget for the desktop and Notification Center, in small, medium and large: charge,
+  state, when the battery will be full or empty, maximum capacity, cycles and temperature as it
+  comes, and in Edit Widget the main value, a ring or a drawn battery, clock time or time left,
+  level colors or monochrome and the details you choose. A widget placed before 0.7 keeps its
+  look.
+- An Accessories widget, in the same three sizes: the batteries of your keyboard, mouse,
+  trackpad and headphones, all of them or the lowest.
+- A click opens the matching page in the main window.
 
 **Menu bar**
 - Any mix of the battery icon, charge, battery power and temperature.
@@ -236,9 +242,11 @@ needed.
 BatteryCore   platform-independent models, parsing, metrics, raw-value decoding, demo data,
               text report (tested on Linux)
 BatterySource the battery and accessory reads: IOKit and the read-only SMC (macOS) / UIDevice
-              (iOS), with their loggers and signposts; the widget needs nothing more
+              (iOS), with their loggers and signposts; with BatteryCore and BatteryArt, all the
+              widget links
 BatteryKit    on top of BatterySource: demo providers, an @Observable BatteryMonitor, iPhone and
               iPad reads, update signatures
+BatteryArt    the drawn battery icon's painter, shared by the menu bar and the widget (macOS)
 BatteryPulse  SwiftUI app: main and compact windows, menu bar item, history, notifications,
               update check, settings (Sources/BatteryPulseApp)
 BatteryPulseWidget  WidgetKit extension, wrapped into the app as an .appex by build-app.sh
