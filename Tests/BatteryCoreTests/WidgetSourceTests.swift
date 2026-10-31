@@ -49,6 +49,78 @@ struct WidgetSourceTests {
                 == nil)
     }
 
+    /// P2 §8.8: the widget reads accessory batteries only with `MacAccessoryProvider`'s one-shot
+    /// `read()`. It never observes their change notifications (`observeChanges`), never runs an
+    /// `AccessoryMonitor`, whose `start()` registers them, and never reads an `id`: an accessory's
+    /// can be brute-forced back to a Bluetooth address. The `dlsym` lookup stays in BatterySource
+    /// (`SecurityGuardTests`).
+    @Test func theWidgetReadsAccessoriesOnceAndWithoutTheirIDs() throws {
+        let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        #expect(Self.accessoryScan(code) == AccessoryScan(providerCalls: ["read"], observers: 0, idReads: 0))
+    }
+
+    /// What the accessory guard sees in the widget's code.
+    struct AccessoryScan: Equatable {
+        /// What each `MacAccessoryProvider` is used for: `read` for `MacAccessoryProvider().read()`,
+        /// "other" for anything else.
+        var providerCalls: [String]
+        /// `observeChanges`, `AccessoryMonitor` or `SystemAccessories`.
+        var observers: Int
+        /// `.id`, as a member or a key path.
+        var idReads: Int
+    }
+
+    /// Word boundaries as in most regex engines: Swift's default (Unicode) ones see none in
+    /// `provider.observeChanges`.
+    static func accessoryScan(_ code: String) -> AccessoryScan {
+        let provider = #/\bMacAccessoryProvider\b(\s*\(\s*\)\s*\.\s*read\s*\(\s*\))?/#.wordBoundaryKind(.simple)
+        let observer = #/\bobserveChanges\b|\bAccessoryMonitor\b|\bSystemAccessories\b/#.wordBoundaryKind(.simple)
+        return AccessoryScan(
+            providerCalls: code.matches(of: provider).map { $0.output.1 == nil ? "other" : "read" },
+            observers: code.matches(of: observer).count,
+            idReads: code.matches(of: #/\.\s*id\b/#.wordBoundaryKind(.simple)).count)
+    }
+
+    /// The accessory guard fails on code that observes, keeps a provider or reads an ID.
+    @Test func theAccessoryGuardFailsOnBadCode() {
+        func scan(_ text: String) -> AccessoryScan { Self.accessoryScan(SourceScanner.codeOnly(text)) }
+        let read = "await MainActor.run { MacAccessoryProvider().read()?.accessories }"
+        #expect(scan(read) == AccessoryScan(providerCalls: ["read"], observers: 0, idReads: 0))
+        #expect(scan("let provider = MacAccessoryProvider()\nprovider.read()").providerCalls == ["other"])
+        #expect(scan("MacAccessoryProvider().observeChanges { }").observers == 1)
+        #expect(scan("let monitor = AccessoryMonitor(provider: nil)").observers == 1)
+        #expect(scan("let provider = SystemAccessories.makeProvider()").observers == 1)
+        #expect(scan("let key = accessory.id").idReads == 1)
+        #expect(scan("ForEach(accessories, id: \\.id) { _ in }").idReads == 1)
+        // Not an ID: an `id:` label, an entity's own `id`, a longer name; nor text in a comment.
+        let fine = """
+            ForEach(rows, id: \\.offset) { _ in }
+            var id: String { field.rawValue }
+            let detail = BatteryWidgetDetail.init(id: raw)
+            let name = source.identifier
+            // never accessory.id or observeChanges(
+            """
+        #expect(scan(fine) == AccessoryScan(providerCalls: [], observers: 0, idReads: 0))
+    }
+
+    /// An accessory's own name reaches the screen only through `AccessoryNameText`, which marks it
+    /// privacy sensitive, in case macOS ever redacts a widget (P2 §8.8).
+    @Test func accessoryNamesArePrivacySensitive() throws {
+        var namers = 0
+        for file in try Self.widgetCode() {
+            let namer = file.code.firstMatch(of: #/struct AccessoryNameText: View \{([\s\S]*?)\n\}/#)
+            if let namer {
+                namers += 1
+                #expect(namer.output.1.contains(".privacySensitive()"), "\(file.path)")
+            }
+            for name in file.code.matches(of: #/\.reported\b/#.wordBoundaryKind(.simple))
+            where namer?.range.contains(name.range.lowerBound) != true {
+                Issue.record("\(file.path): an accessory's name outside AccessoryNameText")
+            }
+        }
+        #expect(namers == 1)
+    }
+
     /// VoiceOver never reads a symbol's name (0.6.1's level symbol read "Three-Quarter-Charged
     /// Battery" at 80 %): the widget draws SF Symbols only through `decorativeSymbol(_:)`, which
     /// hides them, and names no symbol for a label to show.
