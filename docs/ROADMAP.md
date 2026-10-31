@@ -173,7 +173,8 @@ exists:
 **The 1.x promises (C14).** Within 1.x a change may only add; breaking one waits for 2.0.
 
 1. **Settings keys** of the `io.github.nikitausov.BatteryPulse` domain: names, types and defaults,
-   and the legacy migrations. 0.7's anonymous version count adds three keys (Decisions).
+   and the legacy migrations. 0.7 adds four: the anonymous version count's three and the widget
+   reloads' `lastSeenLanguage` (Decisions).
 2. **Storage** under Application Support (`History/`, `Devices/`): files only gain fields, readers
    ignore unknown ones, and a newer devices file makes the store read-only, never lossy.
 3. **The capture format** of `bpulse --raw` and Export Capture.
@@ -204,7 +205,7 @@ signpost names.
 | Version | What it brings | The maintainer's time | Runs |
 |---------|----------------|-----------------------|------|
 | 0.7 | Widgets you configure (Battery and Accessories, each in small, medium and large), device JSON dates, the anonymous version count, the Charge Limit's paused state; released on 2026-10-31 | the look check, a second look and a layout confirmation, at the desk; no M5 session, as the maintainer decided | about 30-33, plus 3 in reserve |
-| 0.7.1 | The widgets that waited for the feed (History and iPhone & iPad), the widget following the app's own language, and 0.7's M5 checks, which Session R would have run | a look at the new widgets, and the M5 session 0.7.0 went without, hands-free: about 6-8 minutes at its start, 3-4 at the logged day's end and 2 after publishing | 8-9 for the feed and its two widgets, plus the widget's language and the release |
+| 0.7.1 | The widgets that waited for the feed (History and iPhone & iPad), the widget following the app's own language, and 0.7's M5 checks, which Session R would have run | a look at the new widgets, and the M5 session 0.7.0 went without, hands-free: about 12-15 minutes in all (1 once before, 6-8 at its start, 3-4 at the logged day's end and 2 after publishing) | 8-9 for the feed and its two widgets, plus the widget's language, re-pointing 0.7's session tools at 0.7.1, and the release |
 | 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard; the backup release key and the build-number clock, both moved from 0.7 | a look sitting of about 40 minutes and a release-candidate sitting of about 85, plus about 5 for the backup key | 30-38, plus 1 for the key |
 | 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
 | 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
@@ -975,9 +976,10 @@ Decisions that last beyond 0.7:
 - **Logs read after the fact log at notice:** info and debug lines stay in memory, so the version
   count logs one line per try at notice, its outcome's case name and code only.
 - **Build numbers:** 0.7.0 takes `release.yml`'s run number, above 0.6.2's 8, since no candidate
-  was built. A clock that only grows, in both workflows, comes in 0.8 before its first candidate,
-  so each candidate sits above the installed release and each release above every candidate:
-  WidgetKit caches a widget's description by `CFBundleVersion`.
+  was built (the maintainer's decision, 2026-10-31). A clock that only grows, in both workflows,
+  comes in 0.8 before its first candidate, so each candidate sits above the installed release and
+  each release above every candidate: WidgetKit caches a widget's description by `CFBundleVersion`.
+  0.7.1's candidates come before it, so its entry below asks how 0.7.1's release sits above them.
 
 ### 0.7.1
 
@@ -1000,8 +1002,23 @@ C (`0.7.0-appendix-c.md`).
   configurable widget, every size from the gallery, the edit sheet in both languages, a
   parameter added to a shipped widget keeping its choices, the rendering modes, time left, the
   accessibility tree, clicks, the reloads per kind over a logged day, crashes and faults, the
-  update path (F12), the check after publishing, and 0.6.2's WP-18 Xcode items and the menu bar
-  on a dark bar, which reached Session R from 0.6.2
+  update path (F12), the check after publishing, the switch from Raw Data to History, the menu
+  bar painter's pixel check before and after W-11's move, and 0.6.2's WP-18 Xcode items and the
+  menu bar on a dark bar, which reached Session R from 0.6.2
+- [ ] 0.7's session tools re-pointed at 0.7.1 before its session: they still name 0.7.0's
+  integration branch, starting release, candidates, folders and result branches
+
+The feed is a new file of ours on disk and the widget's one new entitlement, which 0.6.1's frozen
+outputs (Stage 1.6) and the roadmap to 1.0 had held for a minor release; the maintainer's decision
+brings them in 0.7.1, and its notes announce them with a privacy line.
+
+**Open question for the maintainer, before 0.7.1's first candidate: build numbers.** 0.7.1's
+candidates, built by `ci.yml`, take its run numbers, far above `release.yml`'s, so 0.7.1's release
+would carry a lower `CFBundleVersion` than the candidates its M5 session installs: the stale-widget
+risk the build-number clock removes, and the clock is planned for 0.8. The choices: the clock
+before 0.7.1's first candidate, another way for 0.7.1's release to sit above its candidates, or the
+risk accepted, with the after-publishing check telling a stale description from a lost widget
+(`docs/plans/0.7.1/widgets.md`, "Build numbers").
 
 ### 0.8 to 1.0.0
 

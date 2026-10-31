@@ -3,7 +3,9 @@
 > **For 0.7.1.** 0.7.0 shipped without this session (the maintainer's decision, 2026-10-31), so
 > 0.7.1's M5 session runs it, on 0.7.1's candidates (`widgets.md` beside this file lists the
 > checks). PLAN.md and its § references are 0.7.0's `docs/plans/0.7.0/PLAN.md`, readable at
-> `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`.
+> `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. The branch it fetches, the
+> base release, the candidates, folders and result branches are still 0.7.0's: 0.7.1 re-points them
+> first (`widgets.md`).
 
 Session R of BatteryPulse 0.7.0 runs on the release candidates on the MacBook Air M5. One local
 Claude Code session with computer use does every step itself, through `m5-session.sh` and its `ui`

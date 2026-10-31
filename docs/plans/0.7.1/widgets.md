@@ -11,7 +11,8 @@ This file holds what BatteryPulse 0.7 designed for its widgets and didn't build,
 The maintainer decided on 2026-10-31 to release 0.7.0 without its M5 session (Session R and its
 logged day) and to move the stretch and the widget's language to 0.7.1, not to 1.1 as 0.7's plan had
 it. 0.8 follows 0.7.1. The session tools beside this file (`m5-session.sh`, its helpers,
-`SESSION-R.md` and the launchers) are 0.7.0's, copied with their paths moved here, and
+`SESSION-R.md` and the launchers) are 0.7.0's, copied with their paths into the repository moved
+here and nothing else changed (see "Retargeting the session tools" below), and
 `0.7.0-appendix-c.md` is 0.7.0's whole Appendix C, which records what 0.7 shipped and measured.
 
 **Where its references lead.** The sections taken from 0.6.2's plan (P2) keep their numbers (§8.3,
@@ -75,7 +76,10 @@ Specified in P2 §8.3, §8.5 (History, iPhone & iPad, feed-only options), §8.8 
   - the MVP has merged with budget left.
 
   The budget condition no longer applies: the maintainer moved the three packages to 0.7.1 on
-  2026-10-31 (`0.7.0-appendix-c.md`, "The release"). The other three still hold.
+  2026-10-31 (`0.7.0-appendix-c.md`, "The release"). The other three still hold. RD §3.2 also said
+  they would go to "1.1, not 0.7.x" if they missed 0.7.0, since the feed's new file and the widget's
+  new entitlement wait for a minor release under the frozen-outputs rule; 0.7.1 ships them by the
+  maintainer's decision, announced in its notes (RD's note of 2026-10-31).
 - **One type behind the feed reader,** so the feed's location or entitlement can change later
   without touching the views (RD §3.2 engineering notes): A′, the shared-preference exception, if a
   macOS 27.x update denies A; an App Group container only if M-1 is ever revisited.
@@ -206,8 +210,9 @@ catalogue's own fields, the attention row and the Accessories kind's MVP options
 |---|---|---|---|
 | History chart | bool, large and up (`When(widgetFamily:)`) | on in large and extra large, from the release that ships the feed; placed large widgets get it too (Q-W4, decided by delegation) | **ships only with the feed (W-5).** It owns the sparkline and the History chart, which are never part of Automatic, and takes the last two detail rows (§8.17) |
 
-**The details field catalogue,** the fields that wait for the feed (`BatteryWidgetField`, raw values
-frozen once shipped; 0.7 shipped them as the Details entity `BatteryWidgetDetail`'s ids):
+**The details field catalogue,** the fields that wait for the feed (`BatteryWidgetField`). The field
+raw values 0.7 declared are the Details entity `BatteryWidgetDetail`'s ids and frozen; these two
+aren't among them and get theirs when the feed ships:
 
 | Field | Source | Phase | Notes |
 |---|---|---|---|
@@ -277,7 +282,8 @@ hardware-derived identifier, the widget's own files without `dlopen`, `dlsym`, `
 
 ### The packages
 
-From P2 §8.14, with 0.7's estimates:
+From P2 §8.14; 0.7's estimates are under "What 0.7's plan added" above (W-5 3 runs, W-6 3, W-7
+2-3):
 
 | ID | Package | Depends on | Phase |
 |---|---|---|---|
@@ -357,6 +363,10 @@ what Session R would have, on 0.7.1's release candidate:
 - **Plug, unplug and accessories** (step 9, G7-8, G7-17): the reloads per kind, and
   `currentConfigurations()`' counts against the widgets placed.
 - **The Charge Limit** (step 9b, G7-18): "Charged to limit" on the M5, its Russian screenshot.
+- **Step 10's extras:** the switch from Raw Data to History (`R-raw-history`, 0.6.2's Session B
+  finding 1, which W-3c fixed: History at once, with no Raw Data table under it), and, since W-11
+  shipped, `scripts/menu-bar-shots.sh` before and after, identical pixel for pixel, for the menu bar
+  painter W-11 moved into BatteryArt.
 - **Step 11's optional items:** 0.6.2's WP-18 Xcode items (SUI-17, SUI-19's timing, SZ-10's icon)
   and the menu bar item on a dark bar, which 0.6.2's Session B couldn't check and C-1 gave to
   Session R's GUI phase.
@@ -370,9 +380,27 @@ what Session R would have, on 0.7.1's release candidate:
 - **What W-10 couldn't see:** the What's New window's three rows and the count row at 520 pt in
   Russian, and the widget drawn without extra large's views in every declared family on a Mac.
 
-The candidates (RC-U as 0.6.99, RC-F as 0.5.99, RC-P and RC-U2) need the build-number clock first,
-which moved to 0.8 (ROADMAP's 0.8 entry), or another way to keep each candidate's build number above
-the installed release's: 0.7.0's is `release.yml`'s run number.
+**Build numbers.** A candidate built by `ci.yml` takes that workflow's run number, in the hundreds at
+0.7.0's release, and a release takes `release.yml`'s, 0.7.0's the next after 0.6.2's 8. So 0.7.1's
+candidates already sit above the installed 0.7.0; the risk runs the other way. 0.7.1's published
+release, and F12's update from a candidate to it, would carry a lower `CFBundleVersion` than the
+candidates its M5 session installed, and WidgetKit caches a widget's description by that number, so
+a stale widget from that cause could be misread as a lost configuration (plan-0.7.0 §6.5). The
+build-number clock that removes the risk is planned for 0.8, before its first candidate (the
+maintainer's decision, 2026-10-31). So before 0.7.1's first candidate the maintainer has a question
+to answer, which ROADMAP's 0.7.1 entry carries: the clock then rather than in 0.8, another way for
+0.7.1's release to sit above its candidates, or the risk accepted, with 0.7.1's after-publishing
+check telling a stale description from a lost widget.
+
+**Retargeting the session tools.** Only their paths into the repository were moved here. Everything
+else still names 0.7.0's session: the integration branch `claude/070-integration` that the launchers
+and the runbook fetch (likely deleted after 0.7.0's squash merge, so the documented start would
+fail), the base release (`v0.6.2`, "his 0.6.2"), the candidates and their versions (RC-U as 0.6.99,
+RC-F as 0.5.99, RC-P on `claude/070-spike-param`, RC-U2), the `~/bp-070/` worktrees and the
+`claude/070-session-*` result branches. 0.7.1's plan sets each for 0.7.1 before its session (a
+0.6.99 candidate is older than 0.7.0, so it is no update from it), together with the build-number
+answer above, and counts that run in 0.7.1's estimate. The copies stay as they are until then, so
+CI's dry run keeps checking the rules they froze.
 
 ---
 
