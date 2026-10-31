@@ -158,13 +158,17 @@ import Testing
         #expect(blocker(noImage) == .notSigned)
     }
 
+    /// macOS 27.0, the oldest the app runs on (`build-app.sh`'s `LSMinimumSystemVersion`).
+    private static let macOS27 = AppVersion(parts: [27, 0, 0])
+
     @Test func checksTheCopyTakenOutOfTheDMG() {
         let id = "io.github.nikitausov.BatteryPulse"
         func check(_ identifier: String?, _ version: String?, current: AppVersion = UpdateInstallTests.v031)
             -> UpdateInstallError?
         {
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: identifier, version: version, expectedIdentifier: id, release: Self.v040, current: current)
+                identifier: identifier, version: version, minimumSystemVersion: "27.0", expectedIdentifier: id,
+                release: Self.v040, current: current, system: Self.macOS27)
         }
         #expect(check(id, "0.4.0") == nil)
         #expect(check(id, "0.4") == nil)
@@ -176,8 +180,54 @@ import Testing
         #expect(check(id, "0.4.0", current: Self.v040) == .notNewer)
         #expect(
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: "", version: "0.4.0", expectedIdentifier: "", release: Self.v040, current: Self.v031)
+                identifier: "", version: "0.4.0", minimumSystemVersion: "27.0", expectedIdentifier: "",
+                release: Self.v040, current: Self.v031, system: Self.macOS27)
                 == .unexpectedBundle)
+    }
+
+    /// A copy that needs a newer macOS than the running one is refused before the swap, so an
+    /// update can't leave an app macOS won't open; so is one whose minimum can't be read.
+    @Test func refusesACopyThatNeedsANewerMacOS() {
+        let id = "io.github.nikitausov.BatteryPulse"
+        func check(_ minimum: String?, system: AppVersion = UpdateInstallTests.macOS27) -> UpdateInstallError? {
+            UpdateInstallPolicy.checkStagedBundle(
+                identifier: id, version: "0.4.0", minimumSystemVersion: minimum, expectedIdentifier: id,
+                release: Self.v040, current: Self.v031, system: system)
+        }
+        #expect(check("99.0") == .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])))
+        #expect(check("27.0.1") == .needsNewerMacOS(minimum: AppVersion(parts: [27, 0, 1])))
+        #expect(
+            check("27.2", system: AppVersion(parts: [27, 1, 9]))
+                == .needsNewerMacOS(minimum: AppVersion(parts: [27, 2])))
+        #expect(check("27.0") == nil)
+        #expect(check("27") == nil)
+        #expect(check("26.4") == nil)
+        #expect(check("27.1", system: AppVersion(parts: [27, 1, 0])) == nil)
+        #expect(check("27.1", system: AppVersion(parts: [28, 0, 0])) == nil)
+        // The running system meets its own version (on Linux, the kernel's).
+        let running = UpdateInstallPolicy.runningSystem
+        #expect(check(running.description, system: running) == nil)
+        #expect(running.parts.count == 3)
+        for unreadable in [
+            nil, "", " ", "27.0 ", " 27.0", "v27.0", "27.0-beta", "27.", ".27", "27..0", "27.0.0.0", "x",
+        ]
+            + ["27,0", "+27.0", "-1", "٢٧.0", "27.0\n", "99999999999999999999.0"]
+        {
+            #expect(check(unreadable) == .unexpectedBundle, "\(String(describing: unreadable))")
+        }
+        // The DMG is genuine, but it would only install an app this Mac can't open.
+        let error = UpdateInstallError.needsNewerMacOS(minimum: AppVersion(parts: [99, 0]))
+        #expect(!error.isIntegrityFailure && !error.isRetryable)
+        #expect(error.fallback == .releasePage)
+    }
+
+    @Test func readsLSMinimumSystemVersionStrictly() {
+        #expect(UpdateInstallPolicy.minimumSystem("27.0") == AppVersion(parts: [27, 0]))
+        #expect(UpdateInstallPolicy.minimumSystem("27.1.2")?.parts == [27, 1, 2])
+        #expect(UpdateInstallPolicy.minimumSystem("27")?.parts == [27])
+        #expect(UpdateInstallPolicy.minimumSystem("027.0")?.parts == [27, 0])
+        #expect(UpdateInstallPolicy.minimumSystem("27.0.0.0") == nil)
+        #expect(UpdateInstallPolicy.minimumSystem(nil) == nil)
     }
 
     /// An older release never replaces a newer copy, even signed with the release key: it isn't
@@ -194,7 +244,8 @@ import Testing
         let id = "io.github.nikitausov.BatteryPulse"
         func check(_ version: String, release: AppVersion, current: AppVersion) -> UpdateInstallError? {
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: id, version: version, expectedIdentifier: id, release: release, current: current)
+                identifier: id, version: version, minimumSystemVersion: "27.0", expectedIdentifier: id,
+                release: release, current: current, system: Self.macOS27)
         }
         #expect(check("0.4.0", release: Self.v040, current: newer) == .notNewer)
         #expect(check("0.4.0", release: Self.v040, current: Self.v040) == .notNewer)
@@ -402,31 +453,39 @@ import Testing
         #expect(UpdateInstallPolicy.signatureAssetName(for: "BatteryPulse.dmg") == "BatteryPulse.dmg.sig")
     }
 
-    /// After a failed integrity check, or for a release without a signature, the window offers
-    /// only the release page, never the DMG the app refused.
-    @Test func everyErrorMapsToItsFallback() {
-        let expected: [UpdateInstallError: UpdateFallback] = [
-            .developmentBuild: .downloadDMG,
-            .translocated: .downloadDMG,
-            .folderNotWritable: .downloadDMG,
-            .notSigned: .releasePage,
-            .notNewer: .downloadDMG,
-            .downloadFailed: .downloadDMG,
-            .digestMismatch: .releasePage,
-            .badSignature: .releasePage,
-            .mountFailed: .downloadDMG,
-            .unexpectedBundle: .releasePage,
-            .invalidCodeSignature: .releasePage,
-            .replaceFailed: .downloadDMG,
-            .relaunchFailed: .none,
-        ]
-        #expect(Set(expected.keys) == Set(UpdateInstallError.allCases))
-        for error in UpdateInstallError.allCases {
-            #expect(error.fallback == expected[error], "\(error)")
-            #expect(error.isIntegrityFailure == (expected[error] == .releasePage), "\(error)")
+    /// Every error, one of each case.
+    private static let everyError: [UpdateInstallError] = [
+        .developmentBuild, .translocated, .folderNotWritable, .notSigned, .notNewer, .downloadFailed,
+        .digestMismatch, .badSignature, .mountFailed, .unexpectedBundle, .invalidCodeSignature,
+        .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])), .replaceFailed, .relaunchFailed,
+    ]
+
+    /// What each error leads to: its fallback, and whether it is an integrity failure. A switch, so
+    /// a new case doesn't compile until it is here (and in ``everyError``).
+    private static func expected(_ error: UpdateInstallError) -> (UpdateFallback, integrity: Bool) {
+        switch error {
+        case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
+            .replaceFailed:
+            (.downloadDMG, false)
+        case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature:
+            (.releasePage, true)
+        case .needsNewerMacOS: (.releasePage, false)
+        case .relaunchFailed: (.none, false)
         }
-        // An integrity failure is never worth another try.
-        #expect(!UpdateInstallError.allCases.contains { $0.isIntegrityFailure && $0.isRetryable })
+    }
+
+    /// After a failed integrity check, or for a release without a signature, the window offers
+    /// only the release page, never the DMG the app refused; and only the release page for an
+    /// update this Mac can't open.
+    @Test func everyErrorMapsToItsFallback() {
+        #expect(Set(Self.everyError).count == Self.everyError.count)
+        for error in Self.everyError {
+            let (fallback, integrity) = Self.expected(error)
+            #expect(error.fallback == fallback, "\(error)")
+            #expect(error.isIntegrityFailure == integrity, "\(error)")
+            // An integrity failure is never worth another try.
+            #expect(!(error.isIntegrityFailure && error.isRetryable), "\(error)")
+        }
     }
 
     @Test func theBrowserOpensOnlyGitHubPages() throws {

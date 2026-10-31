@@ -293,7 +293,9 @@ extension UpdateInstallError {
         case .unexpectedBundle:
             String(localized: "The disk image doesn't contain the expected version of BatteryPulse.")
         case .invalidCodeSignature: String(localized: "The new version's code signature isn't valid.")
-        case .replaceFailed: String(localized: "BatteryPulse couldn't replace the installed copy.")
+        // A version that needs a newer macOS says so in words of its own once they are translated;
+        // until then, what happened: the installed copy stays.
+        case .needsNewerMacOS, .replaceFailed: String(localized: "BatteryPulse couldn't replace the installed copy.")
         case .relaunchFailed:
             String(
                 localized:
@@ -306,7 +308,7 @@ extension UpdateInstallError {
         switch self {
         case .translocated, .folderNotWritable: message
         case .developmentBuild, .notSigned, .notNewer, .downloadFailed, .digestMismatch, .badSignature, .mountFailed,
-            .unexpectedBundle, .invalidCodeSignature, .replaceFailed, .relaunchFailed:
+            .unexpectedBundle, .invalidCodeSignature, .needsNewerMacOS, .replaceFailed, .relaunchFailed:
             nil
         }
     }
@@ -555,7 +557,8 @@ nonisolated enum UpdateInstallSteps {
         }
     }
 
-    /// The same app, exactly the release's version, newer than the running one.
+    /// The same app, exactly the release's version, newer than the running one, and one that
+    /// this Mac's macOS opens.
     private static func checkBundle(
         _ bundle: URL, identifier: String, release: AppVersion, current: AppVersion
     ) throws(UpdateInstallError) {
@@ -563,7 +566,9 @@ nonisolated enum UpdateInstallSteps {
         if let problem = UpdateInstallPolicy.checkStagedBundle(
             identifier: info?["CFBundleIdentifier"] as? String,
             version: info?["CFBundleShortVersionString"] as? String,
-            expectedIdentifier: identifier, release: release, current: current)
+            minimumSystemVersion: info?["LSMinimumSystemVersion"] as? String,
+            expectedIdentifier: identifier, release: release, current: current,
+            system: UpdateInstallPolicy.runningSystem)
         {
             throw problem
         }

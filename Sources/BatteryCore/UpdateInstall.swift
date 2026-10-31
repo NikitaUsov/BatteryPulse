@@ -3,7 +3,7 @@ import Foundation
 /// Why BatteryPulse can't install an update itself, or why an installation stopped. Every case
 /// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap);
 /// ``fallback`` says what the Software Update window offers instead.
-public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
+public enum UpdateInstallError: Error, Sendable, Hashable {
     // Checked before Install and Relaunch is offered.
     /// A build without a version (CI artifacts, `swift run`).
     case developmentBuild
@@ -24,10 +24,14 @@ public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
     /// The DMG's signature doesn't verify with any of ``ReleaseSigning/publicKeys``.
     case badSignature
     case mountFailed
-    /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version.
+    /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version, or
+    /// without a readable `LSMinimumSystemVersion`.
     case unexpectedBundle
     /// The new copy's code signature (ad-hoc, sealing its contents) doesn't validate.
     case invalidCodeSignature
+    /// The new copy's `LSMinimumSystemVersion`, `minimum`, is above the running macOS, which
+    /// wouldn't open it.
+    case needsNewerMacOS(minimum: AppVersion)
     /// The copy couldn't be made next to the app, or the two couldn't be swapped (another
     /// volume, a file system without swapping renames, or macOS refused).
     case replaceFailed
@@ -43,15 +47,20 @@ public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
         switch self {
         case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature: true
         case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
-            .replaceFailed, .relaunchFailed:
+            .needsNewerMacOS, .replaceFailed, .relaunchFailed:
             false
         }
     }
 
     /// What the window offers when the app doesn't install the update itself.
     public var fallback: UpdateFallback {
-        if isIntegrityFailure { return .releasePage }
-        return self == .relaunchFailed ? .none : .downloadDMG
+        switch self {
+        case .relaunchFailed: .none
+        // The update is genuine, but the DMG wouldn't help here: the release page says what the
+        // update needs.
+        case .needsNewerMacOS: .releasePage
+        default: isIntegrityFailure ? .releasePage : .downloadDMG
+        }
     }
 }
 
@@ -122,7 +131,9 @@ public enum UpdateIntegrity {
 ///   so a link in them opens only over `https`, on any host (``ReleaseNotes/isAllowedLink(_:)``).
 /// - **Which version:** the copy taken out of the DMG must be this app at exactly the release's
 ///   version, and newer than the running one, so an older signed release can't be installed
-///   over a newer one (``checkStagedBundle(identifier:version:expectedIdentifier:release:current:)``).
+///   over a newer one, and it must run on this Mac's macOS, so an update can't leave an app that
+///   macOS won't open
+///   (``checkStagedBundle(identifier:version:minimumSystemVersion:expectedIdentifier:release:current:system:)``).
 /// - **Not a boundary:** another process of the same user. It could change the DMG between the
 ///   check and the mount, or the new copy between the check and the swap, but it can replace the
 ///   app anyway, so the updater doesn't try to defend against it.
@@ -159,14 +170,40 @@ public enum UpdateInstallPolicy {
     }
 
     /// Checks the Info.plist values of the copy taken out of the DMG before it replaces this one:
-    /// the same app, exactly the release's version, and newer than the running one.
+    /// the same app, exactly the release's version, newer than the running one, and an
+    /// `LSMinimumSystemVersion` that `system`, the running macOS (``runningSystem``), meets. A
+    /// copy without a readable `LSMinimumSystemVersion` (``minimumSystem(_:)``) isn't what the
+    /// release workflow builds: `build-app.sh` always writes one.
     public static func checkStagedBundle(
-        identifier: String?, version: String?, expectedIdentifier: String, release: AppVersion, current: AppVersion
+        identifier: String?, version: String?, minimumSystemVersion: String?, expectedIdentifier: String,
+        release: AppVersion, current: AppVersion, system: AppVersion
     ) -> UpdateInstallError? {
         guard !expectedIdentifier.isEmpty, identifier == expectedIdentifier,
-            let version = version.flatMap(AppVersion.init), version == release
+            let version = version.flatMap(AppVersion.init), version == release,
+            let minimum = minimumSystem(minimumSystemVersion)
         else { return .unexpectedBundle }
-        return release > current ? nil : .notNewer
+        guard release > current else { return .notNewer }
+        return minimum > system ? .needsNewerMacOS(minimum: minimum) : nil
+    }
+
+    /// An `LSMinimumSystemVersion` value: one to three numbers of ASCII digits separated by dots,
+    /// as in `27.0` or `27.1.2`. `nil` for a missing, empty or malformed value, which the check
+    /// refuses: unlike ``AppVersion/init(_:)``, nothing around the numbers is ignored.
+    public static func minimumSystem(_ value: String?) -> AppVersion? {
+        guard let value else { return nil }
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        let numbers = parts.compactMap { part in
+            part.allSatisfy { ("0"..."9").contains($0) } ? Int(part) : nil
+        }
+        guard (1...3).contains(parts.count), numbers.count == parts.count else { return nil }
+        return AppVersion(parts: numbers)
+    }
+
+    /// The version of the running system (macOS, on a Mac), which a staged copy's
+    /// `LSMinimumSystemVersion` must not be above.
+    public static var runningSystem: AppVersion {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return AppVersion(parts: [version.majorVersion, version.minorVersion, version.patchVersion])
     }
 
     /// The tool the installer attaches, inspects and ejects the DMG with. Since macOS 26 it
