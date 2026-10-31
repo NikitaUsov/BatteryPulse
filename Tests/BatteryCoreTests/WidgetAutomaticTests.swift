@@ -30,7 +30,7 @@ struct WidgetAutomaticTests {
             let percent = try #require(s.chargePercent)
             symbol = BatteryPresentation.symbolName(for: s)
             symbolTint = BatteryPresentation.levelTier(for: s)
-            number = formatter.percent(percent)
+            number = Self.percent(percent, formatter.locale)
             state =
                 switch s.chargeState {
                 case .charging: "Charging"
@@ -54,7 +54,7 @@ struct WidgetAutomaticTests {
             rows = []
             guard size == .medium else { return }
             if let health = s.healthPercent {
-                rows.append(Row(label: "Maximum capacity", value: formatter.percent(health)))
+                rows.append(Row(label: "Maximum capacity", value: Self.percent(health, formatter.locale)))
             }
             if let cycles = s.cycleCount {
                 rows.append(Row(label: "Cycle count", value: cycles.formatted(.number.locale(formatter.locale))))
@@ -62,6 +62,11 @@ struct WidgetAutomaticTests {
             if let temperature = s.temperatureCelsius {
                 rows.append(Row(label: "Temperature", value: formatter.celsius(temperature)))
             }
+        }
+
+        /// 0.6.1's percentages: the locale's own format, "80 %" in Russian.
+        static func percent(_ value: Double, _ locale: Locale) -> String {
+            (value / 100).formatted(.percent.precision(.fractionLength(0)).locale(locale))
         }
 
         /// The plan, read back into 0.6.1's fields; `nil` where it shows something 0.6.1 never did.
@@ -126,6 +131,15 @@ struct WidgetAutomaticTests {
                     #expect(expected.state == "Not charging")
                     expected.state = "Charged to limit"
                 }
+                // The second look's change (plan-0.7.0 §6.1b): 0.6.1 wrote the locale's space
+                // before the sign, "80 %" in Russian; 0.7 writes "80%" in every locale. A charge
+                // and a capacity have no digit groups, so every space goes.
+                let spaced = expected.number
+                expected.number.removeAll(where: \.isWhitespace)
+                for index in expected.rows.indices where expected.rows[index].label == "Maximum capacity" {
+                    expected.rows[index].value.removeAll(where: \.isWhitespace)
+                }
+                #expect(locale.identifier != "ru_RU" || spaced != expected.number, "0.6.1's Russian: \(spaced)")
                 #expect(V061Widget(plan) == expected, "\(size) \(locale.identifier) \(snapshot.chargeState)")
                 #expect(plan.route == WidgetRoute(page: .overview))
             }

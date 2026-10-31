@@ -75,10 +75,11 @@ struct AccessoriesWidgetPreviewTests {
     static let earbuds = Scene(
         name: "earbuds-lowest", title: "Lowest only: earbuds", accessories: demo.filter(\.hasParts),
         configuration: AccessoriesWidgetConfiguration(mode: .lowest))
-    /// Out of a full case: three parts at 100 %, wider than small's line, and an old reading under
-    /// them, small's tallest lowest accessory.
+    /// Out of a full case: three parts at 100%, small's widest line of parts (one line in English
+    /// and Russian alike since percentages lost the space before the sign), and an old reading
+    /// under them, small's tallest lowest accessory.
     static let fullEarbuds = Scene(
-        name: "earbuds-full-old", title: "Lowest only: earbuds at 100 %, reading old",
+        name: "earbuds-full-old", title: "Lowest only: earbuds at 100%, reading old",
         accessories: [
             accessory(
                 "AirPods Pro", .headphones, 100,

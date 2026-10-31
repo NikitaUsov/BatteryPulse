@@ -218,8 +218,8 @@ extension WidgetAccessibility {
 }
 
 extension AccessoryWidgetRow {
-    /// "Magic Keyboard, 76 %"; earbuds name each part: "AirPods Pro, Left, 64 %, Right, 61 %,
-    /// Case, 90 %, charging".
+    /// "Magic Keyboard, 76%"; earbuds name each part: "AirPods Pro, Left, 64%, Right, 61%,
+    /// Case, 90%, charging".
     public var spokenLabel: WidgetSpokenLabel {
         var phrases: [WidgetPhrase] = [name.phrase]
         for part in parts {
@@ -231,7 +231,7 @@ extension AccessoryWidgetRow {
 }
 
 extension AccessoryWidgetCharge {
-    /// The charge and its state: "45 %, charging" (the menu bar panel's words), or the charge and
+    /// The charge and its state: "45%, charging" (the menu bar panel's words), or the charge and
     /// the state's own words.
     var phrases: [WidgetPhrase] {
         switch status {

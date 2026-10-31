@@ -542,7 +542,8 @@ struct WidgetPreviewTests {
 
     /// The look check's first question: small and medium Automatic, which keep 0.6.1's look but
     /// for the plan's intended changes (§7.3: "tomorrow", the attention row, "Updated", the empty
-    /// state's words, the symbol beside a low charge).
+    /// state's words, the symbol beside a low charge) and, in Russian, the second look's "80%"
+    /// where 0.6.1 wrote "80 %".
     static let questionOneScenes: [Scene] = [
         onBattery, charging, low, critical, full, onHold, old, serviced, hot, noBattery,
     ]

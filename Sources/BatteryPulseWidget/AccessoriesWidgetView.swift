@@ -198,8 +198,9 @@ struct AccessoryPartsView: View {
 }
 
 /// The lowest accessory's parts: on one line where they fit, else the case on a line of its own
-/// under the buds. Small has room for "64 % 61 % 90 %" but not for three parts at 100 % (in Russian
-/// they would run about 15 points past the margin), and a charge is never cut.
+/// under the buds, so a charge is never cut. Small fits even three parts at 100% on one line in
+/// English and Russian; before percentages lost the space before the sign, Russian's ran about 15
+/// points past the margin, and a wider number format still could.
 struct AccessoryLowestPartsView: View {
     let parts: [AccessoryWidgetPart]
 

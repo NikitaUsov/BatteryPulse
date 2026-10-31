@@ -27,6 +27,12 @@ struct Widget061View: View {
     /// 0.6.1's formatter: the locale's numbers, English unit symbols.
     private var formatter: BatteryFormatter { BatteryFormatter(locale: locale) }
 
+    /// 0.6.1's percentages: the locale's own format, with the space Russian writes before the sign
+    /// ("80 %"), which 0.7's ``BatteryFormatter/percent(_:fractionDigits:)`` leaves out.
+    private func percent(_ value: Double) -> String {
+        (value / 100).formatted(.percent.precision(.fractionLength(0)).locale(locale))
+    }
+
     var body: some View {
         if let snapshot, let percent = snapshot.chargePercent {
             switch size {
@@ -59,7 +65,7 @@ struct Widget061View: View {
                 .foregroundStyle(renderingMode == .fullColor ? tint(s) : .primary)
                 .widgetAccentable()
             Spacer(minLength: 0)
-            Text(verbatim: formatter.percent(percent))
+            Text(verbatim: self.percent(percent))
                 .font(.system(size: 34, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.7)
@@ -80,7 +86,7 @@ struct Widget061View: View {
     private func details(_ s: BatterySnapshot) -> some View {
         Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
             if let health = s.healthPercent {
-                row("Maximum capacity", formatter.percent(health))
+                row("Maximum capacity", percent(health))
             }
             if let cycles = s.cycleCount {
                 row("Cycle count", cycles.formatted(.number.locale(locale)))

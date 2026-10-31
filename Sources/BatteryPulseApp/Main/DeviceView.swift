@@ -281,7 +281,7 @@ struct DeviceView: View {
         }
     }
 
-    /// "4,800 mAh  95.4 % of design".
+    /// "4,800 mAh  95.4% of design".
     private func capacity(_ milliampHours: Int, ratio: Double?) -> String {
         let value = formatter.milliampHours(milliampHours)
         guard let ratio else { return value }
