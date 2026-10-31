@@ -17,6 +17,7 @@ import Testing
         (.criticalBattery, .discharging, 6, .critical),
         (.fullyCharged, .charged, 100, .normal),
         (.optimizedHold, .notCharging, 80, .normal),
+        (.systemChargeLimit, .notCharging, 80, .normal),
         (.justPluggedIn, .charging, 52, .normal),
         (.wornBattery, .discharging, 64, .normal),
         (.heavyLoad, .discharging, 58, .normal),

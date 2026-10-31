@@ -151,6 +151,24 @@ import Testing
         }
     }
 
+    /// Demo Mode's scene expands into the dictionaries the M5 publishes at the limit, so the look is
+    /// reviewed without the real state, by the same decision.
+    @Test func theDemoSceneIsAtTheLimit() throws {
+        let reading = try #require(DemoScenario.systemChargeLimit.battery).reading(at: Fixture.timestamp)
+        let chargerData = try #require(reading.smartBattery["ChargerData"]?.dictionaryValue)
+        #expect(chargerData["NotChargingReason"]?.intValue == Self.held)
+        let s = reading.snapshot
+        #expect(s.isAtSystemChargeLimit)
+        #expect(WidgetStateWord(s) == .chargedToLimit)
+        #expect(s.chargePercent == 80)
+        #expect(s.adapter?.watts == 60)
+        #expect(s.batteryPowerWatts == 0)
+        #expect(BatteryMotionKey(s).isAtSystemChargeLimit)
+        for scenario in DemoScenario.allCases where scenario != .systemChargeLimit {
+            #expect(scenario.battery?.reading(at: Fixture.timestamp).snapshot.isAtSystemChargeLimit != true)
+        }
+    }
+
     // MARK: The widget
 
     static func plan(

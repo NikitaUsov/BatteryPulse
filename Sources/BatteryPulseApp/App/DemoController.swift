@@ -35,6 +35,7 @@ final class DemoController {
         (.scene(.criticalBattery), .overview),
         (.scene(.lowPowerMode), .power),
         (.scene(.optimizedHold), .overview),
+        (.scene(.systemChargeLimit), .overview),
         (.scene(.slowCharger), .power),
         (.scene(.wornBattery), .health),
         (.scene(.noBattery), .overview),
@@ -279,7 +280,7 @@ extension DemoController.Step {
         case .scene(.charging), .scene(.fullyCharged), .scene(.justPluggedIn), .animation(.chargeFromEmpty): .charging
         case .scene(.lowBattery), .scene(.wornBattery), .scene(.slowCharger), .scene(.lowPowerMode): .warning
         case .scene(.criticalBattery), .scene(.heavyLoad), .animation(.drainToEmpty): .critical
-        case .scene(.onBattery), .scene(.optimizedHold), .scene(.noBattery): .neutral
+        case .scene(.onBattery), .scene(.optimizedHold), .scene(.systemChargeLimit), .scene(.noBattery): .neutral
         }
     }
 }
@@ -293,6 +294,7 @@ extension DemoScenario {
         case .criticalBattery: "Critical battery"
         case .fullyCharged: "Fully charged"
         case .optimizedHold: "Optimized charging"
+        case .systemChargeLimit: "Charge limit"
         case .justPluggedIn: "Just plugged in"
         case .wornBattery: "Worn battery"
         case .heavyLoad: "Heavy load"
@@ -310,6 +312,7 @@ extension DemoScenario {
         case .criticalBattery: "Below 10 percent, the charge turns red."
         case .fullyCharged: "Plugged in and full; the adapter powers the Mac."
         case .optimizedHold: "macOS holds the charge at 80 percent to slow battery aging."
+        case .systemChargeLimit: "Charging stopped at the Charge Limit set in System Settings → Battery."
         case .justPluggedIn: "macOS is still estimating the time to full."
         case .wornBattery: "Past its rated cycles and below 80 percent capacity: service recommended."
         case .heavyLoad: "Rendering or gaming: high power draw and an elevated thermal state."
@@ -327,6 +330,7 @@ extension DemoScenario {
         case .criticalBattery: "battery.0percent"
         case .fullyCharged: "battery.100percent"
         case .optimizedHold: "pause.circle"
+        case .systemChargeLimit: "arrow.up.to.line"
         case .justPluggedIn: "powerplug.portrait.fill"
         case .wornBattery: "exclamationmark.triangle"
         case .heavyLoad: "flame"
