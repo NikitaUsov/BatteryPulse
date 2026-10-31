@@ -77,6 +77,62 @@ import Testing
         #expect(formatter.map { file in percentStyles.contains { file.code.contains($0) } } == true)
     }
 
+    /// Nor does a string literal write its own space before the sign (`"\(number) %"`, or
+    /// `+ "\u{00A0}%"`), which the guard above can't see. The text reports are the exception: their
+    /// fixed English is `bpulse`'s output and Copy Report's, byte for byte. The scan must still find
+    /// their "70 %", so the list can't go stale.
+    @Test func noLiteralWritesASpaceBeforeAPercentSign() throws {
+        #expect([#"\(level) %"#, #"\(n)\u{00A0}%"#, "\u{202F}%,", "at 80 %.", "%d %%"].allSatisfy(Self.spacesASign))
+        #expect(![#"\(level)%"#, "Updated %@", "%@ of %1$@", "% d", " %d", "%02x"].contains(where: Self.spacesASign))
+        let reports: Set<String> = [
+            "BatteryCore/AccessoryReport.swift", "BatteryCore/BatteryReport.swift", "BatteryCore/IDeviceReport.swift",
+        ]
+        var offenders: [String] = []
+        var reportsFound: Set<String> = []
+        for file in try SourceScanner.allFiles.get() {
+            let literals = try #require(Self.literals(of: file), "\(file.path): the code and the text don't line up")
+            guard literals.contains(where: Self.spacesASign) else { continue }
+            if reports.contains(file.path) { reportsFound.insert(file.path) } else { offenders.append(file.path) }
+        }
+        #expect(offenders.isEmpty, "Write percentages through BatteryFormatter.percent: \(offenders)")
+        #expect(reportsFound == reports)
+    }
+
+    /// The contents of `file`'s string literals, as written: ``SourceScanner/codeOnly(_:)`` blanks
+    /// every comment and each literal's contents but keeps the literal's quotes, so two quotes with
+    /// only blanks between them in the code enclose a literal's text. `nil` if the code's characters
+    /// don't line up with the text's.
+    static func literals(of file: SourceScanner.File) -> [String]? {
+        let (text, code) = (Array(file.text), Array(file.code))
+        guard text.count == code.count else { return nil }
+        var literals: [String] = []
+        var index = 0
+        while index < code.count {
+            guard code[index] == "\"" else {
+                index += 1
+                continue
+            }
+            var end = index + 1
+            while end < code.count, code[end] == " " || code[end] == "\n" { end += 1 }
+            guard end < code.count, code[end] == "\"" else {
+                index = end
+                continue
+            }
+            literals.append(String(text[(index + 1)..<end]))
+            index = end + 1
+        }
+        return literals
+    }
+
+    /// Whether `literal` has whitespace, or a whitespace escape such as `\u{00A0}`, right before a
+    /// "%" that isn't a format placeholder (`%@`, `%1$@`, `%d`, `%02x`).
+    static func spacesASign(_ literal: String) -> Bool {
+        literal.matches(of: #/(\s|\\u\{([0-9A-Fa-f]{1,6})\})%(?![-+#0-9.]*[A-Za-z@$])/#).contains { match in
+            guard let hex = match.output.2 else { return true }
+            return UInt32(hex, radix: 16).flatMap { Unicode.Scalar($0) }?.properties.isWhitespace == true
+        }
+    }
+
     @Test func watts() {
         #expect(plain(english.watts(-10.34, signed: true)) == "−10.3 W")
         #expect(plain(russian.watts(-10.34, signed: true)) == "−10,3 W-ru")
