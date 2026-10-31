@@ -31,6 +31,18 @@ check. The session's final report (2026-10-24) orders them: powerd's charging pl
 the SMC's `CHLT` and `pmset -g battlimit`; it also brought QUA-05's redacted fixture and the diff
 at 100 % (bit 24 clears and returns). The counts include FEA-35.
 
+**Updated 2026-10-31, at 0.7.0's release, with the maintainer's decisions of that day.** The
+version column and the counts below predate them and stay as a record; where a row disagrees, this
+note holds:
+- 0.7.0 is released without its M5 session (Session R and its logged day): he decided to release
+  without it and to report if something goes wrong. QUA-16, 0.7's own M5 session, goes to 0.7.1's
+  M5 session.
+- FEA-10, FEA-11 and FEA-12 (the feed, the History widget and the iPhone & iPad widget), with SEC-08
+  and DOC-08, go to 0.7.1, not 1.1, and so does the widget following the app's own language (0.7's
+  W-0 item 8). Their design is in `docs/plans/0.7.1/widgets.md`.
+- The backup release key (the roadmap's NEW-13) and the build-number clock go to 0.8, the clock
+  before 0.8's first candidate.
+
 ## How to read this
 
 - **One row per item**, deduplicated across every source. When several sources describe the same
@@ -167,9 +179,9 @@ Enhanced Security spike.
 | FEA-07 | W-1: widget model in BatteryCore | `WidgetSize`, `WidgetKindID`, frozen-raw-value enums, `WidgetLayoutPlan` (`automatic` equals v0.6.1 small and medium), `WidgetTimeText`, `WidgetTextBudget`, `WidgetRow`, `WidgetSparkline`, `WidgetRoute`/`PageID`, `WidgetTimelinePlan`, and the frozen-surface pin test (kinds, raw values, routes, feed path, entitlement keys) | P2 §8.6, §8.13, §8.14 W-1 | no | L | spike answers (FEA-01 to FEA-05) | none (Linux) | 0.7 (MVP) |
 | FEA-08 | W-2: App Intents metadata step in the shipping build | The processor step in `build-app.sh` before the widget's `codesign`; the macOS job fails unless every pinned intent, parameter and `AppEnum` case is in `Metadata.appintents` | P2 §8.14 W-2 | no | M | FEA-01 | Apple API | 0.7 (MVP) |
 | FEA-09 | W-8: Accessories widget | Own one-shot read; All or Lowest (small always Lowest); earbuds per part; demo accessories in previews | P2 §8.4, §8.5 Accessories, W-8 | yes | M | FEA-04 passing, SIZ-01 (`BatterySource` holds `MacAccessoryProvider`) | Apple API | 0.7 (MVP if W0-4 passes; else later through the feed, if W0-3 passed) |
-| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3) [Q-W3 answered yes, 2026-10-22]; an App Group would replace it but needs the paid account (P2 §8.2) [declined, 2026-10-22: the feed is the only route] | 0.7 (stretch), else 1.1 |
-| FEA-11 | W-6: History widget, and the Battery widget's feed fields and History chart | Period 24 h or 7 d; charge, battery power, temperature; 90-day capacity and cycle trend; statistics; charging spans; average drain and time on battery as Battery details | P2 §8.5 History, W-6 | yes | M | FEA-10 | maintainer taste (Q-W2, Q-W4) | 0.7 (stretch) |
-| FEA-12 | W-7: iPhone & iPad widget | Most recently read, all, or a chosen device (`AppEntity` over the feed, or `AppEnum` only if entity queries fail); reading age always shown; names `.privacySensitive()` | P2 §8.5 iPhone & iPad, W-7 | yes | M | FEA-10, FEA-01 (b) | maintainer taste (Q-W2, Q-W11) | 0.7 (stretch) |
+| FEA-10 | W-5: widget data feed | The app writes `Application Support/…/Widget/feed.json` (version 1, ≤ 8 KB: day and week series, 24-hour statistics, 90 daily summaries, up to 8 devices); atomic, only when content changes and a reader kind is placed; nothing in Demo Mode; rewritten on Clear History or Forget | P2 §8.3, W-5; Q-W3 | indirect | L | FEA-03 (A or A′), Q-W3 | Apple API, maintainer taste (Q-W3) [Q-W3 answered yes, 2026-10-22]; an App Group would replace it but needs the paid account (P2 §8.2) [declined, 2026-10-22: the feed is the only route] | 0.7.1 (2026-10-31; was 0.7 (stretch), else 1.1) |
+| FEA-11 | W-6: History widget, and the Battery widget's feed fields and History chart | Period 24 h or 7 d; charge, battery power, temperature; 90-day capacity and cycle trend; statistics; charging spans; average drain and time on battery as Battery details | P2 §8.5 History, W-6 | yes | M | FEA-10 | maintainer taste (Q-W2, Q-W4) | 0.7.1 (2026-10-31; was 0.7 (stretch)) |
+| FEA-12 | W-7: iPhone & iPad widget | Most recently read, all, or a chosen device (`AppEntity` over the feed, or `AppEnum` only if entity queries fail); reading age always shown; names `.privacySensitive()` | P2 §8.5 iPhone & iPad, W-7 | yes | M | FEA-10, FEA-01 (b) | maintainer taste (Q-W2, Q-W11) | 0.7.1 (2026-10-31; was 0.7 (stretch)) |
 | FEA-13 | Configuration fallback: preset kinds | If the edit sheet can't work: Battery (plus large and extra large), Battery Health and Power as fixed `StaticConfiguration` kinds | P2 §8.16 row 1; Q-W2 | yes | M | FEA-01 failing | evidence | 0.7 (only if W0-1 fails; Q-W2 decided: no presets otherwise) |
 | FEA-14 | Large and extra-large sizes of today's static widget, in a 0.6.3 | The one low-risk early slice: new sizes, no configuration, no App Intents, no new file | P2 §9 (P2:1859-1863); Q-W1 | yes | S | 0.6.2 shipped | maintainer taste (Q-W1) [answered 2026-10-22: 0.7] | not planned (Q-W1: 0.7, no 0.6.3) |
 | FEA-15 | Widget Refresh button | `AppIntent` performed in the extension (`allowedExecutionTargets`), next to the read time, on Battery and Accessories; no system change | P2 §8.9, W-9; Q-W9 | yes | S | FEA-06, FEA-01 (c) | maintainer taste (Q-W9) | later |
@@ -213,7 +225,7 @@ Enhanced Security spike.
 | QUA-13 | SUI-09: `@State` initialized in one place | Kept to `App/`; optionally one `AppServices` grouping | R:531; P2 WP-19; RES-swiftui SUI-09 | no | S | none | none | 0.6.2 (P3) |
 | QUA-14 | CB-02: device JSON dates as ISO 8601 | `bpulse --device <n> --json` writes `firstUseDate` as seconds since 2001 today; change with a release-notes line | R:554-556; P1 §8 Q3; AUD-cli-build CB-02 | yes (scripts) | S | none | frozen-output rule (needs a minor version) | 0.7 |
 | QUA-15 | Remove the legacy `samples.jsonl` migration | No release ever wrote that file, so the migration only serves pre-0.3 development folders | AUD-cli-build CB-01 ("for a later decision"); PB §3.4 storage list | no | S | none | none (frozen storage list needs a version that announces it) | unassigned (new) |
-| QUA-16 | 0.7's own M5 session | A 0.6.x widget after the in-app update; every kind × family × rendering mode in both languages at 12- and 24-hour time; the edit sheet; VoiceOver; clicks with and without a window; reloads requested against delivered; widget energy; the feed's contents | P2 §8.14 (P2:1767-1775) | yes | M | FEA-06 to FEA-12 | M5 session | 0.7 |
+| QUA-16 | 0.7's own M5 session | A 0.6.x widget after the in-app update; every kind × family × rendering mode in both languages at 12- and 24-hour time; the edit sheet; VoiceOver; clicks with and without a window; reloads requested against delivered; widget energy; the feed's contents | P2 §8.14 (P2:1767-1775) | yes | M | FEA-06 to FEA-12 | M5 session | 0.7.1's M5 session (2026-10-31; was 0.7: 0.7.0 shipped without it) |
 
 ## 3. Energy and performance
 
@@ -249,7 +261,7 @@ Enhanced Security spike.
 | SEC-05 | SW-13: strict memory safety for BatterySource and BatteryKit | `.strictMemorySafety()`; every IOKit, SMC, notify and MobileDevice unsafe site marked with its reason | R:531; P2 WP-19; P1 §6; RES-swift SW-13 | no | M | SIZ-01 | none | 0.6.2 (P2) |
 | SEC-06 | No prompt for the app's own data after an update | macOS 27's XProtect may deny files created by other teams' apps; an ad-hoc app has no Team ID and a new cdhash per version: confirm History and settings read with no prompt after a real update | RES-security SEC-17 (added); PB §4 last row; P2 D3 | yes | S | DIS-04 | M5 session (after publishing) | 0.6.2 (in the after-publishing checks) |
 | SEC-07 | Swap-renaming capability checked before the swap | `URLResourceKey.volumeSupportsSwapRenamingKey` for a clearer error; optional in SEC-17, not in Sources (grep) | RES-security SEC-17 | yes (error text) | S | none | none | unassigned (new; an optional rider not taken) |
-| SEC-08 | Widget feed hardening | Reader rejects > 32 KB, unknown versions, mismatched lengths, NaN, future dates; strips control and bidirectional characters; folder 0700 and file 0600; no file API outside `WidgetFeedReader`, no `dlopen`/`dlsym`/`URLSession` in the widget's own files; pin that the widget calls only `MacAccessoryProvider.read()` | P2 §8.3, §8.8 | no | S | FEA-10 | none | 0.7 (with W-5) |
+| SEC-08 | Widget feed hardening | Reader rejects > 32 KB, unknown versions, mismatched lengths, NaN, future dates; strips control and bidirectional characters; folder 0700 and file 0600; no file API outside `WidgetFeedReader`, no `dlopen`/`dlsym`/`URLSession` in the widget's own files; pin that the widget calls only `MacAccessoryProvider.read()` | P2 §8.3, §8.8 | no | S | FEA-10 | none | 0.7.1 (2026-10-31; was 0.7 (with W-5)) |
 
 ## 5. Size
 
@@ -287,10 +299,10 @@ Enhanced Security spike.
 | DOC-02 | User Guide for 0.6.2 | Clear's known issue removed (UG:162-163); graduated styles without "beta"; a refresh sentence if E4b lands (UG:124-132); installer text | P2 WP-22 | yes | S | QUA-01, FEA-22, ENG-09 | none | 0.6.2 |
 | DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65) and Session B's (hands-free since 2026-10-23: about 18-22 minutes of the maintainer's time, P2 §1); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
 | DOC-04 | 0.6.2 release notes | `## What's new in 0.6.2` (checked by CB-06); only user-visible items that landed; the energy line; "Updating from 0.6.1" | P2 D1 | yes | S | DIS-08 | none | 0.6.2 |
-| DOC-05 | Plan files | Commit the 0.6.2 plan under a plan folder of its own (removed at the release; readable in the history of the 0.6.2 release PR's head, `refs/pull/12/head`); at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` (removed at 0.7.0's release in turn; what 0.7 didn't build moved on to `docs/plans/0.7.1/widgets.md`) and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
+| DOC-05 | Plan files | Commit the 0.6.2 plan under a plan folder of its own (removed at the release; readable in the history of the 0.6.2 release PR's head, `refs/pull/12/head`); at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` (removed at 0.7.0's release in turn, readable at the commit plan-0.7.0 names; what 0.7 didn't build moved on to `docs/plans/0.7.1/widgets.md`) and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
 | DOC-07 | Widget docs for 0.7 | Rewrite the guide's Widget section (W-10); it still says a DMG replacement removes placed widgets (UG:425), which R:202-203 contradicts for 0.3.1 → 0.4.0, and calls the widget new (UG:428, RM:84) | P2 W-10 | yes | S | FEA-06 | none | 0.7 |
-| DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7 (with W-5) |
+| DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7.1 (2026-10-31; was 0.7 (with W-5)) |
 | DOC-09 | iOS promises in the README (new) | "The iOS app comes later" (RM:14-15), "the planned workaround" (RM:205-206), the iOS 27 badge (RM:5) and the bug template's "or iOS 27" contradict "Not planned: an iOS app" (R:704-706) | as cited | yes | S | DIS-02 | maintainer taste (stance) [the roadmap's M-2, decided by delegation 2026-10-22: not in 1.x] | unassigned (new) |
 | DOC-10 | Bug template asks no app version (new) | `.github/ISSUE_TEMPLATE/bug_report.yml` asks device and OS but not the BatteryPulse version | as cited | no | S | none | none | unassigned (new) |
 
@@ -298,7 +310,7 @@ Enhanced Security spike.
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3, and 0.7's to `docs/plans/0.7.1/` at 0.7.0's): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
+| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3, readable at the commit plan-0.7.0 names, and 0.7's to `docs/plans/0.7.1/` at 0.7.0's): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |
