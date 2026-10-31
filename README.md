@@ -119,10 +119,11 @@ dependencies.
   glass, white content). Reduce Transparency or Increase Contrast gives Standard.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only requests to the internet are an
-  optional update check against GitHub releases, which sends nothing about your Mac, and the
-  download of an update you chose to install. Reading an iPhone or iPad over Wi-Fi (opt-in)
-  stays on your local network.
+  history while recording is on, so it uses almost no CPU in the background. It reaches the
+  internet only to talk to GitHub: an optional update check against GitHub releases, which sends
+  nothing about your Mac, from 0.7 an anonymous version count once per version (see
+  [Privacy](#privacy)), and the download of an update you chose to install. Reading an iPhone or
+  iPad over Wi-Fi (opt-in) stays on your local network.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
   (Settings → General), and a What's New window after updates that add features. From 0.4.0,
   *Install and Relaunch* installs the next version from inside the app; each release is
@@ -140,6 +141,25 @@ scripts/build-app.sh          # build build/BatteryPulse.app and build/BatteryPu
 
 A copy you build yourself opens without the first-launch step. CI also uploads a DMG for every
 run as a workflow artifact (needs a GitHub sign-in; kept for 90 days).
+
+## Privacy
+
+BatteryPulse has no account, no analytics service and no server of its own. Your battery
+readings, history, devices and settings stay on your Mac. It connects to the internet only to
+reach GitHub: to check for updates (daily, weekly, monthly or never, as you choose in Settings →
+General), to download an update you chose to install, and, from 0.7, for an anonymous version
+count. Once per version, at least a day after you start using it, an automatic update check also
+downloads a small file from that version's release on GitHub. GitHub counts downloads, and that
+public count is the only number the developer gets: how many Macs use each version. No
+identifier of any kind is sent, no cookie is kept, and nothing about your Mac, its battery or
+your settings is included. As with any web request, GitHub sees your IP address and the app's
+version, just as it does for the update check, under GitHub's own privacy statement. The
+developer never sees addresses, only totals that anyone can read through GitHub's API. The count
+is on by default, never happens when Check for updates is Never, and turns off with **Include
+this Mac in the anonymous version count** in Settings → General. Reading an iPhone or iPad over
+Wi-Fi (opt-in) stays on your local network.
+
+The [User Guide](docs/USER_GUIDE.md#privacy) says when each request happens.
 
 ## Command-line report
 
