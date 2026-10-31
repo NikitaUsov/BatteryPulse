@@ -89,12 +89,13 @@ public struct Signposts: Sendable {
             let duration = ContinuousClock.now - start
             let text = PerfLine.trigger(trigger)
             let label = name.description
-            signposts.summary.recordInterval(label, trigger: text, duration: duration)
             #if canImport(os)
             signposts.signposter.endInterval(name, state, "\(text, privacy: .public)")
             // Built only when the line is logged: `log stream` or `log config` at the debug level.
             signposts.log.debug("\(PerfLine.interval(label, duration: duration, trigger: text), privacy: .public)")
             #endif
+            // Counted once the interval's end is marked, which the count then doesn't delay.
+            signposts.summary.recordInterval(label, trigger: text, duration: duration)
         }
     }
 
@@ -120,11 +121,11 @@ public struct Signposts: Sendable {
     public func event(_ name: StaticString, trigger: StaticString? = nil) {
         let text = PerfLine.trigger(trigger)
         let label = name.description
-        summary.recordEvent(label, trigger: text)
         #if canImport(os)
         signposter.emitEvent(name, "\(text, privacy: .public)")
         log.debug("\(PerfLine.event(label, trigger: text), privacy: .public)")
         #endif
+        summary.recordEvent(label, trigger: text)
     }
 }
 
