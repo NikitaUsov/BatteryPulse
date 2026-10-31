@@ -23,6 +23,12 @@ struct WidgetChargeBlock: View {
     /// Small and medium keep 0.6.x's sizes; large and extra large have room for more.
     private var roomy: Bool { size != .small && size != .medium }
 
+    /// The main value above the lines, at its kind's size in this widget size (BatteryCore's
+    /// `pointSize(in:)`, the same in every language).
+    private var heroNumber: WidgetHeroNumber {
+        WidgetHeroNumber(main: layout.main, tinted: layout.tinted, size: layout.main.kind.pointSize(in: size))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             switch layout.visual {
@@ -42,14 +48,14 @@ struct WidgetChargeBlock: View {
             VStack(alignment: .leading, spacing: 4) {
                 visual.widgetElement(layout.chargeLabel, strings: strings)
                 if fills { Spacer(minLength: 0) }
-                WidgetHeroNumber(main: layout.main, tinted: layout.tinted, size: roomy ? 40 : 34)
+                heroNumber
                     .widgetElement(mainLabel, strings: strings)
             }
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 visual
                 if fills { Spacer(minLength: 0) }
-                WidgetHeroNumber(main: layout.main, tinted: layout.tinted, size: roomy ? 40 : 34)
+                heroNumber
             }
             .widgetElement(layout.chargeLabel, strings: strings)
         }

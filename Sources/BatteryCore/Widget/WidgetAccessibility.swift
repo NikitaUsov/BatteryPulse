@@ -196,6 +196,14 @@ extension WidgetTimeText {
             return .timeLeft(until: end)
         }
     }
+
+    /// The shorter phrase a one-line place shows where the phrase doesn't fit at full size, as
+    /// ``BatteryWidgetField/shortLabelKey`` does for a label: "Lasts until 12:59 PM tomorrow" is
+    /// wider than small's line. `nil` for a phrase that always fits.
+    var shortKey: String? {
+        guard case .clock(_, tomorrow: true) = form, direction == .empty else { return nil }
+        return "Until %@ tomorrow"
+    }
 }
 
 extension WidgetEmptyReason {
@@ -205,6 +213,16 @@ extension WidgetEmptyReason {
         switch self {
         case .noBattery: .phrases([.key("This Mac has no internal battery."), .key("Try the Accessories widget")])
         case .noInformation: .phrases([.key("No battery information")])
+        }
+    }
+
+    /// The shorter message the widget shows when its own doesn't fit one line, as
+    /// ``BatteryWidgetField/shortLabelKey`` does for a label. "No battery information" keeps its
+    /// Russian, which 0.6.1's widget showed.
+    var shortMessageKey: String? {
+        switch self {
+        case .noBattery: nil
+        case .noInformation: "No battery data"
         }
     }
 }
@@ -234,6 +252,25 @@ extension BatteryWidgetField {
         case .systemChargeLimit: "Charge limit"
         }
     }
+
+    /// The shorter label the widget shows where the label and its value don't fit one line at
+    /// full size: the Russian for Maximum capacity beside 100% in medium. Every language has it
+    /// and picks the first that fits on its own (``WidgetTextBudget``), so the two languages lay
+    /// out alike even where only one shows the shorter label; VoiceOver keeps ``labelKey``. `nil`
+    /// for a label that always fits.
+    var shortLabelKey: String? {
+        switch self {
+        case .maximumCapacity: "Max capacity"
+        case .batteryPower: "Battery"
+        case .adapterInput: "From adapter"
+        case .lowPowerMode: "Low Power"
+        case .remainingCapacity: "Remaining"
+        case .cycleLifeUsed: "Life used"
+        case .cellBalance: "Balance"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
+            nil
+        }
+    }
 }
 
 extension WidgetStateWord {
@@ -261,6 +298,12 @@ extension WidgetCondition {
         case .serviceRecommended: .key("Service Recommended")
         case .other(let raw): .verbatim(raw)
         }
+    }
+
+    /// The shorter words a one-line attention row shows when the condition's don't fit at full
+    /// size, as ``BatteryWidgetField/shortLabelKey`` does for a label; VoiceOver keeps ``phrase``.
+    var shortKey: String? {
+        if case .serviceRecommended = self { "Service" } else { nil }
     }
 }
 

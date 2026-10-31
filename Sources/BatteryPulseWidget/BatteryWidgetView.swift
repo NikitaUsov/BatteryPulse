@@ -179,10 +179,17 @@ struct WidgetEmptyState: View {
         .widgetElement(reason.spokenLabel, strings: strings)
     }
 
-    private var message: Text {
+    /// The message; without information, its shorter words where its own don't fit one line, so
+    /// the Russian takes one line as the English does.
+    @ViewBuilder private var message: some View {
         switch reason {
-        case .noBattery: Text("This Mac has no internal battery.", bundle: strings)
-        case .noInformation: Text("No battery information", bundle: strings)
+        case .noBattery:
+            Text("This Mac has no internal battery.", bundle: strings)
+        case .noInformation:
+            ViewThatFits(in: .horizontal) {
+                Text("No battery information", bundle: strings)
+                Text("No battery data", bundle: strings)
+            }
         }
     }
 }

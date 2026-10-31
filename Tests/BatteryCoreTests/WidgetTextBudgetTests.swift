@@ -83,74 +83,159 @@ struct WidgetTextBudgetTests {
     }
 
     static let stateKeys = WidgetStateWord.allCases.map(WidgetKeys.state)
-    static let attentionKeys = ["High", "Critical", "Fair", "Poor", "Check Battery", "Service Recommended"]
+    static let conditions: [WidgetCondition] = [.fair, .poor, .checkBattery, .serviceRecommended]
 
-    /// The phrases with a clock time, filled.
-    static func timeLines(_ language: Language) throws -> [String] {
-        let keys = [
-            "Full at %@", "Lasts until about %@", "Updated %@", "Full at %@ tomorrow", "Lasts until %@ tomorrow",
+    /// The phrases with a clock time, filled, each with the shorter form a one-line place falls
+    /// back on.
+    static func timeLines(_ language: Language) throws -> [[String]] {
+        let times = [
+            WidgetTimeText(direction: .full, end: .now, form: .clock("", tomorrow: false)),
+            WidgetTimeText(direction: .empty, end: .now, form: .clock("", tomorrow: false)),
+            WidgetTimeText(direction: .full, end: .now, form: .clock("", tomorrow: true)),
+            WidgetTimeText(direction: .empty, end: .now, form: .clock("", tomorrow: true)),
         ]
-        return try keys.compactMap { try text($0, language)?.replacingOccurrences(of: "%@", with: language.clock) }
+        let keys = times.map { [$0.spokenLabel.keys[0], $0.shortKey] } + [["Updated %@"]]
+        return try keys.map { choices in
+            try Self.choices(choices, language).map { $0.replacingOccurrences(of: "%@", with: language.clock) }
+        }
     }
 
     struct Overflow: CustomStringConvertible {
         var text: String
         var place: String
-        var description: String { "\"\(text)\" (\(text.count)) in \(place)" }
+        /// The text's width, when it isn't in the caption.
+        var points: Double?
+        var description: String {
+            "\"\(text)\" (\(Int((points ?? WidgetTextBudget.width(text)).rounded())) pt) in \(place)"
+        }
+    }
+
+    /// Each main value's widest, formatted. A maximum capacity with its tier's symbol beside it has
+    /// two digits, narrower than 100% alone.
+    static func widestMain(_ kind: BatteryWidgetMain, _ f: BatteryFormatter) -> [String] {
+        switch kind {
+        case .charge, .maximumCapacity: [f.percent(100)]
+        case .temperature: [f.celsius(88.8)]
+        case .batteryPower: [f.watts(-88.8, signed: true), f.watts(88.8, signed: true)]
+        }
+    }
+
+    /// `keys` in `language`, the full words first, then the shorter ones the widget falls back on.
+    static func choices(_ keys: [String?], _ language: Language) throws -> [String] {
+        try keys.compactMap { $0 }.compactMap { try text($0, language) }
+    }
+
+    /// A tier's symbol may come before the value: maximum capacity's and a condition's.
+    static func hasCue(_ field: BatteryWidgetField) -> Bool {
+        field == .maximumCapacity || field == .condition
     }
 
     /// Everything over budget, in both languages.
     static func overflows() throws -> [Overflow] {
+        typealias Budget = WidgetTextBudget
         var overflows: [Overflow] = []
         func check(_ fits: Bool, _ text: String, _ place: String) {
             if !fits { overflows.append(Overflow(text: text, place: place)) }
         }
+        /// One of `choices` fits on one line `place` points wide after `before` points.
+        func oneLine(_ choices: [String], after before: Double = 0, _ place: Double) -> Bool {
+            choices.contains { Budget.fits(before + Budget.width($0), in: place) }
+        }
         for language in Language.allCases {
             let f = try formatter(language)
             for size in WidgetSize.allCases {
-                // The main value.
-                for value in [f.percent(100), f.celsius(88.8), f.watts(-88.8, signed: true)] {
-                    check(WidgetTextBudget.fits(value, in: .main, size: size), value, "the main value, \(size)")
-                }
-                // The lines under it.
-                for line in try stateKeys.compactMap({ try text($0, language) }) + timeLines(language) {
-                    check(WidgetTextBudget.fits(line, in: .line, size: size), line, "a line, \(size)")
-                }
-                // Small's attention row is a line; elsewhere it is a row. Both with a symbol.
-                for words in try attentionKeys.compactMap({ try text($0, language) }) {
-                    let slot: WidgetTextBudget.Slot = size == .small ? .line : .row
-                    check(WidgetTextBudget.fits(words, symbol: true, in: slot, size: size), words, "attention, \(size)")
-                }
-                // The details: a label and its value; small's one detail is a line of both.
-                for field in BatteryWidgetField.allCases where field != .time {
-                    guard let label = try text(WidgetKeys.label(field), language) else { continue }
-                    for value in try widestValues(field, language) {
-                        let fits =
-                            size == .small
-                            ? WidgetTextBudget.fits("\(label) \(value)", in: .line, size: size)
-                            : WidgetTextBudget.fits(label, value: value, in: .row, size: size)
-                        check(fits, "\(label) \(value)", "a detail, \(size)")
+                // The main value, on one line at full size at its kind's point size.
+                for kind in BatteryWidgetMain.allCases {
+                    let pointSize = kind.pointSize(in: size)
+                    for value in widestMain(kind, f) {
+                        let width = Budget.mainWidth(value, pointSize: pointSize)
+                        if !Budget.fits(width, in: Budget.lineWidth(size)) {
+                            overflows.append(
+                                Overflow(
+                                    text: value, place: "the main value at \(pointSize) pt, \(size)", points: width))
+                        }
                     }
                 }
-                // A time row is its phrase alone.
-                for line in try timeLines(language) where size != .small {
-                    check(WidgetTextBudget.fits(line, in: .row, size: size), line, "a time row, \(size)")
+                // The lines under it, with a phrase's shorter form where its own doesn't fit.
+                for line in try stateKeys.compactMap({ try text($0, language) }).map({ [$0] }) + timeLines(language) {
+                    check(oneLine(line, Budget.lineWidth(size)), line.last ?? "", "a line, \(size)")
                 }
-                // The Accessories widget's state beside a single part's charge, a line under its
-                // lowest accessory's.
-                for key in ["Charging", "Last known charge", "Connected to power"] {
-                    let line = try #require(try text(key, language))
-                    check(WidgetTextBudget.fits(line, in: .line, size: size), line, "an accessory's state, \(size)")
+                // The attention row: small's line and medium's row hold one line, with the
+                // condition's shorter words where its own don't fit; a tile has two lines.
+                let attentions =
+                    try ThermalState.allCases.filter { $0 == .serious || $0 == .critical }.map {
+                        try choices($0.phrase.keys, language)
+                    } + conditions.map { try choices($0.phrase.keys + [$0.shortKey], language) }
+                for words in attentions {
+                    switch size {
+                    case .small, .medium:
+                        let fits = oneLine(words, after: Budget.symbolWidth, Budget.detailWidth(size))
+                        check(fits, words.last ?? "", "attention, \(size)")
+                    case .large, .extraLarge, .extraLargePortrait:
+                        let lines = Budget.lines(words[0], width: Budget.detailWidth(size), .title3)
+                        check(lines <= 2, words[0], "an attention tile, \(size)")
+                    }
                 }
-                // The empty states.
-                let messages = [
-                    "No battery information", "This Mac has no internal battery.", "Try the Accessories widget",
-                    "No accessories with batteries connected", "All accessories are fully charged",
-                ]
-                for key in messages {
-                    let message = try #require(try text(key, language))
-                    check(WidgetTextBudget.fits(message, in: .message, size: size), message, "a message, \(size)")
+                // The details: a label and its value on one line, with the field's shorter label
+                // where its own doesn't fit, or a word that says what it is alone; a tile's label
+                // on one line over its value on up to two.
+                for field in BatteryWidgetField.allCases where field != .time {
+                    let labels = try choices([WidgetKeys.label(field), field.shortLabelKey], language)
+                    for value in try widestValues(field, language) {
+                        let place = Budget.detailWidth(size)
+                        switch size {
+                        case .small, .medium:
+                            let before =
+                                Budget.width(value, monospacedDigits: size == .medium)
+                                + (hasCue(field) ? Budget.cueWidth : 0) + Budget.gap(size)
+                            let alone = (field == .state || field == .condition) && oneLine([value], place)
+                            check(
+                                oneLine(labels, after: before, place) || alone, "\(labels.last ?? "") \(value)",
+                                "a detail, \(size)")
+                        case .large, .extraLarge, .extraLargePortrait:
+                            check(oneLine([labels[0]], place), labels[0], "a tile's label, \(size)")
+                            check(Budget.lines(value, width: place, .title3) <= 2, value, "a tile's value, \(size)")
+                        }
+                    }
                 }
+                // Medium's time row is its phrase alone, on one line.
+                for line in try timeLines(language) where size == .medium {
+                    check(oneLine(line, Budget.detailWidth(size)), line.last ?? "", "a time row, \(size)")
+                }
+                // The Accessories widget's state under its lowest accessory's name, a line of the
+                // whole width, with its shorter words where its own don't fit.
+                for status in AccessoryWidgetStatus.allCases {
+                    let words = try choices(status.phrase.keys + [status.shortKey], language)
+                    check(oneLine(words, Budget.contentWidth(size)), words.last ?? "", "an accessory's state, \(size)")
+                }
+            }
+        }
+        // The empty states: the Russian takes as many lines as the English, counted with the
+        // margin, and the English without it. A message with shorter words shows the first that
+        // fits one line.
+        let messages: [(keys: [String?], style: Budget.Style)] = [
+            (
+                [WidgetEmptyReason.noInformation.spokenLabel.keys[0], WidgetEmptyReason.noInformation.shortMessageKey],
+                .caption
+            ),
+            (["This Mac has no internal battery."], .caption),
+            (["Try the Accessories widget"], .caption2),
+            (["No accessories with batteries connected"], .caption),
+            (["All accessories are fully charged"], .caption),
+        ]
+        for size in WidgetSize.allCases {
+            let place = Budget.contentWidth(size)
+            for message in messages {
+                func shown(_ language: Language) throws -> Int {
+                    let words = try choices(message.keys, language)
+                    let width = language == .russian ? place * Budget.margin : place
+                    let lines = words.map { Budget.lines($0, width: width, message.style) }
+                    return lines.first { $0 == 1 } ?? lines.last ?? 0
+                }
+                let english = try shown(.english)
+                let russian = try shown(.russian)
+                let text = try text(message.keys[0] ?? "", .russian) ?? ""
+                check(russian == english, text, "a message of \(english) lines, \(size)")
             }
         }
         return overflows
@@ -168,23 +253,71 @@ struct WidgetTextBudgetTests {
         #expect(present.isEmpty, "Remove from pendingKeys: \(present.sorted())")
     }
 
-    /// The budget is the one the plan names: "Lasts until about %@ tomorrow", with "12:59 PM",
-    /// is 35 characters, too long for a line under the main value, so the widget's phrase for an
-    /// end tomorrow drops "about".
-    @Test func theBudgetCatchesALongLine() {
-        let long = "Lasts until about 12:59\u{202F}PM tomorrow"
-        #expect(!WidgetTextBudget.fits(long, in: .line, size: .small))
-        #expect(WidgetTextBudget.fits("Lasts until 12:59\u{202F}PM tomorrow", in: .line, size: .small))
+    /// The table matches the text of CI's pictures (2x, so half their ink widths plus the side
+    /// bearings) within 2 %, in both languages: the medium automatic and small service
+    /// recommended scenes of 0.7.
+    @Test(arguments: [
+        ("Service Recommended", Language.english, 110.5), ("Service Recommended", .russian, 151.0),
+        ("Temperature", .english, 61.5), ("Temperature", .russian, 66.0), ("Condition", .english, 46.0),
+        ("Condition", .russian, 53.5), ("On battery", .russian, 85.5), ("Maximum capacity", .english, 89.5),
+    ])
+    func theTableMatchesThePictures(key: String, language: Language, measured: Double) throws {
+        let text = try #require(try Self.text(key, language))
+        let width = WidgetTextBudget.width(text)
+        #expect(abs(width - measured) <= measured * 0.02, "\(text): \(width) against \(measured)")
     }
 
-    @Test func budgetsPerSlot() {
-        #expect(WidgetTextBudget.width(.line, .small) == 24)
-        #expect(WidgetTextBudget.width(.row, .medium) == 29)
-        #expect(WidgetTextBudget.width(.row, .large) == 35)
-        // 30 characters fill a line at 0.8; the value of a row never shrinks.
-        #expect(WidgetTextBudget.fits(String(repeating: "x", count: 30), in: .line, size: .small))
-        #expect(!WidgetTextBudget.fits(String(repeating: "x", count: 31), in: .line, size: .small))
-        #expect(WidgetTextBudget.fits("Label", value: String(repeating: "9", count: 24), in: .row, size: .medium))
-        #expect(!WidgetTextBudget.fits("Label", value: String(repeating: "9", count: 25), in: .row, size: .medium))
+    /// What 0.7's pictures showed before the parity fixes: the full Russian label beside 100% in
+    /// medium's row, the condition's full words beside small's symbol and the 0.7 Russian
+    /// message without a battery took more than their places, so they shrank or wrapped.
+    @Test func theBudgetCatchesWhatThePicturesShowed() throws {
+        typealias Budget = WidgetTextBudget
+        let maximumCapacity = try #require(try Self.text("Maximum capacity", .russian))
+        let row = Budget.width(maximumCapacity) + Budget.gap(.medium) + Budget.width("100%", monospacedDigits: true)
+        #expect(!Budget.fits(row, in: Budget.detailWidth(.medium)))
+        #expect(
+            Budget.fits(Budget.width("Maximum capacity") + Budget.gap(.medium) + 26, in: Budget.detailWidth(.medium)))
+        let service = try #require(try Self.text("Service Recommended", .russian))
+        #expect(!Budget.fits(Budget.symbolWidth + Budget.width(service), in: Budget.lineWidth(.small)))
+        #expect(Budget.fits(Budget.symbolWidth + Budget.width("Service Recommended"), in: Budget.lineWidth(.small)))
+        // 0.7's first Russian, "this Mac has no internal battery", took 3 lines against 2.
+        #expect(Budget.lines("This Mac has no internal battery.", width: Budget.contentWidth(.small)) == 2)
+        // Small's battery power at 34 points: the Russian, wider than the line, shrank.
+        let power = try Self.formatter(.russian).watts(38, signed: true)
+        #expect(Budget.mainWidth(power, pointSize: 34) > Budget.lineWidth(.small))
+        #expect(Budget.fits(Budget.mainWidth(power, pointSize: 34), in: Budget.lineWidth(.medium)))
+    }
+
+    /// The main value's face matches CI's pictures of 0.7's battery power at 34 points, where the
+    /// value had room (medium's charge block), within 2 %: half the pictures' ink widths plus the
+    /// side bearings.
+    @Test(arguments: [(Language.english, 134.8), (.russian, 141.5)])
+    func theMainFaceMatchesThePictures(language: Language, measured: Double) throws {
+        let text = try Self.formatter(language).watts(38, signed: true)
+        let width = WidgetTextBudget.mainWidth(text, pointSize: 34)
+        #expect(abs(width - measured) <= measured * 0.02, "\(text): \(width) against \(measured)")
+    }
+
+    /// The main value's size doesn't depend on the language, and small and medium keep 0.6.x's 34
+    /// points for the charge.
+    @Test func theMainValueKeepsItsSizes() {
+        #expect(BatteryWidgetMain.charge.pointSize(in: .small) == 34)
+        #expect(BatteryWidgetMain.charge.pointSize(in: .medium) == 34)
+        #expect(BatteryWidgetMain.batteryPower.pointSize(in: .small) == 31)
+        #expect(BatteryWidgetMain.batteryPower.pointSize(in: .medium) == 34)
+        #expect(BatteryWidgetMain.allCases.allSatisfy { $0.pointSize(in: .large) == 40 })
+    }
+
+    @Test func linesBreakAtSpaces() {
+        typealias Budget = WidgetTextBudget
+        #expect(Budget.lines("", width: 10) == 1)
+        #expect(Budget.lines("word", width: 1) == 1)
+        #expect(Budget.lines("a b", width: 1) == 2)
+        #expect(Budget.lines("a b", width: Budget.width("a b")) == 1)
+        // A no-break space keeps a number with its unit.
+        #expect(Budget.lines("12\u{00A0}W", width: 1) == 1)
+        #expect(Budget.fits(98, in: 100) && !Budget.fits(98.1, in: 100))
+        // The main value's digits are tabular: every digit is as wide.
+        #expect(Budget.mainWidth("11", pointSize: 34) == Budget.mainWidth("88", pointSize: 34))
     }
 }

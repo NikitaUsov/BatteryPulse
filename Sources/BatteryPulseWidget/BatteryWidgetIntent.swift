@@ -290,5 +290,21 @@ extension BatteryWidgetField {
         case .systemChargeLimit: "Charge limit"
         }
     }
+
+    /// The shorter label beside the value where the label doesn't fit one line at full size
+    /// (BatteryCore's `shortLabelKey`).
+    var shortLabel: LocalizedStringResource? {
+        switch self {
+        case .maximumCapacity: "Max capacity"
+        case .batteryPower: "Battery"
+        case .adapterInput: "From adapter"
+        case .lowPowerMode: "Low Power"
+        case .remainingCapacity: "Remaining"
+        case .cycleLifeUsed: "Life used"
+        case .cellBalance: "Balance"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
+            nil
+        }
+    }
 }
 #endif

@@ -89,11 +89,17 @@ struct AccessoryLowestView: View {
                 AccessoryLowestPartsView(parts: row.parts)
                     .font(.caption)
             } else if let status = row.parts.first?.charge.status {
-                status.text(strings)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                // The state's words, or its shorter ones where they don't fit at full size.
+                ViewThatFits(in: .horizontal) {
+                    status.text(strings)
+                    if let short = status.shortTitle {
+                        widgetText(short, strings)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -303,6 +309,14 @@ extension AccessoryWidgetStatus {
 
     func text(_ strings: Bundle?) -> Text {
         widgetText(title, strings)
+    }
+
+    /// The shorter words where the state doesn't fit small's line (BatteryCore's `shortKey`).
+    var shortTitle: LocalizedStringResource? {
+        switch self {
+        case .lastKnownCharge: "Last charge"
+        case .charging, .connectedToPower: nil
+        }
     }
 }
 #endif

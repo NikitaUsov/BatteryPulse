@@ -100,7 +100,7 @@ import Testing
         var literals = source.matches(of: localizingCall).map { String($0.output.1) }
         literals += source.matches(of: tupleLiteral).map { String($0.output.1) }
         for block in source.matches(
-            of: #/var \w+: (?:LocalizedStringKey|LocalizedStringResource) \{(?<body>[\s\S]*?)\n    \}/#)
+            of: #/var \w+: (?:LocalizedStringKey|LocalizedStringResource)\?? \{(?<body>[\s\S]*?)\n    \}/#)
         {
             literals += block.output.body.matches(of: caseLiteral).map { String($0.output.1) }
         }
@@ -199,6 +199,18 @@ import Testing
                 }
             }
             """, ["State", "Maximum capacity"]),
+        // A shorter label, where the label doesn't fit beside its value; `nil` for the others.
+        LiteralVector(
+            """
+            extension BatteryWidgetField {
+                var shortLabel: LocalizedStringResource? {
+                    switch self {
+                    case .maximumCapacity: "Max capacity"
+                    case .state: nil
+                    }
+                }
+            }
+            """, ["Max capacity"]),
     ]
 
     @Test(arguments: intentVectors)

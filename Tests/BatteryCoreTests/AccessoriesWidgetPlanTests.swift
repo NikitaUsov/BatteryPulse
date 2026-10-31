@@ -268,6 +268,7 @@ struct AccessoriesWidgetPlanTests {
         keys.formUnion(AccessoryKind.allCases.map(\.titleKey))
         keys.formUnion(AccessoryPartRole.allCases.map(\.labelKey))
         keys.formUnion(AccessoryWidgetStatus.allCases.flatMap(\.phrase.keys))
+        keys.formUnion(AccessoryWidgetStatus.allCases.compactMap(\.shortKey))
         #expect(keys.count > 15)
         for key in keys {
             let russian = try WidgetTextBudgetTests.text(key, .russian)

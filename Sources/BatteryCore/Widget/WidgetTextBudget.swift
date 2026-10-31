@@ -1,57 +1,158 @@
-/// How much text each place of the widget holds, so a long translation is caught on Linux rather
-/// than seen cut off on a Mac. Widths are in characters of caption text at full size, from the
-/// 0.6.1 widget's layout [estimate]; text that may shrink counts at its smallest scale.
+/// How much text each place of the widget holds at full size, so a long translation is caught on
+/// Linux rather than seen shrunk, wrapped or cut off on a Mac, where a Russian picture must lay
+/// out as its English pair does: the same lines, nothing shrunk or cut. Places are in points,
+/// measured in CI's previews of 0.7 (2x pictures). A text's width is the sum of its characters'
+/// advances at the caption size, 10 points [estimate: an open-source sans-serif's advances, scaled
+/// to the widths of CI's pictures, which they match within about 1.5 %], and a text fits a place
+/// with ``margin`` to spare.
 ///
-/// - The main value is the 34-point number, which shrinks to ``mainScaleFactor``.
-/// - A line under it (a state, a time, "Updated 14:05", small's one detail or attention row) is
-///   one line that shrinks to ``textScaleFactor`` as a whole, then truncates.
-/// - A detail row's label shrinks to ``textScaleFactor``; its value never shrinks or truncates.
-/// - A message (an empty state) wraps over up to three lines.
+/// - The main value is one line at full size, at its kind's point size
+///   (``BatteryWidgetMain/pointSize(in:)``), in its own face (``mainWidth(_:pointSize:)``). The
+///   widget still lets it shrink to 0.7 for a value wider than the budget's widest, 100 W or more;
+///   a ring's value is smaller and shrinks to fit inside the ring.
+/// - A line under it, small's detail and attention row, and medium's rows are one line at full
+///   size. Where a label or a condition's words don't fit, the widget shows the shorter key
+///   (``BatteryWidgetField/shortLabelKey``, ``WidgetCondition/shortKey``), so a place fits when one
+///   of them does. Each language picks on its own: small shows Maximum capacity and Service
+///   Recommended in full in English and shorter in Russian, laid out alike.
+/// - A message (an empty state) wraps; the Russian takes as many lines as the English.
+/// - Large's and extra large's tiles hold a label on one line over a value on up to two.
 enum WidgetTextBudget {
-    /// The main value's minimum scale factor (0.6.1's hero number).
-    static let mainScaleFactor = 0.7
-    /// Lines' and labels' minimum scale factor (0.6.1's labels).
-    static let textScaleFactor = 0.8
-    /// A symbol beside text takes about two characters.
-    static let symbolWidth = 2.0
-    /// Between a row's label and its value.
-    static let rowGap = 1.0
+    /// The share of a place a text may fill, for the estimate's error.
+    static let margin = 0.98
 
-    enum Slot: Sendable, CaseIterable {
-        case main, line, row, message
+    /// A text style, as its width relative to the caption.
+    enum Style: Double, Sendable {
+        case caption = 1
+        /// The no-battery message's hint: 3 % wider than the caption in CI's pictures.
+        case caption2 = 1.03
+        /// A tile's value: 15 points, medium weight.
+        case title3 = 1.56
     }
 
-    /// The slot's width in characters at full size.
-    static func width(_ slot: Slot, _ size: WidgetSize) -> Double {
-        switch (slot, size) {
-        // The charge block is as wide in every size.
-        case (.main, _): 7
-        case (.line, _): 24
-        // Small's one detail is a line, in the time line's place.
-        case (.row, .small): 24
-        // A 20-character label and a 9-character value.
-        case (.row, .medium): 29
-        // A 26-character label and a 9-character value: a large widget's column, or an extra
-        // large one's panel.
-        case (.row, .large), (.row, .extraLarge), (.row, .extraLargePortrait): 35
-        case (.message, _): 3 * 24
+    /// A line under the main value: small's whole width, medium's charge block, large's whole
+    /// width, an extra large panel. Small's detail and attention row are such lines.
+    static func lineWidth(_ size: WidgetSize) -> Double {
+        switch size {
+        case .small: 136
+        case .medium: 148
+        case .large: 332
+        case .extraLarge, .extraLargePortrait: 350
         }
     }
 
-    /// Whether `text` fits `slot` in `size`: in a row, `text` is the label and `value` the value
-    /// beside it; elsewhere `value` is unused. `symbol` adds a symbol beside the text.
-    static func fits(_ text: String, value: String = "", symbol: Bool = false, in slot: Slot, size: WidgetSize)
-        -> Bool
-    {
-        let symbols = symbol ? symbolWidth : 0
-        let characters: Double =
-            switch slot {
-            case .main: Double(text.count) * mainScaleFactor
-            case .line: Double(text.count) * textScaleFactor + symbols
-            case .row where value.isEmpty: Double(text.count) * textScaleFactor + symbols
-            case .row: Double(text.count) * textScaleFactor + symbols + rowGap + Double(value.count)
-            case .message: Double(text.count)
-            }
-        return characters <= width(slot, size)
+    /// A detail: small's line, medium's row beside the charge block, a tile of large's or extra
+    /// large's two columns.
+    static func detailWidth(_ size: WidgetSize) -> Double {
+        switch size {
+        case .small: 136
+        case .medium: 148
+        case .large: 160
+        case .extraLarge, .extraLargePortrait: 169
+        }
     }
+
+    /// The widget's whole width inside its margins: an empty state's message, the Accessories
+    /// widget's lines.
+    static func contentWidth(_ size: WidgetSize) -> Double {
+        switch size {
+        case .small: 136
+        case .medium, .large: 332
+        case .extraLarge, .extraLargePortrait: 736
+        }
+    }
+
+    /// The attention row's symbol before its words, with its spacing.
+    static let symbolWidth = 17.0
+    /// A tier's symbol before a value, with its spacing.
+    static let cueWidth = 12.0
+
+    /// Between a label and its value: small's line keeps them 4 points apart, medium's row at
+    /// least 8.
+    static func gap(_ size: WidgetSize) -> Double {
+        size == .small ? 4 : 8
+    }
+
+    /// Whether a text `width` points wide fits a `place` points wide, with ``margin`` to spare.
+    static func fits(_ width: Double, in place: Double) -> Bool {
+        width <= place * margin
+    }
+
+    /// The main value's width in points at `pointSize`: its characters' advances with tabular
+    /// digits, as the widget draws them, scaled from the caption's size and by ``mainFace``.
+    static func mainWidth(_ text: String, pointSize: Double) -> Double {
+        width(text, monospacedDigits: true) * pointSize / 10 * mainFace
+    }
+
+    /// The main value's rounded semibold face against the caption's table at the same size
+    /// [estimate: CI's pictures of 0.7's battery power at 34 points, 134.8 points wide in English
+    /// and 141.5 in Russian; this matches the Russian and is 2 % over the English].
+    static let mainFace = 0.955
+
+    /// The lines `text` takes in a place `width` points wide: word by word, a line breaking at a
+    /// space (never a no-break one) when the next word wouldn't fit, as macOS fills a line. The
+    /// whole width counts; a caller that wants ``margin`` passes it.
+    static func lines(_ text: String, width: Double, _ style: Style = .caption) -> Int {
+        let space = self.width(" ", style)
+        var lines = 1
+        var line = 0.0
+        for word in text.split(separator: " ") {
+            let next = self.width(String(word), style)
+            if line > 0 && line + space + next > width {
+                lines += 1
+                line = next
+            } else {
+                line += (line > 0 ? space : 0) + next
+            }
+        }
+        return lines
+    }
+
+    /// `text`'s width in points in `style`, with `monospacedDigits` as medium's values have them
+    /// (each digit as wide as the widest). A character outside the table counts as a wide letter.
+    static func width(_ text: String, _ style: Style = .caption, monospacedDigits: Bool = false) -> Double {
+        var points = 0.0
+        for scalar in text.unicodeScalars {
+            let value = Int(scalar.value)
+            if monospacedDigits && (0x30...0x39).contains(value) {
+                points += widestDigit
+            } else if (0x20...0x7E).contains(value) {
+                points += ascii[value - 0x20]
+            } else if (0x410...0x44F).contains(value) {
+                points += cyrillic[value - 0x410]
+            } else {
+                points += others[value] ?? unknown
+            }
+        }
+        return points * style.rawValue
+    }
+
+    private static let widestDigit = 6.6
+    private static let unknown = 8.0
+
+    /// U+0020 to U+007E.
+    private static let ascii: [Double] = [
+        2.9, 2.9, 4.7, 6.4, 6.5, 10.0, 6.5, 3.0, 3.7, 3.7, 5.1, 6.7, 2.9, 4.7, 2.9, 3.7,
+        6.4, 4.1, 6.2, 6.3, 6.6, 6.2, 6.3, 5.7, 6.3, 6.3, 2.9, 3.1, 6.7, 6.7, 6.7, 5.2,
+        9.8, 7.0, 6.6, 7.4, 7.3, 6.1, 6.0, 7.6, 7.5, 2.7, 5.8, 6.8, 5.7, 9.2, 7.6, 7.8,
+        6.5, 7.8, 6.5, 6.5, 6.6, 7.6, 7.0, 10.0, 6.9, 6.9, 6.4, 3.7, 3.7, 3.7, 4.8, 4.6,
+        3.3, 5.7, 6.2, 5.8, 6.2, 5.9, 3.8, 6.2, 6.0, 2.5, 2.5, 5.6, 2.5, 8.9, 6.0, 6.1,
+        6.2, 6.2, 3.8, 5.4, 3.3, 6.0, 5.7, 8.3, 5.5, 5.7, 5.6, 4.3, 3.4, 4.3, 6.7,
+    ]
+
+    /// U+0410 to U+044F, the basic Cyrillic capitals and small letters.
+    private static let cyrillic: [Double] = [
+        7.0, 6.6, 6.6, 5.9, 8.3, 6.1, 9.7, 6.3, 7.6, 7.6, 6.8, 7.6, 9.2, 7.5, 7.8, 7.5,
+        6.5, 7.4, 6.6, 6.4, 8.4, 6.9, 7.3, 7.1, 9.7, 9.9, 8.3, 9.0, 6.6, 7.4, 10.3, 6.5,
+        5.7, 6.0, 5.7, 4.4, 6.4, 5.9, 8.2, 5.0, 6.0, 6.0, 5.5, 5.8, 7.8, 6.0, 6.1, 6.0,
+        6.2, 5.8, 4.7, 5.7, 7.0, 5.5, 6.1, 5.9, 8.3, 8.5, 6.5, 7.5, 5.7, 5.7, 8.6, 5.6,
+    ]
+
+    /// The other characters the widget's words and numbers use: the Cyrillic Yo, quotation marks,
+    /// the ellipsis, the minus sign, the middle dot, the degree sign, dashes and the spaces.
+    private static let others: [Int: Double] = [
+        0x0401: 6.1, 0x0451: 5.9, 0x00AB: 5.9, 0x00BB: 5.9, 0x2026: 8.8, 0x2212: 6.7, 0x00B7: 2.9,
+        0x00B0: 4.6, 0x00A0: 2.9, 0x202F: 1.8, 0x2013: 5.1, 0x2014: 10.2, 0x2019: 2.6, 0x201C: 4.5,
+        0x201D: 4.5,
+    ]
 }
