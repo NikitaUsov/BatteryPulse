@@ -144,8 +144,8 @@ extension WidgetRow {
     }
 }
 
-/// Large's and extra large's details: tiles in two columns, each a label over its value, filled
-/// row by row in the plan's order, which is the order VoiceOver reads them in.
+/// Large's details: tiles in two columns, each a label over its value, filled row by row in the
+/// plan's order, which is the order VoiceOver reads them in.
 struct WidgetTileGrid: View {
     let details: [WidgetDetail]
     let tinted: Bool
@@ -220,42 +220,6 @@ struct WidgetTile: View {
                 .minimumScaleFactor(0.8)
         }
         .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-/// Extra large's Power panel opens with its first detail drawn large, as the charge opens the
-/// Battery panel: its label over the number, one VoiceOver element like any row.
-struct WidgetHeroDetail: View {
-    let row: WidgetRow
-    let text: String
-    let tinted: Bool
-    @Environment(\.widgetStrings) private var strings
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            widgetText(row.field.label, strings)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(verbatim: text)
-                    .font(.system(size: 40, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if let cue = row.cue {
-                    WidgetCueSymbol(cue: cue, tinted: tinted)
-                }
-            }
-        }
-        .widgetElement(row.spokenLabel, strings: strings)
-    }
-
-    /// The first of `details` drawn large, when it is a number, and the rest.
-    static func split(_ details: [WidgetDetail]) -> (hero: (row: WidgetRow, text: String)?, rest: [WidgetDetail]) {
-        guard case .row(let row)? = details.first, case .text(let text) = row.value else { return (nil, details) }
-        return ((row, text), Array(details.dropFirst()))
     }
 }
 

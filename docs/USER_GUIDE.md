@@ -444,27 +444,94 @@ like. BatteryPulse has to be running to notify you.
 
 ## Widget
 
-BatteryPulse has a widget for the desktop and Notification Center, in two sizes: the small one
-shows the charge, what the battery is doing and when it will be full or empty; the medium one
-adds maximum capacity, cycle count and temperature.
+BatteryPulse has two widgets for the desktop and Notification Center, each in small, medium and
+large:
 
-1. Open BatteryPulse once after installing it, so macOS finds the widget.
+- **Battery** shows the charge, what the battery is doing and when it will be full or empty, and
+  the details you choose. As it comes, it looks the way BatteryPulse's widget always has: the
+  small one shows the charge with its state and time, and the medium one adds maximum capacity,
+  cycle count and temperature. The large one adds the adapter, system load, battery power, Low
+  Power Mode and the remaining capacity, in two columns.
+- **Accessories** shows the batteries of the keyboards, mice, trackpads and headphones the
+  [Accessories](#accessories) page lists, each with its charge.
+
+To add one:
+
+1. Open BatteryPulse once after installing it, so macOS finds the widgets.
 2. Control-click the desktop and choose **Edit Widgets…** (or click the date in the menu bar
    and **Edit Widgets** at the bottom).
-3. Search for **BatteryPulse** and drag the widget where you want it.
+3. Search for **BatteryPulse**, choose **Battery** or **Accessories** and a size, and drag the
+   widget where you want it.
 
-The widget reads the battery itself, so it keeps working while BatteryPulse isn't running.
-macOS limits how often widgets refresh, so it may lag behind: by up to half an hour while
-BatteryPulse isn't running. While it runs, it refreshes the widget right away when you plug in or
-unplug and once macOS has its first estimate, and at most every quarter of an hour while the
-charge or the estimate moves.
+### Choosing what a widget shows
 
-Replacing BatteryPulse with a new version from the DMG removes the widgets you placed; add them
-again from the gallery as above.
+Control-click a placed widget and choose **Edit Widget**. A widget you placed before 0.7 keeps
+its look until you change something here. The Battery widget offers:
 
-The widget is new and depends on how macOS treats apps that aren't notarized yet. If it doesn't
-appear in the widget gallery, please [report it](#reporting-a-problem); the main window, the
-compact window and the menu bar work either way.
+- **Layout:** *Automatic* shows the details above for its size. *Custom* shows the ones you pick
+  under **Details**, in your order: one in small, where it takes the time line's place, up to
+  four in medium and up to eight in large. Besides Automatic's, you can pick the state, the time
+  to full or empty, the condition, the power from the adapter, cycle life used, cell balance, the
+  voltage and the Charge Limit.
+- **Main value:** the charge, maximum capacity, temperature or battery power. Battery power can be
+  up to half an hour old in a widget, so it always comes with the time it was read.
+- **Main visual:** the number with the level symbol, a ring, or a drawn battery like the menu
+  bar's Modern icon.
+- **Status lines:** the state (*Charging*, *On battery*, *Charged to limit* and so on) and the
+  time to full or empty, each on or off.
+- **Time:** the clock time, such as *Lasts until about 16:39*, or the time left, such as *2
+  hours, 13 minutes*, which counts down by the minute on its own. An end on the next day says
+  *tomorrow*; one two or more days away shows no time.
+- **Colors:** the level colors the app uses, or monochrome.
+- **Update time:** *When old* shows *Updated 14:05* once the reading is over 45 minutes old;
+  *Always* shows it all the time.
+
+Whatever you choose, a battery condition other than Normal, or a Mac running hot, takes the
+widget's last row (in small, the time line's place), and a value that needs attention, such as a
+maximum capacity that is getting low, has a symbol before it, so the color isn't the only sign.
+Where a label is too long for its place, the widget uses a shorter one, such as *Max capacity*.
+On a Mac without a battery, the Battery widget says so and points you to the Accessories widget.
+
+The Accessories widget offers **Show**, *All* or *Lowest only* (the accessory with the least
+charge), and **Hide fully charged**, which leaves out accessories at 100%. With no accessory to
+show, it says *No accessories with batteries connected*, or that all of them are fully charged.
+
+### Clicking a widget
+
+A click opens BatteryPulse's main window at the matching page, even if you use the compact
+window: Overview for the charge, Health for maximum capacity, Power for temperature and battery
+power, and Accessories for the Accessories widget. A Battery widget without a battery to show
+opens Overview.
+
+### How widgets stay current
+
+The widgets read the battery and the accessories themselves, so they keep working while
+BatteryPulse isn't running. macOS limits how often widgets refresh, so they may lag behind: by up
+to half an hour while BatteryPulse isn't running. While it runs, BatteryPulse asks macOS to
+refresh only the kinds of widget you have placed:
+
+- **Battery:** right away when you plug in or unplug, when the battery's state changes, and once
+  macOS has its first estimate; at most every 5 minutes when Low Power Mode turns on or off, the
+  adapter changes, the battery's condition changes, the Mac starts running hot (or has cooled
+  down again), or the Charge Limit starts or stops holding the charge; and at most every quarter
+  of an hour while the charge, the estimate or the temperature moves.
+- **Accessories:** right away when an accessory connects or disconnects, and at most every
+  quarter of an hour while a charge moves.
+
+When BatteryPulse opens in another language than the last time, it refreshes every widget, so
+none keeps the old language's words; after an update, it does the same if the old version's
+widget is still running.
+
+VoiceOver reads the Battery widget's charge as one item ("Battery charge: 70%, On battery") and
+each detail as one, its label and value together; the Accessories widget reads one item per
+accessory.
+
+### Widgets across updates
+
+**Install and Relaunch** keeps the widgets you placed: it ends the running widget just before it
+replaces the app, so macOS takes the new version's widgets in their place. Replacing BatteryPulse
+from the DMG by hand may remove them. If a widget is gone or blank after an update, add it again
+from the gallery as above.
 
 ## Demo Mode
 
@@ -528,8 +595,8 @@ BatteryPulse installs nothing and doesn't offer the download either: the window 
 failed and offers **Open Release Page**, so you can look at the release on GitHub before
 installing anything. If anything else goes wrong, such as a download that stops, nothing is
 replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
-Security may be asked for again after an update, and widgets may need adding again (see
-[Widget](#widget)).
+Security may be asked for again after an update, and after a replacement from the DMG a widget
+may need adding again (see [Widgets across updates](#widgets-across-updates)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see

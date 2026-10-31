@@ -28,8 +28,8 @@ struct BatteryWidget: Widget {
         }
         .configurationDisplayName("Battery")
         .description("Charge, time remaining and the details you choose.")
-        // Extra large has its layout, drawn for the look check, and is declared only on the
-        // maintainer's explicit yes there: a family can be added later but never removed.
+        // No extra large: the look check left it out of 0.7, and a family can be added later
+        // but never removed. Its views come back with it; BatteryCore keeps its plan.
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

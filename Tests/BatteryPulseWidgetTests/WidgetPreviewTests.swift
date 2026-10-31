@@ -48,10 +48,11 @@ struct WidgetPreviewTests {
         }
     }
 
-    static let families: [WidgetSize] = [.small, .medium, .large, .extraLarge]
+    /// The Battery widget's declared families: extra large isn't (the look check, question 3).
+    static let families: [WidgetSize] = [.small, .medium, .large]
 
     static func fileName(_ size: WidgetSize) -> String {
-        size == .extraLarge ? "extra-large" : size.rawValue
+        size.rawValue
     }
 
     static func title(_ size: WidgetSize) -> String {
@@ -430,7 +431,8 @@ struct WidgetPreviewTests {
         .environment(\.colorScheme, .light)
     }
 
-    /// The sheets of the look check's questions (plan-0.7.0 §6.1), numbered as they are.
+    /// The sheets of the look check's questions (plan-0.7.0 §6.1), numbered as they are. Question
+    /// 3's extra large went with its views, as its answer left the family undeclared.
     static func lookCheckSheets(_ l: Language) -> [(name: String, heading: String, rows: [[Picture]])] {
         [
             (
@@ -442,14 +444,6 @@ struct WidgetPreviewTests {
                 [
                     [onBattery, charging, low].map { picture($0, .large, l) },
                     [full, serviced, customEvery].map { picture($0, .large, l) },
-                ]
-            ),
-            (
-                "3-extra-large-two-panels", "3. Extra large: two panels, Battery and Power (declared only on a yes)",
-                [
-                    [onBattery, charging].map { picture($0, .extraLarge, l) },
-                    [serviced, hot].map { picture($0, .extraLarge, l) },
-                    [drawnCharging, customEvery].map { picture($0, .extraLarge, l) },
                 ]
             ),
             (
@@ -473,7 +467,6 @@ struct WidgetPreviewTests {
                 [
                     [serviced, hot].flatMap { s in [WidgetSize.small, .medium].map { picture(s, $0, l) } },
                     [serviced, hot].map { picture($0, .large, l) } + [picture(monochromeServiced, .medium, l)],
-                    [serviced, hot].map { picture($0, .extraLarge, l) },
                 ]
             ),
             (
@@ -487,7 +480,6 @@ struct WidgetPreviewTests {
                 [
                     [noBattery, noInformation].flatMap { s in [WidgetSize.small, .medium].map { picture(s, $0, l) } },
                     [noBattery, noInformation].map { picture($0, .large, l) },
-                    [picture(noBattery, .extraLarge, l)],
                 ]
             ),
         ]

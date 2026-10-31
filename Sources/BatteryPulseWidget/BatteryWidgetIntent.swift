@@ -40,6 +40,8 @@ struct BatteryWidgetIntent: WidgetConfigurationIntent {
     /// Custom's details, in the chosen order; none means no details, never Automatic's. As many
     /// as each size has slots (`WidgetLayoutPlan.detailSlots`); small's one takes the time line's
     /// place. An array of an entity, because only an entity's array can be sized per family.
+    /// Extra large's size stays, though the family isn't declared yet, so the parameter that
+    /// ships in 0.7 needn't change when it is.
     @Parameter(
         title: "Details",
         size: [

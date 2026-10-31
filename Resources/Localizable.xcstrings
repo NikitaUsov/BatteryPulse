@@ -254,6 +254,18 @@
         }
       }
     },
+    "Accessories widget": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the title of the Accessories widget's row.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет «Аксессуары»"
+          }
+        }
+      }
+    },
     "Accessory": {
       "extractionState": "manual",
       "comment": "Kind of accessory that macOS doesn't name",
@@ -262,17 +274,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Аксессуар"
-          }
-        }
-      }
-    },
-    "Accessory batteries": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Аккумуляторы аксессуаров"
           }
         }
       }
@@ -1233,17 +1234,6 @@
         }
       }
     },
-    "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд клавиатур, мышей, трекпадов и наушников Bluetooth в панели строки меню и на странице «Аксессуары», а также уведомление о низком заряде по желанию."
-          }
-        }
-      }
-    },
     "Boot status flags reported by the USB-C port controller firmware.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1834,17 +1824,6 @@
         }
       }
     },
-    "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выберите стиль «Матовый» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол. «Полупрозрачный» и «Прозрачный» — бета-стили: включите «Бета-стили окон» в разделе «Настройки» → «Дополнения»."
-          }
-        }
-      }
-    },
     "Choose what the Battery widget shows.": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: the Battery widget configuration's description",
@@ -2112,6 +2091,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Продолжить"
+          }
+        }
+      }
+    },
+    "Control-click the Battery widget and choose Edit Widget to pick what it shows, now in a large size too. A placed widget keeps its look, and a click opens the matching page.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the configurable Battery widget's row. Edit Widget is the widget's menu item in macOS.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите виджет «Аккумулятор», удерживая клавишу Control, и выберите «Изменить виджет», чтобы задать, что он показывает, — теперь и в большом размере. Размещённый виджет сохраняет свой вид, а нажатие на него открывает нужную страницу."
           }
         }
       }
@@ -2867,17 +2858,6 @@
         }
       }
     },
-    "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Все стили значка теперь повторяют размер и молнию системного значка аккумулятора, а «Процент внутри» показывает заряд так же, как macOS."
-          }
-        }
-      }
-    },
     "Everyday work, unplugged.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -2909,17 +2889,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспортировать снимок…"
-          }
-        }
-      }
-    },
-    "Export history": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Экспорт истории"
           }
         }
       }
@@ -4556,17 +4525,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Строка меню"
-          }
-        }
-      }
-    },
-    "Menu bar icons like macOS 27": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Значки в строке меню как в macOS 27"
           }
         }
       }
@@ -6779,17 +6737,6 @@
         }
       }
     },
-    "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сохраняйте поминутные показания или ежедневное состояние аккумулятора в CSV для таблиц или всё сразу в JSON."
-          }
-        }
-      }
-    },
     "Save the raw data for a bug report. Serial numbers are redacted.": {
       "extractionState": "manual",
       "localizations": {
@@ -7972,17 +7919,6 @@
         }
       }
     },
-    "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
-          }
-        }
-      }
-    },
     "Type": {
       "extractionState": "manual",
       "localizations": {
@@ -8522,6 +8458,18 @@
         }
       }
     },
+    "When the Charge Limit in System Settings → Battery stops charging, BatteryPulse says so in the app, its menu bar panel and the Battery widget.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the Charged to limit row. Charge Limit is the setting in System Settings → Battery.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда Лимит зарядки в Системных настройках → «Аккумулятор» останавливает зарядку, BatteryPulse сообщает об этом в приложении, в панели строки меню и в виджете «Аккумулятор»."
+          }
+        }
+      }
+    },
     "When the driver last finished a 'full' poll (adds cycle count, failure status, etc.).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -8689,6 +8637,18 @@
         }
       }
     },
+    "Widgets you configure": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the title of the configurable Battery widget's row.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настраиваемые виджеты"
+          }
+        }
+      }
+    },
     "Window Style": {
       "extractionState": "manual",
       "comment": "Settings → General: the section of the window style picker (as macOS 27 Icon & widget style)",
@@ -8697,17 +8657,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Стиль окон"
-          }
-        }
-      }
-    },
-    "Window styles": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стили окон"
           }
         }
       }
@@ -8808,6 +8757,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "У вас BatteryPulse %@."
+          }
+        }
+      }
+    },
+    "Your keyboard's, mouse's, trackpad's and headphones' batteries at a glance, in small, medium and large.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the Accessories widget's row; small, medium and large are the widget's sizes.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд клавиатуры, мыши, трекпада и наушников с первого взгляда — в маленьком, среднем и большом размере."
           }
         }
       }

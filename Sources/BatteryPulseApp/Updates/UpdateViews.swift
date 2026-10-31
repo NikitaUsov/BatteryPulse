@@ -387,7 +387,7 @@ struct WhatsNewView: View {
 enum WhatsNew {
     /// The version these features arrived in; What's New appears once after updating to it or
     /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 6, 0])
+    nonisolated static let version = AppVersion(parts: [0, 7, 0])
 
     struct Feature: Identifiable {
         let id: Int
@@ -398,29 +398,20 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "ipad.and.iphone", title: "iPhone and iPad",
+            id: 1, symbol: "square.grid.2x2", title: "Widgets you configure",
             detail:
-                "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's."
+                "Control-click the Battery widget and choose Edit Widget to pick what it shows, now in a large size too. A placed widget keeps its look, and a click opens the matching page."
         ),
         Feature(
-            id: 2, symbol: "headphones", title: "Accessory batteries",
+            id: 2, symbol: "keyboard", title: "Accessories widget",
             detail:
-                "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification."
+                "Your keyboard's, mouse's, trackpad's and headphones' batteries at a glance, in small, medium and large."
         ),
         Feature(
-            id: 3, symbol: "macwindow", title: "Window styles",
+            id: 3, symbol: "battery.75percent", title: "Charged to limit",
             detail:
-                "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced."
+                "When the Charge Limit in System Settings → Battery stops charging, BatteryPulse says so in the app, its menu bar panel and the Battery widget."
         ),
-        Feature(
-            id: 4, symbol: "menubar.rectangle", title: "Menu bar icons like macOS 27",
-            detail:
-                "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does."
-        ),
-        Feature(
-            id: 5, symbol: "square.and.arrow.up", title: "Export history",
-            detail:
-                "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON."),
     ]
 
     /// The anonymous version count, which arrived in 0.7.0 (``VersionCounterPolicy/introducedIn``).

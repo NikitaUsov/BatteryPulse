@@ -199,8 +199,10 @@ if grep -F "CryptoKit" <<<"$LINKED" >/dev/null; then
   echo "error: the widget links CryptoKit; it must not depend on BatteryKit" >&2
   exit 1
 fi
-# For the record only: whether dead stripping left the widget dlopen and dlsym, which it never
-# calls (MacAccessoryProvider does).
+# For the record only: the widget's dl imports. Since 0.7 they are dlopen, dlsym and dlerror, by
+# design: the Accessories widget reads the accessory batteries itself with
+# MacAccessoryProvider().read(), which looks up the private IOPSCopyPowerSourcesByType in the
+# loaded IOKit with dlopen and dlsym, and logs dlerror's text when that fails.
 DL_IMPORTS="$(nm -u "$BIN_PATH/BatteryPulseWidget" | grep -E '^_dl(open|sym|close|error)$' | tr '\n' ' ' || true)"
 echo "The widget's dl imports: ${DL_IMPORTS:-none}"
 

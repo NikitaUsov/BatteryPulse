@@ -13,8 +13,9 @@ import Testing
 /// - an IOKit user-client call (`IOServiceOpen`, `IOConnect…`) outside the SMC client, and a
 ///   registry write anywhere;
 /// - starting a process outside the installer, or signalling one outside the widget refresher;
-/// - in the widget, any file API, dynamic loading, URL session or Network framework
-///   (``widgetForbidden``): the widget reads no file of ours and makes no request;
+/// - in the widget and BatteryArt, the painter it links, any file API, dynamic loading, URL
+///   session or Network framework (``widgetForbidden``): the widget reads no file of ours and
+///   makes no request;
 /// - a handler of URLs or activities outside the app delegate's two widget-click handlers: no
 ///   `onOpenURL`, `handlesExternalEvents` or `onContinueUserActivity`, and no other delegate
 ///   method that opens something. The app's Info.plist registers no URL scheme either
@@ -153,9 +154,10 @@ import Testing
         ]
     }
 
-    /// The widget's own target, which reads the battery and nothing else of ours (P2 §8.8): no file
-    /// API, no `dlopen` or `dlsym`, no `URLSession` and no Network framework (REJ-57). The battery
-    /// and accessory reads it links live in BatterySource.
+    /// The widget's own target and BatteryArt, the painter it shares with the app, which read the
+    /// battery and nothing else of ours (P2 §8.8): no file API, no `dlopen` or `dlsym`, no
+    /// `URLSession` and no Network framework (REJ-57). The battery and accessory reads it links
+    /// live in BatterySource, under the placements above.
     static var widgetForbidden: Regex<Substring> {
         words(
             #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
@@ -166,7 +168,9 @@ import Testing
     /// `application(_:continue:restorationHandler:)`.
     static let clickHandlers = "BatteryPulseApp/App/BatteryPulseApp.swift"
 
-    static let widgetFolder = "BatteryPulseWidget/"
+    /// The sources ``widgetForbidden`` covers: the widget's own, and BatteryArt's, which the
+    /// widget links.
+    static let widgetFolders = ["BatteryPulseWidget/", "BatteryArt/"]
     static let widgetMessage = "the widget reads no file of ours and makes no request"
 
     /// The targets that build with strict memory safety: the parsers of untrusted input
@@ -189,7 +193,7 @@ import Testing
                 found.append((match.range.lowerBound, placement.message))
             }
         }
-        if path.hasPrefix(widgetFolder) {
+        if widgetFolders.contains(where: { path.hasPrefix($0) }) {
             for match in code.matches(of: widgetForbidden) {
                 found.append((match.range.lowerBound, widgetMessage))
             }
@@ -413,7 +417,8 @@ import Testing
         #expect(!text.contains("CFBundleURLSchemes"))
     }
 
-    /// The widget has no file or network API, wherever else the app may use one.
+    /// The widget and the painter it links have no file or network API, wherever else the app
+    /// may use one.
     @Test(arguments: [
         "let data = try Data(contentsOf: url)",
         "let entries = try FileManager.default.contentsOfDirectory(atPath: path)",
@@ -425,8 +430,11 @@ import Testing
         "let connection = NWConnection(host: host, port: port, using: .tcp)",
     ])
     func theWidgetHasNoFileOrNetworkAPI(source: String) {
-        let widget = "BatteryPulseWidget/BatteryTimelineProvider.swift"
-        #expect(Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetMessage) }, "\(source)")
+        for widget in ["BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift"] {
+            #expect(
+                Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetMessage) },
+                "\(widget): \(source)")
+        }
         let app = "BatteryPulseApp/Updates/UpdateNetwork.swift"
         #expect(!Self.violations(in: source, path: app).contains { $0.hasSuffix(Self.widgetMessage) })
     }
