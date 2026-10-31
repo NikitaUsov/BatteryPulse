@@ -231,6 +231,18 @@ struct WidgetAccessibilityTests {
         #expect(WidgetSpokenLabel.timeLeft(until: .distantFuture).text { $0 } == nil)
     }
 
+    /// A sentence keeps its own stop: the next phrase follows it after a space, never ".,".
+    @Test func aSentenceEndsWithItsOwnStop() {
+        let noBattery = WidgetEmptyReason.noBattery.spokenLabel
+        #expect(noBattery.text { $0 } == "This Mac has no internal battery. Try the Accessories widget")
+        let russian = noBattery.text(Self.localize(.russian))
+        #expect(russian?.contains(".,") == false)
+        #expect(russian?.contains(". ") == true)
+        // Only a catalog sentence: a name that ends with a stop is still followed by a comma.
+        let named = WidgetSpokenLabel.phrases([.verbatim("Keyboard No."), .verbatim("7")])
+        #expect(named.text { $0 } == "Keyboard No., 7")
+    }
+
     /// The time left's end, when the plan counts one down.
     static func timeLeftEnd(_ plan: WidgetLayoutPlan) -> Date? {
         guard case .battery(let layout) = plan else { return nil }
