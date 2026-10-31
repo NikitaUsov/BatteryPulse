@@ -20,7 +20,9 @@
 - **Charged to limit:** when the Charge Limit in System Settings → Battery stops charging,
   BatteryPulse now says "Charged to limit" in the app, its menu bar panel and the Battery widget,
   and Power shows "Charge limit: Reached". It can't read the limit's percentage yet.
-- **Percentages** have no space before the % sign in any language, so Russian shows "80%" too.
+- **Percentages** in the app, the menu bar and the widgets have no space before the % sign in
+  either language, so Russian shows "80%" too. The text Copy Report and `bpulse` write is
+  unchanged.
 - **Anonymous version count.** Once per version, at least a day after you start using it, an
   automatic update check also downloads a small file, `BatteryPulse-count.txt`, from that
   version's release; its public download count shows how many Macs use each version. Nothing
