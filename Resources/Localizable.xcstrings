@@ -7761,6 +7761,18 @@
         }
       }
     },
+    "Try the Accessories widget": {
+      "extractionState": "manual",
+      "comment": "Battery widget on a Mac without a battery: under its message, a pointer to the Accessories widget",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Попробуйте виджет «Аксессуары»"
+          }
+        }
+      }
+    },
     "Turn On": {
       "extractionState": "manual",
       "localizations": {

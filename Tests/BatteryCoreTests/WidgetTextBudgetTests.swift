@@ -143,7 +143,7 @@ struct WidgetTextBudgetTests {
                 }
                 // The empty states.
                 let messages = [
-                    "No battery information", "This Mac has no internal battery.",
+                    "No battery information", "This Mac has no internal battery.", "Try the Accessories widget",
                     "No accessories with batteries connected", "All accessories are fully charged",
                 ]
                 for key in messages {

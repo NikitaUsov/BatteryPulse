@@ -187,10 +187,11 @@ extension WidgetTimeText {
 }
 
 extension WidgetEmptyReason {
-    /// The message the widget shows; its symbol is hidden.
+    /// The message the widget shows; its symbol is hidden. Without a battery it points to the
+    /// Accessories widget.
     public var spokenLabel: WidgetSpokenLabel {
         switch self {
-        case .noBattery: .phrases([.key("This Mac has no internal battery.")])
+        case .noBattery: .phrases([.key("This Mac has no internal battery."), .key("Try the Accessories widget")])
         case .noInformation: .phrases([.key("No battery information")])
         }
     }
