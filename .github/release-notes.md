@@ -37,7 +37,8 @@
   --json` is unchanged.
 
 Updating from 0.6.2: **Install and Relaunch** in the update window installs 0.7.0 from inside
-the app.
+the app. If a widget is gone or blank after the update, add it again from the gallery:
+Control-click the desktop and choose **Edit Widgets…**.
 
 ## What's new in 0.6.2
 

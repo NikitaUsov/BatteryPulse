@@ -528,10 +528,10 @@ accessory.
 
 ### Widgets across updates
 
-**Install and Relaunch** keeps the widgets you placed: it ends the running widget just before it
-replaces the app, so macOS takes the new version's widgets in their place. Replacing BatteryPulse
-from the DMG by hand may remove them. If a widget is gone or blank after an update, add it again
-from the gallery as above.
+**Install and Relaunch** should keep the widgets you placed: it ends the running widget just before
+it replaces the app, so macOS takes the new version's widgets in their place. Replacing
+BatteryPulse from the DMG by hand may remove them. If a widget is gone or blank after an update,
+add it again from the gallery as above.
 
 ## Demo Mode
 
@@ -595,8 +595,8 @@ BatteryPulse installs nothing and doesn't offer the download either: the window 
 failed and offers **Open Release Page**, so you can look at the release on GitHub before
 installing anything. If anything else goes wrong, such as a download that stops, nothing is
 replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
-Security may be asked for again after an update, and after a replacement from the DMG a widget
-may need adding again (see [Widgets across updates](#widgets-across-updates)).
+Security may be asked for again after an update, and a widget may need adding again, more likely
+after a replacement from the DMG (see [Widgets across updates](#widgets-across-updates)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see
