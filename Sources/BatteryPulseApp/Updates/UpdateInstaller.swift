@@ -293,9 +293,10 @@ extension UpdateInstallError {
         case .unexpectedBundle:
             String(localized: "The disk image doesn't contain the expected version of BatteryPulse.")
         case .invalidCodeSignature: String(localized: "The new version's code signature isn't valid.")
-        // A version that needs a newer macOS says so in words of its own once they are translated;
-        // until then, what happened: the installed copy stays.
-        case .needsNewerMacOS, .replaceFailed: String(localized: "BatteryPulse couldn't replace the installed copy.")
+        // A version that needs a newer macOS and a volume that can't swap get words of their own
+        // once they are translated; until then, what happened: the installed copy stays.
+        case .needsNewerMacOS, .swapUnsupported, .replaceFailed:
+            String(localized: "BatteryPulse couldn't replace the installed copy.")
         case .relaunchFailed:
             String(
                 localized:
@@ -308,7 +309,8 @@ extension UpdateInstallError {
         switch self {
         case .translocated, .folderNotWritable: message
         case .developmentBuild, .notSigned, .notNewer, .downloadFailed, .digestMismatch, .badSignature, .mountFailed,
-            .unexpectedBundle, .invalidCodeSignature, .needsNewerMacOS, .replaceFailed, .relaunchFailed:
+            .unexpectedBundle, .invalidCodeSignature, .needsNewerMacOS, .swapUnsupported, .replaceFailed,
+            .relaunchFailed:
             nil
         }
     }
@@ -383,15 +385,21 @@ nonisolated enum UpdateInstallSteps {
         }
     }
 
-    /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
-    /// volume), checks the copy, ends the widget extension and swaps the copy with `target` in one
-    /// rename. Returns where the previous version is now. `@concurrent`: the copy, the quarantine
-    /// clearing and the strict code signature check are synchronous work that must not hold the
-    /// caller's actor.
+    /// Checks that `target`'s volume can swap two folders in one rename, copies the app out of the
+    /// verified DMG next to `target` (a temporary folder on the same volume), checks the copy, ends
+    /// the widget extension and swaps the copy with `target` in one rename. Returns where the
+    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
+    /// code signature check are synchronous work that must not hold the caller's actor.
     @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
     ) async throws(UpdateInstallError) -> URL {
         let fileManager = FileManager.default
+        // Before anything is copied: a volume that can't swap would only fail at the swap.
+        let swaps = try? target.resourceValues(forKeys: [.volumeSupportsSwapRenamingKey]).volumeSupportsSwapRenaming
+        if let problem = UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: swaps) {
+            Diagnostics.update.error("The app's volume can't swap two folders in one rename")
+            throw problem
+        }
         let staging: URL
         do {
             staging = try fileManager.url(
