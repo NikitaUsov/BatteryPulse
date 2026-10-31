@@ -50,8 +50,9 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
         self.kinds = kinds
     }
 
-    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable. Details is an
-    /// entity, whose ids are ``BatteryWidgetField``'s raw values.
+    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable, and the
+    /// Accessories kind. Battery's Details is an entity, whose ids are ``BatteryWidgetField``'s raw
+    /// values; Accessories' Hide fully charged is a Bool.
     static let shipping = WidgetIntentManifest(kinds: [
         Kind(
             .battery, families: [.small, .medium, .large],
@@ -66,7 +67,15 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
                     Parameter(name: "time", values: WidgetTimeStyle.allCases.map(\.rawValue)),
                     Parameter(name: "colors", values: WidgetColorStyle.allCases.map(\.rawValue)),
                     Parameter(name: "updateTime", values: WidgetUpdateTimeStyle.allCases.map(\.rawValue)),
-                ]))
+                ])),
+        Kind(
+            .accessories, families: [.small, .medium, .large],
+            intent: Intent(
+                type: "AccessoriesWidgetIntent",
+                parameters: [
+                    Parameter(name: "mode", values: AccessoryWidgetMode.allCases.map(\.rawValue)),
+                    Parameter(name: "hideFullyCharged"),
+                ])),
     ])
 
     /// The JSON of `scripts/widget-manifest.json`: sorted keys, two-space indents, a final newline.

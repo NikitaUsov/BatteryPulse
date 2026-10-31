@@ -10,6 +10,7 @@ import WidgetKit
 struct BatteryPulseWidgets: WidgetBundle {
     var body: some Widget {
         BatteryWidget()
+        AccessoriesWidget()
     }
 }
 
@@ -29,6 +30,24 @@ struct BatteryWidget: Widget {
         .description("Charge, time remaining and the details you choose.")
         // Extra large has its layout, drawn for the look check, and is declared only on the
         // maintainer's explicit yes there: a family can be added later but never removed.
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+/// The Accessories widget: the batteries of the connected keyboards, mice, trackpads and
+/// headphones, which the extension reads itself, configured through ``AccessoriesWidgetIntent``.
+/// A family can be added later but never removed.
+struct AccessoriesWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: WidgetKindID.accessories.rawValue, intent: AccessoriesWidgetIntent.self,
+            provider: AccessoriesTimelineProvider()
+        ) { entry in
+            AccessoriesWidgetRoot(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("Accessories")
+        .description("Batteries of your keyboard, mouse, trackpad and headphones.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

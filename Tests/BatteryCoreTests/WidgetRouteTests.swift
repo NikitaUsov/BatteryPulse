@@ -97,6 +97,7 @@ struct WidgetRouteTests {
         #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories])
         // The app's route, over the intents that ship.
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent")?.page == .overview)
+        #expect(WidgetRoute(activityType: "AccessoriesWidgetIntent")?.page == .accessories)
     }
 
     /// The app's route names the intents the manifest ships, kind by kind, so it opens a page for

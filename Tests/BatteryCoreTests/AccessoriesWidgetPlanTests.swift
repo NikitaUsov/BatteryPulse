@@ -251,4 +251,27 @@ struct AccessoriesWidgetPlanTests {
                 .phrases([.key("No accessories with batteries connected")])
             ])
     }
+
+    /// Every key the Accessories widget's labels use is in the catalog with its Russian.
+    @Test func everyKeyIsTranslated() throws {
+        var keys: Set<String> = []
+        for accessories in [try Self.synthetic(), Self.demo] {
+            for size in WidgetSize.allCases {
+                for mode in AccessoryWidgetMode.allCases {
+                    let stale = WidgetTimelinePlan.Entry(date: Self.readAt, showsEstimate: false, isStale: true)
+                    let plan = Self.plan(size, accessories, AccessoriesWidgetConfiguration(mode: mode), entry: stale)
+                    keys.formUnion(WidgetAccessibility.elements(plan).flatMap(\.keys))
+                }
+            }
+        }
+        keys.formUnion(AccessoriesWidgetEmptyReason.allCases.flatMap(\.spokenLabel.keys))
+        keys.formUnion(AccessoryKind.allCases.map(\.titleKey))
+        keys.formUnion(AccessoryPartRole.allCases.map(\.labelKey))
+        keys.formUnion(AccessoryWidgetStatus.allCases.flatMap(\.phrase.keys))
+        #expect(keys.count > 15)
+        for key in keys {
+            let russian = try WidgetTextBudgetTests.text(key, .russian)
+            #expect(russian != nil && russian != key, "\(key)")
+        }
+    }
 }

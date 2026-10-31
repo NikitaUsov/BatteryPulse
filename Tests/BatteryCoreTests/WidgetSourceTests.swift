@@ -108,16 +108,28 @@ struct WidgetSourceTests {
         #expect(scan("let a = Image(systemName: name)") == bare)
     }
 
-    /// Each widget choice's BatteryCore mirror, by parameter name.
-    static let mirrors: [String: [String]] = [
-        "layout": WidgetLayoutMode.allCases.map(\.rawValue),
-        "mainValue": BatteryWidgetMain.allCases.map(\.rawValue),
-        "mainVisual": BatteryWidgetVisual.allCases.map(\.rawValue),
-        "statusLines": WidgetStatusLine.allCases.map(\.rawValue),
-        "time": WidgetTimeStyle.allCases.map(\.rawValue),
-        "colors": WidgetColorStyle.allCases.map(\.rawValue),
-        "updateTime": WidgetUpdateTimeStyle.allCases.map(\.rawValue),
+    /// Each widget choice's BatteryCore mirror, by intent and parameter name.
+    static let mirrors: [String: [String: [String]]] = [
+        "BatteryWidgetIntent": [
+            "layout": WidgetLayoutMode.allCases.map(\.rawValue),
+            "mainValue": BatteryWidgetMain.allCases.map(\.rawValue),
+            "mainVisual": BatteryWidgetVisual.allCases.map(\.rawValue),
+            "statusLines": WidgetStatusLine.allCases.map(\.rawValue),
+            "time": WidgetTimeStyle.allCases.map(\.rawValue),
+            "colors": WidgetColorStyle.allCases.map(\.rawValue),
+            "updateTime": WidgetUpdateTimeStyle.allCases.map(\.rawValue),
+        ],
+        "AccessoriesWidgetIntent": [
+            "mode": AccessoryWidgetMode.allCases.map(\.rawValue)
+        ],
     ]
+
+    /// The body of the widget's `struct <type>`, where its parameters are declared.
+    static func intentBody(_ type: String, in code: String) throws -> Substring {
+        try #require(
+            code.firstMatch(of: try Regex("struct \(type)\\b[^{]*\\{([\\s\\S]*?)\\n\\}"))?.output[1].substring,
+            "struct \(type)")
+    }
 
     /// A mirror's cases that the widget doesn't offer yet, each with its reason. Removing a case
     /// from here is the commit that offers it.
@@ -129,39 +141,47 @@ struct WidgetSourceTests {
     @Test func eachChoiceMapsToItsMirror() throws {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
         let intents = WidgetIntentManifest.shipping.kinds.compactMap(\.intent)
-        #expect(!intents.isEmpty)
-        for parameter in intents.flatMap(\.parameters) {
-            guard let values = parameter.values else { continue }
-            let declaration = try Regex("@Parameter\\b[^@]*?\\bvar\\s+\(parameter.name)\\s*:\\s*\\[?(\\w+)")
-            let type = try #require(code.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
-            let body = try #require(
-                code.firstMatch(of: try Regex("enum \(type): String, AppEnum \\{([\\s\\S]*?)\\n\\}"))?.output[1]
-                    .substring, "enum \(type)")
-            // A case without a raw value of its own: its raw value is its name.
-            let cases = body.matches(of: #/(?m)^\s*case\s+([a-z]\w*(?:\s*,\s*[a-z]\w*)*)\s*$/#)
-                .flatMap { $0.output.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }
-            #expect(cases == values, "\(type)")
-            let mirror = try #require(Self.mirrors[parameter.name], "no mirror for \(parameter.name)")
-            let pending = Self.notOfferedYet[parameter.name] ?? []
-            #expect(values == mirror.filter { !pending.contains($0) }, "\(parameter.name)")
-            for value in values {
-                #expect(body.contains("case .\(value): .\(value)"), "\(type).\(value)")
+        #expect(intents.count == 2)
+        for intent in intents {
+            let intentBody = try Self.intentBody(intent.type, in: code)
+            for parameter in intent.parameters {
+                guard let values = parameter.values else { continue }
+                let declaration = try Regex("@Parameter\\b[^@]*?\\bvar\\s+\(parameter.name)\\s*:\\s*\\[?(\\w+)")
+                let type = try #require(
+                    intentBody.firstMatch(of: declaration)?.output[1].substring, "\(intent.type).\(parameter.name)")
+                let body = try #require(
+                    code.firstMatch(of: try Regex("enum \(type): String, AppEnum \\{([\\s\\S]*?)\\n\\}"))?.output[1]
+                        .substring, "enum \(type)")
+                // A case without a raw value of its own: its raw value is its name.
+                let cases = body.matches(of: #/(?m)^\s*case\s+([a-z]\w*(?:\s*,\s*[a-z]\w*)*)\s*$/#)
+                    .flatMap { $0.output.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }
+                #expect(cases == values, "\(type)")
+                let mirror = try #require(
+                    Self.mirrors[intent.type]?[parameter.name], "no mirror for \(intent.type).\(parameter.name)")
+                let pending = Self.notOfferedYet[parameter.name] ?? []
+                #expect(values == mirror.filter { !pending.contains($0) }, "\(parameter.name)")
+                for value in values {
+                    #expect(body.contains("case .\(value): .\(value)"), "\(type).\(value)")
+                }
             }
         }
         // Every pending case is a mirror's.
         for (name, pending) in Self.notOfferedYet {
-            #expect(pending.allSatisfy { Self.mirrors[name]?.contains($0) == true }, "\(name)")
+            let mirror = Self.mirrors.values.compactMap { $0[name] }.first
+            #expect(pending.allSatisfy { mirror?.contains($0) == true }, "\(name)")
         }
     }
 
-    /// The `default:` argument of each of the intent's parameters, as written; "none" without one.
-    static func parameterDefaults() throws -> [String: String] {
+    /// The `default:` argument of each of `type`'s parameters, as written; "none" without one.
+    static func parameterDefaults(_ type: String) throws -> [String: String] {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        let body = try Self.intentBody(type, in: code)
+        let intent = try #require(WidgetIntentManifest.shipping.kinds.compactMap(\.intent).first { $0.type == type })
         var defaults: [String: String] = [:]
-        for parameter in WidgetIntentManifest.shipping.kinds.compactMap(\.intent).flatMap(\.parameters) {
+        for parameter in intent.parameters {
             let declaration = try Regex("@Parameter\\(([^@]*?)\\)\\s*var\\s+\(parameter.name)\\s*:")
-            let arguments = try #require(code.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
-            let value = arguments.firstMatch(of: #/\bdefault\s*:\s*(\[[^\]]*\]|\.\w+)/#)?.output.1
+            let arguments = try #require(body.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
+            let value = arguments.firstMatch(of: #/\bdefault\s*:\s*(\[[^\]]*\]|\.\w+|true|false)/#)?.output.1
             defaults[parameter.name] = value.map { String($0.replacing(#/\s+/#, with: " ")) } ?? "none"
         }
         return defaults
@@ -183,8 +203,19 @@ struct WidgetSourceTests {
             "updateTime": ".\(c.updateTime.rawValue)",
         ]
         #expect(c.details.isEmpty)
-        let defaults = try Self.parameterDefaults()
+        let defaults = try Self.parameterDefaults("BatteryWidgetIntent")
         #expect(defaults == expected)
+    }
+
+    /// The Accessories widget's defaults are `AccessoriesWidgetConfiguration()`'s: every accessory,
+    /// lowest first, the full ones too.
+    @Test func eachAccessoriesDefaultIsTheModels() throws {
+        let c = AccessoriesWidgetConfiguration()
+        #expect(c.mode == .all && !c.hidesFullyCharged)
+        #expect(
+            try Self.parameterDefaults("AccessoriesWidgetIntent") == [
+                "mode": ".\(c.mode.rawValue)", "hideFullyCharged": "\(c.hidesFullyCharged)",
+            ])
     }
 
     /// Details' entity is identified by its field's frozen raw value.

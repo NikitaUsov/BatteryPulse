@@ -135,8 +135,18 @@ struct WidgetTextBudgetTests {
                 for line in try timeLines(language) where size != .small {
                     check(WidgetTextBudget.fits(line, in: .row, size: size), line, "a time row, \(size)")
                 }
+                // The Accessories widget's state beside a single part's charge, a line under its
+                // lowest accessory's.
+                for key in ["Charging", "Last known charge", "Connected to power"] {
+                    let line = try #require(try text(key, language))
+                    check(WidgetTextBudget.fits(line, in: .line, size: size), line, "an accessory's state, \(size)")
+                }
                 // The empty states.
-                for key in ["No battery information", "This Mac has no internal battery."] {
+                let messages = [
+                    "No battery information", "This Mac has no internal battery.",
+                    "No accessories with batteries connected", "All accessories are fully charged",
+                ]
+                for key in messages {
                     let message = try #require(try text(key, language))
                     check(WidgetTextBudget.fits(message, in: .message, size: size), message, "a message, \(size)")
                 }
