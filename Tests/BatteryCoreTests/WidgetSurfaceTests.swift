@@ -30,7 +30,7 @@ struct WidgetSurfaceTests {
             BatteryWidgetField.allCases.map(\.rawValue) == [
                 "state", "time", "maximumCapacity", "condition", "cycleCount", "temperature", "adapter",
                 "systemLoad", "batteryPower", "adapterInput", "lowPowerMode", "remainingCapacity", "cycleLifeUsed",
-                "cellBalance", "voltage",
+                "cellBalance", "voltage", "systemChargeLimit",
             ])
         #expect(
             BatteryWidgetMain.allCases.map(\.rawValue) == ["charge", "maximumCapacity", "temperature", "batteryPower"])

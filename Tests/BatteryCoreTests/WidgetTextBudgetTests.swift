@@ -78,6 +78,7 @@ struct WidgetTextBudgetTests {
         case .remainingCapacity: [f.milliampHours(9_999)]
         case .cellBalance: [f.millivolts(999)]
         case .voltage: [f.volts(millivolts: 13_050)]
+        case .systemChargeLimit: try words(["Reached"])
         }
     }
 

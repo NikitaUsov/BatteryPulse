@@ -71,6 +71,7 @@ struct WidgetRowTests {
             missing == [
                 .time, .maximumCapacity, .cycleCount, .temperature, .adapter, .systemLoad, .batteryPower,
                 .adapterInput, .lowPowerMode, .remainingCapacity, .cycleLifeUsed, .cellBalance, .voltage,
+                .systemChargeLimit,
             ])
     }
 

@@ -62,6 +62,10 @@ public enum BatteryWidgetField: String, Sendable, CaseIterable {
     /// The spread between the highest and lowest cell voltage.
     case cellBalance
     case voltage
+    /// "Reached" while macOS's Charge Limit holds the charge
+    /// (``BatterySnapshot/isAtSystemChargeLimit``), and dropped otherwise. Its meaning is frozen,
+    /// its value isn't: a later release can show the limit's percentage in the same field.
+    case systemChargeLimit
 }
 
 /// The value the Battery widget shows large.

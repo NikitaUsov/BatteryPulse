@@ -165,4 +165,51 @@ import Testing
         #expect(layout.level.text == BatteryFormatter(locale: Locale(identifier: "en_US")).percent(80))
         #expect(layout.chargeLabel.text { $0 } == "Battery charge: \(layout.level.text), Charged to limit")
     }
+
+    /// The field reads "Reached" while the limit holds the charge and is dropped otherwise, like
+    /// any value the reading lacks.
+    @Test func theFieldShowsOnlyWhileTheLimitHolds() throws {
+        let formatter = BatteryFormatter(locale: Locale(identifier: "en_US"))
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        let row = try #require(WidgetRow(.systemChargeLimit, snapshot: held, time: nil, formatter: formatter))
+        #expect(row.value == .reached)
+        #expect(row.tier == .normal)
+        #expect(row.cue == nil)
+        #expect(row.spokenLabel == .phrases([.key("Charge limit"), .key("Reached")]))
+        for fixture in Fixture.allCases where fixture != .m5ChargeLimit {
+            let s = try fixture.snapshot()
+            #expect(WidgetRow(.systemChargeLimit, snapshot: s, time: nil, formatter: formatter) == nil, "\(fixture)")
+        }
+        var optimized = held
+        optimized.isOptimizedChargingEngaged = true
+        #expect(WidgetRow(.systemChargeLimit, snapshot: optimized, time: nil, formatter: formatter) == nil)
+    }
+
+    /// Custom's Details offers it; Automatic's lists keep their details.
+    @Test func onlyCustomShowsTheField() throws {
+        for size in WidgetSize.allCases {
+            #expect(!WidgetLayoutPlan.automatic(size).contains(.systemChargeLimit))
+        }
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        let custom = BatteryWidgetConfiguration(layout: .custom, details: [.systemChargeLimit, .adapter])
+
+        let medium = try Self.plan(held, .medium, custom)
+        #expect(medium.details.first == .row(WidgetRow(field: .systemChargeLimit, value: .reached)))
+        #expect(
+            WidgetAccessibility.elements(.battery(medium)).contains(.phrases([.key("Charge limit"), .key("Reached")])))
+
+        // Small's one detail is a line, in the time line's place.
+        let small = try Self.plan(held, .small, custom)
+        #expect(small.lines.contains(.detail(WidgetRow(field: .systemChargeLimit, value: .reached))))
+
+        // Off the limit, the row is left out and the next detail moves up.
+        var notHeld = held
+        notHeld.notChargingReason = 0x80
+        let without = try Self.plan(notHeld, .medium, custom)
+        let fields = without.details.compactMap { detail -> BatteryWidgetField? in
+            guard case .row(let row) = detail else { return nil }
+            return row.field
+        }
+        #expect(fields == [.adapter])
+    }
 }

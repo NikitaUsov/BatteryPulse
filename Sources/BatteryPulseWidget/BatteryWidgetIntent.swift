@@ -287,6 +287,7 @@ extension BatteryWidgetField {
         case .voltage: "Voltage"
         case .cycleLifeUsed: "Cycle life used"
         case .cellBalance: "Cell balance"
+        case .systemChargeLimit: "Charge limit"
         }
     }
 }

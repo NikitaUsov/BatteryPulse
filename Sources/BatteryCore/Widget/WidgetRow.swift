@@ -75,6 +75,10 @@ public struct WidgetRow: Sendable, Equatable {
         case .voltage:
             guard let voltage = s.voltageMV else { return nil }
             value = .text(f.volts(millivolts: voltage))
+        case .systemChargeLimit:
+            // The limit itself is in no key BatteryPulse reads, so the row shows only that it holds.
+            guard s.isAtSystemChargeLimit else { return nil }
+            value = .reached
         }
         self.init(field: field, value: value, tier: tier)
     }
@@ -89,6 +93,8 @@ public enum WidgetValue: Sendable, Equatable {
     /// "On" or "Off".
     case onOff(Bool)
     case time(WidgetTimeText)
+    /// "Reached": the Charge Limit holds the charge.
+    case reached
 }
 
 /// The Mac battery's state in the words the widget and the app use, decided once for both so
