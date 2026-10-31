@@ -208,11 +208,10 @@ jobs:
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
           # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's),
           # copied to docs/plans/0.7.1/ at 0.7.0's release for 0.7.1's M5 session, until 0.7.1's D3
-          # removes the folder. 0.6.2's Session B launcher stayed behind with 0.7.0's plan folder.
+          # removes the folder. 0.6.2's Session B launchers stayed behind with 0.7.0's plan folder.
           bash -n docs/plans/0.7.1/m5-session.sh
           bash -n docs/plans/0.7.1/start-session-r.sh
           bash -n docs/plans/0.7.1/start-short-session.sh
-          bash -n docs/plans/0.7.1/start-after-publishing.sh
           swiftc -typecheck docs/plans/0.7.1/swap.swift
           swiftc -typecheck docs/plans/0.7.1/frames.swift
           swiftc -typecheck docs/plans/0.7.1/ui.swift
