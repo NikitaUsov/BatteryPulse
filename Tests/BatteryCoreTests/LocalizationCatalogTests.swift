@@ -252,6 +252,31 @@ import Testing
         #expect(offenders.isEmpty, "Russian text outside Resources/Localizable.xcstrings: \(offenders)")
     }
 
+    /// A percentage has no space of any kind before its sign, in English and in Russian alike
+    /// ("80%", never "80 %"), as ``BatteryFormatter/percent(_:fractionDigits:)`` writes it. A
+    /// placeholder (`%@`, `%1$@`) is not a sign, so "Updated %@" is fine.
+    @Test func noSpaceBeforeAPercentSign() throws {
+        func spaced(_ text: String) -> Bool {
+            let characters = Array(text)
+            for index in characters.indices.dropFirst() where characters[index] == "%" {
+                let rest = String(characters[(index + 1)...])
+                let placeholder = rest.hasPrefix("@") || rest.prefixMatch(of: #/\d+\$@/#) != nil
+                if !placeholder && characters[index - 1].isWhitespace { return true }
+            }
+            return false
+        }
+        #expect(["80 %", "80\u{00A0}%", "80\u{202F}%", "of 100 %."].allSatisfy(spaced))
+        #expect(!["80%", "Updated %@", "%@ of %1$@", "99,5%"].contains(where: spaced))
+        var offenders: [String] = []
+        for (key, entry) in try catalog().strings {
+            if spaced(key) { offenders.append(key) }
+            for (language, localization) in entry.localizations ?? [:] where spaced(localization.stringUnit.value) {
+                offenders.append("\(language): \(localization.stringUnit.value)")
+            }
+        }
+        #expect(offenders.isEmpty, "A space before %: \(offenders.sorted())")
+    }
+
     @Test func russianTranslationsAreCompleteAndKeepPlaceholders() throws {
         let catalog = try catalog()
         #expect(catalog.sourceLanguage == "en")
