@@ -582,6 +582,18 @@
         }
       }
     },
+    "Balance": {
+      "extractionState": "manual",
+      "comment": "Widget: Cell balance where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс"
+          }
+        }
+      }
+    },
     "Banks": {
       "extractionState": "manual",
       "comment": "Raw Data toolbar switch: the cell bank entries (AppleSmartBatteryBank) and their cells",
@@ -8046,6 +8058,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Если обычно отключать адаптер примерно на 80 процентах, аккумулятор стареет медленнее. Чтобы уведомлять вас, BatteryPulse должен быть запущен."
+          }
+        }
+      }
+    },
+    "Until %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: Lasts until %@ tomorrow where it does not fit one line; %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "До %@ завтра"
           }
         }
       }

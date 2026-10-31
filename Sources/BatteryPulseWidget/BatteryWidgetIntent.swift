@@ -301,8 +301,8 @@ extension BatteryWidgetField {
         case .lowPowerMode: "Low Power"
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
-        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .cellBalance, .voltage,
-            .systemChargeLimit:
+        case .cellBalance: "Balance"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }
     }

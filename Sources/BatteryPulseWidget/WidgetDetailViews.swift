@@ -33,14 +33,14 @@ struct WidgetLineView: View {
         case .state(let word):
             widgetText(word.title, strings)
         case .time(let time):
-            WidgetTimeLabel(time: time)
+            WidgetTimeLabel(time: time, oneLine: true)
         case .updated(let clock):
             Text("Updated \(clock)", bundle: strings)
         case .detail(let row):
             // Small's one detail, in the time line's place: a label and its value, or a time's
             // phrase alone.
             if case .time(let time) = row.value {
-                WidgetTimeLabel(time: time)
+                WidgetTimeLabel(time: time, oneLine: true)
             } else {
                 WidgetDetailRow(row: row, tinted: tinted, spreads: false)
             }
@@ -66,7 +66,7 @@ struct WidgetDetailList: View {
                 case .row(let row):
                     if case .time(let time) = row.value {
                         // A time row is its phrase alone.
-                        WidgetTimeLabel(time: time)
+                        WidgetTimeLabel(time: time, oneLine: true)
                             .foregroundStyle(.secondary)
                             .minimumScaleFactor(0.8)
                             .widgetElement(row.spokenLabel, strings: strings)
@@ -281,9 +281,12 @@ struct WidgetValueLabel: View {
 }
 
 /// The time to full or empty: the end's clock time in its phrase, or the time left, which the
-/// system counts down by the minute without a reload.
+/// system counts down by the minute without a reload. On `oneLine`, a line under the main value
+/// and medium's time row, a phrase too long for its place takes its shorter form (BatteryCore's
+/// `shortKey`) in every language; a tile has two lines for it.
 struct WidgetTimeLabel: View {
     let time: WidgetTimeText
+    var oneLine = false
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
@@ -296,7 +299,15 @@ struct WidgetTimeLabel: View {
         case .clock(let clock, tomorrow: true):
             switch time.direction {
             case .full: Text("Full at \(clock) tomorrow", bundle: strings)
-            case .empty: Text("Lasts until \(clock) tomorrow", bundle: strings)
+            case .empty:
+                if oneLine {
+                    ViewThatFits(in: .horizontal) {
+                        Text("Lasts until \(clock) tomorrow", bundle: strings)
+                        Text("Until \(clock) tomorrow", bundle: strings)
+                    }
+                } else {
+                    Text("Lasts until \(clock) tomorrow", bundle: strings)
+                }
             }
         case .timeLeft:
             Text(.currentDate, format: .offset(to: time.end, allowedFields: [.hour, .minute], sign: .never))

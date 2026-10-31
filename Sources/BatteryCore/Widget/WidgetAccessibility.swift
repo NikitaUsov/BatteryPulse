@@ -196,6 +196,14 @@ extension WidgetTimeText {
             return .timeLeft(until: end)
         }
     }
+
+    /// The shorter phrase a one-line place shows where the phrase doesn't fit at full size, as
+    /// ``BatteryWidgetField/shortLabelKey`` does for a label: "Lasts until 12:59 PM tomorrow" is
+    /// wider than small's line. `nil` for a phrase that always fits.
+    var shortKey: String? {
+        guard case .clock(_, tomorrow: true) = form, direction == .empty else { return nil }
+        return "Until %@ tomorrow"
+    }
 }
 
 extension WidgetEmptyReason {
@@ -257,8 +265,8 @@ extension BatteryWidgetField {
         case .lowPowerMode: "Low Power"
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
-        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .cellBalance, .voltage,
-            .systemChargeLimit:
+        case .cellBalance: "Balance"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }
     }

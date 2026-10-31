@@ -199,6 +199,10 @@ struct WidgetAccessibilityTests {
         keys.formUnion(BatteryWidgetField.allCases.compactMap(\.shortLabelKey))
         keys.formUnion(WidgetEmptyReason.allCases.compactMap(\.shortMessageKey))
         keys.formUnion([WidgetCondition.serviceRecommended.shortKey].compactMap { $0 })
+        keys.formUnion(
+            [WidgetTimeText(direction: .empty, end: .now, form: .clock("23:59", tomorrow: true)).shortKey].compactMap {
+                $0
+            })
         keys.formUnion(WidgetStateWord.allCases.flatMap(\.phrase.keys))
         keys.formUnion(ThermalState.allCases.flatMap(\.phrase.keys))
         #expect(keys.count > 30)
