@@ -17,6 +17,8 @@ import WidgetKit
 /// - `battery-<family>-<scene>[-<mode>][-dark][-ru].png` are the single widgets: full colour, light
 ///   and English unless the name says otherwise. English, light and full colour keep W-3a's names,
 ///   so two runs can be compared file by file.
+/// - `sheet-charge-limit[-ru].png` is the second look's (§6.1b): the Battery widget while the
+///   Charge Limit holds the charge, Automatic beside 0.6.1's widget and Custom with its detail.
 /// - `battery-0.6.1-<family>-<scene>[-ru].png` are 0.6.1's widget from the same reading
 ///   (``Widget061View``), and `diff-0.6.1-to-0.7-<family>-<scene>[-ru].png` mark in red each pixel
 ///   0.7's small and medium Automatic changed, for the look check's first question; the log lists
@@ -170,6 +172,13 @@ struct WidgetPreviewTests {
     static let old = Scene(
         name: "automatic-reading-old", title: "Reading 50 minutes old", snapshot: battery(.onBattery, minutesAgo: 50),
         stale: true)
+    // The Charge Limit's hold: "Charged to limit" in the state line, and Custom's "Charge limit"
+    // detail.
+    static let chargeLimit = scene("automatic-charged-to-limit", "Charged to limit", .systemChargeLimit)
+    static let customChargeLimit = scene(
+        "custom-charge-limit", "Custom: the Charge limit detail", .systemChargeLimit,
+        BatteryWidgetConfiguration(
+            layout: .custom, details: [.systemChargeLimit, .adapter, .systemLoad, .maximumCapacity]))
     // The attention row: a condition other than Normal, and heat.
     static let serviced = scene("automatic-service-recommended", "Service Recommended", .wornBattery)
     static let hot = scene("automatic-heat", "High heat", .heavyLoad)
@@ -246,7 +255,7 @@ struct WidgetPreviewTests {
     }
 
     static let scenes: [Scene] = [
-        onBattery, charging, low, critical, full, onHold, old, serviced, hot,
+        onBattery, charging, low, critical, full, onHold, chargeLimit, customChargeLimit, old, serviced, hot,
         ring, ringCharging, ringLow, ringHealth, drawn, drawnCharging, drawnLow, drawnFull,
         health, temperature, power, monochromeLow, monochromeCritical, monochromeServiced, timeLeft,
         timeLeftCharging, customPower, customHealth, customMonochrome, customTime, customEvery, customEmpty,
@@ -504,6 +513,29 @@ struct WidgetPreviewTests {
                 Self.sheet("\(heading) — \(language.name)", rows),
                 "sheet-modes-\(Self.fileName(size))\(language.suffix)")
         }
+    }
+
+    // MARK: The second look
+
+    /// The second look's sheet (plan-0.7.0 §6.1b): small and medium Automatic at the Charge Limit
+    /// beside 0.6.1's widget, which said "Not charging", large, and Custom with the "Charge limit"
+    /// detail in each declared family.
+    static func chargeLimitRows(_ l: Language) -> [[Picture]] {
+        [
+            [WidgetSize.small, .medium].flatMap { pair(chargeLimit, $0, l) },
+            [picture(chargeLimit, .large, l), picture(customChargeLimit, .medium, l)],
+            [picture(customChargeLimit, .small, l), picture(customChargeLimit, .large, l)],
+        ]
+    }
+
+    @Test(arguments: Language.allCases)
+    func rendersTheChargeLimitSheet(_ language: Language) throws {
+        guard Self.languages.contains(language) else { return }
+        try Self.write(
+            Self.sheet(
+                "The Battery widget at the Charge Limit: Automatic, then Custom's detail — \(language.name)",
+                Self.chargeLimitRows(language)),
+            "sheet-charge-limit\(language.suffix)")
     }
 
     // MARK: Against 0.6.1
