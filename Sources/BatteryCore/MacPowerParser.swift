@@ -136,8 +136,10 @@ enum MacPowerParser {
         static let packVoltageMV = SMCBattery.plausiblePackVoltage
         /// Into (+) or out of (−) the battery.
         static let currentMA = SMCBattery.plausibleCurrent
-        /// A 32-bit register: a bit mask or a status code.
-        static let register = 0...Int(UInt32.max)
+        /// A 32-bit register: a bit mask or a status code. IORegistry stores one with its top bit
+        /// set as a negative number (`FamilyCode`, `RawValueDecoder.unsignedBits`), which is still
+        /// a reading: the report shows it unsigned.
+        static let register = Int(Int32.min)...Int(UInt32.max)
         /// What the charger asks for; 0 while it asks for nothing.
         static let requestedCurrentMA = 0...15_000
         static let requestedVoltageMV = 0...20_000

@@ -91,6 +91,34 @@ import Testing
         }
     }
 
+    /// IORegistry stores a 32-bit register with its top bit set as a negative number, as
+    /// `FamilyCode` shows: it is a reading, shown unsigned, never dropped as implausible. A value
+    /// no 32-bit register holds is.
+    @Test func aRegisterWithItsTopBitSetIsAReading() throws {
+        let topBit = Int64(Int32.min)
+        func snapshot(_ value: Int64) -> BatterySnapshot {
+            MacPowerParser.snapshot(
+                smartBattery: [
+                    "PermanentFailureStatus": .int(value),
+                    "ChargerData": .dictionary(["NotChargingReason": .int(value), "SlowChargingReason": .int(value)]),
+                ],
+                powerSource: [:], adapterDetails: [:], timestamp: Fixture.timestamp)
+        }
+        let s = snapshot(topBit | 0x0100_0000)
+        #expect(s.permanentFailureStatus == Int(topBit | 0x0100_0000))
+        #expect(s.notChargingReason == Int(topBit | 0x0100_0000))
+        #expect(s.slowChargingReason == Int(topBit | 0x0100_0000))
+        #expect(BatteryReport.hex(s.notChargingReason ?? 0) == "0x81000000")
+        for outside in [topBit - 1, Int64(UInt32.max) + 1] {
+            let s = snapshot(outside)
+            #expect(s.permanentFailureStatus == nil && s.notChargingReason == nil && s.slowChargingReason == nil)
+        }
+
+        var entry = SyntheticIDevice.agedIPadEntry
+        entry["PermanentFailureStatus"] = .int(topBit)
+        #expect(IDeviceBatteryParser.battery(entry: entry)?.permanentFailureStatus == Int(topBit))
+    }
+
     /// Every real capture reads inside the plausible ranges, so introducing them changed no
     /// fixture's reading.
     @Test(arguments: Fixture.allCases)
@@ -392,9 +420,10 @@ enum Perturbation {
         "CurrentCapacity": (true, false, "an empty battery"),
         "BatteryCurrentCapacity": (true, false, "an empty battery"),
         "CycleCount": (true, false, "a new battery"),
-        "NotChargingReason": (true, false, "no reason"),
-        "SlowChargingReason": (true, false, "no reason"),
-        "PermanentFailureStatus": (true, false, "no failure"),
+        // A 32-bit register with its top bit set is stored as a negative number: −1 is every bit.
+        "NotChargingReason": (true, true, "no reason; every reason"),
+        "SlowChargingReason": (true, true, "no reason; every reason"),
+        "PermanentFailureStatus": (true, true, "no failure; every failure"),
         "ChargingCurrent": (true, false, "the charger asks for nothing"),
         "ChargingVoltage": (true, false, "the charger asks for nothing"),
         "SystemPowerIn": (true, true, "nothing from the adapter; the telemetry's own sign"),
