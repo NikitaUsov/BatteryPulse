@@ -296,23 +296,25 @@ import Testing
         #expect(result.compactMap { $0 } == [.policy, .systemChargeLimit])
     }
 
-    /// The hold ending without a state change reloads too, within the 5 minutes the immediate
-    /// reasons share.
-    @Test func theHoldsEndSharesTheImmediateInterval() throws {
+    /// The hold starting or ending without a state change shares the 5 minutes the immediate
+    /// reasons keep between their reloads: it waits them out, then reloads.
+    @Test func theHoldSharesTheImmediateInterval() throws {
         let s = try Self.states()
         var lowPower = s.pluggedIn
         lowPower.isLowPowerModeEnabled = true
         var lowPowerHeld = s.held
         lowPowerHeld.isLowPowerModeEnabled = true
         // Low Power Mode at minute 1, the hold at minute 3 (too soon: it waits), then held.
-        let result = Self.reloads([
+        let start = Self.reloads([
             s.pluggedIn, lowPower, lowPower, lowPowerHeld, lowPowerHeld, lowPowerHeld, lowPowerHeld,
         ])
-        #expect(result == [nil, .lowPowerMode, nil, nil, nil, nil, .systemChargeLimit])
-        // Back to bit 7 alone, with no state change.
-        var planner = WidgetReloadPlanner()
-        let start = WidgetReloadPolicyTests.start
-        #expect(planner.battery(s.held, at: start) == nil)
-        #expect(planner.battery(s.pluggedIn, at: start.addingTimeInterval(60)) == .systemChargeLimit)
+        #expect(start == [nil, .lowPowerMode, nil, nil, nil, nil, .systemChargeLimit])
+        // Held, Low Power Mode at minute 1, back to bit 7 alone at minute 3 (it waits), then not held.
+        let end = Self.reloads([
+            s.held, lowPowerHeld, lowPowerHeld, lowPower, lowPower, lowPower, lowPower,
+        ])
+        #expect(end == [nil, .lowPowerMode, nil, nil, nil, nil, .systemChargeLimit])
+        // With no reload before it, the end reloads at once.
+        #expect(Self.reloads([s.held, s.pluggedIn]) == [nil, .systemChargeLimit])
     }
 }
