@@ -306,4 +306,10 @@ extension AccessoryWidgetStatus {
         case .connectedToPower: .key("Connected to power")
         }
     }
+
+    /// The shorter words the small widget shows when the state doesn't fit its line at full size,
+    /// as ``BatteryWidgetField/shortLabelKey`` does for a label; VoiceOver keeps ``phrase``.
+    var shortKey: String? {
+        if case .lastKnownCharge = self { "Last charge" } else { nil }
+    }
 }

@@ -4,10 +4,11 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
-/// A line under the main value: one line that shrinks a little before it is cut off, and a
-/// VoiceOver element of its own, except the state, which the charge's element reads. A value is
-/// never cut: small's detail cuts its label instead, and small's attention row takes a second line
-/// for its words rather than lose them (Service Recommended, in Russian).
+/// A line under the main value: one line at full size, and a VoiceOver element of its own,
+/// except the state, which the charge's element reads. Where a detail's label or the attention
+/// row's words don't fit, the line takes the field's or the condition's shorter words (the same
+/// in every language, so a Russian line lays out as the English one does); only a line longer
+/// still shrinks a little. A value is never cut.
 struct WidgetLineView: View {
     let line: WidgetLine
     let tinted: Bool
@@ -18,17 +19,13 @@ struct WidgetLineView: View {
             content
             .font(.caption)
             .foregroundStyle(.secondary)
-            .lineLimit(lineLimit)
+            .lineLimit(1)
             .minimumScaleFactor(0.8)
         if let label = line.spokenLabel {
             text.widgetElement(label, strings: strings)
         } else {
             text.accessibilityHidden(true)
         }
-    }
-
-    private var lineLimit: Int {
-        if case .attention = line { 2 } else { 1 }
     }
 
     @ViewBuilder private var content: some View {
@@ -45,70 +42,102 @@ struct WidgetLineView: View {
             if case .time(let time) = row.value {
                 WidgetTimeLabel(time: time)
             } else {
-                HStack(spacing: 4) {
-                    widgetText(row.field.label, strings)
-                    WidgetValueLabel(row: row, tinted: tinted)
-                        .fixedSize()
-                }
+                WidgetDetailRow(row: row, tinted: tinted, spreads: false)
             }
         case .attention(let attention):
-            WidgetAttentionLabel(attention: attention, tinted: tinted)
+            WidgetAttentionLabel(attention: attention, tinted: tinted, oneLine: true)
         }
     }
 }
 
-/// Medium's details beside the charge block: a label and its value per row, as in 0.6.x, with
-/// the attention row last. Each row is one VoiceOver element, "label, value": the value's cell
-/// carries the row's label, since a grid row can't take modifiers without leaving the grid.
+/// Medium's details beside the charge block: a row per detail, its label at the leading edge and
+/// its value at the trailing one, with the attention row last. The rows span the whole column, so
+/// the values end where the column does in every language (0.6.x's grid ended where its widest
+/// row did, further right in Russian). Each row is one VoiceOver element, "label, value".
 struct WidgetDetailList: View {
     let details: [WidgetDetail]
     let tinted: Bool
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(details.enumerated()), id: \.offset) { _, detail in
                 switch detail {
                 case .row(let row):
                     if case .time(let time) = row.value {
                         // A time row is its phrase alone.
-                        GridRow {
-                            WidgetTimeLabel(time: time)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .widgetElement(row.spokenLabel, strings: strings)
-                                .gridCellColumns(2)
-                        }
+                        WidgetTimeLabel(time: time)
+                            .foregroundStyle(.secondary)
+                            .minimumScaleFactor(0.8)
+                            .widgetElement(row.spokenLabel, strings: strings)
                     } else {
-                        GridRow {
-                            // Russian labels are longer: they shrink a little before they would be
-                            // cut off.
-                            widgetText(row.field.label, strings)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .accessibilityHidden(true)
-                            WidgetValueLabel(row: row, tinted: tinted)
-                                .monospacedDigit()
-                                .fixedSize()
-                                .widgetElement(row.spokenLabel, strings: strings)
-                                .gridColumnAlignment(.trailing)
-                        }
+                        WidgetDetailRow(row: row, tinted: tinted, spreads: true)
+                            .widgetElement(row.spokenLabel, strings: strings)
                     }
                 case .attention(let attention):
-                    GridRow {
-                        WidgetAttentionLabel(attention: attention, tinted: tinted)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .widgetElement(attention.spokenLabel, strings: strings)
-                            .gridCellColumns(2)
-                    }
+                    WidgetAttentionLabel(attention: attention, tinted: tinted, oneLine: true)
+                        .minimumScaleFactor(0.8)
+                        .widgetElement(attention.spokenLabel, strings: strings)
                 }
             }
         }
         .font(.caption)
+        .lineLimit(1)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+}
+
+/// A detail's label and its value on one line at full size: the field's label, or its shorter one
+/// where the label doesn't fit beside the value (the same in every language, so the two lay out
+/// alike), or a state or condition alone, which says what it is. Only when nothing fits does the
+/// label shrink a little, then truncate; the value never does. Medium's row `spreads` across its
+/// column, with the value at the trailing edge; small's line keeps the value beside its label.
+struct WidgetDetailRow: View {
+    let row: WidgetRow
+    let tinted: Bool
+    let spreads: Bool
+    @Environment(\.widgetStrings) private var strings
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            line(widgetText(row.field.label, strings))
+            if let short = row.field.shortLabel {
+                line(widgetText(short, strings))
+            }
+            if row.standsAlone {
+                value
+            }
+            line(widgetText(row.field.shortLabel ?? row.field.label, strings))
+                .minimumScaleFactor(0.8)
+        }
+    }
+
+    private func line(_ label: Text) -> some View {
+        HStack(spacing: spreads ? 0 : 4) {
+            label
+                .foregroundStyle(.secondary)
+            if spreads {
+                Spacer(minLength: 8)
+            }
+            value
+        }
+    }
+
+    /// Medium's values line up their digits in a column, as 0.6.x's did.
+    private var value: some View {
+        WidgetValueLabel(row: row, tinted: tinted)
+            .font(spreads ? Font.caption.monospacedDigit() : .caption)
+            .fixedSize()
+    }
+}
+
+extension WidgetRow {
+    /// A value whose words say what it is, so it can stand without its label: a state, a condition.
+    fileprivate var standsAlone: Bool {
+        switch value {
+        case .state, .condition: true
+        case .text, .onOff, .time, .reached: false
+        }
     }
 }
 
@@ -275,21 +304,35 @@ struct WidgetTimeLabel: View {
     }
 }
 
-/// A condition other than Normal, or heat: a symbol and the app's words for it.
+/// A condition other than Normal, or heat: a symbol and the app's words for it. On `oneLine`,
+/// small's line and medium's row, the condition's shorter words take the place of its own when
+/// those don't fit at full size, as a detail's short label does; a tile has two lines for them.
 struct WidgetAttentionLabel: View {
     let attention: WidgetAttention
     let tinted: Bool
+    var oneLine = false
     @Environment(\.widgetRenderingMode) private var renderingMode
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
+        if oneLine, case .condition(let condition) = attention, let short = condition.shortTitle {
+            ViewThatFits(in: .horizontal) {
+                label(condition.text(strings))
+                label(widgetText(short, strings))
+            }
+        } else {
+            switch attention {
+            case .heat(let state): label(widgetText(state.title, strings))
+            case .condition(let condition): label(condition.text(strings))
+            }
+        }
+    }
+
+    private func label(_ words: Text) -> some View {
         HStack(spacing: 4) {
             decorativeSymbol(attention.symbolName)
                 .foregroundStyle(renderingMode == .fullColor && tinted ? attention.tier.color : .secondary)
-            switch attention {
-            case .heat(let state): widgetText(state.title, strings)
-            case .condition(let condition): condition.text(strings)
-            }
+            words
         }
     }
 }

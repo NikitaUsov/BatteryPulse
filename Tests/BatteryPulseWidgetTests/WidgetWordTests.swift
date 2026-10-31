@@ -11,6 +11,7 @@ struct WidgetWordTests {
     @Test func fieldLabels() {
         for field in BatteryWidgetField.allCases {
             #expect(field.label.key == field.labelKey, "\(field)")
+            #expect(field.shortLabel?.key == field.shortLabelKey, "\(field)")
         }
     }
 
@@ -24,6 +25,7 @@ struct WidgetWordTests {
         let conditions: [WidgetCondition] = [.normal, .fair, .poor, .checkBattery, .serviceRecommended]
         for condition in conditions {
             #expect(WidgetPhrase.key(condition.title.key) == condition.phrase, "\(condition)")
+            #expect(condition.shortTitle?.key == condition.shortKey, "\(condition)")
         }
         #expect(WidgetCondition.other("Permanent Battery Failure").phrase == .verbatim("Permanent Battery Failure"))
     }
@@ -35,6 +37,7 @@ struct WidgetWordTests {
         }
         for status in AccessoryWidgetStatus.allCases {
             #expect(WidgetPhrase.key(status.title.key) == status.phrase, "\(status)")
+            #expect(status.shortTitle?.key == status.shortKey, "\(status)")
         }
     }
 

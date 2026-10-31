@@ -84,6 +84,15 @@ extension WidgetCondition {
     func text(_ strings: Bundle?) -> Text {
         if case .other(let raw) = self { Text(verbatim: raw) } else { widgetText(title, strings) }
     }
+
+    /// The shorter words a one-line attention row shows when the condition's don't fit
+    /// (BatteryCore's `shortKey`).
+    var shortTitle: LocalizedStringResource? {
+        switch self {
+        case .serviceRecommended: "Service"
+        case .normal, .fair, .poor, .checkBattery, .other: nil
+        }
+    }
 }
 
 extension ThermalState {

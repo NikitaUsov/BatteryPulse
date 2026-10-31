@@ -3109,6 +3109,18 @@
         }
       }
     },
+    "From adapter": {
+      "extractionState": "manual",
+      "comment": "Widget: Power from adapter where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "От адаптера"
+          }
+        }
+      }
+    },
     "From full to 2 percent in 20 seconds, through the low and critical levels.": {
       "extractionState": "manual",
       "comment": "Demo animation subtitle",
@@ -4056,6 +4068,18 @@
         }
       }
     },
+    "Last charge": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: Last known charge where it does not fit one line",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последний заряд"
+          }
+        }
+      }
+    },
     "Last checked %@": {
       "extractionState": "manual",
       "comment": "%@ is a relative date such as 'yesterday'",
@@ -4162,6 +4186,18 @@
         }
       }
     },
+    "Life used": {
+      "extractionState": "manual",
+      "comment": "Widget: Cycle life used where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Израсходовано"
+          }
+        }
+      }
+    },
     "Lifetime extremes and counters kept by the gauge (temperatures, currents, voltages, Qmax, FCC).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4204,6 +4240,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Низкий заряд аккумулятора: %@"
+          }
+        }
+      }
+    },
+    "Low Power": {
+      "extractionState": "manual",
+      "comment": "Widget: Low Power Mode where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Энергосбережение"
           }
         }
       }
@@ -4438,6 +4486,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Отмечает каналы IOReporting этой службы как общедоступные для инструментов отчётности."
+          }
+        }
+      }
+    },
+    "Max capacity": {
+      "extractionState": "manual",
+      "comment": "Widget: Maximum capacity where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Макс. ёмкость"
           }
         }
       }
@@ -4711,6 +4771,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без аккумулятора"
+          }
+        }
+      }
+    },
+    "No battery data": {
+      "extractionState": "manual",
+      "comment": "Widget: No battery information where it does not fit one line",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет данных аккумулятора"
           }
         }
       }
@@ -6865,6 +6937,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Серийный номер аккумулятора."
+          }
+        }
+      }
+    },
+    "Service": {
+      "extractionState": "manual",
+      "comment": "Widget: Service Recommended where the full words do not fit one line beside the warning symbol",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обслуживание"
           }
         }
       }

@@ -207,6 +207,16 @@ extension WidgetEmptyReason {
         case .noInformation: .phrases([.key("No battery information")])
         }
     }
+
+    /// The shorter message the widget shows when its own doesn't fit one line, as
+    /// ``BatteryWidgetField/shortLabelKey`` does for a label. "No battery information" keeps its
+    /// Russian, which 0.6.1's widget showed.
+    var shortMessageKey: String? {
+        switch self {
+        case .noBattery: nil
+        case .noInformation: "No battery data"
+        }
+    }
 }
 
 // The catalog keys of the words the widget shows, the same keys its views use for them (a macOS
@@ -232,6 +242,24 @@ extension BatteryWidgetField {
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
         case .systemChargeLimit: "Charge limit"
+        }
+    }
+
+    /// The shorter label the widget shows where the label and its value don't fit one line at
+    /// full size: the Russian for Maximum capacity beside 100% in medium. Every language has it,
+    /// so the widget picks the first that fits (``WidgetTextBudget``) and the two languages lay
+    /// out alike; VoiceOver keeps ``labelKey``. `nil` for a label that always fits.
+    var shortLabelKey: String? {
+        switch self {
+        case .maximumCapacity: "Max capacity"
+        case .batteryPower: "Battery"
+        case .adapterInput: "From adapter"
+        case .lowPowerMode: "Low Power"
+        case .remainingCapacity: "Remaining"
+        case .cycleLifeUsed: "Life used"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .cellBalance, .voltage,
+            .systemChargeLimit:
+            nil
         }
     }
 }
@@ -261,6 +289,12 @@ extension WidgetCondition {
         case .serviceRecommended: .key("Service Recommended")
         case .other(let raw): .verbatim(raw)
         }
+    }
+
+    /// The shorter words a one-line attention row shows when the condition's don't fit at full
+    /// size, as ``BatteryWidgetField/shortLabelKey`` does for a label; VoiceOver keeps ``phrase``.
+    var shortKey: String? {
+        if case .serviceRecommended = self { "Service" } else { nil }
     }
 }
 

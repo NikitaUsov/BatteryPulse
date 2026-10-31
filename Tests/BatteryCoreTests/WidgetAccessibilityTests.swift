@@ -195,6 +195,10 @@ struct WidgetAccessibilityTests {
         }
         keys.formUnion(WidgetPanel.allCases.flatMap(\.spokenLabel.keys))
         keys.formUnion(BatteryWidgetField.allCases.map(\.labelKey))
+        // The shorter words the widget shows where the full ones don't fit.
+        keys.formUnion(BatteryWidgetField.allCases.compactMap(\.shortLabelKey))
+        keys.formUnion(WidgetEmptyReason.allCases.compactMap(\.shortMessageKey))
+        keys.formUnion([WidgetCondition.serviceRecommended.shortKey].compactMap { $0 })
         keys.formUnion(WidgetStateWord.allCases.flatMap(\.phrase.keys))
         keys.formUnion(ThermalState.allCases.flatMap(\.phrase.keys))
         #expect(keys.count > 30)
