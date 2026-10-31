@@ -14,7 +14,8 @@ import Foundation
 // - The extremes and the first and last values are the chart's own values, not the points' means.
 //   Only values on the chart's time axis count, as only they show.
 // - Every number and time comes formatted, in the formatter's locale and the given time zone: the
-//   numbers as the chart's hover readout shows them, a point's time by the stretch it stands for.
+//   numbers as the chart's hover readout shows them (the Mac's without a sign), a point's time by
+//   the stretch it stands for, and no two points of a summary alike.
 
 /// The name of a chart's series: a catalog key, keyed by the English text the charts' marks and
 /// legend already use.
@@ -63,7 +64,8 @@ public enum ChartUnit: Sendable, Equatable {
     /// A whole number: the cycle count.
     case count
 
-    /// `value` as the chart's hover readout or the Health page shows it.
+    /// `value` as the chart's hover readout or the Health page shows it, but the Mac's watts
+    /// without the readout's sign: what the Mac draws is never negative.
     public func text(_ value: Double, formatter: BatteryFormatter) -> String {
         switch self {
         case .percent(let fractionDigits): formatter.percent(value, fractionDigits: fractionDigits)
@@ -268,7 +270,7 @@ extension ChartSummary {
         let clock = Clock(style, locale: formatter.locale, timeZone: timeZone)
         let starts = stretchStarts(
             covering: range, resolution: resolution, calendar: HistoryDay.gregorian(in: timeZone))
-        let times = starts.map { Moment(date: $0, text: clock.point($0)) }
+        let times = clock.points(starts)
         let series = lines.compactMap { name, samples in
             Series(
                 name, samples: samples.filter { range.contains($0.time) }, starts: starts, times: times, clock: clock,
@@ -315,6 +317,8 @@ extension ChartSummary {
     /// The date formats of a summary, built once for all its times.
     struct Clock {
         let pointStyle: Date.FormatStyle
+        /// A point's style with its zone, for an hour a clock set back reads twice.
+        let zonedPointStyle: Date.FormatStyle
         let momentStyle: Date.FormatStyle
 
         init(_ style: TimeStyle, locale: Locale, timeZone: TimeZone) {
@@ -332,10 +336,20 @@ extension ChartSummary {
                 pointStyle = base.year().month(.wide).day()
                 momentStyle = pointStyle
             }
+            zonedPointStyle = pointStyle.timeZone(.specificName(.short))
         }
 
-        /// A point's stretch, from its start.
-        func point(_ date: Date) -> String { date.formatted(pointStyle) }
+        /// The points of the stretches that begin at `starts`, each read by its start. Where a clock
+        /// is set back, the repeated hour's two points name their zone ("1:00 AM EDT", "1:00 AM
+        /// EST"), so no two points read the same.
+        func points(_ starts: [Date]) -> [ChartSummary.Moment] {
+            let texts = starts.map { $0.formatted(pointStyle) }
+            let uses = Dictionary(texts.map { ($0, 1) }, uniquingKeysWith: +)
+            return zip(starts, texts).map { date, text in
+                ChartSummary.Moment(
+                    date: date, text: uses[text, default: 0] > 1 ? date.formatted(zonedPointStyle) : text)
+            }
+        }
 
         func moment(_ date: Date) -> ChartSummary.Moment {
             ChartSummary.Moment(date: date, text: date.formatted(momentStyle))

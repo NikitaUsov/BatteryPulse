@@ -379,6 +379,40 @@ import Testing
         #expect(trend.series.first?.points.first?.time.text.contains("31") == true)
     }
 
+    /// On 2026-11-01 New York's clocks go back from 2:00 EDT to 1:00 EST, so the hour from 1:00
+    /// comes twice: its two points name their zone, and the day that holds it still starts at
+    /// midnight.
+    @Test func aClockSetBackReadsEveryPointDifferently() throws {
+        let newYork = try #require(TimeZone(identifier: "America/New_York"))
+        let calendar = HistoryDay.gregorian(in: newYork)
+        // 2026-11-01 06:00 UTC, 1:00 EST: an hour after 1:00 EDT.
+        let setBack = Date(timeIntervalSince1970: 1_793_512_800)
+        let end = setBack.addingTimeInterval(6 * 3600)
+        let samples = (0..<(24 * 60)).reversed().map { minute in
+            HistorySample(time: end.addingTimeInterval(-Double(minute) * 60), percent: 50, state: .discharging)
+        }
+        let day = HistoryChartData.make(samples: samples, period: .day, end: end, includesStatistics: true)
+        let week = HistoryChartData.make(
+            samples: samples, period: .week, end: end.addingTimeInterval(3 * 86_400), includesStatistics: true)
+        for formatter in [Self.english, Self.russian] {
+            let hours = ChartSummary.charge(day, formatter: formatter, timeZone: newYork)
+            let points = try #require(hours.series.first?.points)
+            #expect(points.count == 24)
+            let repeated = points.filter { [setBack.addingTimeInterval(-3600), setBack].contains($0.time.date) }
+            #expect(repeated.count == 2)
+            #expect(repeated.allSatisfy { $0.time.text.contains("1:00") })
+            Self.expectConsistent(
+                hours, lines: Self.lines(of: .charge, day), range: end.addingTimeInterval(-86_400)...end,
+                formatter: formatter)
+            let days = ChartSummary.charge(week, formatter: formatter, timeZone: newYork)
+            let starts = try #require(days.series.first?.points.map(\.time.date))
+            #expect(starts.allSatisfy { calendar.startOfDay(for: $0) == $0 })
+            Self.expectConsistent(
+                days, lines: Self.lines(of: .charge, week),
+                range: week.end.addingTimeInterval(-HistoryPeriod.week.length)...week.end, formatter: formatter)
+        }
+    }
+
     /// The series' names are keys the charts already use, so the app's descriptors reuse their
     /// translations.
     @Test func seriesNamesAreCatalogKeys() throws {
