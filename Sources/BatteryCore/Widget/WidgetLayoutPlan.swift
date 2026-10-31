@@ -208,7 +208,8 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
 /// Why the widget shows a message instead of a battery: one line and a symbol, and a click opens
 /// the page that helps.
 public enum WidgetEmptyReason: Sendable, Equatable, CaseIterable {
-    /// The widget read no battery: a desktop Mac ("This Mac has no internal battery.").
+    /// The widget read no battery: a desktop Mac ("This Mac has no internal battery.", then "Try
+    /// the Accessories widget").
     case noBattery
     /// A battery without a charge level ("No battery information").
     case noInformation

@@ -136,7 +136,7 @@ extension WidgetKindID {
     var intentType: String? {
         switch self {
         case .battery: "BatteryWidgetIntent"
-        case .accessories: nil
+        case .accessories: "AccessoriesWidgetIntent"
         }
     }
 

@@ -49,6 +49,121 @@ struct WidgetSourceTests {
                 == nil)
     }
 
+    /// P2 §8.8: the widget reads accessory batteries only with `MacAccessoryProvider`'s one-shot
+    /// `read()`. It never observes their change notifications (`observeChanges`), never runs an
+    /// `AccessoryMonitor`, whose `start()` registers them, and never reads an `id`: an accessory's
+    /// can be brute-forced back to a Bluetooth address. The `dlsym` lookup stays in BatterySource
+    /// (`SecurityGuardTests`).
+    @Test func theWidgetReadsAccessoriesOnceAndWithoutTheirIDs() throws {
+        let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        #expect(Self.accessoryScan(code) == AccessoryScan(providerCalls: ["read"], observers: 0, idReads: 0))
+    }
+
+    /// What the accessory guard sees in the widget's code.
+    struct AccessoryScan: Equatable {
+        /// What each `MacAccessoryProvider` is used for: `read` for `MacAccessoryProvider().read()`,
+        /// "other" for anything else.
+        var providerCalls: [String]
+        /// `observeChanges`, `AccessoryMonitor` or `SystemAccessories`.
+        var observers: Int
+        /// `.id`, as a member or a key path.
+        var idReads: Int
+    }
+
+    /// Word boundaries as in most regex engines: Swift's default (Unicode) ones see none in
+    /// `provider.observeChanges`.
+    static func accessoryScan(_ code: String) -> AccessoryScan {
+        let provider = #/\bMacAccessoryProvider\b(\s*\(\s*\)\s*\.\s*read\s*\(\s*\))?/#.wordBoundaryKind(.simple)
+        let observer = #/\bobserveChanges\b|\bAccessoryMonitor\b|\bSystemAccessories\b/#.wordBoundaryKind(.simple)
+        return AccessoryScan(
+            providerCalls: code.matches(of: provider).map { $0.output.1 == nil ? "other" : "read" },
+            observers: code.matches(of: observer).count,
+            idReads: code.matches(of: #/\.\s*id\b/#.wordBoundaryKind(.simple)).count)
+    }
+
+    /// The accessory guard fails on code that observes, keeps a provider or reads an ID.
+    @Test func theAccessoryGuardFailsOnBadCode() {
+        func scan(_ text: String) -> AccessoryScan { Self.accessoryScan(SourceScanner.codeOnly(text)) }
+        let read = "await MainActor.run { MacAccessoryProvider().read()?.accessories }"
+        #expect(scan(read) == AccessoryScan(providerCalls: ["read"], observers: 0, idReads: 0))
+        #expect(scan("let provider = MacAccessoryProvider()\nprovider.read()").providerCalls == ["other"])
+        #expect(scan("MacAccessoryProvider().observeChanges { }").observers == 1)
+        #expect(scan("let monitor = AccessoryMonitor(provider: nil)").observers == 1)
+        #expect(scan("let provider = SystemAccessories.makeProvider()").observers == 1)
+        #expect(scan("let key = accessory.id").idReads == 1)
+        #expect(scan("ForEach(accessories, id: \\.id) { _ in }").idReads == 1)
+        // Not an ID: an `id:` label, an entity's own `id`, a longer name; nor text in a comment.
+        let fine = """
+            ForEach(rows, id: \\.offset) { _ in }
+            var id: String { field.rawValue }
+            let detail = BatteryWidgetDetail.init(id: raw)
+            let name = source.identifier
+            // never accessory.id or observeChanges(
+            """
+        #expect(scan(fine) == AccessoryScan(providerCalls: [], observers: 0, idReads: 0))
+    }
+
+    /// An accessory's own name reaches the screen only through `AccessoryNameText`, which marks it
+    /// privacy sensitive, in case macOS ever redacts a widget (P2 §8.8).
+    @Test func accessoryNamesArePrivacySensitive() throws {
+        var namers = 0
+        for file in try Self.widgetCode() {
+            let scan = Self.nameScan(file.code)
+            namers += scan.namers
+            #expect(scan.unmarkedNamers == 0, "\(file.path): AccessoryNameText without .privacySensitive()")
+            #expect(scan.namesOutside == 0, "\(file.path): an accessory's name outside AccessoryNameText")
+        }
+        #expect(namers == 1)
+    }
+
+    /// What the name guard sees in one file.
+    struct NameScan: Equatable {
+        /// `struct AccessoryNameText`s.
+        var namers = 0
+        /// Of them, the ones that don't apply `.privacySensitive()`.
+        var unmarkedNamers = 0
+        /// `.reported` names outside `AccessoryNameText`.
+        var namesOutside = 0
+    }
+
+    static func nameScan(_ code: String) -> NameScan {
+        var scan = NameScan()
+        let namer = code.firstMatch(of: #/struct AccessoryNameText: View \{([\s\S]*?)\n\}/#)
+        if let namer {
+            scan.namers = 1
+            scan.unmarkedNamers = namer.output.1.contains(".privacySensitive()") ? 0 : 1
+        }
+        scan.namesOutside =
+            code.matches(of: #/\.reported\b/#.wordBoundaryKind(.simple))
+            .filter { namer?.range.contains($0.range.lowerBound) != true }.count
+        return scan
+    }
+
+    /// The name guard fails on a name text that isn't privacy sensitive and on a name shown
+    /// elsewhere.
+    @Test func theNameGuardFailsOnBadCode() {
+        func scan(_ text: String) -> NameScan { Self.nameScan(SourceScanner.codeOnly(text)) }
+        let namer = """
+            struct AccessoryNameText: View {
+                var body: some View {
+                    text.lineLimit(1).privacySensitive()
+                }
+                private var text: Text {
+                    switch name {
+                    case .reported(let name): Text(verbatim: name)
+                    case .kind(let kind): widgetText(kind.title, strings)
+                    }
+                }
+            }
+            """
+        #expect(scan(namer) == NameScan(namers: 1, unmarkedNamers: 0, namesOutside: 0))
+        #expect(scan(namer.replacing(".privacySensitive()", with: "")).unmarkedNamers == 1)
+        let elsewhere = namer + "\nif case .reported(let name) = row.name { Text(verbatim: name) }"
+        #expect(scan(elsewhere).namesOutside == 1)
+        #expect(scan(namer + "\n// never .reported outside it").namesOutside == 0)
+        #expect(scan("Text(verbatim: \"\")").namers == 0)
+    }
+
     /// VoiceOver never reads a symbol's name (0.6.1's level symbol read "Three-Quarter-Charged
     /// Battery" at 80 %): the widget draws SF Symbols only through `decorativeSymbol(_:)`, which
     /// hides them, and names no symbol for a label to show.
@@ -108,16 +223,28 @@ struct WidgetSourceTests {
         #expect(scan("let a = Image(systemName: name)") == bare)
     }
 
-    /// Each widget choice's BatteryCore mirror, by parameter name.
-    static let mirrors: [String: [String]] = [
-        "layout": WidgetLayoutMode.allCases.map(\.rawValue),
-        "mainValue": BatteryWidgetMain.allCases.map(\.rawValue),
-        "mainVisual": BatteryWidgetVisual.allCases.map(\.rawValue),
-        "statusLines": WidgetStatusLine.allCases.map(\.rawValue),
-        "time": WidgetTimeStyle.allCases.map(\.rawValue),
-        "colors": WidgetColorStyle.allCases.map(\.rawValue),
-        "updateTime": WidgetUpdateTimeStyle.allCases.map(\.rawValue),
+    /// Each widget choice's BatteryCore mirror, by intent and parameter name.
+    static let mirrors: [String: [String: [String]]] = [
+        "BatteryWidgetIntent": [
+            "layout": WidgetLayoutMode.allCases.map(\.rawValue),
+            "mainValue": BatteryWidgetMain.allCases.map(\.rawValue),
+            "mainVisual": BatteryWidgetVisual.allCases.map(\.rawValue),
+            "statusLines": WidgetStatusLine.allCases.map(\.rawValue),
+            "time": WidgetTimeStyle.allCases.map(\.rawValue),
+            "colors": WidgetColorStyle.allCases.map(\.rawValue),
+            "updateTime": WidgetUpdateTimeStyle.allCases.map(\.rawValue),
+        ],
+        "AccessoriesWidgetIntent": [
+            "mode": AccessoryWidgetMode.allCases.map(\.rawValue)
+        ],
     ]
+
+    /// The body of the widget's `struct <type>`, where its parameters are declared.
+    static func intentBody(_ type: String, in code: String) throws -> Substring {
+        try #require(
+            code.firstMatch(of: try Regex("struct \(type)\\b[^{]*\\{([\\s\\S]*?)\\n\\}"))?.output[1].substring,
+            "struct \(type)")
+    }
 
     /// A mirror's cases that the widget doesn't offer yet, each with its reason. Removing a case
     /// from here is the commit that offers it.
@@ -129,39 +256,47 @@ struct WidgetSourceTests {
     @Test func eachChoiceMapsToItsMirror() throws {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
         let intents = WidgetIntentManifest.shipping.kinds.compactMap(\.intent)
-        #expect(!intents.isEmpty)
-        for parameter in intents.flatMap(\.parameters) {
-            guard let values = parameter.values else { continue }
-            let declaration = try Regex("@Parameter\\b[^@]*?\\bvar\\s+\(parameter.name)\\s*:\\s*\\[?(\\w+)")
-            let type = try #require(code.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
-            let body = try #require(
-                code.firstMatch(of: try Regex("enum \(type): String, AppEnum \\{([\\s\\S]*?)\\n\\}"))?.output[1]
-                    .substring, "enum \(type)")
-            // A case without a raw value of its own: its raw value is its name.
-            let cases = body.matches(of: #/(?m)^\s*case\s+([a-z]\w*(?:\s*,\s*[a-z]\w*)*)\s*$/#)
-                .flatMap { $0.output.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }
-            #expect(cases == values, "\(type)")
-            let mirror = try #require(Self.mirrors[parameter.name], "no mirror for \(parameter.name)")
-            let pending = Self.notOfferedYet[parameter.name] ?? []
-            #expect(values == mirror.filter { !pending.contains($0) }, "\(parameter.name)")
-            for value in values {
-                #expect(body.contains("case .\(value): .\(value)"), "\(type).\(value)")
+        #expect(intents.count == 2)
+        for intent in intents {
+            let intentBody = try Self.intentBody(intent.type, in: code)
+            for parameter in intent.parameters {
+                guard let values = parameter.values else { continue }
+                let declaration = try Regex("@Parameter\\b[^@]*?\\bvar\\s+\(parameter.name)\\s*:\\s*\\[?(\\w+)")
+                let type = try #require(
+                    intentBody.firstMatch(of: declaration)?.output[1].substring, "\(intent.type).\(parameter.name)")
+                let body = try #require(
+                    code.firstMatch(of: try Regex("enum \(type): String, AppEnum \\{([\\s\\S]*?)\\n\\}"))?.output[1]
+                        .substring, "enum \(type)")
+                // A case without a raw value of its own: its raw value is its name.
+                let cases = body.matches(of: #/(?m)^\s*case\s+([a-z]\w*(?:\s*,\s*[a-z]\w*)*)\s*$/#)
+                    .flatMap { $0.output.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }
+                #expect(cases == values, "\(type)")
+                let mirror = try #require(
+                    Self.mirrors[intent.type]?[parameter.name], "no mirror for \(intent.type).\(parameter.name)")
+                let pending = Self.notOfferedYet[parameter.name] ?? []
+                #expect(values == mirror.filter { !pending.contains($0) }, "\(parameter.name)")
+                for value in values {
+                    #expect(body.contains("case .\(value): .\(value)"), "\(type).\(value)")
+                }
             }
         }
         // Every pending case is a mirror's.
         for (name, pending) in Self.notOfferedYet {
-            #expect(pending.allSatisfy { Self.mirrors[name]?.contains($0) == true }, "\(name)")
+            let mirror = Self.mirrors.values.compactMap { $0[name] }.first
+            #expect(pending.allSatisfy { mirror?.contains($0) == true }, "\(name)")
         }
     }
 
-    /// The `default:` argument of each of the intent's parameters, as written; "none" without one.
-    static func parameterDefaults() throws -> [String: String] {
+    /// The `default:` argument of each of `type`'s parameters, as written; "none" without one.
+    static func parameterDefaults(_ type: String) throws -> [String: String] {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        let body = try Self.intentBody(type, in: code)
+        let intent = try #require(WidgetIntentManifest.shipping.kinds.compactMap(\.intent).first { $0.type == type })
         var defaults: [String: String] = [:]
-        for parameter in WidgetIntentManifest.shipping.kinds.compactMap(\.intent).flatMap(\.parameters) {
+        for parameter in intent.parameters {
             let declaration = try Regex("@Parameter\\(([^@]*?)\\)\\s*var\\s+\(parameter.name)\\s*:")
-            let arguments = try #require(code.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
-            let value = arguments.firstMatch(of: #/\bdefault\s*:\s*(\[[^\]]*\]|\.\w+)/#)?.output.1
+            let arguments = try #require(body.firstMatch(of: declaration)?.output[1].substring, "\(parameter.name)")
+            let value = arguments.firstMatch(of: #/\bdefault\s*:\s*(\[[^\]]*\]|\.\w+|true|false)/#)?.output.1
             defaults[parameter.name] = value.map { String($0.replacing(#/\s+/#, with: " ")) } ?? "none"
         }
         return defaults
@@ -183,8 +318,19 @@ struct WidgetSourceTests {
             "updateTime": ".\(c.updateTime.rawValue)",
         ]
         #expect(c.details.isEmpty)
-        let defaults = try Self.parameterDefaults()
+        let defaults = try Self.parameterDefaults("BatteryWidgetIntent")
         #expect(defaults == expected)
+    }
+
+    /// The Accessories widget's defaults are `AccessoriesWidgetConfiguration()`'s: every accessory,
+    /// lowest first, the full ones too.
+    @Test func eachAccessoriesDefaultIsTheModels() throws {
+        let c = AccessoriesWidgetConfiguration()
+        #expect(c.mode == .all && !c.hidesFullyCharged)
+        #expect(
+            try Self.parameterDefaults("AccessoriesWidgetIntent") == [
+                "mode": ".\(c.mode.rawValue)", "hideFullyCharged": "\(c.hidesFullyCharged)",
+            ])
     }
 
     /// Details' entity is identified by its field's frozen raw value.

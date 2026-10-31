@@ -81,7 +81,11 @@ struct WidgetSurfaceTests {
                 {"name": "details"},
                 {"name": "time", "values": ["clockTime", "timeLeft"]},
                 {"name": "colors", "values": ["levelColors", "monochrome"]},
-                {"name": "updateTime", "values": ["whenOld", "always"]}]}}]}
+                {"name": "updateTime", "values": ["whenOld", "always"]}]}},
+              {"kind": "io.github.nikitausov.BatteryPulse.accessories", "families": ["small", "medium", "large"],
+              "intent": {"type": "AccessoriesWidgetIntent", "parameters": [
+                {"name": "mode", "values": ["all", "lowest"]},
+                {"name": "hideFullyCharged"}]}}]}
             """
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }

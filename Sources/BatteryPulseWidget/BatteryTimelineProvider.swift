@@ -53,7 +53,7 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
     /// The battery through the extension's read cache. In the widget gallery, a Mac without a
     /// battery shows Demo Mode's battery instead of a message, so the gallery shows the widget.
     private static func read(preview: Bool) async -> BatterySnapshot? {
-        let snapshot = await WidgetReadCache.battery.snapshot()
+        let snapshot = await WidgetReads.battery.value()
         guard preview, snapshot == nil else { return snapshot }
         return DemoScenario.onBattery.battery?.reading(at: .now).snapshot
     }

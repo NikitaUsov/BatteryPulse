@@ -49,11 +49,17 @@ public enum WidgetPhrase: Sendable, Equatable {
         case .key(let key, let arguments): [key] + arguments.flatMap(\.keys)
         }
     }
+
+    /// A catalog sentence ("This Mac has no internal battery."), which ends with its own stop.
+    var isSentence: Bool {
+        if case .key(let key, _) = self { key.hasSuffix(".") } else { false }
+    }
 }
 
 /// The label of one VoiceOver element of the widget.
 public enum WidgetSpokenLabel: Sendable, Equatable {
-    /// Phrases joined with commas: "Maximum capacity, 100 %".
+    /// Phrases joined with commas: "Maximum capacity, 100 %"; after a sentence, with a space: "This
+    /// Mac has no internal battery. Try the Accessories widget".
     case phrases([WidgetPhrase])
     /// The time left, which the system counts down in the text itself: that text is the element,
     /// and its label stays the system's.
@@ -62,7 +68,12 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
     /// The label in one language; `nil` for the time left, whose words only the system has.
     public func text(_ localize: (String) -> String) -> String? {
         guard case .phrases(let phrases) = self else { return nil }
-        return phrases.map { $0.text(localize) }.joined(separator: ", ")
+        var text = ""
+        for (index, phrase) in phrases.enumerated() {
+            if index > 0 { text += phrases[index - 1].isSentence ? " " : ", " }
+            text += phrase.text(localize)
+        }
+        return text
     }
 
     /// Every catalog key the label uses.
@@ -187,10 +198,11 @@ extension WidgetTimeText {
 }
 
 extension WidgetEmptyReason {
-    /// The message the widget shows; its symbol is hidden.
+    /// The message the widget shows; its symbol is hidden. Without a battery it points to the
+    /// Accessories widget.
     public var spokenLabel: WidgetSpokenLabel {
         switch self {
-        case .noBattery: .phrases([.key("This Mac has no internal battery.")])
+        case .noBattery: .phrases([.key("This Mac has no internal battery."), .key("Try the Accessories widget")])
         case .noInformation: .phrases([.key("No battery information")])
         }
     }

@@ -28,6 +28,16 @@ struct WidgetWordTests {
         #expect(WidgetCondition.other("Permanent Battery Failure").phrase == .verbatim("Permanent Battery Failure"))
     }
 
+    /// The Accessories widget's words for an accessory without a name and for a part's state.
+    @Test func accessoryWords() {
+        for kind in AccessoryKind.allCases {
+            #expect(kind.title.key == kind.titleKey, "\(kind)")
+        }
+        for status in AccessoryWidgetStatus.allCases {
+            #expect(WidgetPhrase.key(status.title.key) == status.phrase, "\(status)")
+        }
+    }
+
     @Test func thermalStates() {
         for state in ThermalState.allCases {
             #expect(WidgetPhrase.key(state.title.key) == state.phrase, "\(state)")

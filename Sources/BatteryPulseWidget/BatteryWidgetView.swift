@@ -155,7 +155,8 @@ struct WidgetPanelHeading: View {
     }
 }
 
-/// The message of a widget without a battery to show: one VoiceOver element, the message.
+/// The message of a widget without a battery to show: one VoiceOver element, the message. A Mac
+/// without a battery may still have accessories, so its message points to their widget.
 struct WidgetEmptyState: View {
     let reason: WidgetEmptyReason
     @Environment(\.widgetStrings) private var strings
@@ -167,6 +168,11 @@ struct WidgetEmptyState: View {
             message
                 .font(.caption)
                 .multilineTextAlignment(.center)
+            if reason == .noBattery {
+                Text("Try the Accessories widget", bundle: strings)
+                    .font(.caption2)
+                    .multilineTextAlignment(.center)
+            }
         }
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

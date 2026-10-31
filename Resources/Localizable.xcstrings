@@ -417,6 +417,18 @@
         }
       }
     },
+    "All accessories are fully charged": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: the message when Hide fully charged leaves out every accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все аксессуары полностью заряжены"
+          }
+        }
+      }
+    },
     "All History…": {
       "extractionState": "manual",
       "comment": "History → Export menu: the minute readings and the daily health as JSON",
@@ -567,6 +579,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Группы"
+          }
+        }
+      }
+    },
+    "Batteries of your keyboard, mouse, trackpad and headphones.": {
+      "extractionState": "manual",
+      "comment": "Widget gallery: the Accessories widget's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумуляторы клавиатуры, мыши, трекпада и наушников."
           }
         }
       }
@@ -1716,6 +1740,18 @@
         }
       }
     },
+    "Choose Accessories": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Accessories widget configuration's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать аксессуары"
+          }
+        }
+      }
+    },
     "Choose Battery Details": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: the Battery widget configuration's title",
@@ -1758,6 +1794,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите, что показывает виджет «Аккумулятор»."
+          }
+        }
+      }
+    },
+    "Choose which accessory batteries the widget shows.": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Accessories widget configuration's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, аккумуляторы каких аксессуаров показывает виджет."
           }
         }
       }
@@ -3468,6 +3516,18 @@
         }
       }
     },
+    "Hide fully charged": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: a switch of the Accessories widget that leaves out accessories whose battery is full",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скрывать полностью заряженные"
+          }
+        }
+      }
+    },
     "High": {
       "extractionState": "manual",
       "localizations": {
@@ -4125,6 +4185,18 @@
         }
       }
     },
+    "Lowest only": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: what the Accessories widget shows, the accessory with the lowest charge alone",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только с наименьшим зарядом"
+          }
+        }
+      }
+    },
     "Lowest pack voltage seen over the battery's life.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4546,6 +4618,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нет аксессуаров"
+          }
+        }
+      }
+    },
+    "No accessories with batteries connected": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: the message when no accessory with a battery is connected",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет подключённых аксессуаров с аккумуляторами"
           }
         }
       }
@@ -7673,6 +7757,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Повторить попытку"
+          }
+        }
+      }
+    },
+    "Try the Accessories widget": {
+      "extractionState": "manual",
+      "comment": "Battery widget on a Mac without a battery: under its message, a pointer to the Accessories widget",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Попробуйте виджет «Аксессуары»"
           }
         }
       }
