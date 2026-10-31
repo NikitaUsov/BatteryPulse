@@ -135,7 +135,7 @@ running (UG:508-510). The widget still makes no request. No settings key is adde
 | The M5 session's start (§6.2) | 6-8 | the Mac, on the adapter |
 | The logged day | passive | his normal use |
 | The day's end, with the adapter's two beeps (§6.3) | 5-6 | the Mac |
-| After publishing, the short form (§6.4) | 1-2, plus 6-8 passive | the Mac |
+| After publishing, the short form (§6.4) | 1-2, plus 8-10 passive | the Mac |
 | **Total** | **about 25-29** | the M5 part about 13-17, against R:208's 12-15: the plug moved to the day's end (+2) |
 
 If he releases without the session again, his time is the three looks alone (about 12 minutes),
@@ -147,12 +147,12 @@ or about 15 with the short feed check that §6.5 and Q71-1 recommend.
 |---|---|---|---|---|
 | V-0 intake | 0 (the orchestrator) | | W-7 iPhone & iPad | 2-3 |
 | B-1 build-number clock | 1 | | W-16 tools re-pointed | 1 |
-| W-5 the feed | 3 | | W-17 the session's preparation | 1-2 |
+| W-5 the feed | 3 | | W-17 the session's preparation | 2 |
 | W-15 the widget's language | 1-2 | | Z-1 sizes | 0-1 |
 | W-6 History, Battery's options | 3 | | W-18 localization, docs | 2 |
 | | | | D1 and D3 | 2 |
 
-- **Totals:** about 16-20 runs, plus 2-3 to fix forward. The feed and its two widgets are 8-9 of
+- **Totals:** about 17-20 runs, plus 2-3 to fix forward. The feed and its two widgets are 8-9 of
   them, as R:208 and W71 ("What 0.7's plan added") estimate.
 
 **Not in 0.7.1** (Appendix A has the reasons): 0.8's items and its six preparation branches;
@@ -177,8 +177,8 @@ candidate B, and the app writing into the widget's container (REJ-53); the hold 
 | I-6 | 0.7.0's Appendix C | AC70 | — |
 | I-7 | `currentConfigurations()`' answer to this ad-hoc, unsandboxed app (G7-17) | Never checked on the M5 (AC70:144) | The feed writer fails open, as `WidgetPlacements` does (`WidgetReloadPlanner.swift:242-265`) |
 | I-8 | W0-1 (b): an entity query running in the ad-hoc extension | Unanswered; 0.7.0's Details chooser was never opened (AC70:142) | W-7's default needs no query (§4 W-7 item 2); G71-4 |
-| I-9 | A parameter added to a shipped intent keeps a placed widget's choices (Session R's step 4.4) | Not run; RC-P and RC-U2 never built (AC70:143) | 0.7.1's own update, 0.7.0 → its candidate, is that test (§6.2 step 2); G7-2's default |
-| I-10 | The base the session starts from | v0.7.0 is published; whether the maintainer's Mac runs 0.6.2 or 0.7.0 is unknown | Q71-2; `prepare` reads it |
+| I-9 | A parameter added to a shipped intent keeps a placed widget's choices (Session R's step 4.4) | Not run; RC-P and RC-U2 never built (AC70:143) | 0.7.1's own update, 0.7.0 → its candidate, is that test (step 2's second half, W-17 item 1); G7-2's default |
+| I-10 | The base the session starts from | v0.7.0 is published; whether the maintainer's Mac runs 0.6.2 or 0.7.0 is unknown | Q71-2; `prepare` reads it, and either way puts v0.6.2 in place for step 2's first half (W-17 item 1) |
 | I-11 | 0.8's plan and its six preparation branches, all based on `cf847d0` (0.7's integration history) | Unmerged; none in `main` | They rebase after 0.7.1 (§5) |
 | I-12 | Sizes at 0.7.0 (AC70:172; `scripts/size-budget.json`) | App `__text` 2,008,460 of 2,020,000 B (0.57 % headroom), `app_kb` 4,700 of 4,840 (2.9 %) | Z-1 |
 
@@ -257,9 +257,11 @@ W71 holds the design and stays as written until 0.7.1's D3; these changes hold w
     gets one succinct label), not a chart-descriptor model. 0.8's `ChartSummary` (on
     `claude/080-x1a`, `Sources/BatteryCore/ChartSummary.swift`) stays 0.8's, for the app's charts.
 14. **The session:** RC-P, RC-U2 and step 4.4 go: the update from 0.7.0 to 0.7.1's candidate adds
-    a real parameter (the History chart) and two Details ids, so step 2 is that test. The base is
-    v0.7.0; RC-U is built as 0.7.1 and RC-F as 0.6.99. The `--extension` method of the language
-    step goes, since it would hide W-15's fix (W-17).
+    a real parameter (the History chart) and two Details ids, so step 2's second half is that
+    test. Its first half keeps W71's 0.6.2 widgets across the update to a configurable build, as
+    0.6.2 → v0.7.0, so the session starts on v0.6.2, then v0.7.0; RC-U is built as 0.7.1 and RC-F
+    as 0.6.99. The `--extension` method of the language step goes, since it would hide W-15's fix
+    (W-17).
 15. **Stale references** W71 cites at v0.6.1 or v0.6.2, re-resolved at v0.7.0:
     `build-app.sh:330-336` → `:383-385, 415-418`; `MacAccessoryProvider.swift:35-36, 46, 58` →
     `:41, 54, 70`; `AccessoryMonitor.swift:39` → `:40` (with `observeChanges` at `:80`).
@@ -317,7 +319,12 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      (Xcode 27.2, AC70:169), the Linux suite's count (781 tests in 75 suites at 0.7.0), the latest
      `ci.yml` and `release.yml` run numbers (511 and 9 on 2026-10-31).
   4. Ask Q71-2 to Q71-4 once (Q71-1 waits until the session is due).
-- **Files:** none but this plan's Appendix C. **Linux tests, guards:** none.
+  5. **v0.7.0's week-later counts** (R:917-918; NEW-23): if ROADMAP's Releases table still lacks
+     them once they are a week old, `swift scripts/release-stats.swift` and the row, in a commit of
+     its own; D1 reads them again. A `BatteryPulse-count.txt` count of 0 puts the version count's
+     check back into §6.4 (P7 §6.4 step 6), since no Mac has yet been seen counting (AC70:152).
+- **Files:** this plan's Appendix C; ROADMAP's Releases row (item 5). **Linux tests, guards:**
+  none.
 - **Acceptance:** the integration branch's first CI run is green on both jobs.
 - **Effort:** none of the budget. **Risk:** low. **Rollback:** none needed.
 
@@ -577,9 +584,10 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   `scripts/widget-manifest.json`, `Resources/Localizable.xcstrings`, the tests.
 - **Linux tests:** the plan per family; the geometry (gaps, spans, a flat series, a missing series);
   the summary label in both languages; a planner day test with History placed (plug changes, the
-  hourly cap) and one with all four kinds placed; the timeline plan (hourly, at most 3 entries, the
-  2-hour entry); the large Battery widget with the chart (6 details) and without (8, as 0.7.0's
-  Automatic large, pinned).
+  hourly cap), and 0.7.0's every-kind day test with History added, still under 100 app-initiated
+  reloads a day (`WidgetReloadPlannerTests.swift:342-351`; P2 §8.10; RD:832; INV ENG-16); the
+  timeline plan (hourly, at most 3 entries, the 2-hour entry); the large Battery widget with the
+  chart (6 details) and without (8, as 0.7.0's Automatic large, pinned).
 - **Guards:** the pins above; `MotionGuardTests` keeps the one self-updating text, which "Time on
   battery" uses through its helper file.
 - **Acceptance:** both jobs green; Look 1 answered (§6.1).
@@ -623,7 +631,8 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Files:** as W-6's, plus `Sources/BatteryPulseWidget/DevicesWidget*.swift`.
 - **Linux tests:** the plan per family and state; the display name's order; the choice for each
   `show` case, including "One device" with a forgotten key; the planner's devices day (a device
-  read every 5 minutes while connected, `IDeviceSchedule.swift:39`); `WidgetRoute` for each page.
+  read every 5 minutes while connected, `IDeviceSchedule.swift:39`), and the every-kind day test
+  with all four kinds, still under 100 a day (W-6); `WidgetRoute` for each page.
 - **Guards:** the name guard; `SecurityGuardTests`: the entity query calls the reader and uses no
   file API of its own.
 - **Acceptance:** both jobs green; Look 2 answered.
@@ -656,8 +665,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   (MS:4474-4483); it is 28,380 today, so W-16's cuts (P, U2, step 4.4) pay for W-17's additions.
 - **Guards:** the macOS job's `bash -n` and `swiftc -typecheck` lines (`ci.yml:209-217`).
 - **Acceptance:** both jobs green; `grep -rn '070\|0\.6\.99\|0\.5\.99\|0\.6\.2' docs/plans/0.7.1/`
-  finds only history notes (the bare `0.6.2` too, since "his 0.6.2" and "placed under 0.6.2"
-  carry no `v` and no `070`).
+  finds only history notes, RC-F's new `0.6.99` (`F_VERSION`) and step 2's first base, v0.6.2
+  (W-17 item 1); the bare `0.6.2` is searched too, since "his 0.6.2" and "placed under 0.6.2"
+  carry no `v` and no `070`.
 - **Effort:** S, 1 run. **Risk:** low. **Rollback:** a revert.
 
 ### W-17: The M5 session's preparation (P1; QUA-16)
@@ -665,10 +675,24 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Source:** R:1002-1008; W71 "0.7's M5 checks"; INV QUA-16, ENG-17; P7 §6.2-§6.4; SR; §2.3
   item 14; the lessons of 0.6.2's and 0.7's records (AC70:29, 53, 160).
 - **Items:**
-  1. **Step 2 is the parameter test** (it replaces step 4.4): under 0.7.0, the session sets the
-     medium Battery widget to step 4.1's Custom choices and adds a large Battery widget (Automatic),
-     both by computer use, then `placed before`, `install U`, `placed 1`, `placed 5`; `R2-small`,
-     `R2-medium` ("choices kept") and `R2-large` ("the chart in place of the last two rows").
+  1. **Step 2 in two halves,** at the GUI phase's start:
+     - **0.6.2's widgets across the update to a configurable one** (0.7's own step 2, G7-2's
+       original check, QUA-16's first item; R:1002-1003), whatever the Mac runs: `prepare` puts
+       v0.6.2 in place from its release unless the Mac runs it, as 0.7's `prepare` puts its base
+       (MS:2188-2191, with the base's exemption from the higher-build rule, MS:739-748), and his
+       own app waits in the backup. Then a small and a medium Battery widget from 0.6.2's gallery
+       by computer use (his own may carry 0.7.0's choices), `menu-bar-shots before` (item 12),
+       `placed before`, v0.7.0 installed the installer's way, `placed 1`, `placed 5`;
+       `R2-062-small` and `R2-062-medium` ("the same layout with fresh values"); 0.7.0's What's
+       New (item 11).
+     - **The parameter test** (it replaces step 4.4): under 0.7.0, the session sets the medium
+       Battery widget to step 4.1's Custom choices and adds a large Battery widget (Automatic),
+       both by computer use, then `placed before`, `install U`, `placed 1`, `placed 5`;
+       `R2-small`, `R2-medium` ("choices kept") and `R2-large` ("the chart in place of the last
+       two rows").
+
+     A 0.6.2 user who updates straight to 0.7.1 crosses both changes at once, which the two
+     halves cover between them [inference].
   2. **Five more widget names:** `history-medium`, `history-large`, `devices-small`,
      `devices-medium`, `devices-large` in `WIDGET_NAMES`, the R3 questions and the question list
      (MS:150, 262-263, 316-333), and `xlarge` with `R3-xlarge` out of them (no kind declares extra
@@ -706,27 +730,40 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   10. **`restore end` keeps the logged day's `History/`** (0.7.1 changes no storage format, D1's
       round trip), so his real day isn't lost; the start message says what it keeps and what it
       removes (the RC's `feed.json` with the rest of the session's data).
-  11. **What's New** shot in English after `install U`, and again in Russian (the script clears the
-      last-seen version once), at 520 points (W71, "What W-10 couldn't see").
-  12. **Drops:** `raw-history base` (W-3c shipped in 0.7.0; `rc` stays); `menu-bar-shots before`
-      needs 0.6.2's painter, so `after` is compared with Session B's 0.6.2 shots if they are still
-      in `~/bp-062/B` [unverified], or `before` runs at `prepare` if his Mac still runs 0.6.2
-      (Q71-2).
+  11. **What's New** at 520 points, shot in English and again in Russian (the script clears the
+      last-seen version once): 0.7.0's after step 2's first half, from 0.6.2, with its three rows
+      and the count's row (W71, "What W-10 couldn't see"; AC70:170), and 0.7.1's after
+      `install U`, if Q71-3 is yes.
+  12. **Drops:** `raw-history base` (W-3c shipped in 0.7.0; `rc` stays). `menu-bar-shots before`
+      needs 0.6.2's painter, so it runs on 0.6.2 in step 2's first half (item 1), and `after` on
+      the candidate.
   13. **The plug** (the two beeps) moves to the day's end, so it measures the candidate with every
       kind placed; the start keeps only what needs him.
   14. **The short feed check** (§6.5) as a short-session section of its own, `feed-check`, with its
-      launcher argument.
+      launcher argument. It keeps Session R's lessons, since it drives the edit sheets, System
+      Settings and the desktop too: no BatteryPulse or macOS update before it starts (its step 2
+      needs his 0.7.0 and his placed widgets); `preflight`'s DO lines (his apps quit, the Claude
+      desktop app among them, and a pending macOS update postponed with Later), since a banner at
+      layer 23 refuses the desktop's clicks (AC70:63); `$S main` before its one computer-use
+      access request; the language look only after the reload notice (item 6); the widgets by the
+      script's crops.
   15. **After publishing:** `$S main` first, so BatteryPulse has a window and a Dock icon before
       computer use asks for access (it is an agent app, `build-app.sh:112, 135`); the posted line
       tells the maintainer not to press Install and Relaunch himself (0.6.2's lesson, AC70:29).
   16. **`perf-stats`** per kind with the `history` and `devices` triggers, and the feed's writes
       and reads per day.
-- **Files:** as W-16's.
+  17. **The quick check after a macOS 27.x update** (`scripts/quick-check.sh`, NEW-22, RD:1411)
+      gains the feed, since a macOS update may narrow the widget's temporary exception (PF-1) and
+      nothing else would show it before a user's report: the file's age, modes and version (no
+      name), any rejection the widget logged at notice since the update (W-5 item 9), and a fifth
+      question, whether a placed History or iPhone & iPad widget shows data rather than "Open
+      BatteryPulse to update".
+- **Files:** as W-16's, and `scripts/quick-check.sh` (item 17; no 0.8 branch touches it).
 - **Linux tests:** the dry run (every session's questions resolve; the printed size under 28,500
   bytes).
-- **Guards:** the macOS job's type-checks.
+- **Guards:** the macOS job's type-checks and `bash -n scripts/quick-check.sh` (`ci.yml:200`).
 - **Acceptance:** both jobs green; the dry run lists the new questions.
-- **Effort:** M, 1-2 runs. **Risk:** medium: the printed-size limit, and a GUI phase about 30-45
+- **Effort:** M, 2 runs. **Risk:** medium: the printed-size limit, and a GUI phase about 40-55
   minutes longer than 0.7's (still capped at 4 hours) [estimate]. **Rollback:** a revert; the
   session then runs 0.7's steps re-pointed (W-16), without the new kinds' checks.
 
@@ -921,15 +958,17 @@ CLI's flag check (1 minute).
 `bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.7.1/start-session-r.sh)`.
 
 **R0, the start** (he is there, on the adapter, 6-8 minutes): his yes to the list of changes (SR
-R0 step 2, plus the gallery's five new widgets, the feed the candidate writes and `restore end`
-removes, and the logged day's history it keeps); `prepare` (about 10 minutes, two builds); his apps
+R0 step 2, plus v0.6.2 and then v0.7.0 for step 2 whatever his Mac runs, the gallery's five new
+widgets, the feed the candidate writes and `restore end` removes, and the logged day's history it
+keeps); `prepare` (about 10 minutes, two builds; it puts v0.6.2 in place, W-17 item 1); his apps
 quit, the Claude desktop app among them, and a pending macOS update postponed with Later, as
 preflight asks; the reads and proofs; one computer-use access request after `$S main`; a Focus on;
 `mark away`.
 
 **R1, the GUI phase** (he is away; about 2.5-3.5 hours, capped at 4 [estimate]):
-1. **Step 2** (W-17 item 1): the 0.7.0 set-up, `install U`, the shots, `placed compare`; What's
-   New in English (item 11).
+1. **Step 2** (W-17 item 1): on 0.6.2, its small and medium widgets, `menu-bar-shots before`,
+   v0.7.0 installed, the shots, `placed compare` and 0.7.0's What's New; then the 0.7.0 set-up,
+   `install U`, the shots, `placed compare`, and 0.7.1's What's New if Q71-3 is yes (item 11).
 2. **Step 3:** the gallery in every size in batches (Battery large; Accessories small, medium,
    large; History medium, large; iPhone & iPad small, medium, large), each against CI's previews;
    then the working set. `feed` before and within 15 minutes after the first History widget.
@@ -938,9 +977,9 @@ preflight asks; the reads and proofs; one computer-use access request after `$S 
    6), the sheet (expected to stay in the Mac's language, PF-6), the tree in Russian; 4.5 back to
    Automatic; **4.6** the History sheet's options and the iPhone & iPad sheet's "One device"
    chooser (G71-4).
-4. **Step 5, rendering modes and places** (G7-4), each after a redraw (W-17 item 5): Dim widgets
-   Always and Automatically × the four Icon & widget styles; Notification Center by the script's
-   crops (it can't be granted to computer use); Increase Contrast; Reduce Transparency.
+4. **Step 5, rendering modes and places** (G7-4): Dim widgets Always and Automatically × the four
+   Icon & widget styles; Notification Center by the script's crops (it can't be granted to
+   computer use); Increase Contrast and Reduce Transparency, each after a redraw (W-17 item 5).
 5. **Step 6, time** (G7-3): the 12-hour look after a redraw, `tick` on time left, the count
    toggle in both languages.
 6. **Step 7, the trees** (G7-12): every kind, `devices-*` and `accessories-*` labels redacted; the
@@ -966,33 +1005,44 @@ installed), the summary he reads first (in his language, on the Mac only), `read
     timelines delivered, the share and the median delay (G7-11, ENG-17); the widget's reads, the
     feed's writes and reads; crash reports and `fault` lines since `prepare`, which must be 0
     (G7-16); W-13's lines.
-  - **The plug** (2 minutes of his): unplug at a beep, plug in at the second, 70 seconds later; the
-    reloads per kind, and `currentConfigurations()`' counts against the widgets placed (G7-17).
+  - **The plug** (2 minutes of his): unplug at a beep, plug in at the second, 70 seconds later;
+    each crop's state against `bpulse --json` within a minute, and at a Charge Limit he set, when
+    bit 24 appears (`R9-plug`, SR:149); the reloads per kind, and `currentConfigurations()`'
+    counts against the widgets placed (G7-17).
   - **F12** (G7-15): RC-F (0.6.99) → Check for Updates → Install and Relaunch to 0.7.0, by AX
     presses; per kind as W-17 item 9 says.
   - The batch (items the session answered 3), his yes, `send` to `claude/071-session-r`, and
-    `restore end` (his 0.7.0, his settings, the logged day's history kept).
+    `restore end` (his own BatteryPulse, 0.7.0 or the 0.6.2 he ran, his settings, the logged day's
+    history kept).
 
-### 6.4 After publishing (the short form: about 1-2 minutes of his, plus 6-8 passive)
+### 6.4 After publishing (the short form: about 1-2 minutes of his, plus 8-10 passive)
 
-From his restored 0.7.0, with his widgets placed. D3 posts the start line on the release PR, with
-the PR's number `<n>` and `<keep>`, and the sentence "Don't press Install and Relaunch yourself; the
-session does it":
+From his restored BatteryPulse (0.7.0, or the 0.6.2 he ran, Q71-2), with his widgets placed. D3
+posts the start line on the release PR, with the PR's number `<n>` and `<keep>`, and the sentence
+"Don't press Install and Relaunch yourself; the session does it":
 `git -C ~/BatteryPulse fetch origin refs/pull/<n>/head`, then
 `bash <(git -C ~/BatteryPulse show <keep>:docs/plans/0.7.1/start-short-session.sh) after-publishing <n> <keep>`.
 
 1. His yes; `$S tools`; **`$S main` first,** so BatteryPulse has a window and a Dock icon; only
    then the one computer-use access request; the widget frames (the script's crops).
-2. `after before`; Install and Relaunch to 0.7.1 by `ui press`; `after after`: the version, the
-   pre-swap line, any CHSErrorDomain 1103, `pluginkit`, `codesign`, `xattr`, the crops, the feed's
-   modes and the widget's exception (seconds each).
-3. The session judges D3-version, D3-whats-new and D3-widgets (the Battery and Accessories widgets
-   as before; a History or iPhone & iPad widget he kept comes alive); `send` on his yes.
+2. The before set (BatteryPulse's Settings: General, Menu Bar, Notifications, a shot each by
+   computer use); `after before`; Install and Relaunch to 0.7.1 by `ui press`; `after after`: the
+   version, the pre-swap line, any CHSErrorDomain 1103, `pluginkit`, `codesign`, `xattr`, the
+   crops, the feed's modes and the widget's exception (seconds each); then About, What's New,
+   History, the settings and the menu bar by computer use, and Login Items only by `ui tree`,
+   which says whether the row exists (SR:413-419; MS:4323-4324).
+3. The session judges D3-version, D3-whats-new, D3-widgets (the Battery and Accessories widgets as
+   before; a History or iPhone & iPad widget he kept comes alive), D3-history, D3-settings,
+   D3-login-item and D3-notifications; then `after popover` and D3-first-day, the widget against
+   the popover; `send` on his yes.
 
-Dropped from 0.7's full form (P7 §6.4): the History, settings, Login Items and notification shots
-(seen right after 0.6.2's update, AC70:29), the version count's 10-minute wait (the week-later count
-is its sign) and the popover comparison. **Without a session** (Q71-4): his own two screenshots of
-a placed widget, before and after updating, as 0.6.2's D-9 had.
+Kept from 0.7's full form (P7 §6.4), since RD §1.2 item 6 makes them every release's check
+(About, History, the settings and the login item kept, the widget current; RD:181-183; RD §3.2's
+release criterion, RD:838-842) and 0.7.1 edits `HistoryRecorder.swift` and adds a storage file:
+everything but the version count's 10-minute wait. That wait is dropped, since the week-later count
+is its sign, unless v0.7.0's week-later count reads 0 (V-0 item 5), which puts P7 §6.4 step 6 back.
+**Without a session** (Q71-4): his own two screenshots of a placed widget, before and after
+updating, as 0.6.2's D-9 had.
 
 ### 6.5 Releasing without the M5 session
 
@@ -1002,17 +1052,22 @@ the language choice in BatteryCore and its Russian preview under an English proc
 new kinds and their day tests; `WidgetTextBudget`; `SecurityGuardTests`' one reader placement; the
 posture check with its one exception; `appintents-check` (the sheet's strings and the added
 parameter); the previews and the three looks; and D1's diff, round trip, identifiers and ceilings.
+D1 then builds RC-U alone, for the short feed check, or no candidate at all, as at 0.7.0
+(AC70:161).
 
 **What each skipped check costs:**
 
 | Skipped | What could reach every user unseen | Cost [inference] |
 |---|---|---|
 | The feed through the real exception on today's macOS 27.x (G71-2) | The History and iPhone & iPad widgets stuck on "Open BatteryPulse to update", and the widget's language not following | The headline unseen; known only from reports. RD §1.2 item 3's bar is set aside |
-| Step 2: 0.7.0 → the candidate, a parameter added (G7-2) | Placed widgets that lose their choices or go blank | Each user re-edits or re-adds a widget |
+| Step 2's first half: 0.6.2's widgets across the update to a configurable one (G7-2's original check) | A 0.6.2 user's placed widget gone or blank after updating to 0.7.x | The notes' and the guide's "add it again" lines stay unconfirmed, as at 0.7.0 (AC70:171) |
+| Step 2's second half: 0.7.0 → the candidate, a parameter added (G7-2) | Placed widgets that lose their choices or go blank | Each user re-edits or re-adds a widget; §6.4 sees it first on his own widgets, if Q71-4 is 1 |
 | The language the user's way (G71-3) | The widget staying in the Mac's language | The notes' "should" stays unconfirmed |
 | The device chooser (G71-4) | "One device" with an empty chooser | One option that doesn't work |
 | The feed's modes, Demo Mode, the rewrites (Darwin hooks compiled, never run) | A privacy promise nobody saw kept | The notes promise it on CI's evidence alone |
 | Rendering modes on the Mac (G7-4) | A chart unreadable in tinted or clear styles | A fix forward |
+| Clicks on the new kinds (G7-9) | A click that opens nothing or the wrong page | A fix forward; with BatteryPulse quit, the scheme registered (P7 §7.3) |
+| The trees of the new kinds (G7-12) | A chart or a device row that VoiceOver reads wrongly or not at all | A fix forward; VERIFICATION's row stays open (RD C10) |
 | The logged day (G7-11, G7-16, ENG-17) | Reloads not delivered; a crash or fault | Known only from reports |
 | F12 (G7-15) | A broken update path | Low while `UpdateInstaller` is unchanged since 0.6.2 (`git diff v0.6.2 v0.7.0` shows no change there) |
 | 0.7's debts | Every 0.7 check carries over again (`docs/VERIFICATION.md`'s 0.7 rows) | 0.8's session inherits them |
@@ -1025,20 +1080,26 @@ language once it is reopened; the new widgets fill in once BatteryPulse has run.
 
 **The short feed check** (the middle way, Q71-1's recommendation if he skips the full session):
 one short hands-free session from the same tools (W-17 item 14), about 3 minutes of his (the
-launcher, one yes, the approvals, his apps quit) and about 50-70 minutes passive [estimate], no
-logged day. It runs only the checks whose failure would reach every user: the feed read through
-the exception at its real size, including a file written while no widget process ran (`feed`, and
-the widget's `widget.feed.read` lines); step 2's parameter test; the language the user's way on
-one widget; the "One device" chooser; one click per new kind; crash reports and faults since
-`prepare`; then `restore end`. It pays RD §1.2 item 3's bar for the new read path.
+launcher, one yes, the approvals, his apps quit with the Claude desktop app among them and a
+pending macOS update postponed, as preflight asks) and about 50-70 minutes passive [estimate], no
+logged day; like the full session, it needs his 0.7.0 not updated before it starts. It runs only
+the checks whose failure would reach every user: the feed read through the exception at its real
+size, including a file written while no widget process ran (`feed`, and the widget's
+`widget.feed.read` lines); step 2's parameter test; the language the user's way on one widget,
+shot after the reload notice; the "One device" chooser; one click per new kind; crash reports and
+faults since `prepare`; then `restore end`. It pays RD §1.2 item 3's bar for the new read path.
 
 ### 6.6 Risks the sittings watch
 
 - **Desktop space:** eleven BatteryPulse widgets don't fit the Air's display; W-17's batches and
   working set (W-17 item 2).
 - **The runbook's printed size** (28,380 of 28,500 bytes): every addition pays with a cut (W-16).
-- **The GUI phase's length:** about 30-45 minutes more than 0.7's plan, inside the 4-hour cap; what
+- **The GUI phase's length:** about 40-55 minutes more than 0.7's plan, inside the 4-hour cap; what
   doesn't fit is "not run (time)" [estimate].
+- **The start on 0.6.2:** on a Mac that runs 0.7.0, his own widgets show under 0.6.2 until step 2's
+  first half ends (its Accessories widgets keep their last picture, PF-10); 0.6.2 reads 0.7's
+  storage (AC70:172's round trip), its code names none of 0.7's four settings keys (`git grep` at
+  v0.6.2), and `restore end` brings back his own app and settings.
 - **The iPhone & iPad widget with a device:** `prepare` hides his remembered devices for the GUI
   phase, so it shows only its empty states then; its look with a device comes on the logged day
   and is read against the Devices page, never attached; CI's sample names are the look's evidence.
@@ -1057,7 +1118,7 @@ one widget; the "One device" chooser; one click per new kind; crash reports and 
 | **G71-2** the feed through the exception | the feed-backed kinds, the chart, the two fields, the language | the Linux tests; CI's posture check; the M5's `feed` and `widget.feed.read` lines | ship (§6.5's notes), only on the maintainer's decision (Q71-1) | PF-1's path: A′ in a new candidate; both denied: the feed-backed parts cut before release |
 | **G71-3** the widget's language | the guide's Language text | W-15's preview (CI); step 4.3, the user's way | ship; the notes and the guide say "should follow" | PF-5's path: the guide keeps 0.7.0's sentence; a fix forward |
 | **G71-4** the device chooser | W-7's "One device" | step 4.6 (with Details' 4.1) | ship: the default needs no query | "One device" and its entity cut before release; Details' chooser fixed forward |
-| **G7-2** placed widgets, a parameter added | the release | step 2 (0.7.0 → the candidate); §6.4 | ship; "Edit Widget to choose again; add a blank one again" | PF-2's path |
+| **G7-2** placed widgets across the updates | the release | step 2's two halves (0.6.2 → v0.7.0, a configurable widget; 0.7.0 → the candidate, a parameter added); §6.4 | ship; "Edit Widget to choose again; add a blank one again" | PF-2's path; for the first half, P7 G7-2's (the pre-swap end and CHSErrorDomain 1103 in the logs; the notes' "add it again") |
 | **G7-3** time left | — | step 6 in both languages | ship | a minus sign: a fix before release |
 | **G7-4** rendering modes | — | step 5's shots | ship | a fix forward |
 | **G7-8** Accessories | — | steps 3 and 9 | ship | its empty state (RD §7) |
@@ -1084,10 +1145,10 @@ nothing later; a kind or a case can come in any later release):
 3. the History kind's 90-day series (capacity and cycles), as cases that can be added later;
 4. the Battery widget's two fields;
 5. the History kind whole;
-6. the Battery widget's History chart (then 0.7.1 adds no parameter to a shipped intent, and step 2
-   tests only the update).
+6. the Battery widget's History chart (then 0.7.1 adds no parameter to a shipped intent, and step
+   2's second half tests only the update).
 
-**Effort** is §1's table: about 16-20 runs, plus 2-3 to fix forward.
+**Effort** is §1's table: about 17-20 runs, plus 2-3 to fix forward.
 
 ### 7.3 Frozen surfaces: what 0.7.1 adds, and what it keeps from 0.7.0
 
@@ -1214,8 +1275,11 @@ change don't count. BatteryPulse is an agent app that is rarely in front, so its
   inside the 5-minute minimum the immediate reasons share.
 - **The "Open BatteryPulse to update" line** is a precomputed entry at `writtenAt` + 2 hours, not a
   reload; at most 3 entries per timeline, never closer than 15 minutes.
-- **All four kinds placed:** under about 130 app-initiated reloads a day, each kind within its own
-  budget [estimate]; the Battery kind stays within 0.7's E15 bound plus 7.
+- **All four kinds placed:** under about 100 app-initiated reloads a day, each kind within its own
+  budget, the target P2 §8.10 set for these four kinds (`ebe6547:docs/plans/0.7.0/widgets.md:457`;
+  INV ENG-16; RD:832) and 0.7.0's day test pins for its two
+  (`WidgetReloadPlannerTests.swift:342-351`, extended by W-6 and W-7); the Battery kind stays within
+  0.7's E15 bound plus 7.
 - **Only placed kinds** are reloaded and written for; an empty answer counts as every kind placed.
 
 **Reads:** one feed read per burst of timeline requests, shared by every kind and instance, through
@@ -1350,15 +1414,17 @@ steps.
   **Default:** the full session as planned; asked only when it is due.
 - **Q71-2: Which BatteryPulse does your Mac run now, 0.6.2 or 0.7.0?** Please don't update it
   before the session starts, so the session sees the update it tests. **Recommendation:** stay on
-  what you have. If it is 0.6.2, `prepare` first shoots 0.6.2's menu bar (W-17 item 12) and pays
-  0.7.0's own update debt (G7-2's original check), about 7 minutes more, hands-free. **Default:**
-  `prepare` reads the version and plans from it.
+  what you have. Either way step 2 starts on 0.6.2: from yours, or, on 0.7.0, from v0.6.2 that
+  `prepare` puts in place for the first minutes (your own app comes back at the end), so 0.7.0's
+  own update debt (G7-2's original check) and 0.6.2's menu bar shots (W-17 items 1 and 12) are
+  paid either way, about 7-10 minutes more, hands-free. **Default:** `prepare` reads the version
+  and plans from it.
 - **Q71-3: What's New for 0.7.1?** **1** yes: once after updating, the History widget and the
   iPhone & iPad widget (with the feed's privacy sentence), plus the version count's row for anyone
   coming from before 0.7; **2** no, as a fix release would. **Recommendation: 1:** two new widgets
   are news, and the window is where an updater meets the new file. **Default:** 1.
 - **Q71-4: The check after publishing:** **1** the short session (about 1-2 minutes of yours plus
-  6-8 passive, §6.4); **2** your own two screenshots of a placed widget before and after updating.
+  8-10 passive, §6.4); **2** your own two screenshots of a placed widget before and after updating.
   **Recommendation: 1,** since it also reads the feed's modes and the widget's exception on the
   published build. **Default:** 1; 2 if you skip it.
 
@@ -1378,7 +1444,7 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | The History widget; the Battery widget's chart, average drain and time on battery | R:994-996; INV FEA-11 | W-6 |
 | The iPhone & iPad widget, with its reading's age | R:997-998; INV FEA-12 | W-7 |
 | The widget following the app's own language | R:999-1001; P7 W-0 item 8 (no INV or RD row) | W-15 (W-3b's part); W-17 item 6 (W-12's); W-18 (W-10's) |
-| 0.7's M5 checks | R:1002-1008; INV QUA-16 | W-16, W-17, §6.2-§6.4 |
+| 0.7's M5 checks | R:1002-1008; INV QUA-16 | W-16, W-17, §6.2-§6.4; one by one below |
 | The session tools re-pointed | R:1009-1010 | W-16 |
 | The feed and the exception announced with a privacy line | R:1012-1014; INV DOC-08 | §11, §13 step 2, W-18 |
 | The build-number clock before the first candidate | R:1016-1021 | B-1 (first) |
@@ -1388,6 +1454,7 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | Item | 0.7.1 package or status |
 |---|---|
 | "What 0.7's plan added": the gate (W0-3 passed, Q-W3 yes, M-1 no) | Holds; the budget condition is gone (W71) |
+| "What 0.7's plan added", the rest: order, storage, names and identifiers, energy, size, strings, guards, accessibility, the Charge Limit's number, docs, a parameter added | §5; D1's storage round trip; W-7 item 4, §11; §10; §9; §8; W-5's guards and `LocalizationCatalogTests`; W-6 item 1 (§2.3 item 13); not in 0.7.1 (0.8's A-2); §12; step 2's second half (W-17 item 1) |
 | One type behind the reader; A′ as the fallback | W-5 item 5; PF-1 |
 | The feed's location not a 1.x promise | §7.3 |
 | The entitlement and its pin | W-5 item 7 |
@@ -1401,14 +1468,38 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | §8.8 the feed's hardening | W-5 items 5-7, 9; W-7 item 4 |
 | "The packages" W-5, W-6, W-7 | W-5, W-6, W-7 |
 | The widget's language (W-4's part shipped; W-3b's, W-12's, W-10's parts) | W-15, W-17, W-18 |
-| The M5 check list: steps 2-11, the logged day, F12, after publishing, What's New at 520 points, no extra-large views | §6.2-§6.4; W-17 (step 4.4 folded into step 2, §2.3 item 14) |
-| Step 10: Raw Data to History | W-17 (`raw-history rc` only) |
-| Step 10: the menu bar painter before and after W-11 | W-17 item 12 (conditional on Session B's shots or a 0.6.2 start) |
-| Step 11: WP-18's Xcode items, the dark bar | §6.2 R1 step 10 |
+| "0.7's M5 checks" | One by one in the next table |
 | "Build numbers" | B-1 |
 | "Retargeting the session tools" | W-16 |
 | "Later: W-9" | Not in 0.7.1: after 1.0 at the earliest, only if asked (RD §4.1) |
 | §10 Q-W answers | §14 ("Already decided") |
+
+**0.7's M5 checks, one by one** (W71 "0.7's M5 checks"; AC70:140-153, 170; every one unrun):
+
+| Check (0.7's step, gate) | 0.7.1 step, package or reason |
+|---|---|
+| 0.6.2's small and medium widgets across the update to a configurable one (step 2, G7-2) | Step 2's first half, 0.6.2 → v0.7.0, whatever the Mac runs (W-17 item 1) |
+| A parameter added to a shipped intent keeping the choices (step 4.4, RC-P, RC-U2) | Step 2's second half, 0.7.0 → the candidate (W-17 item 1; §2.3 item 14); RC-P and RC-U2 go |
+| The gallery in every size against CI's previews, with no extra-large views (step 3) | §6.2 R1 step 2 (W-17 item 2) |
+| The edit sheet: Custom, the choices kept, Details' chooser (W0-1 (b)), back to Automatic (steps 4.1, 4.2, 4.5) | §6.2 R1 step 3 |
+| The edit sheet and the widgets in Russian (step 4.3, G7-13) | §6.2 R1 step 3, the user's way only (W-17 item 6) |
+| Rendering modes, Notification Center, Increase Contrast, Reduce Transparency (step 5, G7-4) | §6.2 R1 step 4 |
+| Time left, 12-hour time, the count's toggle in both languages (step 6, G7-3, W-13) | §6.2 R1 step 5 (W-17 item 5) |
+| The accessibility tree, in English and Russian, and Text size (step 7, G7-12) | §6.2 R1 steps 3 and 6 |
+| Clicks with and without a window and with BatteryPulse quit (step 8, G7-9) | §6.2 R1 step 7 (W-17 item 3) |
+| The plug against `bpulse --json`, and the per-kind counts against the placements (step 9, G7-17) | §6.3, at the day's end (W-17 item 13) |
+| The accessories' half (step 9, G7-8) | §6.2 R1 step 8 |
+| The Charge Limit in Demo Mode, in both languages, and System Settings' Russian (step 9b, G7-18) | §6.2 R1 step 8; else Apple's Russian article stands |
+| Raw Data to History (step 10) | `raw-history rc` (W-17 item 12); `base` goes, since Session B showed the bug on 0.6.2 and W-3c shipped |
+| The menu bar painter before and after W-11 (step 10) | `menu-bar-shots before` on 0.6.2 in step 2's first half, `after` on the candidate (W-17 items 1, 12) |
+| WP-18's Xcode items and the dark bar (step 11) | §6.2 R1 step 10, last |
+| The logged day: reloads per kind, the widget's reads, crashes, faults, assertions (G7-11, G7-16) | §6.3 |
+| W-13's optional `noCounter` line | §6.3's W-13 lines: RC-U's 404 for v0.7.1, if it runs for 24 hours |
+| F12 (G7-15) | §6.3: RC-F as 0.6.99 → v0.7.0 |
+| After publishing: About, What's New, History, the settings, the login item, notifications, `codesign`, `xattr`, the widget against the popover | §6.4, RD §1.2 item 6's list |
+| After publishing: the count's `counted` line and its count at 1 or more | Not in §6.4: v0.7.0's week-later count is its sign (V-0 item 5); a count of 0 puts it back |
+| What's New's rows and the count's row at 520 points in Russian (W-10) | W-17 item 11: 0.7.0's window from 0.6.2, 0.7.1's from 0.7.0 |
+| The hold watch (QUA-06, step 11) and the Charge Limit capture (QUA-05) | Not in 0.7.1: 0.8's I-8; QUA-05 not needed (AC70's D-13) |
 
 **RD and INV rows:**
 
@@ -1430,6 +1521,11 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | RD C10 (every family reachable and named in both languages; every chart a descriptor) | W-6, W-7 (labels and summaries); §6.2 step 7; the widget charts get one label, not a descriptor (Appendix B) |
 | RD C14 items 2, 5, 8 | §7.3 |
 | RD §1.2 item 3 | §3; §6.5; Q71-1 |
+| RD §1.2 item 6 (the after-publishing check) | §6.4 |
+| NEW-18 (the verification matrix) | D3: VERIFICATION's 0.7 and 0.7.1 rows |
+| NEW-22 (the quick check after a macOS 27.x update) | W-17 item 17: the feed joins `scripts/quick-check.sh` |
+| NEW-23 (the counts a week after publishing) | §13 step 8 for v0.7.1; V-0 item 5 for v0.7.0 |
+| REJ-30, REJ-53, REJ-57, REJ-60, REJ-62 | Still rejected: the widget stays nonisolated, its reader too; no write into the widget's container; no network in the widget; App Intents types only in the widget target; no seconds or timer text ("Time on battery" and Look 2's self-updating age use the one offset helper) |
 | NEW-13 (the backup key) | Not in 0.7.1: 0.8 (the maintainer's decision, 2026-10-31) |
 | FEA-15 to FEA-19 (W-9) | Not in 0.7.1: after 1.0 (RD §4.1) |
 | FEA-20 (why it isn't charging, as a widget field) | Not in 0.7.1: 1.1 |
@@ -1485,6 +1581,16 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 - `MotionGuardTests` bans `.timer`, `.relative` and `.offset` styles and the reference format style
   in the widget, with one helper allowed (`MotionGuardTests.swift:35-38, 164-176`).
 - SR's printed part is 28,380 bytes, under MS's 28,500 limit (MS:4474-4483; `wc -c`).
+- 0.7.0's day test pins the two MVP kinds under 100 app-initiated reloads a day
+  (`WidgetReloadPlannerTests.swift:342-351`), the bound P2 §8.10 set for all four kinds
+  (`ebe6547:docs/plans/0.7.0/widgets.md:457-458`), as INV ENG-16 and RD's exit criterion (RD:832)
+  do.
+- MS's `prepare` installs its base whenever the Mac runs another version (MS:2188-2191), exempt
+  from the higher-build rule (MS:739-748); its After publishing reads About, What's New, History,
+  the settings, the menu bar and Login Items, and asks D3-history, D3-settings, D3-login-item and
+  D3-notifications (SR:413-426; MS:333, 4323-4324). `ci.yml:200` runs `bash -n` on
+  `scripts/quick-check.sh`, and no 0.8 branch touches it. 0.6.2's code names none of 0.7's four
+  settings keys (`git grep` at `v0.6.2`).
 - The catalog holds 766 keys, none with plural variations; the reused keys of §8 are among them.
 - The sizes of §9 (AC70:172; `scripts/size-budget.json`).
 - 0.8's six preparation branches fork from `cf847d0`; none is in `main`; x1a adds
@@ -1512,6 +1618,11 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 - **RD C10's "every chart has a descriptor"** (RD:347-353, naming the app's charts) against §2.3
   item 13's one label per widget chart (HIG Charts allows one succinct label for a small chart).
   This plan reads C10 as the app's charts [inference]; W-18 asks RD to say so.
+- **RD C14 item 5's "what Automatic shows in each size"** (RD:402-407) against Q-W4's placed large
+  widgets getting the History chart in place of their last two rows (W71 §8.5): this plan reads
+  the chart as its own parameter's, never part of Automatic (P2 §8.5, §8.17), so Automatic's
+  detail list is unchanged [inference]; the notes say what placed widgets show (§13), and Look 1
+  question 2 lets the maintainer keep the eight rows instead.
 
 **Unverified:**
 - PF-1 at 8-12 KB, for a file written while no widget process ran, and on macOS after 27.0.1.
@@ -1524,7 +1635,8 @@ shown, `.privacySensitive()`), Q-W12 (°C).
   (W71; AC70:163). W-15 doesn't depend on it.
 - Whether VoiceOver reads the widget's Russian labels with a Russian voice under an English system.
 - The cost of the redraw trick (W-17 item 5) on the Mac; the sandbox-denial log predicate (W-17
-  item 7); whether Session B's 0.6.2 menu bar shots are still on the Mac (W-17 item 12).
+  item 7); how 0.6.2 draws widgets configured under 0.7.0 for step 2's first half's minutes
+  (§6.6; Session A saw configurable widgets survive a reinstall of 0.6.1, AC70:73).
 - Every [estimate] in §1, §6, §9 and §10.
 
 ---
