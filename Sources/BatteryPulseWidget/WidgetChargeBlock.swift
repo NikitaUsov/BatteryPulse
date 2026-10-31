@@ -7,8 +7,8 @@ import WidgetKit
 
 /// The charge block: the visual (the level symbol, a ring or the drawn battery), the main value and
 /// the lines under it. When it fills its place, as in small and medium, the visual sits at the top
-/// and the number and lines at the bottom, as in 0.6.x; above large's and extra large's details it
-/// takes its own height.
+/// and the number and lines at the bottom, as in 0.6.x; above large's details it takes its own
+/// height.
 ///
 /// VoiceOver reads the charge as one element, "Battery charge: 70%, On battery", from the visual
 /// and, when the main value is the charge, the number with it; another main value is an element of
@@ -20,7 +20,7 @@ struct WidgetChargeBlock: View {
     var fills = true
     @Environment(\.widgetStrings) private var strings
 
-    /// Small and medium keep 0.6.x's sizes; large and extra large have room for more.
+    /// Small and medium keep 0.6.x's sizes; large has room for more.
     private var roomy: Bool { size != .small && size != .medium }
 
     /// The main value above the lines, at its kind's size in this widget size (BatteryCore's

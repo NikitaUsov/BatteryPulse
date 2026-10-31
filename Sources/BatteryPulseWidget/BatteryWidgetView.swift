@@ -16,12 +16,12 @@ struct BatteryWidgetRoot: View {
 }
 
 extension WidgetSize {
-    /// The size of a family the widget declares; any other draws as small, the smallest place.
+    /// The size of a family the widget declares; any other, extra large among them, draws as
+    /// small, the smallest place.
     init(_ family: WidgetFamily) {
         switch family {
         case .systemMedium: self = .medium
         case .systemLarge: self = .large
-        case .systemExtraLarge: self = .extraLarge
         default: self = .small
         }
     }
@@ -33,7 +33,10 @@ extension WidgetSize {
 /// - Small: the charge block alone, as in 0.6.x.
 /// - Medium: the charge block and, beside it, the details, as in 0.6.x.
 /// - Large: the charge block, then the details in two columns of tiles.
-/// - Extra large: two panels, Battery (the charge block and its details) and Power.
+///
+/// Extra large isn't declared (the look check left it out of 0.7), so its two-panel views went
+/// too: they come back with the family. BatteryCore still plans its panels, which a size the
+/// widget never receives draws here as large.
 struct BatteryWidgetView: View {
     let entry: BatteryEntry
     let size: WidgetSize
@@ -60,10 +63,8 @@ struct BatteryWidgetView: View {
                             WidgetDetailList(details: layout.details, tinted: layout.tinted)
                         }
                     }
-                case .large:
+                case .large, .extraLarge, .extraLargePortrait:
                     WidgetLargeLayout(layout: layout)
-                case .extraLarge, .extraLargePortrait:
-                    WidgetExtraLargeLayout(layout: layout, size: size)
                 }
             case .empty(let reason):
                 WidgetEmptyState(reason: reason)
@@ -87,71 +88,6 @@ struct WidgetLargeLayout: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-}
-
-/// Extra large: two panels side by side. Battery holds the charge block and its details, Power
-/// the rest, headed by its first detail drawn large; both grids of tiles sit at the bottom, level
-/// with each other. Automatic names the panels; Custom's hold whatever was chosen, so they go
-/// unnamed, and without details for the Power panel the Battery panel takes the whole width.
-struct WidgetExtraLargeLayout: View {
-    let layout: BatteryWidgetLayout
-    let size: WidgetSize
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                if layout.panelHeadings {
-                    WidgetPanelHeading(panel: .battery)
-                }
-                WidgetChargeBlock(layout: layout, size: size, fills: layout.details.isEmpty)
-                if !layout.details.isEmpty {
-                    Spacer(minLength: 0)
-                    WidgetTileGrid(details: layout.details, tinted: layout.tinted)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            if !layout.powerDetails.isEmpty {
-                let power = WidgetHeroDetail.split(layout.powerDetails)
-                Divider()
-                VStack(alignment: .leading, spacing: 10) {
-                    if layout.panelHeadings {
-                        WidgetPanelHeading(panel: .power)
-                    }
-                    if let hero = power.hero {
-                        WidgetHeroDetail(row: hero.row, text: hero.text, tinted: layout.tinted)
-                    }
-                    Spacer(minLength: 0)
-                    WidgetTileGrid(details: power.rest, tinted: layout.tinted)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
-        }
-    }
-}
-
-/// An extra-large panel's name, a heading for VoiceOver.
-struct WidgetPanelHeading: View {
-    enum Panel {
-        case battery, power
-    }
-
-    let panel: Panel
-    @Environment(\.widgetStrings) private var strings
-
-    var body: some View {
-        title
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    private var title: Text {
-        switch panel {
-        case .battery: Text("Battery", bundle: strings)
-        case .power: Text("Power", bundle: strings)
-        }
     }
 }
 
