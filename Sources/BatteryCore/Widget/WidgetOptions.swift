@@ -111,8 +111,9 @@ public enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
     case always
 }
 
-/// Which accessories the Accessories widget lists.
-enum AccessoryWidgetMode: String, Sendable, CaseIterable {
+/// Which accessories the Accessories widget lists in medium and large; small always shows the
+/// lowest.
+public enum AccessoryWidgetMode: String, Sendable, CaseIterable {
     /// Every accessory, lowest first.
     case all
     case lowest
