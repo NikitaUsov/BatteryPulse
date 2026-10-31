@@ -5,13 +5,18 @@ import BatteryKit
 import BatterySource
 import Foundation
 import Observation
+import os
 
 /// Checks GitHub for a newer release: as often as the user chose, and whenever they ask.
 ///
-/// The only network request BatteryPulse makes on its own; the other is downloading an update
-/// the user chose to install (``UpdateInstaller``). It asks GitHub for the latest release and
-/// sends nothing about the Mac beyond a User-Agent with the app's version (URLSession adds the
-/// language). Builds without a version (CI, `swift run`) never check on their own.
+/// BatteryPulse's requests to the internet all go to GitHub, on ``UpdateNetwork``'s sessions,
+/// which keep no cookies. The check asks for the latest release and sends nothing about the Mac
+/// beyond a User-Agent with the app's version (URLSession adds the language). Once per version, at
+/// least a day after it first ran, an automatic check that reached GitHub also makes the anonymous
+/// version count (``VersionCounterPolicy``): it downloads a small file from the version's release,
+/// with the same User-Agent and a constant language, and nothing else. The only other request is
+/// downloading an update the user chose to install (``UpdateInstaller``). Builds without a version
+/// (CI, `swift run`) never check on their own, and Check Now never counts.
 @Observable
 final class UpdateChecker {
     enum Status: Equatable {
@@ -157,6 +162,53 @@ final class UpdateChecker {
             if !userInitiated, mayOpenWindow { showWindow?() }
         } else {
             status = userInitiated ? .upToDate : .idle
+        }
+        // After the offer is decided, so a window waiting on the check never waits for the count.
+        if !userInitiated { await countVersionIfDue(session: session) }
+    }
+
+    /// The anonymous version count, on an automatic check that reached GitHub: once per version,
+    /// a day after it first ran, and only while the count and automatic checks are on
+    /// (``VersionCounterPolicy/shouldCount(enabled:frequency:current:lastCounted:versionSince:now:)``).
+    /// It downloads the version's counter file, following GitHub's redirect, and ignores the body.
+    /// On the automatic check's session, in its task and its `update.check` interval. A 200 or a
+    /// 404 (no counter on the release) is the version done with; any other answer leaves it for the
+    /// next due automatic check, with no retry of its own.
+    private func countVersionIfDue(session: URLSession) async {
+        let defaults = UserDefaults.standard
+        guard
+            VersionCounterPolicy.shouldCount(
+                enabled: AppSettings.countsVersion, frequency: AppSettings.updateFrequency, current: currentVersion,
+                lastCounted: defaults.string(forKey: AppSettings.lastCountedVersionKey).flatMap(AppVersion.init),
+                versionSince: defaults.object(forKey: AppSettings.versionFirstLaunchKey) as? Date, now: Date()),
+            let url = VersionCounterPolicy.url(for: currentVersion)
+        else { return }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
+        for (field, value) in VersionCounterPolicy.headers(for: currentVersion) {
+            request.setValue(value, forHTTPHeaderField: field)
+        }
+        // The final answer's HTTP status, or a URLError's code (negative) when none came.
+        let code: Int
+        let outcome: VersionCounterPolicy.Outcome
+        do {
+            let (_, response) = try await session.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            outcome = VersionCounterPolicy.outcome(statusCode: statusCode)
+            code = statusCode ?? 0
+        } catch {
+            outcome = .failed
+            code = (error as? URLError)?.code.rawValue ?? 0
+        }
+        if VersionCounterPolicy.marksCounted(outcome) {
+            defaults.set(currentVersion.description, forKey: AppSettings.lastCountedVersionKey)
+        }
+        // Only the outcome's case name and the code log as public, never the URL or an error's
+        // description.
+        switch outcome {
+        case .counted:
+            Diagnostics.update.info("Version count: \(outcome.rawValue, privacy: .public), \(code, privacy: .public)")
+        case .noCounter, .failed:
+            Diagnostics.update.debug("Version count: \(outcome.rawValue, privacy: .public), \(code, privacy: .public)")
         }
     }
 
