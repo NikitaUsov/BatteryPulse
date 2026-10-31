@@ -316,7 +316,7 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
-- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
+- [x] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
   (0.6.0) keeps captures just before and after every charging change, with a timeline. Partly
   settled in 0.6.2's first session (2026-10-23 and 24, the limit at 80 %): the paused state is bit
   24 (0x01000000) of `ChargerData.NotChargingReason`, in `AppleSmartBattery` and its child
@@ -328,8 +328,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   Settings' own record of the last limit, which stayed 80 on battery and at 100 % alike; the SMC's
   `CHLT`, which `bpulse --smc` lists (it prints no `CH*` values; a value read waits for a reviewed
   change); and `pmset -g battlimit`, which prints the file's policy, also only on the adapter. The
-  redacted capture of the hold came with the session's report. Open until it is committed as a
-  test fixture (0.7, QUA-05, `docs/plans/1.0/ROADMAP.md`)
+  redacted capture of the hold came with the session's report and is the
+  `m5-macos27-charge-limit` test fixture (0.7, QUA-05, `docs/plans/1.0/ROADMAP.md`)
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -789,7 +789,7 @@ Deferred from 0.6.1, each for the reason given:
 - [x] CI: `actions/checkout` v7.0.1 and `upload-artifact` v7.0.2, pinned by commit in both
   workflows; `checkout` v6.1.0 turned down, a tag still without a changelog entry
 - [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
-  Charge Limit capture (Stage 1.1; captured in the first session, its fixture still to come); full
+  Charge Limit capture (Stage 1.1; captured in the first session, its fixture committed in 0.7); full
   screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
   1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
   on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,

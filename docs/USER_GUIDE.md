@@ -94,10 +94,17 @@ accessories (see [Accessories](#accessories)).
 - **Overview** — charge with a battery drawn to the exact level, what the battery is doing
   ("Charging at 31.3 W"), time remaining, gauges for charge, maximum capacity and cycle count,
   capacity bars in mAh, and a power-flow diagram from the adapter to the Mac and the battery.
+  When the Charge Limit you set in System Settings → Battery (Apple silicon, macOS 26.4 or later)
+  has stopped charging, the battery reads *Charged to limit*, with a line under it that says so;
+  the menu bar popover and the compact window say *Charged to limit* too. BatteryPulse only reads
+  that the limit holds the charge: it can't read which percentage you set, and it never changes
+  the limit.
 - **Power** — battery voltage, current, power and temperature, and while charging the current
-  and voltage the battery asks the charger for; the power adapter (name, rated power,
-  negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
-  adapter, system load, adapter loss, Low Power Mode and thermal state.
+  and voltage the battery asks the charger for; *Charge limit: Reached* while the Charge Limit
+  holds the charge (a percentage there would only repeat the charge, since macOS stops a few
+  points short of the limit); the power adapter (name, rated power, negotiated voltage and
+  current) and every USB Power Delivery voltage it offers; power from the adapter, system load,
+  adapter loss, Low Power Mode and thermal state.
 - **History** — charge, power and temperature over time; see [History](#history).
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
@@ -390,7 +397,9 @@ notification is on.
 In Settings → Notifications, BatteryPulse can tell you:
 
 - **When charged to** 80, 85, 90, 95 or 100 %. Unplugging around 80 % most of the time slows
-  battery aging.
+  battery aging. This only notifies; to stop charging at a level, set the Charge Limit in System
+  Settings → Battery. A notification above a lower Charge Limit never comes: with the limit at
+  80 %, the battery never reaches 90 %.
 - **When the battery falls to** 10, 20 or 30 % on battery.
 - **When battery service is recommended**, once each time macOS reports a condition other than
   Normal.
@@ -443,8 +452,8 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
 - **Start Tour** plays every scene and animation in turn and switches to the page that shows
   each one best, then starts over. Choose how long each scene stays under **Scene length**.
 - Click a **scene** to show it by hand: fast charging, on battery, low battery, critical
-  battery, fully charged, optimized charging, just plugged in, a worn battery, heavy load, a slow
-  charger, Low Power Mode, or a Mac without a battery.
+  battery, fully charged, optimized charging, the Charge Limit, just plugged in, a worn battery,
+  heavy load, a slow charger, Low Power Mode, or a Mac without a battery.
 - Click an **animation** to watch the battery charge from empty or drain to empty in 20
   seconds.
 
