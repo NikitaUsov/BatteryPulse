@@ -1715,7 +1715,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Проверьте аккумулятор"
+            "value": "Нужна проверка"
           }
         }
       }
@@ -3163,7 +3163,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Полная зарядка к %@ завтра"
+            "value": "Зарядится к %@ завтра"
           }
         }
       }
