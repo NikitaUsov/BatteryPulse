@@ -73,10 +73,12 @@ jobs:
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
       - name: Check Session R's bookkeeping (dry run)
-        # 0.7's M5 session script (plan-0.7.0 W-12), built from 0.6.2's: its questions, the change
-        # record and its restored lines, the logged day's fence, the summary's alerts, the report and
-        # its privacy lint, with nothing of the Mac. Removed with that folder in 0.7's D3.
-        run: bash docs/plans/0.7.0/m5-session.sh dry-run
+        # 0.7's M5 session script (plan-0.7.0 W-12), built from 0.6.2's and copied to
+        # docs/plans/0.7.1/ at 0.7.0's release, which shipped without Session R, for 0.7.1's M5
+        # session: its questions, the change record and its restored lines, the logged day's fence,
+        # the summary's alerts, the report and its privacy lint, with nothing of the Mac. It goes
+        # with that folder at 0.7.1's D3.
+        run: bash docs/plans/0.7.1/m5-session.sh dry-run
 
   macos:
     name: macOS · build & test
@@ -204,17 +206,16 @@ jobs:
           swift scripts/appintents-check.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
-          # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's
-          # copies in the same folder, whose launchers stay as they were), until 0.7's D3 removes the
-          # folder.
-          bash -n docs/plans/0.7.0/m5-session.sh
-          bash -n docs/plans/0.7.0/start-session-r.sh
-          bash -n docs/plans/0.7.0/start-short-session.sh
-          bash -n docs/plans/0.7.0/start-session-b.sh
-          bash -n docs/plans/0.7.0/start-after-publishing.sh
-          swiftc -typecheck docs/plans/0.7.0/swap.swift
-          swiftc -typecheck docs/plans/0.7.0/frames.swift
-          swiftc -typecheck docs/plans/0.7.0/ui.swift
+          # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's),
+          # copied to docs/plans/0.7.1/ at 0.7.0's release for 0.7.1's M5 session, until 0.7.1's D3
+          # removes the folder. 0.6.2's Session B launcher stayed behind with 0.7.0's plan folder.
+          bash -n docs/plans/0.7.1/m5-session.sh
+          bash -n docs/plans/0.7.1/start-session-r.sh
+          bash -n docs/plans/0.7.1/start-short-session.sh
+          bash -n docs/plans/0.7.1/start-after-publishing.sh
+          swiftc -typecheck docs/plans/0.7.1/swap.swift
+          swiftc -typecheck docs/plans/0.7.1/frames.swift
+          swiftc -typecheck docs/plans/0.7.1/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
