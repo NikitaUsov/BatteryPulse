@@ -1,3 +1,42 @@
+## What's new in 0.7.0
+
+- **Widgets you configure:** your Battery widget keeps its look. Control-click it and choose
+  **Edit Widget** to pick what it shows: the charge, maximum capacity, temperature or battery
+  power as its main value; the number with its symbol, a ring or a drawn battery; the time as a
+  clock time or the time left; level colours or monochrome; and, with the Custom layout, the
+  details you want. It now comes in large too, with eight details.
+- **What changed in the look you keep:** a time on the next day says "tomorrow"; a value that
+  needs attention has a symbol before it; a reading over 45 minutes old shows when it was taken
+  ("Updated 14:05"); a battery condition other than Normal, or high heat, takes the last row (in
+  the small widget, the time line's place); medium's values line up at the right edge; a label
+  too long for its place uses a shorter word, such as "Max capacity"; and a Mac without a battery
+  points you to the Accessories widget.
+- **Accessories widget:** your keyboard's, mouse's, trackpad's and headphones' batteries on the
+  desktop or in Notification Center, in small, medium and large. Edit Widget can show only the
+  lowest one, or hide the fully charged ones.
+- **Clicking a widget** opens the matching page in the main window: Overview for the charge,
+  Health for maximum capacity, Power for temperature and battery power, and Accessories for the
+  Accessories widget.
+- **Charged to limit:** when the Charge Limit in System Settings → Battery stops charging,
+  BatteryPulse now says "Charged to limit" in the app, its menu bar panel and the Battery widget,
+  and Power shows "Charge limit: Reached". It can't read the limit's percentage yet.
+- **Percentages** have no space before the % sign in any language, so Russian shows "80%" too.
+- **Anonymous version count.** Once per version, at least a day after you start using it, an
+  automatic update check also downloads a small file, `BatteryPulse-count.txt`, from that
+  version's release; its public download count shows how many Macs use each version. Nothing
+  else is sent: no identifier, nothing about your Mac, its battery or your settings; GitHub sees
+  your IP address, as it does for the update check. It is on by default, never runs when Check
+  for updates is Never, and turns off in Settings → General.
+- **Fixes:** switching from Raw Data to another page no longer leaves Raw Data's table under the
+  new page for a few seconds, and in Russian a few labels in the menu bar panel and Settings are
+  shorter, so they keep to one line.
+- **For scripts:** `bpulse --device <n> --json` writes dates as ISO 8601 strings, like `bpulse
+  --json`; every JSON object `bpulse` prints now has a `formatVersion` field. `--accessories
+  --json` is unchanged.
+
+Updating from 0.6.2: **Install and Relaunch** in the update window installs 0.7.0 from inside
+the app.
+
 ## What's new in 0.6.2
 
 - **Window styles:** a Clear window, and a Translucent one in the dark appearance, no longer
