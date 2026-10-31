@@ -231,6 +231,22 @@ import Testing
         #expect(!UpdateInstallError.swapUnsupported.isIntegrityFailure)
     }
 
+    #if os(macOS)
+    /// On a Mac the check reads a real answer, and the volumes an app lives on (APFS: here CI's
+    /// `/Applications` and its temporary folder, where the swap's folder is made) say they can
+    /// swap, so the check never stops an update there; a `false` would stop every one.
+    @Test func aMacsOwnVolumesCanSwap() throws {
+        let folders = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true), FileManager.default.temporaryDirectory,
+        ]
+        for folder in folders {
+            let swaps = try folder.resourceValues(forKeys: [.volumeSupportsSwapRenamingKey]).volumeSupportsSwapRenaming
+            #expect(swaps == true, "\(folder.path)")
+            #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: swaps) == nil)
+        }
+    }
+    #endif
+
     /// The volume is checked first in the installer's replace, before anything is staged, and the
     /// copy's checks and the widget extension's end still come before the swap.
     @Test func checksTheVolumeBeforeStaging() throws {
