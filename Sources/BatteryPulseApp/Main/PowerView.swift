@@ -22,12 +22,14 @@ struct PowerView: View {
             }
             systemSection
         }
-        // The rows and sections that come with plugging in or a new charge state (the adapter and
-        // USB PD sections, the requested charge, power from the adapter, adapter loss) appear and
-        // go once per event; the rows below them move, so under Reduce Motion it all changes at
-        // once. Battery power, voltage, current and temperature change instantly.
+        // The rows and sections that come with plugging in, a new charge state or the Charge
+        // Limit's hold (the adapter and USB PD sections, the requested charge, the Charge Limit,
+        // power from the adapter, adapter loss) appear and go once per event; the rows below them
+        // move, so under Reduce Motion it all changes at once. Battery power, voltage, current and
+        // temperature change instantly.
         .animation(motion.change, value: key.isPluggedIn)
         .animation(motion.change, value: key.chargeState)
+        .animation(motion.change, value: key.isAtSystemChargeLimit)
         .animation(motion.change, value: hasAdapter)
     }
 
@@ -58,6 +60,11 @@ struct PowerView: View {
                 } else {
                     ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
                 }
+            }
+            // Reached, never a percentage: macOS stops a few points short of the limit and resumes
+            // only after a drop of more than 5 %, so the charge here would read as the limit.
+            if snapshot.isAtSystemChargeLimit {
+                ValueRow("Charge limit", String(localized: "Reached"))
             }
             if let optimized = snapshot.isOptimizedChargingEngaged {
                 // `false` means the feature isn't holding the charge right now, not that it's off.

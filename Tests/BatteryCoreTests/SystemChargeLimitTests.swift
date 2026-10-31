@@ -119,6 +119,24 @@ import Testing
         #expect(WidgetStateWord(s) == .chargedToLimit)
     }
 
+    /// The hold can start with no change of the charge state, so the motion key has a part of its
+    /// own for it, and the Overview's sentence and Power's row move with it.
+    @Test func theMotionKeyChangesWithTheHoldAlone() throws {
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        var notHeld = held
+        notHeld.notChargingReason = 0x80
+        #expect(held.chargeState == notHeld.chargeState)
+        let heldKey = BatteryMotionKey(held)
+        let notHeldKey = BatteryMotionKey(notHeld)
+        #expect(heldKey.isAtSystemChargeLimit)
+        #expect(!notHeldKey.isAtSystemChargeLimit)
+        #expect(heldKey != notHeldKey)
+        var same = notHeldKey
+        same.isAtSystemChargeLimit = true
+        #expect(same == heldKey, "only the hold differs")
+        #expect(!BatteryMotionKey(nil).isAtSystemChargeLimit)
+    }
+
     // MARK: The widget
 
     static func plan(
