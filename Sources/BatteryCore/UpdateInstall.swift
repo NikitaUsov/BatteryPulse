@@ -32,8 +32,11 @@ public enum UpdateInstallError: Error, Sendable, Hashable {
     /// The new copy's `LSMinimumSystemVersion`, `minimum`, is above the running macOS, which
     /// wouldn't open it.
     case needsNewerMacOS(minimum: AppVersion)
+    /// The app's volume can't swap two folders in one rename (its `volumeSupportsSwapRenaming`
+    /// is false), so the new copy can't replace this one without a moment with no app at all.
+    case swapUnsupported
     /// The copy couldn't be made next to the app, or the two couldn't be swapped (another
-    /// volume, a file system without swapping renames, or macOS refused).
+    /// volume, or macOS refused).
     case replaceFailed
     /// The new version is in place but couldn't be opened; the user has to open it.
     case relaunchFailed
@@ -47,7 +50,7 @@ public enum UpdateInstallError: Error, Sendable, Hashable {
         switch self {
         case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature: true
         case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
-            .needsNewerMacOS, .replaceFailed, .relaunchFailed:
+            .needsNewerMacOS, .swapUnsupported, .replaceFailed, .relaunchFailed:
             false
         }
     }
@@ -58,7 +61,7 @@ public enum UpdateInstallError: Error, Sendable, Hashable {
         case .relaunchFailed: .none
         // The update is genuine, but the DMG wouldn't help here: the release page says what the
         // update needs.
-        case .needsNewerMacOS: .releasePage
+        case .needsNewerMacOS, .swapUnsupported: .releasePage
         default: isIntegrityFailure ? .releasePage : .downloadDMG
         }
     }
@@ -204,6 +207,14 @@ public enum UpdateInstallPolicy {
     public static var runningSystem: AppVersion {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         return AppVersion(parts: [version.majorVersion, version.minorVersion, version.patchVersion])
+    }
+
+    /// Whether the app's volume can take the swap, from its `volumeSupportsSwapRenaming`:
+    /// ``UpdateInstallError/swapUnsupported`` only when the volume says it can't. When the
+    /// volume doesn't say (`nil`), the swap is tried, and a refusal is
+    /// ``UpdateInstallError/replaceFailed``.
+    public static func checkSwapRenaming(volumeSupportsSwapRenaming: Bool?) -> UpdateInstallError? {
+        volumeSupportsSwapRenaming == false ? .swapUnsupported : nil
     }
 
     /// The tool the installer attaches, inspects and ejects the DMG with. Since macOS 26 it

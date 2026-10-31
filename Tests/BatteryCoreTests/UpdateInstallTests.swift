@@ -221,6 +221,30 @@ import Testing
         #expect(error.fallback == .releasePage)
     }
 
+    /// Only a volume that says it can't swap stops the install before the copy; one that doesn't
+    /// say gets the swap tried.
+    @Test func refusesAVolumeThatCantSwap() {
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: false) == .swapUnsupported)
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: true) == nil)
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: nil) == nil)
+        #expect(UpdateInstallError.swapUnsupported.fallback == .releasePage)
+        #expect(!UpdateInstallError.swapUnsupported.isIntegrityFailure)
+    }
+
+    /// The volume is checked first in the installer's replace, before anything is staged, and the
+    /// copy's checks and the widget extension's end still come before the swap.
+    @Test func checksTheVolumeBeforeStaging() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/Updates/UpdateInstaller.swift").code
+        let replace = try #require(code.range(of: "static func replace("))
+        let next = code.range(of: "static func ", range: replace.upperBound..<code.endIndex)?.lowerBound
+        let body = code[replace.upperBound..<(next ?? code.endIndex)]
+        let volume = try #require(body.range(of: ".volumeSupportsSwapRenamingKey"))
+        let check = try #require(body.range(of: "UpdateInstallPolicy.checkSwapRenaming("))
+        let staging = try #require(body.range(of: ".itemReplacementDirectory"))
+        #expect(volume.upperBound <= check.lowerBound)
+        #expect(check.upperBound <= staging.lowerBound)
+    }
+
     @Test func readsLSMinimumSystemVersionStrictly() {
         #expect(UpdateInstallPolicy.minimumSystem("27.0") == AppVersion(parts: [27, 0]))
         #expect(UpdateInstallPolicy.minimumSystem("27.1.2")?.parts == [27, 1, 2])
@@ -457,7 +481,7 @@ import Testing
     private static let everyError: [UpdateInstallError] = [
         .developmentBuild, .translocated, .folderNotWritable, .notSigned, .notNewer, .downloadFailed,
         .digestMismatch, .badSignature, .mountFailed, .unexpectedBundle, .invalidCodeSignature,
-        .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])), .replaceFailed, .relaunchFailed,
+        .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])), .swapUnsupported, .replaceFailed, .relaunchFailed,
     ]
 
     /// What each error leads to: its fallback, and whether it is an integrity failure. A switch, so
@@ -469,14 +493,14 @@ import Testing
             (.downloadDMG, false)
         case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature:
             (.releasePage, true)
-        case .needsNewerMacOS: (.releasePage, false)
+        case .needsNewerMacOS, .swapUnsupported: (.releasePage, false)
         case .relaunchFailed: (.none, false)
         }
     }
 
     /// After a failed integrity check, or for a release without a signature, the window offers
     /// only the release page, never the DMG the app refused; and only the release page for an
-    /// update this Mac can't open.
+    /// update this Mac can't open or this volume can't swap in.
     @Test func everyErrorMapsToItsFallback() {
         #expect(Set(Self.everyError).count == Self.everyError.count)
         for error in Self.everyError {
