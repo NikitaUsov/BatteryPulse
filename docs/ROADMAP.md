@@ -776,8 +776,10 @@ Deferred from 0.6.1, each for the reason given:
 - [x] Check Now takes over a running automatic check (E10): it cancels the automatic one and
   checks at once on any network, instead of waiting for a check that Low Data Mode could refuse;
   `UpdatePolicy.checkNow(during:)` decides, tested on Linux
-- [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
-  SEC-18's research
+- `-noverify` when the installer mounts the DMG (SEC-15): not adopted. Timed on the M5 with
+  0.6.1's DMG, five runs each, it saved nothing (`hdiutil attach` 152 ms at the median, 158 ms with
+  the flag), and `diskutil image attach`, which the installer uses now, has no such option
+- [ ] SEC-18's research
 - [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
   unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
   of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
