@@ -776,8 +776,20 @@ Deferred from 0.6.1, each for the reason given:
 - [x] Check Now takes over a running automatic check (E10): it cancels the automatic one and
   checks at once on any network, instead of waiting for a check that Low Data Mode could refuse;
   `UpdatePolicy.checkNow(during:)` decides, tested on Linux
-- [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
-  SEC-18's research
+- `-noverify` when the installer mounts the DMG (SEC-15): not adopted. Timed on the M5 with
+  0.6.1's DMG, five runs each, it saved nothing (`hdiutil attach` 152 ms at the median, 158 ms with
+  the flag), and `diskutil image attach`, which the installer uses now, has no such option
+- [x] SEC-18's research (done in 0.7): what a self-signed code identity would keep across an
+  update. macOS knows an updated app as the same by its designated requirement, and an ad-hoc
+  signature's requirement names only that build (TN3127), so an update loses what is recorded
+  against it: the permissions in Privacy & Security. BatteryPulse asks for none of them (it
+  declares no usage description), and what it does have survived the in-app updates recorded on
+  the M5, ad-hoc signed: Open at login and the placed widget from 0.6.0 to 0.6.1; Open at login,
+  notification permission and History from 0.6.1 to 0.6.2, with a desktop widget in place after
+  it. A self-signed identity has no Team ID, so it brings no App Group, and Gatekeeper still asks
+  for Open Anyway on a DMG install; it would add a second secret and a signing keychain in CI,
+  and the switch to it, like any later change of its certificate, changes the requirement once.
+  Not adopted unless an update is seen losing something; 0.9.0 weighs it (SEC-02)
 - [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
   unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
   of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
