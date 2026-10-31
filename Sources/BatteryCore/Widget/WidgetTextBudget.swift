@@ -13,7 +13,8 @@
 /// - A line under it, small's detail and attention row, and medium's rows are one line at full
 ///   size. Where a label or a condition's words don't fit, the widget shows the shorter key
 ///   (``BatteryWidgetField/shortLabelKey``, ``WidgetCondition/shortKey``), so a place fits when one
-///   of them does.
+///   of them does. Each language picks on its own: small shows Maximum capacity and Service
+///   Recommended in full in English and shorter in Russian, laid out alike.
 /// - A message (an empty state) wraps; the Russian takes as many lines as the English.
 /// - Large's and extra large's tiles hold a label on one line over a value on up to two.
 enum WidgetTextBudget {

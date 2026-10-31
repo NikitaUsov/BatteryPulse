@@ -254,9 +254,10 @@ extension BatteryWidgetField {
     }
 
     /// The shorter label the widget shows where the label and its value don't fit one line at
-    /// full size: the Russian for Maximum capacity beside 100% in medium. Every language has it,
-    /// so the widget picks the first that fits (``WidgetTextBudget``) and the two languages lay
-    /// out alike; VoiceOver keeps ``labelKey``. `nil` for a label that always fits.
+    /// full size: the Russian for Maximum capacity beside 100% in medium. Every language has it
+    /// and picks the first that fits on its own (``WidgetTextBudget``), so the two languages lay
+    /// out alike even where only one shows the shorter label; VoiceOver keeps ``labelKey``. `nil`
+    /// for a label that always fits.
     var shortLabelKey: String? {
         switch self {
         case .maximumCapacity: "Max capacity"

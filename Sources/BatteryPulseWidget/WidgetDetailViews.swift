@@ -6,9 +6,11 @@ import WidgetKit
 
 /// A line under the main value: one line at full size, and a VoiceOver element of its own,
 /// except the state, which the charge's element reads. Where a detail's label or the attention
-/// row's words don't fit, the line takes the field's or the condition's shorter words (the same
-/// in every language, so a Russian line lays out as the English one does); only a line longer
-/// still shrinks a little. A value is never cut.
+/// row's words don't fit, the line takes the field's or the condition's shorter words. Every
+/// language has them and picks them on its own, so a Russian line can show the shorter words
+/// beside an English line with the full ones (small's Maximum capacity and Service Recommended),
+/// laid out alike: one line at full size. Only a line longer still shrinks a little. A value is
+/// never cut.
 struct WidgetLineView: View {
     let line: WidgetLine
     let tinted: Bool
@@ -88,8 +90,9 @@ struct WidgetDetailList: View {
 }
 
 /// A detail's label and its value on one line at full size: the field's label, or its shorter one
-/// where the label doesn't fit beside the value (the same in every language, so the two lay out
-/// alike), or a state or condition alone, which says what it is. Only when nothing fits does the
+/// where the label doesn't fit beside the value (every language has one, so a language whose
+/// label is longer lays out as the others do, with the shorter words), or a state or condition
+/// alone, which says what it is. Only when nothing fits does the
 /// label shrink a little, then truncate; the value never does. Medium's row `spreads` across its
 /// column, with the value at the trailing edge; small's line keeps the value beside its label.
 struct WidgetDetailRow: View {
