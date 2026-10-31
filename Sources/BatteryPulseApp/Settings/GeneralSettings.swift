@@ -3,8 +3,8 @@ import AppKit
 import BatteryCore
 import SwiftUI
 
-/// Where the app appears, startup and language. Also shown in the welcome window, without the
-/// window style.
+/// Where the app appears, startup, updates, the version count and language. Also shown in the
+/// welcome window, without the window style, so a fresh install sees the count's setting first.
 struct GeneralSettings: View {
     /// Settings shows the window style after the window to open; the welcome window doesn't.
     var includesWindowStyle = false
@@ -13,6 +13,8 @@ struct GeneralSettings: View {
     @AppStorage(AppSettings.showWelcomeAtLaunchKey) private var showWelcomeAtLaunch = false
     @AppStorage(AppSettings.updateFrequencyKey) private var updateFrequency = UpdateFrequency.daily
     @AppStorage(AppSettings.prefersCompactWindowKey) private var prefersCompactWindow = false
+    /// Read as on while missing; only the toggle writes it.
+    @AppStorage(AppSettings.anonymousVersionCountKey) private var countsVersion = VersionCounterPolicy.isOnByDefault
     @Environment(LaunchAtLoginModel.self) private var launchAtLogin
     @Environment(UpdateChecker.self) private var updater
 
@@ -95,6 +97,17 @@ struct GeneralSettings: View {
         } footer: {
             Text(
                 "To check, BatteryPulse asks GitHub whether a newer version exists. GitHub sees your IP address, the app's version and your language, as with any web request. Check Now works with any choice."
+            )
+        }
+
+        // The version count rides on the automatic checks: under Never it can't run, and the
+        // toggle keeps its value until they are on again.
+        Section {
+            Toggle("Include this Mac in the anonymous version count", isOn: $countsVersion)
+                .disabled(updateFrequency == .never)
+        } footer: {
+            Text(
+                "Once per version, at least a day after you start using it, an automatic update check also downloads a small file from that version's release on GitHub. Its public download count shows how many Macs use each version. Nothing else is sent: no identifier and nothing about this Mac, its battery or your settings. Nothing is counted when Check for updates is Never."
             )
         }
 
