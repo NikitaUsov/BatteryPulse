@@ -60,7 +60,8 @@ public struct MotionPolicy: Sendable, Equatable {
 /// A live reading every 2 s changes the snapshot almost every time (power, voltage, current,
 /// temperature, time estimates), so nothing animates on the snapshot itself. This key changes
 /// only on battery events: the whole percent, the level tier, plugging in or out, the charge
-/// state, the battery symbol, the direction of the battery's power flow and Low Power Mode.
+/// state, the Charge Limit's hold, the battery symbol, the direction of the battery's power flow
+/// and Low Power Mode.
 public struct BatteryMotionKey: Sendable, Hashable {
     /// Which way power moves through the battery, with the dead band the power-flow label uses.
     public enum Flow: Sendable, Hashable {
@@ -91,6 +92,10 @@ public struct BatteryMotionKey: Sendable, Hashable {
     /// Low Power Mode as the snapshot reports it (a Demo Mode scene can simulate it). The app's
     /// own motion follows the real setting through ``MotionPolicy/reducesResources``.
     public var isLowPowerMode: Bool
+    /// macOS's Charge Limit holds the charge (``BatterySnapshot/isAtSystemChargeLimit``). The hold
+    /// can start with no change of ``chargeState``: plugged in near the limit, the state goes from
+    /// discharging to not charging first, and the hold's bit may follow.
+    public var isAtSystemChargeLimit: Bool
 
     /// A missing snapshot (before the first reading, or no battery) gives a key of its own.
     public init(_ snapshot: BatterySnapshot?) {
@@ -102,10 +107,11 @@ public struct BatteryMotionKey: Sendable, Hashable {
         symbolName = BatteryPresentation.symbolName(for: snapshot)
         flow = Flow(batteryWatts: snapshot?.batteryPowerWatts)
         isLowPowerMode = snapshot?.isLowPowerModeEnabled == true
+        isAtSystemChargeLimit = snapshot?.isAtSystemChargeLimit == true
     }
 
     /// The key of an iPhone's or iPad's battery: the same parts as a Mac's, without Low Power
-    /// Mode (the device doesn't report it). `nil` (no read yet) gives a key of its own.
+    /// Mode and the Charge Limit's hold (the device reports neither). `nil` (no read yet) gives a key of its own.
     public init(device battery: IDeviceBattery?) {
         percent = battery?.chargePercent.map { Int($0.rounded(.toNearestOrEven)) }
         tier =
@@ -115,5 +121,6 @@ public struct BatteryMotionKey: Sendable, Hashable {
         symbolName = BatteryPresentation.symbolName(percent: battery?.chargePercent, state: battery?.chargeState)
         flow = Flow(batteryWatts: battery?.batteryPowerWatts)
         isLowPowerMode = false
+        isAtSystemChargeLimit = false
     }
 }

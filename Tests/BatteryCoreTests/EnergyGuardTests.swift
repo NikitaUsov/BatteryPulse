@@ -13,7 +13,7 @@ import Testing
 ///   the iPhone and iPad transport's timeouts: wake-ups come from tasks that sleep;
 /// - EN-8: `beginActivity`, a power assertion or `performExpiringActivity` outside the installer,
 ///   whose one activity is user-initiated and ended by a `defer`;
-/// - EN-11: a widget reload outside `WidgetRefresher`, which asks `WidgetReloadPolicy`.
+/// - EN-11: a widget reload outside `WidgetRefresher`, which asks `WidgetReloadPlanner`.
 @Suite struct EnergyGuardTests {
     /// A sleep without a tolerance: it runs once per user action, or in a terminal.
     struct OneShot: Sendable {
@@ -30,7 +30,7 @@ import Testing
             reason: "Copy Report's \"Copied\" label, once per click"),
         OneShot(
             path: "BatteryPulseApp/App/WidgetRefresher.swift", interval: ".seconds(1)",
-            reason: "the wait after ending the previous version's widget extension, once after an update"),
+            reason: "the wait after ending the previous widget extension, once after an update or a language change"),
         OneShot(
             path: "bpulse/main.swift", interval: ".seconds(interval)",
             reason: "bpulse --watch: the interval the user typed, while it runs in a terminal"),
@@ -79,7 +79,7 @@ import Testing
                 literals: ["reloadAllTimelines", "reloadTimelines"],
                 pattern: words(#/\breloadAllTimelines\b|\breloadTimelines\b/#),
                 allowed: ["BatteryPulseApp/App/WidgetRefresher.swift"],
-                message: "a widget reload outside WidgetRefresher and its WidgetReloadPolicy"),
+                message: "a widget reload outside WidgetRefresher and its WidgetReloadPlanner"),
         ]
     }
 

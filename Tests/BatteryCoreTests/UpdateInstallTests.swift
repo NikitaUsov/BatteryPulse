@@ -327,6 +327,24 @@ import Testing
         #expect(between == "guard")
     }
 
+    /// The pre-swap end reloads nothing, before or after: a reload would start the old extension
+    /// again, and at the version change WidgetKit would fetch the configurable widget's descriptor
+    /// from it, which it then keeps for that build number. The new version's first launch still
+    /// ends a previous extension, for an update by an installer without the pre-swap end or a copy
+    /// from the DMG.
+    @Test func thePreSwapEndReloadsNothing() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/App/WidgetRefresher.swift").code
+        let start = try #require(code.range(of: "static func endExtensionBeforeSwap()"))
+        let end = try #require(code.range(of: "\n    }\n", range: start.upperBound..<code.endIndex))
+        let body = code[start.upperBound..<end.lowerBound]
+        #expect(body.contains("kill("))
+        for call in ["reloadAllTimelines", "reloadTimelines", "endPreviousExtension"] {
+            #expect(!body.contains(call), "\(call)")
+        }
+        let launch = try SourceScanner.file("BatteryPulseApp/App/BatteryPulseApp.swift").code
+        #expect(launch.contains("WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)"))
+    }
+
     /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a
     /// path that would break any quoting.
     @Test func relaunchPassesThePathUntouched() throws {

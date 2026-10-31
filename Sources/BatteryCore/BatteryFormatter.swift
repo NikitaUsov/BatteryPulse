@@ -43,9 +43,31 @@ public struct BatteryFormatter: Sendable, Equatable {
         self.symbols = symbols
     }
 
-    /// `91` → "91%" (en) or "91 %" (ru).
+    /// `91` → "91%", and `99.5` with one fraction digit → "99.5%" (en) or "99,5%" (ru): the
+    /// locale's digits, separators and sign, with no space between the number and the sign, in
+    /// every locale. Russian, German and French write one ("91 %"); the app never does. Every
+    /// percentage the app, the widgets and their VoiceOver labels show comes from here.
     public func percent(_ value: Double, fractionDigits: Int = 0) -> String {
-        (value / 100).formatted(.percent.precision(.fractionLength(fractionDigits)).locale(locale))
+        Self.closingUp(
+            (value / 100).formatted(.percent.precision(.fractionLength(fractionDigits)).locale(locale)))
+    }
+
+    /// `text` without its spaces of any kind but the digit groups' separator, the only one that
+    /// sits between two digits: "12 345,6 %" → "12 345,6%", "% 80" → "%80".
+    static func closingUp(_ text: String) -> String {
+        guard text.contains(where: \.isWhitespace) else { return text }
+        let characters = Array(text)
+        var closed = ""
+        for (index, character) in characters.enumerated() {
+            if character.isWhitespace {
+                let groupsDigits =
+                    index > 0 && index + 1 < characters.count && characters[index - 1].isNumber
+                    && characters[index + 1].isNumber
+                guard groupsDigits else { continue }
+            }
+            closed.append(character)
+        }
+        return closed
     }
 
     /// `-10.34` → "−10.3 W" (en); Russian uses a decimal comma and its own unit symbol.

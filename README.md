@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/NikitaUsov/BatteryPulse/actions/workflows/ci.yml)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
-![Platforms](https://img.shields.io/badge/platforms-macOS%2027%2B%20%7C%20iOS%2027%2B-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%2027%2B-lightgrey)
 ![Apple Silicon](https://img.shields.io/badge/Mac-Apple%20Silicon-black?logo=apple)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue)](LICENSE)
 
@@ -11,8 +11,8 @@ capacity in mAh, temperature and cell voltages, live power flow, history, and po
 details down to its USB Power Delivery profiles. Built with SwiftUI and Liquid Glass, in English and Russian, with no third-party
 dependencies.
 
-> **Status: early development**, verified on a MacBook Air M5 with macOS 27. The iOS app comes
-> later. See the [roadmap](docs/ROADMAP.md) and the [User Guide](docs/USER_GUIDE.md).
+> **Status: early development**, verified on a MacBook Air M5 with macOS 27. See the
+> [roadmap](docs/ROADMAP.md) and the [User Guide](docs/USER_GUIDE.md).
 
 ## Download
 
@@ -81,9 +81,15 @@ dependencies.
   to 10–30 %, when battery service is recommended, when the Mac runs hot, and when an
   accessory falls to 10–30 %.
 
-**Widget** (new in 0.3)
-- Small and medium widgets for the desktop and Notification Center: charge, state, when the
-  battery will be full or empty, maximum capacity, cycles and temperature.
+**Widgets** (configurable from 0.7)
+- A Battery widget for the desktop and Notification Center, in small, medium and large: charge,
+  state, when the battery will be full or empty, maximum capacity, cycles and temperature as it
+  comes, and in Edit Widget the main value, a ring or a drawn battery, clock time or time left,
+  level colors or monochrome and the details you choose. A widget placed before 0.7 keeps its
+  look.
+- An Accessories widget, in the same three sizes: the batteries of your keyboard, mouse,
+  trackpad and headphones, all of them or the lowest.
+- A click opens the matching page in the main window.
 
 **Menu bar**
 - Any mix of the battery icon, charge, battery power and temperature.
@@ -119,10 +125,11 @@ dependencies.
   glass, white content). Reduce Transparency or Increase Contrast gives Standard.
 - Native SwiftUI with Liquid Glass and no third-party code. No root and no kernel extension;
   the SMC is only ever read. Updates are event-driven, plus one reading a minute for the
-  history while recording is on, so it uses almost no CPU in the background. The only requests to the internet are an
-  optional update check against GitHub releases, which sends nothing about your Mac, and the
-  download of an update you chose to install. Reading an iPhone or iPad over Wi-Fi (opt-in)
-  stays on your local network.
+  history while recording is on, so it uses almost no CPU in the background. It reaches the
+  internet only to talk to GitHub: an optional update check against GitHub releases, which sends
+  nothing about your Mac, from 0.7 an anonymous version count once per version (see
+  [Privacy](#privacy)), and the download of an update you chose to install. Reading an iPhone or
+  iPad over Wi-Fi (opt-in) stays on your local network.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
   (Settings → General), and a What's New window after updates that add features. From 0.4.0,
   *Install and Relaunch* installs the next version from inside the app; each release is
@@ -140,6 +147,25 @@ scripts/build-app.sh          # build build/BatteryPulse.app and build/BatteryPu
 
 A copy you build yourself opens without the first-launch step. CI also uploads a DMG for every
 run as a workflow artifact (needs a GitHub sign-in; kept for 90 days).
+
+## Privacy
+
+BatteryPulse has no account, no analytics service and no server of its own. Your battery
+readings, history, devices and settings stay on your Mac. It connects to the internet only to
+reach GitHub: to check for updates (daily, weekly, monthly or never, as you choose in Settings →
+General), to download an update you chose to install, and, from 0.7, for an anonymous version
+count. Once per version, at least a day after you start using it, an automatic update check also
+downloads a small file from that version's release on GitHub. GitHub counts downloads, and that
+public count is the only number the developer gets: how many Macs use each version. No
+identifier of any kind is sent, no cookie is kept, and nothing about your Mac, its battery or
+your settings is included. As with any web request, GitHub sees your IP address and the app's
+version, just as it does for the update check, under GitHub's own privacy statement. The
+developer never sees addresses, only totals that anyone can read through GitHub's API. The count
+is on by default, never happens when Check for updates is Never, and turns off with **Include
+this Mac in the anonymous version count** in Settings → General. Reading an iPhone or iPad over
+Wi-Fi (opt-in) stays on your local network.
+
+The [User Guide](docs/USER_GUIDE.md#privacy) says when each request happens.
 
 ## Command-line report
 
@@ -189,21 +215,18 @@ current and marks it with `≈`.
 
 Building requires an Apple Silicon Mac with macOS 27 and Xcode 27.
 
-## What each platform exposes
+## What macOS exposes
 
-| Data                                   | macOS | iOS                     |
-|----------------------------------------|:-----:|:-----------------------:|
-| Charge level and charging state        | ✅    | ✅                      |
-| Time to empty / full                   | ✅    | estimated by the app    |
-| Health, cycle count, capacity (mAh)    | ✅    | via analytics import*   |
-| Voltage, current, battery power        | ✅    | —                       |
-| System input, load, adapter loss       | ✅    | —                       |
-| Cell voltages, battery temperature     | ✅†   | via analytics import*   |
-| Power adapter details                  | ✅    | —                       |
-| Low Power Mode, thermal state          | ✅    | ✅                      |
-
-\* iOS doesn't expose these to App Store apps. The planned workaround is to import the
-analytics file that iOS lets you export from Settings. No private APIs are involved.
+| Data                                   | macOS |
+|----------------------------------------|:-----:|
+| Charge level and charging state        | ✅    |
+| Time to empty / full                   | ✅    |
+| Health, cycle count, capacity (mAh)    | ✅    |
+| Voltage, current, battery power        | ✅    |
+| System input, load, adapter loss       | ✅    |
+| Cell voltages, battery temperature     | ✅†   |
+| Power adapter details                  | ✅    |
+| Low Power Mode, thermal state          | ✅    |
 
 † macOS 27 moved them from `AppleSmartBattery` to the registry entries below it (the pack and
 one bank per cell). BatteryPulse reads those, and the SMC's battery keys as a second source for
@@ -219,9 +242,11 @@ needed.
 BatteryCore   platform-independent models, parsing, metrics, raw-value decoding, demo data,
               text report (tested on Linux)
 BatterySource the battery and accessory reads: IOKit and the read-only SMC (macOS) / UIDevice
-              (iOS), with their loggers and signposts; the widget needs nothing more
+              (iOS), with their loggers and signposts; with BatteryCore and BatteryArt, all the
+              widget links
 BatteryKit    on top of BatterySource: demo providers, an @Observable BatteryMonitor, iPhone and
               iPad reads, update signatures
+BatteryArt    the drawn battery icon's painter, shared by the menu bar and the widget (macOS)
 BatteryPulse  SwiftUI app: main and compact windows, menu bar item, history, notifications,
               update check, settings (Sources/BatteryPulseApp)
 BatteryPulseWidget  WidgetKit extension, wrapped into the app as an .appex by build-app.sh

@@ -193,7 +193,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Осталось примерно %@"
+            "value": "Осталось около %@"
           }
         }
       }
@@ -254,6 +254,18 @@
         }
       }
     },
+    "Accessories widget": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the title of the Accessories widget's row.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет «Аксессуары»"
+          }
+        }
+      }
+    },
     "Accessory": {
       "extractionState": "manual",
       "comment": "Kind of accessory that macOS doesn't name",
@@ -262,17 +274,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Аксессуар"
-          }
-        }
-      }
-    },
-    "Accessory batteries": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Аккумуляторы аксессуаров"
           }
         }
       }
@@ -417,6 +418,18 @@
         }
       }
     },
+    "All accessories are fully charged": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: the message when Hide fully charged leaves out every accessory",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все аксессуары полностью заряжены"
+          }
+        }
+      }
+    },
     "All History…": {
       "extractionState": "manual",
       "comment": "History → Export menu: the minute readings and the daily health as JSON",
@@ -435,7 +448,19 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чтобы завершить, разрешите BatteryPulse в разделе «Объекты входа»."
+            "value": "Разрешите BatteryPulse в «Объектах входа»."
+          }
+        }
+      }
+    },
+    "Always": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Update time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Всегда"
           }
         }
       }
@@ -448,6 +473,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Анимации"
+          }
+        }
+      }
+    },
+    "Anonymous version count": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Анонимный подсчёт версий"
           }
         }
       }
@@ -472,6 +508,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расширенный %@"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Layout, each size's own details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически"
+          }
+        }
+      }
+    },
+    "Automatic layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the summary of the Automatic layout",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматический макет"
           }
         }
       }
@@ -523,6 +583,18 @@
         }
       }
     },
+    "Balance": {
+      "extractionState": "manual",
+      "comment": "Widget: Cell balance where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс"
+          }
+        }
+      }
+    },
     "Banks": {
       "extractionState": "manual",
       "comment": "Raw Data toolbar switch: the cell bank entries (AppleSmartBatteryBank) and their cells",
@@ -531,6 +603,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Группы"
+          }
+        }
+      }
+    },
+    "Batteries of your keyboard, mouse, trackpad and headphones.": {
+      "extractionState": "manual",
+      "comment": "Widget gallery: the Accessories widget's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккумуляторы клавиатуры, мыши, трекпада и наушников."
           }
         }
       }
@@ -1126,14 +1210,14 @@
         }
       }
     },
-    "Bitfield of reasons the battery is not charging; Apple does not document the bits.": {
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты."
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд."
           }
         }
       }
@@ -1146,17 +1230,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Битовое поле причин, по которым заблокирован сам контроллер зарядки."
-          }
-        }
-      }
-    },
-    "Bluetooth keyboards, mice, trackpads and headphones in the menu bar panel and on the Accessories page, with an optional low-battery notification.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд клавиатур, мышей, трекпадов и наушников Bluetooth в панели строки меню и на странице «Аксессуары», а также уведомление о низком заряде по желанию."
           }
         }
       }
@@ -1251,14 +1324,14 @@
         }
       }
     },
-    "Capacity held back below 0 % that is not counted in FullChargeCapacity.": {
+    "Capacity held back below 0% that is not counted in FullChargeCapacity.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ёмкость, резервируемая ниже 0 % и не учитываемая в FullChargeCapacity."
+            "value": "Ёмкость, резервируемая ниже 0% и не учитываемая в FullChargeCapacity."
           }
         }
       }
@@ -1306,6 +1379,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Элемент %@"
+          }
+        }
+      }
+    },
+    "Cell balance": {
+      "extractionState": "manual",
+      "comment": "Widget detail: the spread between the highest and lowest cell voltage, in mV",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разброс элементов"
           }
         }
       }
@@ -1451,6 +1536,18 @@
         }
       }
     },
+    "Charge limit": {
+      "extractionState": "manual",
+      "comment": "Power's row, the Battery widget's detail and the demo scene's title: macOS's Charge Limit (System Settings → Battery), not the app's own \"When charged to\" notification",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лимит зарядки"
+          }
+        }
+      }
+    },
     "Charge moved since the last DOD0 reading; positive = discharged, negative = charged.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1463,13 +1560,26 @@
         }
       }
     },
-    "Charge, time remaining and battery health.": {
+    "Charge, time remaining and the details you choose.": {
       "extractionState": "manual",
+      "comment": "Widget gallery: the Battery widget's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, оставшееся время и состояние аккумулятора."
+            "value": "Заряд, оставшееся время и выбранные подробности."
+          }
+        }
+      }
+    },
+    "Charged to limit": {
+      "extractionState": "manual",
+      "comment": "Battery state: macOS's Charge Limit (System Settings → Battery) stopped charging and holds the charge; Apple's battery menu says \"Charged to [%] Limit\"",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряжено до лимита"
           }
         }
       }
@@ -1578,6 +1688,18 @@
         }
       }
     },
+    "Charging stopped at the Charge Limit set in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Overview, below the state, and the Charge limit demo scene: macOS's Charge Limit (System Settings → Battery) stopped charging; BatteryPulse only reads it",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка остановлена на уровне Лимита зарядки, заданного в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
     "Check Again": {
       "extractionState": "manual",
       "localizations": {
@@ -1595,7 +1717,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Проверьте аккумулятор"
+            "value": "Нужна проверка"
           }
         }
       }
@@ -1667,6 +1789,30 @@
         }
       }
     },
+    "Choose Accessories": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Accessories widget configuration's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать аксессуары"
+          }
+        }
+      }
+    },
+    "Choose Battery Details": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Battery widget configuration's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать подробности об аккумуляторе"
+          }
+        }
+      }
+    },
     "Choose BatteryPulse under Applications in Language & Region.": {
       "extractionState": "manual",
       "localizations": {
@@ -1678,13 +1824,26 @@
         }
       }
     },
-    "Choose Frosted in Settings → General to let the desktop show through. Translucent and Clear are in beta: turn on Beta window styles in Settings → Advanced.": {
+    "Choose what the Battery widget shows.": {
       "extractionState": "manual",
+      "comment": "Widget edit sheet: the Battery widget configuration's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите стиль «Матовый» в разделе «Настройки» → «Основные», чтобы сквозь окно просвечивал рабочий стол. «Полупрозрачный» и «Прозрачный» — бета-стили: включите «Бета-стили окон» в разделе «Настройки» → «Дополнения»."
+            "value": "Выберите, что показывает виджет «Аккумулятор»."
+          }
+        }
+      }
+    },
+    "Choose which accessory batteries the widget shows.": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the Accessories widget configuration's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, аккумуляторы каких аксессуаров показывает виджет."
           }
         }
       }
@@ -1745,6 +1904,18 @@
         }
       }
     },
+    "Clock time": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Time, the clock time the charge ends or the battery runs out",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время окончания"
+          }
+        }
+      }
+    },
     "Close": {
       "extractionState": "manual",
       "localizations": {
@@ -1764,6 +1935,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Грубая оценка состояния аккумулятора: Good, Fair, Poor или Check Battery."
+          }
+        }
+      }
+    },
+    "Colors": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: level colours or monochrome",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цвета"
           }
         }
       }
@@ -1908,6 +2091,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Продолжить"
+          }
+        }
+      }
+    },
+    "Control-click the Battery widget and choose Edit Widget to pick what it shows, now in a large size too. A placed widget keeps its look, and a click opens the matching page.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the configurable Battery widget's row. Edit Widget is the widget's menu item in macOS.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите виджет «Аккумулятор», удерживая клавишу Control, и выберите «Изменить виджет», чтобы задать, что он показывает, — теперь и в большом размере. Размещённый виджет сохраняет свой вид, а нажатие на него открывает нужную страницу."
           }
         }
       }
@@ -2154,6 +2349,30 @@
         }
       }
     },
+    "Custom": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Layout, the chosen details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вручную"
+          }
+        }
+      }
+    },
+    "Custom layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the summary of the Custom layout",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Свой макет"
+          }
+        }
+      }
+    },
     "Cycle count": {
       "extractionState": "manual",
       "localizations": {
@@ -2197,6 +2416,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расчётное число циклов перезарядки аккумулятора (регистр контроллера 0x9C)."
+          }
+        }
+      }
+    },
+    "Cycle life used": {
+      "extractionState": "manual",
+      "comment": "Widget detail: the share of the battery's rated cycle count used, in percent",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Израсходовано циклов"
           }
         }
       }
@@ -2338,6 +2569,18 @@
         }
       }
     },
+    "Detail": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: one of the Battery widget's details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показатель"
+          }
+        }
+      }
+    },
     "Details": {
       "extractionState": "manual",
       "localizations": {
@@ -2457,6 +2700,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Разрядка до нуля"
+          }
+        }
+      }
+    },
+    "Drawn battery": {
+      "extractionState": "manual",
+      "comment": "Widget main visual: a battery drawn like the menu bar's Modern icon style",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рисунок аккумулятора"
           }
         }
       }
@@ -2603,17 +2858,6 @@
         }
       }
     },
-    "Every icon style now has the size and bolt of the system's battery icon, and Percentage Inside shows the charge the way macOS does.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Все стили значка теперь повторяют размер и молнию системного значка аккумулятора, а «Процент внутри» показывает заряд так же, как macOS."
-          }
-        }
-      }
-    },
     "Everyday work, unplugged.": {
       "extractionState": "manual",
       "comment": "Demo scene subtitle",
@@ -2645,17 +2889,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Экспортировать снимок…"
-          }
-        }
-      }
-    },
-    "Export history": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Экспорт истории"
           }
         }
       }
@@ -2857,6 +3090,18 @@
         }
       }
     },
+    "From adapter": {
+      "extractionState": "manual",
+      "comment": "Widget: Power from adapter where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "От адаптера"
+          }
+        }
+      }
+    },
     "From full to 2 percent in 20 seconds, through the low and critical levels.": {
       "extractionState": "manual",
       "comment": "Demo animation subtitle",
@@ -2888,6 +3133,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Полная зарядка к %@"
+          }
+        }
+      }
+    },
+    "Full at %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time charging ends, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядится к %@ завтра"
           }
         }
       }
@@ -3003,7 +3260,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "До полной зарядки примерно %@"
+            "value": "До полной зарядки около %@"
           }
         }
       }
@@ -3299,6 +3556,18 @@
         }
       }
     },
+    "Hide fully charged": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: a switch of the Accessories widget that leaves out accessories whose battery is full",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скрывать полностью заряженные"
+          }
+        }
+      }
+    },
     "High": {
       "extractionState": "manual",
       "localizations": {
@@ -3494,6 +3763,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Используется"
+          }
+        }
+      }
+    },
+    "Include this Mac in the anonymous version count": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Учитывать этот Mac в анонимном подсчёте версий"
           }
         }
       }
@@ -3769,6 +4049,18 @@
         }
       }
     },
+    "Last charge": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: Last known charge where it does not fit one line",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последний заряд"
+          }
+        }
+      }
+    },
     "Last checked %@": {
       "extractionState": "manual",
       "comment": "%@ is a relative date such as 'yesterday'",
@@ -3804,6 +4096,18 @@
         }
       }
     },
+    "Lasts until %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: the time the battery runs out, on the next day. %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хватит до %@ завтра"
+          }
+        }
+      }
+    },
     "Lasts until about %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3811,6 +4115,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Хватит примерно до %@"
+          }
+        }
+      }
+    },
+    "Layout": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Automatic or Custom details",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Макет"
           }
         }
       }
@@ -3835,6 +4151,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Устаревшее поле сведений об адаптере в IOPMPowerSource; на Mac с чипом Apple всегда 0."
+          }
+        }
+      }
+    },
+    "Level colors": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Colors, green, orange and red by level",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цвета уровня заряда"
+          }
+        }
+      }
+    },
+    "Life used": {
+      "extractionState": "manual",
+      "comment": "Widget: Cycle life used where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Израсходовано"
           }
         }
       }
@@ -3885,6 +4225,18 @@
         }
       }
     },
+    "Low Power": {
+      "extractionState": "manual",
+      "comment": "Widget: Low Power Mode where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Энергосбережение"
+          }
+        }
+      }
+    },
     "Low Power Mode": {
       "extractionState": "manual",
       "localizations": {
@@ -3916,6 +4268,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Минимальная температура аккумулятора за весь срок службы."
+          }
+        }
+      }
+    },
+    "Lowest only": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: what the Accessories widget shows, the accessory with the lowest charge alone",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только с наименьшим зарядом"
           }
         }
       }
@@ -4024,6 +4388,30 @@
         }
       }
     },
+    "Main value": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the value the Battery widget shows large",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основное значение"
+          }
+        }
+      }
+    },
+    "Main visual": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: how the main value is drawn",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вид значения"
+          }
+        }
+      }
+    },
     "Manufacture date: on TI bq gauges, six ASCII digits that read backwards as YYMMDD, years from 1992.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -4083,6 +4471,18 @@
         }
       }
     },
+    "Max capacity": {
+      "extractionState": "manual",
+      "comment": "Widget: Maximum capacity where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Макс. ёмкость"
+          }
+        }
+      }
+    },
     "Maximum capacity": {
       "extractionState": "manual",
       "localizations": {
@@ -4129,17 +4529,6 @@
         }
       }
     },
-    "Menu bar icons like macOS 27": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Значки в строке меню как в macOS 27"
-          }
-        }
-      }
-    },
     "Model": {
       "extractionState": "manual",
       "localizations": {
@@ -4170,6 +4559,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Современный"
+          }
+        }
+      }
+    },
+    "Monochrome": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Colors, no level colours",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Монохромные"
           }
         }
       }
@@ -4309,6 +4710,18 @@
         }
       }
     },
+    "No accessories with batteries connected": {
+      "extractionState": "manual",
+      "comment": "Accessories widget: the message when no accessory with a battery is connected",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет аксессуаров с аккумуляторами"
+          }
+        }
+      }
+    },
     "No Battery": {
       "extractionState": "manual",
       "localizations": {
@@ -4328,6 +4741,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без аккумулятора"
+          }
+        }
+      }
+    },
+    "No battery data": {
+      "extractionState": "manual",
+      "comment": "Widget: No battery information where it does not fit one line",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет данных аккумулятора"
           }
         }
       }
@@ -4552,6 +4977,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Уведомлять"
+          }
+        }
+      }
+    },
+    "Number and symbol": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Main visual, the number with the level symbol",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Число и значок"
           }
         }
       }
@@ -4993,6 +5430,28 @@
         }
       }
     },
+    "Once per version, at least a day after you start using it, an automatic update check also downloads a small file from that version's release on GitHub. Its public download count shows how many Macs use each version. Nothing else is sent: no identifier and nothing about this Mac, its battery or your settings. Nothing is counted when Check for updates is Never.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Один раз для каждой версии, не раньше чем через день после начала работы с ней, автоматическая проверка обновлений также загружает небольшой файл из выпуска этой версии на GitHub. Его общедоступный счётчик загрузок показывает, сколько компьютеров Mac используют каждую версию. Больше ничего не передаётся: ни идентификатора, ни сведений об этом Mac, его аккумуляторе или ваших настройках. Если для параметра «Проверять обновления» выбрано «Никогда», подсчёт не ведётся."
+          }
+        }
+      }
+    },
+    "Once per version, BatteryPulse downloads a tiny file from GitHub, so its download count shows how many Macs use each version. No identifier and nothing about your Mac is sent; GitHub sees only what it sees for the update check. Turn it off in Settings → General.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse один раз для каждой версии загружает с GitHub крошечный файл, и его счётчик загрузок показывает, сколько компьютеров Mac используют каждую версию. Не передаются ни идентификатор, ни сведения о вашем Mac; GitHub видит только то же, что и при проверке обновлений. Подсчёт можно выключить в разделе «Настройки» → «Основные»."
+          }
+        }
+      }
+    },
     "Opaque manufacturer data block read from the battery gauge at boot.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -5044,7 +5503,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Открыть настройки строки меню…"
+            "value": "Настройки строки меню…"
           }
         }
       }
@@ -5209,14 +5668,14 @@
         }
       }
     },
-    "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100 %.": {
+    "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100%.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Глубина разряда каждого элемента при последнем измерении напряжения в покое, в масштабе 16384 = 100 %."
+            "value": "Глубина разряда каждого элемента при последнем измерении напряжения в покое, в масштабе 16384 = 100%."
           }
         }
       }
@@ -5829,6 +6288,18 @@
         }
       }
     },
+    "Reached": {
+      "extractionState": "manual",
+      "comment": "The Charge limit row's value while macOS's Charge Limit holds the charge",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Достигнут"
+          }
+        }
+      }
+    },
     "Read iPhone and iPad batteries": {
       "extractionState": "manual",
       "localizations": {
@@ -6266,17 +6737,6 @@
         }
       }
     },
-    "Save the minute readings or the daily battery health as CSV for a spreadsheet, or all of it as JSON.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сохраняйте поминутные показания или ежедневное состояние аккумулятора в CSV для таблиц или всё сразу в JSON."
-          }
-        }
-      }
-    },
     "Save the raw data for a bug report. Serial numbers are redacted.": {
       "extractionState": "manual",
       "localizations": {
@@ -6436,6 +6896,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Серийный номер аккумулятора."
+          }
+        }
+      }
+    },
+    "Service": {
+      "extractionState": "manual",
+      "comment": "Widget: Service Recommended where the full words do not fit one line beside the warning symbol",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обслуживание"
           }
         }
       }
@@ -6759,6 +7231,18 @@
         }
       }
     },
+    "Status lines": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the lines under the main value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строки состояния"
+          }
+        }
+      }
+    },
     "Stop Demo": {
       "extractionState": "manual",
       "localizations": {
@@ -7007,7 +7491,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "У этого Mac нет встроенного аккумулятора."
+            "value": "Встроенного аккумулятора нет."
           }
         }
       }
@@ -7068,6 +7552,18 @@
         }
       }
     },
+    "Time left": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Time, a countdown",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставшееся время"
+          }
+        }
+      }
+    },
     "Time remaining": {
       "extractionState": "manual",
       "localizations": {
@@ -7075,6 +7571,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Оставшееся время"
+          }
+        }
+      }
+    },
+    "Time to full or empty": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: a status line or detail",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время до зарядки или разрядки"
           }
         }
       }
@@ -7353,14 +7861,14 @@
         }
       }
     },
-    "True while charging at 99 % or more, when macOS shows \"Finishing Charge\".": {
+    "True while charging at 99% or more, when macOS shows \"Finishing Charge\".": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Да при зарядке от 99 % и выше, когда macOS показывает «Завершение зарядки»."
+            "value": "Да при зарядке от 99% и выше, когда macOS показывает «Завершение зарядки»."
           }
         }
       }
@@ -7388,6 +7896,18 @@
         }
       }
     },
+    "Try the Accessories widget": {
+      "extractionState": "manual",
+      "comment": "Battery widget on a Mac without a battery: under its message, a pointer to the Accessories widget",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет «Аксессуары»"
+          }
+        }
+      }
+    },
     "Turn On": {
       "extractionState": "manual",
       "localizations": {
@@ -7395,17 +7915,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Включить"
-          }
-        }
-      }
-    },
-    "Turn on Read iPhone and iPad batteries in Settings to see a connected device's maximum capacity, cycles and charge, with its history next to the Mac's.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в Настройках, чтобы видеть максимальную ёмкость, циклы перезарядки и заряд подключённого устройства, а его историю — рядом с историей Mac."
           }
         }
       }
@@ -7489,6 +7998,18 @@
         }
       }
     },
+    "Until %@ tomorrow": {
+      "extractionState": "manual",
+      "comment": "Widget: Lasts until %@ tomorrow where it does not fit one line; %@ is a clock time",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "До %@ завтра"
+          }
+        }
+      }
+    },
     "Update available: %@": {
       "extractionState": "manual",
       "localizations": {
@@ -7496,6 +8017,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Доступно обновление: %@"
+          }
+        }
+      }
+    },
+    "Update time": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: when the reading's time shows",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время обновления"
           }
         }
       }
@@ -7902,6 +8435,18 @@
         }
       }
     },
+    "When old": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: Update time, only once the reading is old",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если данные устарели"
+          }
+        }
+      }
+    },
     "When the battery falls to": {
       "extractionState": "manual",
       "localizations": {
@@ -7909,6 +8454,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "При разрядке до"
+          }
+        }
+      }
+    },
+    "When the Charge Limit in System Settings → Battery stops charging, BatteryPulse says so in the app, its menu bar panel and the Battery widget.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the Charged to limit row. Charge Limit is the setting in System Settings → Battery.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда Лимит зарядки в Системных настройках → «Аккумулятор» останавливает зарядку, BatteryPulse сообщает об этом в приложении, в панели строки меню и в виджете «Аккумулятор»."
           }
         }
       }
@@ -8080,6 +8637,18 @@
         }
       }
     },
+    "Widgets you configure": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the title of the configurable Battery widget's row.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настраиваемые виджеты"
+          }
+        }
+      }
+    },
     "Window Style": {
       "extractionState": "manual",
       "comment": "Settings → General: the section of the window style picker (as macOS 27 Icon & widget style)",
@@ -8088,17 +8657,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Стиль окон"
-          }
-        }
-      }
-    },
-    "Window styles": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Стили окон"
           }
         }
       }
@@ -8199,6 +8757,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "У вас BatteryPulse %@."
+          }
+        }
+      }
+    },
+    "Your keyboard's, mouse's, trackpad's and headphones' batteries at a glance, in small, medium and large.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.0: the detail of the Accessories widget's row; small, medium and large are the widget's sizes.",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд клавиатуры, мыши, трекпада и наушников с первого взгляда — в маленьком, среднем и большом размере."
           }
         }
       }

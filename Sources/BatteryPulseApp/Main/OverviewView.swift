@@ -26,10 +26,13 @@ struct OverviewView: View {
                     }
                 }
             }
-            // A new charge state brings or removes the hero's time line, which changes the height
-            // of the cards above the rest: the whole page moves as one, once per event. Under
-            // Reduce Motion the cards snap into place and only the time line fades.
+            // A new charge state brings or removes the hero's time line, and the Charge Limit's
+            // hold its sentence, which changes the height of the cards above the rest: the whole
+            // page moves as one, once per event. The hold can start with no new charge state, so
+            // it is a key of its own. Under Reduce Motion the cards snap into place and only the
+            // time line or the sentence fades.
             .animation(motion.change, value: BatteryMotionKey(snapshot).chargeState)
+            .animation(motion.change, value: BatteryMotionKey(snapshot).isAtSystemChargeLimit)
             .padding(20)
             .frame(maxWidth: 820)
             .frame(maxWidth: .infinity)
@@ -57,6 +60,13 @@ struct OverviewView: View {
                     // No animation of its own: the watts in it change with every reading.
                     Text(Phrases.stateWithPower(snapshot, formatter))
                         .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
+                    // BatteryPulse only reads the limit; the user sets it in System Settings.
+                    if snapshot.isAtSystemChargeLimit {
+                        Text("Charging stopped at the Charge Limit set in System Settings → Battery.")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transition(motion.fadeTransition)
+                    }
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .foregroundStyle(.secondary)

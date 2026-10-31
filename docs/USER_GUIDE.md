@@ -6,6 +6,7 @@ a native macOS app with no third-party code; it only reads system data and needs
 administrator rights.
 
 - [Install](#install)
+- [Privacy](#privacy)
 - [Where BatteryPulse lives](#where-batterypulse-lives)
 - [The main window](#the-main-window)
 - [Compact window](#compact-window)
@@ -41,6 +42,28 @@ BatteryPulse is not notarized by Apple yet, so macOS blocks it the first time:
 
 Until BatteryPulse is notarized, you need to do this once for each new version you download. A
 copy you build yourself (see the README) opens without it.
+
+## Privacy
+
+BatteryPulse has no account, no analytics service and no server of its own. Your battery
+readings, history, devices and settings stay on your Mac. It connects to the internet only to
+reach GitHub: to check for updates (daily, weekly, monthly or never, as you choose in Settings →
+General), to download an update you chose to install, and, from 0.7, for an anonymous version
+count. Once per version, at least a day after you start using it, an automatic update check also
+downloads a small file from that version's release on GitHub. GitHub counts downloads, and that
+public count is the only number the developer gets: how many Macs use each version. No
+identifier of any kind is sent, no cookie is kept, and nothing about your Mac, its battery or
+your settings is included. As with any web request, GitHub sees your IP address and the app's
+version, just as it does for the update check, under GitHub's own privacy statement. The
+developer never sees addresses, only totals that anyone can read through GitHub's API. The count
+is on by default, never happens when Check for updates is Never, and turns off with **Include
+this Mac in the anonymous version count** in Settings → General. Reading an iPhone or iPad over
+Wi-Fi (opt-in) stays on your local network.
+
+The count rides on the scheduled update check, so it adds no wake-up of its own, and a check you
+start (**Check Now** or **Check for Updates…**) never counts. While Check for updates is Never,
+the switch is greyed out and keeps its value. [Updates](#updates) lists every request
+BatteryPulse sends.
 
 ## Where BatteryPulse lives
 
@@ -94,10 +117,17 @@ accessories (see [Accessories](#accessories)).
 - **Overview** — charge with a battery drawn to the exact level, what the battery is doing
   ("Charging at 31.3 W"), time remaining, gauges for charge, maximum capacity and cycle count,
   capacity bars in mAh, and a power-flow diagram from the adapter to the Mac and the battery.
+  When the Charge Limit you set in System Settings → Battery (Apple silicon, macOS 26.4 or later)
+  has stopped charging, the battery reads *Charged to limit*, with a line under it that says so;
+  the menu bar popover and the compact window say *Charged to limit* too. BatteryPulse only reads
+  that the limit holds the charge: it can't read which percentage you set, and it never changes
+  the limit.
 - **Power** — battery voltage, current, power and temperature, and while charging the current
-  and voltage the battery asks the charger for; the power adapter (name, rated power,
-  negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
-  adapter, system load, adapter loss, Low Power Mode and thermal state.
+  and voltage the battery asks the charger for; *Charge limit: Reached* while the Charge Limit
+  holds the charge (no percentage: macOS holds the charge within a few points of the limit, so
+  the charge there would read as the limit); the power adapter (name, rated power, negotiated voltage and
+  current) and every USB Power Delivery voltage it offers; power from the adapter, system load,
+  adapter loss, Low Power Mode and thermal state.
 - **History** — charge, power and temperature over time; see [History](#history).
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
@@ -242,8 +272,8 @@ Readings by Minute:
 
 | Column | Meaning |
 |---|---|
-| `time` | The moment of the reading, ISO 8601 with its offset from UTC: `2026-10-14T13:25:00+03:00` |
-| `localTime` | The same moment as a local date and time that spreadsheets read as a date: `2026-10-14 13:25:00` |
+| `time` | The moment of the reading, ISO 8601 with its offset from UTC: `2026-10-14T19:25:00+09:00` |
+| `localTime` | The same moment as a local date and time that spreadsheets read as a date: `2026-10-14 19:25:00` |
 | `event` | `launch` on the first reading after BatteryPulse started, `wake` on the first after the Mac woke; empty otherwise |
 | `chargePercent` | Charge, % |
 | `chargeState` | `charging`, `discharging`, `charged` (full on the adapter), `notCharging` (held below full on the adapter) or `unknown` |
@@ -359,7 +389,8 @@ each device's name (as its label), model, OS version, last values and history un
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
 device data are never written. Only your account can read the folder, and BatteryPulse's
 messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
-shows a simulated iPhone in place of your devices.
+shows a simulated iPhone in place of your devices. Nothing about your devices goes to the
+internet; [Privacy](#privacy) lists what does.
 
 ## Accessories
 
@@ -390,7 +421,10 @@ notification is on.
 In Settings → Notifications, BatteryPulse can tell you:
 
 - **When charged to** 80, 85, 90, 95 or 100 %. Unplugging around 80 % most of the time slows
-  battery aging.
+  battery aging. This only notifies; to stop charging at a level, set the Charge Limit in System
+  Settings → Battery. While a lower Charge Limit holds the charge, a level above it isn't
+  reached: with the limit at 80 %, the 90 % notification comes only when macOS charges past the
+  limit (Charge to Full Now, or the occasional full charge macOS makes for its estimates).
 - **When the battery falls to** 10, 20 or 30 % on battery.
 - **When battery service is recommended**, once each time macOS reports a condition other than
   Normal.
@@ -410,27 +444,94 @@ like. BatteryPulse has to be running to notify you.
 
 ## Widget
 
-BatteryPulse has a widget for the desktop and Notification Center, in two sizes: the small one
-shows the charge, what the battery is doing and when it will be full or empty; the medium one
-adds maximum capacity, cycle count and temperature.
+BatteryPulse has two widgets for the desktop and Notification Center, each in small, medium and
+large:
 
-1. Open BatteryPulse once after installing it, so macOS finds the widget.
+- **Battery** shows the charge, what the battery is doing and when it will be full or empty, and
+  the details you choose. As it comes, it looks the way BatteryPulse's widget always has: the
+  small one shows the charge with its state and time, and the medium one adds maximum capacity,
+  cycle count and temperature. The large one adds the adapter, system load, battery power, Low
+  Power Mode and the remaining capacity, in two columns.
+- **Accessories** shows the batteries of the keyboards, mice, trackpads and headphones the
+  [Accessories](#accessories) page lists, each with its charge.
+
+To add one:
+
+1. Open BatteryPulse once after installing it, so macOS finds the widgets.
 2. Control-click the desktop and choose **Edit Widgets…** (or click the date in the menu bar
    and **Edit Widgets** at the bottom).
-3. Search for **BatteryPulse** and drag the widget where you want it.
+3. Search for **BatteryPulse**, choose **Battery** or **Accessories** and a size, and drag the
+   widget where you want it.
 
-The widget reads the battery itself, so it keeps working while BatteryPulse isn't running.
-macOS limits how often widgets refresh, so it may lag behind: by up to half an hour while
-BatteryPulse isn't running. While it runs, it refreshes the widget right away when you plug in or
-unplug and once macOS has its first estimate, and at most every quarter of an hour while the
-charge or the estimate moves.
+### Choosing what a widget shows
 
-Replacing BatteryPulse with a new version from the DMG removes the widgets you placed; add them
-again from the gallery as above.
+Control-click a placed widget and choose **Edit Widget**. A widget you placed before 0.7 keeps
+its look until you change something here. The Battery widget offers:
 
-The widget is new and depends on how macOS treats apps that aren't notarized yet. If it doesn't
-appear in the widget gallery, please [report it](#reporting-a-problem); the main window, the
-compact window and the menu bar work either way.
+- **Layout:** *Automatic* shows the details above for its size. *Custom* shows the ones you pick
+  under **Details**, in your order: one in small, where it takes the time line's place, up to
+  four in medium and up to eight in large. Besides Automatic's, you can pick the state, the time
+  to full or empty, the condition, the power from the adapter, cycle life used, cell balance, the
+  voltage and the Charge Limit.
+- **Main value:** the charge, maximum capacity, temperature or battery power. Battery power can be
+  up to half an hour old in a widget, so it always comes with the time it was read.
+- **Main visual:** the number with the level symbol, a ring, or a drawn battery like the menu
+  bar's Modern icon.
+- **Status lines:** the state (*Charging*, *On battery*, *Charged to limit* and so on) and the
+  time to full or empty, each on or off.
+- **Time:** the clock time, such as *Lasts until about 16:39*, or the time left, such as *2
+  hours, 13 minutes*, which counts down by the minute on its own. An end on the next day says
+  *tomorrow*; one two or more days away shows no time.
+- **Colors:** the level colors the app uses, or monochrome.
+- **Update time:** *When old* shows *Updated 14:05* once the reading is over 45 minutes old;
+  *Always* shows it all the time.
+
+Whatever you choose, a battery condition other than Normal, or a Mac running hot, takes the
+widget's last row (in small, the time line's place), and a value that needs attention, such as a
+maximum capacity that is getting low, has a symbol before it, so the color isn't the only sign.
+Where a label is too long for its place, the widget uses a shorter one, such as *Max capacity*.
+On a Mac without a battery, the Battery widget says so and points you to the Accessories widget.
+
+The Accessories widget offers **Show**, *All* or *Lowest only* (the accessory with the least
+charge), and **Hide fully charged**, which leaves out accessories at 100%. With no accessory to
+show, it says *No accessories with batteries connected*, or that all of them are fully charged.
+
+### Clicking a widget
+
+A click opens BatteryPulse's main window at the matching page, even if you use the compact
+window: Overview for the charge, Health for maximum capacity, Power for temperature and battery
+power, and Accessories for the Accessories widget. A Battery widget without a battery to show
+opens Overview.
+
+### How widgets stay current
+
+The widgets read the battery and the accessories themselves, so they keep working while
+BatteryPulse isn't running. macOS limits how often widgets refresh, so they may lag behind: by up
+to half an hour while BatteryPulse isn't running. While it runs, BatteryPulse asks macOS to
+refresh only the kinds of widget you have placed:
+
+- **Battery:** right away when you plug in or unplug, when the battery's state changes, and once
+  macOS has its first estimate; at most every 5 minutes when Low Power Mode turns on or off, the
+  adapter changes, the battery's condition changes, the Mac starts running hot (or has cooled
+  down again), or the Charge Limit starts or stops holding the charge; and at most every quarter
+  of an hour while the charge, the estimate or the temperature moves.
+- **Accessories:** right away when an accessory connects or disconnects, and at most every
+  quarter of an hour while a charge moves.
+
+When your Mac's language changes, BatteryPulse refreshes every widget the next time it opens, so
+none keeps the old language's words; after an update, it does the same if the old version's
+widget is still running.
+
+VoiceOver reads the Battery widget's charge as one item ("Battery charge: 70%, On battery") and
+each detail as one, its label and value together; the Accessories widget reads one item per
+accessory.
+
+### Widgets across updates
+
+**Install and Relaunch** should keep the widgets you placed: it ends the running widget just before
+it replaces the app, so macOS takes the new version's widgets in their place. Replacing
+BatteryPulse from the DMG by hand may remove them. If a widget is gone or blank after an update,
+remove the blank one and add it again from the gallery as above.
 
 ## Demo Mode
 
@@ -443,8 +544,8 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
 - **Start Tour** plays every scene and animation in turn and switches to the page that shows
   each one best, then starts over. Choose how long each scene stays under **Scene length**.
 - Click a **scene** to show it by hand: fast charging, on battery, low battery, critical
-  battery, fully charged, optimized charging, just plugged in, a worn battery, heavy load, a slow
-  charger, Low Power Mode, or a Mac without a battery.
+  battery, fully charged, optimized charging, the Charge Limit, just plugged in, a worn battery,
+  heavy load, a slow charger, Low Power Mode, or a Mac without a battery.
 - Click an **animation** to watch the battery charge from empty or drain to empty in 20
   seconds.
 
@@ -463,7 +564,7 @@ Open Settings with ⌘, or the gear button in the menu bar popover.
 
 | Tab | What it controls |
 |-----|------------------|
-| General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, language, reading iPhones and iPads |
+| General | Menu bar item, Dock icon, open at login, the welcome window, the window style, update checks, the anonymous version count, language, reading iPhones and iPads |
 | Menu Bar | What the item shows (battery icon, percentage, battery power, temperature), the icon style, and the way to turn off the battery item of macOS |
 | Notifications | Charge limit, low battery, battery service, heat and accessory low-battery notifications |
 | Advanced | Recording and clearing history (the Mac's and the devices'), the Developer section (Raw Data and Demo Mode), the beta window styles, a link to this guide |
@@ -494,24 +595,27 @@ BatteryPulse installs nothing and doesn't offer the download either: the window 
 failed and offers **Open Release Page**, so you can look at the release on GitHub before
 installing anything. If anything else goes wrong, such as a download that stops, nothing is
 replaced and the window offers Download instead. Permissions you gave BatteryPulse in Privacy &
-Security may be asked for again after an update, and widgets may need adding again (see
-[Widget](#widget)).
+Security may be asked for again after an update, and a widget may need adding again, more likely
+after a replacement from the DMG (see [Widgets across updates](#widgets-across-updates)).
 
 **Download** opens the DMG in your browser: open it, drag BatteryPulse onto Applications to
 replace the old copy, and approve the new version once in Privacy & Security (see
 [First launch](#first-launch)). Updating from 0.3 works this way once; from 0.4.0 on, Install
 and Relaunch takes over.
 
-The check and the download of an update you chose to install are the only requests
-BatteryPulse sends to the internet, and their answers aren't kept in a network cache: GitHub
-sees your IP address, the app's version and your language, as with any web request, and nothing
-else about your Mac is sent. The only other
+BatteryPulse sends only these requests to the internet, all to GitHub: the update check, the
+anonymous version count (once per version, at least a day after you start using it, on an
+automatic check; see [Privacy](#privacy)) and the download of an update you chose to install.
+Their answers aren't kept in a network cache, and no cookies are kept or sent: GitHub sees your
+IP address and the app's version, as with any web request, and for the check and the download
+also your language; nothing else about your Mac is sent. The only other
 connections are to your own iPhone or iPad while **Read iPhone and iPad batteries** is on, over
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
-symbols that turn a crash report into readable function names; you don't need either.
+`BatteryPulse.dmg.sig`, the signature the app checks, `BatteryPulse-dSYMs.zip`, the debug symbols
+that turn a crash report into readable function names, and, from 0.7.0, `BatteryPulse-count.txt`,
+the file the version count downloads; you don't need any of them.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
@@ -529,6 +633,9 @@ language. To use a different language for BatteryPulse only:
    System Settings…** takes you there).
 2. Under **Applications**, click **+**, choose BatteryPulse and pick a language.
 3. Quit and reopen BatteryPulse.
+
+The widgets most likely follow your Mac's language, so a language chosen for BatteryPulse alone
+may not reach them.
 
 ## Understanding the numbers
 
@@ -565,6 +672,22 @@ language. To use a different language for BatteryPulse only:
 
 The repository also has `bpulse`, a command-line report (`swift run bpulse`). See the
 [README](../README.md#command-line-report).
+
+### JSON for scripts
+
+`bpulse --json` prints this Mac's battery as one JSON object (with `--watch`, one object per
+line), and `bpulse --device <n> --json` the battery of an iPhone or iPad. Each object has
+`formatVersion` (1) among its keys, which are sorted. Units are in the key names
+(`currentCapacityMAh`, `voltageMV`, `systemLoadMW`), the current is negative while discharging,
+dates are ISO 8601 strings in UTC (`"2025-10-02T00:00:00Z"`), and a value that isn't reported is
+left out rather than written as `null`; a list that isn't reported, such as `cellVoltagesMV`,
+is empty. **Copy JSON** in Raw Data copies the object of `bpulse --json`, serial numbers removed.
+
+Keys are only ever added. If a key is renamed or removed, or its meaning changes,
+`formatVersion` goes up and the release notes say so; scripts should ignore the keys they don't
+know. Output without `formatVersion` comes from a `bpulse` before 0.7, which wrote an iPhone's or
+iPad's `firstUseDate` as seconds since 1 January 2001. `--accessories --json` prints a plain
+array, without `formatVersion`, and [`--export json`](#history-export) has its own.
 
 ### Recording charging changes
 
@@ -620,7 +743,8 @@ the setting, and saves what a device returned for a bug report.
    never pairs with a device by itself.
 2. Run `bpulse --devices` to list the devices, then `bpulse --device 1` for the first one:
    charge, state, design, nominal and full-charge capacity with their share of the design,
-   cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON.
+   cycles, temperature, voltage, current and the adapter. `--json` prints the same as JSON
+   ([JSON for scripts](#json-for-scripts)).
    Devices are numbered by their identifier, so the numbers stay the same between runs, and
    the report's Device line ends with the same short ID (`ID …801C`) as the list. If a device
    doesn't answer within 10 s, the list doesn't wait for it: that device and the ones not read
@@ -648,8 +772,8 @@ Magic Keyboard (keyboard, Bluetooth): 76 %
 AirPods Pro (headphones, Bluetooth): left 64 %, right 61 %, case 90 % charging
 ```
 
-`--json` prints the list as JSON. `bpulse --accessories --raw > accessories.xml` saves what macOS
-reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identifiers
+`--json` prints the list as a JSON array. `bpulse --accessories --raw > accessories.xml` saves
+what macOS reported, for a bug report: names become *Accessory 1*, *Accessory 2* and identifiers
 *group-1*, *accessory-1*, consistently, so the parts of an accessory still belong together;
 serial numbers and addresses are removed. `bpulse --input accessories.xml` shows a saved capture
 again, on any computer. When no accessory reports a battery, the list says so and `bpulse` exits

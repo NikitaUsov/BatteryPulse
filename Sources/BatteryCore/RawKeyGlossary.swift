@@ -280,7 +280,7 @@ public enum RawKeyGlossary {
         ("BatteryData.CycleCount", Info(.count, "Cycle count as reported inside BatteryData.")),
         (
             "BatteryData.DOD0",
-            Info(.other, "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100 %.")
+            Info(.other, "Per-cell depth of discharge at the last rested voltage reading, scaled so 16384 = 100%.")
         ),
         (
             "BatteryData.DailyMaxSoc",
@@ -397,7 +397,7 @@ public enum RawKeyGlossary {
         ),
         (
             "BatteryData.PackReserve",
-            Info(.milliampHours, "Capacity held back below 0 % that is not counted in FullChargeCapacity.")
+            Info(.milliampHours, "Capacity held back below 0% that is not counted in FullChargeCapacity.")
         ),
         (
             "BatteryData.PassedCharge",
@@ -538,9 +538,13 @@ public enum RawKeyGlossary {
         ("ChargerData.ChargingCurrent", Info(.milliamps, "Charge current the gauge is asking the charger for.")),
         ("ChargerData.ChargingVoltage", Info(.millivolts, "Per-cell charge voltage target the gauge requests.")),
         ("ChargerData.IsCharging", Info(.boolean, "Charger-side charging flag; mirrors top-level IsCharging.")),
+        // Bit 24 is SystemChargeLimit.heldBit (m5-macos27-charge-limit.plist).
         (
             "ChargerData.NotChargingReason",
-            Info(.flags, "Bitfield of reasons the battery is not charging; Apple does not document the bits.")
+            Info(
+                .flags,
+                "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge."
+            )
         ),
         ("ChargerData.PMUConfiguration", Info(.milliamps, "Input current limit requested for the active adapter.")),
         (
@@ -650,7 +654,7 @@ public enum RawKeyGlossary {
         ("IOPS.Is Charging", Info(.boolean, "True while the battery is actually charging.")),
         (
             "IOPS.Is Finishing Charge",
-            Info(.boolean, "True while charging at 99 % or more, when macOS shows \"Finishing Charge\".")
+            Info(.boolean, "True while charging at 99% or more, when macOS shows \"Finishing Charge\".")
         ),
         ("IOPS.Is Present", Info(.boolean, "True when the battery is installed.")),
         ("IOPS.LPM Active", Info(.boolean, "True when Low Power Mode is on.")),
@@ -715,7 +719,7 @@ public enum RawKeyGlossary {
         ),
         (
             "PackReserve",
-            Info(.milliampHours, "Capacity held back below 0 % that is not counted in FullChargeCapacity.")
+            Info(.milliampHours, "Capacity held back below 0% that is not counted in FullChargeCapacity.")
         ),
         (
             "PermanentFailureStatus",

@@ -3,13 +3,14 @@
   "ceilings": {
     "dmg_bytes": 1520000,
     "app_kb": 4840,
-    "app_binary_bytes": 3000000,
+    "app_binary_bytes": 3160000,
     "app_text_bytes": 2020000,
     "app_exports": 1,
-    "widget_binary_bytes": 818000,
-    "widget_text_bytes": 517000,
+    "widget_binary_bytes": 1359000,
+    "widget_text_bytes": 852000,
     "widget_exports": 1,
-    "strings_bytes": 251000,
+    "widget_appintents_bytes": 24000,
+    "strings_bytes": 264000,
     "icns_bytes": 226000
   }
 }

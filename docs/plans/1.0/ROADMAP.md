@@ -38,6 +38,27 @@ also brought the redacted fixture and the diff at 100 % (bit 24 clears and retur
 M-3 still rules out the private PowerUI client unless the maintainer reopens it. The counts below
 include FEA-35.
 
+**Updated 2026-10-31, at 0.7.0's release, with the maintainer's decisions of that day.** Where the
+sections and rows below say otherwise, this note holds; they stay as written, a record of the plan
+as it stood:
+1. **0.7.0 is released without Session R and its logged day.** He decided to release without the M5
+   session and to report if something goes wrong, so nothing of 0.7 was seen on the M5 before the
+   release: its evidence is CI's and the look checks he answered on CI's pictures. §3.2's exit
+   criterion "Seen before release" is set aside by that decision, and QUA-16, 0.7's own M5 session,
+   moves to 0.7.1's M5 session (`docs/plans/0.7.1/widgets.md`, "0.7's M5 checks").
+2. **The stretch and the widget's language go to 0.7.1, not 1.1:** FEA-10, FEA-11 and FEA-12, with
+   SEC-08 and DOC-08 (W-5 to W-7: the feed, the History widget and the iPhone & iPad widget), and the
+   widget following the app's own language (plan-0.7.0 W-0 item 8). So by his decision the feed's
+   new file and the widget's read-only exception come in a 0.7.x release, announced in its notes,
+   where §3.2 had held them for a minor release under the frozen-outputs rule. Their design is in
+   `docs/plans/0.7.1/widgets.md`.
+3. **NEW-13, the backup release key, goes to 0.8.** The build-number clock (plan-0.7.0 D1), a
+   technical choice, comes before 0.7.1's first candidate; 0.7.0 takes `release.yml`'s run number,
+   above 0.6.2's 8.
+4. 1.1 keeps macOS 28's compatibility work (NEW-21) and FEA-20; ROADMAP also places there extra
+   large, which the look check left out of 0.7 (its question 3 = 3). The order is now 0.7.0, 0.7.1,
+   then 0.8 (ROADMAP's versions table).
+
 **Sources and how they are cited**
 
 | Short | Source |
@@ -46,7 +67,8 @@ include FEA-35.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus 0.6.2's plan, so these lines are v0.6.1's |
-| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows are in `docs/plans/0.7.0/widgets.md`, numbers kept; its whole Appendix C, where 0.6.2's D3 records Session B's results, is in `docs/plans/0.7.0/0.6.2-appendix-c.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
+| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, is in `docs/plans/0.7.1/widgets.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
+| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C is copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build is in `docs/plans/0.7.1/widgets.md` |
 | INV | `docs/plans/1.0/INVENTORY.md`; its row IDs (`FEA-01` …) are used throughout |
 | P1, PB, RES-x | the 0.6.1 plan, playbook and research files in `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
 | V, Q, D | the three independent proposals for 1.0 this roadmap judged: user value (V), quality and trust (Q), distribution and platform (D); working notes, not in the repository |
@@ -359,8 +381,9 @@ for 2.0. The promise lasts a major version instead of a minor (R:437-439) (D, Q)
 1. **Settings keys** of the `io.github.nikitausov.BatteryPulse` domain: names, types and defaults,
    and the legacy migrations. That is PB §3.4's list, plus `betaWindowStyles`, plus `openAtLogin`
    if 0.6.2 adds it (round A0 passed, so it doesn't), plus 0.7's `anonymousVersionCount`,
-   `lastCountedVersion` and `versionFirstLaunch` (NEW-24). The count's default may still turn
-   off in a 1.x release (item 8).
+   `lastCountedVersion` and `versionFirstLaunch` (NEW-24), and `lastSeenLanguage`, which 0.7's
+   widget reloads keep (plan-0.7.0 W-4). The count's default may still turn off in a 1.x release
+   (item 8).
 2. **Storage** under Application Support: `History/` and `Devices/`.
    - Files only gain fields, and readers ignore unknown ones.
    - The widget feed, if it ships, is an internal file between an app and a widget of the same
@@ -589,7 +612,8 @@ optional steps.
   1. **M-1 is answered: no** (2026-10-22). Nothing about the paid account is asked alongside
      0.6.2, and nothing in 0.6.2 or later waits for it (§3.4).
   2. **The optional Charge Limit capture (QUA-05): run in Session A** (2026-10-23, the limit at
-     80 %; P2 Appendix C; its final report, `docs/plans/0.7.0/sessions/A.md`, 2026-10-24). The
+     80 %; P2 Appendix C; its final report, `docs/plans/0.7.0/sessions/A.md` at the commit
+     plan-0.7.0 names, 2026-10-24). The
      pause set bit 24 (0x01000000) of `NotChargingReason`; no registry key holds the configured
      80. The redacted capture of the hold came with the report, on the maintainer's approval, and
      becomes FEA-35's fixture. The local session also read the number's candidates, read-only. At
@@ -640,7 +664,8 @@ optional steps.
      (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its files) into
      `docs/plans/0.7.0/`, beside `widgets.md`, which reach main with 0.6.2's squash merge; the
      release PR's `refs/pull/12/head` keeps 0.6.2's whole plan reachable either way (plan-0.7.0
-     D-1, D-11).
+     D-1, D-11). That folder left at 0.7.0's release in turn, after its session tools were
+     copied to `docs/plans/0.7.1/` (readable at the commit plan-0.7.0 names).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
      run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
      0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from
@@ -765,7 +790,8 @@ optional steps.
     - PLT-05 follows M-2: BatteryKit keeps building for iOS until that first costs time.
     - NEW-18: `docs/VERIFICATION.md` starts with 0.6.2's evidence (plan-0.7.0 R-1 item 5).
   - **Engineering lane:**
-    - NEW-13: the backup key, once the maintainer has generated it (M-9).
+    - NEW-13: the backup key, once the maintainer has generated it (M-9). (Moved to 0.8 on
+      2026-10-31, by the maintainer's decision; the note at the top.)
     - NEW-22: a quick check after every macOS 27.x update starts.
     - P2 §7.2 says 0.6.2 items that get cut move to 0.7. Those that need no M5 time ride in this
       lane (plan-0.7.0 C-1); those that do join 0.7's Session R optional steps or the verification
@@ -779,7 +805,9 @@ optional steps.
 
     If they miss 0.7.0, they go to **1.1, not 0.7.x**. P2 §9.1 allows "0.7.x", but the feed is a
     new file on disk and a new entitlement, and the frozen-outputs rule makes those wait for a
-    minor release (R:437-439; P2 §9 reason 4). 0.8 and 0.9 keep their own themes.
+    minor release (R:437-439; P2 §9 reason 4). 0.8 and 0.9 keep their own themes. **Since
+    2026-10-31 they go to 0.7.1**, by the maintainer's decision, which brings the feed's file and
+    exception in a 0.7.x release (the note at the top).
 - **Engineering notes:**
   - Write the feed reader behind one type, so the feed's location or entitlement can change
     without touching the widget's views (D). The feed's path only links the app and the widget of
@@ -788,10 +816,11 @@ optional steps.
   - `WidgetChartSummary` is built with W-6 (stretch). If W-6 doesn't ship, 0.8's A11Y-01 builds it
     in BatteryCore (plan-0.7.0 §2.5).
 - **Exit criteria:**
-  - **Seen before release:** Session R ran. Without it 0.7 waits (plan-0.7.0 §3, G7-2). This is
-    stricter than §1.2 item 3's "a short session still ships", because the headline can't ship
-    unseen (C2). Session R also screenshots the version count's toggle in English and Russian, on
-    and greyed under Never.
+  - **Seen before release:** Session R ran. Without it 0.7 waits (plan-0.7.0 §3, G7-2). Set aside
+    on 2026-10-31: the maintainer released 0.7.0 without Session R, and 0.7.1's M5 session runs
+    its checks (the note at the top). The criterion as planned was stricter than §1.2 item 3's "a
+    short session still ships", because the headline can't ship unseen (C2). Session R also
+    screenshots the version count's toggle in English and Russian, on and greyed under Never.
   - **Session checks (P2 §8.14):**
     - a 0.6.x widget after the in-app update (or the §8.16 row that applies, documented);
     - every kind, family and rendering mode, in English and Russian, at 12- and 24-hour time;
@@ -1128,7 +1157,8 @@ below runs unless M-1 is asked again.
     - a sweep of deprecations, as `hdiutil` was in macOS 27 (R:524-525);
     - captures on the new macOS.
   - The widgets that waited: FEA-10 to FEA-12, SEC-08 and DOC-08, on the feed if W0-3 passed
-    (there is no App Group: M-1 is no); also FEA-20.
+    (there is no App Group: M-1 is no); also FEA-20. (Since 2026-10-31 the first five are 0.7.1's,
+    by the maintainer's decision; the note at the top. FEA-20 stays here.)
 - **Cadence (M-12, decided by delegation; no dates, M-5):**
   - no schedule: a minor release ships when there is time and desire, and something worth
     shipping, with one M5 sitting;
@@ -1146,7 +1176,7 @@ below runs unless M-1 is asked again.
 
 | Item | When and on what condition | Why not before 1.0 |
 |---|---|---|
-| History and iPhone & iPad widgets (FEA-10, FEA-11, FEA-12, SEC-08, DOC-08), if they miss 0.7.0 | 1.1, on the feed, only if W0-3 passed (Q-W3 is yes). If W0-3 failed, they are not possible without the paid account (§4.2) | They rest on an unverified temporary exception (W0-3). M-1 is no, so there is no App Group, the documented route (P2 §8.2, §8.3) |
+| History and iPhone & iPad widgets (FEA-10, FEA-11, FEA-12, SEC-08, DOC-08), if they miss 0.7.0 | **0.7.1 since 2026-10-31**, by the maintainer's decision (the note at the top), so no longer after 1.0. As planned before: 1.1, on the feed, only if W0-3 passed (Q-W3 is yes). If W0-3 failed, they are not possible without the paid account (§4.2) | They rest on an unverified temporary exception (W0-3). M-1 is no, so there is no App Group, the documented route (P2 §8.2, §8.3) |
 | "Why it isn't charging" as a widget field (FEA-20) | 1.1, once NEW-01's causes are proven; the Charge Limit's part ships in 0.7 with FEA-35 | Keeps 0.8 off the widget |
 | Widget extras: Refresh (FEA-15), extra-large portrait (FEA-16), the dashboard (FEA-17), per-row links (FEA-18), specific accessories (FEA-19) | Specific accessories later (Q-W2). The others only if the maintainer asks: the delegated answers to Q-W8 to Q-W10 (2026-10-22) build none of them | P2 §9.1 "Later"; scope (V, Q) |
 | Apps using the most energy (FEA-26) | a one-day spike on the M5 first | The private coalition calls are unproven without root on macOS 27 (R:576-584) |
@@ -1229,9 +1259,9 @@ condition or the reason.
 | FEA-07 | W-1 widget model in BatteryCore | 0.7 | MVP, with the frozen-value pin test |
 | FEA-08 | W-2 App Intents metadata step | 0.7 | MVP |
 | FEA-09 | W-8 Accessories widget | 0.7 | MVP if W0-4 passed; else 1.1 through the feed, only if W0-3 passed |
-| FEA-10 | W-5 widget data feed | 0.7 stretch, else 1.1 | Only if W0-3 passed (Q-W3 is yes and M-1 is no, both 2026-10-22); if it misses 0.7.0, 1.1 on the feed; if W0-3 failed, not possible without the account (§4.2) |
-| FEA-11 | W-6 History widget | 0.7 stretch, else 1.1 | As FEA-10 |
-| FEA-12 | W-7 iPhone & iPad widget | 0.7 stretch, else 1.1 | As FEA-10 |
+| FEA-10 | W-5 widget data feed | 0.7.1 (2026-10-31; was 0.7 stretch, else 1.1) | Only if W0-3 passed (Q-W3 is yes and M-1 is no, both 2026-10-22); if it misses 0.7.0, 1.1 on the feed; if W0-3 failed, not possible without the account (§4.2) |
+| FEA-11 | W-6 History widget | 0.7.1 (2026-10-31; was 0.7 stretch, else 1.1) | As FEA-10 |
+| FEA-12 | W-7 iPhone & iPad widget | 0.7.1 (2026-10-31; was 0.7 stretch, else 1.1) | As FEA-10 |
 | FEA-13 | Preset kinds (fallback) | 0.7, conditional | Only if W0-1 failed (Q-W2: no presets otherwise) |
 | FEA-14 | 0.6.3 static large sizes | Not planned | Q-W1: 0.7, no 0.6.3 (the maintainer, 2026-10-22) |
 | FEA-15 | Widget Refresh button | After 1.0 | Only if asked: Q-W9 builds no Refresh button (delegation) |
@@ -1270,7 +1300,7 @@ condition or the reason.
 | QUA-13 | SUI-09 `@State` initialized once | 0.6.2 | P3 |
 | QUA-14 | CB-02 device JSON dates ISO 8601 | 0.7 | With NEW-11 |
 | QUA-15 | Remove legacy `samples.jsonl` migration | 0.8 | Engineering lane; a line in the notes |
-| QUA-16 | 0.7's own M5 session | 0.7 | |
+| QUA-16 | 0.7's own M5 session | 0.7.1 (2026-10-31; was 0.7) | 0.7.0 shipped without it; 0.7.1's M5 session runs its checks |
 | ENG-01 | Menu bar energy vs 0.6.0/0.6.1/RC | 0.6.2 | Becomes C5's budgets |
 | ENG-02 | Launch to `menuBarReady` | 0.6.2 | Becomes C5's budget |
 | ENG-03 | Energy per window style | 0.6.2 | |
@@ -1296,7 +1326,7 @@ condition or the reason.
 | SEC-05 | SW-13 strict memory safety | 0.6.2 | P2 |
 | SEC-06 | No prompt for own data after update | 0.6.2 | Repeated in every after-publishing check, and if SEC-02 changes the identity |
 | SEC-07 | Swap-renaming capability check | 0.8 | With NEW-16 |
-| SEC-08 | Widget feed hardening | 0.7 (with W-5), else 1.1 | Follows FEA-10 |
+| SEC-08 | Widget feed hardening | 0.7.1 (2026-10-31; was 0.7 with W-5, else 1.1) | Follows FEA-10 |
 | SIZ-01 | K-03 `BatterySource` target | 0.6.2 | P1 |
 | SIZ-02 | `-internalize-at-link` | 0.6.2 (gated) | |
 | SIZ-03 | LTO, `-dead_strip_dylibs` | 0.6.2 | P3 |
@@ -1322,7 +1352,7 @@ condition or the reason.
 | DOC-05 | Plan files | 0.6.2 | |
 | DOC-06 | Window-style screenshots | 0.6.2 (evidence) | Publication decided in 0.9.0 (NEW-20) |
 | DOC-07 | Widget docs | 0.7 | |
-| DOC-08 | Privacy text for the feed | 0.7 (with W-5), else 1.1 | Follows FEA-10 |
+| DOC-08 | Privacy text for the feed | 0.7.1 (2026-10-31; was 0.7 with W-5, else 1.1) | Follows FEA-10 |
 | DOC-09 | iOS promises in README | 0.7 | Docs pass; M-2: not in 1.x |
 | DOC-10 | Bug template asks app version | 0.7 | Docs pass; also asks how BatteryPulse was installed |
 | TCI-01 | 0.6.2 session script | 0.6.2 | |
@@ -1369,7 +1399,7 @@ condition or the reason.
 | NEW-10 | Parser perturbation and private-source degradation tests | Q, D | 0.8 |
 | NEW-11 | `formatVersion` in `bpulse`'s top-level JSON objects | Q | 0.7 |
 | NEW-12 | Log-privacy guard | Q | 0.8 |
-| NEW-13 | Backup release key (the public half only) | Q, D | 0.7 (else 0.8) |
+| NEW-13 | Backup release key (the public half only) | Q, D | 0.8 (2026-10-31; was 0.7, else 0.8) |
 | NEW-14 | Sentinel around the private calls | Q | 0.8 |
 | NEW-15 | `SECURITY.md`, and the reviewer confirmed | Q | 0.9.0 |
 | NEW-16 | Update safety: the `LSMinimumSystemVersion` check and the relaunch fallback | D | 0.8 |
@@ -1395,7 +1425,7 @@ signed off in its sitting.
 | Q-B4 | by delegation | Both styles stay beta until you sign one off in Session B (= P2's default, G-13b) |
 | Q-B5 | by delegation | Release notes only; What's New stays at 0.6.0 (= P2's default, D3) |
 | Q-B6 | by delegation | The sessions as written, every energy scenario as planned |
-| Q-B9 | settled | GitHub's rate limit behind a VPN, seen in the session; Session B checks the remaining requests before F12 |
+| Q-B9 | settled | GitHub's rate limit on an address shared with other users, seen in the session; Session B checks the remaining requests before F12 |
 | Q-B10 | by delegation | No Low Power Mode fallback (= P2's default, G-13c). FEA-23 is not built |
 | Q-B7 | the maintainer, 2026-10-22 | Xcode is already installed on the M5. WP-18 and the contrast audits run, since 2026-10-23 inside the hands-free Session B, by the local Claude with computer use where Xcode needs it (§3.1 item 4; SUI-18 dropped). The Icon Composer icon ships only on your y to its screenshots (by delegation) |
 | Q-B8 | by delegation | No (= P2's default; §3.1). Enhanced Security is not planned (§4.2) |
@@ -1453,7 +1483,8 @@ anonymous version count in 0.7 (NEW-24; plan-0.7.0 §14 Q7-9).
   - 1.0 ships ad-hoc. README and the guide teach Open Anyway with screenshots (C16), and the
     guide's Known limitations say that every install from the DMG meets it.
   - No App Group: the History and iPhone & iPad widgets exist only through the feed (W0-3, with
-    Q-W3 yes), in 0.7's stretch or in 1.1, or not at all if W0-3 fails.
+    Q-W3 yes), in 0.7.1 since 2026-10-31 (the note at the top; before, 0.7's stretch or 1.1), or
+    not at all if W0-3 fails.
   - Permissions and placed widgets may need setting up again after a DMG replaces the app
     (UG:493-495): a documented known limitation at 1.0 (C3, C7).
   - SEC-02's self-signed identity is weighed in 0.9.0.

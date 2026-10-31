@@ -1,0 +1,95 @@
+{
+  "kinds" : [
+    {
+      "families" : [
+        "small",
+        "medium",
+        "large"
+      ],
+      "intent" : {
+        "parameters" : [
+          {
+            "name" : "layout",
+            "values" : [
+              "automatic",
+              "custom"
+            ]
+          },
+          {
+            "name" : "mainValue",
+            "values" : [
+              "charge",
+              "maximumCapacity",
+              "temperature",
+              "batteryPower"
+            ]
+          },
+          {
+            "name" : "mainVisual",
+            "values" : [
+              "symbol",
+              "ring",
+              "drawnBattery"
+            ]
+          },
+          {
+            "name" : "statusLines",
+            "values" : [
+              "state",
+              "time"
+            ]
+          },
+          {
+            "name" : "details"
+          },
+          {
+            "name" : "time",
+            "values" : [
+              "clockTime",
+              "timeLeft"
+            ]
+          },
+          {
+            "name" : "colors",
+            "values" : [
+              "levelColors",
+              "monochrome"
+            ]
+          },
+          {
+            "name" : "updateTime",
+            "values" : [
+              "whenOld",
+              "always"
+            ]
+          }
+        ],
+        "type" : "BatteryWidgetIntent"
+      },
+      "kind" : "io.github.nikitausov.BatteryPulse.battery"
+    },
+    {
+      "families" : [
+        "small",
+        "medium",
+        "large"
+      ],
+      "intent" : {
+        "parameters" : [
+          {
+            "name" : "mode",
+            "values" : [
+              "all",
+              "lowest"
+            ]
+          },
+          {
+            "name" : "hideFullyCharged"
+          }
+        ],
+        "type" : "AccessoriesWidgetIntent"
+      },
+      "kind" : "io.github.nikitausov.BatteryPulse.accessories"
+    }
+  ]
+}

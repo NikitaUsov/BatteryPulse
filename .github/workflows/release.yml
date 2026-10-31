@@ -27,9 +27,10 @@ jobs:
     runs-on: xcode-27
     environment: release
     env:
-      # The image's default is still Xcode 27.0; 27.1 (27A9275, the release build) is installed
-      # beside it. Use the newest release, never a beta.
-      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
+      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
+      # release. Use the newest release or its release candidate, never a beta.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
     steps:
@@ -61,6 +62,24 @@ jobs:
             exit 1
           fi
           echo "$NOTES opens with \"$first\""
+      - name: Check the version count's file
+        # .github/BatteryPulse-count.txt is the anonymous version count's asset: every release from
+        # 0.7.0 attaches it, and a Mac counts its version by downloading it from that version's
+        # release. It must never be removed from a published release: the app takes the 404 for a
+        # release without a counter and never counts that version.
+        env:
+          COUNT_FILE: .github/BatteryPulse-count.txt
+        run: |
+          if [ ! -f "$COUNT_FILE" ]; then
+            echo "::error file=$COUNT_FILE::$COUNT_FILE is missing; every release attaches it for the anonymous version count."
+            exit 1
+          fi
+          size="$(wc -c <"$COUNT_FILE" | tr -d ' ')"
+          if [ "$size" -lt 1 ] || [ "$size" -gt 1024 ]; then
+            echo "::error file=$COUNT_FILE::$COUNT_FILE holds $size bytes; the version count's file holds 1 to 1024."
+            exit 1
+          fi
+          echo "$COUNT_FILE holds $size bytes"
       - name: Check the update signing key
         # The app installs an update itself only if the DMG is signed with the private half of
         # one of ReleaseSigning.publicKeys, so stop before building when the secret is missing or
@@ -147,7 +166,20 @@ jobs:
         # The DMG and its signature keep stable names, so releases/latest/download/BatteryPulse.dmg
         # always works and the app finds BatteryPulse.dmg.sig next to it. BatteryPulse-dSYMs.zip
         # holds the debug information stripped from the shipped binaries, for crash reports.
+        # BatteryPulse-count.txt (named after the file) is the version count's asset; never remove
+        # it from a published release.
         run: |
-          gh release create "v$VERSION" build/BatteryPulse.dmg build/BatteryPulse.dmg.sig build/BatteryPulse-dSYMs.zip \
+          gh release create "v$VERSION" build/BatteryPulse.dmg build/BatteryPulse.dmg.sig build/BatteryPulse-dSYMs.zip .github/BatteryPulse-count.txt \
             --target "$GITHUB_SHA" --title "BatteryPulse $VERSION" \
             --notes-file .github/release-notes.md --generate-notes
+      - name: Check the published version count's asset
+        # Without the asset no Mac counts this version, and each marks it done on the 404. A Mac
+        # counts at the earliest a day after it first ran the version, so there is time to attach it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qxF BatteryPulse-count.txt; then
+            echo "::error::Release v$VERSION doesn't list BatteryPulse-count.txt, so no Mac would count it. Attach it before anyone has run v$VERSION for a day: gh release upload \"v$VERSION\" .github/BatteryPulse-count.txt"
+            exit 1
+          fi
+          echo "v$VERSION lists BatteryPulse-count.txt"

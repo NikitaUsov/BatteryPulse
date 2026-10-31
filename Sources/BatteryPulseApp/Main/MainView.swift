@@ -30,6 +30,15 @@ enum SidebarItem: Hashable, Identifiable {
         }
     }
 
+    /// Whether a switch away from the page is instant: no fade out and no fade in. Raw Data's
+    /// table and inspector are AppKit views. After a switch from it with no pointer movement (by an
+    /// accessibility client), History's title, toolbar and sidebar selection showed over Raw Data's
+    /// table, not faded at all, and History's charts only in a shot 8 s later: most likely the fade
+    /// stood still at its start until the next window update, so a fade-in alone would stand still
+    /// too. With no animation, the old page goes and the new one shows in the same update as the
+    /// title and the sidebar.
+    var leavesAtOnce: Bool { self == .developer }
+
     /// A `var` with literal cases: the catalog test finds the keys here. A device page shows the
     /// device's name instead (`MainView.navigationTitle`).
     var title: LocalizedStringKey {
@@ -60,35 +69,43 @@ enum SidebarItem: Hashable, Identifiable {
         }
     }
 
-    /// The page as scene storage keeps it: a name, or `device:` and the device's key.
-    var storageKey: String {
+    /// The page's frozen identifier, which scene storage keeps and a widget's click names. One
+    /// case each, so a page can't lose its string.
+    var page: PageID {
         switch self {
-        case .overview: "overview"
-        case .power: "power"
-        case .health: "health"
-        case .history: "history"
-        case .developer: "developer"
-        case .demo: "demo"
-        case .devicesIntro: "devices"
-        case .accessories: "accessories"
-        case .device(let key): Self.devicePrefix + key.rawValue
+        case .overview: .overview
+        case .power: .power
+        case .health: .health
+        case .history: .history
+        case .developer: .developer
+        case .demo: .demo
+        case .devicesIntro: .devices
+        case .accessories: .accessories
+        case .device(let key): .device(key)
         }
     }
+
+    init(page: PageID) {
+        switch page {
+        case .overview: self = .overview
+        case .power: self = .power
+        case .health: self = .health
+        case .history: self = .history
+        case .developer: self = .developer
+        case .demo: self = .demo
+        case .devices: self = .devicesIntro
+        case .accessories: self = .accessories
+        case .device(let key): self = .device(key)
+        }
+    }
+
+    /// The page as scene storage keeps it: a name, or `device:` and the device's key.
+    var storageKey: String { page.rawValue }
 
     init?(storageKey: String) {
-        if storageKey.hasPrefix(Self.devicePrefix) {
-            guard let key = DeviceKey(rawValue: String(storageKey.dropFirst(Self.devicePrefix.count))) else {
-                return nil
-            }
-            self = .device(key)
-            return
-        }
-        let named: [SidebarItem] = Self.pages + Self.developerPages + [.devicesIntro, .accessories]
-        guard let item = named.first(where: { $0.storageKey == storageKey }) else { return nil }
-        self = item
+        guard let page = PageID(rawValue: storageKey) else { return nil }
+        self.init(page: page)
     }
-
-    private static let devicePrefix = "device:"
 }
 
 /// The main window: a sidebar of sections and their content.
@@ -126,9 +143,21 @@ struct MainView: View {
     private var selection: SidebarItem {
         get { SidebarItem(storageKey: storedSelection) ?? .overview }
         nonmutating set {
-            if newValue != selection { Diagnostics.pageWillSwitch() }
-            storedSelection = newValue.storageKey
+            let shown = selection
+            if newValue != shown { Diagnostics.pageWillSwitch() }
+            if newValue != shown, shown.leavesAtOnce {
+                withoutAnimation { storedSelection = newValue.storageKey }
+            } else {
+                storedSelection = newValue.storageKey
+            }
         }
+    }
+
+    /// Runs `body` with no animation: neither the detail's `quickFade` nor one of the caller's.
+    private func withoutAnimation(_ body: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, body)
     }
 
     /// The row the sidebar highlights. A restored device page with no device listed shows the
@@ -181,7 +210,7 @@ struct MainView: View {
         } detail: {
             // Switching pages is the most frequent action here, so it gets the least motion: a
             // 0.15 s fade, no slide. The ZStack keeps the old and the new page on top of each
-            // other while they fade.
+            // other while they fade. A switch away from Raw Data doesn't fade (`leavesAtOnce`).
             ZStack {
                 MainDetail(
                     monitor: monitor, accessories: accessories, selection: selection,
@@ -240,6 +269,20 @@ struct MainView: View {
             let isHidden = !showsDeveloper && SidebarItem.developerPages.contains(request.page)
             withAnimation(motion.change) { selection = isHidden ? .overview : request.page }
         }
+        // A click on a widget asks for its page (`WindowOpener.showMainWindow(page:)`). The request
+        // waits for a main window: one created for the click applies it as it appears, at once and
+        // in place of the page scene storage restored; one already open switches as a sidebar
+        // click does.
+        .onChange(of: WindowOpener.pageRequest.page, initial: true) { old, page in
+            guard let page else { return }
+            WindowOpener.pageRequest.clear()
+            let target = shownPage(forRequest: page)
+            if old == page {
+                withoutAnimation { selection = target }
+            } else {
+                selection = target
+            }
+        }
         // The window style. A style change rebuilds everything above; the registrations below
         // stay put, so they are never dropped or repeated by it.
         .windowLook()
@@ -268,6 +311,15 @@ struct MainView: View {
         default:
             break
         }
+    }
+
+    /// The page a click asked for, as this window shows it: a device page whose device was
+    /// forgotten opens the Devices intro, and a page of a hidden Developer section Overview. With
+    /// no device listed yet, the device page waits for the list, as a restored one does.
+    private func shownPage(forRequest page: SidebarItem) -> SidebarItem {
+        if !showsDeveloper, SidebarItem.developerPages.contains(page) { return .overview }
+        if case .device(let key) = page, !deviceRowIDs.isEmpty, !deviceRowIDs.contains(key) { return .devicesIntro }
+        return page
     }
 
     /// A device page is titled with the device's name, which is data, not a catalog key.

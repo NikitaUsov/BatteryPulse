@@ -4,8 +4,8 @@ import Testing
 @testable import BatteryCore
 
 @Suite struct HistoryExportTests {
-    private let moscow = TimeZone(identifier: "Europe/Moscow")!
-    /// 2026-10-14 10:25:00 UTC = 13:25 in Moscow.
+    private let tokyo = TimeZone(identifier: "Asia/Tokyo")!
+    /// 2026-10-14 10:25:00 UTC = 19:25 in Tokyo.
     private let start = Date(timeIntervalSince1970: 1_791_973_500)
 
     private var samples: [HistorySample] {
@@ -36,7 +36,7 @@ import Testing
     ) -> String {
         let info = HistoryExportInfo(exportedAt: start.addingTimeInterval(3600), generator: "bpulse", source: source)
         let data = HistoryExport.data(
-            kind, samples: samples, days: days, dialect: dialect, info: info, timeZone: moscow)
+            kind, samples: samples, days: days, dialect: dialect, info: info, timeZone: tokyo)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -61,7 +61,7 @@ import Testing
     }
 
     @Test func timesMatchFoundationAcrossTimeZonesAndDaylightSaving() throws {
-        let zones = ["UTC", "Europe/Moscow", "America/New_York", "Europe/Berlin", "Asia/Kolkata", "Pacific/Chatham"]
+        let zones = ["UTC", "Asia/Tokyo", "America/New_York", "Europe/Berlin", "Asia/Kolkata", "Pacific/Chatham"]
         for identifier in zones {
             let zone = try #require(TimeZone(identifier: identifier))
             let iso = Date.ISO8601FormatStyle(timeZoneSeparator: .colon, timeZone: zone)
@@ -105,9 +105,9 @@ import Testing
         #expect(
             text(.samplesCSV) == """
                 time,localTime,event,chargePercent,chargeState,isExternalPowerConnected,batteryWatts,systemLoadWatts,temperatureCelsius,remainingMAh,fullChargeMAh\r
-                2026-10-14T13:25:00+03:00,2026-10-14 13:25:00,launch,84,discharging,0,-5.21,6.3,31.2,3900,4620\r
-                2026-10-14T13:26:00+03:00,2026-10-14 13:26:00,,,unknown,,,,,,\r
-                2026-10-14T13:27:00+03:00,2026-10-14 13:27:00,,83.5,charging,1,12.5,0,30,3880,4620\r
+                2026-10-14T19:25:00+09:00,2026-10-14 19:25:00,launch,84,discharging,0,-5.21,6.3,31.2,3900,4620\r
+                2026-10-14T19:26:00+09:00,2026-10-14 19:26:00,,,unknown,,,,,,\r
+                2026-10-14T19:27:00+09:00,2026-10-14 19:27:00,,83.5,charging,1,12.5,0,30,3880,4620\r
 
                 """)
     }
@@ -116,9 +116,9 @@ import Testing
         #expect(
             text(.samplesCSV, .decimalComma) == """
                 time;localTime;event;chargePercent;chargeState;isExternalPowerConnected;batteryWatts;systemLoadWatts;temperatureCelsius;remainingMAh;fullChargeMAh\r
-                2026-10-14T13:25:00+03:00;2026-10-14 13:25:00;launch;84;discharging;0;-5,21;6,3;31,2;3900;4620\r
-                2026-10-14T13:26:00+03:00;2026-10-14 13:26:00;;;unknown;;;;;;\r
-                2026-10-14T13:27:00+03:00;2026-10-14 13:27:00;;83,5;charging;1;12,5;0;30;3880;4620\r
+                2026-10-14T19:25:00+09:00;2026-10-14 19:25:00;launch;84;discharging;0;-5,21;6,3;31,2;3900;4620\r
+                2026-10-14T19:26:00+09:00;2026-10-14 19:26:00;;;unknown;;;;;;\r
+                2026-10-14T19:27:00+09:00;2026-10-14 19:27:00;;83,5;charging;1;12,5;0;30;3880;4620\r
 
                 """)
     }
@@ -167,14 +167,14 @@ import Testing
                 {
                   "format": "BatteryPulse history",
                   "formatVersion": 1,
-                  "exportedAt": "2026-10-14T14:25:00+03:00",
+                  "exportedAt": "2026-10-14T20:25:00+09:00",
                   "generator": "bpulse",
                   "source": {"kind": "mac", "productType": null, "modelName": null, "osVersion": "27.0.1"},
                   "units": {"batteryWatts": "W", "capacityToDesignPercent": "%", "chargePercent": "%", "fullChargeCapacityMAh": "mAh", "fullChargeMAh": "mAh", "healthPercent": "%", "nominalChargeCapacityMAh": "mAh", "remainingMAh": "mAh", "systemLoadWatts": "W", "temperatureCelsius": "°C"},
                   "samples": [
-                    {"time": "2026-10-14T13:25:00+03:00", "event": "launch", "chargePercent": 84, "chargeState": "discharging", "isExternalPowerConnected": false, "batteryWatts": -5.21, "systemLoadWatts": 6.3, "temperatureCelsius": 31.2, "remainingMAh": 3900, "fullChargeMAh": 4620},
-                    {"time": "2026-10-14T13:26:00+03:00", "event": null, "chargePercent": null, "chargeState": "unknown", "isExternalPowerConnected": null, "batteryWatts": null, "systemLoadWatts": null, "temperatureCelsius": null, "remainingMAh": null, "fullChargeMAh": null},
-                    {"time": "2026-10-14T13:27:00+03:00", "event": null, "chargePercent": 83.5, "chargeState": "charging", "isExternalPowerConnected": true, "batteryWatts": 12.5, "systemLoadWatts": 0, "temperatureCelsius": 30, "remainingMAh": 3880, "fullChargeMAh": 4620}
+                    {"time": "2026-10-14T19:25:00+09:00", "event": "launch", "chargePercent": 84, "chargeState": "discharging", "isExternalPowerConnected": false, "batteryWatts": -5.21, "systemLoadWatts": 6.3, "temperatureCelsius": 31.2, "remainingMAh": 3900, "fullChargeMAh": 4620},
+                    {"time": "2026-10-14T19:26:00+09:00", "event": null, "chargePercent": null, "chargeState": "unknown", "isExternalPowerConnected": null, "batteryWatts": null, "systemLoadWatts": null, "temperatureCelsius": null, "remainingMAh": null, "fullChargeMAh": null},
+                    {"time": "2026-10-14T19:27:00+09:00", "event": null, "chargePercent": 83.5, "chargeState": "charging", "isExternalPowerConnected": true, "batteryWatts": 12.5, "systemLoadWatts": 0, "temperatureCelsius": 30, "remainingMAh": 3880, "fullChargeMAh": 4620}
                   ],
                   "days": [
                     {"day": "2026-10-13", "healthPercent": 100, "capacityToDesignPercent": 101.3, "nominalChargeCapacityMAh": 4757, "fullChargeCapacityMAh": 4620, "cycleCount": 12},
@@ -202,7 +202,7 @@ import Testing
         let empty = String(
             decoding: HistoryExport.data(
                 .json, samples: [], days: [], info: HistoryExportInfo(exportedAt: start, generator: nil, source: nil),
-                timeZone: moscow),
+                timeZone: tokyo),
             as: UTF8.self)
         #expect(
             empty.hasSuffix(
@@ -233,16 +233,16 @@ import Testing
     }
 
     @Test func fileNames() {
-        let late = Date(timeIntervalSince1970: 1_792_020_600)  // 2026-10-14 23:30 UTC, the 15th in Moscow
+        let late = Date(timeIntervalSince1970: 1_792_020_600)  // 2026-10-14 23:30 UTC, the 15th in Tokyo
         #expect(
-            HistoryExport.fileName(.samplesCSV, source: .mac(nil), date: late, timeZone: moscow)
+            HistoryExport.fileName(.samplesCSV, source: .mac(nil), date: late, timeZone: tokyo)
                 == "BatteryPulse-Mac-samples-2026-10-15.csv")
         #expect(
             HistoryExport.fileName(.daysCSV, source: .mac(nil), date: late, timeZone: TimeZone(identifier: "UTC")!)
                 == "BatteryPulse-Mac-days-2026-10-14.csv")
         let phone = HistoryExportSource(kind: .iPhone, productType: "iPhone18,2", modelName: "iPhone 17 Pro Max")
         #expect(
-            HistoryExport.fileName(.json, source: phone, date: late, timeZone: moscow)
+            HistoryExport.fileName(.json, source: phone, date: late, timeZone: tokyo)
                 == "BatteryPulse-iPhone-17-Pro-Max-history-2026-10-15.json")
         #expect(
             HistoryExportSource(kind: .iPad, modelName: "iPad (9th generation)").fileNameComponent
@@ -252,7 +252,7 @@ import Testing
         #expect(HistoryExportSource(kind: .iPad, modelName: "/:.").fileNameComponent == "iPad")
         #expect(HistoryExportSource(kind: .iPhone, productType: "iPhone18,2").fileNameComponent == "iPhone")
         #expect(
-            HistoryExport.fileName(.json, source: nil, date: late, timeZone: moscow)
+            HistoryExport.fileName(.json, source: nil, date: late, timeZone: tokyo)
                 == "BatteryPulse-History-history-2026-10-15.json")
     }
 
@@ -273,13 +273,13 @@ import Testing
         for sample in samples { try await store.record(sample) }
         try await store.record(days[0], at: start)
         let info = HistoryExportInfo(exportedAt: start, generator: nil, source: nil)
-        let data = try await HistoryExport.data(.json, from: store, info: info, timeZone: moscow)
+        let data = try await HistoryExport.data(.json, from: store, info: info, timeZone: tokyo)
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
         // A minute apart, so the store keeps all three.
         #expect((object["samples"] as? [Any])?.count == 3)
         #expect((object["days"] as? [Any])?.count == 1)
         let csv = try await HistoryExport.data(
-            .daysCSV, from: store, dialect: .decimalComma, info: info, timeZone: moscow)
+            .daysCSV, from: store, dialect: .decimalComma, info: info, timeZone: tokyo)
         #expect(String(decoding: csv, as: UTF8.self).components(separatedBy: "\r\n").count == 3)
     }
 }

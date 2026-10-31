@@ -12,7 +12,17 @@ import Testing
 ///   MobileDevice framework and the accessory power sources;
 /// - an IOKit user-client call (`IOServiceOpen`, `IOConnect…`) outside the SMC client, and a
 ///   registry write anywhere;
-/// - starting a process outside the installer, or signalling one outside the widget refresher.
+/// - starting a process outside the installer, or signalling one outside the widget refresher;
+/// - in the widget and BatteryArt, the painter it links, any file API, dynamic loading, URL
+///   session or Network framework (``widgetForbidden``): the widget reads no file of ours and
+///   makes no request;
+/// - a handler of URLs or activities outside the app delegate's two widget-click handlers: no
+///   `onOpenURL`, `handlesExternalEvents` or `onContinueUserActivity`, and no other delegate
+///   method that opens something. The app's Info.plist registers no URL scheme either
+///   (``noURLSchemeIsRegistered()``): the widget's URL reaches the app without one, and no web
+///   page's link opens it;
+/// - a `URLSession` made outside `UpdateNetwork`, or the version count's URL taken outside the
+///   update checker.
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
@@ -57,6 +67,19 @@ import Testing
                 pattern: words(#/\bURLSession\s*\.\s*shared\b/#),
                 allowed: [:],
                 message: "URLSession.shared caches on disk; use UpdateNetwork's sessions"),
+            // W-13: with `.shared` banned, `UpdateNetwork`'s two sessions are the only ones, so
+            // every request is update traffic with their configuration.
+            Placement(
+                literals: ["URLSession"],
+                pattern: words(#/\bURLSession\s*(?:\.\s*init\s*)?\(/#),
+                allowed: ["BatteryPulseApp/Updates/UpdateChecker.swift": 2],
+                message: "a new URLSession; use UpdateNetwork's sessions"),
+            // W-13: the version count is requested in one place, the automatic update check.
+            Placement(
+                literals: ["VersionCounterPolicy"],
+                pattern: words(#/\bVersionCounterPolicy\s*\.\s*url\b/#),
+                allowed: ["BatteryPulseApp/Updates/UpdateChecker.swift": 1],
+                message: "the version count's URL only in the update checker"),
             Placement(
                 literals: ["IOServiceOpen", "IOConnect"],
                 pattern: words(#/\bIOServiceOpen\b|\bIOConnect\w+/#),
@@ -114,6 +137,15 @@ import Testing
                     "BatterySource/MacAccessoryProvider.swift": 1,
                 ],
                 message: "@safe; mark each unsafe use `unsafe` with its reason instead"),
+            // A click on a widget reaches the app delegate, by URL or by activity, never a scene
+            // modifier: BatteryPulse usually has no window when one arrives.
+            Placement(
+                literals: ["application", "onOpenURL", "handlesExternalEvents", "onContinueUserActivity"],
+                pattern: words(
+                    #/\bfunc\s+application\s*\([^,)]*,\s*(?:open\w*|continue)\b|\bonOpenURL\b|\bhandlesExternalEvents\b|\bonContinueUserActivity\b/#
+                ),
+                allowed: [Self.clickHandlers: 2],
+                message: "a URL or activity handler only in the app delegate's two widget-click handlers"),
             Placement(
                 literals: ["StrictMemorySafety"],
                 pattern: words(#/\bStrictMemorySafety\b/#),
@@ -121,6 +153,25 @@ import Testing
                 message: "StrictMemorySafety silenced; mark each unsafe use `unsafe` with its reason"),
         ]
     }
+
+    /// The widget's own target and BatteryArt, the painter it shares with the app, which read the
+    /// battery and nothing else of ours (P2 §8.8): no file API, no `dlopen` or `dlsym`, no
+    /// `URLSession` and no Network framework (REJ-57). The battery and accessory reads it links
+    /// live in BatterySource, under the placements above.
+    static var widgetForbidden: Regex<Substring> {
+        words(
+            #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
+        )
+    }
+
+    /// The app delegate's file, with `application(_:open:)` and
+    /// `application(_:continue:restorationHandler:)`.
+    static let clickHandlers = "BatteryPulseApp/App/BatteryPulseApp.swift"
+
+    /// The sources ``widgetForbidden`` covers: the widget's own, and BatteryArt's, which the
+    /// widget links.
+    static let widgetFolders = ["BatteryPulseWidget/", "BatteryArt/"]
+    static let widgetMessage = "the widget reads no file of ours and makes no request"
 
     /// The targets that build with strict memory safety: the parsers of untrusted input
     /// (BatteryCore, bpulse) and the system bindings (BatterySource, BatteryKit).
@@ -140,6 +191,11 @@ import Testing
             guard matches.count > allowed else { continue }
             for match in matches.dropFirst(allowed) {
                 found.append((match.range.lowerBound, placement.message))
+            }
+        }
+        if widgetFolders.contains(where: { path.hasPrefix($0) }) {
+            for match in code.matches(of: widgetForbidden) {
+                found.append((match.range.lowerBound, widgetMessage))
             }
         }
         return found.sorted { $0.0 < $1.0 }.map { index, message in
@@ -189,9 +245,51 @@ import Testing
     /// SEC-03: no request goes through the shared session.
     @Test func noSharedURLSession() {
         #expect(flags("let (data, response) = try await URLSession.shared.data(for: request)"))
-        #expect(flags("let session = URLSession .shared", path: "BatteryPulseApp/Updates/UpdateChecker.swift"))
+        #expect(flags("let session = URLSession .shared", path: Self.updateChecker))
         #expect(!flags("let (data, _) = try await UpdateNetwork.user.data(for: request)"))
-        #expect(!flags("let session = URLSession(configuration: .ephemeral)"))
+        #expect(!flags("let session = URLSession(configuration: .ephemeral)", path: Self.updateChecker))
+    }
+
+    private static let updateChecker = "BatteryPulseApp/Updates/UpdateChecker.swift"
+
+    /// W-13: `UpdateNetwork`'s two sessions are the only ones.
+    @Test func sessionsOnlyInUpdateNetwork() {
+        let sessions = "static let user = URLSession(configuration: configuration(automatic: false))\n"
+        #expect(!flags(sessions + sessions, path: Self.updateChecker))
+        #expect(flags(sessions + sessions + sessions, path: Self.updateChecker))
+        #expect(flags(sessions, path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        #expect(flags("let session = URLSession.init(configuration: .default)", path: "BatteryCore/Updates.swift"))
+        #expect(!flags("let configuration = URLSessionConfiguration.ephemeral"))
+        #expect(!flags("func fetch(session: URLSession) async throws -> Data"))
+        #expect(!flags("let task = session.dataTask(with: request)"))
+    }
+
+    /// W-13: update traffic neither stores nor sends cookies. `UpdateNetwork` builds both sessions'
+    /// configuration in one function, so the three settings before its `if automatic` hold for
+    /// both.
+    @Test func updateTrafficHasNoCookies() throws {
+        let code = try SourceScanner.file(Self.updateChecker).code
+        let function = try #require(code.firstRange(of: "func configuration(automatic: Bool)"))
+        let shared = try #require(code[function.upperBound...].firstRange(of: "if automatic"))
+        let common = code[function.upperBound..<shared.lowerBound]
+        for (setting, pattern) in [
+            ("httpCookieStorage = nil", #/\bconfiguration\s*\.\s*httpCookieStorage\s*=\s*nil\b/#),
+            ("httpShouldSetCookies = false", #/\bconfiguration\s*\.\s*httpShouldSetCookies\s*=\s*false\b/#),
+            ("httpCookieAcceptPolicy = .never", #/\bconfiguration\s*\.\s*httpCookieAcceptPolicy\s*=\s*\.\s*never\b/#),
+        ] {
+            #expect(common.contains(pattern), "UpdateNetwork's configuration sets \(setting)")
+        }
+    }
+
+    /// W-13: the version count's URL is taken once, by the update checker.
+    @Test func versionCountURLInOnePlace() {
+        let request = "guard let url = VersionCounterPolicy.url(for: currentVersion) else { return }\n"
+        #expect(!flags(request, path: Self.updateChecker))
+        #expect(flags(request + request, path: Self.updateChecker))
+        #expect(flags(request, path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        #expect(flags(request, path: "BatteryPulseApp/App/BatteryPulseApp.swift"))
+        #expect(!flags("let due = VersionCounterPolicy.shouldCount(enabled: on, frequency: frequency)"))
+        #expect(!flags("let urlString = VersionCounterPolicy.urlString", path: "BatteryCore/Updates.swift"))
     }
 
     /// The SMC client's one user-client call: `IOConnectCallStructMethod` with selector 2
@@ -240,6 +338,16 @@ import Testing
         "unowned(unsafe) let owner: Owner",
         "@safe final class Box { private var pointer: UnsafeMutableRawPointer? }",
         "@diagnose(StrictMemorySafety, as: ignored, reason: \"audited\") func read() {}",
+        "func application(_ application: NSApplication, open urls: [URL]) {}",
+        "func application(_ sender: NSApplication, openFile filename: String) -> Bool { true }",
+        "func application(\n    _ app: NSApplication, continue userActivity: NSUserActivity,\n    restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void\n) -> Bool { false }",
+        "MainView().onOpenURL { url in show(url) }",
+        "WindowGroup { MainView() }.handlesExternalEvents(matching: [\"page\"])",
+        "MainView().onContinueUserActivity(\"BatteryWidgetIntent\") { _ in }",
+        "let session = URLSession(configuration: .ephemeral)",
+        "let session = URLSession .init(configuration: configuration)",
+        "let url = VersionCounterPolicy.url(for: version)",
+        "let url = VersionCounterPolicy . url(for: version)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -261,6 +369,9 @@ import Testing
         "let name = unsafe String(cString: pointer)",
         "nonisolated let safeArea = 1",
         "@safeAreaPadding var inset = 0",
+        "func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool { true }",
+        "func applicationDockMenu(_ sender: NSApplication) -> NSMenu? { nil }",
+        "NSWorkspace.shared.open(AppLinks.help)",
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
@@ -278,6 +389,60 @@ import Testing
         #expect(flags("let process = Process()", path: "bpulse/main.swift"))
         #expect(!flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/App/WidgetRefresher.swift"))
         #expect(flags("kill(pid, SIGTERM)", path: "BatteryPulseApp/Updates/UpdateInstaller.swift"))
+        let open = "func application(_ application: NSApplication, open urls: [URL]) {}\n"
+        #expect(!flags(open + open, path: Self.clickHandlers))
+        #expect(flags(open + open + open, path: Self.clickHandlers))
+        #expect(flags(open, path: "BatteryPulseApp/App/WidgetRefresher.swift"))
+        #expect(flags("MainView().onOpenURL { url in show(url) }", path: "BatteryPulseApp/Main/MainView.swift"))
+    }
+
+    /// Both click routes are handled, in the app delegate: the `widgetURL` and the activity of a
+    /// click without one.
+    @Test func theAppDelegateHandlesBothClickRoutes() throws {
+        let code = try SourceScanner.file(Self.clickHandlers).code
+        #expect(
+            code.contains(Self.words(#/\bfunc\s+application\s*\(\s*_\s+\w+\s*:\s*NSApplication\s*,\s*open\s+urls\b/#)))
+        #expect(code.contains(Self.words(#/\bfunc\s+application\s*\([^,)]*,\s*continue\s+userActivity\b/#)))
+    }
+
+    /// No URL scheme in the app's Info.plist, which `build-app.sh` writes: the widget's
+    /// `batterypulse` URL reaches the app without one, and no web page's link reaches it at all.
+    /// A plain-text read, since the scan covers only Swift files.
+    @Test func noURLSchemeIsRegistered() throws {
+        let script = SourceScanner.sources.deletingLastPathComponent().appendingPathComponent("scripts/build-app.sh")
+        let text = try String(contentsOf: script, encoding: .utf8)
+        // The Info.plist is still written there.
+        #expect(text.contains("<key>CFBundleIdentifier</key>"))
+        #expect(!text.contains("CFBundleURLTypes"))
+        #expect(!text.contains("CFBundleURLSchemes"))
+    }
+
+    /// The widget and the painter it links have no file or network API, wherever else the app
+    /// may use one.
+    @Test(arguments: [
+        "let data = try Data(contentsOf: url)",
+        "let entries = try FileManager.default.contentsOfDirectory(atPath: path)",
+        "let handle = FileHandle(forReadingAtPath: path)",
+        "let text = try String(contentsOfFile: path, encoding: .utf8)",
+        "let file = fopen(path, mode)",
+        "let session = URLSession(configuration: .ephemeral)",
+        "import Network",
+        "let connection = NWConnection(host: host, port: port, using: .tcp)",
+    ])
+    func theWidgetHasNoFileOrNetworkAPI(source: String) {
+        for widget in ["BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift"] {
+            #expect(
+                Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetMessage) },
+                "\(widget): \(source)")
+        }
+        let app = "BatteryPulseApp/Updates/UpdateNetwork.swift"
+        #expect(!Self.violations(in: source, path: app).contains { $0.hasSuffix(Self.widgetMessage) })
+    }
+
+    @Test func theWidgetMayNameFilesInText() {
+        let widget = "BatteryPulseWidget/BatteryTimelineProvider.swift"
+        #expect(!flags("// Reads no file: no FileManager, no URLSession.\nlet name = \"Network\"", path: widget))
+        #expect(!flags("let reading = await WidgetReadCache.battery.snapshot()", path: widget))
     }
 
     /// SW-R6: four `@unchecked Sendable` types, one in each listed file.

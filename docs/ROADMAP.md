@@ -5,18 +5,23 @@ charging state.
 
 ## Decisions
 
-- **Platforms:** macOS 27 and iOS 27 minimum. On the Mac this means Apple Silicon only, since
-  macOS 27 no longer runs on Intel Macs. No Intel code paths.
+- **Platforms:** macOS 27 minimum; BatteryKit still builds for iOS 27 (PLT-05). macOS 27 means
+  Apple Silicon only, since it no longer runs on Intel Macs. No Intel code paths. CI's macOS job
+  keeps building BatteryKit for iOS, as cheap insurance, until that first costs time (decided with
+  M-2 on 2026-10-22).
 - **Distribution (macOS):** a DMG outside the App Store. The app is not sandboxed, so SMC reads
-  (and later charge limiting) are possible. A notarized DMG needs a paid Apple Developer
-  account, and there won't be one: on 2026-10-22 the maintainer decided against it, not now and
+  are possible. A notarized DMG needs a paid Apple Developer account, and there won't be one: on
+  2026-10-22 the maintainer decided against it, not now and
   not before 1.0. BatteryPulse is a non-commercial hobby project with about no users, and he
   won't pay for an Apple developer account for this app; he is willing to spend on help with
   development, not on the account. So each install from the DMG needs Open Anyway in Privacy &
   Security, in-app updates don't, and permissions or placed widgets may need setting up again
   after a DMG replaces the app; 1.0 documents these as known limitations.
-- **Distribution (iOS):** undecided. Personal installs from Xcode work with a free Apple ID
-  (re-signed every 7 days); TestFlight and the App Store need the paid account.
+- **Distribution (iOS):** not in 1.x (M-2 in `docs/plans/1.0/ROADMAP.md`, decided on
+  2026-10-22). Public iOS APIs give only the level and the charging state, personal installs from
+  Xcode have to be re-signed every 7 days, and TestFlight and the App Store need the paid account
+  the maintainer declined; BatteryPulse on the Mac already reads an iPhone's or iPad's battery
+  health (Stage 5).
 - **Reference hardware:** MacBook Air M5 running macOS 27.
 - **App shape:** a regular app with a main window (sidebar: Overview, Power, History, Health,
   Devices with a page per iPhone or iPad and Accessories, optional Developer), a compact window and a widget, plus an optional menu bar item. Users choose menu bar and Dock presence; the app is
@@ -57,6 +62,17 @@ charging state.
     `lastCountedVersion`, `versionFirstLaunch`) and a new release asset (`BatteryPulse-count.txt`)
     are frozen-surface changes, so they arrive in a minor release. Through 0.6.x the app counts
     and sends nothing.
+- **Widgets (0.7):** two kinds, Battery (0.6's kind string, now configured in its own edit
+  sheet) and Accessories, each in small, medium and large. Extra large isn't declared: the
+  maintainer's look check (2026-10-31) left its two-panel layout out of 0.7, and since a size can
+  be added later but never removed, it waits. Automatic is frozen: in small and medium it is
+  0.6.1's widget with the planned changes, so a placed widget keeps its look; the kind strings,
+  the intent and parameter names, the option values and the sizes offered are 1.x surfaces (C14
+  item 5). The app asks WidgetKit to reload only the kinds that are placed (`WidgetReloadPlanner`),
+  within the daily budget. Without an App Group (no paid account) the History and iPhone & iPad
+  widgets can only read a small copy of readings the app writes for them (the feed); the feed
+  and those widgets were 0.7's stretch, which the maintainer left out of 0.7, so they wait for
+  0.7.1 (decided on 2026-10-31).
 - **Releases have no dates.** BatteryPulse is a hobby project: a release ships when there is time
   and desire. The plans keep the order of the versions and estimate their effort, but set no
   target date (decided on 2026-10-22).
@@ -78,6 +94,128 @@ charging state.
   about the Mac, its battery or the settings is ever sent, and GitHub's public download counts
   are the only usage numbers the maintainer gets. Reading an iPhone or iPad over Wi-Fi stays on
   the local network.
+
+## Road to 1.0
+
+1.0.0 is the first release meant for people other than the maintainer. What it means was approved
+by him as written on 2026-10-22; the full plan, with how each criterion is checked, is
+`docs/plans/1.0/ROADMAP.md` (§2), and everything still open, each item placed in a version, is in
+`docs/plans/1.0/INVENTORY.md`.
+
+**Five promises:**
+
+1. **Seen working.** What the User Guide says works was seen working on the M5 in a packaged
+   build.
+2. **A week without a crash.** The final 0.9.x runs in daily use for seven days without a crash.
+3. **In-app updates from older versions.** Install and Relaunch reaches 1.0 from older versions,
+   with data and settings kept.
+4. **Nothing breaks through 1.x.** Scripts, settings, stored data, placed widgets and the update
+   path keep working.
+5. **Usable by a non-expert.** Someone who isn't an expert can install BatteryPulse, understand
+   what it shows and report a problem without developer tools.
+
+1.0.0 is the last 0.9.x renamed, with no new code.
+
+**The criteria,** each checked by a Linux or CI test, a scripted step on the M5 or a document that
+exists:
+
+- **C1 Contents:** everything 0.6.1 ships; 0.7's configurable Battery widget (small, medium and
+  large) and the Accessories widget; macOS's Charge
+  Limit, read-only (its number only if 0.8 proves a source, else a known limitation); 0.8's
+  answers.
+- **C2 Every feature seen in a packaged build:** `docs/VERIFICATION.md` maps each User Guide
+  feature to the session and the evidence from a DMG build, and every open "Check on the M5" line
+  here is ticked or listed under Known limitations in the guide and in 1.0's notes.
+- **C3 No known issue in anything on by default:** the guide's known issues list only the beta
+  styles, the Developer options and what C7 allows; Open Anyway on each DMG install, and a
+  permission or placed widget lost when a DMG replaces the app, are documented known limitations.
+- **C4 Seven-day soak:** the final 0.9.x on the M5 for 7 days, nights included: no crash report
+  for the app or the widget, no fault message, memory on day 7 within 10 % of day 1, and every
+  History gap explained by a launch, a wake or a sleep.
+- **C5 Energy within budgets:** on one day, the final 0.9.x no more than 15 % above 0.6.2's DMG
+  in wake-ups, energy with power in the menu bar, CPU with the displays asleep, launch to the menu
+  bar (with exactly one read before it) and idle memory; an attached iPhone with every window
+  closed under 1 ms/s.
+- **C6 Resource targets:** the app binary under 5 MB, idle CPU within C5's comparison at about one
+  read a minute, and idle memory with no window open under 30 MB (or the measured number, with the
+  maintainer's yes).
+- **C7 Upgrade matrix:** Install and Relaunch reaches the final 0.9.x from 0.4.0, 0.6.1, the last
+  0.7.x and the last 0.8.x, plus one install over the old copy from the DMG; History, devices and
+  settings survive, and the guide names any permission or widget to set up again.
+- **C8 No update leaves an app that can't launch:** the installer refuses a bundle that needs a
+  newer macOS, and the old copy comes back if the new one fails to open.
+- **C9 Robustness pinned by tests:** every storage format decodes and a future file loses
+  nothing; a capture with a key removed, a type swapped or an extreme value never crashes and
+  shows "—" or "Unavailable", never a wrong number; a missing source gives an explanation.
+- **C10 Accessibility:** VoiceOver reaches and names every control on every page, the menu bar
+  panel, every Settings pane and every widget size, in English and Russian; every chart has a
+  descriptor; the keyboard works without a pointer; contrast passes in Standard and Frosted, light
+  and dark, and with Increase Contrast.
+- **C11 Russian:** the maintainer signs off a screenshot set of every screen, alert, notification
+  and error message, and the catalog stays complete.
+- **C12 Engineering gates:** no compiler warnings, the strict lint, every guard suite green and a
+  test count that only grows, plus new guards for explanations, log privacy and frozen surfaces.
+- **C13 Release health:** no open issue about a crash or data loss, and the last two releases
+  before 1.0 needed no rollback.
+- **C14 Stability for 1.x:** the promises below.
+- **C15 Releases and keys:** the DMG, its signature and the debug symbols on GitHub Releases, with
+  in-app updates; two signing keys, today's and an offline backup; the `release` environment's
+  reviewer confirmed.
+- **C16 First install, ad-hoc:** README and the guide show Open Anyway with screenshots from the
+  current macOS 27.x; the guide's Known limitations and 1.0's notes say that every install from
+  the DMG needs it and in-app updates don't.
+- **C17 The documentation matches the product:** README without iOS promises or "early
+  development", with screenshots and an honest hardware claim; the guide with a Compatibility
+  section, Uninstall and Troubleshooting, and every file BatteryPulse writes and every request it
+  makes; Help opening the guide at the release's tag; `SECURITY.md`; a bug template that asks for
+  the version and the install; no `swift run` in user-facing text.
+
+**The 1.x promises (C14).** Within 1.x a change may only add; breaking one waits for 2.0.
+
+1. **Settings keys** of the `io.github.nikitausov.BatteryPulse` domain: names, types and defaults,
+   and the legacy migrations. 0.7 adds four: the anonymous version count's three and the widget
+   reloads' `lastSeenLanguage` (Decisions).
+2. **Storage** under Application Support (`History/`, `Devices/`): files only gain fields, readers
+   ignore unknown ones, and a newer devices file makes the store read-only, never lossy.
+3. **The capture format** of `bpulse --raw` and Export Capture.
+4. **`bpulse`'s machine outputs:** `--json`, `--raw`, `--device <n> --json|--raw`,
+   `--accessories --json|--raw`, `--export csv|json`, the `--record` folder, the options and the
+   exit codes 0, 1 and 2; fields and options are only added. The text report, `--help`, the text
+   of `--smc` and `--watch`, and stderr may change, with a line in the release notes.
+5. **Widgets:** kind strings; the intent, entity and query type names, parameter names, option
+   raw values and entity ID formats; the sizes offered, which are only added to; what Automatic
+   shows in each size; the page and route strings, and the URL scheme if there is one.
+6. **The update contract:** `BatteryPulse.dmg` and `BatteryPulse.dmg.sig` on GitHub Releases,
+   read through `releases/latest`; signing keys are only added (a compromised key is removed in a
+   release whose notes say why); the bundle IDs and the log subsystem; every 1.x version installs
+   the next one in-app. 0.7's version count adds `BatteryPulse-count.txt` to every release
+   (Decisions).
+7. **Platform:** macOS 27 or later on Apple silicon throughout 1.x; the floor rises only in 2.0.
+8. **Privacy:** the app reaches the internet only to talk to GitHub, through ephemeral sessions:
+   the update check and a download the user chose, and from 0.7 the anonymous version count
+   (Decisions). No identifier and nothing about the Mac, its battery or its settings is sent, and
+   within 1.x nothing is added to what is sent.
+
+Not promised: readings macOS stops providing, looks and wording, the beta window styles' look
+(their stored values keep decoding), the Developer options, energy beyond C5's budgets, and the
+signpost names.
+
+**The order of the versions,** with their effort [estimate]; an order, not a schedule:
+
+| Version | What it brings | The maintainer's time | Runs |
+|---------|----------------|-----------------------|------|
+| 0.7 | Widgets you configure (Battery and Accessories, each in small, medium and large), device JSON dates, the anonymous version count, the Charge Limit's paused state; released on 2026-10-31 | the look check, a second look and a layout confirmation, at the desk; no M5 session, as the maintainer decided | about 30-33, plus 3 in reserve |
+| 0.7.1 | The widgets that waited for the feed (History and iPhone & iPad), the widget following the app's own language, and 0.7's M5 checks, which Session R would have run | a look at the new widgets, and the M5 session 0.7.0 went without, hands-free: about 12-15 minutes in all (1 once before, 6-8 at its start, 3-4 at the logged day's end and 2 after publishing) | 8-9 for the feed and its two widgets, plus the widget's language, the build-number clock, re-pointing 0.7's session tools at 0.7.1, and the release |
+| 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard; the backup release key, moved from 0.7 | a look sitting of about 40 minutes and a release-candidate sitting of about 85, plus about 5 for the backup key | 30-38, plus 1 for the key |
+| 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
+| 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
+| 1.0.0 | The promise: the last 0.9.x renamed | the after-publishing check, about 10 minutes | 1-2 |
+| 1.1 | macOS 28 compatibility once macOS 28 ships (an event, not a date), and extra large, which the look check left out of 0.7 | — | — |
+
+**No dates.** "This is a hobby project; we release when there is time and desire" (the
+maintainer, 2026-10-22). No version has a target date, a calendar or an outer bound; the order
+and the estimates stay. If 1.0 isn't out when macOS 28's betas arrive, it still ships on macOS 27,
+checked there.
 
 ## What the platforms expose
 
@@ -191,9 +329,9 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
 - [x] 0.3.1: fixes from that run (per-cell charge voltage, SMC float cells in volts, `B0AT` in
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
-- [ ] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
-  (0.6.0) keeps captures just before and after every charging change, with a timeline. Partly
-  settled in 0.6.2's first session (2026-10-23 and 24, the limit at 80 %): the paused state is bit
+- [x] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
+  (0.6.0) keeps captures just before and after every charging change, with a timeline. Settled
+  in 0.6.2's first session (2026-10-23 and 24, the limit at 80 %): the paused state is bit
   24 (0x01000000) of `ChargerData.NotChargingReason`, in `AppleSmartBattery` and its child
   `AppleChargerData`, with no charge current, and raising the limit to 100 % clears it; the
   configured value is in no registry key. That session's reads put its candidates for 0.8 in this
@@ -203,8 +341,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   Settings' own record of the last limit, which stayed 80 on battery and at 100 % alike; the SMC's
   `CHLT`, which `bpulse --smc` lists (it prints no `CH*` values; a value read waits for a reviewed
   change); and `pmset -g battlimit`, which prints the file's policy, also only on the adapter. The
-  redacted capture of the hold came with the session's report. Open until it is committed as a
-  test fixture (0.7, QUA-05, `docs/plans/1.0/ROADMAP.md`)
+  redacted capture of the hold came with the session's report and is the
+  `m5-macos27-charge-limit` test fixture (0.7, QUA-05, `docs/plans/1.0/ROADMAP.md`)
 - [x] 0.4: glossary entries for the keys of the pack, banks, cells and charger entries of
   macOS 27; `RawKeyGlossaryTests` lists the ones still unexplained (about 20 on the M5)
 - [ ] Glossary: re-check the keys left out as uncertain, and add captures from other Apple
@@ -275,7 +413,10 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   installer also ends the running widget extension just before the swap, so macOS can't take
   the old one's description for the new version. Each release's check after publishing looks
   again; a loss stays a documented known limitation at 1.0 (no Developer ID signature is
-  coming, 2026-10-22), and the guide tells the user to add them again
+  coming, 2026-10-22), and the guide tells the user to add them again. The update to 0.7.0,
+  which turns the Battery widget into one you configure under the same kind, wasn't looked at:
+  0.7.0 shipped without an M5 session (the maintainer's decision, 2026-10-31), so its notes and
+  the guide say to add a widget again if it is gone or blank, and 0.7.1's session checks it
 - [x] An About BatteryPulse window: version and build, license, links to the project, the User
   Guide and the release notes, and Check for Updates; from the app menu, the menu bar
   popover and Settings
@@ -508,7 +649,7 @@ Decisions that last beyond 0.6.1:
   declaration.
 - **Frozen outputs.** Within a minor release, `bpulse`'s output and exit codes, the capture
   format, the storage formats, the settings keys and the update contract don't change; a change
-  waits for a version that announces it (device JSON dates, 0.7).
+  waits for a version that announces it (device JSON dates and `formatVersion`, shipped in 0.7).
 - **Looks.** The tile pickers mark the choice with an accent outline; selection glass would
   return only with a pixel test. Clear dims at 0.65 in both appearances. Translucent and Clear
   stay beta styles until the maintainer signs them off on the M5; the History chart readout keeps
@@ -572,7 +713,8 @@ beta window styles' known bug, the energy measurements 0.6.1's session skipped, 
 read-path groundwork that widget customization (0.7) needs. The plan, removed at the release, is
 readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`); its widget design
 moved to `docs/plans/0.7.0/widgets.md`, and its Appendix C, session tools and both sessions'
-reports were copied to `docs/plans/0.7.0/`.
+reports were copied to `docs/plans/0.7.0/`, a folder that left at 0.7.0's release in turn
+(readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`).
 Two sittings on the M5: an early one (about 65 minutes plus 3 hours unattended, 2026-10-23/24) and
 one on the release candidate, run hands-free on 2026-10-30 with about the planned 13-15 minutes of
 the maintainer's time (a first attempt on 2026-10-27 was cancelled). WP-18's Xcode items didn't
@@ -629,7 +771,8 @@ Deferred from 0.6.1, each for the reason given:
   the Icon Composer icon (SZ-10), shipped only on the maintainer's yes to its screenshots. Not run
   in the release candidate's session: after the macOS 27.2 update Xcode asked to install system
   components, which the hands-free session left alone, and the frozen worktree had no icon
-  source. They move to 0.7, into Session R's GUI phase
+  source. They moved to 0.7, into Session R's GUI phase, and on to 0.7.1's M5 session when 0.7.0
+  shipped without Session R
 - [x] CryptoKit out of the widget (K-03): a lower `BatterySource` target that the widget depends
   on alone, besides BatteryCore; with `-internalize-at-link` on the widget's and the app's link
   lines, the size headroom 0.7's widget work needs. In CI, against the build before: the widget
@@ -648,8 +791,23 @@ Deferred from 0.6.1, each for the reason given:
 - [ ] MobileDevice in a helper process (SEC-10), only on evidence of a hang or crash
 - Enhanced Security (SEC-08): not planned (decided on 2026-10-22: no session step, and the
   Developer ID build it was to be retried on won't exist without the paid account)
-- [ ] `-noverify` when the installer mounts the DMG (SEC-15), if mounting takes 100 ms or more;
-  Check Now cancels a waiting automatic check (E10); SEC-18's research
+- [x] Check Now takes over a running automatic check (E10): it cancels the automatic one and
+  checks at once on any network, instead of waiting for a check that Low Data Mode could refuse;
+  `UpdatePolicy.checkNow(during:)` decides, tested on Linux
+- `-noverify` when the installer mounts the DMG (SEC-15): not adopted. Timed on the M5 with
+  0.6.1's DMG, five runs each, it saved nothing (`hdiutil attach` 152 ms at the median, 158 ms with
+  the flag), and `diskutil image attach`, which the installer uses now, has no such option
+- [x] SEC-18's research (done in 0.7): what a self-signed code identity would keep across an
+  update. macOS knows an updated app as the same by its designated requirement, and an ad-hoc
+  signature's requirement names only that build (TN3127), so an update loses what is recorded
+  against it: the permissions in Privacy & Security. BatteryPulse asks for none of them (it
+  declares no usage description), and what it does have survived the in-app updates recorded on
+  the M5, ad-hoc signed: Open at login and the placed widget from 0.6.0 to 0.6.1; Open at login,
+  notification permission and History from 0.6.1 to 0.6.2, with a desktop widget in place after
+  it. A self-signed identity has no Team ID, so it brings no App Group, and Gatekeeper still asks
+  for Open Anyway on a DMG install; it would add a second secret and a signing keychain in CI,
+  and the switch to it, like any later change of its certificate, changes the requirement once.
+  Not adopted unless an update is seen losing something; 0.9.0 weighs it (SEC-02)
 - [x] Readability and tooling: SW-13 for BatterySource and BatteryKit (strict memory safety, each
   unsafe use marked with its reason, four `@safe` types, a guard test for both); a DocC link check
   of BatteryCore in CI (SW-21, 9 s); C2 as a table of the parser's peak memory per fixture in CI,
@@ -661,7 +819,7 @@ Deferred from 0.6.1, each for the reason given:
 - [x] CI: `actions/checkout` v7.0.1 and `upload-artifact` v7.0.2, pinned by commit in both
   workflows; `checkout` v6.1.0 turned down, a tag still without a changelog entry
 - [ ] The 0.6.0 checks that 0.6.1's session doesn't cover, which stay open in their stages: the
-  Charge Limit capture (Stage 1.1; captured in the first session, its fixture still to come); full
+  Charge Limit capture (Stage 1.1; captured in the first session, its fixture committed in 0.7); full
   screen, the contrast audit with Accessibility Inspector and each window style's energy (Stage
   1.5); frame rate and energy with motion (Stage 1.4); the menu bar icons with Increase Contrast and
   on displays with a notch (Stage 1.3); iPhone, iPad and accessory captures in the packaged app,
@@ -692,38 +850,49 @@ In Low Power Mode, and with the displays asleep, one pair each came out about eq
 4,248.4 mJ/h in Standard and 4,335.8 in Clear, one run each; Translucent and Frosted weren't
 measured.
 
-### 0.7
+### Stage 1.8: Widgets you configure (0.7)
 
-Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's
-Charge Limit shown. The plan: `docs/plans/0.7.0/PLAN.md`. The widget design it builds on, moved
-from 0.6.2's plan at 0.6.2's release: `docs/plans/0.7.0/widgets.md`.
+Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's Charge
+Limit shown; released on 2026-10-31. The plan, removed at the release, is readable at
+`ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head` (`docs/plans/0.7.0/PLAN.md` there,
+with the widget design it took from 0.6.2's plan beside it); what 0.7 didn't build moved to
+`docs/plans/0.7.1/widgets.md`, and its Appendix C and session tools were copied to
+`docs/plans/0.7.1/`. Three sittings at the desk, answered on CI's pictures (2026-10-31): the look
+check, a second look and a layout confirmation. No M5 session: the maintainer released 0.7.0 without
+Session R and its logged day (2026-10-31), so nothing of 0.7 was seen on the M5 before the release,
+only in CI, and 0.7.1's M5 session checks it.
 
-- [ ] Widget customization: the widget's own edit sheet (App Intents) chooses what it shows, with
-  defaults that keep a placed widget looking as it does today: the main value and visual, the
-  details per size, clock time or time left, level colours or monochrome; every rendering mode,
-  device names hidden where the widget is redacted, clicks that open the matching page,
-  VoiceOver. Which fields fit which size is decided in BatteryCore and tested on Linux. In
-  phases:
-  - 0.6.2, throwaway builds on the M5 for what the design depends on, plus the size headroom
-    (K-03 and `-internalize-at-link`) and the read off the main actor that the widget's provider
-    reuses. Their first answers (2026-10-23): a SwiftPM build gets the App Intents metadata and
-    the edit sheet shows the parameters; the sandboxed widget reads a file the app writes, and
-    reads accessory batteries itself; a widget placed by 0.6.1 survives the move to a
-    configurable widget if the old widget extension has ended before the swap, which 0.6.2's
-    installer sees to;
-  - the 0.7 MVP, never cut: the Battery widget in small, medium and large (extra large only if
-    its layout is approved), Layout Automatic or Custom, status lines, the read time, empty
-    states and accessibility, the reload planner, and the Accessories widget (all of them, or
-    the lowest);
-  - 0.7's stretch, else 1.1: the small copy of the last readings the app writes for the widgets
-    (the feed), and with it the History widget (with the 90-day capacity and cycle trend) and an
-    iPhone & iPad widget;
-  - after 1.0: a Refresh button, the extra-large dashboard and portrait size, per-row links,
-    chosen accessories
-- [ ] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
-  (`firstUseDate` is a number of seconds since 2001 today), and every top-level JSON object gains
-  a format version, with a line in the release notes, because scripts that read it have to change
-- [ ] The anonymous version count (Decisions), on by default and announced: once per version, at
+- [x] Widget customization: the Battery widget's own edit sheet (App Intents, Edit Widget)
+  chooses what it shows, with Automatic keeping a placed widget's look: Layout (Automatic or
+  Custom, with Custom's details in the chosen order, one in small in the time line's place, up to
+  four in medium and eight in large), the main value (charge, maximum capacity, temperature or
+  battery power, which always comes with its read time), the main visual (number and symbol, a
+  ring or the drawn battery the menu bar paints, shared through BatteryArt), the status lines,
+  clock time or time left (counting down by the minute without a sign), level colours or
+  monochrome, and the update time; in small, medium and large. Automatic's changes from 0.6.1:
+  "tomorrow" on a later-day end, a symbol before a value that needs attention, "Updated" on a
+  reading over 45 minutes old, the attention row for a condition or heat, the no-battery pointer
+  to Accessories, "Charged to limit", no space before %, medium's values at the trailing edge,
+  and shorter labels where the full ones don't fit. Every rendering mode, VoiceOver one element
+  per row, clicks that open the matching page (by URL, or by the intent's activity), and
+  `WidgetReloadPlanner` reloading only placed kinds, also on Low Power Mode, adapter, condition,
+  heat and Charge Limit changes. Which fields fit which size is decided in BatteryCore and tested
+  on Linux. Before it, 0.6.2's throwaway builds on the M5 answered what the design depends on
+  (2026-10-23): a SwiftPM build gets the App Intents metadata and the edit sheet shows the
+  parameters; the sandboxed widget reads accessory batteries itself; a widget placed by 0.6.1
+  survives the move to a configurable widget if the old widget extension has ended before the
+  swap, which 0.6.2's installer sees to
+- [x] The Accessories widget, in small, medium and large: the connected accessories' batteries,
+  all or the lowest, optionally without the fully charged ones, read by the widget itself
+- Not in 0.7, as the maintainer decided: extra large (the look check left it undeclared; BatteryCore
+  keeps its two-panel plan; 1.1), the stretch (the feed, the History and iPhone & iPad widgets) and
+  the widget following the app's own language (0.7.1), and the backup release key (0.8); the
+  build-number clock, a technical choice, comes in 0.7.1; after 1.0: a Refresh button, the
+  extra-large dashboard and portrait size, per-row links, chosen accessories
+- [x] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
+  (`firstUseDate` was a number of seconds since 2001), and every top-level JSON object gained
+  `formatVersion`, with a line in the release notes, because scripts that read it have to change
+- [x] The anonymous version count (Decisions), on by default and announced: once per version, at
   least a day after it first runs, an automatic update check also downloads
   `BatteryPulse-count.txt` from that version's release, and its public download count shows how
   many Macs use each version. A switch in Settings → General (also in the Welcome window),
@@ -732,16 +901,124 @@ from 0.6.2's plan at 0.6.2's release: `docs/plans/0.7.0/widgets.md`.
   `UpdateNetwork`'s ephemeral sessions. What's New, the release notes, README's and the User Guide's new Privacy
   sections and the file's own text say what is sent, what isn't and where to turn it off; the
   release workflow attaches the file to every release from 0.7.0, and the Releases table gains a
-  Count column
-- [ ] macOS's Charge Limit shown, read-only (the maintainer's request, 2026-10-23): while the
+  Count column a week after publishing
+- [x] macOS's Charge Limit shown, read-only (the maintainer's request, 2026-10-23): while the
   limit holds the charge, Overview's state says so in Apple's wording, with a pointer to System
   Settings → Battery; Power gains a "Charge limit: Reached" row; the menu bar popover, the compact
   window and the widget's state line say the same, and the widget offers a Charge limit field;
-  Raw Data decodes the bit. From bit 24 of `NotChargingReason`, and only with a committed
-  fixture of the real state (else it moves to 0.8). Not the limit's number (0.8), no marker on
-  the ring or the battery, no menu bar icon change, and `bpulse` unchanged. The app's own "When
-  charged to" alert never fires under a lower limit, which the guide says.
-  BatteryPulse never sets the limit
+  Raw Data decodes the bit. From bit 24 of `NotChargingReason`, with a committed fixture of the
+  real state (`m5-macos27-charge-limit`). Not the limit's number (0.8), no marker on the ring or
+  the battery, no menu bar icon change, and `bpulse` unchanged. The app's own "When charged to"
+  alert never fires under a lower limit, which the guide says. BatteryPulse never sets the limit
+- [ ] Seen on the M5: none of the above yet, since 0.7.0 shipped on CI's evidence (the
+  maintainer's decision, 2026-10-31): both jobs, the widget previews in English and Russian, the
+  size report, the packaged app's install and launch. 0.7.1's M5 session runs the checks Session R
+  would have (`docs/plans/0.7.1/widgets.md`)
+- [ ] A week after publishing: v0.7.0's DMG, signature and `BatteryPulse-count.txt` downloads in
+  the Releases table, from `scripts/release-stats.swift`
+
+Decisions that last beyond 0.7:
+
+- **Frozen surfaces 0.7 changed on purpose,** each announced in 0.7.0's notes where users see it;
+  otherwise the frozen outputs of 0.6.1's decisions hold:
+
+  | Surface | 0.6.x | 0.7 |
+  |---|---|---|
+  | The Battery widget's kind `io.github.nikitausov.BatteryPulse.battery` | A static configuration, small and medium, one look | The same kind string, now an `AppIntentConfiguration` with families small, medium and large (extra large not declared: the look check's question 3 = 3). Automatic keeps small and medium as they were, except: "tomorrow" on a later-day end ("Lasts until %@ tomorrow", "Full at %@ tomorrow"); a cue symbol before a value whose tier isn't normal (maximum capacity's health tier, a condition); "Updated %@" when the reading is over 45 minutes old; the attention row for an abnormal condition or high heat (in small, in place of the time line); the no-battery state's hint "Try the Accessories widget"; "Charged to limit" instead of "Not charging" while the Charge Limit holds the charge; no space before % ("80%", in Russian too); medium's values at the trailing edge; and the shorter labels and words ("Max capacity", "Until %@ tomorrow", a condition's short words) where the full ones don't fit, each language choosing on its own |
+  | A new kind, `io.github.nikitausov.BatteryPulse.accessories` | — | Small, medium, large |
+  | The reload policy | `WidgetReloadPolicy` | `WidgetReloadPlanner`: also on Low Power Mode, adapter, condition, heat and Charge Limit changes; only for placed kinds |
+  | `bpulse --device <n> --json`, and `--input` of a device capture with `--json` | `firstUseDate` in seconds since 2001 | ISO 8601 strings, like `--json` |
+  | `bpulse --json`, `--watch --json` | No version field | `formatVersion: 1` |
+  | Settings keys | 0.6.2's | Four added, none changed: `anonymousVersionCount` (a missing key means on, and only the toggle writes it), `lastCountedVersion`, `versionFirstLaunch` and `lastSeenLanguage` (written only when the app's effective language changes, so a launch in another language reloads every placed widget). A widget's configuration lives in macOS's, not in our domain |
+  | Release assets | `BatteryPulse.dmg`, `.dmg.sig`, `BatteryPulse-dSYMs.zip` | Plus `BatteryPulse-count.txt` on every release from v0.7.0, never removed from a published release |
+  | Update traffic and requests | Ephemeral sessions, cookies kept in memory; the update check and a download the user chose | No cookies stored or sent; plus the version count, once per version, at least 24 hours after it first ran, on an automatic check that reached GitHub, never under Never or with the toggle off |
+  | `@SceneStorage("mainSelection")` | `SidebarItem` strings | The same strings, now `PageID`'s raw values, pinned by a test |
+  | The app's Info.plist | No URL types | Still none: the widget's `batterypulse://` URLs reach the app unregistered |
+  | The app's state words | "Not charging" while the Charge Limit holds the charge | "Charged to limit", and Power's "Charge limit: Reached" row; `ChargeState` keeps its five cases, so History and `--json` are unchanged |
+  | The widget extension | Binary, strings, Info.plist; sandbox only | Plus `Contents/Resources/Metadata.appintents`; still the sandbox only |
+  | `CFBundleVersion` | each workflow's own run number | Unchanged in 0.7.0: `release.yml`'s run number, above 0.6.2's 8. A clock that only grows comes in 0.7.1, before its first candidate |
+  | Signposts | `widget.reload` (`policy`, `update`) | Plus `widget.timeline` (`battery`, `accessories`) and `widget.reload`'s `policy.accessories` and `language` |
+
+- **New frozen surfaces, promised for 1.x** (C14 item 5): the kind strings; the intent type names
+  (a click without a URL arrives as an activity of that type), the parameter names, every option's
+  raw value and the Details entity's ids (the field raw values, `systemChargeLimit` included);
+  each kind's families, which are only ever added to; Automatic's meaning in each family; the
+  `PageID` and `WidgetRoute` strings with the unregistered `batterypulse` scheme; the four settings
+  keys above; and `BatteryPulse-count.txt` on every release. `WidgetSurfaceTests` and
+  `scripts/widget-manifest.json` pin the widget's, and the version count's tests the asset's name
+  and the release workflow's attachment.
+- **Widgets through App Intents, built by SwiftPM:** `build-app.sh` runs Apple's App Intents
+  metadata processor on the widget, and CI's `appintents-check.swift` checks the metadata
+  against the manifest and the catalog; App Intents types and their strings live only in the
+  widget, mirroring BatteryCore's `WidgetOptions` one to one; Details is an entity whose ids are
+  the field raw values.
+- **BatteryCore decides, the widget draws:** what each entry shows (`WidgetLayoutPlan`,
+  `AccessoriesWidgetPlan`), its VoiceOver labels and each place's room in points
+  (`WidgetTextBudget`, measured in CI's previews), so a long Russian text fails on Linux; the
+  drawn battery is one painter, `BatteryArt`'s, shared with the menu bar.
+- **Reloads:** only for placed kinds, asked of WidgetKit at a reload moment, never on a timer;
+  the new reasons share a 5-minute minimum; one read per burst of timeline requests
+  (`ReadCoalescer`). A launch in another version or language ends the old extension and reloads
+  every kind.
+- **Time text:** the one self-updating text is a date offset by the minute, without seconds or a
+  sign; no timer text or periodic timeline (`MotionGuardTests`).
+- **Clicks:** a widget's `batterypulse://page/…` URL reaches the app delegate with no scheme
+  registered, and a click without one arrives as an activity of the intent's type; both open the
+  main window at the page, and the handlers live only in the app delegate.
+- **Sizes are only added:** extra large's views were removed for their size (about 11.5 KB of the
+  widget's `__text`) and come back when the family does; BatteryCore keeps its two-panel plan, and
+  the intent keeps extra large's Details size, so the shipped parameter needn't change.
+- **Percentages:** no space before % in the app, the widgets and VoiceOver, in every language
+  (`BatteryFormatter.percent`, with a catalog guard); Copy Report's and `bpulse`'s text keep
+  "70 %", as frozen outputs.
+- **The Charge Limit, read-only:** bit 24 of `NotChargingReason` with external power, a computed
+  property, so no stored format changes; Apple's wording; the number waits for a proven source.
+- **Logs read after the fact log at notice:** info and debug lines stay in memory, so the version
+  count logs one line per try at notice, its outcome's case name and code only.
+- **Build numbers:** 0.7.0 takes `release.yml`'s run number, above 0.6.2's 8. No candidate was
+  built, so no CI build of 0.7 sits above it on the M5; leaving the clock out of 0.7.0 was a
+  technical choice at its release (P1 §8: architecture is delegated), not the maintainer's. A clock
+  that only grows, in both workflows, comes in 0.7.1 before its first candidate, so each candidate
+  sits above the installed release and each release above every candidate: WidgetKit caches a
+  widget's description by `CFBundleVersion`.
+
+### 0.7.1
+
+What 0.7 left for the release after it, before 0.8, as the maintainer decided on 2026-10-31. The
+design and the checks: `docs/plans/0.7.1/widgets.md`, beside 0.7's session tools and its Appendix
+C (`0.7.0-appendix-c.md`).
+
+- [ ] The small copy of the last readings the app writes for the widgets (the feed, W-5), in a
+  folder only the user can read, which the widget reads through one read-only sandbox exception;
+  rewritten at once when history is cleared, a device forgotten or a reading turned off
+- [ ] The History widget (W-6), with the 24-hour and 7-day charts and the 90-day capacity and cycle
+  trend, and the Battery widget's feed-backed options: the History chart in large, average drain
+  and time on battery
+- [ ] The iPhone & iPad widget (W-7): the most recently read device, all of them or a chosen one,
+  with its reading's age
+- [ ] The widget following the app's own language: a language chosen for BatteryPulse alone in
+  System Settings reaches the widget too. 0.7 reloads every widget when the app's language
+  changes, but the sandboxed widget most likely still follows the system's language
+- [ ] 0.7's M5 checks, which Session R would have run: placed widgets across the update to a
+  configurable widget, every size from the gallery, the edit sheet in both languages, a
+  parameter added to a shipped widget keeping its choices, the rendering modes, time left, the
+  accessibility tree, clicks, the reloads per kind over a logged day, crashes and faults, the
+  update path (F12), the check after publishing, the switch from Raw Data to History, the menu
+  bar painter's pixel check before and after W-11's move, and 0.6.2's WP-18 Xcode items and the
+  menu bar on a dark bar, which reached Session R from 0.6.2
+- [ ] 0.7's session tools re-pointed at 0.7.1 before its session: they still name 0.7.0's
+  integration branch, starting release, candidates, folders and result branches
+
+The feed is a new file of ours on disk and the widget's one new entitlement, which 0.6.1's frozen
+outputs (Stage 1.6) and the roadmap to 1.0 had held for a minor release; the maintainer's decision
+brings them in 0.7.1, and its notes announce them with a privacy line.
+
+**Build numbers, before 0.7.1's first candidate.** 0.7.1's candidates, built by `ci.yml`, take its
+run numbers, far above `release.yml`'s, so 0.7.1's release would otherwise carry a lower
+`CFBundleVersion` than the candidates its M5 session installs, and a stale widget from that cause
+could be misread as a lost configuration. So one commit, before the first candidate, makes both
+workflows take the build number from one clock that only grows (plan-0.7.0 D1's design;
+`docs/plans/0.7.1/widgets.md`, "Build numbers"). It is a technical choice, so it isn't asked.
 
 ### 0.8 to 1.0.0
 
@@ -753,7 +1030,8 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   file on the adapter, System Settings' own record on battery, the SMC's `CHLT` or `pmset -g
   battlimit`; no registry key holds it), a health summary and explanations of the numbers, a
   first-run Welcome, Report a Problem (a bundle you preview and save; nothing is sent), VoiceOver
-  and the keyboard everywhere, and tests that pin what 1.x keeps
+  and the keyboard everywhere, and tests that pin what 1.x keeps; and, moved from 0.7, the backup
+  release key
 - [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
   screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
   since there is no paid developer account; features freeze here, and 0.9.x only fixes
@@ -782,6 +1060,14 @@ maintainer is the only user. From 0.6.2 on, `scripts/release-stats.swift` prints
 DMG and signature download counts, and they are added to the Releases table a week after
 publishing. Through 0.6.x the app itself counts and sends nothing; from 0.7 the anonymous version
 count adds one public number per release, how many Macs ran it (Decisions), and nothing else.
+
+### 1.1
+
+- [ ] macOS 28 compatibility, once macOS 28 ships (an event, not a date): the Xcode 28 runner, a
+  sweep of deprecations and captures on the new macOS
+- [ ] Extra large, which the look check left out of 0.7: two panels (Battery and Power) whose plan
+  BatteryCore keeps, added without touching placed widgets (the feed and its widgets moved to
+  0.7.1)
 
 ### Stage 2: iOS MVP
 
@@ -813,7 +1099,8 @@ count adds one public number per release, how many Macs ran it (Decisions), and 
 
 ### Stage 4: Widgets and notifications
 
-- [x] WidgetKit (macOS): charge, state, time to full or empty, health, cycles, temperature
+- [x] WidgetKit (macOS): charge, state, time to full or empty, health, cycles, temperature; from
+  0.7 configurable in small, medium and large, beside an Accessories widget
 - [ ] WidgetKit (iOS)
 - [ ] iOS Live Activity while charging
 - [x] Notifications (macOS): charge threshold reached, low battery, overheating, "Service
@@ -932,20 +1219,20 @@ the account on 2026-10-22 (not before 1.0), so the items that need it are not pl
 | 0.6.0   | 2026-10-16 | iPhone and iPad in the app with their history, Bluetooth accessory batteries, window styles (Standard, Frosted, Translucent, Clear), menu bar icons matched to macOS 27, CSV/JSON history export, the widget kept current across updates; `bpulse --accessories`, `--export` and `--record` |
 | 0.6.1   | 2026-10-22 | Optimization and foundation: a 61 % smaller download, one read per power event, a minute's pace for the SMC's other keys, slower polls in Low Power Mode and none while the displays sleep, faster History and Raw Data, updates that are never offered unverified; Translucent and Clear become beta styles; accent-outline tile pickers |
 | 0.6.2   | 2026-10-30 | Maintenance and foundation: about 40 % less processor time in the background with the icon and charge in the menu bar (about 20 % with power shown too), Clear and dark Translucent windows that no longer turn black on their way to the Dock, Check Now that takes over a running automatic check, iPhone and iPad pages that name the connection their values came over, a smaller widget extension without CryptoKit, the installer on `diskutil`; main actor by default and battery reads off the main actor |
+| 0.7.0   | 2026-10-31 | Widgets you configure: the Battery widget in small, medium and large, with its own edit sheet (main value, number, ring or drawn battery, clock time or time left, colours, details), an Accessories widget, clicks that open the matching page; "Charged to limit" at the Charge Limit; no space before %; ISO 8601 dates and `formatVersion` in `bpulse`'s JSON; the anonymous version count |
 
-Next: **0.7**, widget customization (the 0.7 stage, `docs/plans/0.7.0/PLAN.md`): widgets you
-configure in their own edit sheet, the device JSON's dates, the anonymous version count and macOS's
-Charge Limit shown. Then **0.8**: answers in the app; **0.9**: ready for others; **1.0.0**: the
-last 0.9.x renamed (`docs/plans/1.0/ROADMAP.md`). This is the order, not a schedule: each release
-ships when there is time and desire. Not planned: an iOS app, charge limiting (setting a limit),
-and Developer ID signing and notarization (no paid developer account, decided on 2026-10-22: not
-before 1.0).
+Next: **0.7.1** (`docs/plans/0.7.1/widgets.md`): the History and iPhone & iPad widgets on the feed,
+the widget following the app's own language, and 0.7's M5 checks, which 0.7.0 shipped without. Then
+**0.8**: answers in the app; **0.9**: ready for others; **1.0.0**: the last 0.9.x renamed
+(`docs/plans/1.0/ROADMAP.md`). This is the order, not a schedule: each release ships when there is
+time and desire. Not planned: an iOS app, charge limiting (setting a limit), and Developer ID
+signing and notarization (no paid developer account, decided on 2026-10-22: not before 1.0).
 
 ## Development environment
 
 - **Claude cloud sessions** (Linux, Swift 6.4): `swift build`, `swift test`. Everything builds
   and tests except code under `#if os(macOS)` / `#if os(iOS)`.
-- **CI** (`xcode-27` runner: macOS 27, Xcode 27.1): builds and tests the Darwin code, builds
+- **CI** (`xcode-27` runner: macOS 27, Xcode 27.2): builds and tests the Darwin code, builds
   `BatteryKit` for iOS, packages the app, reports its size and launches it once.
 - **The maintainer's Mac:** running the tools and the UI: `swift run BatteryPulse`,
   `swift run bpulse`, or `scripts/build-app.sh` for the packaged app.

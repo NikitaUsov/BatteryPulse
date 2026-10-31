@@ -177,7 +177,7 @@ public struct CaptureRecorder: Sendable {
     let heartbeat: TimeInterval
     let minimumSpacing: TimeInterval
     let flapLimit: Int
-    /// The `time` and `gauge_updated` columns: `2026-10-15T21:30:05+03:00`.
+    /// The `time` and `gauge_updated` columns: `2026-10-16T03:30:05+09:00`.
     let timeStyle: Date.ISO8601FormatStyle
 
     public init(

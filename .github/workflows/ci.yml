@@ -72,14 +72,13 @@ jobs:
           docc convert --additional-symbol-graph-dir "$RUNNER_TEMP/symbol-graphs" --warnings-as-errors \
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
-      - name: Check Session B's energy queue (dry run)
-        # 0.6.2's M5 session script, copied to docs/plans/0.7.0/ as W-12's starting point
-        # (plan-0.7.0 D-11): Session B's queue with the world stubbed, its order, its retries and its
-        # thresholds in three scenarios. Removed with that folder in 0.7's D3.
-        run: |
-          for scenario in default low late; do
-            bash docs/plans/0.7.0/m5-session.sh queue --dry-run "$scenario"
-          done
+      - name: Check Session R's bookkeeping (dry run)
+        # 0.7's M5 session script (plan-0.7.0 W-12), built from 0.6.2's and copied to
+        # docs/plans/0.7.1/ at 0.7.0's release, which shipped without Session R, for 0.7.1's M5
+        # session: its questions, the change record and its restored lines, the logged day's fence,
+        # the summary's alerts, the report and its privacy lint, with nothing of the Mac. It goes
+        # with that folder at 0.7.1's D3.
+        run: bash docs/plans/0.7.1/m5-session.sh dry-run
 
   macos:
     name: macOS · build & test
@@ -89,9 +88,10 @@ jobs:
     # The same for a hung test or smoke run.
     timeout-minutes: 30
     env:
-      # The image's default is still Xcode 27.0; 27.1 (27A9275, the release build) is installed
-      # beside it. Use the newest release, never a beta.
-      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
+      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
+      # release. Use the newest release or its release candidate, never a beta.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -99,9 +99,27 @@ jobs:
           persist-credentials: false
       - name: Toolchain
         run: xcodebuild -version && swift --version
+      - name: Compile the string tables for the widget previews
+        # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
+        # build-app.sh compiles it: each language's table is a bundle of its own.
+        run: |
+          mkdir -p build/widget-strings
+          xcrun xcstringstool compile --output-directory build/widget-strings Resources/Localizable.xcstrings
+          ls build/widget-strings
       - name: Test
         # The warning gate, as in the Linux job.
         run: swift test -Xswiftc -warnings-as-errors -Xswiftc -Wwarning -Xswiftc DeprecatedDeclaration
+      - name: Upload the widget previews
+        # The widget as BatteryPulseWidgetTests rendered it, for the look check: every family,
+        # scene and rendering mode, light and dark, English and Russian, with a contact sheet per
+        # question. Approximate: no WidgetKit container, and the accented and vibrant modes
+        # without the system's tint. build-app.sh empties build/, so they go up before the
+        # packaging.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: widget-previews-${{ github.sha }}
+          path: build/widget-previews/*.png
+          if-no-files-found: error
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Peak memory of the parser
@@ -173,26 +191,30 @@ jobs:
           echo "Rendered $renders captures: each fixture as text, --json and --raw"
       - name: Check the verification scripts
         # Nothing else builds or runs them. The menu bar shots and their display metrics need a Mac
-        # with a display, rusage a running BatteryPulse; perf-stats and release-stats run here on
-        # their samples, offline.
+        # with a display, rusage a running BatteryPulse, the quick check after a macOS update a
+        # person at the Mac; perf-stats and release-stats run here on their samples, offline.
+        # appintents-check's self-test runs it on the 0.6.2 widget spike's metadata and on doctored
+        # copies, which must fail.
         run: |
           bash -n scripts/menu-bar-shots.sh
+          bash -n scripts/quick-check.sh
           swiftc -typecheck scripts/display-metrics.swift
           swiftc -typecheck scripts/rusage.swift
           swiftc -typecheck scripts/perf-stats.swift
           swiftc -typecheck scripts/release-stats.swift
           swift scripts/release-stats.swift --self-test
+          swift scripts/appintents-check.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
-          # 0.6.2's M5 session script and its helpers, copied to docs/plans/0.7.0/ for W-12
-          # (plan-0.7.0 D-11), and the launcher of 0.6.2's after-publishing check, until 0.7's D3
-          # removes the folder.
-          bash -n docs/plans/0.7.0/m5-session.sh
-          bash -n docs/plans/0.7.0/start-session-b.sh
-          bash -n docs/plans/0.7.0/start-after-publishing.sh
-          swiftc -typecheck docs/plans/0.7.0/swap.swift
-          swiftc -typecheck docs/plans/0.7.0/frames.swift
-          swiftc -typecheck docs/plans/0.7.0/ui.swift
+          # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's),
+          # copied to docs/plans/0.7.1/ at 0.7.0's release for 0.7.1's M5 session, until 0.7.1's D3
+          # removes the folder. 0.6.2's Session B launchers stayed behind with 0.7.0's plan folder.
+          bash -n docs/plans/0.7.1/m5-session.sh
+          bash -n docs/plans/0.7.1/start-session-r.sh
+          bash -n docs/plans/0.7.1/start-short-session.sh
+          swiftc -typecheck docs/plans/0.7.1/swap.swift
+          swiftc -typecheck docs/plans/0.7.1/frames.swift
+          swiftc -typecheck docs/plans/0.7.1/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
       - name: Package app (DMG)
@@ -205,6 +227,14 @@ jobs:
             exit 1
           fi
           scripts/build-app.sh
+      - name: Check the App Intents metadata
+        # build-app.sh extracts the widget's App Intents metadata by hand, and the system shows the
+        # widget's edit sheet from it alone: every intent, parameter and AppEnum case of the manifest
+        # must be in it, and every string of the sheet must be a catalog key that the widget's
+        # compiled Russian table translates.
+        run: >-
+          swift scripts/appintents-check.swift scripts/widget-manifest.json Resources/Localizable.xcstrings
+          build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex/Contents/Resources
       - name: Size report
         # The size table and the bundle hygiene counts go to the step summary and build/size.json.
         # The token is for the comparison with the latest release.

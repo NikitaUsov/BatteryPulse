@@ -25,15 +25,22 @@ extension BatteryFormatter {
 
 /// Localized phrases built from battery state.
 enum Phrases {
+    /// The Mac battery's state, in the words the widget uses: BatteryCore's `WidgetStateWord`
+    /// decides for both, so the app and the widget can't drift apart.
     static func state(_ s: BatterySnapshot) -> String {
-        if s.chargeState == .notCharging, s.isOptimizedChargingEngaged == true {
-            return String(localized: "Charging on hold")
+        switch WidgetStateWord(s) {
+        case .charging: String(localized: "Charging")
+        case .onBattery: String(localized: "On battery")
+        case .fullyCharged: String(localized: "Fully charged")
+        case .chargingOnHold: String(localized: "Charging on hold")
+        case .chargedToLimit: String(localized: "Charged to limit")
+        case .notCharging: String(localized: "Not charging")
+        case .unknown: String(localized: "Unknown")
         }
-        return state(s.chargeState)
     }
 
-    /// The charge state of any battery. iPhones and iPads report no optimized hold, so "Charging
-    /// on hold" stays the Mac's.
+    /// The charge state of any battery. iPhones and iPads report neither the optimized hold nor
+    /// the Charge Limit's, so "Charging on hold" and "Charged to limit" stay the Mac's.
     static func state(_ state: ChargeState) -> String {
         switch state {
         case .charging: String(localized: "Charging")

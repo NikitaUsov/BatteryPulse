@@ -10,18 +10,39 @@ body:
     validations:
       required: true
   - type: input
+    id: version
+    attributes:
+      label: BatteryPulse version
+      description: >-
+        In BatteryPulse → About BatteryPulse, or Settings → Advanced → Version. For a copy you
+        built yourself, which may say "Development build", also give the commit if you know it.
+      placeholder: 0.6.1 (7)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - From the DMG
+        - In-app update (Install and Relaunch)
+        - Built from source
+    validations:
+      required: true
+  - type: input
     id: device
     attributes:
       label: Device
-      placeholder: "MacBook Pro 14\" M3 Pro, 2023 / iPhone 15 Pro"
+      description: Your Mac, and the iPhone, iPad or accessory too if the problem is with one.
+      placeholder: "MacBook Pro 14\" M3 Pro, 2023"
     validations:
       required: true
   - type: input
     id: os
     attributes:
       label: OS version
-      description: BatteryPulse requires macOS 27 on Apple Silicon, or iOS 27.
-      placeholder: macOS 27.0 / iOS 27.0
+      description: BatteryPulse requires macOS 27 on Apple silicon. For an iPhone or iPad, add its version too.
+      placeholder: macOS 27.0
     validations:
       required: true
   - type: textarea

@@ -2,7 +2,8 @@
 import PackageDescription
 
 // The language policy, in one place: every target, tests included, builds with these settings,
-// and no target passes compiler flags of its own (the widget's two flags only shape the extension).
+// and no target passes compiler flags of its own (the widget's one flag only shapes the
+// extension; its entry point is a link flag of scripts/build-app.sh).
 let strict: [SwiftSetting] = [
     .enableUpcomingFeature("ExistentialAny"),
     .enableUpcomingFeature("MemberImportVisibility"),
@@ -22,7 +23,7 @@ let package = Package(
         // Platform-independent models, parsing and metrics. Builds and tests on Linux.
         .library(name: "BatteryCore", targets: ["BatteryCore"]),
         // The battery and accessory reads: IOKit and the SMC on macOS, UIDevice on iOS, with their
-        // loggers and signposts. The widget links it and BatteryCore alone.
+        // loggers and signposts. The widget links it, BatteryCore and BatteryArt alone.
         .library(name: "BatterySource", targets: ["BatterySource"]),
         // OS integration on top of BatterySource: the observable monitors, iPhone and iPad reads,
         // and the CryptoKit code (device keys, update signatures).
@@ -48,6 +49,12 @@ let package = Package(
         .target(
             name: "BatteryKit", dependencies: ["BatteryCore", "BatterySource"],
             swiftSettings: strict + [.strictMemorySafety()]),
+        // The drawn battery of the menu bar icon, which the widget draws too: SwiftUI and Core Text
+        // only, so it stays safe in an app extension. One painter keeps the two identical, on the
+        // one geometry in BatteryCore. Neither a parser of untrusted input nor a system binding, it
+        // builds without strict memory safety like the app, so its Core Text glyph calls, which
+        // pass arrays as pointers, stay unmarked.
+        .target(name: "BatteryArt", dependencies: ["BatteryCore"], swiftSettings: strict),
         // It reads capture files too. Its unsafe sites are marked: two Foundation calls that take
         // a pointer, and the macOS-only SMC listing's `String(format:)`.
         .executableTarget(
@@ -60,20 +67,15 @@ let package = Package(
         // timeline provider on threads of its own.
         .executableTarget(
             name: "BatteryPulseApp",
-            dependencies: ["BatteryCore", "BatterySource", "BatteryKit"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryKit", "BatteryArt"],
             swiftSettings: strict + [.defaultIsolation(MainActor.self)]
         ),
         .executableTarget(
             name: "BatteryPulseWidget",
-            dependencies: ["BatteryCore", "BatterySource"],
+            dependencies: ["BatteryCore", "BatterySource", "BatteryArt"],
             swiftSettings: strict + [
                 // Allow only the APIs an app extension may use, as Xcode does for extension targets.
                 .unsafeFlags(["-application-extension"], .when(platforms: [.macOS]))
-            ],
-            linkerSettings: [
-                // Start the way Xcode links app extensions. `@main` on the WidgetBundle keeps the
-                // widgets in the binary; each is useless without the other.
-                .unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_NSExtensionMain"], .when(platforms: [.macOS]))
             ]
         ),
         .testTarget(
@@ -87,5 +89,8 @@ let package = Package(
         .testTarget(name: "BatteryKitTests", dependencies: ["BatteryKit", "BatterySource"], swiftSettings: strict),
         // The option parser; the output forms are covered by rendering the fixtures (`--input`).
         .testTarget(name: "bpulseTests", dependencies: ["bpulse", "BatteryCore"], swiftSettings: strict),
+        // Renders the widget's sizes into PNGs for review (macOS only; CI uploads them).
+        .testTarget(
+            name: "BatteryPulseWidgetTests", dependencies: ["BatteryPulseWidget", "BatteryCore"], swiftSettings: strict),
     ]
 )
