@@ -387,11 +387,10 @@ candidates already sit above the installed 0.7.0; the risk runs the other way. 0
 release, and F12's update from a candidate to it, would carry a lower `CFBundleVersion` than the
 candidates its M5 session installed, and WidgetKit caches a widget's description by that number, so
 a stale widget from that cause could be misread as a lost configuration (plan-0.7.0 §6.5). The
-build-number clock that removes the risk is planned for 0.8, before its first candidate (the
-maintainer's decision, 2026-10-31). So before 0.7.1's first candidate the maintainer has a question
-to answer, which ROADMAP's 0.7.1 entry carries: the clock then rather than in 0.8, another way for
-0.7.1's release to sit above its candidates, or the risk accepted, with 0.7.1's after-publishing
-check telling a stale description from a lost widget.
+build-number clock removes the risk, so it comes before 0.7.1's first candidate: one commit makes
+`ci.yml` and `release.yml` take `BUILD_NUMBER` from one clock that only grows (plan-0.7.0 D1: for
+example whole minutes since 2026-01-01 UTC at build time), and About shows the new number beside
+the version. It is a technical choice, recorded in ROADMAP's decisions.
 
 **Retargeting the session tools.** Only their paths into the repository were moved here. Everything
 else still names 0.7.0's session: the integration branch `claude/070-integration` that the launchers
@@ -400,7 +399,7 @@ fail), the base release (`v0.6.2`, "his 0.6.2"), the candidates and their versio
 RC-F as 0.5.99, RC-P on `claude/070-spike-param`, RC-U2), the `~/bp-070/` worktrees and the
 `claude/070-session-*` result branches. 0.7.1's plan sets each for 0.7.1 before its session (a
 0.6.99 candidate is older than 0.7.0, so it is no update from it), together with the build-number
-answer above, and counts that run in 0.7.1's estimate. The copies stay as they are until then, so
+clock above, and counts that run in 0.7.1's estimate. The copies stay as they are until then, so
 CI's dry run keeps checking the rules they froze.
 
 ---

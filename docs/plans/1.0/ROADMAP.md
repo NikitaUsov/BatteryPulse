@@ -52,8 +52,9 @@ as it stood:
    new file and the widget's read-only exception come in a 0.7.x release, announced in its notes,
    where §3.2 had held them for a minor release under the frozen-outputs rule. Their design is in
    `docs/plans/0.7.1/widgets.md`.
-3. **NEW-13, the backup release key, and the build-number clock (plan-0.7.0 D1) go to 0.8,** the
-   clock before 0.8's first candidate. 0.7.0 takes `release.yml`'s run number, above 0.6.2's 8.
+3. **NEW-13, the backup release key, goes to 0.8.** The build-number clock (plan-0.7.0 D1), a
+   technical choice, comes before 0.7.1's first candidate; 0.7.0 takes `release.yml`'s run number,
+   above 0.6.2's 8.
 4. 1.1 keeps macOS 28's compatibility work (NEW-21) and FEA-20; ROADMAP also places there extra
    large, which the look check left out of 0.7 (its question 3 = 3). The order is now 0.7.0, 0.7.1,
    then 0.8 (ROADMAP's versions table).

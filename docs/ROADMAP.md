@@ -205,8 +205,8 @@ signpost names.
 | Version | What it brings | The maintainer's time | Runs |
 |---------|----------------|-----------------------|------|
 | 0.7 | Widgets you configure (Battery and Accessories, each in small, medium and large), device JSON dates, the anonymous version count, the Charge Limit's paused state; released on 2026-10-31 | the look check, a second look and a layout confirmation, at the desk; no M5 session, as the maintainer decided | about 30-33, plus 3 in reserve |
-| 0.7.1 | The widgets that waited for the feed (History and iPhone & iPad), the widget following the app's own language, and 0.7's M5 checks, which Session R would have run | a look at the new widgets, and the M5 session 0.7.0 went without, hands-free: about 12-15 minutes in all (1 once before, 6-8 at its start, 3-4 at the logged day's end and 2 after publishing) | 8-9 for the feed and its two widgets, plus the widget's language, re-pointing 0.7's session tools at 0.7.1, and the release |
-| 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard; the backup release key and the build-number clock, both moved from 0.7 | a look sitting of about 40 minutes and a release-candidate sitting of about 85, plus about 5 for the backup key | 30-38, plus 1 for the key |
+| 0.7.1 | The widgets that waited for the feed (History and iPhone & iPad), the widget following the app's own language, and 0.7's M5 checks, which Session R would have run | a look at the new widgets, and the M5 session 0.7.0 went without, hands-free: about 12-15 minutes in all (1 once before, 6-8 at its start, 3-4 at the logged day's end and 2 after publishing) | 8-9 for the feed and its two widgets, plus the widget's language, the build-number clock, re-pointing 0.7's session tools at 0.7.1, and the release |
+| 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard; the backup release key, moved from 0.7 | a look sitting of about 40 minutes and a release-candidate sitting of about 85, plus about 5 for the backup key | 30-38, plus 1 for the key |
 | 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
 | 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
 | 1.0.0 | The promise: the last 0.9.x renamed | the after-publishing check, about 10 minutes | 1-2 |
@@ -886,9 +886,9 @@ only in CI, and 0.7.1's M5 session checks it.
   all or the lowest, optionally without the fully charged ones, read by the widget itself
 - Not in 0.7, as the maintainer decided: extra large (the look check left it undeclared; BatteryCore
   keeps its two-panel plan; 1.1), the stretch (the feed, the History and iPhone & iPad widgets) and
-  the widget following the app's own language (0.7.1), the backup release key and the build-number
-  clock (0.8); after 1.0: a Refresh button, the extra-large dashboard and portrait size, per-row
-  links, chosen accessories
+  the widget following the app's own language (0.7.1), and the backup release key (0.8); the
+  build-number clock, a technical choice, comes in 0.7.1; after 1.0: a Refresh button, the
+  extra-large dashboard and portrait size, per-row links, chosen accessories
 - [x] `bpulse --device <n> --json` writes dates as ISO 8601 strings, like the Mac's report
   (`firstUseDate` was a number of seconds since 2001), and every top-level JSON object gained
   `formatVersion`, with a line in the release notes, because scripts that read it have to change
@@ -936,7 +936,7 @@ Decisions that last beyond 0.7:
   | The app's Info.plist | No URL types | Still none: the widget's `batterypulse://` URLs reach the app unregistered |
   | The app's state words | "Not charging" while the Charge Limit holds the charge | "Charged to limit", and Power's "Charge limit: Reached" row; `ChargeState` keeps its five cases, so History and `--json` are unchanged |
   | The widget extension | Binary, strings, Info.plist; sandbox only | Plus `Contents/Resources/Metadata.appintents`; still the sandbox only |
-  | `CFBundleVersion` | each workflow's own run number | Unchanged in 0.7.0: `release.yml`'s run number, above 0.6.2's 8. A clock that only grows comes in 0.8 |
+  | `CFBundleVersion` | each workflow's own run number | Unchanged in 0.7.0: `release.yml`'s run number, above 0.6.2's 8. A clock that only grows comes in 0.7.1, before its first candidate |
   | Signposts | `widget.reload` (`policy`, `update`) | Plus `widget.timeline` (`battery`, `accessories`) and `widget.reload`'s `policy.accessories` and `language` |
 
 - **New frozen surfaces, promised for 1.x** (C14 item 5): the kind strings; the intent type names
@@ -975,11 +975,12 @@ Decisions that last beyond 0.7:
   property, so no stored format changes; Apple's wording; the number waits for a proven source.
 - **Logs read after the fact log at notice:** info and debug lines stay in memory, so the version
   count logs one line per try at notice, its outcome's case name and code only.
-- **Build numbers:** 0.7.0 takes `release.yml`'s run number, above 0.6.2's 8, since no candidate
-  was built (the maintainer's decision, 2026-10-31). A clock that only grows, in both workflows,
-  comes in 0.8 before its first candidate, so each candidate sits above the installed release and
-  each release above every candidate: WidgetKit caches a widget's description by `CFBundleVersion`.
-  0.7.1's candidates come before it, so its entry below asks how 0.7.1's release sits above them.
+- **Build numbers:** 0.7.0 takes `release.yml`'s run number, above 0.6.2's 8. No candidate was
+  built, so no CI build of 0.7 sits above it on the M5; leaving the clock out of 0.7.0 was a
+  technical choice at its release (P1 §8: architecture is delegated), not the maintainer's. A clock
+  that only grows, in both workflows, comes in 0.7.1 before its first candidate, so each candidate
+  sits above the installed release and each release above every candidate: WidgetKit caches a
+  widget's description by `CFBundleVersion`.
 
 ### 0.7.1
 
@@ -1012,13 +1013,12 @@ The feed is a new file of ours on disk and the widget's one new entitlement, whi
 outputs (Stage 1.6) and the roadmap to 1.0 had held for a minor release; the maintainer's decision
 brings them in 0.7.1, and its notes announce them with a privacy line.
 
-**Open question for the maintainer, before 0.7.1's first candidate: build numbers.** 0.7.1's
-candidates, built by `ci.yml`, take its run numbers, far above `release.yml`'s, so 0.7.1's release
-would carry a lower `CFBundleVersion` than the candidates its M5 session installs: the stale-widget
-risk the build-number clock removes, and the clock is planned for 0.8. The choices: the clock
-before 0.7.1's first candidate, another way for 0.7.1's release to sit above its candidates, or the
-risk accepted, with the after-publishing check telling a stale description from a lost widget
-(`docs/plans/0.7.1/widgets.md`, "Build numbers").
+**Build numbers, before 0.7.1's first candidate.** 0.7.1's candidates, built by `ci.yml`, take its
+run numbers, far above `release.yml`'s, so 0.7.1's release would otherwise carry a lower
+`CFBundleVersion` than the candidates its M5 session installs, and a stale widget from that cause
+could be misread as a lost configuration. So one commit, before the first candidate, makes both
+workflows take the build number from one clock that only grows (plan-0.7.0 D1's design;
+`docs/plans/0.7.1/widgets.md`, "Build numbers"). It is a technical choice, so it isn't asked.
 
 ### 0.8 to 1.0.0
 
@@ -1031,8 +1031,7 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   battlimit`; no registry key holds it), a health summary and explanations of the numbers, a
   first-run Welcome, Report a Problem (a bundle you preview and save; nothing is sent), VoiceOver
   and the keyboard everywhere, and tests that pin what 1.x keeps; and, moved from 0.7, the backup
-  release key and the build number from one clock that only grows, in both workflows, before
-  0.8's first release candidate
+  release key
 - [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
   screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
   since there is no paid developer account; features freeze here, and 0.9.x only fixes

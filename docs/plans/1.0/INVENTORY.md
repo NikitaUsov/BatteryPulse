@@ -40,8 +40,8 @@ note holds:
 - FEA-10, FEA-11 and FEA-12 (the feed, the History widget and the iPhone & iPad widget), with SEC-08
   and DOC-08, go to 0.7.1, not 1.1, and so does the widget following the app's own language (0.7's
   W-0 item 8). Their design is in `docs/plans/0.7.1/widgets.md`.
-- The backup release key (the roadmap's NEW-13) and the build-number clock go to 0.8, the clock
-  before 0.8's first candidate.
+- The backup release key (the roadmap's NEW-13) goes to 0.8. The build-number clock (plan-0.7.0
+  D1), a technical choice, comes before 0.7.1's first candidate.
 
 ## How to read this
 
