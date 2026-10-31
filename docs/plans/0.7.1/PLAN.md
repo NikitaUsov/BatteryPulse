@@ -207,12 +207,18 @@ W71 holds the design and stays as written until 0.7.1's D3; these changes hold w
    feed is the widget's one new entitlement", and reading the app's own preference domain would
    expose every setting in it [inference]. So the feed gains `languages`, and every placed kind
    reads it, Battery and Accessories included (W-15).
-2. **Write rule:** the feed is written while any BatteryPulse kind is placed, not only a reader
-   kind (W71 §8.3 "Writes"), because every kind now reads its language. Its sections follow the
+2. **Write rule:** the feed serves any placed BatteryPulse kind, not only a reader kind (W71
+   §8.3 "Writes"), because every kind now reads its language. Its sections follow the
    placed kinds: devices only while the iPhone & iPad kind is placed, history while History or
    Battery is. An empty or failed `currentConfigurations()` answer counts as every kind placed
-   (fail open, I-7). With no BatteryPulse widget placed in a real answer, the writer removes the
-   file at its next write moment.
+   (fail open, I-7; `WidgetReloadPlanner.swift:230-265`), and the answer lists only BatteryPulse's
+   own widgets, so "none placed" is an empty answer too [inference from
+   https://developer.apple.com/documentation/widgetkit/widgetcenter]. So while fail-open holds,
+   every section the toggles allow is written whether or not a widget is placed, and the file is
+   never removed for want of one; only an answer that lists widgets narrows the sections. If
+   G7-17 shows real answers on the M5, D3 records whether a later release counts an empty answer
+   as none placed for the feed alone and removes the file then, which would starve the new
+   widgets if WidgetKit ever answered this ad-hoc app with a silent empty list.
 3. **Write moments:** W71 §8.3 writes only "at the moments the app already reloads widgets" and
    "only when the content changes". On the adapter at a steady charge nothing reloads for hours,
    and with recording off and no device read nothing changes, so the feed would pass its 2-hour
@@ -436,8 +442,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
     NaN inputs, strips control and bidirectional characters, and round-trips a full feed;
   - the store: folder 0700, file 0600, an atomic replace (a reader sees the old or the new file),
     unchanged bytes not rewritten, removal;
-  - the builder: no `DeviceKey.demo`, nothing while overridden, sections by placement, reads off
-    → no devices, recording off → no series, the re-bucketing at UTC midnight and across a gap;
+  - the builder: no `DeviceKey.demo`, nothing while overridden, sections by placement (an empty
+    answer: every section), reads off → no devices, recording off → no series, the re-bucketing
+    at UTC midnight and across a gap;
   - the write rule: a step's write goes out with nothing else changed, and with recording off.
 - **Guards:**
   - `SecurityGuardTests`: `widgetForbidden` keeps covering every widget file, with one allowed
@@ -1061,7 +1068,7 @@ one widget; the "One device" chooser; one click per new kind; crash reports and 
 | **G7-13** the Russian edit sheet | — | step 4.3 | "not checked" (PF-6 expects English) | — |
 | **G7-15** update path | the release | F12; §6.4 | as 0.6.2's G-16 | `gh release edit v0.7.1 --prerelease` on his yes; fix forward |
 | **G7-16** crashes and faults | whether the candidate ships | `day-end`'s counts | — | no D3: a fix, a new candidate, the steps it touches again |
-| **G7-17** placements | whether reloads and the feed filter by kind | the plug's counts at the day's end | an empty answer counts as every kind placed | — |
+| **G7-17** placements | whether reloads and the feed filter by kind, and whether a later release may remove the feed when none is placed | the plug's counts at the day's end | an empty answer counts as every kind placed, so the feed holds every section the toggles allow (§2.3 item 2) | — |
 | **G7-18** Charge Limit | — | step 9b's Russian shot | Apple's Russian support article (102338) stands (AC70:141) | a one-key fix |
 
 ### 7.2 Cut line
@@ -1107,9 +1114,9 @@ space before %; reloads only for placed kinds, never on a timer; one self-updati
 app's requests are unchanged; `bpulse`'s outputs unchanged; `ChargeState`'s five cases.
 
 **New 1.x surfaces once 0.7.1 ships** (RD C14 item 5): the two kind strings, the two intent type
-names, `DevicesWidgetDevice` and its id format, every new parameter name and raw value, the two
-field raw values, and the families declared. `WidgetSurfaceTests` and `scripts/widget-manifest.json`
-pin them.
+names, `DevicesWidgetDevice`, its query's type name and its id format, every new parameter name
+and raw value, the two field raw values, and the families declared. `WidgetSurfaceTests` and
+`scripts/widget-manifest.json` pin them.
 
 ---
 
@@ -1194,7 +1201,9 @@ change don't count. BatteryPulse is an agent app that is rarely in front, so its
   with 15 seconds of tolerance (`HistoryRecorder.swift:56-62`), once per 15-minute step while the
   app runs (§2.3 item 3): at most 96 writes a day of at most 8-12 KB, each an atomic rename
   [estimate]. The immediate rewrites ride user actions and existing observations.
-- Nothing is written in Demo Mode, and nothing while no BatteryPulse widget is placed.
+- Nothing is written in Demo Mode. An empty answer, which is also how "no BatteryPulse widget
+  placed" reads, writes as if every kind were placed (§2.3 item 2), so the writes above hold for
+  every Mac that runs 0.7.1 [inference].
 - `EnergyGuardTests` is unchanged: no sleep, timer, task or activity is added.
 
 **Reloads and timelines** (W-6, W-7; tested on Linux):
@@ -1229,10 +1238,12 @@ temperature and the read time); BatteryPulse's language list; and whether histor
 device reads are on. Never a UDID, ECID or serial; never `Devices/key`; never Demo Mode's data;
 never an accessory; nothing that isn't already in `History/` or `Devices/devices.json` beside it.
 
-**Only what a placed kind can show:** devices only while an iPhone & iPad widget is placed, the
-history only while a History or Battery widget is, and no file at all once no BatteryPulse widget
-is placed (§2.3 item 2). Clear History, Forget, and turning recording or device reads off rewrite
-it at once, placed or not.
+**Only what a placed kind can show, once WidgetKit lists the placed widgets:** devices only while
+an iPhone & iPad widget is placed, the history only while a History or Battery widget is (§2.3
+item 2). An empty or failed answer, which is also how "no BatteryPulse widget placed" reads,
+writes every section the toggles allow, so a Mac without BatteryPulse widgets keeps the file too
+[inference; G7-17]. Clear History, Forget, and turning recording or device reads off rewrite it at
+once, placed or not.
 
 **Who can read it:**
 - The folder is 0700 and the file 0600, owned by the user, like `Devices/` when its key creates it
@@ -1282,7 +1293,7 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 | What's New | Q71-3 | W-18 |
 | `CLAUDE.md` | Layout: `WidgetFeed`, `WidgetFeedStore`, `WidgetLanguage`, `WidgetChartSummary` in BatteryCore's list; the widget "signed with only the app-sandbox entitlement" (CL:99) gains the read-only exception, and "reads no file of ours" (CL:103) becomes "reads only the feed, in `WidgetFeedReader`"; four kinds; the signposts (CL:237-238); Releases: the build number from the clock | W-18, B-1 |
 | `docs/ROADMAP.md` | The 0.7.1 entry ticked; the Releases row; the decisions: the feed and its exception, the clock, the language; Stage 1.2's widget line from §6.4 | W-18, D3 |
-| `docs/plans/1.0/ROADMAP.md`, `INVENTORY.md` | FEA-10 to FEA-12, SEC-08, DOC-08, QUA-16 marked shipped or carried; C1's sentence that the two widgets count toward 1.0 "only if they shipped in 0.7.0" (RD:257-262) restated for 0.7.1; SIZ-07 given a home (Appendix A) | W-18 |
+| `docs/plans/1.0/ROADMAP.md`, `INVENTORY.md` | FEA-10 to FEA-12, SEC-08, DOC-08, QUA-16 marked shipped or carried; C1's sentence that the two widgets count toward 1.0 "only if they shipped in 0.7.0" (RD:257-262) restated for 0.7.1; SIZ-07 given a home (Appendix A); C10's charts read as the app's (Appendix B) | W-18 |
 | `docs/VERIFICATION.md` | 0.7's rows from the session; 0.7.1's rows | D3 |
 | `.github/release-notes.md` | §13 step 2 | W-18, D1 |
 
@@ -1416,7 +1427,7 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | SIZ-06 (0.7's budget) | Z-1 |
 | SIZ-07 (placed in 0.7 as P3; 0.7's records don't say it was measured) | Not in 0.7.1 except as a size fallback (§9); W-18 asks RD to give it a home |
 | RD C1 (the two widgets count toward 1.0 only if in 0.7.0) | W-18 restates it |
-| RD C10 (every family reachable and named in both languages; every chart a descriptor) | W-6, W-7 (labels and summaries); §6.2 step 7 |
+| RD C10 (every family reachable and named in both languages; every chart a descriptor) | W-6, W-7 (labels and summaries); §6.2 step 7; the widget charts get one label, not a descriptor (Appendix B) |
 | RD C14 items 2, 5, 8 | §7.3 |
 | RD §1.2 item 3 | §3; §6.5; Q71-1 |
 | NEW-13 (the backup key) | Not in 0.7.1: 0.8 (the maintainer's decision, 2026-10-31) |
@@ -1498,12 +1509,17 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 - **W71's "likely deleted" integration branch:** it is deleted.
 - **Accented mode on the Mac:** the HIG's table and Apple's accented-rendering article disagree
   (PF-8; P7:3567-3572).
+- **RD C10's "every chart has a descriptor"** (RD:347-353, naming the app's charts) against §2.3
+  item 13's one label per widget chart (HIG Charts allows one succinct label for a small chart).
+  This plan reads C10 as the app's charts [inference]; W-18 asks RD to say so.
 
 **Unverified:**
 - PF-1 at 8-12 KB, for a file written while no widget process ran, and on macOS after 27.0.1.
 - PF-2 on macOS 27 with the ad-hoc extension; PF-3; PF-5 at run time; PF-6; PF-7; PF-9; PF-10
   for 0.7.0.
 - Whether the widget's sandbox alone would refuse a read of `History/` (§11).
+- That `currentConfigurations()` lists only BatteryPulse's own widgets, so none placed reads as an
+  empty answer and the feed is written with every section (§2.3 item 2).
 - Whether a language chosen for BatteryPulse alone reaches the extension without help on macOS 27
   (W71; AC70:163). W-15 doesn't depend on it.
 - Whether VoiceOver reads the widget's Russian labels with a Russian voice under an English system.
