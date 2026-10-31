@@ -248,12 +248,15 @@ public struct SMCRawValue: Sendable, Equatable {
         guard let code = SMCFourCC(validating: key), let d = captureValue.dictionaryValue,
             let type = d[CaptureField.type]?.stringValue.flatMap({ SMCFourCC(validating: $0) }),
             let size = d[CaptureField.size]?.intValue, (1...SMCParamBlock.payloadCapacity).contains(size),
-            case .data(let bytes)? = d[CaptureField.bytes], bytes.count >= size
+            case .data(let bytes)? = d[CaptureField.bytes], bytes.count >= size,
+            // The attributes give the byte order: without them, or with a value no key has, the
+            // bytes can't be read. Every value the SMC answered with is readable.
+            let attributes = d[CaptureField.attributes]?.intValue.flatMap(UInt8.init(exactly:)),
+            SMCKeyInfo(size: UInt32(size), type: type, attributes: attributes).isReadable
         else { return nil }
-        let attributes = d[CaptureField.attributes]?.intValue ?? 0
         self.init(
             key: code,
-            info: SMCKeyInfo(size: UInt32(size), type: type, attributes: UInt8(truncatingIfNeeded: attributes)),
+            info: SMCKeyInfo(size: UInt32(size), type: type, attributes: attributes),
             payload: Array(bytes.prefix(size)))
     }
 }

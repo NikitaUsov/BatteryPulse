@@ -109,6 +109,12 @@ extension PropertyValue {
         }
     }
 
+    /// The integer, when it lies in `range`; any other value is no reading, as if the key were
+    /// missing.
+    func intValue(in range: ClosedRange<Int>) -> Int? {
+        intValue.flatMap { range.contains($0) ? $0 : nil }
+    }
+
     public var doubleValue: Double? {
         switch self {
         case .int(let value): Double(value)

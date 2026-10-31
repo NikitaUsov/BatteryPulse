@@ -158,12 +158,12 @@ public enum IDeviceBatteryParser {
         let data = entry["BatteryData"]?.dictionaryValue ?? [:]
         let packData = pack["BatteryData"]?.dictionaryValue ?? [:]
 
-        /// The first positive value: the entry's `BatteryData` (iOS 27), the entry itself, then
-        /// the pack's `BatteryData`.
+        /// The first plausible value (positive, and no more than a battery holds): the entry's
+        /// `BatteryData` (iOS 27), the entry itself, then the pack's `BatteryData`.
         func capacity(_ keys: String...) -> Int? {
             for key in keys {
                 for source in [data, entry, packData] {
-                    if let value = source[key]?.intValue, value > 0 { return value }
+                    if let value = source[key]?.intValue(in: MacPowerParser.Plausible.capacityMAh) { return value }
                 }
             }
             return nil
@@ -185,14 +185,16 @@ public enum IDeviceBatteryParser {
             [data["DateOfFirstUse"], packData["DateOfFirstUse"], entry["DateOfFirstUse"]].lazy
             .compactMap { $0?.intValue }.compactMap(firstUseDate(sinceReferenceDate:)).first
 
-        b.cycleCount = (entry["CycleCount"] ?? data["CycleCount"])?.intValue.flatMap { $0 >= 0 ? $0 : nil }
-        b.designCycleCount = entry["DesignCycleCount9C"]?.intValue.flatMap { $0 > 0 ? $0 : nil }
+        b.cycleCount =
+            entry["CycleCount"]?.intValue(in: MacPowerParser.Plausible.cycles)
+            ?? data["CycleCount"]?.intValue(in: MacPowerParser.Plausible.cycles)
+        b.designCycleCount = entry["DesignCycleCount9C"]?.intValue(in: MacPowerParser.Plausible.ratedCycles)
 
         // Charge: what iOS shows first.
         if let percent = lockdown["BatteryCurrentCapacity"]?.intValue, (0...100).contains(percent) {
             b.chargePercent = Double(percent)
-        } else if let current = entry["CurrentCapacity"]?.intValue, let max = entry["MaxCapacity"]?.intValue,
-            max > 0, current >= 0
+        } else if let current = entry["CurrentCapacity"]?.intValue(in: MacPowerParser.Plausible.remainingMAh),
+            let max = entry["MaxCapacity"]?.intValue(in: MacPowerParser.Plausible.capacityMAh)
         {
             b.chargePercent = MacPowerParser.percent(current, of: max)
         }
@@ -209,8 +211,8 @@ public enum IDeviceBatteryParser {
         // Electrical. `Voltage` can read 0 on an iPhone.
         b.voltageMV = [entry["Voltage"], entry["AppleRawBatteryVoltage"], packData["Voltage"]].lazy
             .compactMap { $0?.intValue }.first { plausiblePackVoltage.contains($0) }
-        b.amperageMA = entry["Amperage"]?.intValue
-        b.instantAmperageMA = entry["InstantAmperage"]?.intValue
+        b.amperageMA = entry["Amperage"]?.intValue(in: MacPowerParser.Plausible.currentMA)
+        b.instantAmperageMA = entry["InstantAmperage"]?.intValue(in: MacPowerParser.Plausible.currentMA)
         let cells = data["CellVoltage"]
         b.cellVoltagesMV = (cells?.arrayValue ?? cells.map { [$0] } ?? []).compactMap(\.intValue)
             .filter { SMCBattery.plausibleCellVoltage.contains($0) }
@@ -228,16 +230,18 @@ public enum IDeviceBatteryParser {
         }
 
         b.errorCondition = entry["ErrorCondition"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
-        b.permanentFailureStatus = entry["PermanentFailureStatus"]?.intValue
+        b.permanentFailureStatus = entry["PermanentFailureStatus"]?.intValue(in: MacPowerParser.Plausible.register)
         return b
     }
 
     /// `DateOfFirstUse` counts seconds since 2001-01-01, like `Date(timeIntervalSinceReferenceDate:)`;
-    /// 0 means "not set". Only dates from the first iPhone on are a reading.
+    /// 0 means "not set". Only dates from the first iPhone up to 2100 are a reading.
     static func firstUseDate(sinceReferenceDate seconds: Int) -> Date? {
         guard seconds > 0 else { return nil }
         let date = Date(timeIntervalSinceReferenceDate: TimeInterval(seconds))
-        return date >= Date(timeIntervalSinceReferenceDate: 189_000_000) ? date : nil  // 2007
+        let first = Date(timeIntervalSinceReferenceDate: 189_000_000)  // 2007
+        let last = Date(timeIntervalSince1970: TimeInterval(MacPowerParser.Plausible.unixTime.upperBound))
+        return (first...last).contains(date) ? date : nil
     }
 
     /// One cell, or a few in series; anything else is not a reading.

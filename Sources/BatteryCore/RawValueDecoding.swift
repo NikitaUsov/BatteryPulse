@@ -64,13 +64,15 @@ public enum RawValueDecoder {
         case .milliamps: return value.intValue.map(DecodedRawValue.milliamps)
         case .milliwatts: return value.intValue.map(DecodedRawValue.milliwatts)
         case .microwattHoursPerSecond:
-            return value.intValue.map { .milliwatts(Int((Double($0) * 3.6).rounded())) }
+            // A garbage value times 3.6 can leave Int's range, and converting it would trap.
+            return value.intValue.flatMap { Int(exactly: (Double($0) * 3.6).rounded()) }.map(DecodedRawValue.milliwatts)
         case .percent: return value.doubleValue.map(DecodedRawValue.percent)
         case .celsius: return value.doubleValue.map(DecodedRawValue.celsius)
         case .centidegreesCelsius: return value.doubleValue.map { .celsius($0 / 100) }
         case .decikelvin: return value.doubleValue.map { .celsius((($0 / 10 - 273.15) * 100).rounded() / 100) }
-        case .minutes: return value.intValue.map(DecodedRawValue.minutes)
-        case .seconds: return value.intValue.map(DecodedRawValue.seconds)
+        case .minutes:
+            return value.intValue(in: -durationSeconds / 60...durationSeconds / 60).map(DecodedRawValue.minutes)
+        case .seconds: return value.intValue(in: -durationSeconds...durationSeconds).map(DecodedRawValue.seconds)
         case .unixTime:
             guard let seconds = value.intValue else { return nil }
             return seconds > 0 ? .date(Date(timeIntervalSince1970: TimeInterval(seconds))) : .sentinel(.none)
@@ -90,6 +92,10 @@ public enum RawValueDecoder {
             return nil
         }
     }
+
+    /// The longest duration decoded, a century in seconds: a garbage value near `Int.max` traps
+    /// when it is formatted, and none this long is a reading.
+    static let durationSeconds = 3_155_760_000
 
     /// IORegistry stores 32-bit registers as signed numbers (`FamilyCode` -536854518 is
     /// 0xE000400A), so negative 32-bit values are reinterpreted as unsigned.

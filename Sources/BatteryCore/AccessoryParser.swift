@@ -37,6 +37,9 @@ public enum AccessoryParser {
     static let otherTypes: Set<String> = ["InternalBattery", "UPS"]
     /// `kIOPSInvalidVendorID`, `kIOPSInvalidProductID`.
     static let invalidID = 0xffff
+    /// The largest `Current Capacity` or `Max Capacity` taken as a reading: accessories publish
+    /// a percentage, or tenths with a maximum of 1000.
+    static let plausibleCapacity = 100_000.0
 
     /// Every accessory in `sources` (power source descriptions), its parts grouped, sorted by
     /// kind, then name, so rows never jump between reads.
@@ -103,20 +106,25 @@ public enum AccessoryParser {
         return source[Key.powerSourceID]?.intValue.map { "s:\($0)" }
     }
 
-    /// The battery a source describes, or `nil` without a usable `Current Capacity`.
+    /// The battery a source describes, or `nil` without a usable `Current Capacity`. Without
+    /// `Max Capacity` the charge is a percentage, so one above 100 is no reading, never a full
+    /// battery; a maximum that is there but unusable (0, negative, not a number) leaves the scale
+    /// unknown, so the charge is no reading either.
     static func part(from source: PropertyDictionary) -> AccessoryPart? {
-        guard let current = source[Key.currentCapacity]?.doubleValue, current.isFinite, current >= 0 else {
-            return nil
+        var maximum: Double?
+        if let value = source[Key.maxCapacity] {
+            guard let max = value.doubleValue, (1...plausibleCapacity).contains(max) else { return nil }
+            maximum = max
         }
-        var percent = current
-        if let max = source[Key.maxCapacity]?.doubleValue, max.isFinite, max > 0, max != 100 {
-            percent = current * 100 / max
-        }
+        guard let current = source[Key.currentCapacity]?.doubleValue,
+            (0...(maximum == nil ? 100 : plausibleCapacity)).contains(current)
+        else { return nil }
+        let percent = maximum.map { current * 100 / $0 } ?? current
         let state = string(source[Key.state])
         return AccessoryPart(
             role: AccessoryPartRole(
                 partIdentifier: string(source[Key.partIdentifier]), category: string(source[Key.category])),
-            percent: Int(min(max(percent.rounded(), 0), 100)),
+            percent: Int(min(percent.rounded(), 100)),
             isCharging: source[Key.isCharging]?.boolValue ?? false,
             isOnExternalPower: state == externalPowerState,
             isOffline: state == offlineState)
