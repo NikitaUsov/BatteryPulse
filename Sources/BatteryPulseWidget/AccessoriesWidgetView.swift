@@ -131,13 +131,15 @@ struct AccessoryListView: View {
 }
 
 /// An accessory's or a part's symbol, or the generic accessory symbol where this macOS lacks it, as
-/// the app draws them: a device symbol, desaturated in the accented rendering mode.
+/// the app draws them. In the accented rendering mode it stays in the default group, like the
+/// words beside it: `.desaturated` maps an image's luminance to its alpha, which suits a picture
+/// but leaves a dark symbol all but invisible (CI's accented pictures in light).
 struct WidgetAccessorySymbol: View {
     let name: String
 
     var body: some View {
         let available = NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil
-        decorativeSymbol(available ? name : AccessoryKind.fallbackSymbolName, accentedMode: .desaturated)
+        decorativeSymbol(available ? name : AccessoryKind.fallbackSymbolName)
     }
 }
 
