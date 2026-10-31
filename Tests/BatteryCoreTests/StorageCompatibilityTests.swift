@@ -226,8 +226,8 @@ import Testing
     }
 
     /// A later 1.x adds to version 1, or moves to a higher version. Either way this version shows
-    /// none of its devices, stays read-only and leaves the file exactly as it was, through a save,
-    /// a forget and a cleared history.
+    /// none of its devices, stays read-only and leaves the file and the devices' histories as
+    /// they were, through a save and a forget.
     @Test(arguments: [
         ("a new top-level field", #""version":1"#, #""version":1,"order":["cfa3073fbe82243a2581b4d4ce99245e"]"#),
         ("a new device field", #""name":"Phone""#, #""name":"Phone","nickname":"Work phone""#),
@@ -254,8 +254,12 @@ import Testing
         try await store.save([Self.shippedDevice])
         #expect(try Data(contentsOf: url) == written, "\(change)")
         #expect(!FileManager.default.fileExists(atPath: folder.appendingPathComponent("devices.unreadable.json").path))
-        // Its devices' histories are the newer version's too: they read and stay.
+        // Its devices' histories are the newer version's too: they read, and stay when this
+        // version forgets the device.
         #expect(try await store.history(for: Self.phone).dailySummaries() == [Self.shippedDays[0].day])
+        try await store.forget(Self.phone, remaining: [])
+        #expect(try Data(contentsOf: url) == written, "\(change)")
+        #expect(try await DeviceStore(directory: folder).history(for: Self.phone).dailySummaries().count == 1)
     }
 
     // MARK: - A device's history

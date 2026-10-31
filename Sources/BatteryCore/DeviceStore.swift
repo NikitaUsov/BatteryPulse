@@ -199,8 +199,15 @@ public actor DeviceStore {
     /// them back on its next flush. The folder goes after the registry is saved, so a crash in
     /// between leaves an orphan folder (``clearHistory()`` removes it), never an entry without
     /// its history.
+    ///
+    /// While ``isReadOnly``, the registry still lists the device, so its history stays too, and
+    /// the store is only flushed and evicted: a newer version's device keeps all it had.
     public func forget(_ key: DeviceKey, remaining: [RememberedDevice]) async throws {
         try save(remaining)
+        guard !isReadOnly else {
+            if let store = stores.removeValue(forKey: key) { try await store.flush() }
+            return
+        }
         // Evicted before the await, so nothing hands out this store again meanwhile.
         if let store = stores.removeValue(forKey: key) { try await store.clear() }
         let folder = directory.appendingPathComponent(key.rawValue)
