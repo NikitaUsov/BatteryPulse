@@ -33,6 +33,15 @@ enum AppSettings {
     /// Where an in-app update put the previous version, to delete at the next launch.
     static let updateLeftoverKey = "updateLeftover"
     static let lastSeenVersionKey = "lastSeenVersion"
+    /// The anonymous version count (Settings → General): on when missing, and only its toggle
+    /// writes it, so a later release can change the default for everyone who never chose.
+    static let anonymousVersionCountKey = "anonymousVersionCount"
+    /// The last version the count is done with, as `x.y.z`: counted, or without a counter on its
+    /// release (``VersionCounterPolicy/marksCounted(_:)``).
+    static let lastCountedVersionKey = "lastCountedVersion"
+    /// When this version first ran on this Mac, written when ``lastSeenVersionKey`` changes. The
+    /// count waits a day after it, so its switch comes before the first count.
+    static let versionFirstLaunchKey = "versionFirstLaunch"
     static let recordHistoryKey = "recordHistory"
     static let prefersCompactWindowKey = "prefersCompactWindow"
     /// How the main and compact windows look (Settings → General): a `WindowLook` raw value,
@@ -88,6 +97,11 @@ enum AppSettings {
 
     static var readsDevices: Bool {
         UserDefaults.standard.bool(forKey: readDevicesKey)
+    }
+
+    /// The anonymous version count: on unless the user turned it off.
+    static var countsVersion: Bool {
+        VersionCounterPolicy.isEnabled(stored: UserDefaults.standard.object(forKey: anonymousVersionCountKey) as? Bool)
     }
 
     /// Daily by default; Settings → General shows the choice.
@@ -156,11 +170,17 @@ enum WhatsNewPolicy {
         UserDefaults.standard.string(forKey: AppSettings.lastSeenVersionKey).flatMap(AppVersion.init)
     }
 
-    /// Unversioned builds (CI artifacts share the bundle ID) don't count, or the next real
-    /// release would show What's New twice.
+    /// Records `version` as the one that ran last and, when it differs from the one before, when
+    /// it first ran: the version count's day of grace starts then. Unversioned builds (CI
+    /// artifacts share the bundle ID) don't count, or the next real release would show What's New
+    /// twice, and running one would restart the installed version's grace.
     static func markSeen(_ version: AppVersion) {
         guard version != UpdateInstallPolicy.unversioned else { return }
-        UserDefaults.standard.set(version.description, forKey: AppSettings.lastSeenVersionKey)
+        let defaults = UserDefaults.standard
+        if lastLaunched != version {
+            defaults.set(Date(), forKey: AppSettings.versionFirstLaunchKey)
+        }
+        defaults.set(version.description, forKey: AppSettings.lastSeenVersionKey)
     }
 }
 

@@ -58,6 +58,7 @@ struct BatteryPulseApp: App {
         // the placed widgets keep the previous language's render until they reload.
         let versionChanged = WhatsNewPolicy.lastLaunched != updater.currentVersion
         WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)
+        // On a version's first launch, this also starts the version count's day of grace.
         WhatsNewPolicy.markSeen(updater.currentVersion)
         updater.showWindow = { WindowOpener.show(WindowID.update) }
         updater.startAutomaticChecks()
