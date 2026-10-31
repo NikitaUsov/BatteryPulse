@@ -65,6 +65,11 @@ fail() {
   status=1
 }
 
+# since <start> <file>: the seconds from <start> (date +%s) to the file's modification.
+since() {
+  echo $(($(stat -f %m "$2") - $1))
+}
+
 # version <bundle>: its CFBundleShortVersionString, or nothing.
 version() {
   plutil -extract CFBundleShortVersionString raw -o - "$1/Contents/Info.plist" 2> /dev/null || true
@@ -144,10 +149,15 @@ probe "$app" 2.0 true "$one/update-opened"
 probe "$previous" 1.0 false "$one/previous-opened"
 mkdir -p "$downloads"
 : > "$downloads/BatteryPulse.dmg"
+start="$(date +%s)"
 seconds="$(relaunch "$app" "$previous" "$marker")"
 echo "The script ended after $seconds s"
 wait_for 15 -e "$one/previous-opened" || fail "the previous version wasn't opened again"
 [ -e "$one/update-opened" ] || fail "the update wasn't opened"
+# When each version opened, from the probes' own files: the wait is the time between the two.
+if [ -e "$one/update-opened" ] && [ -e "$one/previous-opened" ]; then
+  echo "The update opened after $(since "$start" "$one/update-opened") s, the previous version after $(since "$start" "$one/previous-opened") s"
+fi
 [ "$(version "$app")" = 1.0 ] || fail "the app's path holds version '$(version "$app")', not the previous 1.0"
 [ "$(version "$previous")" = 2.0 ] || fail "the previous version's place holds '$(version "$previous")', not the update"
 [ ! -e "$previous.new" ] || fail "the update was left aside at $previous.new"
