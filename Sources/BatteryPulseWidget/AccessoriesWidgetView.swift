@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import BatteryCore
 import Foundation
 import SwiftUI
@@ -64,7 +65,7 @@ struct AccessoryLowestView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            decorativeSymbol(row.symbolName, accentedMode: .desaturated)
+            WidgetAccessorySymbol(name: row.symbolName)
                 .font(roomy ? .title : .title2)
             Spacer(minLength: 0)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -112,7 +113,7 @@ struct AccessoryListView: View {
         VStack(alignment: .leading, spacing: roomy ? 14 : 8) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: 8) {
-                    decorativeSymbol(row.symbolName, accentedMode: .desaturated)
+                    WidgetAccessorySymbol(name: row.symbolName)
                         .foregroundStyle(.secondary)
                         .frame(width: roomy ? 24 : 20)
                     AccessoryNameText(name: row.name)
@@ -126,6 +127,17 @@ struct AccessoryListView: View {
         }
         .font(roomy ? .body : .callout)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// An accessory's or a part's symbol, or the generic accessory symbol where this macOS lacks it, as
+/// the app draws them: a device symbol, desaturated in the accented rendering mode.
+struct WidgetAccessorySymbol: View {
+    let name: String
+
+    var body: some View {
+        let available = NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil
+        decorativeSymbol(available ? name : AccessoryKind.fallbackSymbolName, accentedMode: .desaturated)
     }
 }
 
@@ -162,7 +174,7 @@ struct AccessoryPartsView: View {
             ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
                 HStack(spacing: 2) {
                     if hasParts, let symbol = part.role.symbolName {
-                        decorativeSymbol(symbol, accentedMode: .desaturated)
+                        WidgetAccessorySymbol(name: symbol)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
