@@ -260,6 +260,23 @@ import Testing
         #expect(!flags("let task = session.dataTask(with: request)"))
     }
 
+    /// W-13: update traffic neither stores nor sends cookies. `UpdateNetwork` builds both sessions'
+    /// configuration in one function, so the three settings before its `if automatic` hold for
+    /// both.
+    @Test func updateTrafficHasNoCookies() throws {
+        let code = try SourceScanner.file(Self.updateChecker).code
+        let function = try #require(code.firstRange(of: "func configuration(automatic: Bool)"))
+        let shared = try #require(code[function.upperBound...].firstRange(of: "if automatic"))
+        let common = code[function.upperBound..<shared.lowerBound]
+        for (setting, pattern) in [
+            ("httpCookieStorage = nil", #/\bconfiguration\s*\.\s*httpCookieStorage\s*=\s*nil\b/#),
+            ("httpShouldSetCookies = false", #/\bconfiguration\s*\.\s*httpShouldSetCookies\s*=\s*false\b/#),
+            ("httpCookieAcceptPolicy = .never", #/\bconfiguration\s*\.\s*httpCookieAcceptPolicy\s*=\s*\.\s*never\b/#),
+        ] {
+            #expect(common.contains(pattern), "UpdateNetwork's configuration sets \(setting)")
+        }
+    }
+
     /// W-13: the version count's URL is taken once, by the update checker.
     @Test func versionCountURLInOnePlace() {
         let request = "guard let url = VersionCounterPolicy.url(for: currentVersion) else { return }\n"

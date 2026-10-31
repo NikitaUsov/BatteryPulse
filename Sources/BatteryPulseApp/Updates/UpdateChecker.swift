@@ -209,7 +209,9 @@ final class UpdateChecker {
 }
 
 /// The sessions of the update traffic. Both are ephemeral and have no URL cache, so a check or
-/// a download leaves nothing on disk but the files the installer moves into place itself.
+/// a download leaves nothing on disk but the files the installer moves into place itself. Neither
+/// keeps or sends cookies: github.com sets some on a release download, even one that answers 404,
+/// and in memory they would join every later request while the app runs.
 enum UpdateNetwork {
     /// Check Now, the release's signature and its DMG: the user asked, so any network will do.
     /// Check Now during an automatic check cancels it and asks here instead.
@@ -221,6 +223,9 @@ enum UpdateNetwork {
     private static func configuration(automatic: Bool) -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieAcceptPolicy = .never
         // Without a connection a check fails at once instead of keeping the window waiting; the
         // next tick or Check Now asks again.
         configuration.waitsForConnectivity = false
