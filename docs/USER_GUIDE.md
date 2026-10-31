@@ -546,8 +546,9 @@ connections are to your own iPhone or iPad while **Read iPhone and iPad batterie
 the local network for one connected over Wi-Fi (see
 [Connecting a device](#connecting-a-device)); nothing from them goes to the internet. If GitHub
 limits requests from your network, the check waits and tries again later. Each release also lists
-`BatteryPulse.dmg.sig`, the signature the app checks, and `BatteryPulse-dSYMs.zip`, the debug
-symbols that turn a crash report into readable function names; you don't need either.
+`BatteryPulse.dmg.sig`, the signature the app checks, `BatteryPulse-dSYMs.zip`, the debug symbols
+that turn a crash report into readable function names, and, from 0.7.0, `BatteryPulse-count.txt`,
+the file the version count downloads; you don't need any of them.
 
 After an update that adds features, a **What's New** window lists them once; it's also in the
 Help menu.
