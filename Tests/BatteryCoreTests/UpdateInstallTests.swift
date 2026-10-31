@@ -589,6 +589,22 @@ import Testing
             ])
     }
 
+    /// CI's macOS job runs the relaunch script both ways an update can go, with the app's own
+    /// text, waits and marker, so the check can't drift from the code.
+    @Test func ciChecksTheRelaunchFallback() throws {
+        let root = SourceScanner.sources.deletingLastPathComponent()
+        let check = try String(
+            contentsOf: root.appendingPathComponent("scripts/relaunch-fallback-check.sh"), encoding: .utf8)
+        #expect(check.contains("\nRELAUNCH='" + UpdateInstallPolicy.relaunchScript + "'\n"))
+        #expect(check.ranges(of: "RELAUNCH=").count == 1)
+        #expect(check.contains("\nCHECKS=\(UpdateInstallPolicy.launchMarkerChecks)\n"))
+        #expect(check.contains("\nMARKER_NAME=\(UpdateInstallPolicy.launchMarkerName)\n"))
+        #expect(check.contains(#"/bin/sh -c "$RELAUNCH" sh "$1" "$installer" /usr/bin/open "$2" "$3" "$CHECKS""#))
+        let workflow = try String(
+            contentsOf: root.appendingPathComponent(".github/workflows/ci.yml"), encoding: .utf8)
+        #expect(workflow.contains("run: scripts/relaunch-fallback-check.sh build/BatteryPulse.app\n"))
+    }
+
     /// What a launch deletes after an update, by how it found the launch marker.
     @Test func aLaunchDeletesOnlyWhatTheRelaunchLeftIt() {
         let previous = "/private/var/folders/ab/T/TemporaryItems/NSIRD_BatteryPulse_x/BatteryPulse.app"

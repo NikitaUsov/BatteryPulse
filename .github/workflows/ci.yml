@@ -427,6 +427,14 @@ jobs:
           echo "Last lines of the app's log:"
           tail -20 "$RUNNER_TEMP/launch.log"
           exit "$status"
+      - name: Check the relaunch fallback
+        # The installer's relaunch script (UpdateInstallPolicy.relaunchScript; a Linux test keeps the
+        # check's copy equal to it), both ways: an update that exits at launch must be swapped for
+        # the previous version, which opens again, once the 30 s wait is out; this build, opened as
+        # the update, must create its launch marker in time, stay, and delete the previous version
+        # and the downloads. About a minute.
+        timeout-minutes: 4
+        run: scripts/relaunch-fallback-check.sh build/BatteryPulse.app
       - name: Package the profiling build
         # Only on a dispatch that asks for it. Last, because build-app.sh starts by removing build/,
         # which every step above reads; the same version and build number as the DMG above, so a
