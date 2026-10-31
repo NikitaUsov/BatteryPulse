@@ -317,8 +317,8 @@ bpulse (CLI, macOS)    App (SwiftUI: macOS menu bar + iOS)
   0.1 K as a temperature fallback, compact window labels) and the M5 capture as a fixture
 - [x] Verify on the M5: the update check finds a new release (0.3.0 → 0.3.1)
 - [x] Verify on the M5: a capture at the macOS Charge Limit stop point. `bpulse --record`
-  (0.6.0) keeps captures just before and after every charging change, with a timeline. Partly
-  settled in 0.6.2's first session (2026-10-23 and 24, the limit at 80 %): the paused state is bit
+  (0.6.0) keeps captures just before and after every charging change, with a timeline. Settled
+  in 0.6.2's first session (2026-10-23 and 24, the limit at 80 %): the paused state is bit
   24 (0x01000000) of `ChargerData.NotChargingReason`, in `AppleSmartBattery` and its child
   `AppleChargerData`, with no charge current, and raising the limit to 100 % clears it; the
   configured value is in no registry key. That session's reads put its candidates for 0.8 in this

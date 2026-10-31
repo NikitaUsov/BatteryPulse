@@ -61,8 +61,9 @@ struct PowerView: View {
                     ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
                 }
             }
-            // Reached, never a percentage: macOS stops a few points short of the limit and resumes
-            // only after a drop of more than 5 %, so the charge here would read as the limit.
+            // Reached, never a percentage: macOS holds the charge within a few points of the limit
+            // and resumes only after a drop of more than 5 %, so the charge here would read as the
+            // limit.
             if snapshot.isAtSystemChargeLimit {
                 ValueRow("Charge limit", String(localized: "Reached"))
             }

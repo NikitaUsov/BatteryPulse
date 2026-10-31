@@ -101,8 +101,8 @@ accessories (see [Accessories](#accessories)).
   the limit.
 - **Power** — battery voltage, current, power and temperature, and while charging the current
   and voltage the battery asks the charger for; *Charge limit: Reached* while the Charge Limit
-  holds the charge (a percentage there would only repeat the charge, since macOS stops a few
-  points short of the limit); the power adapter (name, rated power, negotiated voltage and
+  holds the charge (no percentage: macOS holds the charge within a few points of the limit, so
+  the charge there would read as the limit); the power adapter (name, rated power, negotiated voltage and
   current) and every USB Power Delivery voltage it offers; power from the adapter, system load,
   adapter loss, Low Power Mode and thermal state.
 - **History** — charge, power and temperature over time; see [History](#history).
@@ -398,8 +398,9 @@ In Settings → Notifications, BatteryPulse can tell you:
 
 - **When charged to** 80, 85, 90, 95 or 100 %. Unplugging around 80 % most of the time slows
   battery aging. This only notifies; to stop charging at a level, set the Charge Limit in System
-  Settings → Battery. A notification above a lower Charge Limit never comes: with the limit at
-  80 %, the battery never reaches 90 %.
+  Settings → Battery. While a lower Charge Limit holds the charge, a level above it isn't
+  reached: with the limit at 80 %, the 90 % notification comes only when macOS charges past the
+  limit (Charge to Full Now, or the occasional full charge macOS makes for its estimates).
 - **When the battery falls to** 10, 20 or 30 % on battery.
 - **When battery service is recommended**, once each time macOS reports a condition other than
   Normal.
