@@ -17,8 +17,9 @@ it. 0.8 follows 0.7.1. The session tools beside this file (`m5-session.sh`, its 
 **Where its references lead.** The sections taken from 0.6.2's plan (P2) keep their numbers (§8.3,
 §8.5, §8.8, §10), as 0.6.2's D3 kept them when it moved P2's §8 to §10 into 0.7.0's plan folder, so
 "P2 §8.5" or "Q-W4" still finds its text here. Every other reference is to a file that left the
-repository with 0.7.0's plan folder, readable at `<keep>` in `refs/pull/13/head` (the last commit of
-0.7.0's release PR that holds `docs/plans/0.7.0/`), or to one that stays:
+repository with 0.7.0's plan folder, readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in
+`refs/pull/13/head` (the last commit of 0.7.0's release PR that holds `docs/plans/0.7.0/`), or to
+one that stays:
 - **Inside the sections taken from P2,** a bare section, package or row is P2's: a §8 or §9 section
   that isn't here (§8.1, §8.2, §8.4, §8.6, §8.7, §8.9 to §8.17, §9 with §9.1) and the W0 rows are in
   `docs/plans/0.7.0/widgets.md`; "Appendix C" is P2's own, with Session A's and Session B's rows, in

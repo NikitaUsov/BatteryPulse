@@ -3,7 +3,7 @@
 # Copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R (the
 # maintainer's decision, 2026-10-31), so 0.7.1's M5 session runs it. PLAN.md below is 0.7.0's
 # docs/plans/0.7.0/PLAN.md, readable at
-# <keep> in refs/pull/13/head.
+# ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
 #
 #   bash docs/plans/0.7.1/m5-session.sh help
 #

@@ -8,7 +8,7 @@
 //
 // Copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R, for 0.7.1's
 // M5 session. PLAN.md is 0.7.0's docs/plans/0.7.0/PLAN.md, readable at
-// <keep> in refs/pull/13/head.
+// ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
 //
 // Its folder is the session's: the folder above the bin/ it runs from, which must be
 // ~/bp-070/R, C, H or D3 of the account's own home; run from anywhere else it refuses everything.

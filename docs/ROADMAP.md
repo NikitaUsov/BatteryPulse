@@ -712,7 +712,8 @@ beta window styles' known bug, the energy measurements 0.6.1's session skipped, 
 read-path groundwork that widget customization (0.7) needs. The plan, removed at the release, is
 readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`); its widget design
 moved to `docs/plans/0.7.0/widgets.md`, and its Appendix C, session tools and both sessions'
-reports were copied to `docs/plans/0.7.0/`.
+reports were copied to `docs/plans/0.7.0/`, a folder that left at 0.7.0's release in turn
+(readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`).
 Two sittings on the M5: an early one (about 65 minutes plus 3 hours unattended, 2026-10-23/24) and
 one on the release candidate, run hands-free on 2026-10-30 with about the planned 13-15 minutes of
 the maintainer's time (a first attempt on 2026-10-27 was cancelled). WP-18's Xcode items didn't
@@ -850,15 +851,15 @@ measured.
 
 ### Stage 1.8: Widgets you configure (0.7)
 
-Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's
-Charge Limit shown; released on 2026-10-31. The plan, removed at the release, is readable at
-`<keep>` in `refs/pull/13/head` (`docs/plans/0.7.0/PLAN.md` there, with the widget design it
-took from 0.6.2's plan beside it); what 0.7 didn't build moved to `docs/plans/0.7.1/widgets.md`,
-and its Appendix C and session tools were copied to `docs/plans/0.7.1/`.
-Three sittings at the desk, answered on CI's pictures (2026-10-31): the look check, a second look
-and a layout confirmation. No M5 session: the maintainer released 0.7.0 without Session R and
-its logged day (2026-10-31), so nothing of 0.7 was seen on the M5 before the release, only in
-CI, and 0.7.1's M5 session checks it.
+Widgets you configure, plus the device JSON's dates, the anonymous version count and macOS's Charge
+Limit shown; released on 2026-10-31. The plan, removed at the release, is readable at
+`ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head` (`docs/plans/0.7.0/PLAN.md` there,
+with the widget design it took from 0.6.2's plan beside it); what 0.7 didn't build moved to
+`docs/plans/0.7.1/widgets.md`, and its Appendix C and session tools were copied to
+`docs/plans/0.7.1/`. Three sittings at the desk, answered on CI's pictures (2026-10-31): the look
+check, a second look and a layout confirmation. No M5 session: the maintainer released 0.7.0 without
+Session R and its logged day (2026-10-31), so nothing of 0.7 was seen on the M5 before the release,
+only in CI, and 0.7.1's M5 session checks it.
 
 - [x] Widget customization: the Battery widget's own edit sheet (App Intents, Edit Widget)
   chooses what it shows, with Automatic keeping a placed widget's look: Layout (Automatic or
