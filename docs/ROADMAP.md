@@ -203,7 +203,7 @@ signpost names.
 
 | Version | What it brings | The maintainer's time | Runs |
 |---------|----------------|-----------------------|------|
-| 0.7 | Widgets you configure (Battery and Accessories, each in small, medium and large), device JSON dates, the anonymous version count, the Charge Limit's paused state | about 31-34 minutes: the look check and a second look (about 19), Session R hands-free, the logged day's end and the after-publishing check (about 12-15) | about 31-34, plus 3 in reserve |
+| 0.7 | Widgets you configure (Battery and Accessories, each in small, medium and large), device JSON dates, the anonymous version count, the Charge Limit's paused state | about 31-34 minutes: the look check and a second look (about 19), Session R hands-free, the logged day's end and the after-publishing check (about 12-15) | about 30-33, plus 3 in reserve |
 | 0.8 | Answers in the app: why it isn't charging, the configured Charge Limit, a health summary, explanations, Report a Problem, VoiceOver and the keyboard; the backup release key, moved from 0.7 | a look sitting of about 40 minutes and a release-candidate sitting of about 85, plus about 5 for the backup key | 30-38, plus 1 for the key |
 | 0.9.0 | Ready for others (feature freeze): the docs, the written 1.x promise, the ad-hoc first install documented, `bpulse` in the app | about 50 minutes, plus up to 60 for the verification matrix's open rows | 8-11, plus whatever 0.8's cut line moves |
 | 0.9.x | Release candidates, fixes only: the soak, the energy budgets, the upgrade matrix | about 40 minutes, plus 70 unattended and a passive 7-day soak | 1-3 each |
@@ -896,7 +896,8 @@ in a version, in `docs/plans/1.0/INVENTORY.md`.
   file on the adapter, System Settings' own record on battery, the SMC's `CHLT` or `pmset -g
   battlimit`; no registry key holds it), a health summary and explanations of the numbers, a
   first-run Welcome, Report a Problem (a bundle you preview and save; nothing is sent), VoiceOver
-  and the keyboard everywhere, and tests that pin what 1.x keeps
+  and the keyboard everywhere, and tests that pin what 1.x keeps; and the backup release key,
+  moved from 0.7
 - [ ] 0.9.0, ready for others: the documentation (Open Anyway on a first install, with fresh
   screenshots), the written 1.x promise and `bpulse` inside the app; no Developer ID signing,
   since there is no paid developer account; features freeze here, and 0.9.x only fixes
