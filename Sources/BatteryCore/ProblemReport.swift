@@ -26,7 +26,7 @@ public enum ProblemReport {
     public static let crashReportsFolder = "Library/Logs/DiagnosticReports"
 
     /// The app and the Mac, as the report names them.
-    public struct Identity: Sendable, Equatable {
+    public struct Identity: Sendable {
         /// `CFBundleShortVersionString`.
         public var appVersion: String?
         /// `CFBundleVersion`.
@@ -45,7 +45,7 @@ public enum ProblemReport {
     }
 
     /// A crash report of the app's, by its file name.
-    public struct CrashReport: Sendable, Equatable {
+    public struct CrashReport: Sendable {
         public var name: String
         /// The file, read only when its contents go in; `nil` when it wasn't read or couldn't be.
         public var contents: Data?
@@ -57,66 +57,11 @@ public enum ProblemReport {
     }
 
     /// What the crash reports folder showed.
-    public enum CrashReports: Sendable, Equatable {
+    public enum CrashReports: Sendable {
         /// The folder couldn't be listed: the report says so, and the app shows no error.
         case notReadable
         /// The app's reports, in the order to list them; the others are dropped.
         case found([CrashReport])
-    }
-
-    /// Everything the report is made of, read by the app when its window opens.
-    public struct Inputs: Sendable {
-        /// When the report was made.
-        public var date: Date
-        public var identity: Identity
-        /// Demo Mode's scene while it is on. The battery capture is still this Mac's own.
-        public var demoScene: String?
-        /// The system's battery read; `nil` when it found no battery.
-        public var battery: BatteryReading?
-        /// `nil` when the accessories weren't read.
-        public var accessories: AccessoryReading?
-        /// The last iPhone or iPad capture since launch; `nil` while device reading is off or
-        /// before a device was read.
-        public var device: IDeviceCapture?
-        /// The values of ``ProblemReport/includedSettings``, by key; any other key is dropped.
-        public var settings: [String: SettingValue]
-        public var perf: PerfSummary.Snapshot
-        public var crashReports: CrashReports
-        /// The second choice: the crash reports' contents go in too.
-        public var includesCrashContents: Bool
-        /// The user's home folder, written as `~` in the crash reports' contents.
-        public var homeDirectory: String
-
-        public init(
-            date: Date, identity: Identity, demoScene: String? = nil, battery: BatteryReading?,
-            accessories: AccessoryReading?, device: IDeviceCapture?, settings: [String: SettingValue],
-            perf: PerfSummary.Snapshot, crashReports: CrashReports, includesCrashContents: Bool,
-            homeDirectory: String
-        ) {
-            self.date = date
-            self.identity = identity
-            self.demoScene = demoScene
-            self.battery = battery
-            self.accessories = accessories
-            self.device = device
-            self.settings = settings
-            self.perf = perf
-            self.crashReports = crashReports
-            self.includesCrashContents = includesCrashContents
-            self.homeDirectory = homeDirectory
-        }
-    }
-
-    /// The report, built off the caller's actor: the captures' property lists and the crash
-    /// reports' contents take a while.
-    @concurrent
-    public static func assemble(_ inputs: Inputs) async -> String {
-        text(for: inputs)
-    }
-
-    /// The report's text: ``assemble(_:)`` without leaving the caller's actor.
-    public static func text(for inputs: Inputs) -> String {
-        text(for: inputs, limits: .standard)
     }
 
     /// How much of the crash reports' contents goes in.
@@ -131,37 +76,74 @@ public enum ProblemReport {
         static let standard = ContentLimits(perReport: 2_000_000, total: 20_000_000)
     }
 
-    static func text(for inputs: Inputs, limits: ContentLimits) -> String {
+    /// The report's text, from what the app reads when the report's window opens.
+    ///
+    /// The captures' property lists and the crash reports' contents take a while, so the app
+    /// calls this from a `@concurrent` function of its own. BatteryCore has none: an async
+    /// function stays in every binary that links BatteryCore, the widget's too, with everything
+    /// it calls, where a function nothing calls is stripped.
+    ///
+    /// - Parameters:
+    ///   - date: When the report was made.
+    ///   - identity: The app and the Mac (`SystemIdentity` in BatterySource reads it).
+    ///   - demoScene: Demo Mode's scene while it is on. The battery capture is still this Mac's
+    ///     own.
+    ///   - battery: The system's battery read; `nil` when it found no battery.
+    ///   - accessories: `nil` when the accessories weren't read.
+    ///   - device: The last iPhone or iPad capture since launch; `nil` while device reading is
+    ///     off or before a device was read.
+    ///   - settings: The values of ``includedSettings``, by key; any other key is dropped.
+    ///   - perf: This launch's signposts (``PerfSummary/session``).
+    ///   - crashReports: The app's crash reports, listed by the app from ``crashReportsFolder``
+    ///     with ``isCrashReportName(_:)``, their contents read only for the second choice.
+    ///   - includesCrashContents: The second choice: the crash reports' contents go in too.
+    ///   - homeDirectory: The user's home folder, written as `~` in the crash reports' contents.
+    /// - Returns: The file's text, which the preview shows and the app saves as UTF-8.
+    public static func text(
+        date: Date, identity: Identity, demoScene: String? = nil, battery: BatteryReading?,
+        accessories: AccessoryReading?, device: IDeviceCapture?, settings: [String: SettingValue],
+        perf: PerfSummary.Snapshot, crashReports: CrashReports, includesCrashContents: Bool, homeDirectory: String
+    ) -> String {
+        text(
+            date: date, identity: identity, demoScene: demoScene, battery: battery, accessories: accessories,
+            device: device, settings: settings, perf: perf, crashReports: crashReports,
+            includesCrashContents: includesCrashContents, homeDirectory: homeDirectory, limits: .standard)
+    }
+
+    static func text(
+        date: Date, identity: Identity, demoScene: String?, battery: BatteryReading?, accessories: AccessoryReading?,
+        device: IDeviceCapture?, settings: [String: SettingValue], perf: PerfSummary.Snapshot,
+        crashReports listing: CrashReports, includesCrashContents: Bool, homeDirectory: String, limits: ContentLimits
+    ) -> String {
         var report = ReportText()
-        report.line("BatteryPulse problem report, made \(inputs.date.formatted(.iso8601))")
+        report.line("BatteryPulse problem report, made \(date.formatted(.iso8601))")
         report.line("BatteryPulse sends nothing: this file stays on this Mac until it is attached to an issue.")
         report.line(
             "Left out: serial numbers, the battery's manufacturing data, the iPhone's or iPad's identifiers "
                 + "and name, and the accessories' names and addresses.")
 
         report.section("BatteryPulse")
-        let identity = inputs.identity
         let version = identity.appVersion.map(oneLine) ?? "unknown"
         let build = identity.build.map(oneLine).flatMap { $0 == version ? nil : $0 }
         report.line("Version: \(version)" + (build.map { " (\($0))" } ?? ""))
         report.line("macOS: \(oneLine(identity.systemVersion))")
         report.line("Mac: \(identity.model.map(oneLine) ?? "unknown")")
         report.line(
-            inputs.demoScene.map { "Demo Mode: on (\(oneLine($0))); the battery capture is still this Mac's own" }
+            demoScene.map { "Demo Mode: on (\(oneLine($0))); the battery capture is still this Mac's own" }
                 ?? "Demo Mode: off")
 
         report.section("Settings")
-        for line in settingsLines(inputs.settings) { report.line(line) }
+        for line in settingsLines(settings) { report.line(line) }
 
-        report.section("Performance since launch (\(elapsedText(inputs.perf.elapsed)))")
-        let perfLines = inputs.perf.lines
+        report.section("Performance since launch (\(elapsedText(perf.elapsed)))")
+        let perfLines = perf.lines
         report.line(
             perfLines.isEmpty
                 ? "Nothing measured yet."
                 : "Intervals: count, total and longest time; events: count. By signpost name and trigger.")
         for line in perfLines { report.line(line) }
 
-        let crashReports = Self.crashReports(in: inputs.crashReports)
+        let crashReports = Self.crashReports(in: listing)
         report.section("Crash reports")
         switch crashReports {
         case nil: report.line("Not readable: ~/\(crashReportsFolder) couldn't be listed.")
@@ -170,42 +152,42 @@ public enum ProblemReport {
             report.line("In ~/\(crashReportsFolder):")
             for crashReport in reports { report.line(crashReport.name) }
             report.line(
-                inputs.includesCrashContents
+                includesCrashContents
                     ? "Their contents are at the end of this file."
                     : "Their contents are not included.")
         }
 
         report.section("Battery")
-        if let battery = inputs.battery {
+        if let battery {
             report.capture("battery", battery.redactedRawCapture)
         } else {
             report.line("Not read: the system reported no internal battery.")
         }
 
         report.section("Accessories")
-        if let accessories = inputs.accessories {
+        if let accessories {
             report.capture("accessories", accessories.redactedRawCapture)
         } else {
             report.line("Not read.")
         }
 
         report.section("iPhone or iPad")
-        if let device = inputs.device {
+        if let device {
             report.line("The last capture since launch.")
             report.capture("device", device.redactedRawCapture)
         } else {
             report.line("None: reading iPhones and iPads is off, or none was read since launch.")
         }
 
-        if inputs.includesCrashContents, let reports = crashReports, !reports.isEmpty {
+        if includesCrashContents, let crashReports, !crashReports.isEmpty {
             report.section("Crash report contents")
             report.line(
                 "Their identifiers left out (\(crashReportIdentifiers.sorted().joined(separator: ", "))), "
                     + "and the home folder written as ~.")
             var budget = limits.total
-            for crashReport in reports {
+            for crashReport in crashReports {
                 report.crashReport(
-                    crashReport, homeDirectory: inputs.homeDirectory, largest: limits.perReport, budget: &budget)
+                    crashReport, homeDirectory: homeDirectory, largest: limits.perReport, budget: &budget)
             }
         }
         return report.text
@@ -561,7 +543,7 @@ struct JSONMemberCutter {
 
 extension ProblemReport {
     /// A setting's stored value, as `UserDefaults.object(forKey:)` returns it.
-    public enum SettingValue: Sendable, Equatable {
+    public enum SettingValue: Sendable {
         case bool(Bool)
         case int(Int64)
         case double(Double)
@@ -641,7 +623,7 @@ extension ProblemReport {
             switch key {
             case "alertState": return alertStateText(data)
             case "accessoryAlertState": return accessoryAlertStateText(data)
-            default: return "left out: \(data.count) bytes"
+            default: return "left out: binary data"
             }
         case .other: return "left out: not a plain value"
         }

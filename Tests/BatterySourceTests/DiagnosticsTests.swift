@@ -74,7 +74,7 @@ import os
         let snapshot = summary.snapshot()
         typealias Key = PerfSummary.Key
         #expect(
-            snapshot.intervals.keys.sorted() == [
+            Set(snapshot.intervals.keys) == [
                 Key(name: "page.switch", trigger: "overview"), Key(name: "read", trigger: "full"),
             ])
         #expect(snapshot.intervals.values.allSatisfy { $0.count == 1 })

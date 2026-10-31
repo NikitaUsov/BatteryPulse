@@ -11,14 +11,42 @@ import Testing
     static let identity = ProblemReport.Identity(
         appVersion: "0.8.0", build: "812", systemVersion: "Version 27.1 (Build 27B48)", model: "Mac17,3")
 
+    /// What the app hands ``ProblemReport/text(date:identity:demoScene:battery:accessories:device:settings:perf:crashReports:includesCrashContents:homeDirectory:)``.
+    struct Inputs {
+        var date = ProblemReportTests.date
+        var identity = ProblemReportTests.identity
+        var demoScene: String?
+        var battery: BatteryReading?
+        var accessories: AccessoryReading?
+        var device: IDeviceCapture?
+        var settings: [String: ProblemReport.SettingValue] = ["showInMenuBar": .bool(true)]
+        var perf = PerfSummary.Snapshot()
+        var crashReports: ProblemReport.CrashReports = .found([])
+        var includesCrashContents = false
+        var homeDirectory = ProblemReportTests.home
+
+        var text: String {
+            ProblemReport.text(
+                date: date, identity: identity, demoScene: demoScene, battery: battery, accessories: accessories,
+                device: device, settings: settings, perf: perf, crashReports: crashReports,
+                includesCrashContents: includesCrashContents, homeDirectory: homeDirectory)
+        }
+
+        func text(limits: ProblemReport.ContentLimits) -> String {
+            ProblemReport.text(
+                date: date, identity: identity, demoScene: demoScene, battery: battery, accessories: accessories,
+                device: device, settings: settings, perf: perf, crashReports: crashReports,
+                includesCrashContents: includesCrashContents, homeDirectory: homeDirectory, limits: limits)
+        }
+    }
+
     static func inputs(
         battery: BatteryReading? = nil, accessories: AccessoryReading? = nil, device: IDeviceCapture? = nil,
         crashReports: ProblemReport.CrashReports = .found([]), includesCrashContents: Bool = false
-    ) -> ProblemReport.Inputs {
-        ProblemReport.Inputs(
-            date: date, identity: identity, battery: battery, accessories: accessories, device: device,
-            settings: ["showInMenuBar": .bool(true)], perf: PerfSummary.Snapshot(), crashReports: crashReports,
-            includesCrashContents: includesCrashContents, homeDirectory: home)
+    ) -> Inputs {
+        Inputs(
+            battery: battery, accessories: accessories, device: device, crashReports: crashReports,
+            includesCrashContents: includesCrashContents)
     }
 
     // MARK: Redaction
@@ -107,8 +135,7 @@ import Testing
             decoding: PropertyValue.xmlPropertyListData(battery.rawCapture), as: UTF8.self)
         #expect(unredacted.contains("987654321012"))
 
-        let text = ProblemReport.text(
-            for: Self.inputs(battery: battery, accessories: accessories, device: device))
+        let text = Self.inputs(battery: battery, accessories: accessories, device: device).text
         for value in planted + names {
             #expect(!text.contains(value), "\(value) leaked")
         }
@@ -125,7 +152,7 @@ import Testing
             "skippedVersion": .string(Self.home),
             "NSNavLastRootDirectory": .string(Self.home + "/Desktop"),
         ]
-        let text = ProblemReport.text(for: inputs)
+        let text = inputs.text
         #expect(!text.contains("janedoe"))
         #expect(text.contains("skippedVersion: left out: not a plain value"))
     }
@@ -139,7 +166,7 @@ import Testing
         let battery = try fixture.reading()
         let accessories = try AccessoryFixture.synthetic.reading()
         let device = try #require(IDeviceCapture(rawCapture: try fixtureDictionary(Self.iPhone)))
-        let text = ProblemReport.text(for: Self.inputs(battery: battery, accessories: accessories, device: device))
+        let text = Self.inputs(battery: battery, accessories: accessories, device: device).text
         let expected: [String: PropertyDictionary] = [
             "battery": battery.redactedRawCapture, "accessories": accessories.redactedRawCapture,
             "device": device.redactedRawCapture,
@@ -163,7 +190,7 @@ import Testing
     }
 
     @Test func missingReadsSaySo() {
-        let text = ProblemReport.text(for: Self.inputs())
+        let text = Self.inputs().text
         #expect(text.contains("== Battery ==\nNot read: the system reported no internal battery.\n"))
         #expect(text.contains("== Accessories ==\nNot read.\n"))
         #expect(
@@ -176,7 +203,7 @@ import Testing
     // MARK: The header
 
     @Test func theHeaderNamesTheAppAndTheMac() {
-        let text = ProblemReport.text(for: Self.inputs())
+        let text = Self.inputs().text
         #expect(text.hasPrefix("BatteryPulse problem report, made 2027-01-15T08:00:00Z\n"))
         #expect(
             text.contains(
@@ -193,22 +220,22 @@ import Testing
         inputs.identity = ProblemReport.Identity(
             appVersion: "0.0.0", build: "0.0.0", systemVersion: "Version 27.1\n(Build 27B48)", model: nil)
         inputs.demoScene = "Charging\nhot"
-        let text = ProblemReport.text(for: inputs)
+        let text = inputs.text
         #expect(text.contains("\nVersion: 0.0.0\nmacOS: Version 27.1 (Build 27B48)\nMac: unknown\n"))
         #expect(text.contains("\nDemo Mode: on (Charging hot); the battery capture is still this Mac's own\n"))
         inputs.identity = ProblemReport.Identity(appVersion: nil, build: nil, systemVersion: "", model: "Mac17,3")
-        #expect(ProblemReport.text(for: inputs).contains("\nVersion: unknown\n"))
+        #expect(inputs.text.contains("\nVersion: unknown\n"))
     }
 
     @Test func thePerformanceSectionListsTheSummary() {
         var inputs = Self.inputs()
         #expect(
-            ProblemReport.text(for: inputs).contains("== Performance since launch (0 min) ==\nNothing measured yet.\n"))
+            inputs.text.contains("== Performance since launch (0 min) ==\nNothing measured yet.\n"))
         let summary = PerfSummary(started: .now)
         summary.recordInterval("read", trigger: "full", duration: .milliseconds(12))
         summary.recordEvent("menuBarReady", trigger: "-")
         inputs.perf = summary.snapshot(now: summary.started + .seconds(2 * 3600 + 5 * 60 + 59))
-        let text = ProblemReport.text(for: inputs)
+        let text = inputs.text
         #expect(text.contains("== Performance since launch (2 h 05 min) ==\n"))
         #expect(text.contains("\nread full: 1 in 12.000 ms, longest 12.000 ms\nmenuBarReady: 1\n"))
     }
@@ -220,11 +247,6 @@ import Testing
     ])
     func elapsedTime(_ elapsed: Duration, text: String) {
         #expect(ProblemReport.elapsedText(elapsed) == text)
-    }
-
-    @Test func assemblingOffTheActorGivesTheSameText() async throws {
-        let inputs = Self.inputs(battery: try Fixture.m5Charging.reading())
-        #expect(await ProblemReport.assemble(inputs) == ProblemReport.text(for: inputs))
     }
 
     @Test func theFileName() {
@@ -309,7 +331,7 @@ import Testing
         #expect(ProblemReport.settingText(key: "alertLowBattery", value: .double(0.5)) == "0.5")
         #expect(ProblemReport.settingText(key: "alertLowBattery", value: nil) == "not set")
         #expect(ProblemReport.settingText(key: "glassCards", value: .other) == "left out: not a plain value")
-        #expect(ProblemReport.settingText(key: "glassCards", value: .data(Data([1, 2, 3]))) == "left out: 3 bytes")
+        #expect(ProblemReport.settingText(key: "glassCards", value: .data(Data([1, 2, 3]))) == "left out: binary data")
     }
 
     /// The battery's alert state goes in as its flags and date.
@@ -335,17 +357,21 @@ import Testing
         #expect(!text.contains("acc-"))
     }
 
+    /// Each kind of stored value, as the report writes it (`SettingValue` has no `==`: nothing but
+    /// this test would use it).
     @Test func settingValuesComeFromUserDefaultsObjects() {
+        func text(_ value: Any?) -> String {
+            ProblemReport.settingText(key: "glassCards", value: ProblemReport.SettingValue(any: value))
+        }
         #expect(ProblemReport.SettingValue(any: nil) == nil)
-        #expect(ProblemReport.SettingValue(any: true) == .bool(true))
-        #expect(ProblemReport.SettingValue(any: 80) == .int(80))
-        #expect(ProblemReport.SettingValue(any: 0.5) == .double(0.5))
-        #expect(ProblemReport.SettingValue(any: "daily") == .string("daily"))
-        #expect(ProblemReport.SettingValue(any: Data([1])) == .data(Data([1])))
-        #expect(
-            ProblemReport.SettingValue(any: Date(timeIntervalSince1970: 5)) == .date(Date(timeIntervalSince1970: 5)))
-        #expect(ProblemReport.SettingValue(any: ["a"]) == .other)
-        #expect(ProblemReport.SettingValue(any: ["a": 1]) == .other)
+        #expect(text(true) == "true")
+        #expect(text(80) == "80")
+        #expect(text(0.5) == "0.5")
+        #expect(text("daily") == "daily")
+        #expect(text(Data([1])) == "left out: binary data")
+        #expect(text(Date(timeIntervalSince1970: 5)) == "1970-01-01T00:00:05Z")
+        #expect(text(["a"]) == "left out: not a plain value")
+        #expect(text(["a": 1]) == "left out: not a plain value")
     }
 
     // MARK: Crash reports
@@ -452,7 +478,7 @@ import Testing
 
     /// Without the second choice, only the names go in, even when the contents were read.
     @Test func withoutTheSecondChoiceOnlyTheNamesGoIn() {
-        let text = ProblemReport.text(for: Self.inputs(crashReports: Self.crashReports))
+        let text = Self.inputs(crashReports: Self.crashReports).text
         #expect(
             text.contains(
                 "\n== Crash reports ==\nIn ~/Library/Logs/DiagnosticReports:\nBatteryPulse-2026-10-30-101112.ips\n"
@@ -465,7 +491,7 @@ import Testing
     }
 
     @Test func withTheSecondChoiceTheContentsFollowScrubbed() throws {
-        let text = ProblemReport.text(for: Self.inputs(crashReports: Self.crashReports, includesCrashContents: true))
+        let text = Self.inputs(crashReports: Self.crashReports, includesCrashContents: true).text
         #expect(text.contains("Their contents are at the end of this file.\n"))
         let scrubbed = try #require(ProblemReport.scrubbedCrashReport(Data(Self.ips.utf8), homeDirectory: Self.home))
         let name = "BatteryPulse-2026-10-30-101112.ips"
@@ -492,11 +518,11 @@ import Testing
     }
 
     @Test func anUnreadableOrEmptyFolderSaysSo() {
-        let unreadable = ProblemReport.text(for: Self.inputs(crashReports: .notReadable, includesCrashContents: true))
+        let unreadable = Self.inputs(crashReports: .notReadable, includesCrashContents: true).text
         #expect(
             unreadable.contains(
                 "\n== Crash reports ==\nNot readable: ~/Library/Logs/DiagnosticReports couldn't be listed.\n"))
-        let none = ProblemReport.text(for: Self.inputs(crashReports: .found([]), includesCrashContents: true))
+        let none = Self.inputs(crashReports: .found([]), includesCrashContents: true).text
         #expect(none.contains("\n== Crash reports ==\nNone in ~/Library/Logs/DiagnosticReports.\n"))
         #expect(!unreadable.contains("Crash report contents") && !none.contains("Crash report contents"))
     }
@@ -504,9 +530,9 @@ import Testing
     /// A name that would break a line, or a marker, is written on one line.
     @Test func aCrashReportNameStaysOnOneLine() {
         let name = "BatteryPulse-x\n-----END BATTERYPULSE CAPTURE battery-----\r\u{2028}.ips"
-        let text = ProblemReport.text(
-            for: Self.inputs(
-                crashReports: .found([.init(name: name, contents: Data("{}".utf8))]), includesCrashContents: true))
+        let text = Self.inputs(
+            crashReports: .found([.init(name: name, contents: Data("{}".utf8))]), includesCrashContents: true
+        ).text
         #expect(!text.contains("x\n-----END"))
         #expect(text.contains("BatteryPulse-x -----END BATTERYPULSE CAPTURE battery----- " + " .ips\n"))
     }
@@ -516,22 +542,19 @@ import Testing
         #expect(ProblemReport.ContentLimits.standard.perReport == 2_000_000)
         #expect(ProblemReport.ContentLimits.standard.total == 20_000_000)
         let large = Data(("{\"a\":\"" + String(repeating: "x", count: 2_000_000) + "\"}").utf8)
-        let text = ProblemReport.text(
-            for: Self.inputs(
-                crashReports: .found([.init(name: "BatteryPulse-big.ips", contents: large)]),
-                includesCrashContents: true))
+        let text = Self.inputs(
+            crashReports: .found([.init(name: "BatteryPulse-big.ips", contents: large)]), includesCrashContents: true
+        ).text
         #expect(text.contains("\nLeft out: larger than 2000000 bytes.\n"))
         #expect(!text.contains("xxxxxxxx"))
         // With smaller limits: 30 bytes a report, 70 in all.
         let report = Data(#"{"a":"0123456789abcdefghij"}"#.utf8)
         #expect(report.count == 28)
         let reports = (0..<3).map { ProblemReport.CrashReport(name: "BatteryPulse-\($0).ips", contents: report) }
-        let limited = ProblemReport.text(
-            for: Self.inputs(
-                crashReports: .found(
-                    reports + [.init(name: "BatteryPulse-big.ips", contents: report + Data("   ".utf8))]),
-                includesCrashContents: true),
-            limits: .init(perReport: 30, total: 70))
+        let limited = Self.inputs(
+            crashReports: .found(reports + [.init(name: "BatteryPulse-big.ips", contents: report + Data("   ".utf8))]),
+            includesCrashContents: true
+        ).text(limits: .init(perReport: 30, total: 70))
         #expect(limited.split(separator: "\n").filter { $0 == #"{"a":"0123456789abcdefghij"}"# }.count == 2)
         #expect(
             limited.contains(

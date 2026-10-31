@@ -13,17 +13,13 @@ public final class PerfSummary: Sendable {
     public static let session = PerfSummary()
 
     /// A signpost name and its trigger, `-` for none, as the `perf` lines write them.
-    public struct Key: Sendable, Hashable, Comparable {
+    public struct Key: Sendable, Hashable {
         public var name: String
         public var trigger: String
 
         public init(name: String, trigger: String) {
             self.name = name
             self.trigger = trigger
-        }
-
-        public static func < (lhs: Key, rhs: Key) -> Bool {
-            (lhs.name, lhs.trigger) < (rhs.name, rhs.trigger)
         }
     }
 
@@ -41,7 +37,7 @@ public final class PerfSummary: Sendable {
     }
 
     /// What the summary held at one moment.
-    public struct Snapshot: Sendable, Equatable {
+    public struct Snapshot: Sendable {
         public var intervals: [Key: Totals]
         public var events: [Key: Int]
         /// Since the summary was made: for ``PerfSummary/session``, about since launch.
@@ -60,21 +56,24 @@ public final class PerfSummary: Sendable {
         ///
         /// The trigger is left out when there is none.
         public var lines: [String] {
-            let intervalLines = intervals.sorted { $0.key < $1.key }.map { key, totals in
+            let intervalLines = intervals.sorted { $0.key.precedes($1.key) }.map { key, totals in
                 "\(key.label): \(totals.count) in \(PerfSummary.milliseconds(totals.total)) ms, "
                     + "longest \(PerfSummary.milliseconds(totals.longest)) ms"
             }
-            let eventLines = events.sorted { $0.key < $1.key }.map { key, count in "\(key.label): \(count)" }
+            let eventLines = events.sorted { $0.key.precedes($1.key) }.map { key, count in "\(key.label): \(count)" }
             return intervalLines + eventLines
         }
     }
 
-    private struct State {
-        var intervals: [Key: Totals] = [:]
-        var events: [Key: Int] = [:]
+    /// An interval's key or an event's: one dictionary holds both, whose code every binary that
+    /// signposts carries, the widget's too.
+    private struct Slot: Hashable {
+        var key: Key
+        var isEvent: Bool
     }
 
-    private let state = Mutex(State())
+    /// An event's slot counts in `count` alone.
+    private let slots = Mutex<[Slot: Totals]>([:])
     /// When the summary was made.
     public let started: ContinuousClock.Instant
 
@@ -85,26 +84,36 @@ public final class PerfSummary: Sendable {
     /// An interval named `name` ended after `duration`; a negative one counts as zero.
     public func recordInterval(_ name: String, trigger: String, duration: Duration) {
         let duration = max(duration, .zero)
-        state.withLock { state in
-            var totals = state.intervals[Key(name: name, trigger: trigger), default: Totals()]
+        let slot = Slot(key: Key(name: name, trigger: trigger), isEvent: false)
+        slots.withLock { slots in
+            var totals = slots[slot, default: Totals()]
             totals.count += 1
             totals.total += duration
             totals.longest = max(totals.longest, duration)
-            state.intervals[Key(name: name, trigger: trigger)] = totals
+            slots[slot] = totals
         }
     }
 
     /// An event named `name` was marked.
     public func recordEvent(_ name: String, trigger: String) {
-        state.withLock { state in
-            state.events[Key(name: name, trigger: trigger), default: 0] += 1
+        let slot = Slot(key: Key(name: name, trigger: trigger), isEvent: true)
+        slots.withLock { slots in
+            slots[slot, default: Totals()].count += 1
         }
     }
 
     /// What the summary holds now; `now` is when it is read.
     public func snapshot(now: ContinuousClock.Instant = .now) -> Snapshot {
-        let (intervals, events) = state.withLock { ($0.intervals, $0.events) }
-        return Snapshot(intervals: intervals, events: events, elapsed: max(now - started, .zero))
+        let slots = slots.withLock { $0 }
+        var snapshot = Snapshot(elapsed: max(now - started, .zero))
+        for (slot, totals) in slots {
+            if slot.isEvent {
+                snapshot.events[slot.key] = totals.count
+            } else {
+                snapshot.intervals[slot.key] = totals
+            }
+        }
+        return snapshot
     }
 
     /// Milliseconds with three decimals, rounded to the nearest microsecond: `0.412`, `85.000`.
@@ -121,5 +130,10 @@ extension PerfSummary.Key {
     /// `read full`, or `menuBarReady` without a trigger.
     var label: String {
         trigger == "-" ? name : "\(name) \(trigger)"
+    }
+
+    /// By name, then by trigger.
+    func precedes(_ other: Self) -> Bool {
+        (name, trigger) < (other.name, other.trigger)
     }
 }
