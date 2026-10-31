@@ -17,6 +17,9 @@ enum Fixture: String, CaseIterable {
     /// Real: the same Mac just after unplugging. The registry still shows a charge current; the
     /// SMC reads the discharge current.
     case m5Unplugged = "m5-macos27-unplugged"
+    /// Real: the same Mac on a 35 W adapter, held at 80 % by the Charge Limit set in System
+    /// Settings → Battery: bit 24 of `NotChargingReason`, no charge current.
+    case m5ChargeLimit = "m5-macos27-charge-limit"
     /// Synthetic pre-macOS 27 layout, for fallback keys.
     case legacyDischarging = "synthetic-legacy-discharging"
     case legacyCharging = "synthetic-legacy-charging"
