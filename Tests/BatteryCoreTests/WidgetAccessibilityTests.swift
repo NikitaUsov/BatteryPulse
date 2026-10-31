@@ -217,11 +217,11 @@ struct WidgetAccessibilityTests {
     }
 
     @Test func phrasesFillTheirPlaceholdersInTurn() {
-        let phrase = WidgetPhrase.key("Battery charge: %@, %@", [.verbatim("70\u{00A0}%"), .key("On battery")])
-        #expect(phrase.text { $0 } == "Battery charge: 70\u{00A0}%, On battery")
+        let phrase = WidgetPhrase.key("Battery charge: %@, %@", [.verbatim("70%"), .key("On battery")])
+        #expect(phrase.text { $0 } == "Battery charge: 70%, On battery")
         // Each key through the language's table, its arguments filled in after.
         let shouted = phrase.text { $0.uppercased() }
-        #expect(shouted == "BATTERY CHARGE: 70\u{00A0}%, ON BATTERY")
+        #expect(shouted == "BATTERY CHARGE: 70%, ON BATTERY")
         #expect(phrase.keys == ["Battery charge: %@, %@", "On battery"])
         // Missing arguments leave the placeholder; extra ones are dropped.
         #expect(WidgetPhrase.key("Updated %@").text { $0 } == "Updated %@")

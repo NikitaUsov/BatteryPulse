@@ -10,7 +10,7 @@ import WidgetKit
 /// and the number and lines at the bottom, as in 0.6.x; above large's and extra large's details it
 /// takes its own height.
 ///
-/// VoiceOver reads the charge as one element, "Battery charge: 70 %, On battery", from the visual
+/// VoiceOver reads the charge as one element, "Battery charge: 70%, On battery", from the visual
 /// and, when the main value is the charge, the number with it; another main value is an element of
 /// its own after it. The state line is in the charge's element, so VoiceOver skips the line itself.
 struct WidgetChargeBlock: View {

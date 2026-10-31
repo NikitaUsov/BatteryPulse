@@ -5,7 +5,7 @@ import Foundation
 // shows them. 0.6.1's widget gave VoiceOver nine flat elements, an unnamed level symbol among
 // them, and no label paired with its value.
 //
-// - The charge block is one element, "Battery charge: 70 %, On battery", whatever the main value:
+// - The charge block is one element, "Battery charge: 70%, On battery", whatever the main value:
 //   the level symbol, the ring and the drawn battery all show the charge. The level symbol is
 //   hidden, since its bucket can contradict the number (75 % stands for 63-87 %).
 // - A main value other than the charge reads "label, value" after it, and so does each row.
@@ -58,7 +58,7 @@ public enum WidgetPhrase: Sendable, Equatable {
 
 /// The label of one VoiceOver element of the widget.
 public enum WidgetSpokenLabel: Sendable, Equatable {
-    /// Phrases joined with commas: "Maximum capacity, 100 %"; after a sentence, with a space: "This
+    /// Phrases joined with commas: "Maximum capacity, 100%"; after a sentence, with a space: "This
     /// Mac has no internal battery. Try the Accessories widget".
     case phrases([WidgetPhrase])
     /// The time left, which the system counts down in the text itself: that text is the element,
@@ -120,13 +120,13 @@ enum WidgetAccessibility {
 }
 
 extension BatteryWidgetLayout {
-    /// The charge block's element, "Battery charge: 70 %, On battery" (the menu bar icon's words),
+    /// The charge block's element, "Battery charge: 70%, On battery" (the menu bar icon's words),
     /// whatever the main value and whether or not the state line shows.
     public var chargeLabel: WidgetSpokenLabel {
         .phrases([.key("Battery charge: %@, %@", [.verbatim(level.text), level.state.phrase])])
     }
 
-    /// The main value's element when it isn't the charge: "Maximum capacity, 100 %".
+    /// The main value's element when it isn't the charge: "Maximum capacity, 100%".
     public var mainLabel: WidgetSpokenLabel? {
         guard let field = main.kind.field else { return nil }
         return .phrases([.key(field.labelKey), .verbatim(main.text)])

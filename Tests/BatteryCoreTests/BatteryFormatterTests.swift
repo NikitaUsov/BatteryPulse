@@ -19,10 +19,62 @@ import Testing
     }
 
     @Test func percent() {
-        #expect(plain(english.percent(91)) == "91%")
-        #expect(plain(russian.percent(91)) == "91 %")
-        #expect(plain(english.percent(104.27, fractionDigits: 1)) == "104.3%")
-        #expect(plain(russian.percent(104.27, fractionDigits: 1)) == "104,3 %")
+        #expect(english.percent(91) == "91%")
+        #expect(russian.percent(91) == "91%")
+        #expect(english.percent(104.27, fractionDigits: 1) == "104.3%")
+        #expect(russian.percent(104.27, fractionDigits: 1) == "104,3%")
+        #expect(russian.percent(99.5, fractionDigits: 1) == "99,5%")
+        #expect(russian.percent(80) == "80%")
+    }
+
+    /// No space of any kind between the number and the sign, whichever one the locale writes
+    /// (Russian, German and French write one, Ukrainian and English none), with the locale's own
+    /// digits and separators: the number as ``BatteryFormatter/number(_:fractionDigits:signed:)``
+    /// writes it, then the sign.
+    @Test(arguments: ["ru_RU", "uk_UA", "de_DE", "fr_FR", "en_US"])
+    func percentHasNoSpaceBeforeTheSign(locale identifier: String) throws {
+        let formatter = BatteryFormatter(locale: Locale(identifier: identifier))
+        for (value, digits) in [(80.0, 0), (100, 0), (5, 0), (99.5, 1), (104.27, 1), (0.25, 2), (12_345.6, 1)] {
+            let text = formatter.percent(value, fractionDigits: digits)
+            #expect(text == formatter.number(value, fractionDigits: digits) + "%", "\(identifier): \(text)")
+            let scalars = Array(text.unicodeScalars)
+            let sign = try #require(scalars.firstIndex(of: "%"), "\(identifier): \(text) has no %")
+            let before = try #require(sign > 0 ? scalars[sign - 1] : nil, "\(identifier): \(text) starts with %")
+            #expect(!before.properties.isWhitespace, "\(identifier): \(text) has a space before %")
+            #expect(before.properties.numericType != nil, "\(identifier): \(text) has no digit right before %")
+        }
+    }
+
+    /// A locale that writes the sign first loses its space too ("% 80" in Basque), and only the
+    /// space between two digits stays.
+    @Test func closingUpKeepsOnlyDigitGroupSpaces() {
+        #expect(BatteryFormatter.closingUp("% 80") == "%80")
+        #expect(BatteryFormatter.closingUp("12\u{00A0}345,6\u{00A0}%") == "12\u{00A0}345,6%")
+        #expect(BatteryFormatter.closingUp("12\u{202F}345,6\u{202F}%") == "12\u{202F}345,6%")
+        #expect(BatteryFormatter.closingUp("99,5\u{2009}%") == "99,5%")
+        #expect(BatteryFormatter.closingUp("80%") == "80%")
+    }
+
+    /// Percentages are formatted in one place, ``BatteryFormatter/percent(_:fractionDigits:)``,
+    /// so none of the app's or the widget's goes back to the locale's space before the sign. The
+    /// text reports (``BatteryReport``, `bpulse`'s and Copy Report's English) write their own
+    /// fixed "70 %" in string literals, which the scanner blanks.
+    @Test func onlyTheFormatterFormatsPercentages() throws {
+        let percentStyles = [
+            #/\.formatted\(\s*\.percent\b/#,
+            #/format:\s*\.percent\b/#,
+            #/\.percent\s*\.\s*(?:precision|scale|rounded|grouping|sign|locale|notation|decimalSeparator)\b/#,
+            #/\.Percent\b/#,
+            #/numberStyle\s*=\s*\.percent\b/#,
+            #/\.percentSymbol\b/#,
+        ]
+        var offenders: [String] = []
+        for file in try SourceScanner.allFiles.get() where file.path != "BatteryCore/BatteryFormatter.swift" {
+            if percentStyles.contains(where: { file.code.contains($0) }) { offenders.append(file.path) }
+        }
+        #expect(offenders.isEmpty, "Format percentages through BatteryFormatter.percent: \(offenders)")
+        let formatter = try SourceScanner.allFiles.get().first { $0.path == "BatteryCore/BatteryFormatter.swift" }
+        #expect(formatter.map { file in percentStyles.contains { file.code.contains($0) } } == true)
     }
 
     @Test func watts() {
