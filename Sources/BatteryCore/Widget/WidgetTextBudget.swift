@@ -6,8 +6,10 @@
 /// to the widths of CI's pictures, which they match within about 1.5 %], and a text fits a place
 /// with ``margin`` to spare.
 ///
-/// - The main value is the one place that may shrink: the 34-point number, down to
-///   ``mainScaleFactor``, counted in characters (the rounded digits aren't in the table).
+/// - The main value is one line at full size, at its kind's point size
+///   (``BatteryWidgetMain/pointSize(in:)``), in its own face (``mainWidth(_:pointSize:)``). The
+///   widget still lets it shrink to 0.7 for a value wider than the budget's widest, 100 W or more;
+///   a ring's value is smaller and shrinks to fit inside the ring.
 /// - A line under it, small's detail and attention row, and medium's rows are one line at full
 ///   size. Where a label or a condition's words don't fit, the widget shows the shorter key
 ///   (``BatteryWidgetField/shortLabelKey``, ``WidgetCondition/shortKey``), so a place fits when one
@@ -15,10 +17,6 @@
 /// - A message (an empty state) wraps; the Russian takes as many lines as the English.
 /// - Large's and extra large's tiles hold a label on one line over a value on up to two.
 enum WidgetTextBudget {
-    /// The main value's minimum scale factor (0.6.1's hero number).
-    static let mainScaleFactor = 0.7
-    /// The main value's width in characters at full size: the charge block is as wide in every size.
-    static let mainCharacters = 7.0
     /// The share of a place a text may fill, for the estimate's error.
     static let margin = 0.98
 
@@ -79,10 +77,16 @@ enum WidgetTextBudget {
         width <= place * margin
     }
 
-    /// Whether `text` fits the main value's place once shrunk to ``mainScaleFactor``.
-    static func fitsMain(_ text: String) -> Bool {
-        Double(text.count) * mainScaleFactor <= mainCharacters
+    /// The main value's width in points at `pointSize`: its characters' advances with tabular
+    /// digits, as the widget draws them, scaled from the caption's size and by ``mainFace``.
+    static func mainWidth(_ text: String, pointSize: Double) -> Double {
+        width(text, monospacedDigits: true) * pointSize / 10 * mainFace
     }
+
+    /// The main value's rounded semibold face against the caption's table at the same size
+    /// [estimate: CI's pictures of 0.7's battery power at 34 points, 134.8 points wide in English
+    /// and 141.5 in Russian; this matches the Russian and is 2 % over the English].
+    static let mainFace = 0.955
 
     /// The lines `text` takes in a place `width` points wide: word by word, a line breaking at a
     /// space (never a no-break one) when the next word wouldn't fit, as macOS fills a line. The

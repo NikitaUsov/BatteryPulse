@@ -314,6 +314,19 @@ extension BatteryWidgetMain {
         case .batteryPower: .batteryPower
         }
     }
+
+    /// The value's point size above the lines under it, the same in every language: 0.6.x's 34
+    /// in small and medium, 40 in large and extra large (a ring's value is smaller, inside the
+    /// ring). Small draws battery power at 31: at 34 its Russian, whose unit is wider than the
+    /// English "W", is wider than small's line, so only the Russian would shrink and the two would
+    /// differ in size. ``WidgetTextBudget`` checks every value at its size in both languages.
+    public func pointSize(in size: WidgetSize) -> Double {
+        switch size {
+        case .small: self == .batteryPower ? 31 : 34
+        case .medium: 34
+        case .large, .extraLarge, .extraLargePortrait: 40
+        }
+    }
 }
 
 /// A line under the main value.

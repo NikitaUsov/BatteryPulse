@@ -103,7 +103,21 @@ struct WidgetTextBudgetTests {
     struct Overflow: CustomStringConvertible {
         var text: String
         var place: String
-        var description: String { "\"\(text)\" (\(Int(WidgetTextBudget.width(text).rounded())) pt) in \(place)" }
+        /// The text's width, when it isn't in the caption.
+        var points: Double?
+        var description: String {
+            "\"\(text)\" (\(Int((points ?? WidgetTextBudget.width(text)).rounded())) pt) in \(place)"
+        }
+    }
+
+    /// Each main value's widest, formatted. A maximum capacity with its tier's symbol beside it has
+    /// two digits, narrower than 100% alone.
+    static func widestMain(_ kind: BatteryWidgetMain, _ f: BatteryFormatter) -> [String] {
+        switch kind {
+        case .charge, .maximumCapacity: [f.percent(100)]
+        case .temperature: [f.celsius(88.8)]
+        case .batteryPower: [f.watts(-88.8, signed: true), f.watts(88.8, signed: true)]
+        }
     }
 
     /// `keys` in `language`, the full words first, then the shorter ones the widget falls back on.
@@ -130,9 +144,17 @@ struct WidgetTextBudgetTests {
         for language in Language.allCases {
             let f = try formatter(language)
             for size in WidgetSize.allCases {
-                // The main value, the one place that may shrink.
-                for value in [f.percent(100), f.celsius(88.8), f.watts(-88.8, signed: true)] {
-                    check(Budget.fitsMain(value), value, "the main value, \(size)")
+                // The main value, on one line at full size at its kind's point size.
+                for kind in BatteryWidgetMain.allCases {
+                    let pointSize = kind.pointSize(in: size)
+                    for value in widestMain(kind, f) {
+                        let width = Budget.mainWidth(value, pointSize: pointSize)
+                        if !Budget.fits(width, in: Budget.lineWidth(size)) {
+                            overflows.append(
+                                Overflow(
+                                    text: value, place: "the main value at \(pointSize) pt, \(size)", points: width))
+                        }
+                    }
                 }
                 // The lines under it, with a phrase's shorter form where its own doesn't fit.
                 for line in try stateKeys.compactMap({ try text($0, language) }).map({ [$0] }) + timeLines(language) {
@@ -260,6 +282,30 @@ struct WidgetTextBudgetTests {
         #expect(Budget.fits(Budget.symbolWidth + Budget.width("Service Recommended"), in: Budget.lineWidth(.small)))
         // 0.7's first Russian, "this Mac has no internal battery", took 3 lines against 2.
         #expect(Budget.lines("This Mac has no internal battery.", width: Budget.contentWidth(.small)) == 2)
+        // Small's battery power at 34 points: the Russian, wider than the line, shrank.
+        let power = try Self.formatter(.russian).watts(38, signed: true)
+        #expect(Budget.mainWidth(power, pointSize: 34) > Budget.lineWidth(.small))
+        #expect(Budget.fits(Budget.mainWidth(power, pointSize: 34), in: Budget.lineWidth(.medium)))
+    }
+
+    /// The main value's face matches CI's pictures of 0.7's battery power at 34 points, where the
+    /// value had room (medium's charge block), within 2 %: half the pictures' ink widths plus the
+    /// side bearings.
+    @Test(arguments: [(Language.english, 134.8), (.russian, 141.5)])
+    func theMainFaceMatchesThePictures(language: Language, measured: Double) throws {
+        let text = try Self.formatter(language).watts(38, signed: true)
+        let width = WidgetTextBudget.mainWidth(text, pointSize: 34)
+        #expect(abs(width - measured) <= measured * 0.02, "\(text): \(width) against \(measured)")
+    }
+
+    /// The main value's size doesn't depend on the language, and small and medium keep 0.6.x's 34
+    /// points for the charge.
+    @Test func theMainValueKeepsItsSizes() {
+        #expect(BatteryWidgetMain.charge.pointSize(in: .small) == 34)
+        #expect(BatteryWidgetMain.charge.pointSize(in: .medium) == 34)
+        #expect(BatteryWidgetMain.batteryPower.pointSize(in: .small) == 31)
+        #expect(BatteryWidgetMain.batteryPower.pointSize(in: .medium) == 34)
+        #expect(BatteryWidgetMain.allCases.allSatisfy { $0.pointSize(in: .large) == 40 })
     }
 
     @Test func linesBreakAtSpaces() {
@@ -271,8 +317,7 @@ struct WidgetTextBudgetTests {
         // A no-break space keeps a number with its unit.
         #expect(Budget.lines("12\u{00A0}W", width: 1) == 1)
         #expect(Budget.fits(98, in: 100) && !Budget.fits(98.1, in: 100))
-        // The main value shrinks to 0.7: ten characters fill it.
-        #expect(Budget.fitsMain(String(repeating: "8", count: 10)))
-        #expect(!Budget.fitsMain(String(repeating: "8", count: 11)))
+        // The main value's digits are tabular: every digit is as wide.
+        #expect(Budget.mainWidth("11", pointSize: 34) == Budget.mainWidth("88", pointSize: 34))
     }
 }
