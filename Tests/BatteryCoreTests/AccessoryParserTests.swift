@@ -79,9 +79,10 @@ import Testing
         #expect(percent(current: .int(42), max: .int(0)) == nil)
         #expect(percent(current: .int(42), max: .string("100")) == nil)
         #expect(percent(current: .double(41.6), max: nil) == 42)
-        // Over the maximum, the charge is full; without one, 130 can't be a percentage.
+        // Over the maximum, the charge is full; without one, the maximum is 100.
         #expect(percent(current: .int(1010), max: .int(1000)) == 100)
-        #expect(percent(current: .int(130), max: nil) == nil)
+        #expect(percent(current: .int(130), max: .int(100)) == 100)
+        #expect(percent(current: .int(130), max: nil) == 100)
         #expect(percent(current: .int(.max), max: .int(100)) == nil)
         #expect(percent(current: .int(7), max: .int(.max)) == nil)
         #expect(percent(current: .int(-1), max: .int(100)) == nil)
