@@ -434,6 +434,10 @@ import Testing
         (#"{"incident":"x","crashReporterKey":{"n":[1,2]}}"#, #"{}"#),
         (#"{"a":{"b":[{"incident":"x","c":true}]},"d":null}"#, #"{"a":{"b":[{"c":true}]},"d":null}"#),
         (#"{"incid\u0065nt":"x","a":-1.5e3}"#, #"{"a":-1.5e3}"#),
+        (
+            #"{"a":-0,"b":1E+10,"c":0.5e-3,"incident":7,"d":[0,-12.25,3e2]}"#,
+            #"{"a":-0,"b":1E+10,"c":0.5e-3,"d":[0,-12.25,3e2]}"#
+        ),
         (#"{"a":"incident","b":"\"incident\":1"}"#, #"{"a":"incident","b":"\"incident\":1"}"#),
         (#"[{"incident":"x"},{"a":[]}] {"b":{}}"#, #"[{},{"a":[]}] {"b":{}}"#),
         ("{\n  \"a\" : 1,\n  \"incident\" : \"x\",\n  \"b\" : 2\n}", "{\n  \"a\" : 1,\n  \"b\" : 2\n}"),
@@ -447,6 +451,9 @@ import Testing
     @Test(arguments: [
         "", "   ", "Incident Identifier: 5F3A0E9C", #"{"a":1"#, #"{"a" 1}"#, #"{"a":1,}"#, #"[1,]"#, #"{"a":tru}"#,
         "{\"a\":\"line\nbreak\"}", #"{"a":"\"}"#, #"{a:1}"#, #"{"a":1}}"#,
+        // Numbers are JSON's only.
+        "e", "-", #"{"a":e}"#, #"{"a":01}"#, #"{"a":1.}"#, #"{"a":.5}"#, #"{"a":1e}"#, #"{"a":1e+}"#, #"{"a":+1}"#,
+        #"{"a":-}"#, "[1-2]",
         String(repeating: "[", count: 300) + String(repeating: "]", count: 300),
     ])
     func notJSONIsLeftOut(text: String) {
