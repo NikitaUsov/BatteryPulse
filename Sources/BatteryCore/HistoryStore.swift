@@ -20,6 +20,9 @@ public actor HistoryStore {
     private var days: [String: HistoryDay]?
     /// What `days.jsonl` holds, to tell whether a summary changed enough to write right away.
     private var writtenDays: [String: HistoryDay] = [:]
+    /// The lines of `days.jsonl` that say more than this version writes for their summary (a
+    /// later version's fields), by day. A rewrite keeps each as it is while its summary stays.
+    private var richerDayLines: [String: (day: HistoryDay, line: Data)] = [:]
     private var lastDaysWrite: Date?
     /// Whether this session has looked for the legacy samples file. No version since writes
     /// it, so it is split at the session's first call and not looked for again.
@@ -223,18 +226,35 @@ public actor HistoryStore {
 
     private func loadDays() throws -> [String: HistoryDay] {
         if let days { return days }
-        // Later lines for the same day replace earlier ones.
+        // Later lines for the same day replace earlier ones; lines that don't decode are skipped.
         var loaded: [String: HistoryDay] = [:]
-        for day in try readLines(HistoryDay.self, from: daysURL) { loaded[day.day] = day }
+        richerDayLines = [:]
+        if FileManager.default.fileExists(atPath: daysURL.path) {
+            for line in try Data(contentsOf: daysURL).split(separator: 0x0A) {
+                guard let day = try? decoder.decode(HistoryDay.self, from: line) else { continue }
+                loaded[day.day] = day
+                richerDayLines[day.day] = (try? encoder.encode(day)) == line ? nil : (day, Data(line))
+            }
+        }
         days = loaded
         writtenDays = loaded
         return loaded
     }
 
-    /// Rewrites `days.jsonl` with one line per day, atomically.
+    /// Rewrites `days.jsonl` with one line per day, atomically. A summary that hasn't changed
+    /// since it was read keeps its line, with any fields a later version wrote in it.
     private func writeDays(_ days: [String: HistoryDay]) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try writeLines(days.values.sorted { $0.day < $1.day }, to: daysURL)
+        var data = Data()
+        for day in days.values.sorted(by: { $0.day < $1.day }) {
+            if let read = richerDayLines[day.day], read.day == day {
+                data.append(read.line)
+            } else {
+                data.append(try encoder.encode(day))
+            }
+            data.append(0x0A)
+        }
+        try data.write(to: daysURL, options: .atomic)
         writtenDays = days
         activity.daysWrites += 1
     }
@@ -252,6 +272,7 @@ public actor HistoryStore {
         prunedThrough = nil
         days = [:]
         writtenDays = [:]
+        richerDayLines = [:]
     }
 
     // MARK: - Files
