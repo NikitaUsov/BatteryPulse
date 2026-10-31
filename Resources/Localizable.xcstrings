@@ -1186,14 +1186,14 @@
         }
       }
     },
-    "Bitfield of reasons the battery is not charging; Apple does not document the bits.": {
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты."
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд."
           }
         }
       }
@@ -1523,6 +1523,18 @@
         }
       }
     },
+    "Charge limit": {
+      "extractionState": "manual",
+      "comment": "Power's row, the Battery widget's detail and the demo scene's title: macOS's Charge Limit (System Settings → Battery), not the app's own \"When charged to\" notification",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лимит зарядки"
+          }
+        }
+      }
+    },
     "Charge moved since the last DOD0 reading; positive = discharged, negative = charged.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1543,6 +1555,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Заряд, оставшееся время и выбранные подробности."
+          }
+        }
+      }
+    },
+    "Charged to limit": {
+      "extractionState": "manual",
+      "comment": "Battery state: macOS's Charge Limit (System Settings → Battery) stopped charging and holds the charge; Apple's battery menu says \"Charged to [%] Limit\"",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряжено до лимита"
           }
         }
       }
@@ -1647,6 +1671,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сеансы зарядки"
+          }
+        }
+      }
+    },
+    "Charging stopped at the Charge Limit set in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Overview, below the state, and the Charge limit demo scene: macOS's Charge Limit (System Settings → Battery) stopped charging; BatteryPulse only reads it",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка остановлена на уровне Лимита зарядки, заданного в Системных настройках → «Аккумулятор»."
           }
         }
       }
@@ -6162,6 +6198,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Необработанные таблицы импеданса элементов из контроллера, по одному 32-байтовому блоку на элемент."
+          }
+        }
+      }
+    },
+    "Reached": {
+      "extractionState": "manual",
+      "comment": "The Charge limit row's value while macOS's Charge Limit holds the charge",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Достигнут"
           }
         }
       }

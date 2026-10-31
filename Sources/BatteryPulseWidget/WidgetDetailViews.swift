@@ -245,6 +245,7 @@ struct WidgetValueLabel: View {
             case .onOff(true): Text("On", bundle: strings)
             case .onOff(false): Text("Off", bundle: strings)
             case .time(let time): WidgetTimeLabel(time: time)
+            case .reached: Text("Reached", bundle: strings)
             }
         }
     }

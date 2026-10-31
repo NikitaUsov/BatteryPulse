@@ -15,6 +15,8 @@ public struct DemoBattery: Sendable, Equatable {
     public var isFullyCharged = false
     /// Optimized Battery Charging is holding the charge.
     public var isOptimizedHold = false
+    /// macOS's Charge Limit is holding the charge (``BatterySnapshot/isAtSystemChargeLimit``).
+    public var isAtSystemChargeLimit = false
     /// Power into the battery: positive while charging, negative while discharging.
     public var batteryWatts: Double
     public var systemLoadWatts: Double
@@ -108,8 +110,10 @@ public struct DemoBattery: Sendable, Equatable {
             "BatteryInstalled": .bool(true),
             "ChargerData": .dictionary([
                 "IsCharging": .int(isCharging ? 1 : 0),
-                // On battery the M5 reports 0x80; it is 0 while charging.
-                "NotChargingReason": .int(isExternal ? 0 : 128),
+                // On battery the M5 reports 0x80; it is 0 while charging, and bit 24 while the
+                // Charge Limit holds the charge.
+                "NotChargingReason": .int(
+                    isAtSystemChargeLimit ? Int64(SystemChargeLimit.heldBit) : isExternal ? 0 : 128),
                 "SlowChargingReason": .int(0),
             ]),
             "CurrentCapacity": .int(Int64(level)),
@@ -279,6 +283,8 @@ public struct DemoAdapter: Sendable, Equatable {
 /// Ready-made states that show what BatteryPulse does in each situation.
 public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
     case charging, onBattery, lowBattery, criticalBattery, fullyCharged, optimizedHold
+    /// Held at 80 % by the Charge Limit set in System Settings → Battery.
+    case systemChargeLimit
     case justPluggedIn, wornBattery, heavyLoad, slowCharger, lowPowerMode, noBattery
 
     public var id: Self { self }
@@ -302,6 +308,9 @@ public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
         case .optimizedHold:
             DemoBattery(percent: 80, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 7.1, minutesRemaining: 0)
                 .with { $0.isOptimizedHold = true }
+        case .systemChargeLimit:
+            DemoBattery(percent: 80, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 6.8, minutesRemaining: 0)
+                .with { $0.isAtSystemChargeLimit = true }
         case .justPluggedIn:
             DemoBattery(
                 percent: 52, adapter: .usbC60W, isCharging: true, batteryWatts: 21, systemLoadWatts: 8.3,

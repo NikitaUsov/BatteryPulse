@@ -164,6 +164,7 @@ extension WidgetRow {
         case .state(let word): .phrases([.key(field.labelKey), word.phrase])
         case .condition(let condition): .phrases([.key(field.labelKey), condition.phrase])
         case .onOff(let on): .phrases([.key(field.labelKey), .key(on ? "On" : "Off")])
+        case .reached: .phrases([.key(field.labelKey), .key("Reached")])
         }
     }
 }
@@ -230,6 +231,7 @@ extension BatteryWidgetField {
         case .cycleLifeUsed: "Cycle life used"
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
+        case .systemChargeLimit: "Charge limit"
         }
     }
 }
@@ -241,6 +243,7 @@ extension WidgetStateWord {
         case .onBattery: .key("On battery")
         case .fullyCharged: .key("Fully charged")
         case .chargingOnHold: .key("Charging on hold")
+        case .chargedToLimit: .key("Charged to limit")
         case .notCharging: .key("Not charging")
         case .unknown: .key("Unknown")
         }

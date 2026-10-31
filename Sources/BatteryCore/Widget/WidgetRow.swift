@@ -75,6 +75,10 @@ public struct WidgetRow: Sendable, Equatable {
         case .voltage:
             guard let voltage = s.voltageMV else { return nil }
             value = .text(f.volts(millivolts: voltage))
+        case .systemChargeLimit:
+            // The limit itself is in no key BatteryPulse reads, so the row shows only that it holds.
+            guard s.isAtSystemChargeLimit else { return nil }
+            value = .reached
         }
         self.init(field: field, value: value, tier: tier)
     }
@@ -89,19 +93,34 @@ public enum WidgetValue: Sendable, Equatable {
     /// "On" or "Off".
     case onOff(Bool)
     case time(WidgetTimeText)
+    /// "Reached": the Charge Limit holds the charge.
+    case reached
 }
 
-/// The battery's state in the words the widget and the app use.
+/// The Mac battery's state in the words the widget and the app use, decided once for both so
+/// the two can't drift apart.
 public enum WidgetStateWord: Sendable, Equatable, CaseIterable {
-    case charging, onBattery, fullyCharged, chargingOnHold, notCharging, unknown
+    case charging, onBattery, fullyCharged, chargingOnHold
+    /// "Charged to limit": macOS's Charge Limit holds the charge
+    /// (``BatterySnapshot/isAtSystemChargeLimit``). Apple's battery menu says "Charged to 80%
+    /// Limit"; the number is in no key BatteryPulse reads, so the words leave it out.
+    case chargedToLimit
+    case notCharging, unknown
 
-    init(_ s: BatterySnapshot) {
+    public init(_ s: BatterySnapshot) {
         self =
             switch s.chargeState {
             case .charging: .charging
             case .discharging: .onBattery
             case .charged: .fullyCharged
-            case .notCharging: s.isOptimizedChargingEngaged == true ? .chargingOnHold : .notCharging
+            case .notCharging:
+                if s.isOptimizedChargingEngaged == true {
+                    .chargingOnHold
+                } else if s.isAtSystemChargeLimit {
+                    .chargedToLimit
+                } else {
+                    .notCharging
+                }
             case .unknown: .unknown
             }
     }

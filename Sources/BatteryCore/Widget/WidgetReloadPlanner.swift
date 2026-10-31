@@ -5,12 +5,13 @@ import Foundation
 /// for counts; the widgets refresh their own timelines every 30 minutes in between.
 ///
 /// - **Battery:** ``WidgetReloadPolicy``, 0.6.x's rules for plug and state changes, the first
-///   estimate, a 3-point step and a moved estimate. Four more reasons reload at once: a Low Power
-///   Mode flip, a change of the adapter's watts or wireless flag, a change of condition, and the
-///   thermal state entering serious or critical. The thermal reason has the heat alert's
-///   hysteresis: leaving reloads only once the state is back at nominal, so a state flapping
-///   between fair and serious under load reloads once. These four share ``immediateInterval``
-///   between their reloads. A temperature move of ``temperatureStep`` waits, like a percent step,
+///   estimate, a 3-point step and a moved estimate. Five more reasons reload at once: a Low Power
+///   Mode flip, a change of the adapter's watts or wireless flag, a change of condition, the
+///   thermal state entering serious or critical, and the Charge Limit's hold starting or ending
+///   without a change of the charge state. The thermal reason has the heat alert's hysteresis:
+///   leaving reloads only once the state is back at nominal, so a state flapping between fair and
+///   serious under load reloads once. These five share ``immediateInterval`` between their
+///   reloads. A temperature move of ``temperatureStep`` waits, like a percent step,
 ///   until ``WidgetReloadPolicy/minimumInterval`` has passed since the kind's last reload.
 /// - **Accessories:** a connect or a disconnect reloads at once. A step of ``accessoryStep``
 ///   points waits until ``accessoryInterval`` has passed since the kind's last reload.
@@ -21,8 +22,8 @@ import Foundation
 /// recorded without a reload. A reload is recorded when it is decided; ``WidgetPlacements`` then
 /// says whether the kind is placed at all.
 public struct WidgetReloadPlanner: Sendable {
-    /// The least time between two reloads for a Low Power Mode flip, the adapter, the condition or
-    /// the heat.
+    /// The least time between two reloads for a Low Power Mode flip, the adapter, the condition,
+    /// the heat or the Charge Limit's hold.
     static let immediateInterval: TimeInterval = 5 * 60
     /// In °C.
     static let temperatureStep = 3.0
@@ -41,6 +42,11 @@ public struct WidgetReloadPlanner: Sendable {
         case condition
         /// The thermal state entered serious or critical, or came back to nominal.
         case heat
+        /// macOS's Charge Limit started or stopped holding the charge
+        /// (``BatterySnapshot/isAtSystemChargeLimit``) with no change of the charge state, which
+        /// ``WidgetReloadPolicy`` reloads for: plugged in near the limit, the state goes from
+        /// discharging to not charging first, and the hold's bit may follow.
+        case systemChargeLimit
         case temperature
         /// An accessory connected or disconnected.
         case connection
@@ -56,6 +62,7 @@ public struct WidgetReloadPlanner: Sendable {
         var condition: WidgetCondition
         /// The planner's heat as of the reload.
         var isHot: Bool
+        var isAtSystemChargeLimit: Bool
         var temperature: Double?
 
         init(_ snapshot: BatterySnapshot, isHot: Bool) {
@@ -64,6 +71,7 @@ public struct WidgetReloadPlanner: Sendable {
             adapterIsWireless = snapshot.adapter?.isWireless
             condition = WidgetCondition(snapshot.healthCondition)
             self.isHot = isHot
+            isAtSystemChargeLimit = snapshot.isAtSystemChargeLimit
             temperature = snapshot.temperatureCelsius
         }
 
@@ -73,6 +81,7 @@ public struct WidgetReloadPlanner: Sendable {
             if next.adapterWatts != adapterWatts || next.adapterIsWireless != adapterIsWireless { return .adapter }
             if next.condition != condition { return .condition }
             if next.isHot != isHot { return .heat }
+            if next.isAtSystemChargeLimit != isAtSystemChargeLimit { return .systemChargeLimit }
             return nil
         }
 
