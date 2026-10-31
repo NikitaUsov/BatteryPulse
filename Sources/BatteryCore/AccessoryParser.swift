@@ -107,19 +107,18 @@ public enum AccessoryParser {
     }
 
     /// The battery a source describes, or `nil` without a usable `Current Capacity`. Without
-    /// `Max Capacity` the charge is a percentage, so one above 100 is no reading, never a full
-    /// battery; a maximum that is there but unusable (0, negative, not a number) leaves the scale
-    /// unknown, so the charge is no reading either.
+    /// `Max Capacity` the charge is a percentage, read as with a maximum of 100: over it, the
+    /// battery is full. A maximum that is there but unusable (0, negative, not a number) leaves
+    /// the scale unknown, so the charge is no reading.
     static func part(from source: PropertyDictionary) -> AccessoryPart? {
-        var maximum: Double?
+        var maximum = 100.0
         if let value = source[Key.maxCapacity] {
             guard let max = value.doubleValue, (1...plausibleCapacity).contains(max) else { return nil }
             maximum = max
         }
-        guard let current = source[Key.currentCapacity]?.doubleValue,
-            (0...(maximum == nil ? 100 : plausibleCapacity)).contains(current)
+        guard let current = source[Key.currentCapacity]?.doubleValue, (0...plausibleCapacity).contains(current)
         else { return nil }
-        let percent = maximum.map { current * 100 / $0 } ?? current
+        let percent = current * 100 / maximum
         let state = string(source[Key.state])
         return AccessoryPart(
             role: AccessoryPartRole(
