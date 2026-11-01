@@ -4,8 +4,9 @@
 day 0.7.0 was released: tag `v0.7.0` is `main` at `5e2e5c7`, `release.yml` build 9, "Widgets you
 configure". 0.7.0 shipped without its M5 session (Session R), by the maintainer's decision. The
 maintainer asked for 0.7.1's plan only, so nothing of 0.7.1 is built now: no code, no preparation
-branch, no pull request. This file, on `claude/071-plan`, is the only thing written for 0.7.1 until
-the maintainer says the work starts.
+branch, no pull request. This file, on `claude/071-plan-v2`, is the only thing written for 0.7.1
+until the maintainer says the work starts. (It replaces `claude/071-plan`, whose commit messages
+carried a trailer CLAUDE.md forbids.)
 
 **Scope** (ROADMAP's "### 0.7.1", R:985-1021, decided by the maintainer on 2026-10-31):
 - W-5, the feed: a small copy of the last readings the app writes, which the widget reads through
@@ -172,7 +173,7 @@ candidate B, and the app writing into the widget's container (REJ-53); the hold 
 | I-1 | 0.7.0's code: two kinds, the BatteryCore widget model, the planner, routes, manifest, previews (W71 "What 0.7 shipped") | On `main` at `5e2e5c7` | — |
 | I-2 | SPIKE-W's feed proof: the unsandboxed app wrote 55 bytes, the sandboxed widget read them under A and A′ (both exceptions in one entitlements file, `a609487:Resources/BatteryPulseWidget.entitlements`), ad-hoc signed with the hardened runtime, on macOS 27.0.1 (AC70:41, 75; 26A434, `ebe6547:docs/plans/0.7.0/sessions/A.md:73`) | Proven once; never at 8-12 KB, never for a file written while the widget wasn't running, never after 27.0.1 | PF-1: the reader type switches to A′, else the feed-backed kinds are cut before release (§7.1 G71-2) |
 | I-3 | The session tools in `docs/plans/0.7.1/` | Present; still 0.7.0's names (W71 "Retargeting the session tools") | W-16 re-points them |
-| I-4 | 0.7's integration branch `claude/070-integration`, which the launchers fetch | **Gone from origin** (`git ls-remote origin` lists only `main`, the tags, the seven `claude/080-*` branches and this plan's `claude/071-plan`; a stale local remote-tracking ref may still show it) | W-16 points everything at `claude/071-integration` |
+| I-4 | 0.7's integration branch `claude/070-integration`, which the launchers fetch | **Gone from origin** (`git ls-remote origin` lists only `main`, the tags, the seven `claude/080-*` branches and this plan's branch; a stale local remote-tracking ref may still show it) | W-16 points everything at `claude/071-integration` |
 | I-5 | W71's design | Present | §2.3 lists this plan's changes |
 | I-6 | 0.7.0's Appendix C | AC70 | — |
 | I-7 | `currentConfigurations()`' answer to this ad-hoc, unsandboxed app (G7-17) | Never checked on the M5 (AC70:144) | The feed writer fails open, as `WidgetPlacements` does (`WidgetReloadPlanner.swift:242-265`) |
@@ -323,6 +324,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      them once they are a week old, `swift scripts/release-stats.swift` and the row, in a commit of
      its own; D1 reads them again. A `BatteryPulse-count.txt` count of 0 puts the version count's
      check back into §6.4 (P7 §6.4 step 6), since no Mac has yet been seen counting (AC70:152).
+  6. **The feasibility review** the planning run left undone (its third review didn't run): the
+     runs, the sittings' minutes, the GUI phase's length and Z-1's bounds against 0.7's records
+     (AC70, P7), before W-5 starts; its fixes go into this file.
 - **Files:** this plan's Appendix C; ROADMAP's Releases row (item 5). **Linux tests, guards:**
   none.
 - **Acceptance:** the integration branch's first CI run is green on both jobs.
@@ -758,6 +762,25 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
       name), any rejection the widget logged at notice since the update (W-5 item 9), and a fifth
       question, whether a placed History or iPhone & iPad widget shows data rather than "Open
       BatteryPulse to update".
+  18. **Maximum capacity against macOS's** (the maintainer's question of 2026-10-31). That evening,
+      at cycle 52, the M5 showed 99 % in BatteryPulse (`NominalChargeCapacity` 5711 of
+      `DesignCapacity` 5760 mAh, 99.15 %; `healthPercent` caps the ratio at 100,
+      `BatterySnapshot+Metrics.swift:16-19`), 100 % in System Settings and in `system_profiler
+      SPPowerDataType`, and 96.65 % as the raw maximum (`AppleRawMaxCapacity` 5567 mAh) against
+      design, a ratio other tools show [the maintainer's reading, not a capture]. The M5's
+      captures at cycles 48-51 had 5986-6015 mAh (104 %, so 100 % everywhere) and `MaxCapacity`
+      100, which the glossary reads as `CurrentCapacity`'s scale (`RawKeyGlossary.swift:377,
+      709`). So the nominal capacity fell by about 5 % within a few cycles [inference: a
+      recalibration, which `CycleCountLastQmax` would date]. A `capacity` command, at R0, at the
+      day's end and after publishing (so over a few days), takes a capture's numbers
+      (`NominalChargeCapacity`, `AppleRawMaxCapacity`, `DesignCapacity`, `MaxCapacity`,
+      `CycleCount`, `CycleCountLastQmax`; the capture stays on the Mac), BatteryPulse's Health
+      figure, System Settings → Battery → Battery Health's by computer use, and
+      `system_profiler SPPowerDataType`'s "Maximum Capacity"; Appendix C records the numbers. They
+      show whether macOS's figure follows the nominal capacity late, rounds it, or comes from
+      elsewhere, which D3 hands to 0.8's health summary. 0.7.1 changes no code for it, only the
+      guide's sentence (§12). Without a session, the maintainer runs the same command by hand at
+      three moments a day or more apart.
 - **Files:** as W-16's, and `scripts/quick-check.sh` (item 17; no 0.8 branch touches it).
 - **Linux tests:** the dry run (every session's questions resolve; the printed size under 28,500
   bytes).
@@ -799,7 +822,8 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   4. **The docs** of §12, each new CL line checked against the merged code with `git grep`.
   5. **What's New** as Q71-3 decides, and the release notes' draft with the privacy line (§11, §13).
 - **Files:** `Resources/Localizable.xcstrings`, `Sources/BatteryPulseApp/Updates/UpdateViews.swift`,
-  `CLAUDE.md`, `docs/USER_GUIDE.md`, `README.md`, `docs/ROADMAP.md`, `docs/plans/1.0/*.md`,
+  `Sources/BatteryCore/BatterySnapshot+Metrics.swift` (a doc comment, §12), `CLAUDE.md`,
+  `docs/USER_GUIDE.md`, `README.md`, `docs/ROADMAP.md`, `docs/plans/1.0/*.md`,
   `docs/VERIFICATION.md`, `.github/release-notes.md`.
 - **Linux tests:** `LocalizationCatalogTests` (every key with its Russian, nothing unused, no
   Cyrillic outside the catalog, no space before %).
@@ -832,6 +856,9 @@ without it (§6.5).
 **D3:**
 - Apply the answers or the defaults; record the numbers in Appendix C.
 - Move the lasting decisions to ROADMAP; fill `docs/VERIFICATION.md`'s 0.7 and 0.7.1 rows.
+- Hand W-17 item 18's readings to 0.8's health summary, with what they show: where macOS's
+  "Maximum Capacity" comes from, and whether BatteryPulse can read it without root and without
+  `Process` (`SecurityGuardTests`).
 - Move the session tools to `docs/plans/0.8.0/` with the `ci.yml` lines that check them, so 0.8's
   T-1 finds them (P8's I-7 expected them missing), unless 0.8's intake says otherwise.
 - Remove `docs/plans/0.7.1/` in the last commit, noting `<keep>`, the commit before it.
@@ -965,7 +992,8 @@ quit, the Claude desktop app among them, and a pending macOS update postponed wi
 preflight asks; the reads and proofs; one computer-use access request after `$S main`; a Focus on;
 `mark away`.
 
-**R1, the GUI phase** (he is away; about 2.5-3.5 hours, capped at 4 [estimate]):
+**R1, the GUI phase** (he is away; about 2.5-3.5 hours, capped at 4 [estimate]), opening with
+`capacity`'s first reading (W-17 item 18):
 1. **Step 2** (W-17 item 1): on 0.6.2, its small and medium widgets, `menu-bar-shots before`,
    v0.7.0 installed, the shots, `placed compare` and 0.7.0's What's New; then the 0.7.0 set-up,
    `install U`, the shots, `placed compare`, and 0.7.1's What's New if Q71-3 is yes (item 11).
@@ -1009,6 +1037,7 @@ installed), the summary he reads first (in his language, on the Mac only), `read
     each crop's state against `bpulse --json` within a minute, and at a Charge Limit he set, when
     bit 24 appears (`R9-plug`, SR:149); the reloads per kind, and `currentConfigurations()`'
     counts against the widgets placed (G7-17).
+  - `capacity`'s second reading (W-17 item 18).
   - **F12** (G7-15): RC-F (0.6.99) → Check for Updates → Install and Relaunch to 0.7.0, by AX
     presses; per kind as W-17 item 9 says.
   - The batch (items the session answered 3), his yes, `send` to `claude/071-session-r`, and
@@ -1030,7 +1059,8 @@ posts the start line on the release PR, with the PR's number `<n>` and `<keep>`,
    version, the pre-swap line, any CHSErrorDomain 1103, `pluginkit`, `codesign`, `xattr`, the
    crops, the feed's modes and the widget's exception (seconds each); then About, What's New,
    History, the settings and the menu bar by computer use, and Login Items only by `ui tree`,
-   which says whether the row exists (SR:413-419; MS:4323-4324).
+   which says whether the row exists (SR:413-419; MS:4323-4324); then `capacity`'s third
+   reading (W-17 item 18).
 3. The session judges D3-version, D3-whats-new, D3-widgets (the Battery and Accessories widgets as
    before; a History or iPhone & iPad widget he kept comes alive), D3-history, D3-settings,
    D3-login-item and D3-notifications; then `after popover` and D3-first-day, the widget against
@@ -1070,6 +1100,7 @@ D1 then builds RC-U alone, for the short feed check, or no candidate at all, as 
 | The trees of the new kinds (G7-12) | A chart or a device row that VoiceOver reads wrongly or not at all | A fix forward; VERIFICATION's row stays open (RD C10) |
 | The logged day (G7-11, G7-16, ENG-17) | Reloads not delivered; a crash or fault | Known only from reports |
 | F12 (G7-15) | A broken update path | Low while `UpdateInstaller` is unchanged since 0.6.2 (`git diff v0.6.2 v0.7.0` shows no change there) |
+| The maximum-capacity readings (W-17 item 18) | Nothing: 0.7.1 changes no code for them | 0.8's health summary starts without them, unless the maintainer runs the command by hand |
 | 0.7's debts | Every 0.7 check carries over again (`docs/VERIFICATION.md`'s 0.7 rows) | 0.8's session inherits them |
 
 **What the notes then say:** that the new widgets were checked on CI's renders, not on a Mac;
@@ -1353,6 +1384,7 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 | `docs/USER_GUIDE.md`, Language (UG:627-638) | The widgets follow the language chosen for BatteryPulse once it is reopened; the edit sheet, the gallery and, if PF-7 fails, the live time text follow the Mac's | W-18 |
 | `docs/USER_GUIDE.md`, the widgets' independence (UG:508-510) | The Battery and Accessories widgets still read the Mac themselves; History and iPhone & iPad show what BatteryPulse last wrote | W-18 |
 | `docs/USER_GUIDE.md` and `README.md`, Privacy | §11's privacy line | W-18 |
+| `docs/USER_GUIDE.md`, Understanding the numbers (UG:645-647); `README.md`'s Health bullet (RM:45); `healthPercent`'s doc comment (`BatterySnapshot+Metrics.swift:16`) | "Matches System Settings" and "as macOS shows it" become what the figure is: the nominal capacity against the design capacity, capped at 100 % as System Settings caps it, which can differ from System Settings' figure by a point or two (W-17 item 18) | W-18 |
 | `README.md`, Widget bullets | The four kinds | W-18 |
 | What's New | Q71-3 | W-18 |
 | `CLAUDE.md` | Layout: `WidgetFeed`, `WidgetFeedStore`, `WidgetLanguage`, `WidgetChartSummary` in BatteryCore's list; the widget "signed with only the app-sandbox entitlement" (CL:99) gains the read-only exception, and "reads no file of ours" (CL:103) becomes "reads only the feed, in `WidgetFeedReader`"; four kinds; the signposts (CL:237-238); Releases: the build number from the clock | W-18, B-1 |
@@ -1525,6 +1557,7 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | NEW-18 (the verification matrix) | D3: VERIFICATION's 0.7 and 0.7.1 rows |
 | NEW-22 (the quick check after a macOS 27.x update) | W-17 item 17: the feed joins `scripts/quick-check.sh` |
 | NEW-23 (the counts a week after publishing) | §13 step 8 for v0.7.1; V-0 item 5 for v0.7.0 |
+| The maintainer's maximum-capacity question (2026-10-31) | W-17 item 18; §12; D3 |
 | REJ-30, REJ-53, REJ-57, REJ-60, REJ-62 | Still rejected: the widget stays nonisolated, its reader too; no write into the widget's container; no network in the widget; App Intents types only in the widget target; no seconds or timer text ("Time on battery" and Look 2's self-updating age use the one offset helper) |
 | NEW-13 (the backup key) | Not in 0.7.1: 0.8 (the maintainer's decision, 2026-10-31) |
 | FEA-15 to FEA-19 (W-9) | Not in 0.7.1: after 1.0 (RD §4.1) |
@@ -1540,12 +1573,12 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 
 **Verified for this plan** (at `5e2e5c7` unless named; read 2026-10-31):
 - v0.7.0 is `release.yml` run 9 at `5e2e5c7` (run 8 was v0.6.2 at `0ecca33`); the latest `ci.yml`
-  run before this plan's own is 511 on `main` at `5e2e5c7` (512 and up are `claude/071-plan`'s),
+  run before this plan's own is 511 on `main` at `5e2e5c7` (512 and up are this plan's),
   and 510 on the 0.7 integration branch at `8713ab9` (GitHub's API). `BUILD_NUMBER` is
   `github.run_number` at `ci.yml:223, 437` and `release.yml:128`; the profiling build shares the
   DMG's build number (`ci.yml:430-433`).
 - `git ls-remote origin` lists no `claude/070-*` branch: only `main`, the tags, the seven
-  `claude/080-*` branches, `claude/071-plan` and `refs/pull/*` (`refs/pull/13/head` = `8713ab9`).
+  `claude/080-*` branches, this plan's branch and `refs/pull/*` (`refs/pull/13/head` = `8713ab9`).
   The launchers' documented `git fetch origin claude/070-integration` would fail
   (`start-session-r.sh:6, 15`).
 - The widget's entitlements are the sandbox key alone
