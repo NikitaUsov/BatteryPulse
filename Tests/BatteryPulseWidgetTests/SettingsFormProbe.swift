@@ -44,8 +44,57 @@ private struct ProbeCapped: Layout {
     }
 }
 
+/// Four tabs, as Settings shows them.
+@MainActor
+private final class ProbeToolbarDelegate: NSObject, NSToolbarDelegate {
+    let identifiers = ["General", "Menu Bar", "Notifications", "Advanced"].map { NSToolbarItem.Identifier($0) }
+
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { identifiers }
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { identifiers }
+    func toolbarSelectableItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { identifiers }
+
+    func toolbar(
+        _ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier,
+        willBeInsertedIntoToolbar flag: Bool
+    ) -> NSToolbarItem? {
+        let item = NSToolbarItem(itemIdentifier: itemIdentifier)
+        item.label = itemIdentifier.rawValue
+        item.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
+        return item
+    }
+}
+
 @MainActor
 struct SettingsFormProbe {
+    @Test func windowChrome() async throws {
+        _ = NSApplication.shared
+        probeLog("screens' visible heights \(NSScreen.screens.map { $0.visibleFrame.height })")
+        let delegate = ProbeToolbarDelegate()
+        for preference in [true, false] {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 500, height: 300), styleMask: [.titled, .closable],
+                backing: .buffered, defer: false)
+            if preference {
+                let toolbar = NSToolbar(identifier: "probe")
+                toolbar.delegate = delegate
+                toolbar.displayMode = .iconAndLabel
+                window.toolbar = toolbar
+                window.toolbarStyle = .preference
+            }
+            window.orderFrontRegardless()
+            try await Task.sleep(for: .milliseconds(300))
+            let content = window.contentRect(forFrameRect: window.frame).height
+            probeLog(
+                "chrome, \(preference ? "preference toolbar" : "title bar only"): frame \(window.frame.height), content \(content), layout \(window.contentLayoutRect.height), chrome \(window.frame.height - window.contentLayoutRect.height)"
+            )
+            window.orderOut(nil)
+        }
+        // The toolbar holds its delegate weakly.
+        withExtendedLifetime(delegate) {}
+        let button = NSHostingView(rootView: Button("Done") {}.controlSize(.large))
+        probeLog("a large button \(button.fittingSize)")
+    }
+
     private func measure(_ name: String, _ view: some View) {
         let controller = NSHostingController(rootView: view)
         let fitted = controller.sizeThatFits(in: CGSize(width: 500, height: 100_000))
