@@ -5,13 +5,23 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
-/// Reads the widget's family and hands the views its size, as the Battery widget's root does.
+/// Reads the widget's family and hands the views its size, and sets the language the entry draws
+/// in, as the Battery widget's root does.
 struct AccessoriesWidgetRoot: View {
     let entry: AccessoriesEntry
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        AccessoriesWidgetView(entry: entry, size: WidgetSize(family))
+        Self.content(entry, size: WidgetSize(family))
+    }
+
+    /// The widget for `entry` in `size`, in the entry's language, as the Battery widget's root
+    /// draws its own. The previews draw it too.
+    static func content(_ entry: AccessoriesEntry, size: WidgetSize, timeZone: TimeZone = .autoupdatingCurrent)
+        -> some View
+    {
+        AccessoriesWidgetView(entry: entry, size: size, formatter: entry.language.formatter, timeZone: timeZone)
+            .widgetLanguage(entry.language)
     }
 }
 
