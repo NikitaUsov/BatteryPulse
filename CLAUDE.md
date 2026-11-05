@@ -139,9 +139,9 @@ through the App Store. Reference hardware: MacBook Air M5.
 - Cloud sessions run on Linux: `swift build` and `swift test` work, but anything under
   `#if os(macOS)` / `#if os(iOS)` (IOKit, UIKit, SwiftUI) is NOT compiled here.
 - Darwin code is verified only by CI (`.github/workflows/ci.yml`, runner `xcode-27`: macOS 27,
-  Xcode 27.2 through `DEVELOPER_DIR` (for now Apple's release candidate, 27B48, until the image
-  carries the release), Swift 6.4.2) and on the maintainer's Mac. After touching Darwin code, push
-  and check the macOS job.
+  Xcode 27.2 through `DEVELOPER_DIR` (the release, 27B52; a runner still on an older image has
+  the release candidate, 27B48, at the same path), Swift 6.4.2) and on the maintainer's Mac. After
+  touching Darwin code, push and check the macOS job.
 - Both CI jobs treat every compiler warning as an error (a deprecation stays a warning) and have
   time limits; the macOS job also packages the app, checks its size and signing posture, and
   launches it once. The Linux job checks BatteryCore's documentation links ("Check the

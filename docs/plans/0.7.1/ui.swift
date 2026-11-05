@@ -1,17 +1,18 @@
-// The hands of the hands-free sessions of BatteryPulse 0.7.0 (0.7.0's PLAN.md §6.2;
+// The hands of the hands-free sessions of BatteryPulse 0.7.1 (PLAN.md §6.2;
 // Session R and its short sessions, built on 0.6.2's Session B): Accessibility (AX), posted mouse
 // events (CGEvent) and the window list (CGWindowList), with safety rules of its own, so they don't
 // rest on the Claude session alone. The session script builds it beside `frames` and is its only
 // caller (`m5-session.sh ui <command>`):
 //
-//   xcrun swiftc -O docs/plans/0.7.1/ui.swift -o ~/bp-070/<R|C|H|D3>/bin/ui
+//   xcrun swiftc -O docs/plans/0.7.1/ui.swift -o ~/bp-071/<R|C|H|D3>/bin/ui
 //
-// Copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R, for 0.7.1's
-// M5 session. PLAN.md is 0.7.0's docs/plans/0.7.0/PLAN.md, readable at
+// 0.7.0's, copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R, and
+// re-pointed at 0.7.1, whose M5 session runs it. PLAN.md is 0.7.1's docs/plans/0.7.1/PLAN.md,
+// beside this file; plan-0.7.0 is 0.7.0's docs/plans/0.7.0/PLAN.md, readable at
 // ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
 //
 // Its folder is the session's: the folder above the bin/ it runs from, which must be
-// ~/bp-070/R, C, H or D3 of the account's own home; run from anywhere else it refuses everything.
+// ~/bp-071/R, C, H or D3 of the account's own home; run from anywhere else it refuses everything.
 //
 // A point is global display points, the top left of the main display at 0,0, given as `<x> <y>`,
 // or as `--image <png> <x> <y>`: pixels of a full-screen shot of the main display (the script's
@@ -109,7 +110,7 @@
 //
 // What the script recorded comes from files in the session's folder, never from the environment:
 // ui-hosts (proof P1's widget hosts), ui-panes (proof P8's panes), widgets.tsv (`widget`'s frames),
-// ui-tap and launched.tsv; the fence from ~/bp-070/R (ready, day-ended, arm.pid). The home folder
+// ui-tap and launched.tsv; the fence from ~/bp-071/R (ready, day-ended, arm.pid). The home folder
 // is the account's own, from the user database (getpwuid), never HOME; with CFFIXED_USER_HOME set
 // it refuses everything.
 //
@@ -136,7 +137,7 @@
 //     Groups, Touch ID & Password, Lock Screen, Passwords or Login Password, nor on an element
 //     whose label names one of them;
 //   - it refuses everything that touches AX or posts an event while the screen is locked or the
-//     lid is closed, and while ~/bp-070/R/ready exists without a newer ~/bp-070/R/day-ended (the
+//     lid is closed, and while ~/bp-071/R/ready exists without a newer ~/bp-071/R/day-ended (the
 //     logged day), unless Session R's arm window (its pid and start time in arm.pid) is among its
 //     own ancestors;
 //   - it refuses any point within 20 points of a hot corner set to Start Screen Saver, Put Display
@@ -292,7 +293,7 @@ enum Rules {
 
     /// The Dock's full-display overlay, the one window the topmost-window and occlusion tests pass
     /// over (the header's exception). Session B's first attempt (2026-10-27, macOS 27.2 26B123,
-    /// PLAN.md Appendix C) met it: CGWindowList listed a window of the Dock at layer 20 with bounds
+    /// 0.6.2's Appendix C) met it: CGWindowList listed a window of the Dock at layer 20 with bounds
     /// 0 0 1710 1107 (the M5's whole display) and alpha 1 all evening, while every window below it
     /// showed and took clicks, so every occlusion and desktop check failed on it. Exact: the owner
     /// name "Dock", a pid that is the Dock's own process (com.apple.dock), layer 20 and bounds equal
@@ -664,7 +665,7 @@ enum OwnWindows {
     static func allows(_ window: AXUIElement, of process: RunningProcess) -> Bool {
         switch process.bundle {
         case Rules.textEdit:
-            return document(window) == resolved(Safety.home + "/bp-070-cover.txt")
+            return document(window) == resolved(Safety.home + "/bp-071-cover.txt")
         case Rules.xcode:
             guard let path = document(window) else { return false }
             let run = resolved(Safety.home + "/run")
@@ -1022,16 +1023,16 @@ struct WindowHit {
 }
 
 enum Safety {
-    /// The sessions' folders, ~/bp-070/<name> of the account's own home.
+    /// The sessions' folders, ~/bp-071/<name> of the account's own home.
     static let sessions = ["R", "C", "H", "D3"]
 
     /// The session's folder: the one above the bin/ this executable runs from, when that is
-    /// ~/bp-070/R, C, H or D3 of the account's own home; nil otherwise (`run` refuses then).
+    /// ~/bp-071/R, C, H or D3 of the account's own home; nil otherwise (`run` refuses then).
     static let folder: String? = {
         guard let home = Account.home, let executable = Processes.path(getpid()) else { return nil }
         let bin = URL(fileURLWithPath: executable).resolvingSymlinksInPath().deletingLastPathComponent()
         let session = bin.deletingLastPathComponent()
-        let root = URL(fileURLWithPath: home + "/bp-070").resolvingSymlinksInPath().path
+        let root = URL(fileURLWithPath: home + "/bp-071").resolvingSymlinksInPath().path
         guard bin.lastPathComponent == "bin", session.deletingLastPathComponent().path == root,
             Safety.sessions.contains(session.lastPathComponent)
         else { return nil }
@@ -1042,7 +1043,7 @@ enum Safety {
     static let home = folder ?? "/var/empty"
 
     /// Session R's folder, whose ready and day-ended fence every session.
-    static let sessionR = (Account.home ?? "/var/empty") + "/bp-070/R"
+    static let sessionR = (Account.home ?? "/var/empty") + "/bp-071/R"
 
     static func modified(_ path: String) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
@@ -1071,7 +1072,7 @@ enum Safety {
     /// R's arm window is an ancestor; and always without a session folder.
     static func checkFence() throws {
         guard folder != nil else {
-            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-070/R, C, H or D3)")
+            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-071/R, C, H or D3)")
         }
         if let readyAt = modified(sessionR + "/ready") {
             let ended = modified(sessionR + "/day-ended").map { $0 > readyAt } ?? false
@@ -1932,8 +1933,8 @@ enum Command {
     static func position(_ options: Options) throws {
         try Safety.checkAction()
         let process = try appArgument(options, 1)
-        // Terminal's windows go in the left third (§6 "Places"): moving a window clicks nothing in
-        // it, so Terminal may be placed, though never clicked or pressed.
+        // Terminal's windows go in the left third (SESSION-R.md, "Places"): moving a window clicks
+        // nothing in it, so Terminal may be placed, though never clicked or pressed.
         if process.bundle != Rules.terminal { try Safety.checkTarget(process) }
         let numbers = options.words.dropFirst(2).compactMap(Double.init)
         guard numbers.count == 2 || numbers.count == 4 else {

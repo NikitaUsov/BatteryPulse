@@ -88,9 +88,10 @@ jobs:
     # The same for a hung test or smoke run.
     timeout-minutes: 30
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
-      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
-      # release. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it. Image
+      # 20261104.0337 replaced its release candidate (27B48) with the release (27B52) at
+      # Xcode_27.2.app; a runner still on an older image runs the release candidate from the same
+      # path. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -98,7 +99,13 @@ jobs:
           # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
           persist-credentials: false
       - name: Toolchain
-        run: xcodebuild -version && swift --version
+        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release; listed first,
+        # so they show even when DEVELOPER_DIR's Xcode is gone. One command a line: bash -e fails
+        # the step on any of them, but not on the first of an && list.
+        run: |
+          ls -d /Applications/Xcode*.app
+          xcodebuild -version
+          swift --version
       - name: Compile the string tables for the widget previews
         # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
         # build-app.sh compiles it: each language's table is a bundle of its own.
@@ -217,16 +224,32 @@ jobs:
           swiftc -typecheck docs/plans/0.7.1/ui.swift
       - name: Build BatteryKit for iOS
         run: xcodebuild build -scheme BatteryKit -destination 'generic/platform=iOS' -quiet
+      - name: Read the build number
+        # The clock that release.yml reads too (scripts/build-number.sh), so a release sits above
+        # every candidate built before it. Read once for the job, into BUILD_NUMBER: the profiling
+        # build below carries the same number as this DMG.
+        run: |
+          build_number="$(scripts/build-number.sh)"
+          echo "Build $build_number"
+          echo "BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
       - name: Package app (DMG)
         env:
           VERSION: ${{ inputs.version }}
-          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           if [ -n "$VERSION" ] && ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "error: '$VERSION' is not a version like 0.5.99" >&2
             exit 1
           fi
           scripts/build-app.sh
+          # The app and its widget carry the job's number: WidgetKit caches by it.
+          for bundle in build/BatteryPulse.app build/BatteryPulse.app/Contents/PlugIns/BatteryPulseWidget.appex; do
+            build="$(plutil -extract CFBundleVersion raw -o - "$bundle/Contents/Info.plist")"
+            echo "$bundle: CFBundleVersion $build"
+            if [ "$build" != "$BUILD_NUMBER" ]; then
+              echo "error: $bundle carries build $build, not $BUILD_NUMBER" >&2
+              exit 1
+            fi
+          done
       - name: Check the App Intents metadata
         # build-app.sh extracts the widget's App Intents metadata by hand, and the system shows the
         # widget's edit sheet from it alone: every intent, parameter and AppEnum case of the manifest
@@ -434,7 +457,6 @@ jobs:
         if: inputs.profiling
         env:
           VERSION: ${{ inputs.version }}
-          BUILD_NUMBER: ${{ github.run_number }}
         run: PROFILING=1 scripts/build-app.sh
       - name: Upload the profiling DMG
         if: inputs.profiling

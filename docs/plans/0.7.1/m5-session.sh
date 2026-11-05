@@ -1,37 +1,39 @@
 #!/bin/bash
-# BatteryPulse 0.7.0: the M5 sessions (0.7.0's PLAN.md §6), one command per call.
-# Copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R (the
-# maintainer's decision, 2026-10-31), so 0.7.1's M5 session runs it. PLAN.md below is 0.7.0's
-# docs/plans/0.7.0/PLAN.md, readable at
-# ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
+# BatteryPulse 0.7.1: the M5 sessions (PLAN.md §6), one command per call.
+# 0.7.0's, copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R (the
+# maintainer's decision, 2026-10-31), and re-pointed at 0.7.1, whose M5 session runs it (PLAN.md
+# W-16). PLAN.md and a bare § below are 0.7.1's docs/plans/0.7.1/PLAN.md, beside this file;
+# plan-0.7.0, and 0.7's package, decision and step IDs (W-12, D-17, step 12), are 0.7.0's
+# docs/plans/0.7.0/PLAN.md, readable at ebe654772c7f06d5e136327e0e6a236fed71cdc9 in
+# refs/pull/13/head.
 #
 #   bash docs/plans/0.7.1/m5-session.sh help
 #
 # Session R (hands-free; PLAN.md §6.2; its runbook is SESSION-R.md beside this file): one local
-# Claude Code session with computer use runs it from the frozen worktree ~/bp-070/R/run (a script
+# Claude Code session with computer use runs it from the frozen worktree ~/bp-071/R/run (a script
 # run from there is Session R), drives the GUI through `ui` (ui.swift, with safety rules of its own)
 # and judges the pictures beside the script's pixel measurements. The arm window keeps the display
 # awake for the GUI phase and starts the logged day (§6.3) on `ready`. Everything lands in
-# ~/bp-070/R: each change goes into changes.tsv before it is made, and every restore works from that
+# ~/bp-071/R: each change goes into changes.tsv before it is made, and every restore works from that
 # file (`restore gui` before the logged day, `restore end` after it); `send` commits R.md to
-# docs/plans/0.7.1/sessions/R.md on claude/070-session-r after his yes, through a privacy lint.
+# docs/plans/0.7.1/sessions/R.md on claude/071-session-r after his yes, through a privacy lint.
 #
 # The short sessions run the same way from their own frozen worktrees (SESSION-R.md, "The short
-# sessions"): ~/bp-070/C/run is the Charge limit capture (`charge-limit`), ~/bp-070/H/run the Hold
-# watch (`hold-watch`), ~/bp-070/D3/run the After publishing check (`after`, `count-check`); each
-# keeps its files in ~/bp-070/<C|H|D3> and sends <C|H|D3>.md on claude/070-session-<c|h|d3>.
+# sessions"): ~/bp-071/C/run is the Charge limit capture (`charge-limit`), ~/bp-071/H/run the Hold
+# watch (`hold-watch`), ~/bp-071/D3/run the After publishing check (`after`, `count-check`); each
+# keeps its files in ~/bp-071/<C|H|D3> and sends <C|H|D3>.md on claude/071-session-<c|h|d3>.
 #
 # An automated step that can't run records "not checked" or "not run" with its reason, and the
 # session goes on. Builds stay in their DMGs and the backup in its zip, so the only
 # BatteryPulse.app on the disk is the one in /Applications, and macOS can't pick up another copy's
 # widget. Never another results branch, never a pull request.
 #
-# Every install goes the way UpdateInstaller goes: the widget extension ended first (as 0.6.2's
-# installer does, D-17), a copy staged on the same volume, one atomic swap (swap.swift: renamex_np
-# with RENAME_SWAP), lsregister -f, a relaunch; the extension's pids before and after, and any
-# CHSErrorDomain 1103 line, go into the step's section (G7-2). A build whose CFBundleVersion isn't
-# higher than the installed one is refused (WidgetKit caches by it), except the reinstall of his
-# backed-up app.
+# Every install goes the way UpdateInstaller goes: the widget extension ended first (as the
+# installer does since 0.6.2, D-17), a copy staged on the same volume, one atomic swap (swap.swift:
+# renamex_np with RENAME_SWAP), lsregister -f, a relaunch; the extension's pids before and after,
+# and any CHSErrorDomain 1103 line, go into the step's section (G7-2). A build whose CFBundleVersion
+# isn't higher than the installed one is refused (WidgetKit caches by it), except the reinstall of
+# his backed-up app.
 #
 # Wording (PLAN.md §3, §6): every y/n question means "y = looks right"; everything else is a
 # numbered choice. A step prints its questions as ASK lines and its hands-on tasks as DO lines;
@@ -45,30 +47,26 @@ set -euo pipefail
 # MARK: - Builds and places
 
 REPO="NikitaUsov/BatteryPulse"
-INTEGRATION_BRANCH="claude/070-integration"
+INTEGRATION_BRANCH="claude/071-integration"
 
 # Session R's builds (PLAN.md §6.2, D1), each a CI artifact. D1 dispatches ci.yml on the frozen
-# code in this order, so each build number is higher than the one installed before it:
-#   U   the release candidate as 0.6.99 (RC-U): step 2 installs it over 0.6.2;
-#   P   RC-U plus one dummy widget parameter (RC-P, its own commit): step 4.4;
-#   U2  RC-U again as 0.6.99, a later run (RC-U2): the rest of the session and the logged day;
-#   F   the release candidate as 0.5.99 (RC-F): F12 at the day's end, whose update check offers the
-#       real 0.6.2.
-# U, U2 and F are found by the frozen commit's code (locate_builds); P has other code, so D1 pins
-# it (RUN_P and ARTIFACT_P). A pin overrides the search.
+# code in this order, each with the build-number clock (B-1), so each build number is higher than
+# the one installed before it:
+#   U   the release candidate as 0.7.1 (RC-U): step 2 installs it over 0.7.0, and the rest of the
+#       session and the logged day run on it;
+#   F   the release candidate as 0.6.99 (RC-F): F12 at the day's end, whose update check offers the
+#       real 0.7.0.
+# Both are found by the frozen commit's code (locate_builds). A pin (RUN_<name> and
+# ARTIFACT_<name>) overrides the search.
 RUN_U=""
 ARTIFACT_U=""
-RUN_P=""
-ARTIFACT_P=""
-RUN_U2=""
-ARTIFACT_U2=""
 RUN_F=""
 ARTIFACT_F=""
-# The published 0.6.2, the base: his app at the start, and what F12 installs.
-TAG_BASE="v0.6.2"
-BASE_VERSION="0.6.2"
-RC_VERSION="0.6.99"
-F_VERSION="0.5.99"
+# The published 0.7.0, the base: the app the session starts from, and what F12 installs.
+TAG_BASE="v0.7.0"
+BASE_VERSION="0.7.0"
+RC_VERSION="0.7.1"
+F_VERSION="0.6.99"
 
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 WIDGET_ID="$BUNDLE_ID.Widget"
@@ -96,26 +94,26 @@ esac
 # it); none elsewhere, where only help and the dry run work. BP_SESSION chooses one only off the
 # Mac (a dry run): on the Mac the path alone decides, so no variable turns a fence off.
 case "$HERE" in
-  "$ACCOUNT_HOME"/bp-070/R/run/*) SESSION=R ;;
-  "$ACCOUNT_HOME"/bp-070/C/run/*) SESSION=C ;;
-  "$ACCOUNT_HOME"/bp-070/H/run/*) SESSION=H ;;
-  "$ACCOUNT_HOME"/bp-070/D3/run/*) SESSION=D3 ;;
+  "$ACCOUNT_HOME"/bp-071/R/run/*) SESSION=R ;;
+  "$ACCOUNT_HOME"/bp-071/C/run/*) SESSION=C ;;
+  "$ACCOUNT_HOME"/bp-071/H/run/*) SESSION=H ;;
+  "$ACCOUNT_HOME"/bp-071/D3/run/*) SESSION=D3 ;;
   *) SESSION=none ;;
 esac
 if [ "$(uname -s)" != Darwin ]; then SESSION="${BP_SESSION:-$SESSION}"; fi
 # Session R's folder, whatever this run's own folder is: its fence (ready before day-end) holds for
 # every session's script.
-R_HOME="$ACCOUNT_HOME/bp-070/R"
+R_HOME="$ACCOUNT_HOME/bp-071/R"
 # dry-run (CI on Linux) is Session R's bookkeeping in a folder of its own. On the Mac nothing else
 # moves the folder: a BP_WORK of the caller's would hold no fence and no change record.
 if [ "${1:-}" = dry-run ]; then
   SESSION=R
-  BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-070-dry.XXXXXX")"
+  BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-071-dry.XXXXXX")"
 elif [ "$(uname -s)" = Darwin ]; then
   BP_WORK=""
 fi
 case "$SESSION" in
-  R | C | H | D3) RESULTS_BRANCH="claude/070-session-$(tr '[:upper:]' '[:lower:]' <<<"$SESSION")" ;;
+  R | C | H | D3) RESULTS_BRANCH="claude/071-session-$(tr '[:upper:]' '[:lower:]' <<<"$SESSION")" ;;
   none) RESULTS_BRANCH="" ;;
   *)
     echo "error: BP_SESSION is R, C, H or D3" >&2
@@ -124,7 +122,7 @@ case "$SESSION" in
 esac
 TAB="$(printf '\t')"
 # BP_WORK only moves the folder for the dry run and for the bookkeeping commands off the Mac.
-WORK="${BP_WORK:-$ACCOUNT_HOME/bp-070/$SESSION}"
+WORK="${BP_WORK:-$ACCOUNT_HOME/bp-071/$SESSION}"
 BACKUP="$WORK/backup"
 BUILDS="$WORK/builds"
 BIN="$WORK/bin"
@@ -246,18 +244,18 @@ question() {
     R-keep-widgets) echo "yn|person|Keep the widgets step 3 adds from the gallery: y = keep (default: removed at the end)" ;;
     R-usage | C-usage | H-usage | D3-usage) echo "text|person|What /usage showed at the start" ;;
     R-send | C-send | H-send | D3-send)
-      echo "yn|person|Send ${1%-send}.md and the attached images to claude/070-session-$(tr '[:upper:]' '[:lower:]' <<<"${1%-send}"), after the contact sheet and the summary: y = send"
+      echo "yn|person|Send ${1%-send}.md and the attached images to claude/071-session-$(tr '[:upper:]' '[:lower:]' <<<"${1%-send}"), after the contact sheet and the summary: y = send"
       ;;
     C-yes) echo "yn|person|The Charge limit capture with the adapter in: the recording, the limit at 100 % for at most 10 minutes and back: y = go ahead" ;;
     H-yes) echo "yn|person|The hold watch tonight: the recording under caffeinate -i, the Mac on the adapter with the lid open: y = go ahead" ;;
-    D3-yes) echo "yn|person|The after-publishing check: the update to 0.7.0 by Install and Relaunch, the version count's check: y = go ahead" ;;
+    D3-yes) echo "yn|person|The after-publishing check: the update to $RC_VERSION by Install and Relaunch, the version count's check: y = go ahead" ;;
     prep-charge-limit) echo "text|judge|The Charge Limit (pmset -g battlimit on the adapter, else the Battery pane's shot), in %" ;;
     prep-widget-style) echo "text|judge|System Settings → Appearance → Icon & widget style (computer use from the sidebar, its shot): Default, Dark, Clear or Tinted" ;;
     prep-dim-widgets) echo "text|judge|System Settings → Desktop & Dock → Dim widgets on desktop (its shot): Automatically, Always or Never" ;;
     prep-open-at-login) echo "2|judge|Open at login (BatteryPulse's own toggle, by AX or its Settings shot): 1 on, 2 off" ;;
     prep-widgets) echo "2|judge|A small and a medium BatteryPulse widget on the desktop, uncovered: 1 yes, 2 no (one was added, noted)" ;;
     R2-small | R2-medium)
-      echo "4|judge|Step 2, the ${1#R2-} widget placed under 0.6.2, after RC-U's install and the desktop click, against prepare's shot: 1 same, 2 blank or grey, 3 gone, 4 different (note)"
+      echo "4|judge|Step 2, the ${1#R2-} widget placed under $BASE_VERSION, after RC-U's install and the desktop click, against prepare's shot: 1 same, 2 blank or grey, 3 gone, 4 different (note)"
       ;;
     R3-large | R3-xlarge | R3-accessories-small | R3-accessories-medium | R3-accessories-large)
       echo "yn|judge|Step 3, the ${1#R3-} widget added from the gallery, against W-3b's or W-8's PNG: looks right (n names the picture)"
@@ -266,7 +264,6 @@ question() {
     R4-2-kept) echo "yn|judge|Step 4.2: Edit Widget again shows the choices made" ;;
     R4-3-sheet) echo "3|judge|Step 4.3, Edit Widget with BatteryPulse in Russian: 1 all Russian, 2 some English (which), 3 the sheet didn't change language (not checked)" ;;
     R4-3-widgets) echo "3|judge|Step 4.3, the placed widgets after the language switch, the reload and a new extension: 1 Russian, 2 still English (which), 3 no redraw (not checked)" ;;
-    R4-4-kept) echo "yn|judge|Step 4.4, RC-P over RC-U: Edit Widget on the medium widget still shows the choices of 4.1" ;;
     R4-5-automatic) echo "yn|judge|Step 4.5: the medium widget back on Automatic, as before step 4" ;;
     R5-always-default | R5-always-dark | R5-always-clear | R5-always-tinted | R5-auto-default | R5-auto-dark | R5-auto-clear | R5-auto-tinted | \
       R5-nc-default | R5-nc-dark | R5-nc-clear | R5-nc-tinted | R5-contrast | R5-transparency)
@@ -292,13 +289,13 @@ question() {
     R-raw-history-base | R-raw-history-rc)
       echo "3|judge|A pointer-free switch from Raw Data to History (${1##*-}): 1 History at once, 2 History's title over Raw Data's table first (for how long), 3 something else (note)"
       ;;
-    F12-version) echo "yn|judge|F12: after Install and Relaunch on RC-F, BatteryPulse came back as 0.6.2" ;;
+    F12-version) echo "yn|judge|F12: after Install and Relaunch on RC-F, BatteryPulse came back as $BASE_VERSION" ;;
     F12-widget) echo "4|judge|F12: the widgets after the update against the before shots: 1 same, 2 blank or grey, 3 gone, 4 different (note)" ;;
     C-bit24) echo "3|judge|At the limit on the adapter, when charging stopped: 1 NotChargingReason gained bit 24, 2 it didn't, 3 not reached" ;;
     C-full) echo "yn|judge|The limit at 100 % (computer use or his hand at the beeps), confirmed by pmset -g battlimit or the pane's shot" ;;
     C-back) echo "yn|judge|The limit back at its value, confirmed by pmset -g battlimit or the pane's shot" ;;
     H-hold) echo "3|judge|The night on the adapter: 1 a hold was seen (the charge held below 100 % with NotChargingReason set), 2 none, 3 not readable" ;;
-    D3-version) echo "yn|judge|After Install and Relaunch, About shows 0.7.0" ;;
+    D3-version) echo "yn|judge|After Install and Relaunch, About shows $RC_VERSION" ;;
     D3-whats-new) echo "yn|judge|What's New appeared once" ;;
     D3-count-row) echo "yn|judge|What's New lists Anonymous version count" ;;
     D3-widgets) echo "4|judge|The widgets against the before-picture, after the desktop click: 1 same, 2 blank or grey, 3 gone, 4 different" ;;
@@ -320,7 +317,7 @@ questions_list() {
       echo prep-charge-limit prep-widget-style prep-dim-widgets prep-open-at-login prep-widgets
       echo R-raw-history-base R2-small R2-medium
       echo R3-large R3-xlarge R3-accessories-small R3-accessories-medium R3-accessories-large
-      echo R4-1-shows R4-2-kept R4-3-sheet R4-3-widgets R4-4-kept R4-5-automatic
+      echo R4-1-shows R4-2-kept R4-3-sheet R4-3-widgets R4-5-automatic
       echo R5-always-default R5-always-dark R5-always-clear R5-always-tinted R5-auto-default R5-auto-dark R5-auto-clear R5-auto-tinted
       echo R5-nc-default R5-nc-dark R5-nc-clear R5-nc-tinted R5-contrast R5-transparency
       echo R6-12-hour R6-tick R6-count-toggle R7-tree R7-tree-ru R7-text-size
@@ -558,7 +555,7 @@ end_widget_extension_and_wait() {
 
 MOUNT=""
 mount_dmg() {
-  MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/bp-070-mount.XXXXXX")"
+  MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/bp-071-mount.XXXXXX")"
   hdiutil attach -quiet -nobrowse -readonly -noautoopen -mountpoint "$MOUNT" "$1" || fail "can't mount $1"
 }
 
@@ -602,12 +599,11 @@ fetch_artifact() {
   describe_build "$name" "run $run, artifact $artifact"
 }
 
-# locate_builds: U, U2 and F from the integration branch's successful CI runs whose commit is the
-# frozen one or an ancestor with the same code (Sources, Resources, Package.swift, build-app.sh):
-# the oldest run with a $RC_VERSION DMG is U, the newest later one U2; the newest $F_VERSION DMG is
-# F. A pin (RUN_<name>, ARTIFACT_<name>) overrides each.
+# locate_builds: U and F from the integration branch's successful CI runs whose commit is the frozen
+# one or an ancestor with the same code (Sources, Resources, Package.swift, build-app.sh): the oldest
+# run with a $RC_VERSION DMG is U (D1 dispatches it before F, so its build number is the lower); the
+# newest $F_VERSION DMG is F. A pin (RUN_<name>, ARTIFACT_<name>) overrides each.
 LOC_U=""
-LOC_U2=""
 LOC_F=""
 locate_builds() {
   local head run sha names artifact rc_runs="" f="" rc_re f_re
@@ -626,9 +622,8 @@ locate_builds() {
     if [ -n "$artifact" ] && [ -z "$f" ]; then f="$run$TAB$artifact"; fi
   done < <(gh run list -R "$REPO" -b "$INTEGRATION_BRANCH" -w ci.yml -s success -L 40 --json databaseId,headSha \
     --jq '.[] | [.databaseId, .headSha] | @tsv' 2>/dev/null || true)
-  # gh lists the newest first: U is the last line, U2 the first, when there are two.
+  # gh lists the newest first: U is the last line.
   LOC_U="$(grep . <<<"$rc_runs" | tail -1 || true)"
-  if [ "$(grep -c . <<<"$rc_runs" || true)" -ge 2 ]; then LOC_U2="$(grep . <<<"$rc_runs" | head -1)"; fi
   LOC_F="$f"
 }
 
@@ -658,12 +653,10 @@ fetch_builds_r() {
     rm -rf "$BUILDS/base.download"
     describe_build base "release $TAG_BASE"
   fi
-  if [ ! -f "$BUILDS/U.dmg" ] || [ ! -f "$BUILDS/U2.dmg" ] || [ ! -f "$BUILDS/F.dmg" ]; then locate_builds; fi
+  if [ ! -f "$BUILDS/U.dmg" ] || [ ! -f "$BUILDS/F.dmg" ]; then locate_builds; fi
   fetch_one U "$RUN_U" "$ARTIFACT_U" "$LOC_U"
   [ -f "$BUILDS/U.dmg" ] || fail "no RC-U: D1 dispatches ci.yml with version $RC_VERSION on the frozen code, or pins RUN_U"
   fetch_previews
-  fetch_one P "$RUN_P" "$ARTIFACT_P" ""
-  fetch_one U2 "$RUN_U2" "$ARTIFACT_U2" "$LOC_U2"
   fetch_one F "$RUN_F" "$ARTIFACT_F" "$LOC_F"
 }
 
@@ -683,12 +676,12 @@ fetch_previews() {
   fi
 }
 
-# install_build <base|U|P|U2|F|backup> [--no-launch]: the build's app into /Applications the way
+# install_build <base|U|F|backup> [--no-launch]: the build's app into /Applications the way
 # UpdateInstaller does it: the widget extension ended first and waited for (D-17), a copy staged on
 # the same volume, its bundle ID and code signature checked, one atomic swap with the installed copy
 # (swap.swift), the old copy deleted once it has quit, lsregister -f, a relaunch. WidgetKit caches
 # by CFBundleVersion, so a build whose number isn't higher than the installed one is refused, except
-# the base 0.6.2 and his backed-up app. The extension's pids before the swap and 10 s after the
+# the base 0.7.0 and his backed-up app. The extension's pids before the swap and 10 s after the
 # relaunch go into installs.tsv and the step's section (G7-2).
 install_build() {
   local name="$1" launch_after=1 staging staged bundle version build installed last_seen why="higher" before after ended
@@ -743,7 +736,7 @@ install_build() {
       why="restore puts his app back"
     else
       rm -rf "$staging"
-      fail "refusing $name: its build $build isn't higher than the installed $installed, and WidgetKit caches by it (D1 dispatches U, P, U2 and F in this order)"
+      fail "refusing $name: its build $build isn't higher than the installed $installed, and WidgetKit caches by it (D1 dispatches U and F in this order)"
     fi
     echo "note: $name's build $build isn't higher than the installed $installed: $why"
   fi
@@ -779,12 +772,12 @@ install_build() {
 
 installed_build() { plist_value "$APP/Contents/Info.plist" CFBundleVersion; }
 
-# install <base|U|P|U2|F|backup>: one build, as every step installs it, with its section lines: the
+# install <base|U|F|backup>: one build, as every step installs it, with its section lines: the
 # pids, and CHSErrorDomain 1103 lines since the install (read again by the step's later shots).
 step_install() {
   r_only install
-  [ $# -eq 1 ] || fail "usage: $SCRIPT install <base|U|P|U2|F|backup>"
-  case "$1" in base | U | P | U2 | F | backup) ;; *) fail "no build $1 in Session R" ;; esac
+  [ $# -eq 1 ] || fail "usage: $SCRIPT install <base|U|F|backup>"
+  case "$1" in base | U | F | backup) ;; *) fail "no build $1 in Session R" ;; esac
   [ "$1" = backup ] || [ -n "$(original_of app)" ] || fail "prepare records the app's change first: $SCRIPT prepare"
   install_build "$1"
   use_section 05-installs "Installs"
@@ -843,8 +836,8 @@ build_gui_tools() {
 }
 
 # tools: a short session's first script call: ui and frames built from its own frozen worktree
-# into ~/bp-070/<C|H|D3>/bin, where ui finds its session's folder (Session R's prepare builds
-# them in ~/bp-070/R/bin). The After publishing check clicks, crops and reads AX through them.
+# into ~/bp-071/<C|H|D3>/bin, where ui finds its session's folder (Session R's prepare builds
+# them in ~/bp-071/R/bin). The After publishing check clicks, crops and reads AX through them.
 step_tools() {
   [ "$(uname -s)" = Darwin ] || fail "this runs on the Mac"
   xcode-select -p >/dev/null 2>&1 ||
@@ -1078,7 +1071,7 @@ check_tools() {
   case "$(sw_vers -productVersion)" in 27.*) ;; *) warn "this session was planned for macOS 27" ;; esac
 }
 
-# A fresh backup into ~/bp-070/R/backup (PLAN.md §6.2 step 1): the app, the defaults domain (his
+# A fresh backup into ~/bp-071/R/backup (PLAN.md §6.2, R0): the app, the defaults domain (his
 # settings: Check for updates, Window to open, the app's own AppleLanguages), Application Support,
 # the widget extension's AppleLanguages, the appearance, the 24-hour setting. A second prepare keeps
 # it unless asked for a fresh one.
@@ -1087,7 +1080,7 @@ backup() {
     echo "keeping the backup of $(cat "$BACKUP/done") in $BACKUP (prepare --fresh-backup takes a new one)"
     return 0
   fi
-  [ -d "$APP" ] || fail "$APP is missing: his $BASE_VERSION is the session's start"
+  [ -d "$APP" ] || fail "$APP is missing: his own BatteryPulse is the session's start"
   rm -rf "$BACKUP"
   mkdir -p "$BACKUP"
   ditto -c -k --keepParent "$APP" "$BACKUP/BatteryPulse.zip"
@@ -1150,10 +1143,10 @@ DAY_STREAM="$LOGS/day.ndjson"
 GUI_STREAM="$LOGS/gui.ndjson"
 DRY_RUN=""
 
-r_only() { [ "$SESSION" = R ] || fail "$1 is a Session R command: run it from the frozen worktree ~/bp-070/R/run"; }
+r_only() { [ "$SESSION" = R ] || fail "$1 is a Session R command: run it from the frozen worktree ~/bp-071/R/run"; }
 
 # session_only <session> <command>: a short session's command, from its own frozen worktree.
-session_only() { [ "$SESSION" = "$1" ] || fail "$2 is the $1 session's command: run it from ~/bp-070/$1/run"; }
+session_only() { [ "$SESSION" = "$1" ] || fail "$2 is the $1 session's command: run it from ~/bp-071/$1/run"; }
 
 # app_pid_of <app>: the main process of TextEdit, System Settings, Xcode or Accessibility Inspector,
 # by its executable's path at the start of the argument list (pgrep -x can't match past 16
@@ -1423,9 +1416,9 @@ arm_is_ancestor() {
 # caller_is_arm: the arm window's process (arm.pid) is this call's ancestor.
 caller_is_arm() { arm_is_ancestor "$WORK/arm.pid"; }
 
-# r_fence: once `ready` is up (the logged day), no command acts until his day-end (§6.2: the session
-# ends its turn at step 12); a day-end counts only when it is newer than ready. `ui` enforces the
-# same for itself, and day_fence for every run of this script.
+# r_fence: once `ready` is up (the logged day), no command acts until his day-end (§6.2, R2: the
+# session ends its turn at `ready`); a day-end counts only when it is newer than ready. `ui`
+# enforces the same for itself, and day_fence for every run of this script.
 r_fence() {
   if [ -f "$READY_FILE" ] && ! ended_after "$WORK" ready && ! caller_is_arm; then
     fail "ready is up: the logged day runs, and nothing acts until his day-end; nothing was done"
@@ -1433,11 +1426,11 @@ r_fence() {
   day_fence
 }
 
-# The arm window of ~/bp-070/R (arm.pid) is this call's ancestor.
+# The arm window of ~/bp-071/R (arm.pid) is this call's ancestor.
 caller_is_r_arm() { arm_is_ancestor "$R_HOME/arm.pid"; }
 
 # day_fence: Session R's fence for every run of this script, wherever it runs from (a short
-# session's worktree, his checkout): ~/bp-070/R's ready without a newer day-ended stops every acting
+# session's worktree, his checkout): ~/bp-071/R's ready without a newer day-ended stops every acting
 # command but the arm's own and day-end.
 day_fence() {
   if [ -f "$R_HOME/ready" ] && ! ended_after "$R_HOME" ready && ! caller_is_r_arm; then
@@ -1993,7 +1986,7 @@ park_pointer() {
 }
 
 # place_window: BatteryPulse's front window on the right of the main display, below the banners'
-# corner and above the Dock (§6 "Places"), by AX.
+# corner and above the Dock (SESSION-R.md, "Places"), by AX.
 place_window() {
   local screen width height frame w h
   screen="$(ui_run screen 2>/dev/null || true)"
@@ -2020,7 +2013,7 @@ select_page() {
 
 # MARK: - Session R: the start (prepare attempt, prepare, prepare reads)
 
-# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-070/R/attempt).
+# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-071/R/attempt).
 attempt_head() { git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown; }
 
 # attempt_current: the session's folder is this attempt's (its attempt file names this commit).
@@ -2036,7 +2029,7 @@ attempt_fence() {
 
 # prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"] (the start's first
 # call, right after the worktree): a clean start. A session folder that holds an earlier attempt's
-# files (no attempt file, or another commit's) moves aside to ~/bp-070/<session>-attempt-<that
+# files (no attempt file, or another commit's) moves aside to ~/bp-071/<session>-attempt-<that
 # attempt's date>, never deleted, once no arm window of that attempt runs and every change its
 # changes.tsv lists was put back (restored.tsv). Until then attempt_fence refuses `restored`, so the
 # two options record it here: --restored, the session put a setting back at the new start and
@@ -2101,10 +2094,10 @@ step_attempt() {
     fi
     epoch="$(cat "$WORK/prepare.epoch" 2>/dev/null || mtime_of "$old")"
     when="$(date -r "$epoch" '+%Y-%m-%d' 2>/dev/null || date -d "@$epoch" '+%Y-%m-%d')"
-    dest="$ACCOUNT_HOME/bp-070/$SESSION-attempt-$when"
+    dest="$ACCOUNT_HOME/bp-071/$SESSION-attempt-$when"
     while [ -e "$dest" ]; do
       n=$((n + 1))
-      dest="$ACCOUNT_HOME/bp-070/$SESSION-attempt-$when-$n"
+      dest="$ACCOUNT_HOME/bp-071/$SESSION-attempt-$when-$n"
     done
     mkdir -p "$dest"
     # A directory moves to another parent only when it is writable (its .. entry changes).
@@ -2126,9 +2119,9 @@ step_attempt() {
 }
 
 
-# prepare [--fresh-backup] (the start, a background task): the backup into ~/bp-070/R, the builds
-# (base, U, P, U2, F) and the tools (ui, frames, swap, perf-stats, bpulse), his remembered devices
-# out of the session's sight, his 0.6.2 running with the session's settings, then a beep. Only after
+# prepare [--fresh-backup] (the start, a background task): the backup into ~/bp-071/R, the builds
+# (base, U, F) and the tools (ui, frames, swap, perf-stats, bpulse), his remembered devices out of
+# the session's sight, the base 0.7.0 running with the session's settings, then a beep. Only after
 # his yes to the list of changes (answer --by person R-yes y).
 step_prepare_r() {
   check_tools
@@ -2167,9 +2160,7 @@ step_prepare_r() {
   while IFS=$'\t' read -r name version build origin; do
     out "| $name | $version | $build | $origin |"
   done <"$WORK/builds.tsv"
-  for name in P U2 F; do
-    if [ -f "$BUILDS/$name.none" ]; then out "- $(cat "$BUILDS/$name.none")"; fi
-  done
+  if [ -f "$BUILDS/F.none" ]; then out "- $(cat "$BUILDS/F.none")"; fi
   if [ -z "$(original_of app)" ]; then
     record_change app "$(cat "$BACKUP/version")" "the release candidates"
     record_change bp-settings "his settings (backup)" "the session's settings"
@@ -2194,13 +2185,13 @@ step_prepare_r() {
   echo "BEEP (prepare is done): when he is back and has quit his own apps: $SCRIPT prepare reads"
 }
 
-# prepare reads (the start): what PLAN.md §6.2 step 1 reads, as 0.6.2's prepare did: the Charge
+# prepare reads (the start): what PLAN.md §6.2's R0 reads, as 0.6.2's prepare did: the Charge
 # Limit (pmset -g battlimit), the 24-hour setting, Open at login (AX), Check for updates and Window
 # to open (his defaults), the languages (BatteryPulse's own, its widget extension's, the system's),
 # the appearance; Icon & widget style and Dim widgets on desktop by computer use from System
 # Settings' sidebar (0.6.2's P8: their URLs open other panes), answered from its shot. A value it
 # can't read is "unknown" and never changed. Then the desktop's shot and pluginkit: the small and
-# medium widgets placed under 0.6.2.
+# medium widgets placed under the base 0.7.0.
 step_prepare_reads() {
   begin_section 01-reads "Prepare's reads (the start)"
   local limit corner value screen keys
@@ -2789,7 +2780,7 @@ step_main() {
 
 # MARK: - Session R: step 2, placed widgets across the update (G7-2)
 
-# placed before | 1 | 5 | compare: before (once the small and medium frames are recorded, on 0.6.2):
+# placed before | 1 | 5 | compare: before (once the small and medium frames are recorded, on 0.7.0):
 # a crop of each after the desktop click; 1 and 5: a minute and five minutes after RC-U's install
 # (waits until then), pluginkit, a full shot (local) and the crops, the extension's pids and the
 # CHSErrorDomain 1103 lines; compare (the GUI phase): the crops after the desktop click, against
@@ -2861,7 +2852,7 @@ step_edit_shot() {
   crop_widgets "$SHOTS/edit" "$1" | grep -F '/medium-' || true
 }
 
-# language ru [--extension] | back: step 4.3 the way a user does it (PLAN.md W-0 item 8): the
+# language ru [--extension] | back: step 4.3 the way a user does it (plan-0.7.0 W-0 item 8): the
 # session sets BatteryPulse's language in System Settings → General → Language & Region →
 # Applications by computer use first (`change app-language <his> ru`), then this relaunches
 # BatteryPulse in the language his settings give it, waits up to 90 s for a widget reload notice
@@ -3206,7 +3197,7 @@ step_demo_shots() {
 
 # raw-history <base|rc>: Session B's finding (1): a pointer-free switch from Raw Data to History by
 # AX selection, the main window shot 0.3 s, 2 s and 8 s after it: does History show its title over
-# Raw Data's table first? base runs on 0.6.2 at the start, rc in the GUI phase.
+# Raw Data's table first? base runs on 0.7.0 at the start, rc in the GUI phase.
 step_raw_history() {
   r_only raw-history
   local tag="${1:-}"
@@ -3342,14 +3333,14 @@ ARM_GUI_CAFFEINATE=""
 ARM_READY_WAITER=""
 ARM_SHOWN=""
 
-# arm open: writes ~/bp-070/R/arm.command and opens it in a new Terminal window (open -a Terminal:
+# arm open: writes ~/bp-071/R/arm.command and opens it in a new Terminal window (open -a Terminal:
 # no Automation needed). The window runs the frozen worktree's script.
 arm_open() {
   r_fence
   mkdir -p "$WORK"
   cat >"$WORK/arm.command" <<EOF
 #!/bin/bash
-# BatteryPulse Session R's arm window (0.7.0's PLAN.md §6.2, step 12), opened by the session.
+# BatteryPulse Session R's arm window (PLAN.md §6.3, the logged day), opened by the session.
 exec /bin/bash "$HERE/m5-session.sh" arm
 EOF
   chmod +x "$WORK/arm.command"
@@ -3532,9 +3523,9 @@ step_day_end() {
 
 # MARK: - Session R: F12 at the day's end (D-12, G7-15)
 
-# f12 rate | before | after: RC-F (0.5.99) installed first (`install F`); Check for Updates, then
-# Install and Relaunch by AX presses, between before and after. after reads the version (0.6.2?),
-# the update log's pre-swap extension end (0.6.2's installer, D-17), the eject failures and the
+# f12 rate | before | after: RC-F (0.6.99) installed first (`install F`); Check for Updates, then
+# Install and Relaunch by AX presses, between before and after. after reads the version (0.7.0?),
+# the update log's pre-swap extension end (RC-F's installer, D-17), the eject failures and the
 # CHSErrorDomain 1103 lines, and the widgets after the desktop click.
 step_f12() {
   r_only f12
@@ -3595,7 +3586,7 @@ step_f12() {
 
 # When each changed setting comes back: "gui" before the logged day (restore gui: the day runs on
 # the RC with his settings, his remembered devices and the system as he left it), "end" after it
-# (restore end: his 0.6.2 again, his data, the widgets the session added).
+# (restore end: his own BatteryPulse again, his data, the widgets the session added).
 restore_phase() {
   case "$1" in
     app | bp-support | widget-data | desktop-widgets) echo end ;;
@@ -3713,7 +3704,7 @@ step_summary() {
     echo "CHANGED $setting: $(original_of "$setting") -> $(awk -F '\t' -v s="$setting" '$1 == s { v = $3 } END { print v }' "$CHANGES"); back: ${line:-not yet}"
   done
   if [ "$phase" = gui ]; then
-    echo "LEFT FOR LATER (restore end): the release candidate stays installed for the logged day; his 0.6.2, its data and the session's widgets come back at the day's end"
+    echo "LEFT FOR LATER (restore end): the release candidate stays installed for the logged day; his own BatteryPulse, its data and the session's widgets come back at the day's end"
   fi
   echo "REMIND: turn the Focus off before using the Mac"
 }
@@ -3807,7 +3798,7 @@ appendix_rows() {
 |---|---|
 | G7-2: placed widgets across RC-U's install, the extension's pids, CHSErrorDomain 1103 | Step 2; Installs; R2-* |
 | The gallery's new sizes against the CI renders | Step 3; R3-* |
-| G7-13 and the added parameter (RC-P over RC-U, RD C14 item 5) | Step 4.3; R4-* |
+| G7-13: the edit sheet in Russian | Step 4.3; R4-* |
 | G7-4: rendering modes and places, with each crop's contrast | Step 5; R5-* |
 | G7-3, W-13's toggle | Step 6; R6-* |
 | G7-12: the trees, Text size | Step 7; R7-* |
@@ -3823,7 +3814,7 @@ EOF
       ;;
     C) printf '%s\n' "| Fact | Where |" "|---|---|" "| QUA-05 / FEA-35: the Charge Limit's bit at the hold, the 100 % diff, the rows around each change | The Charge limit capture; C-* |" ;;
     H) printf '%s\n' "| Fact | Where |" "|---|---|" "| QUA-06: an optimized-charging hold seen overnight under caffeinate -i | The hold watch; H-hold |" ;;
-    D3) printf '%s\n' "| Fact | Where |" "|---|---|" "| §6.4: the update to 0.7.0, the widgets, P2 D3's list, the version count (W-13), the first day's comparison | After publishing; D3-* |" ;;
+    D3) printf '%s\n' "| Fact | Where |" "|---|---|" "| §6.4: the update to $RC_VERSION, the widgets, P2 D3's list, the version count (W-13), the first day's comparison | After publishing; D3-* |" ;;
   esac
 }
 
@@ -3844,12 +3835,12 @@ timeline() {
 
 build_report() {
   local id value by at note file caption setting line unrestored=""
-  echo "# Session $SESSION results (BatteryPulse 0.7.0)"
+  echo "# Session $SESSION results (BatteryPulse $RC_VERSION)"
   echo
   echo "Written by \`docs/plans/0.7.1/m5-session.sh send\` on $(date '+%Y-%m-%d %H:%M %z'). The session ran hands-free"
   echo "(PLAN.md §6.2): answers marked \"claude\" were judged by the Claude session from the pictures, beside the"
   echo "script's pixel measurement where one exists; \"person\" ones came from the maintainer. Full-desktop shots,"
-  echo "recordings and logs stay on the Mac (\`~/bp-070/$SESSION\`)."
+  echo "recordings and logs stay on the Mac (\`~/bp-071/$SESSION\`)."
   echo
   for setting in $(changed_settings); do is_restored "$setting" || unrestored="$unrestored $setting"; done
   for setting in $LEFTOVERS; do
@@ -3997,8 +3988,8 @@ privacy_lint() {
 }
 
 # send [--dry-run]: <session>.md (and the attached images) committed to docs/plans/0.7.1/sessions/
-# on claude/070-session-<session>, which starts from that branch if it exists, else the
-# integration branch, else main (after 0.7's D3 removed both); a fresh shallow clone in the
+# on claude/071-session-<session>, which starts from that branch if it exists, else the
+# integration branch, else main (after 0.7.1's D3 removed both); a fresh shallow clone in the
 # session's folder, so his own checkout stays as it is. Never another branch, never a pull request.
 # His yes first (<session>-send y, after the contact sheet and the summary), then the privacy lint.
 step_send() {
@@ -4104,7 +4095,7 @@ timeline_rows() {
 }
 
 # timeline_changes: each row where the state or NotChargingReason changed, with the row before it
-# (the rows around each change, PLAN.md W-12 item 1).
+# (the rows around each change, plan-0.7.0 W-12 item 1).
 timeline_changes() {
   local file
   file="$(record_folder)/timeline.tsv"
@@ -4282,7 +4273,7 @@ step_hold_watch() {
 
 # after before | after | popover: the before-picture (pluginkit, the crops after the desktop click,
 # the time), right before Check for Updates and Install and Relaunch by AX presses; after (waits
-# for 0.7.0, at most 3 minutes): the update log's pre-swap line and CHSErrorDomain 1103, pluginkit,
+# for 0.7.1, at most 3 minutes): the update log's pre-swap line and CHSErrorDomain 1103, pluginkit,
 # the crops, `codesign -dv --verbose=4` and `xattr -l` (P2 D3's list); popover: the first day's
 # comparison, the popover beside the widgets.
 step_after() {
@@ -4300,11 +4291,11 @@ step_after() {
       crop_widgets "$SHOTS/after" before
       out "- before ($(cat "$WORK/after.time")): $(app_version); widget extension pids: $(widget_pids | tr '\n' ' ')"
       out_block "$LOGS/pluginkit-before.txt"
-      echo "DO (session): Check for Updates, then Install and Relaunch to 0.7.0, by AX presses; then: $SCRIPT after after"
+      echo "DO (session): Check for Updates, then Install and Relaunch to $RC_VERSION, by AX presses; then: $SCRIPT after after"
       ;;
     after)
       [ -f "$WORK/after.time" ] || fail "first: $SCRIPT after before"
-      until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = 0.7.0 ] || [ "$waited" -ge 180 ]; do
+      until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$RC_VERSION" ] || [ "$waited" -ge 180 ]; do
         sleep 1
         waited=$((waited + 1))
       done
@@ -4312,7 +4303,7 @@ step_after() {
       out "- after: $(app_version), running $(if app_running; then echo yes; else echo no; fi)"
       log_since "$(cat "$WORK/after.time")" "$UPDATE_PREDICATE" "$LOGS/after-update.ndjson" >/dev/null
       swap="$(messages "$LOGS/after-update.ndjson" | grep -F 'extension before the swap' | head -1 || true)"
-      out "- 0.6.2's pre-swap line (every BatteryPulseWidget process ended, D-17): ${swap:-none}; $(chs_since "$(cat "$WORK/after.time")")"
+      out "- the updating installer's pre-swap line (every BatteryPulseWidget process ended, D-17): ${swap:-none}; $(chs_since "$(cat "$WORK/after.time")")"
       pluginkit -mv -i "$WIDGET_ID" >"$LOGS/pluginkit-after.txt" 2>&1 || true
       out_block "$LOGS/pluginkit-after.txt"
       flags="$(codesign -dv --verbose=4 "$APP" 2>&1 | grep -o 'flags=[^ ]*' | head -1 || true)"
@@ -4335,11 +4326,11 @@ step_after() {
   esac
 }
 
-# count-check | count-check stats: W-13's version count (§6.4 step 6), with Check for updates set to
-# anything but Never: BatteryPulse quit, lastCountedVersion and lastUpdateCheck cleared,
+# count-check | count-check stats: W-13's version count (plan-0.7.0 §6.4 step 6), with Check for
+# updates set to anything but Never: BatteryPulse quit, lastCountedVersion and lastUpdateCheck cleared,
 # versionFirstLaunch back-dated (the grace day skipped, a check due), BatteryPulse opened again;
 # then W-13's update line (the first automatic check runs 20 s after launch), at most 2 minutes.
-# stats, 10 minutes after that line (a background wait): scripts/release-stats.swift, v0.7.0's
+# stats, 10 minutes after that line (a background wait): scripts/release-stats.swift, v0.7.1's
 # count. On failed, noCounter or no line it prints the logged code.
 step_count_check() {
   session_only D3 count-check
@@ -4376,9 +4367,9 @@ step_count_check() {
       (cd "$ROOT" && xcrun swift scripts/release-stats.swift) >"$LOGS/release-stats.txt" 2>&1 ||
         out "- release-stats failed: $(tail -1 "$LOGS/release-stats.txt")"
       out "- release-stats (10 minutes after the check):"
-      # Newest first: the header, its rule, then 0.7.0's row.
-      head -3 "$LOGS/release-stats.txt" >"$LOGS/release-stats-070.txt" || true
-      out_block "$LOGS/release-stats-070.txt"
+      # Newest first: the header, its rule, then 0.7.1's row.
+      head -3 "$LOGS/release-stats.txt" >"$LOGS/release-stats-071.txt" || true
+      out_block "$LOGS/release-stats-071.txt"
       ask D3-count
       ;;
     *) fail "usage: $SCRIPT count-check [stats]" ;;
@@ -4530,7 +4521,7 @@ usage: $SCRIPT <command> [arguments]          (Session R, hands-free; SESSION-R.
 The start (on the adapter, he is there):
   prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]   first: a clean start
   answer --by person R-yes y (and R-back, R-keep-ax, R-keep-widgets, R-usage)
-  prepare [--fresh-backup]   the backup into ~/bp-070/R, the builds (base, U, P, U2, F), the tools; a beep
+  prepare [--fresh-backup]   the backup into ~/bp-071/R, the builds (base, U, F), the tools; a beep
   prepare reads              the Charge Limit, 24-hour, Open at login, Check for updates, Window to open, the
                              languages, the appearance; the panes' shots for the two style settings; pluginkit
   proof P1 --image <png> <x> <y> | P6 | P7 | P8 | P11 | <P#> pass|fail <note>
@@ -4540,7 +4531,7 @@ The start (on the adapter, he is there):
   raw-history base; placed before; install U; placed 1; placed 5; plug (his two beeps)
   arm open; mark away        the arm window, then the GUI phase (no sound from here until his day-end)
 The GUI phase (heartbeat <step and expected time> after each step, at least every 10 minutes):
-  placed compare; gallery <name>; edit-shot <tag>; language ru [--extension] | back; install P; install U2
+  placed compare; gallery <name>; edit-shot <tag>; language ru [--extension] | back
   look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour | text-size
   tick; count-toggle; tree [ru]; click-widget quit|running|accessories|health|main|compact
   accessories-watch disconnect|reconnect; demo-shots [ru]; raw-history rc; menubar; wp18 previews|timing
@@ -4589,7 +4580,7 @@ case "$COMMAND" in
     ;;
 esac
 [ "$SESSION" != none ] ||
-  fail "$COMMAND runs from a session's frozen worktree (~/bp-070/R/run, C/run, H/run or D3/run): see SESSION-R.md"
+  fail "$COMMAND runs from a session's frozen worktree (~/bp-071/R/run, C/run, H/run or D3/run): see SESSION-R.md"
 # From Session R's ready until his day-end, nothing acts, whichever session's script runs: the
 # reads, day-end and the arm itself are let through.
 case "$COMMAND:${1:-}" in
