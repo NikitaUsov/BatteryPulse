@@ -366,6 +366,26 @@ struct WidgetReloadPlannerTests {
         #expect(!WidgetReloadPlanner.LaunchReason.update.reloadsAnyway)
     }
 
+    /// The widgets take BatteryPulse's language from the feed (W-15), so a launch in another
+    /// language writes it before it ends the extension and reloads: the new extension reads the
+    /// new language, and a running one can't keep its read of the old one. An update ends the
+    /// previous version's extension at once, without waiting for a write.
+    @Test func aLanguageChangeWritesTheFeedBeforeTheReload() throws {
+        let language = try #require(
+            WidgetReloadPlanner.launchReason(versionChanged: false, lastLanguage: "en", language: "ru"))
+        #expect(language.steps == [.writeFeed, .endExtension, .reload])
+        let write = try #require(language.steps.firstIndex(of: .writeFeed))
+        let end = try #require(language.steps.firstIndex(of: .endExtension))
+        let reload = try #require(language.steps.firstIndex(of: .reload))
+        #expect(write < end && end < reload)
+        // With the version changed too.
+        #expect(
+            WidgetReloadPlanner.launchReason(versionChanged: true, lastLanguage: "ru", language: "en")?.steps.first
+                == .writeFeed)
+        #expect(WidgetReloadPlanner.LaunchReason.update.steps == [.endExtension, .reload])
+        #expect(WidgetReloadPlanner.LaunchStep.allCases.count == 3)
+    }
+
     // MARK: Placements
 
     /// Nothing is reloaded for a kind a non-empty answer leaves out; an empty answer, a failure and

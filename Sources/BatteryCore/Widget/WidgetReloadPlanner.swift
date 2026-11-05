@@ -214,6 +214,29 @@ extension WidgetReloadPlanner {
 
         /// Whether every kind reloads even when no extension was running.
         public var reloadsAnyway: Bool { self == .language }
+
+        /// What the launch does, in this order. A language change writes the widget feed first
+        /// and waits for it: the widgets take BatteryPulse's language from it
+        /// (``WidgetLanguage``), so the extension the reload starts must find the new one, and a
+        /// running one must not keep a read of the old one. An update ends the previous version's
+        /// extension at once, as before.
+        public var steps: [LaunchStep] {
+            switch self {
+            case .update: [.endExtension, .reload]
+            case .language: [.writeFeed, .endExtension, .reload]
+            }
+        }
+    }
+
+    /// One step of what a launch does (``LaunchReason/steps``).
+    public enum LaunchStep: String, Sendable, CaseIterable {
+        /// Writes the widget feed with the app's languages, and waits for the write.
+        case writeFeed
+        /// Ends the widget extension a previous launch left running.
+        case endExtension
+        /// Reloads every kind a second later: after an update only when an extension was ended
+        /// (``LaunchReason/reloadsAnyway``).
+        case reload
     }
 
     /// Why this launch ends the widget extension and reloads, or `nil`. `language` is the app's

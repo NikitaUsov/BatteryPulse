@@ -302,9 +302,24 @@ extension WidgetFeed {
         case plug
         /// Demo Mode ended: what it kept from being written is written now.
         case demoEnded
+        /// A launch in another language than the last one: the widgets take BatteryPulse's
+        /// language from the feed (``WidgetLanguage``), so it is written before they reload
+        /// (``WidgetReloadPlanner/LaunchReason/steps``).
+        case language
 
         /// Whether the write goes out even when nothing but `writtenAt` changed.
         public var writesUnchanged: Bool { self == .step }
+
+        /// Whether the write still goes out in Demo Mode, as a removal only
+        /// (``WidgetFeed/removing(_:)``): the reasons a user's removal arrives with (Clear
+        /// History, recording off, device reads off, Forget). Nothing else is written while the
+        /// demo runs.
+        public var removesInDemoMode: Bool {
+            switch self {
+            case .historyCleared, .recording, .devices: true
+            case .step, .plug, .demoEnded, .language: false
+            }
+        }
 
         /// The trigger of the `widget.feed.write` signpost.
         public var signpostName: StaticString {
@@ -315,6 +330,7 @@ extension WidgetFeed {
             case .devices: "devices"
             case .plug: "plug"
             case .demoEnded: "demoEnded"
+            case .language: "language"
             }
         }
     }
@@ -334,6 +350,56 @@ extension WidgetFeed {
             lastStep = step
             return true
         }
+    }
+
+    /// What the user removed while Demo Mode runs, from the real settings and the real remembered
+    /// devices, never the demo's: the one change the feed takes then (``removing(_:)``).
+    public struct Removal: Sendable, Equatable {
+        /// Clear History ran since the last write.
+        public var historyCleared: Bool
+        /// Whether Record battery history is on.
+        public var recordsHistory: Bool
+        /// Whether Read iPhone and iPad batteries is on.
+        public var readsDevices: Bool
+        /// The remembered devices' keys: a device of the feed that isn't among them was forgotten.
+        public var remembered: Set<DeviceKey>
+
+        public init(historyCleared: Bool, recordsHistory: Bool, readsDevices: Bool, remembered: Set<DeviceKey>) {
+            self.historyCleared = historyCleared
+            self.recordsHistory = recordsHistory
+            self.readsDevices = readsDevices
+            self.remembered = remembered
+        }
+    }
+
+    /// The feed with what `removal` says the user removed taken out, and nothing added, updated or
+    /// moved: the rewrite Demo Mode allows, since a removal must leave the feed at once while the
+    /// demo's readings never reach it.
+    ///
+    /// - Clear History leaves the series as gaps over the same steps, and no figures, start on
+    ///   battery or daily summaries, as a build from the cleared history writes them.
+    /// - Recording off drops the history section; device reads off drop the devices; a device no
+    ///   longer remembered goes.
+    /// - A setting turned on stays off in the feed, and `writtenAt` stays, so the widgets age the
+    ///   rest as before: the end of Demo Mode writes the feed in full.
+    public func removing(_ removal: Removal) -> WidgetFeed {
+        var feed = self
+        feed.recordsHistory = recordsHistory && removal.recordsHistory
+        if !feed.recordsHistory {
+            feed.day = nil
+            feed.week = nil
+        } else if removal.historyCleared {
+            feed.day = day?.cleared()
+            feed.week = week?.cleared()
+        }
+        if !feed.recordsHistory || removal.historyCleared {
+            feed.statistics24h = nil
+            feed.onBatterySince = nil
+            feed.daily = nil
+        }
+        feed.readsDevices = readsDevices && removal.readsDevices
+        feed.devices = feed.readsDevices ? devices?.filter { removal.remembered.contains($0.key) } : nil
+        return feed
     }
 
     /// The index of the step of `step` seconds that holds `date`, counted from 1970.
@@ -741,6 +807,14 @@ extension WidgetFeed {
 }
 
 extension WidgetFeed.Series {
+    /// The same steps, each a gap.
+    func cleared() -> WidgetFeed.Series {
+        WidgetFeed.Series(
+            start: start, step: step, percent: percent.map { _ in nil },
+            batteryWatts10: batteryWatts10.map { _ in nil },
+            temperature10: temperature10.map { _ in nil }, plugged: plugged.map { _ in nil })
+    }
+
     /// The series with each number outside its range a gap.
     func bounded() -> WidgetFeed.Series {
         var series = self
