@@ -164,12 +164,13 @@ import Testing
         )
     }
 
-    /// The file APIs, Foundation's and the POSIX calls the feed's reader makes, which only
-    /// ``feedReader`` may use in the widget and BatteryArt. Not `read(`, which
-    /// `MacAccessoryProvider().read()` is; `getpw\w*` covers `getpwnam` and `getpwuid_r` too.
+    /// The file APIs, Foundation's and the POSIX calls the feed's reader makes and their kin
+    /// (paths, links, folders, the System module's descriptors), which only ``feedReader`` may use
+    /// in the widget and BatteryArt. Not `read(`, which `MacAccessoryProvider().read()` is;
+    /// `getpw\w*` covers `getpwnam` and `getpwuid_r` too.
     static var widgetFileAPIs: Regex<Substring> {
         words(
-            #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\b(?:open|openat|stat|lstat|fstat)\s*\(|\bgetpw\w*/#
+            #/\bFileManager\b|\bFileHandle\b|\bNSFileCoordinator\b|\bFileDescriptor\b|\bimport\s+System\b|\bcontentsOf(?:File)?\s*:|\bf(?:d|re)?open\s*\(|\b(?:open|openat|creat|stat|lstat|fstat|fstatat|access|faccessat|readlink|realpath|opendir|scandir)\s*\(|\bgetpw\w*/#
         )
     }
 
@@ -453,6 +454,17 @@ import Testing
         "let entry = getpwuid(getuid())",
         "let entry = getpwnam(name)",
         "_ = getpwuid_r(uid, &entry, &buffer, size, &result)",
+        "let file = fdopen(descriptor, mode)",
+        "let file = freopen(path, mode, stream)",
+        "let descriptor = creat(path, 0o600)",
+        "guard access(path, R_OK) == 0 else { return }",
+        "_ = fstatat(folder, name, &info, 0)",
+        "let count = readlink(path, &buffer, size)",
+        "let resolved = realpath(path, nil)",
+        "let folder = opendir(path)",
+        "let descriptor = try FileDescriptor.open(path, .readOnly)",
+        "import System",
+        "let coordinator = NSFileCoordinator(filePresenter: nil)",
     ])
     func theWidgetHasNoFileAPIButTheFeedReader(source: String) {
         for widget in ["BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift"] {
