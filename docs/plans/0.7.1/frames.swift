@@ -3,7 +3,7 @@
 // judgment pairs the session's reading of a picture with a pixel measurement). The session script
 // builds it once:
 //
-//   xcrun swiftc -O docs/plans/0.7.1/frames.swift -o ~/bp-071/<R|C|H|D3>/bin/frames
+//   xcrun swiftc -O docs/plans/0.7.1/frames.swift -o ~/bp-071/<R|C|H|D3|F>/bin/frames
 //
 //   frames dump <movie> <folder> [interval s, default 0.2] [width px, default 1280]
 //               [--rect <x> <y> <width> <height> --screen <display width in points>]
