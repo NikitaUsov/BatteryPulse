@@ -36,6 +36,8 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var placements = WidgetPlacements()
     /// The placed widgets of the last answer, as counted per kind, to log a change only.
     @ObservationIgnored private var answeredCounts: [WidgetKindID: Int]?
+    /// The last question failed: a failure that repeats at every routine write logs at error once.
+    @ObservationIgnored private var lastAnswerFailed = false
     @ObservationIgnored private var writing: Task<Void, Never>?
     /// What the requests made while a write ran ask for after it.
     @ObservationIgnored private var queued: (reason: WidgetFeed.WriteReason, unchanged: Bool)?
@@ -135,8 +137,9 @@ final class WidgetFeedWriter {
 
     /// Asks WidgetKit for the placed widgets when the answer in memory can't tell whether a
     /// section is shown (``WidgetFeed/needsPlacementAnswer(recordsHistory:readsDevices:placements:at:readers:)``).
-    /// A failure counts as every kind placed. With nothing placed that is every routine write, so
-    /// an answer logs at notice only when its counts change.
+    /// A failure counts as every kind placed. With nothing placed, or WidgetKit failing, that is
+    /// every routine write, so an answer logs at notice only when its counts change, and a failure
+    /// at error only when the question before it didn't fail.
     private func askForPlacementsIfNeeded(recordsHistory: Bool, readsDevices: Bool) async {
         guard
             WidgetFeed.needsPlacementAnswer(
@@ -148,6 +151,7 @@ final class WidgetFeedWriter {
             let counts = WidgetPlacements.counts(in: kinds)
             let changed = counts != answeredCounts
             answeredCounts = counts
+            lastAnswerFailed = false
             let level: OSLogType = changed ? .default : .debug
             Diagnostics.widget.log(
                 level: level,
@@ -156,8 +160,11 @@ final class WidgetFeedWriter {
         } catch {
             placements.recordFailure(at: .now)
             answeredCounts = nil
+            let level: OSLogType = lastAnswerFailed ? .debug : .error
+            lastAnswerFailed = true
             let error = error as NSError
-            Diagnostics.widget.error(
+            Diagnostics.widget.log(
+                level: level,
                 "Asking WidgetKit for the placed widgets failed (\(error.domain, privacy: .public) \(error.code)); the widget feed counts every kind as placed: \(error.localizedDescription)"
             )
         }
