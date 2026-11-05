@@ -281,8 +281,8 @@ question() {
     R2-small) echo "4|judge|Step 2's second half, the small widget (Automatic) after RC-U's install over $BASE_VERSION and the desktop click, against its -before.png: 1 the same layout with fresh values, 2 blank or grey, 3 gone, 4 different (note)" ;;
     R2-medium) echo "4|judge|Step 2's second half, the medium widget set to Custom under $BASE_VERSION, after RC-U's install: 1 its choices kept, with fresh values, 2 blank or grey, 3 gone, 4 different (note: choices lost?)" ;;
     R2-large) echo "4|judge|Step 2's second half, the large widget placed under $BASE_VERSION (Automatic), after RC-U's install: 1 the History chart in place of the last two rows, 2 blank or grey, 3 gone, 4 different (note: the eight rows kept?)" ;;
-    R2-whats-new-070 | R2-whats-new-071)
-      if [ "$1" = R2-whats-new-070 ]; then rest="$BASE_VERSION's, from $START_VERSION: three rows and the version count's row"; else rest="$RC_VERSION's, from $BASE_VERSION"; fi
+    R2-whats-new-base | R2-whats-new-rc)
+      if [ "$1" = R2-whats-new-base ]; then rest="$BASE_VERSION's, from $START_VERSION: three rows and the version count's row"; else rest="$RC_VERSION's, from $BASE_VERSION"; fi
       echo "yn|judge|What's New after the update ($rest), at 520 points, in English and in Russian: every row and its text readable, nothing cut"
       ;;
     R3-large | R3-accessories-small | R3-accessories-medium | R3-accessories-large | R3-history-medium | R3-history-large | \
@@ -357,7 +357,7 @@ questions_list() {
     R)
       echo R-yes R-back R-keep-ax R-keep-widgets R-usage
       echo prep-charge-limit prep-widget-style prep-dim-widgets prep-open-at-login prep-widgets R-capacity-start
-      echo R2-062-small R2-062-medium R2-whats-new-070 R-feed-before R2-small R2-medium R2-large R2-whats-new-071
+      echo R2-062-small R2-062-medium R2-whats-new-base R-feed-before R2-small R2-medium R2-large R2-whats-new-rc
       echo R3-large R3-accessories-small R3-accessories-medium R3-accessories-large R3-history-medium R3-history-large
       echo R3-devices-small R3-devices-medium R3-devices-large R-feed-history R-feed-cold
       echo R4-1-chooser R4-1-shows R4-2-kept R4-3-sheet R4-3-widgets R4-5-automatic R4-6-history R4-6-device
@@ -373,7 +373,7 @@ questions_list() {
     H) echo H-yes H-usage H-hold H-send ;;
     D3) echo D3-yes D3-usage D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications D3-feed D3-capacity D3-count D3-first-day D3-send ;;
     F)
-      echo F-yes F-usage F-keep-widgets prep-widgets R-feed-before R2-small R2-medium R2-large R3-history-medium R3-devices-small
+      echo F-yes F-usage F-keep-widgets R-feed-before R2-small R2-medium R2-large R3-history-medium R3-devices-small
       echo R-feed-history R-feed-cold R4-3-widgets R4-6-device R8-history R8-device F-send
       ;;
   esac
@@ -2971,8 +2971,8 @@ step_whats_new() {
   local version previous id rect width file
   version="$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)"
   case "$version" in
-    "$BASE_VERSION") previous="$START_VERSION" id=R2-whats-new-070 ;;
-    "$RC_VERSION") previous="$BASE_VERSION" id=R2-whats-new-071 ;;
+    "$BASE_VERSION") previous="$START_VERSION" id=R2-whats-new-base ;;
+    "$RC_VERSION") previous="$BASE_VERSION" id=R2-whats-new-rc ;;
     *) fail "What's New is checked after the update to $BASE_VERSION or $RC_VERSION; $version is installed" ;;
   esac
   use_section 12-whats-new "What's New after each update (W-17 item 11)"
@@ -3484,7 +3484,8 @@ widget_entitlements() {
     ENTITLEMENTS="unread (codesign -d --entitlements of $(basename "$WIDGET_APPEX"))"
     return 0
   fi
-  sandbox="$(awk '/<key>com\.apple\.security\.app-sandbox<\/key>/ { getline; print (index($0, "<true/>") ? "yes" : "no"); exit }' "$file")"
+  # The value on the key's line or the next (plutil writes it on the next).
+  sandbox="$(awk '/<key>com\.apple\.security\.app-sandbox<\/key>/ { if (!index($0, "<true/>")) getline; print (index($0, "<true/>") ? "yes" : "no"); exit }' "$file")"
   paths="$(awk -v key="<key>$FEED_EXCEPTION_KEY</key>" 'index($0, key) { inside = 1; next }
     inside && /<\/array>/ { exit } inside && /<string>/ { s = $0; sub(/.*<string>/, "", s); sub(/<\/string>.*/, "", s); print s }' "$file")"
   others="$(grep -o '<key>[^<]*</key>' "$file" | sed 's/<[^>]*>//g' |
@@ -3499,6 +3500,7 @@ widget_entitlements() {
 # sum of the rejections and failures.
 FEED_LOGS=""
 FEED_TROUBLE=0
+FEED_READS=unknown
 feed_logs_since() {
   local since="$1" lines reads stream=""
   log_since "$since" "$WIDGET_PREDICATE AND eventMessage CONTAINS \"widget feed\"" "$LOGS/feed-since.ndjson" >/dev/null
@@ -3510,7 +3512,8 @@ feed_logs_since() {
   else
     reads="unknown (no stream)"
   fi
-  FEED_LOGS="since $since: writes $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }')), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//')), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o 'failed: errno [0-9]*' <<<"$lines" | sort -u | tr '\n' ' ' | sed 's/ $//'))"
+  FEED_READS="${reads%% *}"
+  FEED_LOGS="since $since: writes $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true)), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o 'failed: errno [0-9]*' <<<"$lines" | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
 }
 
 # feed_denials_since <time>: the sandbox's denials of BatteryPulseWidget since then, counted (all,
@@ -3694,6 +3697,7 @@ step_feed() {
         fi
         out "- the first History widget: $(cat "$WORK/first-history.time" 2>/dev/null || echo "not recorded") ($minutes minutes ago)"
         [ "${FEED_DENIALS:-0}" = 0 ] || note="${note:+$note; }$FEED_DENIALS sandbox denials"
+        [ "$FEED_READS" != 0 ] || note="${note:+$note; }the widget logged no read of it since $since"
         if [ -z "$note" ]; then feed_verdict R-feed-history y "every rule kept; the widget's reads: see the section"; else
           feed_verdict R-feed-history n "$note"
         fi
@@ -4443,7 +4447,7 @@ restore_all() {
 # language, on the Mac only): an ALERT per setting not confirmed back, then every setting the
 # session changed with how it was confirmed, and the Focus.
 step_summary() {
-  r_only summary
+  rf_only summary
   local setting phase="${1:-gui}" line
   for setting in $(changed_settings); do
     [ "$phase" = end ] || [ "$(restore_phase "$setting")" = gui ] || continue
@@ -5400,8 +5404,12 @@ case "$COMMAND:${1:-}" in
 esac
 case "$COMMAND" in
   prepare)
-    r_only prepare
-    if [ "${1:-}" = reads ]; then run_step step_prepare_reads; else step_prepare_r "$@"; fi
+    case "$SESSION:${1:-}" in
+      R:reads) run_step step_prepare_reads ;;
+      R:*) step_prepare_r "$@" ;;
+      F:*) step_prepare_f "$@" ;;
+      *) fail "prepare is Session R's or the feed check's: run it from ~/bp-071/R/run or ~/bp-071/F/run" ;;
+    esac
     ;;
   answer) step_answer "$@" ;;
   main) run_step step_main ;;

@@ -1,8 +1,9 @@
 #!/bin/bash
 # BatteryPulse's quick check after a macOS 27.x update (about 5 minutes, by hand; ROADMAP's NEW-22).
 # A macOS update can move what BatteryPulse reads: the accessories' power sources, the Charge
-# Limit's bit in NotChargingReason, the registry the Raw Data page shows. Run it a few minutes after
-# each update, from the checkout, with BatteryPulse running:
+# Limit's bit in NotChargingReason, the registry the Raw Data page shows, and the widget's one
+# read-only sandbox exception, which Apple calls temporary, so an update may narrow it. Run it a few
+# minutes after each update, from the checkout, with BatteryPulse running:
 #
 #   bash scripts/quick-check.sh
 #
@@ -14,9 +15,13 @@
 #      24, or bit 24 without a limit, is printed as a CHECK line: the bit may have moved;
 #    - the accessories: `bpulse --accessories --raw` and `pmset -g accps -xml` side by side, as
 #      counts of power sources other than the Mac's own battery. pmset writes one property list per
-#      source, back to back, and plutil reads only the first, so each is counted on its own.
-# 2. Four questions, each "y = looks right" (n says what, s skips): the Devices page, the
-#    Accessories page, the Raw Data page and the desktop widget.
+#      source, back to back, and plutil reads only the first, so each is counted on its own;
+#    - the widget's feed (Widget/feed.json in BatteryPulse's Application Support folder, which the
+#      History and iPhone & iPad widgets read): its age, modes and version, never a name, and the
+#      rejections and failures the widget logged since the last restart (the update's), which is
+#      where a narrowed exception shows first (errno 1, the sandbox's denial).
+# 2. Five questions, each "y = looks right" (n says what, s skips): the Devices page, the
+#    Accessories page, the Raw Data page, the desktop widget, and a History or iPhone & iPad widget.
 #
 # The report goes to the terminal and to ~/bp-quick-check/<macOS build>-<time>.md, on this Mac
 # only. It holds counts, numbers and his answers: never an accessory's or a device's name, and no
@@ -24,6 +29,7 @@
 set -euo pipefail
 
 APP="/Applications/BatteryPulse.app"
+FEED="$HOME/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/feed.json"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BPULSE="$ROOT/.build/release/bpulse"
 
@@ -224,12 +230,45 @@ if [ -x "$BPULSE" ]; then
   fi
 fi
 
+out ""
+out "## The widget's feed"
+out ""
+if [ -f "$FEED" ]; then
+  written="$(grep -o '"writtenAt":[0-9.]*' "$FEED" | head -1 | cut -d: -f2 | cut -d. -f1 || true)"
+  version="$(grep -o '"version":[0-9]*' "$FEED" | head -1 | cut -d: -f2 || true)"
+  age=-
+  if [ -n "$written" ]; then age=$(($(date +%s) - written)); fi
+  out "- feed.json: $(stat -f %Lp "$FEED") in a $(stat -f %Lp "$(dirname "$FEED")") folder (expected 600 and 700), $(wc -c <"$FEED" | tr -d ' ') bytes, version ${version:--} (expected 1), written ${age} s ago"
+  if [ "$age" != - ] && [ "$age" -gt 7200 ]; then
+    out "- CHECK: written over two hours ago, so the History and iPhone & iPad widgets say Open BatteryPulse to update: is BatteryPulse running?"
+  fi
+else
+  out "- no feed.json: BatteryPulse 0.7.1 or later writes it while it runs"
+fi
+# The widget's reader and the app's writer log at notice, so log show keeps them; the restart is
+# the macOS update's.
+boot="$(sysctl -n kern.boottime 2>/dev/null | sed -n 's/.*sec = \([0-9][0-9]*\).*/\1/p')"
+if [ -n "$boot" ]; then
+  /usr/bin/log show --start "$(date -r "$boot" '+%Y-%m-%d %H:%M:%S')" --predicate \
+    'subsystem == "io.github.nikitausov.BatteryPulse" AND category == "widget" AND (eventMessage CONTAINS "widget feed was rejected" OR eventMessage CONTAINS "the widget feed failed")' \
+    >"$WORK/feed-log.txt" 2>/dev/null || true
+  rejected="$(grep -c -F 'widget feed was rejected' "$WORK/feed-log.txt" || true)"
+  failed="$(grep -c -F 'the widget feed failed' "$WORK/feed-log.txt" || true)"
+  out "- since the restart ($(date -r "$boot" '+%Y-%m-%d %H:%M')): $rejected rejections ($(grep -o 'widget feed was rejected: [a-zA-Z]*' "$WORK/feed-log.txt" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), $failed failures ($(grep -o 'errno [0-9]*' "$WORK/feed-log.txt" | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
+  if [ "$((rejected + failed))" -gt 0 ]; then
+    out "- CHECK: the widget couldn't use the feed (errno 1 is the sandbox's denial: the update may have narrowed the widget's exception): keep \`log show --last boot --predicate 'subsystem == \"io.github.nikitausov.BatteryPulse\" AND category == \"widget\"'\` for the next release"
+  fi
+else
+  out "- the restart's time can't be read (sysctl kern.boottime): the widget's feed lines aren't counted"
+fi
+
 echo
-echo "Now four questions. Open BatteryPulse's main window (its menu bar item, then Open BatteryPulse)."
+echo "Now five questions. Open BatteryPulse's main window (its menu bar item, then Open BatteryPulse)."
 ask devices "Devices: connect an iPhone or iPad by cable if one is at hand (else s). Does its page show its battery?"
 ask accessories "Accessories: does the page list the accessories macOS shows in the Bluetooth menu, with their levels?"
 ask raw-data "Raw Data: does the table fill, and does a search for NotChargingReason find its row?"
 ask widget "The desktop widget: does it show the same charge and state as the menu bar item (give it a minute)?"
+ask widget-feed "A History or iPhone & iPad widget, if one is placed (else s): does it show data, not Open BatteryPulse to update?"
 
 out ""
 out "## Looks right?"
