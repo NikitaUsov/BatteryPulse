@@ -117,12 +117,15 @@ public final class WidgetFeedStore: Sendable {
         }
     }
 
-    /// Makes the folder 0700, or sets an existing one so.
+    /// Makes the folder 0700, or sets an existing one so. A missing folder above it gets the
+    /// default modes, as the stores beside it make theirs: only `Widget` is made the user's alone,
+    /// whichever store writes first.
     private func prepareFolder() throws {
         let manager = FileManager.default
         guard let attributes = try? manager.attributesOfItem(atPath: directory.path) else {
+            try manager.createDirectory(at: directory.deletingLastPathComponent(), withIntermediateDirectories: true)
             try manager.createDirectory(
-                at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: Self.folderMode])
+                at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: Self.folderMode])
             return
         }
         // Read without following a link: a link in its place is refused, never written through.

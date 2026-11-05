@@ -45,6 +45,19 @@ import Testing
         #expect(try WidgetFeed.decode(data, now: WidgetFeedTests.now) == Self.feed())
     }
 
+    /// A folder above `Widget` that the store makes (BatteryPulse's own, when the feed is written
+    /// before the history) gets the modes any new folder gets, not the feed's.
+    @Test func theFoldersAboveKeepTheDefaultModes() throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        let plain = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: plain, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: plain) }
+        _ = try WidgetFeedStore(directory: directory).write(Self.feed())
+        #expect(try Self.mode(directory) == 0o700)
+        #expect(try Self.mode(directory.deletingLastPathComponent()) == Self.mode(plain))
+    }
+
     /// A folder made with the default modes, and a feed some earlier copy left readable by all:
     /// both become the user's alone at the next write.
     @Test func existingModesAreTightened() throws {
