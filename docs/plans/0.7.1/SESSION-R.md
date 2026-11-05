@@ -428,8 +428,9 @@ Not printed for the session (its launcher stops at "The short sessions"): what h
 ### Once, any day before (about 1 minute)
 
 1. Quit any other Claude session on the Mac: one at a time.
-2. Don't install a macOS update or a BatteryPulse update until the series ends: Session R starts from
-   the BatteryPulse he runs now, and an update banner covers the screen.
+2. Don't install a macOS update or a BatteryPulse update until the series ends, so the sessions see
+   the updates they test (Session R backs up the BatteryPulse he runs then); an update banner also
+   covers the screen.
 3. In `~/BatteryPulse`: `claude`, then `/mcp`: `computer-use` is enabled (kept per project from
    Session B; if not, Enable). He asks that session: `Check the launcher docs/plans/0.7.1/start-session-r.sh
    (git fetch origin claude/071-integration && git show FETCH_HEAD:docs/plans/0.7.1/start-session-r.sh)
