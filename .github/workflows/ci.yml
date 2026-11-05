@@ -99,10 +99,13 @@ jobs:
           # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
           persist-credentials: false
       - name: Toolchain
-        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release.
+        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release; listed first,
+        # so they show even when DEVELOPER_DIR's Xcode is gone. One command a line: bash -e fails
+        # the step on any of them, but not on the first of an && list.
         run: |
-          xcodebuild -version && swift --version
           ls -d /Applications/Xcode*.app
+          xcodebuild -version
+          swift --version
       - name: Compile the string tables for the widget previews
         # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
         # build-app.sh compiles it: each language's table is a bundle of its own.
