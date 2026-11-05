@@ -507,8 +507,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
        Clear History, recording off, device reads off and Forget take their part out of the feed
        last written at once, from the real settings and the real remembered devices, never the
        demo's values, and add, update or move nothing, `writtenAt` included
-       (`WidgetFeed.removing`, `WidgetFeedStore.rewrite`). Nothing else is written while the demo
-       runs. So a Demo Mode longer than 2 hours shows the widgets' "Open BatteryPulse to update"
+       (`WidgetFeed.removing`, `WidgetFeedStore.rewrite`); before the launch's first write, which
+       left no feed in memory to take a part out of, the file goes whole. Nothing else is written
+       while the demo runs. So a Demo Mode longer than 2 hours shows the widgets' "Open BatteryPulse to update"
        until it ends, when the write at once repairs it [inference].
      - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`, as it decides for the
        reloads: the answer is re-asked at a write moment once it is older than 15 minutes
