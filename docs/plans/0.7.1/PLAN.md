@@ -1644,6 +1644,11 @@ steps.
   **Recommendation: 1,** since it also reads the feed's modes and the widget's exception on the
   published build. **Default:** 1; 2 if you skip it.
 
+**The maintainer's answers** (2026-11-05, when the work started): **Q71-2:** 0.7.0, so step 2's first
+half runs from the v0.6.2 that `prepare` puts in place (W-17 item 1). **Q71-3:** 1, and from now on
+What's New for every version, a lasting decision that W-18 writes into ROADMAP's decisions.
+**Q71-4:** 1, the short session. Q71-1 waits until the session is due.
+
 Already decided, and only signed off in the looks: Q-W2 (the two kinds; the 90-day trend), Q-W4
 (placed large widgets get the chart), Q-W8 (a click opens the widget's page), Q-W11 (device names
 shown, `.privacySensitive()`), Q-W12 (°C).
