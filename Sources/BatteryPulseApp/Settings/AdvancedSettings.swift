@@ -13,13 +13,18 @@ struct AdvancedSettings: View {
     @AppStorage(AppSettings.recordHistoryKey) private var recordsHistory = true
     @AppStorage(AppSettings.readDevicesKey) private var readsDevices = false
     @Environment(IDeviceMonitor.self) private var devices
+    @Environment(WidgetFeedWriter.self) private var widgetFeed
     @State private var confirmsClearing = false
 
     var body: some View {
         Section {
             Toggle("Record battery history", isOn: $recordsHistory)
-                // The 5-minute reads of iPhones and iPads start or stop with it.
-                .onChange(of: recordsHistory) { devices.historySettingChanged() }
+                // The 5-minute reads of iPhones and iPads start or stop with it, and the widget's
+                // feed gains or drops the history at once.
+                .onChange(of: recordsHistory) {
+                    devices.historySettingChanged()
+                    widgetFeed.write(.recording)
+                }
             LabeledContent("Recorded history") {
                 Button("Clear History…", role: .destructive) { confirmsClearing = true }
                     // On the button that asks, not on the Section, which may give each of its
@@ -95,6 +100,7 @@ struct AdvancedSettings: View {
                 )
             }
             await devices.clearHistory()
+            widgetFeed.write(.historyCleared)
         }
     }
 }

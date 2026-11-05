@@ -17,6 +17,7 @@ struct BatteryPulseApp: App {
     @State private var updater: UpdateChecker
     private let historyRecorder: HistoryRecorder
     private let notifier: BatteryNotifier
+    private let widgetFeed: WidgetFeedWriter
     private let widgetRefresher: WidgetRefresher
     @State private var launchAtLogin = LaunchAtLoginModel()
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = true
@@ -38,12 +39,14 @@ struct BatteryPulseApp: App {
         accessories.start()
         self.accessories = accessories
         self.demo = DemoController(monitor: monitor, accessories: accessories)
-        historyRecorder = HistoryRecorder(monitor: monitor)
+        let widgetFeed = WidgetFeedWriter(monitor: monitor)
+        self.widgetFeed = widgetFeed
+        historyRecorder = HistoryRecorder(monitor: monitor, feed: widgetFeed)
         historyRecorder.start()
         AppDevices.start()
         notifier = BatteryNotifier(monitor: monitor, accessories: accessories)
         notifier.start()
-        widgetRefresher = WidgetRefresher(monitor: monitor, accessories: accessories)
+        widgetRefresher = WidgetRefresher(monitor: monitor, accessories: accessories, feed: widgetFeed)
         widgetRefresher.start()
         showsWelcome = AppSettings.shouldShowWelcomeAtLaunch
         // A menu-bar app starts quietly; without the menu bar item the window is the app.
@@ -161,6 +164,7 @@ struct BatteryPulseApp: App {
                 .environment(launchAtLogin)
                 .environment(updater)
                 .environment(AppDevices.monitor)
+                .environment(widgetFeed)
                 .motionPolicy()
         }
     }
