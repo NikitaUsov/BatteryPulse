@@ -8,19 +8,32 @@ import os
 
 /// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
 /// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
-/// read the battery and the accessories themselves; this only says when. Demo Mode never reaches
-/// the widgets.
+/// read the battery and the accessories themselves; this only says when. It also has the widget's
+/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``). Demo Mode never
+/// reaches the widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private let accessories: AccessoryMonitor
+    private let devices: IDeviceMonitor
+    private let feed: WidgetFeedWriter
     private var planner = WidgetReloadPlanner()
     private var placements = WidgetPlacements()
     private var batteryObservation: Task<Void, Never>?
     private var accessoryObservation: Task<Void, Never>?
+    private var deviceObservation: Task<Void, Never>?
+    /// The adapter as the feed was last told of it, outside Demo Mode.
+    private var feedPlugged: Bool?
+    /// Demo Mode was on at the last battery change: its end rewrites the feed.
+    private var feedSawDemo = false
 
-    init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
+    init(
+        monitor: BatteryMonitor, accessories: AccessoryMonitor, feed: WidgetFeedWriter,
+        devices: IDeviceMonitor = AppDevices.monitor
+    ) {
         self.monitor = monitor
         self.accessories = accessories
+        self.feed = feed
+        self.devices = devices
     }
 
     /// Evaluates every change of the battery and of the accessory list. The values at the start
@@ -33,9 +46,12 @@ final class WidgetRefresher {
             if let snapshot = monitor.snapshot { _ = planner.battery(snapshot, at: now) }
             _ = planner.accessories(accessories.accessories, at: now)
         }
+        feedSawDemo = monitor.isOverridden
+        if !feedSawDemo { feedPlugged = monitor.snapshot?.isExternalPowerConnected }
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
+                self.followBatteryForFeed()
                 await self.evaluateBattery()
             }
         }
@@ -45,6 +61,14 @@ final class WidgetRefresher {
                 await self.evaluateAccessories()
             }
         }
+        // A new reading, Forget, and reads turned on or off each change the remembered devices or
+        // the monitor's state; the writer skips a feed whose content didn't change.
+        deviceObservation = Task(name: "WidgetRefresher.devices") { [weak self, devices] in
+            for await _ in Observations({ (devices.remembered, devices.isEnabled) }).dropFirst() {
+                guard let self else { return }
+                self.feed.write(.devices)
+            }
+        }
     }
 
     func stop() {
@@ -52,6 +76,25 @@ final class WidgetRefresher {
         batteryObservation = nil
         accessoryObservation?.cancel()
         accessoryObservation = nil
+        deviceObservation?.cancel()
+        deviceObservation = nil
+    }
+
+    /// A plug change rewrites the feed at once, and so does the end of Demo Mode, whose readings
+    /// never count as a plug change.
+    private func followBatteryForFeed() {
+        guard !monitor.isOverridden else {
+            feedSawDemo = true
+            return
+        }
+        let plugged = monitor.snapshot?.isExternalPowerConnected
+        if feedSawDemo {
+            feedSawDemo = false
+            feed.write(.demoEnded)
+        } else if let plugged, let last = feedPlugged, plugged != last {
+            feed.write(.plug)
+        }
+        if let plugged { feedPlugged = plugged }
     }
 
     /// The app's effective language at its last launch (the first of
@@ -237,10 +280,10 @@ final class WidgetRefresher {
     }
 }
 
-/// WidgetKit's list of the placed widgets, as their kind strings. Nonisolated: `WidgetCenter`
-/// declares no `Sendable` conformance, so it is asked off the main actor, and only the strings
-/// come back.
-private nonisolated enum PlacedWidgets {
+/// WidgetKit's list of the placed widgets, as their kind strings, for the reloads and the feed.
+/// Nonisolated: `WidgetCenter` declares no `Sendable` conformance, so it is asked off the main
+/// actor, and only the strings come back.
+nonisolated enum PlacedWidgets {
     @concurrent static func kinds() async throws -> [String] {
         try await WidgetCenter.shared.currentConfigurations().map(\.kind)
     }

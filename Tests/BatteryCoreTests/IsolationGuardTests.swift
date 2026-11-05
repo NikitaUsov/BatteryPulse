@@ -63,10 +63,13 @@ import Testing
             declaration: "private nonisolated static let extensionExecutable",
             reason: "the scan reads it off the main actor, and a static of a main-actor type is main-actor"),
         OffMain(
-            path: "BatteryPulseApp/App/WidgetRefresher.swift", declaration: "private nonisolated enum PlacedWidgets",
+            path: "BatteryPulseApp/App/WidgetRefresher.swift", declaration: "nonisolated enum PlacedWidgets",
             reason:
-                "its @concurrent function asks WidgetKit for the placed widgets off the main actor, so the WidgetCenter it calls never crosses actors"
+                "its @concurrent function asks WidgetKit for the placed widgets off the main actor, for the reloads and the feed, so the WidgetCenter it calls never crosses actors"
         ),
+        OffMain(
+            path: "BatteryPulseApp/App/WidgetFeedWriter.swift", declaration: "private nonisolated enum FeedBuild",
+            reason: "the widget feed reads the history and builds off the main actor"),
         OffMain(
             path: "BatteryPulseApp/MenuBar/BatteryIconView.swift",
             declaration: "private nonisolated final class AppearanceVariants",
