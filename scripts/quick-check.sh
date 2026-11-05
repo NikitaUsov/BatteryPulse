@@ -246,15 +246,16 @@ else
   out "- no feed.json: BatteryPulse 0.7.1 or later writes it while it runs"
 fi
 # The widget's reader and the app's writer log at notice, so log show keeps them; the restart is
-# the macOS update's.
+# the macOS update's. Only the entries count: log's first line repeats the predicate ("Filtering
+# the log data using ..."), and with it both phrases.
 boot="$(sysctl -n kern.boottime 2>/dev/null | sed -n 's/.*sec = \([0-9][0-9]*\).*/\1/p')"
 if [ -n "$boot" ]; then
-  /usr/bin/log show --start "$(date -r "$boot" '+%Y-%m-%d %H:%M:%S')" --predicate \
+  /usr/bin/log show --start "$(date -r "$boot" '+%Y-%m-%d %H:%M:%S')" --style ndjson --predicate \
     'subsystem == "io.github.nikitausov.BatteryPulse" AND category == "widget" AND (eventMessage CONTAINS "widget feed was rejected" OR eventMessage CONTAINS "the widget feed failed")' \
-    >"$WORK/feed-log.txt" 2>/dev/null || true
+    2>/dev/null | grep '^{' | grep -v '"finished"' >"$WORK/feed-log.txt" || true
   rejected="$(grep -c -F 'widget feed was rejected' "$WORK/feed-log.txt" || true)"
   failed="$(grep -c -F 'the widget feed failed' "$WORK/feed-log.txt" || true)"
-  out "- since the restart ($(date -r "$boot" '+%Y-%m-%d %H:%M')): $rejected rejections ($(grep -o 'widget feed was rejected: [a-zA-Z]*' "$WORK/feed-log.txt" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), $failed failures ($(grep -o 'errno [0-9]*' "$WORK/feed-log.txt" | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
+  out "- since the restart ($(date -r "$boot" '+%Y-%m-%d %H:%M')): $rejected rejections ($(grep -o 'widget feed was rejected: [a-zA-Z][a-zA-Z]*' "$WORK/feed-log.txt" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), $failed failures ($(grep -o -E '(errno|code) -?[0-9]+' "$WORK/feed-log.txt" | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
   if [ "$((rejected + failed))" -gt 0 ]; then
     out "- CHECK: the widget couldn't use the feed (errno 1 is the sandbox's denial: the update may have narrowed the widget's exception): keep \`log show --last boot --predicate 'subsystem == \"io.github.nikitausov.BatteryPulse\" AND category == \"widget\"'\` for the next release"
   fi

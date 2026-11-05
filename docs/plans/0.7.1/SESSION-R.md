@@ -149,7 +149,9 @@ prints this file up to "The short sessions"; the session it starts, you, begins 
      unless he keeps them); a Bluetooth accessory disconnected and reconnected by an AX press; the
      appearance and a plain wallpaper for the menu bar shots (put back by the tool, read back).
    - What the end keeps and removes: the logged day's history stays; the widget feed the candidate
-     writes (`Widget/feed.json`) goes with the rest of the session's data.
+     writes (`Widget/feed.json`) goes with the rest of the session's data. Near the GUI phase's end
+     the session clears BatteryPulse's history once; his comes back from the backup for the logged
+     day (the GUI phase's own hours go).
    - Never: the Charge Limit, a VPN, anything in Privacy & Security, Users & Groups or Passwords.
    - The questions: when is he back at the Mac (else 4 hours from now; the GUI phase ends 10 minutes
      before)? Keep Terminal's Accessibility after Session R (else a reminder at the end)? Keep the
@@ -405,13 +407,15 @@ minutes).
    with his settings and data (his history kept, the candidate's feed removed); his remembered
    iPhones and iPads hidden until then; BatteryPulse's language for one look; a large, a History and
    an iPhone & iPad widget from the gallery (removed at the end unless he keeps them); the medium
-   widget's choices for a while. On his yes: `$S answer --by person F-yes y`, `F-usage`,
-   `F-keep-widgets`.
-2. `$S prepare` as a background task, waited on with `$S wait 9` (the backup, RC-U, the tools).
+   widget's choices for a while; the display kept on until the end. On his yes: `$S answer --by
+   person F-yes y`, `F-usage`, `F-keep-widgets`.
+2. `$S prepare` as a background task, waited on with `$S wait 9` (the backup, RC-U, the tools, and a
+   display assertion that `restore end` ends: there is no arm window).
 3. At its beep, ask him to quit his apps, the Claude desktop app among them, and to choose Later for
    a pending macOS update. `$S preflight` (its DO lines to him); **`$S main`,** then the one
    computer-use access request; `$S proof P1 ...` at his small or medium widget, `$S widget small
-   ...` and `$S widget medium ...`, `$S desktop-spot ...`.
+   ...` and `$S widget medium ...` (one he hasn't placed: from the gallery, `change desktop-widgets`
+   first), `$S desktop-spot ...`.
 4. `$S feed before`. Step 2's second half as R1 step 3 does it, on his widgets (the medium one's
    Custom choices, with `change widget-choices "<his, from its sheet>" Custom` first and his back at
    step 9; a large widget; `placed second before`, `install U`, What's New closed by `$S ui press
@@ -457,7 +461,7 @@ item goes to his batch at the day's end. Never guess: unsure is `--unsure`.
 | `R9b-*` | Charged to limit on Overview, the popover and the compact window, Charge limit: Reached on Power; in Russian the catalog's terms | `--unsure` |
 | `R-settings` | each pane's end in its shot: the last row's control whole and reachable; a pane that fits shows no scroll bar | `--unsure` |
 | `V01-menubar` | the item legible on the light and the dark bar, not clipped | `--unsure` |
-| `R-menu-bar-same` | 1 the script's diff found every pair identical; else 2, naming the pairs it lists | `--unsure` |
+| `R-menu-bar-same` | each pair it lists, BatteryPulse's item alone (the clock, the system's items and the charge change between the runs): 1 drawn the same in every pair; 2 naming the pairs that differ | `--unsure` |
 | `R-raw-history-rc` | 1 History at once; 2 History's title over Raw Data's table first (how long: 0.3 s, 2 s, 8 s) | 3 |
 | `F12-widget`, `F12-new-kinds` | before against after: 1 same (the new kinds: their last picture kept), 2 blank or grey, 3 gone, 4 different | `--unsure` |
 | `R-*` (his) | his answers | `R-back` 4 hours after the start; `R-keep-ax` n; `R-keep-widgets` n; `R-send` n (nothing is sent) |

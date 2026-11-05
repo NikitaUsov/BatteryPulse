@@ -326,7 +326,7 @@ question() {
     R9b-settings-ru) echo "3|judge|Step 9b, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
     R-settings) echo "yn|judge|Settings on the Air's display (S-1): every Settings pane and the Welcome window, scrolled to its end: the last row's control reachable; a pane that fits shows no scroll bar and doesn't move (n names the pane)" ;;
     V01-menubar) echo "yn|judge|The menu bar item on a light and on a dark menu bar (the crops): legible, not clipped" ;;
-    R-menu-bar-same) echo "2|judge|menu-bar-shots before ($START_VERSION's painter) against after (RC-U's), each look and style: 1 identical pixel for pixel, 2 they differ (which; a charge that moved between them is a note)" ;;
+    R-menu-bar-same) echo "2|judge|menu-bar-shots before ($START_VERSION's painter) against after (RC-U's), each look and style: 1 BatteryPulse's item drawn the same (the clock, the system's items and a charge that moved between them aside), 2 it differs (which)" ;;
     R-raw-history-rc)
       echo "3|judge|A pointer-free switch from Raw Data to History (rc): 1 History at once, 2 History's title over Raw Data's table first (for how long), 3 something else (note)"
       ;;
@@ -1284,11 +1284,11 @@ open_pane() { track_launch "System Settings" open "$(pane_url "$1")"; }
 
 # The background processes the script leaves running (the GUI phase's and the logged day's log
 # streams, bpulse --record), by their pid files, checked against their command lines.
-LEFTOVERS="gui-stream day-stream record"
+LEFTOVERS="gui-stream day-stream record awake"
 leftover_running() {
   local pid what
   pid="$(cat "$WORK/$1.pid" 2>/dev/null || true)"
-  case "$1" in *-stream) what="log stream" ;; *) what="--record" ;; esac
+  case "$1" in *-stream) what="log stream" ;; awake) what="caffeinate -d" ;; *) what="--record" ;; esac
   [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && ps -o args= -p "$pid" 2>/dev/null | grep -q -F -- "$what"
 }
 
@@ -2292,7 +2292,8 @@ step_prepare_r() {
 # prepare [--fresh-backup] (the feed check's start, a background task): the backup into
 # ~/bp-071/F, RC-U and the CI renders, the tools, his remembered devices out of sight, his own
 # 0.7.0 relaunched with the session's settings (step 2's second half updates it), the GUI stream
-# for the widget's reads, then a beep. Only on his 0.7.0 and after his yes (F-yes).
+# for the widget's reads, the display kept awake until restore end, then a beep. Only on his 0.7.0
+# and after his yes (F-yes).
 step_prepare_f() {
   # A second prepare, after the session changed the app, keeps going.
   if [ -z "$(original_of app)" ]; then
@@ -2310,6 +2311,7 @@ step_prepare_f() {
   prepare_changes "the release candidate RC-U"
   relaunch_r
   gui_stream_start
+  awake_start
   sound Glass
   echo "BEEP (prepare is done): when he is back and has quit his own apps: $SCRIPT preflight"
 }
@@ -2443,6 +2445,8 @@ holder_is_ours() {
   path="$(ps -o comm= -p "$pid" 2>/dev/null || true)"
   # Gone since pmset listed it: its assertion went with it.
   [ -n "$path" ] || return 0
+  # The feed check's own display assertion (awake_start), detached from the script that started it.
+  if [ "$pid" = "$(cat "$WORK/awake.pid" 2>/dev/null || true)" ]; then return 0; fi
   claude="$(claude_pids)"
   if grep -qx -- "$pid" <<<"$claude"; then return 0; fi
   parent="$pid"
@@ -2800,6 +2804,22 @@ stream_start() {
   disown "$pid" 2>/dev/null || true
   sleep 2
   echo "the $1 runs (pid $pid) into $2"
+}
+
+# awake_start: the feed check's display assertion, which Session R's arm window keeps for its GUI
+# phase and the arm-less feed check needs as much (an hour hands-free, a 5-minute wait in step 2,
+# the display off and the screen locked otherwise): caffeinate -d -i for at most 2.5 hours,
+# detached, its pid in awake.pid. restore end (stop_leftovers) ends it; keepawake_check counts it as
+# the script's own.
+awake_start() {
+  if leftover_running awake; then
+    echo "the display assertion runs already (pid $(cat "$WORK/awake.pid"))"
+    return 0
+  fi
+  nohup caffeinate -d -i -t 9000 >/dev/null 2>&1 </dev/null &
+  echo "$!" >"$WORK/awake.pid"
+  disown "$!" 2>/dev/null || true
+  echo "the display stays awake until restore end, at most 2.5 hours (caffeinate pid $(cat "$WORK/awake.pid"))"
 }
 
 # stream_stop <name>: ends it the way Control-C does.
@@ -3502,15 +3522,18 @@ widget_entitlements() {
 # feed_logs_since <time>: BatteryPulse's own feed lines since then, as counts, into FEED_LOGS: the
 # app's writes and their reasons and the widget's rejections and open failures (`log show`: notice
 # lines), and the widget's reads (debug lines, only in this session's stream). FEED_TROUBLE is the
-# sum of the rejections and failures.
+# sum of the rejections and failures, FEED_REASONS the reasons of the immediate writes logged
+# (WidgetFeed.WriteReason's case names, one per word: `devices`, `historyCleared`, ...).
 FEED_LOGS=""
 FEED_TROUBLE=0
 FEED_READS=unknown
+FEED_REASONS=""
 feed_logs_since() {
   local since="$1" lines reads stream=""
   log_since "$since" "$WIDGET_PREDICATE AND eventMessage CONTAINS \"widget feed\"" "$LOGS/feed-since.ndjson" >/dev/null
   lines="$(messages "$LOGS/feed-since.ndjson")"
   FEED_TROUBLE="$(grep -c -E 'widget feed was rejected|widget feed failed' <<<"$lines" || true)"
+  FEED_REASONS="$(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort -u | tr '\n' ' ' || true)"
   if [ -s "$GUI_STREAM" ]; then stream="$GUI_STREAM"; fi
   if [ -n "$stream" ]; then
     reads="$(entries "$stream" | awk -F '\t' -v s="$since" '$1 >= s && $2 == "BatteryPulseWidget" && index($3, "Read the widget feed") { n++ } END { print n + 0 }')"
@@ -3518,7 +3541,7 @@ feed_logs_since() {
     reads="unknown (no stream)"
   fi
   FEED_READS="${reads%% *}"
-  FEED_LOGS="since $since: writes $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true)), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o 'failed: errno [0-9]*' <<<"$lines" | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
+  FEED_LOGS="since $since: writes $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true)), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o -E 'failed: (errno|code) -?[0-9]+' <<<"$lines" | sed 's/^failed: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
 }
 
 # feed_denials_since <time>: the sandbox's denials of BatteryPulseWidget since then, counted (all,
@@ -3613,10 +3636,13 @@ set_reads() {
 #               never with an iPhone or iPad on a cable): rewritten at once     R-feed-reads
 #   cleared     after Clear History on the session's own data (change history
 #               first): rewritten at once, with an empty day                    R-feed-cleared
+# A rewrite "at once" is a writtenAt after the press (the history change's record for cleared), or
+# the app's own line for it (Wrote the widget feed (devices), (historyCleared)) since the last run,
+# so a slow computer-use clear or a toggle by computer use still reads as what it was.
 #   check       after publishing: the modes, the version, the exception         D3-feed
 # Never Forget a device: the devices are his.
 step_feed() {
-  local moment="${1:-}" since facts problems="" age written threshold pressed before mtime note value start minutes
+  local moment="${1:-}" since facts problems="" age written threshold pressed before mtime note value start minutes at
   case "$SESSION:$moment" in
     R:before | R:history | R:cold | R:demo-start | R:demo-end | R:reads-on | R:reads-off | R:cleared) ;;
     F:before | F:history | F:cold | D3:check) ;;
@@ -3626,25 +3652,35 @@ step_feed() {
   use_section 25-feed "The widget's feed (G71-2; W-17 item 7)"
   since="$(feed_run | cut -f1)"
   [ -n "$since" ] || since="$(cat "$WORK/prepare.time" 2>/dev/null || clock)"
-  # A rewrite "at once" is one written in the last minute, or after this call's own press.
+  # A rewrite "at once" is one written in the last minute, after this call's own press, or after
+  # the history change's record.
   threshold=$(($(date +%s) - 60))
   case "$moment" in
-    reads-on)
-      [ "$(usb_device_count)" = 0 ] || {
-        not_checked R-feed-reads "an iPhone or iPad is on a cable: reads stay off, so none of his is read and remembered"
+    reads-on | reads-off)
+      if [ "$moment" = reads-on ]; then
+        [ "$(usb_device_count)" = 0 ] || {
+          not_checked R-feed-reads "an iPhone or iPad is on a cable: reads stay off, so none of his is read and remembered"
+          return 0
+        }
+        [ -n "$(original_of remembered-devices)" ] || record_change remembered-devices none "none during the GUI phase"
+      fi
+      # No run is recorded until the toggle moved, so the rerun reads the app's line since the run before.
+      if ! pressed="$(set_reads "${moment#reads-}")"; then
+        echo "DO (session): the AX press didn't reach the toggle: turn Read iPhone and iPad batteries ${moment#reads-} in BatteryPulse's Settings → General by computer use, then $SCRIPT feed $moment again"
         return 0
-      }
-      [ -n "$(original_of remembered-devices)" ] || record_change remembered-devices none "none during the GUI phase"
-      pressed="$(set_reads on)" || echo "DO (session): the AX press didn't reach the toggle: turn on Read iPhone and iPad batteries in BatteryPulse's Settings → General by computer use, then $SCRIPT feed reads-on again"
-      [ -z "$pressed" ] || threshold="$pressed"
-      ;;
-    reads-off)
-      pressed="$(set_reads off)" || echo "DO (session): turn off Read iPhone and iPad batteries by computer use (Settings → General), then $SCRIPT feed reads-off again"
+      fi
       [ -z "$pressed" ] || threshold="$pressed"
       ;;
     cleared)
-      [ -n "$(original_of history)" ] ||
-        warn "Clear History's change isn't recorded ($SCRIPT change history \"his, in the backup\" cleared, before the clear): restore gui puts his history back only with it"
+      # Recorded now if the session didn't before the clear: the backup holds his history either
+      # way, and only this record makes restore gui put it back (and restore end keep the backup's).
+      if [ -z "$(original_of history)" ]; then
+        warn "Clear History's change wasn't recorded before the clear: recorded now, so restore gui puts his history back from the backup"
+        record_change history "his, in the backup" cleared
+      fi
+      at="$(awk -F '\t' '$1 == "history" { t = $4 } END { print t }' "$CHANGES")"
+      at="$(date -j -f '%Y-%m-%d %H:%M:%S' "$at" +%s 2>/dev/null || echo "$threshold")"
+      if [ "$at" -lt "$threshold" ]; then threshold="$at"; fi
       ;;
     cold)
       end_widget_extension_and_wait >/dev/null
@@ -3725,10 +3761,14 @@ step_feed() {
       fi
       ;;
     reads-on | reads-off)
+      # The toggle's own write, logged since the last run, with readsDevices as asked now.
+      if [ "$value" != rewritten ] && [ "reads=$(fact "$facts" reads)" = "reads=$(if [ "$moment" = reads-on ]; then echo true; else echo false; fi)" ]; then
+        case " $FEED_REASONS " in *" devices "*) value="rewritten (the app's devices write since $since)" ;; esac
+      fi
       out "- $moment: $value"
       echo "$moment $value" >>"$WORK/feed-reads.txt"
       if [ "$moment" = reads-off ]; then
-        if grep -q '^reads-on rewritten' "$WORK/feed-reads.txt" 2>/dev/null && [ "$value" = rewritten ]; then
+        if grep -q '^reads-on rewritten' "$WORK/feed-reads.txt" 2>/dev/null && case "$value" in rewritten*) true ;; *) false ;; esac; then
           feed_verdict R-feed-reads y "rewritten at once on and off"
         else
           feed_verdict R-feed-reads n "$(tr '\n' ';' <"$WORK/feed-reads.txt" | sed 's/;$//; s/;/; /g')"
@@ -3736,8 +3776,11 @@ step_feed() {
       fi
       ;;
     cleared)
-      if [ "$value" = rewritten ] && [ "$(fact "$facts" days)" -le 1 ] 2>/dev/null; then
-        feed_verdict R-feed-cleared y "rewritten at once, $(fact "$facts" days) steps of the day with a charge"
+      if [ "$value" != rewritten ]; then
+        case " $FEED_REASONS " in *" historyCleared "*) value="rewritten (the app's historyCleared write since $since)" ;; esac
+      fi
+      if case "$value" in rewritten*) true ;; *) false ;; esac && [ "$(fact "$facts" days)" -le 1 ] 2>/dev/null; then
+        feed_verdict R-feed-cleared y "$value, $(fact "$facts" days) steps of the day with a charge"
       else
         feed_verdict R-feed-cleared n "$value, $(fact "$facts" days) steps of the day with a charge"
       fi
@@ -3780,16 +3823,20 @@ feed_cold_verdict() {
 # MARK: - Maximum capacity against macOS's (W-17 item 18), crashes and faults, the front window
 
 # battery_key <capture> <key> data|top: a key of AppleSmartBattery in a `bpulse --raw` capture,
-# looked for in its BatteryData first (data) or at its top (top), then in the other; "-" when
-# neither holds it.
+# looked for in its BatteryData first (data) or at its top (top), then in the other, then in its
+# registry children's BatteryData and its LifetimeData, the pack's first: on macOS 27 the M5 keeps
+# AppleRawMaxCapacity and LifetimeData.CycleCountLastQmax only there (the m5-macos27-* fixtures
+# with children); "-" when none holds it.
 battery_key() {
-  local first="AppleSmartBattery.BatteryData.$2" second="AppleSmartBattery.$2" swap
-  if [ "$3" = top ]; then
-    swap="$first"
-    first="$second"
-    second="$swap"
-  fi
-  plutil -extract "$first" raw -o - "$1" 2>/dev/null || plutil -extract "$second" raw -o - "$1" 2>/dev/null || echo -
+  local path child paths="BatteryData.$2 $2"
+  if [ "$3" = top ]; then paths="$2 BatteryData.$2"; fi
+  for child in 0 1 2 3; do
+    paths="$paths IORegistryEntryChildren.$child.BatteryData.$2 IORegistryEntryChildren.$child.BatteryData.LifetimeData.$2"
+  done
+  for path in $paths; do
+    plutil -extract "AppleSmartBattery.$path" raw -o - "$1" 2>/dev/null && return 0
+  done
+  echo -
 }
 
 # percent_of <part> <whole>: part / whole in percent, to two places, or "-".
@@ -3954,7 +4001,7 @@ step_menubar() {
 # painter it is), after on the candidate (the extras), then each after shot against its before shot.
 step_menu_bar_shots() {
   r_only menu-bar-shots
-  local file pair same=0 differ=0 missing=0
+  local file pair same=0 differ=0 missing=0 compared
   case "${1:-}" in before | after) ;; *) fail "usage: $SCRIPT menu-bar-shots before | after [--charge] [--looks <list>]" ;; esac
   run_menu_bar_shots "$@" || fail "menu-bar-shots.sh didn't finish (logs/menubar-$1.txt), or prepare didn't read the appearance or the wallpaper"
   relaunch_r
@@ -3965,14 +4012,20 @@ step_menu_bar_shots() {
     pair="$SHOTS/menubar/before-${file#"$SHOTS"/menubar/after-}"
     if [ ! -f "$pair" ]; then
       missing=$((missing + 1))
-    elif grep -q 'identical=yes' <<<"$("$BIN/frames" diff "$pair" "$file" 2>/dev/null || true)"; then
+      continue
+    fi
+    compared="$("$BIN/frames" diff "$pair" "$file" 2>/dev/null || true)"
+    if grep -q 'identical=yes' <<<"$compared"; then
       same=$((same + 1))
     else
       differ=$((differ + 1))
-      echo "LOOK $pair against $file"
+      echo "LOOK $pair against $file ($(sed -n 's/.*changed_pct=\([^ ]*\).*/\1/p' <<<"$compared" | head -1) % of its pixels changed)"
     fi
   done
-  out "- after against before, per look and style: $same identical, $differ different, $missing without a before shot"
+  # The crops are the right half of the menu bar: the clock, the system's battery item and a charge
+  # that moved change between the two runs hours apart, so a pair that differs is read by eye, its
+  # BatteryPulse item against the other's.
+  out "- after against before, per look and style: $same identical, $differ with changed pixels (the clock and the system's items are in each crop: BatteryPulse's item is compared by eye), $missing without a before shot"
   ask R-menu-bar-same
 }
 
@@ -5250,6 +5303,16 @@ dry_run() {
   [ "$(feed_facts "$WORK/no-feed.json")" = missing ] && check ok "no feed reads as missing" || check fail "a missing feed isn't missing"
   [ "$(percent_of 5711 5760)" = 99.15 ] && [ "$(percent_of - 5760)" = - ] && check ok "capacity's ratio reads as the plan's 99.15 %" ||
     check fail "capacity's ratio is wrong"
+  # The capture's keys where macOS 27 keeps them (plutil is macOS's: a Mac's dry run reads them).
+  feed="$ROOT/Tests/BatteryCoreTests/Fixtures/m5-macos27-charge-limit.plist"
+  if command -v plutil >/dev/null 2>&1; then
+    [ "$(battery_key "$feed" NominalChargeCapacity data)" = 5986 ] && [ "$(battery_key "$feed" AppleRawMaxCapacity top)" = 5842 ] &&
+      [ "$(battery_key "$feed" CycleCountLastQmax data)" = 50 ] && [ "$(battery_key "$feed" CycleCount top)" = 51 ] &&
+      check ok "capacity reads an M5 capture's keys, the pack's AppleRawMaxCapacity and CycleCountLastQmax among them" ||
+      check fail "capacity misreads $(basename "$feed")"
+  else
+    echo "skipped: capacity's capture keys (no plutil here; a Mac's dry run reads $(basename "$feed"))"
+  fi
   for id in $WIDGET_NAMES; do
     case "$id" in small | medium | large) id="R3-large" ;; *) id="R3-$id" ;; esac
     if question "$id" >/dev/null; then :; else check fail "the widget name behind $id has no step 3 question"; fi
