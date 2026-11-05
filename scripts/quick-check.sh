@@ -238,7 +238,11 @@ if [ -f "$FEED" ]; then
   version="$(grep -o '"version":[0-9]*' "$FEED" | head -1 | cut -d: -f2 || true)"
   age=-
   if [ -n "$written" ]; then age=$(($(date +%s) - written)); fi
-  out "- feed.json: $(stat -f %Lp "$FEED") in a $(stat -f %Lp "$(dirname "$FEED")") folder (expected 600 and 700), $(wc -c <"$FEED" | tr -d ' ') bytes, version ${version:--} (expected 1), written ${age} s ago"
+  modes="$(stat -f %Lp "$FEED") $(stat -f %Lp "$(dirname "$FEED")")"
+  out "- feed.json: ${modes% *} in a ${modes#* } folder (expected 600 and 700), $(wc -c <"$FEED" | tr -d ' ') bytes, version ${version:--} (expected 1), written ${age} s ago"
+  if [ "$modes" != "600 700" ] || [ "${version:-}" != 1 ]; then
+    out "- CHECK: the feed's modes or version aren't the ones BatteryPulse writes: keep the line above for the next release"
+  fi
   if [ "$age" != - ] && [ "$age" -gt 7200 ]; then
     out "- CHECK: written over two hours ago, so the History and iPhone & iPad widgets say Open BatteryPulse to update: is BatteryPulse running?"
   fi

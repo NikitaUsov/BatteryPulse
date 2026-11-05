@@ -3886,8 +3886,13 @@ step_capacity() {
   profiler="$(system_profiler SPPowerDataType 2>/dev/null | sed -n 's/^[[:space:]]*Maximum Capacity:[[:space:]]*//p' | head -1 || true)"
   row="| $tag | $(clock) | $nominal ($(percent_of "$nominal" "$design") %) | $raw ($(percent_of "$raw" "$design") %) | $design | $max | $cycles | $qmax | ${health:--} | ${profiler:--} |"
   if [ "$SESSION" = none ]; then
-    printf '%s\n' "| Reading | Time | NominalChargeCapacity (of design) | AppleRawMaxCapacity (of design) | DesignCapacity | MaxCapacity | CycleCount | CycleCountLastQmax | BatteryPulse's Health | system_profiler's Maximum Capacity |" \
-      "|---|---|---|---|---|---|---|---|---|---|" "$row" | tee -a "$folder/readings.md"
+    # One table across the readings, a day or more apart: its header once.
+    if [ ! -s "$folder/readings.md" ]; then
+      printf '%s\n' "| Reading | Time | NominalChargeCapacity (of design) | AppleRawMaxCapacity (of design) | DesignCapacity | MaxCapacity | CycleCount | CycleCountLastQmax | BatteryPulse's Health | system_profiler's Maximum Capacity |" \
+        "|---|---|---|---|---|---|---|---|---|---|" >"$folder/readings.md"
+    fi
+    printf '%s\n' "$row" >>"$folder/readings.md"
+    cat "$folder/readings.md"
     echo "The capture stays in $capture; add System Settings → Battery → Battery Health's figure beside the row."
     return 0
   fi
