@@ -21,8 +21,12 @@ enum AppWidgetFeed {
 ///   once per 15-minute step, changed or not, so `writtenAt` keeps saying that BatteryPulse runs.
 /// - **At once:** Clear History and the recording toggle (Settings → Advanced calls it), a device
 ///   read, forgotten or reads turned on or off, a plug change and Demo Mode's end
-///   (``WidgetRefresher`` follows them).
-/// - **Never** in Demo Mode, whose readings never reach the widgets.
+///   (``WidgetRefresher`` follows them), and a launch in another language, before the widgets
+///   reload (``writeAndWait(_:)``): they take BatteryPulse's language from the feed.
+/// - **Never** in Demo Mode, whose readings never reach the widgets, but for what the user removes
+///   meanwhile: Clear History, recording off, device reads off and Forget take their part out of
+///   the feed last written at once, from the real settings and devices, and add nothing
+///   (``WidgetFeed/removing(_:)``).
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
 /// moment only. One write runs at a time; the requests meanwhile make one follow-on write.
@@ -41,6 +45,9 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var writing: Task<Void, Never>?
     /// What the requests made while a write ran ask for after it.
     @ObservationIgnored private var queued: (reason: WidgetFeed.WriteReason, unchanged: Bool)?
+    /// Clear History ran since the last write that accounted for it: an event, not a setting, so a
+    /// folded request can't lose it, and a failed write leaves it for the next.
+    @ObservationIgnored private var historyCleared = false
 
     init(
         monitor: BatteryMonitor, history: HistoryStore = AppHistory.store, store: WidgetFeedStore = AppWidgetFeed.store
@@ -58,6 +65,7 @@ final class WidgetFeedWriter {
 
     /// Writes the feed now, or right after the write that is running.
     func write(_ reason: WidgetFeed.WriteReason) {
+        if reason == .historyCleared { historyCleared = true }
         let unchanged = (queued?.unchanged ?? false) || reason.writesUnchanged
         // An immediate reason labels the follow-on write over a routine one: it logs.
         let label = queued.map { $0.reason == .step ? reason : $0.reason } ?? reason
@@ -66,6 +74,13 @@ final class WidgetFeedWriter {
         writing = Task(name: "WidgetFeedWriter.write") { [weak self] in
             await self?.writeQueued()
         }
+    }
+
+    /// Writes the feed, and returns once that write and any it was folded with are done, written
+    /// or not: a launch in another language reloads the widgets only then (``WidgetRefresher``).
+    func writeAndWait(_ reason: WidgetFeed.WriteReason) async {
+        write(reason)
+        await writing?.value
     }
 
     /// Runs the queued writes one after another until none is left.
@@ -77,7 +92,12 @@ final class WidgetFeedWriter {
     }
 
     private func writeOnce(_ reason: WidgetFeed.WriteReason, unchanged: Bool) async {
-        guard !monitor.isOverridden else { return }
+        let clearing = historyCleared
+        historyCleared = false
+        guard !monitor.isOverridden else {
+            await removeInDemoMode(reason, historyCleared: clearing)
+            return
+        }
         let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
         defer { interval.end() }
         // Taken before any wait, while Demo Mode is known to be off.
@@ -99,15 +119,22 @@ final class WidgetFeedWriter {
             readsDevices: readsDevices, sections: sections,
             current: snapshot.map { HistorySample($0, at: now) },
             devices: devices, modelNames: modelNames)
-        guard let feed = await FeedBuild.make(source, history: history),
-            // The placements and the build ran off the main actor: Demo Mode may have started
-            // meanwhile.
-            !monitor.isOverridden
-        else { return }
+        guard let feed = await FeedBuild.make(source, history: history) else {
+            // The history couldn't be read, so the previous feed stays; a clear still leaves it.
+            if clearing { await removeOnly(reason, historyCleared: true) }
+            return
+        }
+        // The placements and the build ran off the main actor: Demo Mode may have started
+        // meanwhile.
+        guard !monitor.isOverridden else {
+            await removeInDemoMode(reason, historyCleared: clearing)
+            return
+        }
         do {
             let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
             Self.log(outcome, of: feed, reason: reason)
         } catch {
+            if clearing { historyCleared = true }
             // The widgets keep the previous feed and, two hours after it, say so. The error's
             // domain and code are public, its description, which can name a path, is not.
             let error = error as NSError
@@ -128,10 +155,52 @@ final class WidgetFeedWriter {
             Diagnostics.widget.notice(
                 "Wrote the widget feed (\(reason.rawValue, privacy: .public)): \(bytes, privacy: .public) bytes, \(steps, privacy: .public) steps of the day, \(days, privacy: .public) days, \(devices, privacy: .public) devices"
             )
-        case .written:
+        case .written, .removed:
             break
         case .unchanged:
             Diagnostics.widget.debug("The widget feed is unchanged (\(reason.rawValue, privacy: .public))")
+        }
+    }
+
+    /// Demo Mode lets through only a removal the user made meanwhile: one of the reasons a removal
+    /// arrives with, or a clear that a write hasn't accounted for yet.
+    private func removeInDemoMode(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async {
+        guard reason.removesInDemoMode || historyCleared else { return }
+        await removeOnly(reason, historyCleared: historyCleared)
+    }
+
+    /// Takes out of the feed last written what the user removed, from the real settings and the
+    /// real remembered devices, never the demo's, and adds, updates or moves nothing
+    /// (``WidgetFeed/removing(_:)``). Logs at notice when it took something out, so `log show`
+    /// finds it.
+    private func removeOnly(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async {
+        let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
+        defer { interval.end() }
+        let removal = WidgetFeed.Removal(
+            historyCleared: historyCleared, recordsHistory: AppSettings.recordsHistory,
+            readsDevices: AppSettings.readsDevices, remembered: Set(AppDevices.monitor.remembered.map(\.id)))
+        do {
+            switch try await FeedBuild.rewrite(store, with: removal, at: .now) {
+            case .written(let bytes):
+                Diagnostics.widget.notice(
+                    "Took a removal out of the widget feed (\(reason.rawValue, privacy: .public)), nothing added: \(bytes, privacy: .public) bytes"
+                )
+            case .removed:
+                Diagnostics.widget.notice(
+                    "Removed the widget feed, which couldn't be read back, for a removal (\(reason.rawValue, privacy: .public))"
+                )
+            case .unchanged, nil:
+                Diagnostics.widget.debug(
+                    "Nothing to take out of the widget feed (\(reason.rawValue, privacy: .public))")
+            }
+        } catch {
+            if historyCleared { self.historyCleared = true }
+            // The error's domain and code are public, its description, which can name a path, is
+            // not.
+            let error = error as NSError
+            Diagnostics.widget.error(
+                "Taking a removal out of the widget feed failed (\(reason.rawValue, privacy: .public); \(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+            )
         }
     }
 
@@ -173,6 +242,15 @@ final class WidgetFeedWriter {
 
 /// The feed's build and write, off the main actor: the history's reads, the builder and the file.
 private nonisolated enum FeedBuild {
+    /// Takes `removal` out of the feed `store` last wrote, or out of the file on disk, which blocks
+    /// on the file system; `nil` without a feed.
+    @concurrent
+    static func rewrite(_ store: WidgetFeedStore, with removal: WidgetFeed.Removal, at now: Date) async throws
+        -> WidgetFeedStore.Outcome?
+    {
+        try store.rewrite(at: now) { $0.removing(removal) }
+    }
+
     /// Writes `feed` through `store`, which blocks on the file system.
     @concurrent
     static func write(_ feed: WidgetFeed, to store: WidgetFeedStore, unchanged: Bool) async throws

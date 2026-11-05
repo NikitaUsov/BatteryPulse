@@ -25,6 +25,9 @@ final class WidgetRefresher {
     private var feedPlugged: Bool?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
     private var feedSawDemo = false
+    /// The feed writer of the refresher the app started, for the launch's language reload, which
+    /// writes the feed first: `start()` runs before ``endPreviousExtension(versionChanged:)``.
+    private static weak var launchFeed: WidgetFeedWriter?
 
     init(
         monitor: BatteryMonitor, accessories: AccessoryMonitor, feed: WidgetFeedWriter,
@@ -41,6 +44,7 @@ final class WidgetRefresher {
     /// nothing.
     func start() {
         guard batteryObservation == nil else { return }
+        Self.launchFeed = feed
         if !isDemo {
             let now = Date.now
             if let snapshot = monitor.snapshot { _ = planner.battery(snapshot, at: now) }
@@ -118,7 +122,10 @@ final class WidgetRefresher {
     /// A language chosen for BatteryPulse alone (System Settings → General → Language & Region →
     /// Applications) applies at the next launch, and every placed widget keeps its render in the
     /// previous language until it reloads, so a language change reloads every kind even when no
-    /// extension was running.
+    /// extension was running. The widgets take the language from the feed, so a language change
+    /// writes it first and waits for the write, off the main actor, before it ends the extension
+    /// and reloads (``WidgetReloadPlanner/LaunchReason/steps``): the extension the reload starts
+    /// reads the new language, and a running one can't keep its read of the old one.
     static func endPreviousExtension(versionChanged: Bool) {
         let defaults = UserDefaults.standard
         let lastLanguage = defaults.string(forKey: lastSeenLanguageKey)
@@ -130,6 +137,19 @@ final class WidgetRefresher {
             let reason = WidgetReloadPlanner.launchReason(
                 versionChanged: versionChanged, lastLanguage: lastLanguage, language: language)
         else { return }
+        guard reason.steps.first == .writeFeed, let feed = launchFeed else {
+            endAndReload(reason)
+            return
+        }
+        Task(name: "WidgetRefresher.languageReload") {
+            await feed.writeAndWait(.language)
+            Self.endAndReload(reason)
+        }
+    }
+
+    /// Ends the extension a previous launch left running and, a second later, reloads every kind:
+    /// after an update only when one was ended. The launch's last two steps.
+    private static func endAndReload(_ reason: WidgetReloadPlanner.LaunchReason) {
         var ended = false
         if let processes = extensionProcesses() {
             // Another user's copy can't be signalled anyway.
@@ -142,7 +162,7 @@ final class WidgetRefresher {
         }
         guard ended || reason.reloadsAnyway else { return }
         // On the main actor, like the rest of the app.
-        Task {
+        Task(name: "WidgetRefresher.launchReload") {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
             switch reason {
