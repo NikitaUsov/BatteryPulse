@@ -27,9 +27,9 @@ jobs:
     runs-on: xcode-27
     environment: release
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
-      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
-      # release. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, the release
+      # (27B52), which replaced its release candidate (27B48) at Xcode_27.2.app in image
+      # 20261104.0337. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
@@ -38,6 +38,11 @@ jobs:
         with:
           # gh gets the token through GH_TOKEN, so it isn't left in .git/config for the build.
           persist-credentials: false
+      - name: Toolchain
+        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release.
+        run: |
+          xcodebuild -version && swift --version
+          ls -d /Applications/Xcode*.app
       - name: Check the release notes
         # The notes become the release's text, which the Software Update window shows to everyone
         # updating, so they must open with this version's heading: "## What's new in 0.6.1", or

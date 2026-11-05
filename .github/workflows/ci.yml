@@ -88,9 +88,9 @@ jobs:
     # The same for a hung test or smoke run.
     timeout-minutes: 30
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
-      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
-      # release. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, the release
+      # (27B52), which replaced its release candidate (27B48) at Xcode_27.2.app in image
+      # 20261104.0337. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -98,7 +98,10 @@ jobs:
           # Nothing here pushes, so the token isn't left in .git/config for the build and tests.
           persist-credentials: false
       - name: Toolchain
-        run: xcodebuild -version && swift --version
+        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release.
+        run: |
+          xcodebuild -version && swift --version
+          ls -d /Applications/Xcode*.app
       - name: Compile the string tables for the widget previews
         # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
         # build-app.sh compiles it: each language's table is a bundle of its own.
