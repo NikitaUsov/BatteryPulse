@@ -69,7 +69,7 @@ import Testing
         ),
         OffMain(
             path: "BatteryPulseApp/App/WidgetFeedWriter.swift", declaration: "private nonisolated enum FeedBuild",
-            reason: "the widget feed reads the history and builds off the main actor"),
+            reason: "the widget feed reads the history, builds and writes its file off the main actor"),
         OffMain(
             path: "BatteryPulseApp/MenuBar/BatteryIconView.swift",
             declaration: "private nonisolated final class AppearanceVariants",

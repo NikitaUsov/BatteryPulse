@@ -31,11 +31,11 @@ import Testing
                 temperature10: [nil], plugged: [false]))
     }
 
-    @Test func theFolderAndTheFileAreTheUsersAlone() async throws {
+    @Test func theFolderAndTheFileAreTheUsersAlone() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
-        let outcome = try await store.write(Self.feed())
+        let outcome = try store.write(Self.feed())
         #expect(outcome == .written(bytes: try WidgetFeed.encoded(Self.feed()).count))
         #expect(try Self.mode(directory) == 0o700)
         #expect(try Self.mode(directory.appendingPathComponent("feed.json")) == 0o600)
@@ -47,7 +47,7 @@ import Testing
 
     /// A folder made with the default modes, and a feed some earlier copy left readable by all:
     /// both become the user's alone at the next write.
-    @Test func existingModesAreTightened() async throws {
+    @Test func existingModesAreTightened() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let manager = FileManager.default
@@ -56,7 +56,7 @@ import Testing
         let file = directory.appendingPathComponent("feed.json")
         #expect(
             manager.createFile(atPath: file.path, contents: Data("{}".utf8), attributes: [.posixPermissions: 0o644]))
-        _ = try await WidgetFeedStore(directory: directory).write(Self.feed())
+        _ = try WidgetFeedStore(directory: directory).write(Self.feed())
         #expect(try Self.mode(directory) == 0o700)
         #expect(try Self.mode(file) == 0o600)
         #expect(try Self.names(in: directory) == ["feed.json"])
@@ -64,67 +64,67 @@ import Testing
 
     /// A reader that opened the old file reads the old file: the new one takes its place in one
     /// rename, never by rewriting it.
-    @Test func theReplaceIsAtomic() async throws {
+    @Test func theReplaceIsAtomic() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
         let old = Self.feed(percent: 10)
-        _ = try await store.write(old)
+        _ = try store.write(old)
         let file = directory.appendingPathComponent("feed.json")
         let reader = try FileHandle(forReadingFrom: file)
         defer { try? reader.close() }
         let new = Self.feed(percent: 90)
-        _ = try await store.write(new)
+        _ = try store.write(new)
         #expect(try reader.readToEnd() == WidgetFeed.encoded(old))
         #expect(try Data(contentsOf: file) == WidgetFeed.encoded(new))
     }
 
-    @Test func aFeedOnlyWrittenAgainIsntRewritten() async throws {
+    @Test func aFeedOnlyWrittenAgainIsntRewritten() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
         let file = directory.appendingPathComponent("feed.json")
-        _ = try await store.write(Self.feed())
+        _ = try store.write(Self.feed())
         let first = try Data(contentsOf: file)
         let later = WidgetFeedTests.now.addingTimeInterval(60)
-        #expect(try await store.write(Self.feed(at: later)) == .unchanged)
+        #expect(try store.write(Self.feed(at: later)) == .unchanged)
         #expect(try Data(contentsOf: file) == first)
         // The routine write goes out all the same.
-        let routine = try await store.write(Self.feed(at: later), unchanged: true)
+        let routine = try store.write(Self.feed(at: later), unchanged: true)
         #expect(routine == .written(bytes: first.count))
         #expect(try Data(contentsOf: file) == WidgetFeed.encoded(Self.feed(at: later)))
         // A change goes out.
-        #expect(try await store.write(Self.feed(at: later, percent: 49)) != .unchanged)
+        #expect(try store.write(Self.feed(at: later, percent: 49)) != .unchanged)
     }
 
     /// A folder removed meanwhile is made again; a file removed meanwhile is written at the next
     /// change or the next routine write.
-    @Test func aRemovedFolderIsMadeAgain() async throws {
+    @Test func aRemovedFolderIsMadeAgain() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
-        _ = try await store.write(Self.feed())
+        _ = try store.write(Self.feed())
         try FileManager.default.removeItem(at: directory)
-        _ = try await store.write(Self.feed(), unchanged: true)
+        _ = try store.write(Self.feed(), unchanged: true)
         #expect(try Self.mode(directory) == 0o700)
         #expect(try Self.names(in: directory) == ["feed.json"])
     }
 
-    @Test func removalLeavesTheFolder() async throws {
+    @Test func removalLeavesTheFolder() throws {
         let directory = Self.temporaryDirectory()
         defer { Self.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
-        _ = try await store.write(Self.feed())
-        try await store.remove()
+        _ = try store.write(Self.feed())
+        try store.remove()
         #expect(try Self.names(in: directory) == [])
-        try await store.remove()
+        try store.remove()
         // After a removal the same feed is written again.
-        #expect(try await store.write(Self.feed()) != .unchanged)
+        #expect(try store.write(Self.feed()) != .unchanged)
     }
 
     /// A link in the folder's place is refused, never written through; a file a write left
     /// behind is replaced, never written through.
-    @Test func linksAreNeverFollowed() async throws {
+    @Test func linksAreNeverFollowed() throws {
         let root = Self.temporaryDirectory().deletingLastPathComponent()
         defer { try? FileManager.default.removeItem(at: root) }
         let manager = FileManager.default
@@ -132,8 +132,8 @@ import Testing
         try manager.createDirectory(at: elsewhere, withIntermediateDirectories: true)
         let directory = root.appendingPathComponent("Widget")
         try manager.createSymbolicLink(at: directory, withDestinationURL: elsewhere)
-        await #expect(throws: WidgetFeedStore.Failure.notAFolder) {
-            try await WidgetFeedStore(directory: directory).write(Self.feed())
+        #expect(throws: WidgetFeedStore.Failure.notAFolder) {
+            try WidgetFeedStore(directory: directory).write(Self.feed())
         }
         #expect(try Self.names(in: elsewhere) == [])
 
@@ -143,7 +143,7 @@ import Testing
         #expect(manager.createFile(atPath: target.path, contents: Data("kept".utf8)))
         try manager.createSymbolicLink(
             at: directory.appendingPathComponent("feed.json.tmp"), withDestinationURL: target)
-        _ = try await WidgetFeedStore(directory: directory).write(Self.feed())
+        _ = try WidgetFeedStore(directory: directory).write(Self.feed())
         #expect(try Data(contentsOf: target) == Data("kept".utf8))
         #expect(try Self.names(in: directory) == ["feed.json"])
     }

@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// The widget's feed on disk: `feed.json` in `Widget/`, beside `History/` and `Devices/` in
 /// BatteryPulse's Application Support folder, the one folder the widget's read-only exception
@@ -11,8 +12,10 @@ import Foundation
 /// - A feed that differs from the last one written only in `writtenAt` isn't written, unless the
 ///   caller says so (the routine write).
 ///
-/// Foundation alone, so it needs no pointer and no `unsafe`.
-public actor WidgetFeedStore {
+/// Foundation alone, so it needs no pointer and no `unsafe`. Its calls block on the file system,
+/// so the app makes them off the main actor; one runs at a time. A final class rather than an
+/// actor, so a binary that never writes (the widget) strips its code.
+public final class WidgetFeedStore: Sendable {
     /// The feed's file name.
     public static let fileName = "feed.json"
     /// The folder below the home folder, as the widget's entitlement names it: relative to the
@@ -36,8 +39,8 @@ public actor WidgetFeedStore {
     public var fileURL: URL { directory.appendingPathComponent(Self.fileName) }
     private var temporaryURL: URL { directory.appendingPathComponent(Self.temporaryName) }
     /// The feed on disk as this store last wrote it, to tell a change from a write of the same
-    /// content.
-    private var written: WidgetFeed?
+    /// content; its lock also keeps one write at a time.
+    private let written = Mutex<WidgetFeed?>(nil)
 
     public init(directory: URL) {
         self.directory = directory
@@ -62,8 +65,16 @@ public actor WidgetFeedStore {
     /// Writes `feed`, unless it differs from the file only in `writtenAt` and `unchanged` is
     /// false.
     public func write(_ feed: WidgetFeed, unchanged: Bool = false) throws -> Outcome {
-        if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return .unchanged }
-        let data = try WidgetFeed.encoded(feed)
+        try written.withLock { written in
+            if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return .unchanged }
+            let bytes = try replace(with: WidgetFeed.encoded(feed))
+            written = feed
+            return .written(bytes: bytes)
+        }
+    }
+
+    /// Writes `data` to a new 0600 file and puts it in the feed's place; returns its size.
+    private func replace(with data: Data) throws -> Int {
         try prepareFolder()
         let manager = FileManager.default
         // A file left by a write that didn't finish: removed, never written through, in case it
@@ -93,15 +104,16 @@ public actor WidgetFeedStore {
             try? manager.removeItem(at: temporaryURL)
             throw error
         }
-        written = feed
-        return .written(bytes: data.count)
+        return data.count
     }
 
     /// Removes the feed, and a temporary file a write left; the folder stays.
     public func remove() throws {
-        written = nil
-        for url in [fileURL, temporaryURL] where exists(url) {
-            try FileManager.default.removeItem(at: url)
+        try written.withLock { written in
+            written = nil
+            for url in [fileURL, temporaryURL] where exists(url) {
+                try FileManager.default.removeItem(at: url)
+            }
         }
     }
 

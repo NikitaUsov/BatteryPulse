@@ -34,6 +34,8 @@ final class WidgetFeedWriter {
     private let store: WidgetFeedStore
     @ObservationIgnored private var schedule = WidgetFeed.StepSchedule()
     @ObservationIgnored private var placements = WidgetPlacements()
+    /// The placed widgets of the last answer, as counted per kind, to log a change only.
+    @ObservationIgnored private var answeredCounts: [WidgetKindID: Int]?
     @ObservationIgnored private var writing: Task<Void, Never>?
     /// What the requests made while a write ran ask for after it.
     @ObservationIgnored private var queued: (reason: WidgetFeed.WriteReason, unchanged: Bool)?
@@ -76,6 +78,8 @@ final class WidgetFeedWriter {
         guard !monitor.isOverridden else { return }
         let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
         defer { interval.end() }
+        // Taken before any wait, while Demo Mode is known to be off.
+        let snapshot = monitor.snapshot
         let recordsHistory = AppSettings.recordsHistory
         let readsDevices = AppSettings.readsDevices
         await askForPlacementsIfNeeded(recordsHistory: recordsHistory, readsDevices: readsDevices)
@@ -91,14 +95,15 @@ final class WidgetFeedWriter {
         let source = WidgetFeed.Source(
             now: now, languages: Bundle.main.preferredLocalizations, recordsHistory: recordsHistory,
             readsDevices: readsDevices, sections: sections,
-            current: monitor.snapshot.map { HistorySample($0, at: now) },
+            current: snapshot.map { HistorySample($0, at: now) },
             devices: devices, modelNames: modelNames)
         guard let feed = await FeedBuild.make(source, history: history),
-            // The build ran off the main actor: Demo Mode may have started meanwhile.
+            // The placements and the build ran off the main actor: Demo Mode may have started
+            // meanwhile.
             !monitor.isOverridden
         else { return }
         do {
-            let outcome = try await store.write(feed, unchanged: unchanged)
+            let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
             Self.log(outcome, of: feed, reason: reason)
         } catch {
             // The widgets keep the previous feed and, two hours after it, say so. The error's
@@ -130,7 +135,8 @@ final class WidgetFeedWriter {
 
     /// Asks WidgetKit for the placed widgets when the answer in memory can't tell whether a
     /// section is shown (``WidgetFeed/needsPlacementAnswer(recordsHistory:readsDevices:placements:at:readers:)``).
-    /// A failure counts as every kind placed.
+    /// A failure counts as every kind placed. With nothing placed that is every routine write, so
+    /// an answer logs at notice only when its counts change.
     private func askForPlacementsIfNeeded(recordsHistory: Bool, readsDevices: Bool) async {
         guard
             WidgetFeed.needsPlacementAnswer(
@@ -140,11 +146,16 @@ final class WidgetFeedWriter {
             let kinds = try await PlacedWidgets.kinds()
             placements.record(answer: kinds, at: .now)
             let counts = WidgetPlacements.counts(in: kinds)
-            Diagnostics.widget.notice(
+            let changed = counts != answeredCounts
+            answeredCounts = counts
+            let level: OSLogType = changed ? .default : .debug
+            Diagnostics.widget.log(
+                level: level,
                 "Placed widgets, for the widget feed: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories"
             )
         } catch {
             placements.recordFailure(at: .now)
+            answeredCounts = nil
             let error = error as NSError
             Diagnostics.widget.error(
                 "Asking WidgetKit for the placed widgets failed (\(error.domain, privacy: .public) \(error.code)); the widget feed counts every kind as placed: \(error.localizedDescription)"
@@ -153,8 +164,16 @@ final class WidgetFeedWriter {
     }
 }
 
-/// The feed's build: the history's reads and the builder, off the main actor.
+/// The feed's build and write, off the main actor: the history's reads, the builder and the file.
 private nonisolated enum FeedBuild {
+    /// Writes `feed` through `store`, which blocks on the file system.
+    @concurrent
+    static func write(_ feed: WidgetFeed, to store: WidgetFeedStore, unchanged: Bool) async throws
+        -> WidgetFeedStore.Outcome
+    {
+        try store.write(feed, unchanged: unchanged)
+    }
+
     /// Reads what of the history `source` includes from `store`, then builds the feed; `nil` in
     /// Demo Mode, or when the history can't be read, so the previous feed stays rather than one
     /// that lost the history.

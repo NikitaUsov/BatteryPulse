@@ -753,8 +753,8 @@ extension WidgetFeed.Series {
 
 /// What the widget found where the feed should be.
 public enum WidgetFeedState: Sendable, Equatable {
-    /// A valid feed.
-    case feed(WidgetFeed)
+    /// A valid feed; boxed, so the state stays one word wide.
+    indirect case feed(WidgetFeed)
     /// No file: BatteryPulse hasn't written one, or the folder is gone.
     case missing
     /// A file the reader turned down.
