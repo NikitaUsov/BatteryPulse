@@ -97,6 +97,35 @@ import Testing
         #expect(try store.write(Self.feed(at: later, percent: 49)) != .unchanged)
     }
 
+    /// The routine write goes out with nothing else changed, recording off included: `writtenAt`
+    /// is the widget's only sign that BatteryPulse runs. An immediate reason with nothing changed
+    /// writes nothing.
+    @Test func theRoutineWriteGoesOutWithNothingChanged() throws {
+        let directory = Self.temporaryDirectory()
+        defer { Self.remove(directory) }
+        let store = WidgetFeedStore(directory: directory)
+        func feed(at date: Date) throws -> WidgetFeed {
+            let source = WidgetFeed.Source(
+                now: date, languages: ["en"], recordsHistory: false, readsDevices: false, sections: [.history],
+                samples: [WidgetFeedTests.sample(1)])
+            return try #require(WidgetFeed.build(source))
+        }
+        let start = WidgetFeedTests.now
+        _ = try store.write(feed(at: start))
+        var schedule = WidgetFeed.StepSchedule()
+        let first = schedule.isDue(at: start)
+        let next = start.addingTimeInterval(15 * 60)
+        let due = schedule.isDue(at: next)
+        #expect(first && due)
+        let devices = WidgetFeed.WriteReason.devices
+        #expect(try store.write(feed(at: next), unchanged: devices.writesUnchanged) == .unchanged)
+        let step = WidgetFeed.WriteReason.step
+        #expect(try store.write(feed(at: next), unchanged: step.writesUnchanged) != .unchanged)
+        let data = try Data(contentsOf: directory.appendingPathComponent("feed.json"))
+        let written = try WidgetFeed.decode(data, now: next)
+        #expect(written.writtenAt == next && written.day == nil)
+    }
+
     /// A folder removed meanwhile is made again; a file removed meanwhile is written at the next
     /// change or the next routine write.
     @Test func aRemovedFolderIsMadeAgain() throws {
