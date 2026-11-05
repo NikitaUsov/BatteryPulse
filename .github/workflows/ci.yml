@@ -88,9 +88,10 @@ jobs:
     # The same for a hung test or smoke run.
     timeout-minutes: 30
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, the release
-      # (27B52), which replaced its release candidate (27B48) at Xcode_27.2.app in image
-      # 20261104.0337. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it. Image
+      # 20261104.0337 replaced its release candidate (27B48) with the release (27B52) at
+      # Xcode_27.2.app; a runner still on an older image runs the release candidate from the same
+      # path. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

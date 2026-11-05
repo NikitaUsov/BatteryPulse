@@ -27,9 +27,10 @@ jobs:
     runs-on: xcode-27
     environment: release
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, the release
-      # (27B52), which replaced its release candidate (27B48) at Xcode_27.2.app in image
-      # 20261104.0337. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it. Image
+      # 20261104.0337 replaced its release candidate (27B48) with the release (27B52) at
+      # Xcode_27.2.app; a runner still on an older image runs the release candidate from the same
+      # path. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
