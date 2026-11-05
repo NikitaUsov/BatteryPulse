@@ -4,7 +4,7 @@
 // rest on the Claude session alone. The session script builds it beside `frames` and is its only
 // caller (`m5-session.sh ui <command>`):
 //
-//   xcrun swiftc -O docs/plans/0.7.1/ui.swift -o ~/bp-071/<R|C|H|D3>/bin/ui
+//   xcrun swiftc -O docs/plans/0.7.1/ui.swift -o ~/bp-071/<R|C|H|D3|F>/bin/ui
 //
 // 0.7.0's, copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R, and
 // re-pointed at 0.7.1, whose M5 session runs it. PLAN.md is 0.7.1's docs/plans/0.7.1/PLAN.md,
@@ -12,7 +12,7 @@
 // ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
 //
 // Its folder is the session's: the folder above the bin/ it runs from, which must be
-// ~/bp-071/R, C, H or D3 of the account's own home; run from anywhere else it refuses everything.
+// ~/bp-071/R, C, H, D3 or F of the account's own home; run from anywhere else it refuses everything.
 //
 // A point is global display points, the top left of the main display at 0,0, given as `<x> <y>`,
 // or as `--image <png> <x> <y>`: pixels of a full-screen shot of the main display (the script's
@@ -1024,10 +1024,10 @@ struct WindowHit {
 
 enum Safety {
     /// The sessions' folders, ~/bp-071/<name> of the account's own home.
-    static let sessions = ["R", "C", "H", "D3"]
+    static let sessions = ["R", "C", "H", "D3", "F"]
 
     /// The session's folder: the one above the bin/ this executable runs from, when that is
-    /// ~/bp-071/R, C, H or D3 of the account's own home; nil otherwise (`run` refuses then).
+    /// ~/bp-071/R, C, H, D3 or F of the account's own home; nil otherwise (`run` refuses then).
     static let folder: String? = {
         guard let home = Account.home, let executable = Processes.path(getpid()) else { return nil }
         let bin = URL(fileURLWithPath: executable).resolvingSymlinksInPath().deletingLastPathComponent()
@@ -1072,7 +1072,7 @@ enum Safety {
     /// R's arm window is an ancestor; and always without a session folder.
     static func checkFence() throws {
         guard folder != nil else {
-            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-071/R, C, H or D3)")
+            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-071/R, C, H, D3 or F)")
         }
         if let readyAt = modified(sessionR + "/ready") {
             let ended = modified(sessionR + "/day-ended").map { $0 > readyAt } ?? false
