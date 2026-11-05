@@ -66,15 +66,13 @@ import Testing
     }
 
     /// Everything as large as the builder writes it: 8 devices with names of 64 four-byte scalars,
-    /// 90 days, every step of both series with the longest numbers, every statistic.
+    /// 90 days, every step of both series with the longest values (`false` is longer than
+    /// `true`), every statistic at the longest its bound allows.
     static func largestFeed() throws -> WidgetFeed {
         var samples: [HistorySample] = []
         // One sample a minute for 7 days and 2 hours, so every step of both series has one.
         for minute in stride(from: 0.0, through: 7 * 24 * 60 + 120, by: 1) {
-            samples.append(
-                sample(
-                    minute, percent: 100, plugged: minute.truncatingRemainder(dividingBy: 2) == 0,
-                    watts: -999.9, temperature: -99.9))
+            samples.append(sample(minute, percent: 100, plugged: false, watts: -999.9, temperature: -99.9))
         }
         samples.reverse()
         let calendar = HistoryDay.gregorian(in: utc)
@@ -92,12 +90,15 @@ import Testing
         source.modelNames = modelNames
         source.languages = [String](repeating: String(repeating: "a", count: 35), count: 20)
         var feed = try build(source)
-        // The longest numbers each field may hold, and the longest class.
+        // The longest numbers each field may hold, the longest state and the longest class.
         feed.statistics24h = WidgetFeed.Statistics(
-            averageDrainPercentPerHour: 999.9, timeOnBattery: 86_400, chargingSessions: 9_999)
+            averageDrainPercentPerHour: 999.9, timeOnBattery: WidgetFeed.Bounds.timeOnBattery.upperBound,
+            chargingSessions: WidgetFeed.Bounds.sessions.upperBound)
         feed.onBatterySince = now.addingTimeInterval(-3_600)
+        let longestState = ChargeState.allCases.max { $0.rawValue.utf8.count < $1.rawValue.utf8.count }
         feed.devices = feed.devices?.map { device in
             var device = device
+            device.state = longestState ?? .notCharging
             device.deviceClass = WidgetFeed.sanitizedName(longName(), maximumScalars: WidgetFeed.maximumClassScalars)
             device.maximumCapacity = 999
             device.cycleCount = 99_999
@@ -114,6 +115,8 @@ import Testing
         #expect(feed.daily?.cycleCount.count == WidgetFeed.maximumDays)
         #expect(feed.day?.percent.allSatisfy { $0 == 100 } == true)
         #expect(feed.week?.batteryWatts10.allSatisfy { $0 == -9_999 } == true)
+        #expect(feed.day?.plugged.allSatisfy { $0 == false } == true)
+        #expect(feed.week?.plugged.allSatisfy { $0 == false } == true)
         let bytes = try WidgetFeed.encoded(feed).count
         // Over 8 KB, as the plan's model expected: the limit is 12 KB, well under the reader's 32.
         #expect(bytes > 8 * 1024)
