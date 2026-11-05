@@ -5153,7 +5153,7 @@ step_count_check() {
 # the change record and its restored lines; the logged day's fence and its day-end; the summary's
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
-  local problems=0 id session setting report printed feed facts
+  local problems=0 id session setting report printed feed facts counts=""
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -5167,9 +5167,11 @@ dry_run() {
     for id in $(questions_list); do
       if question "$id" >/dev/null; then :; else check fail "$session's question $id has no text"; fi
     done
+    counts="${counts:+$counts, }$session $(questions_list | wc -w | tr -d ' ')"
   done
   SESSION=R
-  check ok "every session's questions resolve"
+  check ok "every session's questions resolve ($counts)"
+  echo "Session R's questions: $(questions_list | tr '\n' ' ')"
   for setting in app bp-settings bp-support widget-data remembered-devices widget-languages history; do
     [ "$(restore_how "$setting")" = script ] && check ok "$setting comes back by the script" ||
       check fail "$setting should come back by the script"
