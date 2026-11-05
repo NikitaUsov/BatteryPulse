@@ -61,7 +61,8 @@ not observed; **[estimate]** a planning number; **[conflict]** two sources disag
 **IDs:**
 - Packages: V-0 (intake), B-1 (the build-number clock), W-5, W-6 and W-7 (W71's and INV's IDs,
   kept), W-15 (the widget's language), W-16 (the session tools re-pointed), W-17 (the M5 session's
-  preparation), Z-1 (sizes), W-18 (localization, docs, What's New), D1-D3.
+  preparation), Z-1 (sizes), W-18 (localization, docs, What's New), D1-D3; S-1 (Settings fit the
+  screen), added when the work started, from the maintainer's report.
 - Gates: 0.7's gates keep their IDs where 0.7.1 carries them (G7-2 to G7-18, P7 §7.1), since the
   session's question IDs name them; 0.7.1's own are G71-1 to G71-4.
 - Questions: Q71-1 to Q71-4. Platform facts: PF-1 to PF-11 (§2.2). Inputs: I-1 to I-12 (§2.1).
@@ -112,6 +113,8 @@ without a paid account (M-1 is no; R:65-75).
 - **A privacy line** in the notes, the guide and README: what the feed holds, where, who can read
   it, and when it is rewritten (§11).
 - **What's New** for 0.7.1, if Q71-3 is yes.
+- **Settings fit the screen:** a Settings pane taller than the screen scrolls, so every setting can
+  be reached on a MacBook's display (S-1).
 
 **What stays as 0.7.0 shipped it:** the Battery and Accessories kinds, their options, Automatic's
 meaning in every family, and the Charge Limit read-only. The Battery and Accessories widgets still
@@ -153,6 +156,7 @@ or about 15 with the short feed check that §6.5 and Q71-1 recommend.
 | W-6 History, Battery's options | 3 | | W-18 localization, docs | 2 |
 | | | | D1 and D3 | 2 |
 
+- **S-1**, added later: 1 run.
 - **Totals:** about 17-20 runs, plus 2-3 to fix forward. The feed and its two widgets are 8-9 of
   them, as R:208 and W71 ("What 0.7's plan added") estimate.
 
@@ -357,6 +361,12 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   3. About already shows "version (build)" when they differ (`AboutView.swift:49-56`), so no app
      change.
   4. ROADMAP's decisions gain the line (W-18 writes it; R:978-983 already announces it).
+  5. **The toolchain, up to date** (the maintainer's ask when the work started): both workflows'
+     Toolchain step also lists the Xcodes on the image (`ls -d /Applications/Xcode*.app`); if a
+     release Xcode newer than 27.2's release candidate (27B48, AC70:169) is there, both workflows'
+     `DEVELOPER_DIR` move to it, with both jobs green under warnings as errors, and CLAUDE.md's
+     Environment line follows. Swift is already the newest release: 6.4.2 in the session hook,
+     `swift:6.4-noble` in the Linux job and Xcode 27.2's Swift (swift.org's list ends at 6.4.2).
 - **Files:** `scripts/build-number.sh` (new), `.github/workflows/ci.yml`,
   `.github/workflows/release.yml`, and a new `Tests/BatteryCoreTests/BuildNumberTests.swift`, not
   `UpdateInstallTests.swift` (which already reads `ci.yml`, `UpdateInstallTests.swift:284-288`, but
@@ -369,6 +379,34 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Effort:** S, 1 run. **Risk:** low (p2a's `ci.yml` step lands right before "Package the
   profiling build", a few lines above its `BUILD_NUMBER`: a mechanical rebase-over for 0.8, §5).
   **Rollback:** revert before D1; never after a candidate is installed.
+
+### S-1: Settings fit the screen (P1; the maintainer's report)
+
+- **Source:** the maintainer's report when the work started: the Settings window has grown taller
+  than the MacBook's screen, doesn't scroll, and its last settings can't be reached.
+  `SettingsPage` (`SettingsView.swift:31-40`) makes each pane exactly as tall as its rows, with
+  scrolling off (`.scrollDisabled(true)`, `.fixedSize(horizontal: false, vertical: true)`), and
+  General holds the window style tiles, the device settings and, since 0.7.0, the version count's
+  toggle. The Welcome window shows `GeneralSettings` through the same page
+  (`WelcomeView.swift:32-34`), under its header and above its buttons.
+- **Items:**
+  1. A pane stays as tall as its rows while it fits; above a cap it keeps the cap's height and
+     scrolls. The cap is the shortest screen's visible height (`NSScreen.visibleFrame`) less what
+     the window shows around the pane (Settings: the title bar and the tab bar; Welcome: also its
+     header, buttons and padding), never under a floor. It bounces only when it scrolls
+     (`.scrollBounceBehavior(.basedOnSize)` in place of `.scrollDisabled(true)`).
+  2. The cap's arithmetic lives in BatteryCore with Linux tests; the app measures and applies it
+     within its isolation rules (`IsolationGuardTests`).
+  3. The Crossfade note (`SettingsView.swift:43-45`) still holds: a pane doesn't jump when a note
+     switches.
+- **Files:** `Sources/BatteryPulseApp/Settings/SettingsView.swift`,
+  `Sources/BatteryPulseApp/Welcome/WelcomeView.swift`, one new BatteryCore file and its test. No
+  string, so no catalog key; no file another 0.7.1 package edits.
+- **Linux tests:** the cap: the page's own height below it, the cap above it, the floor on a tiny
+  screen, the shortest screen winning.
+- **Acceptance:** both jobs green; W-17 item 19 on the Air: every pane's last row reachable, and no
+  scroll bar on a pane that fits.
+- **Effort:** S, 1 run. **Risk:** low; the size ceilings (Z-1). **Rollback:** a revert.
 
 ### W-5: The feed (P1; FEA-10, SEC-08's feed half)
 
@@ -781,6 +819,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
       elsewhere, which D3 hands to 0.8's health summary. 0.7.1 changes no code for it, only the
       guide's sentence (§12). Without a session, the maintainer runs the same command by hand at
       three moments a day or more apart.
+  19. **Settings on the Air's display** (S-1): each Settings pane and the Welcome window opened by
+      computer use and scrolled to its end; the last row's control reachable; a pane that fits
+      shows no scroll bar and doesn't move.
 - **Files:** as W-16's, and `scripts/quick-check.sh` (item 17; no 0.8 branch touches it).
 - **Linux tests:** the dry run (every session's questions resolve; the printed size under 28,500
   bytes).
@@ -875,7 +916,7 @@ never touches them.
 | Round | Slot 1 | Slot 2 | Waits for |
 |---|---|---|---|
 | A0 | V-0, the intake | | the maintainer's go |
-| A1 | W-5 | B-1, then W-16 | A0 |
+| A1 | W-5 | B-1, then W-16; S-1 beside them (its files are no other package's) | A0 |
 | A2 | W-15 | W-17 | W-5 (the feed, the reader, `WidgetRefresher`); W-17: W-16 (the same files) |
 | A3 | W-6 | (W-17's `feed` checks, once W-5's file exists) | W-15 (the root views, `WidgetRefresher`) |
 | **Look 1** | the maintainer, about 5 minutes (§6.1) | | W-6's contact sheets |
@@ -1018,7 +1059,8 @@ preflight asks; the reads and proofs; one computer-use access request after `$S 
    both languages, with `feed` showing the file untouched across it.
 9. **The feed's rewrites:** reads off and on; Clear History on the session's data; `feed` after
    each.
-10. **Extras, while time allows:** `raw-history rc`; the menu bar on a dark bar (`V01-menubar`);
+10. **Settings** (S-1, W-17 item 19): every pane and the Welcome window on the Air's display.
+11. **Extras, while time allows:** `raw-history rc`; the menu bar on a dark bar (`V01-menubar`);
     `menu-bar-shots after` (W-17 item 12); 0.6.2's WP-18 Xcode items, last.
 
 **R2, the hand-over:** `restore gui` (his settings and devices back into the candidate, which stays
@@ -1100,6 +1142,7 @@ D1 then builds RC-U alone, for the short feed check, or no candidate at all, as 
 | The trees of the new kinds (G7-12) | A chart or a device row that VoiceOver reads wrongly or not at all | A fix forward; VERIFICATION's row stays open (RD C10) |
 | The logged day (G7-11, G7-16, ENG-17) | Reloads not delivered; a crash or fault | Known only from reports |
 | F12 (G7-15) | A broken update path | Low while `UpdateInstaller` is unchanged since 0.6.2 (`git diff v0.6.2 v0.7.0` shows no change there) |
+| Settings on the Air's display (S-1, W-17 item 19) | A pane that still cuts off its last rows | A fix forward; the maintainer sees it on his own Mac first |
 | The maximum-capacity readings (W-17 item 18) | Nothing: 0.7.1 changes no code for them | 0.8's health summary starts without them, unless the maintainer runs the command by hand |
 | 0.7's debts | Every 0.7 check carries over again (`docs/VERIFICATION.md`'s 0.7 rows) | 0.8's session inherits them |
 
@@ -1391,7 +1434,7 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 | `docs/ROADMAP.md` | The 0.7.1 entry ticked; the Releases row; the decisions: the feed and its exception, the clock, the language; Stage 1.2's widget line from §6.4 | W-18, D3 |
 | `docs/plans/1.0/ROADMAP.md`, `INVENTORY.md` | FEA-10 to FEA-12, SEC-08, DOC-08, QUA-16 marked shipped or carried; C1's sentence that the two widgets count toward 1.0 "only if they shipped in 0.7.0" (RD:257-262) restated for 0.7.1; SIZ-07 given a home (Appendix A); C10's charts read as the app's (Appendix B) | W-18 |
 | `docs/VERIFICATION.md` | 0.7's rows from the session; 0.7.1's rows | D3 |
-| `.github/release-notes.md` | §13 step 2 | W-18, D1 |
+| `.github/release-notes.md` | §13 step 2; its Fixes: Settings fit the screen (S-1) | W-18, D1 |
 
 ---
 
@@ -1558,6 +1601,8 @@ shown, `.privacySensitive()`), Q-W12 (°C).
 | NEW-22 (the quick check after a macOS 27.x update) | W-17 item 17: the feed joins `scripts/quick-check.sh` |
 | NEW-23 (the counts a week after publishing) | §13 step 8 for v0.7.1; V-0 item 5 for v0.7.0 |
 | The maintainer's maximum-capacity question (2026-10-31) | W-17 item 18; §12; D3 |
+| The maintainer's Settings report (when the work started) | S-1; W-17 item 19 |
+| The maintainer's ask to bring the tools up to date (when the work started) | B-1 item 5 (the toolchain); W-16 (the session tools) |
 | REJ-30, REJ-53, REJ-57, REJ-60, REJ-62 | Still rejected: the widget stays nonisolated, its reader too; no write into the widget's container; no network in the widget; App Intents types only in the widget target; no seconds or timer text ("Time on battery" and Look 2's self-updating age use the one offset helper) |
 | NEW-13 (the backup key) | Not in 0.7.1: 0.8 (the maintainer's decision, 2026-10-31) |
 | FEA-15 to FEA-19 (W-9) | Not in 0.7.1: after 1.0 (RD §4.1) |
