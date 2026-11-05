@@ -15,10 +15,10 @@ import WidgetKit
 ///
 /// - `language-<kind>-<family>-<scene>-feed-ru.png`: Russian from the feed, the Mac in English with
 ///   the US region, so the numbers keep the region's formats, as the app's do.
-/// - `sheet-language-feed.png`: each scene in English without a feed (0.7.0's widget), in Russian
-///   from the feed, and where the Russian from the feed on a Russian Mac differs from 0.7.0's
-///   Russian render, drawn from the Russian table directly (``WidgetPreviewTests``): in red, with
-///   the share of pixels in its caption and the log, for the layout check.
+/// - `sheet-language-feed-<kind>-<family>.png`: each scene in English without a feed (0.7.0's
+///   widget), in Russian from the feed, and where Russian from the feed on a Russian Mac differs
+///   from 0.7.0's Russian render, drawn from the Russian table directly (``WidgetPreviewTests``):
+///   in red, with the share of pixels in its caption and the log, for the layout check.
 ///
 /// Russian needs the table CI compiles before the tests (`build/widget-strings`); without it,
 /// nothing is drawn.
@@ -154,41 +154,43 @@ struct WidgetLanguagePreviewTests {
     }
 
     /// The Battery and Accessories widgets in Russian from the feed while the process is English,
-    /// beside the English render, and measured against 0.7.0's Russian render.
+    /// beside the English render, and measured against 0.7.0's Russian render: a sheet per kind and
+    /// family, each small enough for one PNG.
     @Test func rendersTheWidgetsInTheFeedsLanguage() throws {
         guard let tables = try Self.tables() else { return }
         let russian = try Self.table(["ru"], mac: Self.englishMac, tables: tables)
         let russianOnRussianMac = try Self.table(["ru"], mac: Self.russianMac, tables: tables)
         let english = WidgetLanguageTable.extensionOwn
-        var rows: [[WidgetPreviewTests.Picture]] = []
-        for scene in Self.batteryScenes {
-            for size in WidgetPreviewTests.families {
-                let name = "battery-\(WidgetPreviewTests.fileName(size))-\(scene.name)"
-                rows.append(
-                    try Self.row(
-                        name, scene.title, size, english: Self.battery(scene, size, english),
-                        feed: Self.battery(scene, size, russian),
-                        feedOnRussianMac: Self.battery(scene, size, russianOnRussianMac),
-                        direct: WidgetPreviewTests.widget(scene, size, .standard, .russian),
-                        countsDown: scene.configuration.time == .timeLeft))
+        for size in WidgetPreviewTests.families {
+            let family = WidgetPreviewTests.fileName(size)
+            let rows = try Self.batteryScenes.map { scene in
+                try Self.row(
+                    "battery-\(family)-\(scene.name)", scene.title, size, english: Self.battery(scene, size, english),
+                    feed: Self.battery(scene, size, russian),
+                    feedOnRussianMac: Self.battery(scene, size, russianOnRussianMac),
+                    direct: WidgetPreviewTests.widget(scene, size, .standard, .russian),
+                    countsDown: scene.configuration.time == .timeLeft)
             }
+            try WidgetPreviewTests.write(
+                WidgetPreviewTests.sheet(Self.heading("Battery", size), rows), "sheet-language-feed-battery-\(family)")
         }
-        for scene in Self.accessoryScenes {
-            for size in AccessoriesWidgetPreviewTests.families {
-                let name = "accessories-\(WidgetPreviewTests.fileName(size))-\(scene.name)"
-                rows.append(
-                    try Self.row(
-                        name, "Accessories: \(scene.title)", size, english: Self.accessories(scene, size, english),
-                        feed: Self.accessories(scene, size, russian),
-                        feedOnRussianMac: Self.accessories(scene, size, russianOnRussianMac),
-                        direct: AccessoriesWidgetPreviewTests.widget(scene, size, .standard, .russian)))
+        for size in AccessoriesWidgetPreviewTests.families {
+            let family = WidgetPreviewTests.fileName(size)
+            let rows = try Self.accessoryScenes.map { scene in
+                try Self.row(
+                    "accessories-\(family)-\(scene.name)", scene.title, size,
+                    english: Self.accessories(scene, size, english), feed: Self.accessories(scene, size, russian),
+                    feedOnRussianMac: Self.accessories(scene, size, russianOnRussianMac),
+                    direct: AccessoriesWidgetPreviewTests.widget(scene, size, .standard, .russian))
             }
+            try WidgetPreviewTests.write(
+                WidgetPreviewTests.sheet(Self.heading("Accessories", size), rows),
+                "sheet-language-feed-accessories-\(family)")
         }
-        try WidgetPreviewTests.write(
-            WidgetPreviewTests.sheet(
-                "The widgets in BatteryPulse's language from the feed, the process in English: English without a feed, Russian from the feed, and Russian from the feed against 0.7.0's Russian",
-                rows),
-            "sheet-language-feed")
+    }
+
+    static func heading(_ kind: String, _ size: WidgetSize) -> String {
+        "The \(kind) widget, \(WidgetPreviewTests.title(size).lowercased()), in BatteryPulse's language from the feed, the process in English: English without a feed, Russian from the feed, and Russian from the feed against 0.7.0's Russian"
     }
 }
 #endif
