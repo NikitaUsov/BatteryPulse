@@ -1,5 +1,6 @@
 #if os(macOS)
 import AppKit
+import BatteryCore
 import SwiftUI
 
 /// Shown on first launch (and at every launch if the user keeps it enabled).
@@ -29,7 +30,8 @@ struct WelcomeView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            SettingsPage {
+            // Capped below the header and above the buttons, so the window fits the screen.
+            SettingsPage(fit: .welcome) {
                 GeneralSettings()
             }
 
