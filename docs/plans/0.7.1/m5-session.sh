@@ -324,7 +324,7 @@ question() {
     R9b-demo-ru) echo "yn|judge|Step 9b, the same in Russian, in the catalog's terms" ;;
     R9b-widgets) echo "yn|judge|Step 9b, with bit 24 now: the Battery widgets say Charged to limit" ;;
     R9b-settings-ru) echo "3|judge|Step 9b, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
-    R-settings) echo "yn|judge|Step 10 (S-1): every Settings pane and the Welcome window on the Air's display, scrolled to its end: the last row's control reachable; a pane that fits shows no scroll bar and doesn't move (n names the pane)" ;;
+    R-settings) echo "yn|judge|Settings on the Air's display (S-1): every Settings pane and the Welcome window, scrolled to its end: the last row's control reachable; a pane that fits shows no scroll bar and doesn't move (n names the pane)" ;;
     V01-menubar) echo "yn|judge|The menu bar item on a light and on a dark menu bar (the crops): legible, not clipped" ;;
     R-menu-bar-same) echo "2|judge|menu-bar-shots before ($START_VERSION's painter) against after (RC-U's), each look and style: 1 identical pixel for pixel, 2 they differ (which; a charge that moved between them is a note)" ;;
     R-raw-history-rc)
@@ -2273,10 +2273,15 @@ step_prepare_r() {
   # Step 2's first half starts on 0.6.2 whatever the Mac runs (PLAN.md Q71-2): checked against the
   # start's version, not the base's.
   case "$(app_version)" in
-    "$START_VERSION "*) out "- the Mac runs $START_VERSION: step 2 starts from it" ;;
+    "$START_VERSION "*) out "- $START_VERSION runs: step 2 starts from it" ;;
     *)
-      install_build start --no-launch
-      out "- $START_VERSION put in place for step 2's first half (his $(cat "$BACKUP/version") waits in the backup)"
+      # A prepare run again once step 2 installed a later build leaves that one.
+      if [ -s "$WORK/installed" ] && ! grep -q -E '^(start|backup) ' "$WORK/installed"; then
+        out "- step 2 has begun ($(cut -d' ' -f1 "$WORK/installed") installed): prepare leaves $(app_version) as it is"
+      else
+        install_build start --no-launch
+        out "- $START_VERSION put in place for step 2's first half (his $(cat "$BACKUP/version") waits in the backup)"
+      fi
       ;;
   esac
   relaunch_r
@@ -3063,7 +3068,7 @@ relaunch_for_redraw() {
     for pid in $(widget_pids); do
       case "$before" in *" $pid "*) ;; *) fresh="$pid" ;; esac
     done
-    if [ -n "$reload" ] && [ -n "$fresh" ] && { [ -z "$REDRAW_ALSO" ] || messages "$capture" | grep -q -F "$REDRAW_ALSO"; }; then break; fi
+    if [ -n "$reload" ] && [ -n "$fresh" ] && { [ -z "$REDRAW_ALSO" ] || grep -q -F "$REDRAW_ALSO" <<<"$(messages "$capture")"; }; then break; fi
   done
   perf_stop "$stream"
   REDRAW="after ${waited} s, the reload notice: ${reload:-none}; a new extension process: ${fresh:-none}"
@@ -3960,7 +3965,7 @@ step_menu_bar_shots() {
     pair="$SHOTS/menubar/before-${file#"$SHOTS"/menubar/after-}"
     if [ ! -f "$pair" ]; then
       missing=$((missing + 1))
-    elif "$BIN/frames" diff "$pair" "$file" 2>/dev/null | grep -q 'identical=yes'; then
+    elif grep -q 'identical=yes' <<<"$("$BIN/frames" diff "$pair" "$file" 2>/dev/null || true)"; then
       same=$((same + 1))
     else
       differ=$((differ + 1))
