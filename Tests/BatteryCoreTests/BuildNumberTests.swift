@@ -76,6 +76,11 @@ import Testing
         #expect(readers.count == 1, "\(name): \(readers.map { steps[$0].name })")
         let reader = try #require(readers.first)
         #expect(steps[reader].code.contains(#"echo "BUILD_NUMBER=$build_number" >> "$GITHUB_ENV""#), "\(name)")
+        // Never skipped: build-app.sh would fall back to build 1, and release.yml doesn't read the
+        // packaged number back.
+        #expect(
+            !steps[reader].code.contains { $0.hasPrefix("if:") || $0.hasPrefix("- if:") },
+            "\(name): the reader runs on a condition")
         let packagers = steps.indices.filter { steps[$0].text.contains("scripts/build-app.sh") }
         #expect(packagers.count == packagingSteps, "\(name): \(packagers.map { steps[$0].name })")
         for packager in packagers {
