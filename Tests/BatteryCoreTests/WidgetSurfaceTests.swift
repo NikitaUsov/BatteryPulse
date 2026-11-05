@@ -90,14 +90,34 @@ struct WidgetSurfaceTests {
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }
 
-    /// The widget's entitlements are the sandbox alone: no App Group, no exception.
+    /// The widget's entitlements: the sandbox, and one read-only exception with one path, the
+    /// feed's folder. No App Group, no other exception, nothing writable.
     @Test func widgetEntitlements() throws {
-        let url = Self.repository.appendingPathComponent("Resources/BatteryPulseWidget.entitlements")
-        let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
-        let entitlements = try #require(plist as? [String: Any])
-        #expect(entitlements.keys.sorted() == ["com.apple.security.app-sandbox"])
+        let entitlements = try Self.widgetEntitlementsFile()
+        #expect(entitlements.keys.sorted() == ["com.apple.security.app-sandbox", Self.feedException])
         let sandbox = try #require(entitlements["com.apple.security.app-sandbox"])
         #expect(PropertyValue(any: sandbox) == .bool(true))
+        #expect(
+            entitlements[Self.feedException] as? [String] == [
+                "/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/"
+            ])
+    }
+
+    /// The exception names the folder the app writes the feed to, so the two can't drift apart.
+    @Test func theExceptionIsTheFeedsFolder() throws {
+        let paths = try #require(try Self.widgetEntitlementsFile()[Self.feedException] as? [String])
+        #expect(paths == [WidgetFeedStore.homeRelativePath])
+        let home = URL(fileURLWithPath: "/Users/someone", isDirectory: true)
+        let folder = WidgetFeedStore.defaultDirectory(home: home).path
+        #expect(paths.map { home.path + $0 } == [folder + "/"])
+    }
+
+    static let feedException = "com.apple.security.temporary-exception.files.home-relative-path.read-only"
+
+    static func widgetEntitlementsFile() throws -> [String: Any] {
+        let url = repository.appendingPathComponent("Resources/BatteryPulseWidget.entitlements")
+        let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
+        return try #require(plist as? [String: Any])
     }
 
     /// `SidebarItem` maps to and from `PageID` one case to one case, and `storageKey` is the

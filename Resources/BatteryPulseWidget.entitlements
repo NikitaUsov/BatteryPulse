@@ -3,7 +3,15 @@
 <plist version="1.0">
 <dict>
   <!-- App extensions must be sandboxed; the app itself is not. No App Group: ad-hoc signed
-       code can't claim one, so the widget reads the battery itself. -->
+       code can't claim one, so the widget reads the battery and the accessories itself. -->
   <key>com.apple.security.app-sandbox</key><true/>
+  <!-- What it can't read itself, the history and the iPhones and iPads, the app copies into one
+       small file, Widget/feed.json in its Application Support folder. This read-only exception
+       names that folder alone (relative to the home, with a leading and a trailing slash), never
+       History or Devices beside it, and the widget opens only that file (WidgetFeedReader). -->
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+  <array>
+    <string>/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/</string>
+  </array>
 </dict>
 </plist>
