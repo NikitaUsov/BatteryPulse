@@ -149,16 +149,18 @@ or about 15 with the short feed check that §6.5 and Q71-1 recommend.
 
 | Package | Runs | | Package | Runs |
 |---|---|---|---|---|
-| V-0 intake | 0 (the orchestrator) | | W-7 iPhone & iPad | 2-3 |
+| V-0 intake (item 6, the review) | 1 | | W-7 iPhone & iPad | 2-3 |
 | B-1 build-number clock | 1 | | W-16 tools re-pointed | 1 |
-| W-5 the feed | 3 | | W-17 the session's preparation | 2 |
+| W-5 the feed | 3-4 | | W-17 the session's preparation | 2 |
 | W-15 the widget's language | 1-2 | | Z-1 sizes | 0-1 |
 | W-6 History, Battery's options | 3 | | W-18 localization, docs | 2 |
-| | | | D1 and D3 | 2 |
+| S-1 Settings fit the screen | 1 | | D1 and D3 | 2 |
 
-- **S-1**, added later: 1 run.
-- **Totals:** about 17-20 runs, plus 2-3 to fix forward. The feed and its two widgets are 8-9 of
-  them, as R:208 and W71 ("What 0.7's plan added") estimate.
+- **Totals:** about 19-23 runs, plus 2-3 to fix forward and about 2 for what the looks find: 0.7's
+  second look and its parity check each added a package of their own, the space before % and the
+  layout parity (`1f6b17d`, `7c32fd7`; AC70:138-139). The feed and its two widgets are 8-10 of
+  them, against R:208's and W71's 8-9 ("What 0.7's plan added"): V-0's review added W-5's settings
+  calls, its device observation and its guard split (§4 W-5).
 
 **Not in 0.7.1** (Appendix A has the reasons): 0.8's items and its six preparation branches;
 the Charge Limit's number, even through the feed; extra large, in any kind (1.1); the backup
@@ -236,7 +238,9 @@ W71 holds the design and stays as written until 0.7.1's D3; these changes hold w
    stay (W-5 item 4).
 4. **The writer's file modes:** the temporary file is made 0600 before the rename, as
    `DeviceStore` does for its key (`DeviceStore.swift:66-86`), not after it, as SPIKE-W did
-   (`a609487:Sources/BatteryPulseApp/App/SpikeWidgetFeed.swift`).
+   (`a609487:Sources/BatteryPulseApp/App/SpikeWidgetFeed.swift`); and, stricter than
+   `DeviceStore`, which writes its bytes into a file of the default mode and sets 0600 after
+   (:73-77), before any byte is written (W-5 item 3).
 5. **The reader** opens with `O_NOFOLLOW` and checks for a regular file, besides W71 §8.3's
    validation.
 6. **Devices in the feed** carry the owner's name, the model name the app resolved, and the class,
@@ -333,8 +337,10 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      (AC70, P7), before W-5 starts; its fixes go into this file.
 - **Files:** this plan's Appendix C; ROADMAP's Releases row (item 5). **Linux tests, guards:**
   none.
-- **Acceptance:** the integration branch's first CI run is green on both jobs.
-- **Effort:** none of the budget. **Risk:** low. **Rollback:** none needed.
+- **Acceptance:** the integration branch's first CI run is green on both jobs (run 517, Appendix
+  C).
+- **Effort:** items 1-5 none of the budget; item 6 one run, its findings fixed in this file and its
+  measurements in Appendix C. **Risk:** low. **Rollback:** none needed.
 
 ### B-1: The build-number clock (P1; first, before any candidate)
 
@@ -367,6 +373,15 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      `DEVELOPER_DIR` move to it, with both jobs green under warnings as errors, and CLAUDE.md's
      Environment line follows. Swift is already the newest release: 6.4.2 in the session hook,
      `swift:6.4-noble` in the Linux job and Xcode 27.2's Swift (swift.org's list ends at 6.4.2).
+     **V-0's review:** the integration branch's first run (517) already built with Xcode 27.2
+     **27B52** from the same `/Applications/Xcode_27.2.app`, and its App Intents processor now runs
+     from there too (no `Xcode_27.2_Release_Candidate.app`, which AC70:169 saw); the image of
+     2026-11-04 lists 27.2 (27B52), 27.1 (27A9275, its default) and 27.0 (27A266a), marking none
+     a candidate (Appendix C). So the path stays, and what changes is the text that names 27B48:
+     the comments at `ci.yml:91-93` and `release.yml:30-32`, and CLAUDE.md's Environment line
+     (CL:142). Whether 27B52 is Apple's release or a later candidate is [unverified]; Apple's
+     Xcode release notes say. And `release.yml` has no Toolchain step (its steps run from
+     `release.yml:41`), so B-1 adds one there, or lists the Xcodes in `ci.yml` alone.
 - **Files:** `scripts/build-number.sh` (new), `.github/workflows/ci.yml`,
   `.github/workflows/release.yml`, and a new `Tests/BatteryCoreTests/BuildNumberTests.swift`, not
   `UpdateInstallTests.swift` (which already reads `ci.yml`, `UpdateInstallTests.swift:284-288`, but
@@ -401,7 +416,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      switches.
 - **Files:** `Sources/BatteryPulseApp/Settings/SettingsView.swift`,
   `Sources/BatteryPulseApp/Welcome/WelcomeView.swift`, one new BatteryCore file and its test. No
-  string, so no catalog key; no file another 0.7.1 package edits.
+  string, so no catalog key; no file another 0.7.1 package edits, unless S-1 needs an
+  `IsolationGuardTests` entry, which W-5 edits beside it in round A1: S-1 then waits for W-5's
+  merge of that file (§5, never two on one file).
 - **Linux tests:** the cap: the page's own height below it, the cap above it, the floor on a tiny
   screen, the shortest screen winning.
 - **Acceptance:** both jobs green; W-17 item 19 on the Air: every pane's last row reachable, and no
@@ -419,11 +436,19 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      `plugged`; `statistics24h` (`HistoryStatistics`, `History.swift:217-231`); `onBatterySince`;
      `daily` (up to 90 days of `capacityToDesign10` and `cycleCount`); up to 8 devices. Plus
      `languages` (W-15) and the flags `recordsHistory` and `readsDevices`, so a widget can tell
-     "off" from "none".
+     "off" from "none". W-5 writes `languages` from its first commit (the app's
+     `Bundle.main.preferredLocalizations`), so W-15 adds only the reading side and the launch
+     order.
      - A device holds its `DeviceKey` string, the owner's name and the model name as the app
        shows them (verbatim), its class, charge, state, maximum capacity, cycles, temperature and
        read time. Never a UDID, ECID or serial (`RememberedDevice` holds none,
-       `RememberedDevice.swift:37-108`), and never `DeviceKey.demo`.
+       `RememberedDevice.swift:37-108`), and never `DeviceKey.demo`. The model name is the one
+       `IDeviceModelName` resolves on the main actor (`AppDevices.swift:39-60`, the system's
+       localized name), read there before the builder runs.
+     - Encoded compactly (no `.prettyPrinted`): the largest feed is about 9.2 KB compact and
+       about 16.5 KB pretty-printed [estimate: a model of this schema, not Swift's encoder;
+       Appendix C], so the size test below likely sets the limit at 12 KB, still well under the
+       reader's 32 KB.
      - No accessory levels (W0-4 passed) and no Charge Limit number (0.8's A-2; v1 may gain it,
        since its schema only gains fields, RD C14 item 2).
   2. **The builder,** a pure function over `Sendable` values, called from a `@concurrent` function
@@ -432,10 +457,29 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      10-minute means, `HistoryChartData.swift:9-10, 51-55`) and takes the store's existing reads
      (`HistoryStore.samples(from:to:)`, `dailySummaries()`, as `HistoryView.swift:303-331` calls
      them), so `HistoryStore.swift` is not edited (§5, e2 and e3).
+     - `onBatterySince` has no source today (no snapshot or store field holds an unplug time): the
+       builder takes it from the samples, the start of the last run on battery, so it is `nil`
+       with recording off or on the adapter [inference].
+     - It applies the decoder's caps itself (8 devices, names of 64 scalars), so the size test's
+       worst case is the writer's too.
+     - Reading 7 days keeps that week's decoded samples in the store's memory for the session
+       (`HistoryStore.swift:31`, today filled only once History is opened): about 1.3 MB, 11,520
+       samples of 112 bytes [estimate], against RD C6's 30 MB idle target (§10).
   3. **`WidgetFeedStore`** in BatteryCore, the writer's file half: the `Widget/` folder 0700
      (created so, or set so if it exists); a temporary file in it, created and set 0600 before any
      byte is written; `rename` over `feed.json`; nothing written when everything but `writtenAt`
      is unchanged, except the routine step's write (item 4); the file removed on request.
+     - Foundation alone, so BatteryCore gains no `unsafe` (a POSIX `rename` takes C strings,
+       which strict memory safety flags): the temporary file through
+       `createFile(atPath:contents: nil, attributes: [.posixPermissions: 0o600])`, its bytes through
+       a `FileHandle`, and the swap through `replaceItemAt(_:withItemAt:backupItemName:options:)`
+       with `.usingNewMetadataOnly`, since by default it keeps the old file's permissions;
+       `moveItem` refuses an existing destination. On Linux, Swift 6.4.2, that sequence leaves a
+       0600 `feed.json` and no other file (V-0's check, Appendix C); on Darwin [unverified] until
+       CI runs W-5's tests there.
+     - Its folder is the entitlement's path, from `HistoryStore.appBundleIdentifier`
+       (`HistoryStore.swift:76`), never `Bundle.main.bundleIdentifier`, which `swift run` leaves
+       `nil` (the stores' `defaultDirectory` then names `BatteryPulse/`, :79-83).
   4. **The app's writer** (`App/WidgetFeedWriter.swift`, driven from `WidgetRefresher`, which stays
      the only reload site, `EnergyGuardTests.swift:78-82`):
      - **Routine:** at `HistoryRecorder`'s minute tick, from its loop rather than `recordNow`
@@ -446,20 +490,49 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
        iPhones and iPads turned on or off (`AppDevices.setReading`, `AppDevices.swift:21-24`);
        Forget (`DeviceView.swift:87`); a new device reading; a plug change; the app's language
        changed at launch, before W-4's reload (W-15); Demo Mode left.
-     - **Never** while `monitor.isOverridden` (Demo Mode), as `HistoryRecorder.swift:77` does.
-     - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`; the answer is re-asked
-       at a write moment once it is older than 15 minutes (`WidgetPlacements.maximumAge`).
+     - **How the writer hears of them** (V-0's review): the recording toggle is a `UserDefaults`
+       key and Clear History a store call, both in one Settings pane (`AdvancedSettings.swift:20-22,
+       85-99`), and no observation can follow either, so that pane calls the writer, two lines.
+       Forget, reads on or off and a new reading each change `AppDevices.monitor`'s `remembered`
+       or `isEnabled` (`IDeviceMonitor.swift:64-65, 181-209, 260-286, 609-612`), so one named
+       `Observations` task in `WidgetRefresher` follows them, and `AppDevices.swift` and
+       `DeviceView.swift` stay as they are. A plug change and Demo Mode left arrive through the
+       battery observation it already has (`WidgetRefresher.swift:36-41`).
+     - **`HistoryRecorder` gets the writer as an object** in its `init` (`BatteryPulseApp.swift`
+       makes it before `HistoryRecorder`, :41): a closure-typed property may need a fifth
+       `@MainActor`, as the pages' `(DeviceKey) -> Void` does, which `IsolationGuardTests`' four
+       refuse (`IsolationGuardTests.swift:19-26`) [inference].
+     - **Never** while `monitor.isOverridden` (Demo Mode), as `HistoryRecorder.swift:77` does. So
+       a Demo Mode longer than 2 hours shows the widgets' "Open BatteryPulse to update" until it
+       ends, when the write at once repairs it [inference].
+     - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`, as it decides for the
+       reloads: the answer is re-asked at a write moment once it is older than 15 minutes
+       (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs,
+       and a kind it lists stays placed until the app quits (`WidgetReloadPlanner.swift:236-241,
+       269-274`). So a removed iPhone & iPad widget's devices stay in the feed until the next
+       launch (§11 says so), and a new one gets them within 15 minutes and a write moment.
      - Recording off or reads off drop their sections at once, placed or not.
   5. **The reader** (`Sources/BatteryPulseWidget/WidgetFeedReader.swift`, the one widget file
      allowed a file API): the real home from `getpwuid(getuid())`, because `NSHomeDirectory()` is
      the container inside the sandbox (SPIKE-W's `SpikeProbes.swift`); `open` with `O_RDONLY`,
      `O_NOFOLLOW` and `O_CLOEXEC`; `fstat` for a regular file of at most 32 KB; a read of at most
      32 KB + 1 bytes; the bytes go to BatteryCore's validating decoder. A third `WidgetReadCache`
-     gives one read per burst of timeline requests (`WidgetReadCache.swift:12-41`).
+     gives one read per burst of timeline requests (`WidgetReadCache.swift:12-41`); it keeps no
+     `nil` (:10-11), so its value is the read's state (a feed, no feed, a rejection), and "no
+     feed" is shared like a feed.
+     - SPIKE-W read this way (`Darwin.open`, then `FileHandle(fileDescriptor:)`), so the calls
+       are proven in the sandbox; `O_NOFOLLOW` and `fstat` are new [unverified there]. The widget
+       builds without strict memory safety (`Package.swift`), so they carry no `unsafe`, and
+       CLAUDE.md's list of the widget's unmarked unsafe calls gains the reader (W-18).
+     - An `open` that fails with anything but `ENOENT` logs its `errno` at notice (a number,
+       public): a sandbox denial is silent on macOS 27 except as `EPERM` (SPIKE-W's
+       `SpikeProbes.swift`), and that line is how W-17 item 17's quick check sees an exception
+       narrowed by a macOS update.
   6. **The validating decoder** in BatteryCore: W71 §8.3's rejections (over 32 KB, an unknown
      version, series of different lengths, NaN or infinity, a date more than 10 minutes ahead);
      control and bidirectional-override characters stripped from names and names capped at 64
-     characters; unknown fields ignored. A missing file is a state ("no feed"), not an error.
+     Unicode scalars (W71's "64 characters", counted so the size test's bound holds); unknown
+     fields ignored. A missing file is a state ("no feed"), not an error.
   7. **The entitlement:**
      `com.apple.security.temporary-exception.files.home-relative-path.read-only` with one path,
      `/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`, in
@@ -470,23 +543,28 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      `ebe6547:docs/plans/0.7.0/widgets.md:448-454`).
   9. **Logs:** the bytes, the section counts and a rejection's case name as `.public`; never a
      name, a key or a path (CL logging). A rejection logs at notice, so `log show` finds it
-     (AC70:168). The widget has no `Diagnostics` of its own: it uses BatterySource's
+     (AC70:168), as a write at once does, and a failed write logs at error; the routine step's
+     write has its signpost's debug line only, so 96 a day don't fill the stored log. The widget
+     has no `Diagnostics` of its own: it uses BatterySource's
      (`BatteryTimelineProvider.swift:44`, `WidgetReadCache.swift:66`), which has no `widget`
      logger (`BatterySource/Diagnostics.swift:147-156`; the app's twin has one,
      `BatteryPulseApp/App/Diagnostics.swift:21`). So W-5 adds that one logger line to
      BatterySource's `Diagnostics`, the one BatterySource edit of 0.7.1 (a6a, §5); the widget's
      signposts pass their new names to BatterySource's `Diagnostics.begin`, with no edit there.
 - **Files:** `Sources/BatteryCore/Widget/WidgetFeed.swift`, `.../WidgetFeedStore.swift`,
-  `Sources/BatteryPulseApp/App/WidgetFeedWriter.swift`, `.../WidgetRefresher.swift`,
-  `.../HistoryRecorder.swift` (the tick's call), `.../BatteryPulseApp.swift` (the init line),
+  `Sources/BatteryPulseApp/App/WidgetFeedWriter.swift`, `.../WidgetRefresher.swift` (the devices'
+  observation), `.../HistoryRecorder.swift` (the tick's call), `.../BatteryPulseApp.swift` (the
+  init lines), `Sources/BatteryPulseApp/Settings/AdvancedSettings.swift` (the two calls, item 4;
+  no 0.8 branch and no other 0.7.1 package edits it),
   `Sources/BatteryPulseWidget/WidgetFeedReader.swift`, `.../WidgetReadCache.swift`,
   `Sources/BatterySource/Diagnostics.swift` (the `widget` logger, item 9),
   `Resources/BatteryPulseWidget.entitlements`, `Tests/BatteryCoreTests/{WidgetFeedTests,
   WidgetFeedStoreTests, WidgetSurfaceTests, SecurityGuardTests, IsolationGuardTests}.swift`.
 - **Linux tests:**
-  - the largest feed (8 devices with 64-character names of 4-byte characters, up to 256 bytes
-    each in UTF-8, 90 days, full series, every statistic) fits 8 KB, or the limit becomes 12 KB
-    by this test (W71 §8.3);
+  - the largest feed (8 devices with names of 64 four-byte scalars, 256 bytes each in UTF-8, 90
+    days, full series, every statistic) fits 8 KB, or the limit becomes 12 KB by this test (W71
+    §8.3; about 9.2 KB is expected, item 1). The caps count Unicode scalars, not `Character`s: 64
+    `Character`s of joined emoji can be about 1.6 KB, 25 bytes each;
   - the decoder rejects truncated, oversized, future-dated, wrong-version, mismatched-length and
     NaN inputs, strips control and bidirectional characters, and round-trips a full feed;
   - the store: folder 0700, file 0600, an atomic replace (a reader sees the old or the new file),
@@ -502,18 +580,30 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
     only Foundation's file APIs and `fopen` (`FileManager`, `FileHandle`, `contentsOf:`, `fopen(`,
     :161-165), not the POSIX calls the reader uses, so it gains `open(`, `fstat(` and `getpwuid`
     (not `read(`, which `MacAccessoryProvider().read()` would match), and the self-test
-    (`theWidgetHasNoFileOrNetworkAPI`, :432-441) gains those samples, so it flags them in any
-    other widget file.
+    (`theWidgetHasNoFileOrNetworkAPI`, its samples at :422-431) gains those samples, so it flags
+    them in any other widget file.
+    - The rule today is one regex applied to every widget and BatteryArt file with no allow list
+      (:196-200), so the placement means splitting it in two: the file APIs, which
+      `WidgetFeedReader.swift` alone may use, and `dl*`, `URLSession` and Network, which none
+      may. The self-test gains a case that the reader's file is still flagged for the second.
+    - `openat(`, `stat(`, `lstat(` and `getpw\w*` (`getpwnam`, `getpwuid_r`) join the first
+      pattern too, since `\bgetpwuid\b` misses `getpwuid_r`; none appears in a widget or
+      BatteryArt file today (V-0's `grep`).
   - `WidgetSurfaceTests.widgetEntitlements` (`WidgetSurfaceTests.swift:93-101`) pins exactly the
-    sandbox key and the one exception with its one path.
-  - `IsolationGuardTests`' list gains the writer's `nonisolated` declarations, if any.
-  - `EnergyGuardTests` is unchanged: no sleep, timer or task is added.
+    sandbox key and the one exception with its one path, and a second test pins that path to
+    `WidgetFeedStore`'s folder, so the writer and the entitlement can't drift apart.
+  - `IsolationGuardTests`' list gains the writer's off-main work: one `private nonisolated` type
+    holding its `@concurrent` build, as `HistoryLoad` does (`HistoryView.swift:302-308`).
+  - `EnergyGuardTests` is unchanged: no sleep, timer or activity is added. One named observation
+    task is (the devices', item 4), which wakes only on a change, as every `Observations` task
+    does (CL observation).
 - **Acceptance:** both jobs green; the posture check passes; the packaged widget's entitlements
   hold the exception; the storage round trip of D1 finds exactly `Widget/feed.json` new.
-- **Effort:** L, 3 runs. **Risk:** medium: a temporary exception may be narrowed by a macOS 27.x
-  update (PF-1); the reader type keeps the switch to A′ local. **Rollback:** before D1, a revert;
-  once released, the location may move in a minor release with a line in the notes, and the schema
-  only gains fields (RD C14 item 2).
+- **Effort:** L, 3-4 runs [estimate]: four targets, the guard's split, and a writer, reader and
+  entitlement only CI compiles. **Risk:** medium: a temporary exception may be narrowed by a
+  macOS 27.x update (PF-1); the reader type keeps the switch to A′ local. **Rollback:** before
+  D1, a revert; once released, the location may move in a minor release with a line in the notes,
+  and the schema only gains fields (RD C14 item 2).
 
 ### W-15: The widget follows the app's own language (P1)
 
@@ -527,9 +617,10 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      as a pure function for Linux; `nil` without a feed, which keeps today's behaviour (the
      extension's own language).
   2. **The app writes its effective language list** (`Bundle.main.preferredLocalizations`) into
-     the feed. At a launch whose language differs from `lastSeenLanguage` (W-4's reason,
-     `WidgetRefresher.swift:61, 79-89`; `WidgetReloadPlanner.launchReason`, :223), it writes the
-     feed first, then ends the extension and reloads every kind. A language chosen for an app
+     the feed, as W-5 already does (W-5 item 1). At a launch whose language differs from
+     `lastSeenLanguage` (W-4's reason, `WidgetRefresher.swift:61, 79-89`;
+     `WidgetReloadPlanner.launchReason`, :223), it writes the feed first, then ends the extension
+     and reloads every kind. A language chosen for an app
      alone may show only once the app is reopened ("If the app is open, you may need to quit and
      then reopen it to see the change", Apple's guide:
      https://support.apple.com/guide/mac-help/change-the-language-your-mac-uses-mh26684/mac), and
@@ -554,10 +645,14 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      Russian while the process is English, beside the English render.
   5. **What can't follow,** written into the guide by W-18: the edit sheet and the gallery's names
      (PF-6), and, if PF-7 fails, the time text the system keeps live.
-- **Files:** `Sources/BatteryCore/Widget/WidgetLanguage.swift`, `WidgetFeed.swift` (the field),
-  `Sources/BatteryPulseWidget/{BatteryWidgetView, AccessoriesWidgetView, WidgetWords,
-  WidgetFormatter, BatteryTimelineProvider}.swift` and the accessories provider,
-  `Sources/BatteryPulseApp/App/WidgetRefresher.swift` (the order at launch), the tests.
+- **Files:** `Sources/BatteryCore/Widget/WidgetLanguage.swift` (`WidgetFeed.swift` only if W-5
+  left `languages` out), `Sources/BatteryPulseWidget/{BatteryWidgetView, AccessoriesWidgetView,
+  WidgetWords, WidgetFormatter, BatteryTimelineProvider}.swift` and the accessories provider,
+  `Sources/BatteryPulseApp/App/WidgetRefresher.swift` (the order at launch; the language reload
+  waits for the feed's write, which runs off the main actor), the tests, among them
+  `WidgetSourceTests.swift`: `theWidgetsUnitSymbolsAreTheApps` finds the widget's unit symbols by
+  the declaration `static let widget = BatteryFormatter(` (`WidgetSourceTests.swift:20-27`), so
+  the per-language formatter keeps a declaration it reads, or the test follows it.
 - **Linux tests:** the choice for `["ru"]`, `["en"]` (English itself, never `nil`),
   `["ru-RU", "en"]`, `["de", "en"]`, `[]` and no feed; the launch order (feed written before the
   reload) in `WidgetReloadPlannerTests`.
@@ -655,7 +750,10 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      for "One device", whose `EntityQuery` reads the feed through `WidgetFeedReader` and declares
      `allowedExecutionTargets` `.widgetKitExtension`, as Details does
      (`BatteryWidgetIntent.swift:259`). Its titles are the names, shown verbatim, never catalog
-     keys. The default never runs the query (PF-3).
+     keys. The default never runs the query (PF-3). Where WidgetKit's last answer listed widgets
+     but none of this kind, the feed has no devices until the answer is asked again (W-5 item 4),
+     so the first iPhone & iPad widget's chooser can be empty for up to about 15 minutes; the
+     edit sheet then lists nothing rather than an error [inference].
   3. **The reading's age:** "Updated %@", the time today and the date otherwise, through the
      widget's formatter in its language (§2.3 item 11); Look 2 offers the alternative.
   4. **Names:** `DeviceNameText` applies `.privacySensitive()`, the one namer for devices, pinned
@@ -686,7 +784,7 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Source:** R:1009-1010; W71 "Retargeting the session tools"; I-4.
 - **Items** (mechanical; every occurrence, counted by `grep` before and after):
   1. `INTEGRATION_BRANCH` and the launchers' and the runbook's fetch lines: `claude/071-integration`
-     (MS:48; `start-session-r.sh:6, 15`; `start-short-session.sh:6, 23, 30`; SR:351, 439, 450,
+     (MS:47; `start-session-r.sh:6, 15`; `start-short-session.sh:6, 23, 30`; SR:351, 439, 450,
      456).
   2. The base and the candidates: `TAG_BASE` v0.7.0, `BASE_VERSION` 0.7.0, `RC_VERSION` 0.7.1,
      `F_VERSION` 0.6.99 (MS:68-71); RC-P's and RC-U2's pins, fetches and install cases removed
@@ -697,8 +795,8 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
      report's title "BatteryPulse 0.7.1".
   4. The literal versions in the logic and the questions: `step_after`'s "0.7.0" becomes a
      variable; D3-yes, D3-version, F12-version and R2's texts name 0.7.1 and 0.7.0 (MS:253,
-     259-261, 295, 301, 4303-4315), and so do the lines that call the base "his 0.6.2" (for
-     example MS:3598, 3716).
+     259-261, 295, 301, 4303-4315), as do D3's report table and the report's title (MS:3826,
+     3847), and so do the lines that call the base "his 0.6.2" (for example MS:3598, 3716).
   5. The runbook's top note and the tools' "PLAN.md" references point at this file.
 - **Files:** `docs/plans/0.7.1/{m5-session.sh, SESSION-R.md, ui.swift, frames.swift, swap.swift,
   start-session-r.sh, start-short-session.sh}`.
@@ -709,7 +807,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Acceptance:** both jobs green; `grep -rn '070\|0\.6\.99\|0\.5\.99\|0\.6\.2' docs/plans/0.7.1/`
   finds only history notes, RC-F's new `0.6.99` (`F_VERSION`) and step 2's first base, v0.6.2
   (W-17 item 1); the bare `0.6.2` is searched too, since "his 0.6.2" and "placed under 0.6.2"
-  carry no `v` and no `070`.
+  carry no `v` and no `070`. A second `grep -n '0\.7\.0'` over the same files, which the first
+  misses ("Install and Relaunch to 0.7.0", the report's "BatteryPulse 0.7.0"), lists every line
+  that keeps 0.7.0, each the base, F12's target or a history note, checked by hand.
 - **Effort:** S, 1 run. **Risk:** low. **Rollback:** a revert.
 
 ### W-17: The M5 session's preparation (P1; QUA-16)
@@ -735,6 +835,14 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 
      A 0.6.2 user who updates straight to 0.7.1 crosses both changes at once, which the two
      halves cover between them [inference].
+
+     So the script holds two published builds where 0.7's held one (V-0's review): W-16 makes
+     `TAG_BASE` v0.7.0, the build step 2's first half installs and F12's update fetches (F12 waits
+     for `BASE_VERSION`, MS:3563-3581), and W-17 adds v0.6.2, the start, with its own
+     `gh release download` beside the base's (MS:652-660) and the same exemption from the
+     higher-build rule (`install_build`'s names, MS:686, 739-748, and `install`'s, MS:787, gain
+     it); `prepare` then checks the Mac's version against v0.6.2's, not `BASE_VERSION`
+     (MS:2188-2191).
   2. **Five more widget names:** `history-medium`, `history-large`, `devices-small`,
      `devices-medium`, `devices-large` in `WIDGET_NAMES`, the R3 questions and the question list
      (MS:150, 262-263, 316-333), and `xlarge` with `R3-xlarge` out of them (no kind declares extra
@@ -838,9 +946,20 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
   1. Every package that touches a binary records the numbers of §3 in its commit message.
   2. A ceiling a package crosses is raised in a budget-only commit of its own that says why, in
      that package (as 0.7's W-3a did, AC70:126), and D1 sets each to the candidate plus about 5 %.
-  3. **0.7.1's outer bounds:** the widget within 0.6.1's ceilings (990,000 B of `__text`,
-     1,450,000 B of binary; P7 §9 rule 2); the app binary under RD C6's 5 MB; `app_kb` up to
-     5,000 KB and the DMG up to 1,600,000 B [estimate]. Beyond them the cut order applies.
+  3. **0.7.1's outer bounds** [estimate]: the widget's `__text` up to 1,050,000 B and its binary up
+     to 1,700,000 B; the app binary under RD C6's 5 MB; `app_kb` up to 5,200 KB and the DMG up to
+     1,600,000 B. Beyond them the cut order applies.
+     - **Why not 0.6.1's ceilings** (990,000 B of `__text`, 1,450,000 B of binary; P7 §9 rule 2),
+       as this plan first said (V-0's review): the binary's 156,096 B of room covers only about
+       96 KB of `__text`, since 0.7 added 1.62 B of binary per byte of `__text` (+515,232 B and
+       +318,440 B from v0.6.2 to v0.7.0) and its first intent 2.55 (AC70:22, 126), against §9's
+       60-200 KB; and 0.7's own growth came in above its estimate (100-250 KB, P7 §9; 318 KB
+       measured). So 0.6.1's bounds would cut features for growth inside the plan's own estimate.
+     - The new bounds cover §9's upper end at 0.7's ratio (200 KB of `__text`, about 324 KB of
+       binary, 1,618,000 B) with room for the intents' heavier share; `app_kb` and the DMG follow
+       (about 5,050-5,160 KB and 1,520,000-1,550,000 B there, the DMG at 0.29 of the installed
+       growth as at run 517). They are 0.7.1's own, not a 1.x promise; D1 still sets every
+       ceiling to the candidate plus about 5 % (item 2).
   4. `widget_appintents_bytes`' provisional 24,000 B (W-2's, AC70:125) is replaced at D1 by the
      candidate plus about 5 %. 0.7's two intents take 15,725 B, so two more and an entity may
      reach it [inference].
@@ -848,7 +967,9 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
 - **Files:** `scripts/size-budget.json` only. **Linux tests, guards:** CI's size report.
 - **Acceptance:** the macOS job's size report passes at D1.
 - **Effort:** S, 0-1 run (its commits ride in the packages). **Risk:** medium: the app's `__text`
-  has 11,540 B of room and W-5's builder and writer land there. **Rollback:** none needed.
+  has 11,540 B of room (run 517, Appendix C) and W-5's builder and writer land there; the
+  widget's binary ceiling, 65,096 B of room, falls to W-6's first commits [estimate].
+  **Rollback:** none needed.
 
 ### W-18: Localization review, docs and What's New (P1; DOC-08; merges last)
 
@@ -1033,8 +1154,8 @@ quit, the Claude desktop app among them, and a pending macOS update postponed wi
 preflight asks; the reads and proofs; one computer-use access request after `$S main`; a Focus on;
 `mark away`.
 
-**R1, the GUI phase** (he is away; about 2.5-3.5 hours, capped at 4 [estimate]), opening with
-`capacity`'s first reading (W-17 item 18):
+**R1, the GUI phase** (he is away; about 2.5-3.5 hours, up to the cap of 4 [estimate; §6.6]),
+opening with `capacity`'s first reading (W-17 item 18):
 1. **Step 2** (W-17 item 1): on 0.6.2, its small and medium widgets, `menu-bar-shots before`,
    v0.7.0 installed, the shots, `placed compare` and 0.7.0's What's New; then the 0.7.0 set-up,
    `install U`, the shots, `placed compare`, and 0.7.1's What's New if Q71-3 is yes (item 11).
@@ -1169,7 +1290,12 @@ faults since `prepare`; then `restore end`. It pays RD §1.2 item 3's bar for th
   working set (W-17 item 2).
 - **The runbook's printed size** (28,380 of 28,500 bytes): every addition pays with a cut (W-16).
 - **The GUI phase's length:** about 40-55 minutes more than 0.7's plan, inside the 4-hour cap; what
-  doesn't fit is "not run (time)" [estimate].
+  doesn't fit is "not run (time)" [estimate]. The one hands-free GUI phase measured, Session B's,
+  took 51 minutes for about 28 answers (Appendix C); 0.7's plan put 2-3 hours on Session R's 63
+  questions (P7 §6.2), and R1 asks about 80, so 2.5-3.8 hours by that rate [estimate]: the cap may
+  bind. So W-17 orders R1 by what §6.5's short feed check runs: once the phase passes 3 hours,
+  step 5's remaining Dim × style shots and step 11's extras are "not run (time)" before step 2's
+  second half, `feed`, 4.3, 4.6, a click per new kind or the rewrites are.
 - **The start on 0.6.2:** on a Mac that runs 0.7.0, his own widgets show under 0.6.2 until step 2's
   first half ends (its Accessories widgets keep their last picture, PF-10); 0.6.2 reads 0.7's
   storage (AC70:172's round trip), its code names none of 0.7's four settings keys (`git grep` at
@@ -1222,7 +1348,7 @@ nothing later; a kind or a case can come in any later release):
 6. the Battery widget's History chart (then 0.7.1 adds no parameter to a shipped intent, and step
    2's second half tests only the update).
 
-**Effort** is §1's table: about 17-20 runs, plus 2-3 to fix forward.
+**Effort** is §1's table: about 19-23 runs, plus 2-3 to fix forward and about 2 for the looks.
 
 ### 7.3 Frozen surfaces: what 0.7.1 adds, and what it keeps from 0.7.0
 
@@ -1305,12 +1431,20 @@ looks and W-18's pass:
 | `strings_bytes` | 250,710 B | 264,000 B | 5.0 % |
 | DMG | 1,415,873 B | 1,520,000 B | 6.9 % |
 
+The integration branch's first run (517, at `1f2847281dd5`) measured the same numbers, but for the
+DMG's 1,415,877 B (its compression varies by a few bytes; the published v0.7.0 DMG is 1,415,777 B,
+the size report's comparison); Appendix C.
+
 **Expected growth** [estimate]:
-- **App:** W-5's builder, store and writer, a few to about 15 KB of `__text`: the app's ceiling is
-  likely crossed in W-5, with a raise there.
+- **App:** W-5's builder, store and writer, and what of W-6's and W-7's BatteryCore code the app
+  links (the planner's new kinds, the routes, the feed's `Codable` conformance, S-1's cap): about
+  15-40 KB of `__text`. 0.7 added 105,480 B to it (1,902,980 B at v0.6.2, AC70:22). The app's
+  ceiling is likely crossed in W-5, with a raise there.
 - **Widget:** two kinds, their plans and views, the reader and the language choice. 0.7's Battery
   and Accessories kinds took the widget's `__text` from 492,660 to 810,068 B (AC70:125, 133),
-  so 60-200 KB is plausible; the widget's ceilings will be raised, inside 0.6.1's.
+  so 60-200 KB is plausible, though 0.7's own estimate (100-250 KB) came in low. Its binary grows
+  faster (1.62 B per byte of `__text` in 0.7), so the widget's ceilings are raised in W-6 and
+  W-7, inside Z-1's outer bounds (Z-1 item 3).
 - **Metadata:** two intents and an entity, about 8-10 KB, near the provisional 24,000 B.
 - **Strings:** about 18-24 keys × 2 bundles, about 4-7 KB of `strings_bytes`.
 
@@ -1335,11 +1469,16 @@ change don't count. BatteryPulse is an agent app that is rarely in front, so its
 - **No new wake-up:** the routine write rides `HistoryRecorder`'s minute tick, which already exists
   with 15 seconds of tolerance (`HistoryRecorder.swift:56-62`), once per 15-minute step while the
   app runs (§2.3 item 3): at most 96 writes a day of at most 8-12 KB, each an atomic rename
-  [estimate]. The immediate rewrites ride user actions and existing observations.
+  [estimate]. The immediate rewrites ride user actions, the existing battery observation and one
+  new observation of the remembered devices (W-5 item 4), which runs only when they change.
 - Nothing is written in Demo Mode. An empty answer, which is also how "no BatteryPulse widget
   placed" reads, writes as if every kind were placed (§2.3 item 2), so the writes above hold for
   every Mac that runs 0.7.1 [inference].
-- `EnergyGuardTests` is unchanged: no sleep, timer, task or activity is added.
+- `EnergyGuardTests` is unchanged: no sleep, timer or activity is added, and no task that wakes
+  on its own.
+- **Memory:** each write rebuilds from the store's last 7 days, which then stay decoded in the
+  store for the session, about 1.3 MB [estimate] that today only an opened History page costs
+  (W-5 item 2); RD C6's idle target is under 30 MB, never yet measured (RD C6).
 
 **Reloads and timelines** (W-6, W-7; tested on Linux):
 - **History:** its timeline refreshes hourly (about 24 a day), plus a plug change, at most hourly.
@@ -1380,8 +1519,10 @@ never an accessory; nothing that isn't already in `History/` or `Devices/devices
 an iPhone & iPad widget is placed, the history only while a History or Battery widget is (§2.3
 item 2). An empty or failed answer, which is also how "no BatteryPulse widget placed" reads,
 writes every section the toggles allow, so a Mac without BatteryPulse widgets keeps the file too
-[inference; G7-17]. Clear History, Forget, and turning recording or device reads off rewrite it at
-once, placed or not.
+[inference; G7-17]. A kind the answer once listed counts as placed until BatteryPulse quits
+(`WidgetPlacements`, W-5 item 4), so removing the last iPhone & iPad widget drops the devices at
+the next launch, not at once. Clear History, Forget, and turning recording or device reads off
+rewrite it at once, placed or not.
 
 **Who can read it:**
 - The folder is 0700 and the file 0600, owned by the user, like `Devices/` when its key creates it
@@ -1630,7 +1771,7 @@ shown, `.privacySensitive()`), Q-W12 (°C).
   (`Resources/BatteryPulseWidget.entitlements:7`), pinned by `WidgetSurfaceTests.swift:93-101`.
 - `widgetForbidden` covers `BatteryPulseWidget/` and `BatteryArt/` with no allow list
   (`SecurityGuardTests.swift:161-200`), naming Foundation's file APIs and `fopen` but no POSIX
-  `open`, `fstat` or `getpwuid` (:161-165); its self-test is at :432-441.
+  `open`, `fstat` or `getpwuid` (:161-165); its self-test is at :422-441.
 - The widget's `Diagnostics` is BatterySource's (`BatteryTimelineProvider.swift:44`,
   `WidgetReadCache.swift:66`), whose loggers have no `widget` category
   (`BatterySource/Diagnostics.swift:147-156`); a6a rewrites that file's `Signposts`.
@@ -1716,9 +1857,29 @@ shown, `.privacySensitive()`), Q-W12 (°C).
   item 7); how 0.6.2 draws widgets configured under 0.7.0 for step 2's first half's minutes
   (§6.6; Session A saw configurable widgets survive a reinstall of 0.6.1, AC70:73).
 - Every [estimate] in §1, §6, §9 and §10.
+- From V-0's review: that `replaceItemAt` with `.usingNewMetadataOnly` keeps the new file's 0600
+  on Darwin as it does on Linux (W-5 item 3); that `O_NOFOLLOW` and `fstat` behave in the
+  widget's sandbox as SPIKE-W's plain `open` did (W-5 item 5); whether Xcode 27.2 27B52 is
+  Apple's release (B-1 item 5); the feed's size from Swift's own encoder (W-5 item 1).
 
 ---
 
 ## Appendix C: facts 0.7.1 records (filled during the release)
 
-Empty until the work starts.
+**V-0** (2026-11-05: the intake's CI facts and item 6, the feasibility review, at
+`claude/071-integration`'s `1f2847281dd5`, whose code is v0.7.0's, so every file:line of v0.7.0
+still resolves there):
+
+| Fact | Shown by | Decides |
+|---|---|---|
+| The integration branch's first CI run: `ci.yml` run 517 (id 42090913060) at `1f28472`, **green on both jobs**, Linux in 2 min 9 s and macOS in 9 min 19 s. The latest `ci.yml` run at the review is 518 (`claude/071-b1`, B-1's); `release.yml`'s is 9 (v0.7.0) | GitHub's API | V-0 items 1 and 3, its acceptance; B-1's "Why first" |
+| The toolchain at run 517. macOS job: image `xcode-27-arm64` 20261104.0337.1 on macOS 27.0.1 (26A434); `DEVELOPER_DIR`'s `/Applications/Xcode_27.2.app` is **Xcode 27.2, build 27B52** (AC70:169 saw 27B48), Swift 6.4.2 (swiftlang-6.4.2.1.9, clang-2100.4.1.1), target arm64-apple-macosx27.0.0; the App Intents processor runs from `Xcode_27.2.app` with `--xcode-version 27B52`. The image's readme lists 27.2 (27B52, also as `Xcode_27.2.0.app`), 27.1 (27A9275, the default) and 27.0 (27A266a), and marks none a candidate. Linux job: image `ubuntu-26.04` 20261101.186, container `swift:6.4-noble`. 781 tests in 75 suites in both jobs, as at 0.7.0 | the run's logs; the image's readme | B-1 item 5; CLAUDE.md's Environment line |
+| The sizes at run 517 (its `size-1f28472…` artifact): DMG 1,415,877 B, `app_kb` 4,700, app binary 3,007,712 B, app `__text` 2,008,460 B, widget binary 1,293,904 B, widget `__text` 810,068 B, `widget_appintents_bytes` 15,725 B, `strings_bytes` 250,710 B, `icns_bytes` 215,181 B, every hygiene count 0; the published v0.7.0 DMG 1,415,777 B. **Room under today's ceilings:** app `__text` 11,540 B (0.57 %), `app_kb` 140 KB, app binary 152,288 B, widget `__text` 41,932 B, widget binary 65,096 B, `widget_appintents_bytes` 8,275 B, `strings_bytes` 13,290 B, DMG 104,123 B, `icns_bytes` 10,819 B | CI | Z-1; §9 |
+| 0.7's growth, the base of 0.7.1's size estimates: the widget's `__text` 491,628 → 810,068 B (+318,440) and its binary 778,672 → 1,293,904 B (+515,232, 1.62 B per byte of `__text`), its first intent alone +54,752 B and +139,568 B (2.55); the app's `__text` 1,902,980 → 2,008,460 B (+105,480) and binary 2,854,688 → 3,007,712 B (+153,024). P7 §9 had put the widget's at 100-250 KB | AC70:22, 125-126, 133; P7 §9 | Z-1 item 3 (the outer bounds rewritten); §9 |
+| The one hands-free GUI phase measured: Session B's, `mark away` 12:30:38 to `restore gui` 13:21:41 on 2026-10-30, 51 minutes for about 28 answers (`ebe6547:docs/plans/0.7.0/sessions/B.md:33-36`). Session R's question list holds 63 (MS:316-333), for which P7 §6.2 planned 2-3 hours. 0.7's looks added two packages, the space before % and the layout parity (`1f6b17d`, `7c32fd7`) | `B.md`; MS; `git log --merges` | §1's runs; §6.6 |
+| The largest feed, from a model of W-5 item 1's schema (Python's `json` with UTF-8 kept, not Swift's encoder; 8 devices with 64 four-byte scalars each, every series and day full): **9,230 B compact**, 16,487 B pretty-printed with sorted keys; the devices 3,929 B, the day series 2,120 B, the week 1,869 B, the daily summaries 960 B [estimate] | V-0's model | W-5 item 1 and its size test |
+| `FileManager` on Linux, Swift 6.4.2: `createFile(atPath:contents: nil, attributes: [.posixPermissions: 0o600])` makes a 0600 file; `replaceItemAt(_:withItemAt:backupItemName: nil, options: .usingNewMetadataOnly)` over a 0644 `feed.json` leaves it 0600 with the new bytes and no other file in the folder; `moveItem` onto an existing file fails (code 516); a folder created with 0700 is 0700 | V-0's check, a throwaway program | W-5 item 3 |
+| `HistorySample`'s stride is 112 B (a model of its fields, Linux x86_64), so the 11,520 minute samples of the 8 UTC days a 7-day read covers are about 1.3 MB [estimate] | V-0's model | W-5 item 2; §10 |
+| W-5's file:lines re-resolved at `1f28472`: each resolves as cited but two, the self-test's samples (`SecurityGuardTests.swift:422-431`; the test is at :432) and the widget rule's loop (:196-200), fixed in W-5 and Appendix B; W-16's `INTEGRATION_BRANCH` is at MS:47, not 48. The review's new citations (`AdvancedSettings.swift:20-22`, `IDeviceMonitor.swift:64-65, 181-209, 260-286`, `WidgetReloadPlanner.swift:236-241, 269-274`, `HistoryStore.swift:31, 76, 79-83`, `AppDevices.swift:39-60`, `HistoryView.swift:302-308`, `IsolationGuardTests.swift:19-26`, `WidgetSourceTests.swift:20-27`, MS:652-660, 686, 787, 3563-3581, 3826, 3847) were read at `1f28472` | V-0's review | W-5, W-15, W-16, W-17 |
+| Not one of the six 0.8 branches touches a file the review added to W-5's or W-17's lists: `AdvancedSettings.swift`, `WidgetRefresher.swift`, `HistoryRecorder.swift`, `BatteryPulseApp.swift`, the widget, the guard suites W-5 edits, MS (`git diff --stat cf847d0 origin/claude/080-<pkg>`); e3's `LogPrivacyGuardTests` meets W-5's `.public` lines at its rebase, as §5 says | `git` | §5 |
+| **The review's findings**, each fixed where it says: the writer can't hear Clear History or the recording toggle without the Settings pane's two calls, nor Forget, reads or a new reading without an observation of the devices (W-5 item 4; its Files); a listed kind stays placed until quit, so the devices section outlives a removed widget until the next launch (W-5 item 4, §11); the widget guard is one regex with no allow list, so W-5 splits it (W-5's guards); the rename needs `replaceItemAt` with `.usingNewMetadataOnly`, and `DeviceStore` writes its bytes before 0600 (W-5 item 3, §2.3 item 4); the worst feed exceeds 8 KB, and names must be capped in scalars (W-5 item 1, its test); an `EPERM` must log (W-5 item 5); "no task is added" was wrong (W-5's guards, §10); the decoded week's memory (W-5 item 2, §10); the widget binary's outer bound would bind inside the plan's estimate (Z-1 item 3, §9); Xcode 27.2 27B52 is already in place and `release.yml` has no Toolchain step (B-1 item 5); W-15 needn't add `languages` and must keep `WidgetSourceTests`' formatter declaration (W-15); W-16's acceptance `grep` missed `0.7.0` (W-16); MS needs a second published build for step 2 (W-17 item 1); the chooser can be empty for about 15 minutes (W-7 item 2); the GUI phase may reach the 4-hour cap (§6.6); the runs (§1, §7.2) | V-0's review | the sections named |
