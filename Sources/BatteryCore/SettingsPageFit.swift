@@ -17,14 +17,15 @@ public struct SettingsPageFit: Sendable, Equatable {
         self.chrome = chrome
     }
 
-    /// The Settings window: its title bar and its tab bar, the tabs' symbols over their names,
-    /// about 90 points together, rounded up.
+    /// The Settings window: its title bar and its tab bar, the tabs' symbols over their names. A
+    /// window with a preference-style toolbar of four tabs measured 88 points of them on CI's
+    /// macOS 27; 12 more to spare.
     public static let settings = SettingsPageFit(chrome: 100)
 
-    /// The welcome window: its title bar (about 32 points), its 24-point padding at the top and
-    /// the bottom, the header (the 128-point icon), the large buttons (about 36 points) and the
-    /// 18-point spacing above and below the page.
-    public static let welcome = SettingsPageFit(chrome: 32 + 2 * 24 + 128 + 36 + 2 * 18)
+    /// The welcome window: its title bar (32 points on CI's macOS 27), its 24-point padding at
+    /// the top and the bottom, the header (the 128-point icon), the large buttons (28 points) and
+    /// the 18-point spacing above and below the page, 272 points; 8 more to spare.
+    public static let welcome = SettingsPageFit(chrome: 280)
 
     /// Room left between a window at the cap and the edges of the visible area, top and bottom
     /// together, in points: the window doesn't touch the menu bar or the Dock.

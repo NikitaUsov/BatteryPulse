@@ -31,22 +31,31 @@ struct SettingsView: View {
 
 /// A pane's grouped Form, as tall as its rows while it fits the screen: the Settings tabs and the
 /// welcome window's settings. Above `SettingsPageFit`'s cap for its window it keeps the cap's
-/// height and scrolls; it bounces only then.
+/// height and scrolls; while it fits, it doesn't bounce.
 struct SettingsPage<Content: View>: View {
     /// The window around the page.
     var fit = SettingsPageFit.settings
     @ViewBuilder let content: Content
 
     var body: some View {
+        Form { content }
+            .formStyle(.grouped)
+            .scrollBounceBehavior(.basedOnSize)
+            .modifier(ScreenFit(fit: fit))
+    }
+}
+
+/// Caps a page at `fit`'s cap on the current screens. A modifier, not generic, so the five pages
+/// share its code.
+private struct ScreenFit: ViewModifier {
+    var fit: SettingsPageFit
+
+    func body(content: Content) -> some View {
         // Read here, on the main actor: the layout gets a plain number.
         let cap = fit.cap(visibleHeights: ScreenHeights.shared.visibleHeights)
-        CappedHeightLayout(cap: CGFloat(cap)) {
-            Form { content }
-                .formStyle(.grouped)
-                .scrollBounceBehavior(.basedOnSize)
-        }
-        // Again when a page shows, in case a change of the screens' room went unannounced.
-        .onAppear { ScreenHeights.shared.update() }
+        CappedHeightLayout(cap: CGFloat(cap)) { content }
+            // Again when a page shows, in case a change of the screens' room went unannounced.
+            .onAppear { ScreenHeights.shared.update() }
     }
 }
 
