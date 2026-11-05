@@ -26,7 +26,7 @@ enum AppWidgetFeed {
 /// - **Never** in Demo Mode, whose readings never reach the widgets, but for what the user removes
 ///   meanwhile: Clear History, recording off, device reads off and Forget take their part out of
 ///   the feed last written at once, from the real settings and devices, and add nothing
-///   (``WidgetFeed/removing(_:)``).
+///   (``WidgetFeed/removing(_:)``); before the first write since launch, the file goes whole.
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
 /// moment only. One write runs at a time; the requests meanwhile make one follow-on write.
@@ -180,14 +180,14 @@ final class WidgetFeedWriter {
             historyCleared: historyCleared, recordsHistory: AppSettings.recordsHistory,
             readsDevices: AppSettings.readsDevices, remembered: Set(AppDevices.monitor.remembered.map(\.id)))
         do {
-            switch try await FeedBuild.rewrite(store, with: removal, at: .now) {
+            switch try await FeedBuild.rewrite(store, with: removal) {
             case .written(let bytes):
                 Diagnostics.widget.notice(
                     "Took a removal out of the widget feed (\(reason.rawValue, privacy: .public)), nothing added: \(bytes, privacy: .public) bytes"
                 )
             case .removed:
                 Diagnostics.widget.notice(
-                    "Removed the widget feed, which couldn't be read back, for a removal (\(reason.rawValue, privacy: .public))"
+                    "Removed the widget feed for a removal (\(reason.rawValue, privacy: .public)): none was written since launch"
                 )
             case .unchanged, nil:
                 Diagnostics.widget.debug(
@@ -242,13 +242,13 @@ final class WidgetFeedWriter {
 
 /// The feed's build and write, off the main actor: the history's reads, the builder and the file.
 private nonisolated enum FeedBuild {
-    /// Takes `removal` out of the feed `store` last wrote, or out of the file on disk, which blocks
-    /// on the file system; `nil` without a feed.
+    /// Takes `removal` out of the feed `store` last wrote, or removes the file a previous launch
+    /// left before its first write, which blocks on the file system; `nil` without a file.
     @concurrent
-    static func rewrite(_ store: WidgetFeedStore, with removal: WidgetFeed.Removal, at now: Date) async throws
+    static func rewrite(_ store: WidgetFeedStore, with removal: WidgetFeed.Removal) async throws
         -> WidgetFeedStore.Outcome?
     {
-        try store.rewrite(at: now) { $0.removing(removal) }
+        try store.rewrite { $0.removing(removal) }
     }
 
     /// Writes `feed` through `store`, which blocks on the file system.

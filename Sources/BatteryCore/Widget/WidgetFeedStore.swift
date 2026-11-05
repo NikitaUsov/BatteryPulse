@@ -52,8 +52,8 @@ public final class WidgetFeedStore: Sendable {
         case written(bytes: Int)
         /// The feed differs from the file only in `writtenAt`, so nothing was written.
         case unchanged
-        /// A rewrite found a file it couldn't read back as a feed, and removed it
-        /// (``rewrite(at:_:)``).
+        /// A rewrite before the store's first write removed the file a previous launch left
+        /// (``rewrite(_:)``).
         case removed
     }
 
@@ -76,57 +76,25 @@ public final class WidgetFeedStore: Sendable {
         }
     }
 
-    /// Rewrites the feed with `change` applied, and nothing else read or built: in Demo Mode, whose
-    /// readings never reach the feed, what the user removes still leaves it at once
-    /// (``WidgetFeed/removing(_:)``). The feed is the one this store last wrote or, before its
-    /// first write, the file a previous launch left; a file it can't read back as a feed is
-    /// removed, which only removes. `nil` when there is no feed.
-    public func rewrite(at now: Date, _ change: (WidgetFeed) -> WidgetFeed) throws -> Outcome? {
+    /// Rewrites the feed this store last wrote with `change` applied, and nothing else read or
+    /// built: in Demo Mode, whose readings never reach the feed, what the user removes still
+    /// leaves it at once (``WidgetFeed/removing(_:)``). Before this store's first write there is
+    /// no feed to take a part out of, so the file a previous launch left, if any, is removed
+    /// whole, which only removes; the next full write makes it again. `nil` when there is no file
+    /// either.
+    public func rewrite(_ change: (WidgetFeed) -> WidgetFeed) throws -> Outcome? {
         try written.withLock { written in
-            let feed: WidgetFeed
-            if let written {
-                feed = written
-            } else {
-                switch readBack(at: now) {
-                case .none:
-                    return nil
-                case .unreadable:
-                    try removeFiles()
-                    return .removed
-                case .feed(let onDisk):
-                    feed = onDisk
-                }
+            guard let feed = written else {
+                guard exists(fileURL) || exists(temporaryURL) else { return nil }
+                try removeFiles()
+                return .removed
             }
             let changed = change(feed)
-            guard changed != feed else {
-                written = feed
-                return .unchanged
-            }
+            guard changed != feed else { return .unchanged }
             let bytes = try replace(with: WidgetFeed.encoded(changed))
             written = changed
             return .written(bytes: bytes)
         }
-    }
-
-    /// What the feed's file holds, for a rewrite before this store's first write.
-    private enum OnDisk {
-        case none
-        case unreadable
-        case feed(WidgetFeed)
-    }
-
-    /// The file as the widget's decoder reads it, at most ``WidgetFeed/maximumBytes``; a link, a
-    /// folder or anything else that isn't a regular file is unreadable, never followed.
-    private func readBack(at now: Date) -> OnDisk {
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path) else { return .none }
-        guard attributes[.type] as? FileAttributeType == .typeRegular,
-            let handle = try? FileHandle(forReadingFrom: fileURL)
-        else { return .unreadable }
-        defer { try? handle.close() }
-        guard let data = try? handle.read(upToCount: WidgetFeed.maximumBytes + 1),
-            let feed = try? WidgetFeed.decode(data, now: now)
-        else { return .unreadable }
-        return .feed(feed)
     }
 
     /// Writes `data` to a new 0600 file and puts it in the feed's place; returns its size.

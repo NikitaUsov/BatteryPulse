@@ -133,14 +133,14 @@ import Testing
         defer { WidgetFeedStoreTests.remove(directory) }
         let store = WidgetFeedStore(directory: directory)
         // No feed yet: nothing to rewrite, and nothing is made.
-        #expect(try store.rewrite(at: Self.now) { $0.removing(Self.removal(readsDevices: false)) } == nil)
+        #expect(try store.rewrite { $0.removing(Self.removal(readsDevices: false)) } == nil)
         #expect(!FileManager.default.fileExists(atPath: directory.path))
 
         let feed = try Self.feed()
         _ = try store.write(feed)
-        #expect(try store.rewrite(at: Self.now) { $0.removing(Self.removal()) } == .unchanged)
+        #expect(try store.rewrite { $0.removing(Self.removal()) } == .unchanged)
         let off = feed.removing(Self.removal(readsDevices: false))
-        let outcome = try store.rewrite(at: Self.now) { $0.removing(Self.removal(readsDevices: false)) }
+        let outcome = try store.rewrite { $0.removing(Self.removal(readsDevices: false)) }
         #expect(outcome == .written(bytes: try WidgetFeed.encoded(off).count))
         let data = try Data(contentsOf: store.fileURL)
         #expect(try WidgetFeed.decode(data, now: Self.now) == off)
@@ -150,41 +150,26 @@ import Testing
         #expect(try store.write(off) == .unchanged)
     }
 
-    /// Before its first write, a store rewrites the file a previous launch left.
-    @Test func aNewStoreRewritesTheFileOnDisk() throws {
+    /// Before its first write a store has no feed to take a part out of, so the file a previous
+    /// launch left goes whole, which only removes; a link in its place is removed, never followed,
+    /// and what it points to stays. The next full write makes the file again.
+    @Test func beforeItsFirstWriteAStoreRemovesTheFile() throws {
         let directory = WidgetFeedStoreTests.temporaryDirectory()
         defer { WidgetFeedStoreTests.remove(directory) }
         let feed = try Self.feed()
         _ = try WidgetFeedStore(directory: directory).write(feed)
         let store = WidgetFeedStore(directory: directory)
-        #expect(try store.rewrite(at: Self.now) { $0.removing(Self.removal()) } == .unchanged)
-        let cleared = feed.removing(Self.removal(historyCleared: true))
-        let later = WidgetFeedStore(directory: directory)
-        #expect(try later.rewrite(at: Self.now) { $0.removing(Self.removal(historyCleared: true)) } != .unchanged)
-        #expect(try WidgetFeed.decode(Data(contentsOf: later.fileURL), now: Self.now) == cleared)
-    }
-
-    /// A file it can't read back as a feed is removed, which only removes; a link in the feed's
-    /// place is removed, never followed, and what it points to stays.
-    @Test func anUnreadableFileIsRemoved() throws {
-        let directory = WidgetFeedStoreTests.temporaryDirectory()
-        defer { WidgetFeedStoreTests.remove(directory) }
-        let manager = FileManager.default
-        try manager.createDirectory(at: directory, withIntermediateDirectories: true)
-        let file = directory.appendingPathComponent(WidgetFeedStore.fileName)
-        try Data("{\"version\": 1".utf8).write(to: file)
-        #expect(try WidgetFeedStore(directory: directory).rewrite(at: Self.now) { $0 } == .removed)
+        #expect(try store.rewrite { $0.removing(Self.removal()) } == .removed)
         #expect(try WidgetFeedStoreTests.names(in: directory) == [])
+        #expect(try store.rewrite { $0.removing(Self.removal()) } == nil)
+        #expect(try store.write(feed) == .written(bytes: try WidgetFeed.encoded(feed).count))
 
-        // A feed written ahead of the clock is turned down as the widget turns it down.
-        let ahead = try Self.feed(minutesAgo: -60)
-        try WidgetFeed.encoded(ahead).write(to: file)
-        #expect(try WidgetFeedStore(directory: directory).rewrite(at: Self.now) { $0 } == .removed)
-
+        let manager = FileManager.default
         let target = directory.deletingLastPathComponent().appendingPathComponent("target.json")
-        try WidgetFeed.encoded(try Self.feed()).write(to: target)
-        try manager.createSymbolicLink(at: file, withDestinationURL: target)
-        #expect(try WidgetFeedStore(directory: directory).rewrite(at: Self.now) { $0 } == .removed)
+        try WidgetFeed.encoded(feed).write(to: target)
+        try manager.removeItem(at: store.fileURL)
+        try manager.createSymbolicLink(at: store.fileURL, withDestinationURL: target)
+        #expect(try WidgetFeedStore(directory: directory).rewrite { $0 } == .removed)
         #expect(try WidgetFeedStoreTests.names(in: directory) == [])
         #expect(manager.fileExists(atPath: target.path))
     }
