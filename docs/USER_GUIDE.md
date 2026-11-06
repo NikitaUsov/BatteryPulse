@@ -133,8 +133,9 @@ Power Mode; otherwise they follow the menu bar's light or dark color.
 BatteryPulse can't hide the battery item macOS shows. To use BatteryPulse in its place, click
 **Open Menu Bar Settings…** in Settings → Menu Bar and turn off **Battery** there.
 
-The popover that opens from the item shows charge, state, time remaining, maximum capacity,
-cycles, temperature, the adapter and the system load, and below them the batteries of connected
+The popover that opens from the item shows charge, state, time remaining, why the battery isn't
+charging (see [Why it isn't charging](#why-it-isnt-charging)), maximum capacity, cycles,
+temperature, the adapter and the system load, and below them the batteries of connected
 accessories (see [Accessories](#accessories)).
 
 ## The main window
@@ -142,11 +143,8 @@ accessories (see [Accessories](#accessories)).
 - **Overview** — charge with a battery drawn to the exact level, what the battery is doing
   ("Charging at 31.3 W"), time remaining, gauges for charge, maximum capacity and cycle count,
   capacity bars in mAh, and a power-flow diagram from the adapter to the Mac and the battery.
-  When the Charge Limit you set in System Settings → Battery (Apple silicon, macOS 26.4 or later)
-  has stopped charging, the battery reads *Charged to limit*, with a line under it that says so;
-  the menu bar popover and the compact window say *Charged to limit* too. BatteryPulse only reads
-  that the limit holds the charge: it can't read which percentage you set, and it never changes
-  the limit.
+  On the adapter it also says why the battery isn't charging, when it can; see
+  [Why it isn't charging](#why-it-isnt-charging).
 - **Power** — battery voltage, current, power and temperature, and while charging the current
   and voltage the battery asks the charger for; *Charge limit: Reached* while the Charge Limit
   holds the charge (no percentage: macOS holds the charge within a few points of the limit, so
@@ -187,6 +185,28 @@ is switched to another user, the menu bar stops refreshing power and catches up 
 back. Otherwise BatteryPulse updates when macOS reports a change, plus one reading a minute for
 the history while recording is on (the default; turn it off in Settings → Advanced), so it uses
 almost no CPU in the background.
+
+### Why it isn't charging
+
+When your Mac is on its adapter but the battery isn't charging, BatteryPulse names the reason
+only when the battery reports it:
+
+- **The Charge Limit** you set in System Settings → Battery (Apple silicon, macOS 26.4 or later):
+  once it has stopped charging, the battery reads *Charged to limit*, and a line under it says
+  that charging stopped at the Charge Limit, with **Battery Settings…**, which opens that pane.
+  BatteryPulse only reads that the limit holds the charge: it can't read which percentage you
+  set, and it never changes the limit.
+- **No reason reported:** the battery reads *Not charging*, and the info button beside it lists
+  the reasons macOS can stop charging on the adapter, from Apple's guide: a battery health
+  feature such as the Charge Limit or Optimized Battery Charging, a battery warmer than
+  recommended (charging may then stop at 80 %), or an adapter that can run the Mac but not charge
+  the battery as well. It names none of them for your Mac, since the battery doesn't say which.
+
+Optimized Battery Charging's own hold reads *Charging on hold*. The menu bar popover shows the
+same line with a **Battery Settings…** link, and the list as the help tag of the info symbol
+beside *Not charging*; the compact window shows the state alone. The text report (**Copy
+Report**, `bpulse`) names the reason after the raw value of `NotChargingReason`, for example
+`0x1000000 (Charge Limit)`.
 
 ### Motion and Liquid Glass
 
@@ -636,8 +656,9 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
 - **Start Tour** plays every scene and animation in turn and switches to the page that shows
   each one best, then starts over. Choose how long each scene stays under **Scene length**.
 - Click a **scene** to show it by hand: fast charging, on battery, low battery, critical
-  battery, fully charged, optimized charging, the Charge Limit, just plugged in, a worn battery,
-  heavy load, a slow charger, Low Power Mode, or a Mac without a battery.
+  battery, fully charged, optimized charging, the Charge Limit, not charging with no reason
+  reported, just plugged in, a worn battery, heavy load, a slow charger, Low Power Mode, or a Mac
+  without a battery.
 - Click an **animation** to watch the battery charge from empty or drain to empty in 20
   seconds.
 

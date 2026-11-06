@@ -22,14 +22,14 @@ struct PowerView: View {
             }
             systemSection
         }
-        // The rows and sections that come with plugging in, a new charge state or the Charge
-        // Limit's hold (the adapter and USB PD sections, the requested charge, the Charge Limit,
-        // power from the adapter, adapter loss) appear and go once per event; the rows below them
-        // move, so under Reduce Motion it all changes at once. Battery power, voltage, current and
+        // The rows and sections that come with plugging in, a new charge state or a cause for not
+        // charging (the adapter and USB PD sections, the requested charge, the Charge Limit, power
+        // from the adapter, adapter loss) appear and go once per event; the rows below them move,
+        // so under Reduce Motion it all changes at once. Battery power, voltage, current and
         // temperature change instantly.
         .animation(motion.change, value: key.isPluggedIn)
         .animation(motion.change, value: key.chargeState)
-        .animation(motion.change, value: key.isAtSystemChargeLimit)
+        .animation(motion.change, value: key.notChargingCause)
         .animation(motion.change, value: hasAdapter)
     }
 

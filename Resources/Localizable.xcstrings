@@ -188,6 +188,18 @@
         }
       }
     },
+    "A battery health feature holds the charge to extend the battery's lifespan: the Charge Limit or Optimized Battery Charging, in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Overview: one of Apple's possible reasons for not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Функция отслеживания состояния аккумулятора удерживает заряд, чтобы продлить срок его службы: Лимит зарядки или Оптимизированная зарядка в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
     "A language you choose for BatteryPulse alone in System Settings should reach its widgets too, once you reopen BatteryPulse.": {
       "extractionState": "manual",
       "comment": "What's New for 0.7.1: a language chosen for BatteryPulse alone reaches the widgets",
@@ -907,6 +919,18 @@
         }
       }
     },
+    "Battery Settings…": {
+      "extractionState": "manual",
+      "comment": "Overview and the menu bar: opens System Settings → Battery, where a cause for not charging is changed",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки аккумулятора…"
+          }
+        }
+      }
+    },
     "Battery temperature estimate in hundredths of a degree Celsius.": {
       "extractionState": "manual",
       "localizations": {
@@ -1118,6 +1142,18 @@
         }
       }
     },
+    "BatteryPulse names the reason only when the battery reports it.": {
+      "extractionState": "manual",
+      "comment": "Overview: the line after Apple's possible reasons for not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BatteryPulse называет причину, только когда её сообщает аккумулятор."
+          }
+        }
+      }
+    },
     "BatteryPulse records an iPhone or iPad every 5 minutes while it's connected by cable.": {
       "extractionState": "manual",
       "localizations": {
@@ -1234,14 +1270,14 @@
         }
       }
     },
-    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge.": {
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge. On the MacBook Air M5 sampled, it reads 0x80 on battery and for the first seconds after plugging in.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд."
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд. На проверенном MacBook Air M5 поле равно 0x80 при работе от аккумулятора и в первые секунды после подключения адаптера."
           }
         }
       }
@@ -4504,6 +4540,18 @@
         }
       }
     },
+    "macOS can stop charging on the adapter when:": {
+      "extractionState": "manual",
+      "comment": "Overview: the line before Apple's possible reasons for not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS может остановить зарядку при подключённом адаптере, если:"
+          }
+        }
+      }
+    },
     "macOS caps maximum capacity at %@. The battery currently holds %@ of its design capacity.": {
       "extractionState": "manual",
       "localizations": {
@@ -5976,6 +6024,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подключён и полностью заряжен: Mac работает от адаптера."
+          }
+        }
+      }
+    },
+    "Plugged in but not charging, for no reason BatteryPulse can name.": {
+      "extractionState": "manual",
+      "comment": "Demo Mode: the scene of a Mac on its adapter that isn't charging, with no cause the battery reports",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключён, но не заряжается, и BatteryPulse не может назвать причину."
           }
         }
       }
@@ -7564,6 +7624,18 @@
         }
       }
     },
+    "The battery is warmer than recommended: charging may stop at %@.": {
+      "extractionState": "manual",
+      "comment": "Overview: one of Apple's possible reasons for not charging; the placeholder is a percentage (80%)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура аккумулятора выше рекомендованной: зарядка может остановиться на уровне %@."
+          }
+        }
+      }
+    },
     "The charge of your iPhone and iPad, as BatteryPulse last read it.": {
       "extractionState": "manual",
       "localizations": {
@@ -7649,6 +7721,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подпись кода новой версии недействительна."
+          }
+        }
+      }
+    },
+    "The power adapter has enough power to run the Mac, but not to charge the battery as well.": {
+      "extractionState": "manual",
+      "comment": "Overview: one of Apple's possible reasons for not charging",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мощности адаптера питания хватает на работу Mac, но не на зарядку аккумулятора."
           }
         }
       }
@@ -8934,6 +9018,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Какие записи о загрузке с разряженным аккумулятором присутствуют: бит 0 — GeneralPayload, бит 1 — SMCBootManagementPayload."
+          }
+        }
+      }
+    },
+    "Why isn't the battery charging?": {
+      "extractionState": "manual",
+      "comment": "Overview: the title of the popover with Apple's possible reasons for not charging, and the name of the info button that opens it",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Почему аккумулятор не заряжается?"
           }
         }
       }

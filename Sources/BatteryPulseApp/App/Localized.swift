@@ -130,6 +130,57 @@ enum Phrases {
         }
     }
 
+    // MARK: Not charging
+
+    /// Why the Mac battery isn't charging, for a cause BatteryPulse can prove: the sentence under
+    /// the state line on Overview and in the menu bar popover; `nil` without one. BatteryPulse only
+    /// reads the cause, so the sentence says where it is changed.
+    static func notChargingSentence(_ s: BatterySnapshot) -> String? {
+        guard let cause = s.notChargingCause else { return nil }
+        return switch cause {
+        case .systemChargeLimit:
+            String(localized: "Charging stopped at the Charge Limit set in System Settings → Battery.")
+        }
+    }
+
+    /// The question Apple's possible reasons answer when the battery reports no cause BatteryPulse
+    /// can prove: the title of the main window's popover and the name of the button that opens it.
+    static var whyNotCharging: String {
+        String(localized: "Why isn't the battery charging?")
+    }
+
+    /// The line before Apple's possible reasons.
+    static var notChargingReasonsIntro: String {
+        String(localized: "macOS can stop charging on the adapter when:")
+    }
+
+    /// Apple's possible reasons why a Mac on its adapter isn't charging (the Mac User Guide's "If
+    /// your Mac battery won't charge"), naming none for this Mac.
+    static func notChargingReasons(_ f: BatteryFormatter) -> [String] {
+        [
+            String(
+                localized:
+                    "A battery health feature holds the charge to extend the battery's lifespan: the Charge Limit or Optimized Battery Charging, in System Settings → Battery."
+            ),
+            // Apple: above the recommended temperatures, charging may stop at 80%.
+            String(localized: "The battery is warmer than recommended: charging may stop at \(f.percent(80))."),
+            String(
+                localized: "The power adapter has enough power to run the Mac, but not to charge the battery as well."),
+        ]
+    }
+
+    /// What BatteryPulse names, and when: the line after Apple's possible reasons.
+    static var notChargingReasonsFootnote: String {
+        String(localized: "BatteryPulse names the reason only when the battery reports it.")
+    }
+
+    /// The question, the reasons and the footnote as one text: the menu bar popover's help tag,
+    /// since the menu bar's window opens no popover of its own.
+    static func notChargingReasonsHelp(_ f: BatteryFormatter) -> String {
+        ([whyNotCharging, notChargingReasonsIntro] + notChargingReasons(f).map { "• " + $0 }
+            + [notChargingReasonsFootnote]).joined(separator: "\n")
+    }
+
     /// macOS reports "Normal" (our default) or a problem such as "Service Recommended".
     static func condition(_ raw: String?) -> String? {
         switch raw {

@@ -36,6 +36,7 @@ final class DemoController {
         (.scene(.lowPowerMode), .power),
         (.scene(.optimizedHold), .overview),
         (.scene(.systemChargeLimit), .overview),
+        (.scene(.notChargingWithoutCause), .overview),
         (.scene(.slowCharger), .power),
         (.scene(.wornBattery), .health),
         (.scene(.noBattery), .overview),
@@ -280,7 +281,9 @@ extension DemoController.Step {
         case .scene(.charging), .scene(.fullyCharged), .scene(.justPluggedIn), .animation(.chargeFromEmpty): .charging
         case .scene(.lowBattery), .scene(.wornBattery), .scene(.slowCharger), .scene(.lowPowerMode): .warning
         case .scene(.criticalBattery), .scene(.heavyLoad), .animation(.drainToEmpty): .critical
-        case .scene(.onBattery), .scene(.optimizedHold), .scene(.systemChargeLimit), .scene(.noBattery): .neutral
+        case .scene(.onBattery), .scene(.optimizedHold), .scene(.systemChargeLimit), .scene(.notChargingWithoutCause),
+            .scene(.noBattery):
+            .neutral
         }
     }
 }
@@ -295,6 +298,7 @@ extension DemoScenario {
         case .fullyCharged: "Fully charged"
         case .optimizedHold: "Optimized charging"
         case .systemChargeLimit: "Charge limit"
+        case .notChargingWithoutCause: "Not charging"
         case .justPluggedIn: "Just plugged in"
         case .wornBattery: "Worn battery"
         case .heavyLoad: "Heavy load"
@@ -313,6 +317,7 @@ extension DemoScenario {
         case .fullyCharged: "Plugged in and full; the adapter powers the Mac."
         case .optimizedHold: "macOS holds the charge at 80 percent to slow battery aging."
         case .systemChargeLimit: "Charging stopped at the Charge Limit set in System Settings → Battery."
+        case .notChargingWithoutCause: "Plugged in but not charging, for no reason BatteryPulse can name."
         case .justPluggedIn: "macOS is still estimating the time to full."
         case .wornBattery: "Past its rated cycles and below 80 percent capacity: service recommended."
         case .heavyLoad: "Rendering or gaming: high power draw and an elevated thermal state."
@@ -331,6 +336,7 @@ extension DemoScenario {
         case .fullyCharged: "battery.100percent"
         case .optimizedHold: "pause.circle"
         case .systemChargeLimit: "arrow.up.to.line"
+        case .notChargingWithoutCause: "bolt.slash"
         case .justPluggedIn: "powerplug.portrait.fill"
         case .wornBattery: "exclamationmark.triangle"
         case .heavyLoad: "flame"

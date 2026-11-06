@@ -15,8 +15,10 @@ public struct DemoBattery: Sendable, Equatable {
     public var isFullyCharged = false
     /// Optimized Battery Charging is holding the charge.
     public var isOptimizedHold = false
-    /// macOS's Charge Limit is holding the charge (``BatterySnapshot/isAtSystemChargeLimit``).
-    public var isAtSystemChargeLimit = false
+    /// `ChargerData.NotChargingReason`, whose bits name a cause for not charging
+    /// (``BatterySnapshot/notChargingCause``): bit 24 while the Charge Limit holds the charge.
+    /// `nil` reads as the M5 reports it with no cause: 0x80 on battery and 0 on the adapter.
+    public var notChargingReason: Int?
     /// Power into the battery: positive while charging, negative while discharging.
     public var batteryWatts: Double
     public var systemLoadWatts: Double
@@ -110,10 +112,8 @@ public struct DemoBattery: Sendable, Equatable {
             "BatteryInstalled": .bool(true),
             "ChargerData": .dictionary([
                 "IsCharging": .int(isCharging ? 1 : 0),
-                // On battery the M5 reports 0x80; it is 0 while charging, and bit 24 while the
-                // Charge Limit holds the charge.
-                "NotChargingReason": .int(
-                    isAtSystemChargeLimit ? Int64(SystemChargeLimit.heldBit) : isExternal ? 0 : 128),
+                // On battery the M5 reports 0x80, on the adapter 0, unless the scene sets a cause.
+                "NotChargingReason": .int(Int64(notChargingReason ?? (isExternal ? 0 : 0x80))),
                 "SlowChargingReason": .int(0),
             ]),
             "CurrentCapacity": .int(Int64(level)),
@@ -280,11 +280,17 @@ public struct DemoAdapter: Sendable, Equatable {
     }
 }
 
-/// Ready-made states that show what BatteryPulse does in each situation.
+/// Ready-made states that show what BatteryPulse does in each situation, among them a scene for
+/// each cause for not charging BatteryPulse names (``NotChargingCause``) and one for none.
 public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
     case charging, onBattery, lowBattery, criticalBattery, fullyCharged, optimizedHold
     /// Held at 80 % by the Charge Limit set in System Settings → Battery.
     case systemChargeLimit
+    /// On the adapter and not charging, with no cause BatteryPulse can name
+    /// (``BatterySnapshot/isNotChargingWithoutCause``): the reason reads 0x80, as the M5's did
+    /// 10 s after a plug-in (`m5-macos27-plugged-in-10s.plist`), so the main window lists Apple's
+    /// possible reasons.
+    case notChargingWithoutCause
     case justPluggedIn, wornBattery, heavyLoad, slowCharger, lowPowerMode, noBattery
 
     public var id: Self { self }
@@ -310,7 +316,10 @@ public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
                 .with { $0.isOptimizedHold = true }
         case .systemChargeLimit:
             DemoBattery(percent: 80, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 6.8, minutesRemaining: 0)
-                .with { $0.isAtSystemChargeLimit = true }
+                .with { $0.notChargingReason = SystemChargeLimit.heldBit }
+        case .notChargingWithoutCause:
+            DemoBattery(percent: 57, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 7.4, minutesRemaining: 0)
+                .with { $0.notChargingReason = 0x80 }
         case .justPluggedIn:
             DemoBattery(
                 percent: 52, adapter: .usbC60W, isCharging: true, batteryWatts: 21, systemLoadWatts: 8.3,
