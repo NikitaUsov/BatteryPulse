@@ -514,7 +514,7 @@ disagree, or are unsure, the item goes to his batch at the day's end. Never gues
 | `R-settings` | each pane's end in its shot: the last row's control whole and reachable; a pane that fits shows no scroll bar | `--unsure` |
 | `R-menu-bar-same` | each pair it lists, BatteryPulse's item alone (the clock, the system's items and the charge change between the runs): 1 drawn the same in every pair; 2 naming the pairs that differ | `--unsure` |
 | `R-raw-history-rc` | 1 History at once; 2 History's title over Raw Data's table first (how long) | 3 |
-| `F12-version`, `F12-widget`, `F12-new-kinds` | before against after: 1 same (the new kinds: their last picture kept), 2 blank or grey, 3 gone, 4 different | `--unsure` |
+| `F12-version`, `F12-widget`, `F12-new-kinds` | the version the script read; the crops before against after the redraw: 1 same, with fresh values (the published 0.7.1 has every kind, the History and iPhone & iPad ones too), 2 blank or grey, 3 gone, 4 different | `--unsure`; no redraw: not checked |
 | `H-hold` | 1 a span held below 100 % on the adapter for 15 minutes or more; 2 none | 3 |
 | `D3-widgets` | after the redraw and the desktop click, against the before-picture: 1 same, 2 blank or grey, 3 gone, 4 different | `--unsure` |
 | `D3-*` (the rest) | as each question says, from its shot or the script's read | `--unsure` |

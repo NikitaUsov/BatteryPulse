@@ -625,6 +625,28 @@ wallpapers() {
 WIDGET_EXEC='^/[^ ]*/BatteryPulseWidget\.appex/Contents/MacOS/BatteryPulseWidget( |$)'
 widget_pids() { pgrep -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
+# fresh_widget_pid <the pids before, space-separated> [<seconds, 60 by default>]: a widget
+# extension process that wasn't among them, waited for up to that long (PLAN.md §6.0 rule 4: an
+# update ends the extension before its swap, and the new version's launch reloads every kind, so
+# a new process is the redraw); printed, or nothing when none came in time.
+fresh_widget_pid() {
+  local before=" $1 " waited=0 pid
+  while :; do
+    for pid in $(widget_pids); do
+      case "$before" in
+        *" $pid "*) ;;
+        *)
+          echo "$pid"
+          return 0
+          ;;
+      esac
+    done
+    [ "$waited" -lt "${2:-60}" ] || return 0
+    sleep 5
+    waited=$((waited + 5))
+  done
+}
+
 end_widget_extension() { pkill -TERM -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
 # end_widget_extension_and_wait: ends every BatteryPulseWidget process before a swap and waits for
@@ -3123,7 +3145,7 @@ step_main() {
 # (rule 4: an extension process that wasn't there before the install; none is "not checked").
 step_placed() {
   r_only placed
-  local half="${1:-}" moment="${2:-}" names prefix at name title before fresh="" pid
+  local half="${1:-}" moment="${2:-}" names prefix at name title fresh=""
   case "$half" in
     his) names="small medium large" prefix=R2- title="Step 2: his widgets across RC-U's install over $BASE_VERSION (G7-2)" ;;
     062) names="small medium" prefix=R2-062- title="Step 11c: $START_VERSION's widgets across RC-U's install (G7-2)" ;;
@@ -3151,10 +3173,7 @@ step_placed() {
       out_block "$LOGS/pluginkit-$half-$moment.txt"
       ;;
     compare)
-      before=" $(cat "$WORK/placed-$half.pids" 2>/dev/null || true) "
-      for pid in $(widget_pids); do
-        case "$before" in *" $pid "*) ;; *) fresh="$pid" ;; esac
-      done
+      fresh="$(fresh_widget_pid "$(cat "$WORK/placed-$half.pids" 2>/dev/null || true)" 30)"
       click_desktop || not_checked "${prefix}compare" "no desktop spot"
       crop_widgets "$SHOTS/placed-$half" now
       out "- compared ($(clock)): a widget extension process since before: ${fresh:-none}; $(chs_since "$(cat "$WORK/installed.time" 2>/dev/null || cat "$WORK/prepare.time")")"
@@ -5105,8 +5124,10 @@ step_day_end() {
 # F`); Check for Updates, then Install and Relaunch by AX presses, between before and after: RC-F's
 # installer (P-2's checks and relaunch fallback among them) installs the published 0.7.1. after
 # reads the version, the update log's pre-swap extension end (D-17), the eject failures and the
-# CHSErrorDomain 1103 lines, and the widgets after the desktop click, per kind (P71's W-17 item 9):
-# under 0.7.1 every kind comes back, the History and iPhone & iPad ones with the rest.
+# CHSErrorDomain 1103 lines, and the widgets after the desktop click, per kind (P71's W-17 item 9),
+# once a widget extension process that wasn't there before Install drew them (PLAN.md §6.0 rule 4;
+# none within a minute is "not checked", never an answer from a stale render): under 0.7.1 every
+# kind comes back, the History and iPhone & iPad ones with the rest.
 step_f12() {
   r_only f12
   use_section 75-f12 "F12: Install and Relaunch on RC-F's installer (G8-9)"
@@ -5125,12 +5146,13 @@ step_f12() {
       clock >"$WORK/f12.time"
       click_desktop || true
       crop_widgets "$SHOTS/f12" before >/dev/null
+      widget_pids | tr '\n' ' ' >"$WORK/f12-before.pids"
       if [ -n "$(widget_pids)" ]; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
-      out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension")"
+      out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension") (pids: $(cat "$WORK/f12-before.pids"))"
       echo "DO (session): Check for Updates, then Install and Relaunch, by AX presses (ui press BatteryPulse ...); then: $SCRIPT f12 after"
       ;;
     after)
-      local waited=0 lines swap failures version
+      local waited=0 lines swap failures version fresh
       until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$BASE_VERSION" ] || [ "$waited" -ge 180 ]; do
         sleep 1
         waited=$((waited + 1))
@@ -5147,14 +5169,21 @@ step_f12() {
       out "- the pre-swap extension end: ${swap:-no line}$(if [ "$(cat "$WORK/f12-extension" 2>/dev/null)" = no ]; then echo "; no extension ran before Install: not exercised"; fi)"
       failures="$(messages "$LOGS/f12-update.ndjson" | grep -c -F -e "it can't be ejected by force" -e "Ejecting the update's disk image failed" || true)"
       out "- eject failure lines: ${failures:-0} (must be 0); $(chs_since "$(cat "$WORK/f12.time")")"
-      click_desktop || true
-      crop_widgets "$SHOTS/f12" after
       if [ "$version" = "$BASE_VERSION" ]; then
         step_answer --by claude F12-version y "read from the installed Info.plist: $version" >/dev/null
       else
         step_answer --by claude F12-version n "read from the installed Info.plist: $version" >/dev/null
       fi
       echo "F12-version: $(answer_of F12-version) (the installed version is $version)"
+      fresh="$(fresh_widget_pid "$(cat "$WORK/f12-before.pids" 2>/dev/null || true)")"
+      out "- a widget extension process since before Install (rule 4's redraw): ${fresh:-none within a minute}"
+      if [ -z "$fresh" ]; then
+        not_checked F12-widget "no redraw: no widget extension process that wasn't there before Install"
+        not_checked F12-new-kinds "no redraw: no widget extension process that wasn't there before Install"
+        return 0
+      fi
+      click_desktop || true
+      crop_widgets "$SHOTS/f12" after
       echo "LOOK $SHOTS/f12/*-before.png against *-after.png: F12-widget for small, medium, large and accessories-*, F12-new-kinds for history-* and devices-*"
       ask F12-widget F12-new-kinds
       ;;
@@ -6307,7 +6336,7 @@ step_hold_watch() {
 # beside the widgets.
 step_after() {
   session_only D3 after
-  local waited=0 flags quarantine swap before fresh="" pid
+  local waited=0 flags quarantine swap fresh=""
   use_section 10-after "After publishing (§6.6)"
   case "${1:-}" in
     before)
@@ -6339,11 +6368,8 @@ step_after() {
       flags="$(codesign -dv --verbose=4 "$APP" 2>&1 | grep -o 'flags=[^ ]*' | head -1 || true)"
       quarantine="$(xattr -l "$APP" 2>/dev/null | grep -c com.apple.quarantine || true)"
       out "- codesign: ${flags:-no flags line} (expected flags=0x10002(adhoc,runtime)); quarantine lines: $quarantine (expected 0)"
-      before=" $(cat "$WORK/after-before.pids" 2>/dev/null || true) "
-      for pid in $(widget_pids); do
-        case "$before" in *" $pid "*) ;; *) fresh="$pid" ;; esac
-      done
-      out "- a widget extension process since before (rule 4's redraw): ${fresh:-none}"
+      fresh="$(fresh_widget_pid "$(cat "$WORK/after-before.pids" 2>/dev/null || true)")"
+      out "- a widget extension process since before (rule 4's redraw): ${fresh:-none within a minute}"
       click_desktop || true
       if [ -n "$fresh" ]; then crop_widgets "$SHOTS/after" after; else
         not_checked D3-widgets "no redraw: no widget extension process that wasn't there before the update"
