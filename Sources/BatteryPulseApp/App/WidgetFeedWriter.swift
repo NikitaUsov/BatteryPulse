@@ -30,9 +30,11 @@ enum AppWidgetFeed {
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
 /// moment only. One write runs at a time; the requests meanwhile make one follow-on write. A write
-/// for what the user removed counts in ``removalsWritten`` once the file is without it, the one
-/// property anything observes: ``WidgetRefresher`` then reloads the kinds that show it
-/// (``takeRemovedSections()``).
+/// that shows the widgets something their own timelines would show only later counts in
+/// ``changesWritten``, the one property anything observes: what the user removed, once the file
+/// is without it, and what a write brought (``WidgetFeed/WriteEffect``), a feed in place of one
+/// they couldn't use or that had aged. ``WidgetRefresher`` then reloads the kinds that show it
+/// (``takeChanges()``).
 /// Observable for that, and to be in the Settings pane's environment.
 @Observable
 final class WidgetFeedWriter {
@@ -55,9 +57,12 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var queuedRemovals: Set<WidgetFeed.Section> = []
     /// The sections the removals written since the refresher last asked took out.
     @ObservationIgnored private var removedSections: Set<WidgetFeed.Section> = []
-    /// How many writes took out what the user removed: each left the file without it, whether it
-    /// took it out or found it out already.
-    private(set) var removalsWritten = 0
+    /// What the writes since the refresher last asked brought the widgets.
+    @ObservationIgnored private var writtenEffect = WidgetFeed.WriteEffect.nothing
+    /// How many writes showed the widgets something they see only after a reload: a removal, each
+    /// leaving the file without it, whether it took it out or found it out already, or a write's
+    /// effect.
+    private(set) var changesWritten = 0
 
     init(
         monitor: BatteryMonitor, history: HistoryStore = AppHistory.store, store: WidgetFeedStore = AppWidgetFeed.store
@@ -96,11 +101,14 @@ final class WidgetFeedWriter {
         await writing?.value
     }
 
-    /// The sections the removals written since the last call took out, for the kinds that show
-    /// them to reload.
-    func takeRemovedSections() -> Set<WidgetFeed.Section> {
-        defer { removedSections = [] }
-        return removedSections
+    /// What the writes since the last call showed the widgets: the sections the removals took
+    /// out, and what the full writes brought; for the kinds that show them to reload.
+    func takeChanges() -> (removed: Set<WidgetFeed.Section>, effect: WidgetFeed.WriteEffect) {
+        defer {
+            removedSections = []
+            writtenEffect = .nothing
+        }
+        return (removedSections, writtenEffect)
     }
 
     /// Runs the queued writes one after another until none is left. A write that didn't fail
@@ -116,19 +124,27 @@ final class WidgetFeedWriter {
             switch result {
             case .failed:
                 queuedRemovals.formUnion(removals)
-            case .changed, .unchanged:
-                if !removals.isEmpty {
-                    removedSections.formUnion(removals)
-                    removalsWritten += 1
-                }
+            case .changed(let effect):
+                record(removals, effect)
+            case .unchanged:
+                record(removals, .nothing)
             }
         }
         writing = nil
     }
 
-    /// What a write did to the file.
+    /// Keeps what a write showed the widgets for ``takeChanges()``, and counts it once.
+    private func record(_ removals: Set<WidgetFeed.Section>, _ effect: WidgetFeed.WriteEffect) {
+        guard !removals.isEmpty || effect != .nothing else { return }
+        removedSections.formUnion(removals)
+        writtenEffect.formUnion(effect)
+        changesWritten += 1
+    }
+
+    /// What a write did to the file, and, when it wrote a feed, what that showed the widgets.
     private enum WriteResult {
-        case changed, unchanged, failed
+        case changed(WidgetFeed.WriteEffect)
+        case unchanged, failed
     }
 
     /// Writes the feed for `reason`. `removals` are the sections the requests it serves take out:
@@ -171,9 +187,9 @@ final class WidgetFeedWriter {
             return await removeInDemoMode(reason, historyCleared: clearing, removing: removals)
         }
         do {
-            let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
+            let (outcome, effect) = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
             Self.log(outcome, of: feed, reason: reason)
-            return outcome == .unchanged ? .unchanged : .changed
+            return outcome == .unchanged ? .unchanged : .changed(effect)
         } catch {
             if clearing { historyCleared = true }
             // The widgets keep the previous feed and, two hours after it, say so. The error's
@@ -239,12 +255,12 @@ final class WidgetFeedWriter {
                 Diagnostics.widget.notice(
                     "Took a removal out of the widget feed (\(reason.rawValue, privacy: .public)), nothing added: \(bytes, privacy: .public) bytes"
                 )
-                return .changed
+                return .changed(.nothing)
             case .removed:
                 Diagnostics.widget.notice(
                     "Removed the widget feed for a removal (\(reason.rawValue, privacy: .public)): none was written since launch"
                 )
-                return .changed
+                return .changed(.nothing)
             case .unchanged, nil:
                 Diagnostics.widget.debug(
                     "Nothing to take out of the widget feed (\(reason.rawValue, privacy: .public))")
@@ -309,12 +325,13 @@ private nonisolated enum FeedBuild {
         try store.rewrite { $0.removing(removal) }
     }
 
-    /// Writes `feed` through `store`, which blocks on the file system.
+    /// Writes `feed` through `store`, which blocks on the file system, and says what the write
+    /// showed the widgets (``WidgetFeedStore/writeReporting(_:unchanged:)``).
     @concurrent
     static func write(_ feed: WidgetFeed, to store: WidgetFeedStore, unchanged: Bool) async throws
-        -> WidgetFeedStore.Outcome
+        -> (outcome: WidgetFeedStore.Outcome, effect: WidgetFeed.WriteEffect)
     {
-        try store.write(feed, unchanged: unchanged)
+        try store.writeReporting(feed, unchanged: unchanged)
     }
 
     /// Reads what of the history `source` includes from `store`, then builds the feed; `nil` in

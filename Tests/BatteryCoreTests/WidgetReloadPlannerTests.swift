@@ -395,13 +395,14 @@ struct WidgetReloadPlannerTests {
     }
 
     /// E15's day: its six plug changes, each over an hour after the one before, reload the History
-    /// kind six times, well within its budget beside its 24 hourly timelines.
+    /// kind six times, well within its budget beside its 24 hourly timelines and the feed's writes
+    /// (``WriteEffectTests/FeedDay``).
     @Test func aHistoryDayStaysWellWithinItsBudget() {
         let day = Day()
         let reasons = Self.historyReloads(day.snapshots, minutes: day.minutes)
         #expect(reasons.allSatisfy { $0 == nil || $0 == .plug })
         #expect(reasons.count(where: { $0 == .plug }) == Day.unplugs.count + Day.plugs.count - 1)
-        #expect(reasons.count(where: { $0 != nil }) + 24 < 40)
+        #expect(reasons.count(where: { $0 != nil }) + 24 + (WriteEffectTests.feedReloads()[.history] ?? 0) < 40)
     }
 
     /// Every kind placed (Battery on the harder day, Accessories, History): under 100

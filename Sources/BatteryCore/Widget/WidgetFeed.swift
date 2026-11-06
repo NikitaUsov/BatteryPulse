@@ -378,6 +378,73 @@ extension WidgetFeed {
         }
     }
 
+    /// How old the feed a write replaces may be before the widgets need a reload to leave it: a
+    /// feed this old can reach ``outdatedAge`` before the History widget's own hourly refresh
+    /// (``WidgetTimelinePlan/historyRefreshInterval``) reads the next one, so a widget whose
+    /// timeline was made from it would add "Open BatteryPulse to update" while BatteryPulse runs.
+    /// The app writes at least once per 15 minutes while it runs, so only a gap reaches it:
+    /// BatteryPulse not running, the Mac asleep, Demo Mode, or writes that failed.
+    public static let repairAge: TimeInterval = outdatedAge - WidgetTimelinePlan.historyRefreshInterval
+
+    /// What a write shows the placed widgets that their own timelines would show only at their
+    /// next refresh, up to an hour later: a feed in place of one they couldn't use or that had
+    /// aged. The kinds that show it then reload (``WidgetReloadPlanner/written(_:at:)``).
+    public struct WriteEffect: Sendable, Equatable {
+        /// Why the widgets need a reload to leave the feed the write replaced, if they do.
+        public var repair: Repair?
+
+        public init(repair: Repair? = nil) {
+            self.repair = repair
+        }
+
+        /// Nothing a reload must show.
+        public static let nothing = WriteEffect()
+
+        /// The effects of two writes, for the reloads that serve both: the larger repair.
+        public mutating func formUnion(_ other: WriteEffect) {
+            if let next = other.repair, repair.map({ $0 < next }) ?? true { repair = next }
+        }
+    }
+
+    /// Why the widgets need a reload to leave the feed a write replaced.
+    public enum Repair: Int, Sendable, Comparable {
+        /// It was ``WidgetFeed/repairAge`` old or older: the History, iPhone & iPad and large
+        /// Battery widgets show its last data with "Open BatteryPulse to update", or soon would.
+        case outdated
+        /// The widgets couldn't use it: there was none (none written since BatteryPulse was
+        /// installed or updated from 0.7.0, or a removal took the file before this launch's first
+        /// write), or one they turn down. Those three said "Open BatteryPulse to update", and every
+        /// kind drew in the extension's own language rather than BatteryPulse's.
+        case unusable
+
+        public static func < (lhs: Repair, rhs: Repair) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+
+        /// The kinds that show what the repair changes, in ``WidgetKindID``'s order: those that
+        /// show a section for an old feed, and every kind for one they couldn't use, since each
+        /// takes its language from the feed.
+        public var readers: [WidgetKindID] {
+            switch self {
+            case .outdated:
+                WidgetKindID.allCases.filter { kind in Section.allCases.contains { $0.readers.contains(kind) } }
+            case .unusable:
+                WidgetKindID.allCases
+            }
+        }
+    }
+
+    /// What writing this feed shows the placed widgets in place of `previous`, the file as the
+    /// widget would have read it: the feed last written, or before the first write of a launch,
+    /// what a previous one left. A feed with a date too far ahead of this one's (a clock set back
+    /// since) is one the widget turns down.
+    public func effect(replacing previous: WidgetFeedState) -> WriteEffect {
+        guard let old = previous.feed, (try? old.validate(now: writtenAt)) != nil else {
+            return WriteEffect(repair: .unusable)
+        }
+        return WriteEffect(repair: writtenAt.timeIntervalSince(old.writtenAt) >= Self.repairAge ? .outdated : nil)
+    }
+
     /// The devices section a write would hold, but for the read times: what tells a change the
     /// widget shows (a device read for the first time, forgotten or renamed, a new charge, state or
     /// detail, another device read last, reads turned on or off) from a read that only read the same

@@ -128,12 +128,13 @@ struct DevicesReloadPlannerTests {
         // A reload per quarter hour of charging at most, and the full charge's state.
         #expect(count >= 6 && count <= 18)
         // Within the low end of WidgetKit's daily budget for one widget, beside its own
-        // half-hourly timelines.
-        #expect(count + 48 < 70)
+        // half-hourly timelines and the feed's writes (``WriteEffectTests/FeedDay``).
+        #expect(count + 48 + (WriteEffectTests.feedReloads()[.devices] ?? 0) < 70)
     }
 
-    /// Every kind placed (Battery on the harder day, Accessories, History, iPhone & iPad): under
-    /// 100 app-initiated reloads a day.
+    /// Every kind placed (Battery on the harder day, Accessories, History, iPhone & iPad), with the
+    /// feed's writes that reload them (``WriteEffectTests/FeedDay``): under 100 app-initiated
+    /// reloads a day.
     @Test func everyKindPlacedStaysUnderAHundredADay() {
         typealias Planner = WidgetReloadPlannerTests
         let battery = WidgetReloadPlannerTests.HarderDay()
@@ -143,7 +144,10 @@ struct DevicesReloadPlannerTests {
             $0 != nil
         })
         let deviceCount = Self.deviceReloads(DeviceDay()).count(where: { $0 != nil })
+        let feed = WriteEffectTests.feedReloads()
         #expect(deviceCount <= 18)
-        #expect(batteryCount + accessoryCount + historyCount + deviceCount < 100)
+        #expect(batteryCount + (feed[.battery] ?? 0) < 70)
+        #expect(accessoryCount + (feed[.accessories] ?? 0) < 40)
+        #expect(batteryCount + accessoryCount + historyCount + deviceCount + feed.values.reduce(0, +) < 100)
     }
 }
