@@ -66,7 +66,9 @@ struct WidgetTextBudgetTests {
         case .state: try words(stateKeys)
         // A time row is its phrase alone; the phrases are checked as lines.
         case .time: []
-        case .maximumCapacity, .cycleLifeUsed: [f.percent(100), f.percent(999)]
+        // Capped at 100% like System Settings.
+        case .maximumCapacity: [f.percent(100)]
+        case .cycleLifeUsed: [f.percent(100), f.percent(999)]
         // An abnormal condition goes to the attention row, so a condition row reads Normal.
         case .condition: try words(["Normal"])
         case .cycleCount: [9_999.formatted(.number.locale(f.locale))]
@@ -200,22 +202,22 @@ struct WidgetTextBudgetTests {
                         check(lines <= 2, words[0], "an attention tile, \(size)")
                     }
                 }
-                // The details: a label and its value on one line, with the field's shorter label
-                // where its own doesn't fit, or a word that says what it is alone; a tile's label
-                // on one line over its value on up to two.
+                // The details: a label and its value on one line, in the one form the place shows
+                // the label in whatever the value (``BatteryWidgetField/labelForm(in:locale:)``):
+                // the field's label, its shorter one, or none, a word that says what it is alone;
+                // a tile's label on one line over its value on up to two.
                 for field in BatteryWidgetField.allCases where field != .time {
                     let labels = try choices([WidgetKeys.label(field), field.shortLabelKey], language)
                     for value in try widestValues(field, language) {
                         let place = Budget.detailWidth(size)
                         switch size {
                         case .small, .medium:
-                            let before =
-                                Budget.width(value, monospacedDigits: size == .medium)
-                                + (hasCue(field) ? Budget.cueWidth : 0) + Budget.gap(size)
-                            let alone = (field == .state || field == .condition) && oneLine([value], place)
-                            check(
-                                oneLine(labels, after: before, place) || alone, "\(labels.last ?? "") \(value)",
-                                "a detail, \(size)")
+                            let shown = try Self.label(
+                                field, field.labelForm(in: size, locale: language.locale), language)
+                            let fits =
+                                shown.map { Budget.fits(Self.before(field, value, size) + Budget.width($0), in: place) }
+                                ?? oneLine([value], place)
+                            check(fits, "\(shown ?? "") \(value)", "a detail, \(size)")
                         case .large, .extraLarge, .extraLargePortrait:
                             let tile = field == .timeOnBattery ? Self.timeOnBatteryTile(language) : value
                             check(oneLine([labels[0]], place), labels[0], "a tile's label, \(size)")
@@ -323,6 +325,66 @@ struct WidgetTextBudgetTests {
             }
         }
         return overflows
+    }
+
+    /// What comes before a detail's label on its line: its value (medium's with tabular digits),
+    /// a tier's symbol and the gap.
+    static func before(_ field: BatteryWidgetField, _ value: String, _ size: WidgetSize) -> Double {
+        WidgetTextBudget.width(value, monospacedDigits: size == .medium)
+            + (hasCue(field) ? WidgetTextBudget.cueWidth : 0)
+            + WidgetTextBudget.gap(size)
+    }
+
+    /// The label `form` shows of `field` in `language`; `nil` for none.
+    static func label(_ field: BatteryWidgetField, _ form: WidgetLabelForm, _ language: Language) throws -> String? {
+        switch form {
+        case .full: try text(WidgetKeys.label(field), language)
+        case .short: try field.shortLabelKey.flatMap { try text($0, language) }
+        case .none: nil
+        }
+    }
+
+    /// Look 1's pre-answer: one label per place. Each one-line place of each language shows the
+    /// first form of a field's label that fits beside every widest value the place can show, and
+    /// keeps it whatever the value is: the table in ``BatteryWidgetField/labelForm(in:locale:)`` is
+    /// that choice, derived here from the budget.
+    @Test(arguments: Language.allCases)
+    func eachPlaceShowsOneLabelWhateverTheValue(_ language: Language) throws {
+        for size in [WidgetSize.small, .medium] {
+            let place = WidgetTextBudget.detailWidth(size)
+            for field in BatteryWidgetField.allCases where field != .time {
+                let values = try Self.widestValues(field, language)
+                func fits(_ form: WidgetLabelForm) throws -> Bool {
+                    guard let label = try Self.label(field, form, language) else {
+                        return values.allSatisfy { WidgetTextBudget.fits(WidgetTextBudget.width($0), in: place) }
+                    }
+                    return values.allSatisfy {
+                        WidgetTextBudget.fits(Self.before(field, $0, size) + WidgetTextBudget.width(label), in: place)
+                    }
+                }
+                let expected: WidgetLabelForm =
+                    try fits(.full) ? .full : field.shortLabelKey != nil && fits(.short) ? .short : .none
+                #expect(field.labelForm(in: size, locale: language.locale) == expected, "\(field), \(size)")
+            }
+        }
+        // Tiles have a line of their own for the label.
+        for field in BatteryWidgetField.allCases {
+            #expect(field.labelForm(in: .large, locale: language.locale) == .full)
+        }
+    }
+
+    /// The forms 0.7.1's pictures show: the medium Battery widget's Time on battery is its shorter
+    /// Unplugged in Russian beside any value, and small's Average drain "Drain" in English.
+    @Test func theRussianTimeOnBatteryIsShortInMedium() {
+        let russian = Locale(identifier: "ru_RU")
+        #expect(BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: russian) == .short)
+        #expect(BatteryWidgetField.averageDrain.labelForm(in: .small, locale: Locale(identifier: "en_US")) == .short)
+        #expect(BatteryWidgetField.maximumCapacity.labelForm(in: .small, locale: Locale(identifier: "en_US")) == .full)
+        #expect(BatteryWidgetField.state.labelForm(in: .small, locale: russian) == .none)
+        // A language without a table of its own is laid out as English.
+        #expect(
+            BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: Locale(identifier: "de_DE"))
+                == BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: Locale(identifier: "en_US")))
     }
 
     @Test func everyWidgetTextFitsItsPlace() throws {
