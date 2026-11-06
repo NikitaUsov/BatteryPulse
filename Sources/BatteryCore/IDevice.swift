@@ -6,6 +6,12 @@ public enum IDeviceConnection: String, Sendable, Codable, CaseIterable {
     case wifi = "Wi-Fi"
     case unknown = "Unknown"
 
+    /// A connection a later version adds decodes as ``IDeviceConnection/unknown``, so `devices.json` keeps the
+    /// device.
+    public init(from decoder: any Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+
     /// Interface types: 1 USB, 2 network. 3 is a companion proxy (an Apple Watch reached through
     /// its iPhone), which is never read; 0 is unknown.
     public init(interfaceType: Int) {
