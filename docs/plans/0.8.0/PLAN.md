@@ -346,7 +346,9 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
      0.7.1's D3 moved the session tooling to `docs/plans/0.8.0/` (I-7). The six preparation
      packages, implemented and reviewed on `claude/080-<pkg>` before 0.7.1, are carried onto the
      integration branch as `claude/080-<pkg>-r` (E-3, A-6a, P-2a, X-1a, X-2a, E-2), rebased onto
-     v0.7.1 as P71 §5 foresaw, by two agents beside this intake.
+     v0.7.1 as P71 §5 foresaw, by two agents beside this intake. Their merges, the two fixes where
+     they met, CI and sizes at the head and what later packages inherit: Appendix C's carry-over
+     block.
   3. **Changed: no re-resolving here.** The base moved twice (v0.7.0, then v0.7.1), so this plan's
      file:lines stay v0.6.2's as written, and each package re-resolves its own at its start, on the
      integration branch, as 0.7.1's packages did (AC71's V-0 rows). P7, W, AC62 and the session
@@ -956,8 +958,10 @@ holds none either, until a version that knows them runs again.
 ### E-3: The log-privacy guard and the legacy migration (P2, done before 0.7.1; NEW-12, QUA-15)
 
 **Done before 0.7.1,** carried in A-0 as `claude/080-e3-r`, whose allow list holds 0.7.0's and
-0.7.1's `.public` values (85 in 15 files, Appendix C). Nothing remains, so it has left the cut
-order (§7.2), where it was fourth.
+0.7.1's `.public` values (85 in 15 files, Appendix C), and 86 once P-2a's launch-marker errno
+joined it at the carry-over (`3dc4d19`). Nothing remains, so it has left the cut order (§7.2), where
+it was fourth. Every later package that logs a new `.public` value adds its entry with its reason
+(the guard's failure names the line to add), and a renamed file moves its key.
 
 - **Source:** RD §3.3 NEW-12, C12; CL "Logging" (only static text, numbers and case names as
   `.public`); P7:1829-1830 (0.7 checks log lines by hand until this guard exists); RD §3.3 QUA-15
@@ -1637,30 +1641,49 @@ for help tags; the Russian review (§6.3); `scripts/string-tables.swift` in both
 **Where it starts:** v0.7.1's CI size report (RC-U's, whose code v0.7.1 is), recorded by A-0 in
 Appendix C: the app binary 3,249,712 B (ceiling 3,413,000), its `__text` 2,174,176 B (2,283,000),
 `app_kb` 5,156 (5,414), the widget binary 1,615,152 B (1,696,000), `strings_bytes` 140,189 B
-(147,200), the DMG 1,591,826 B (1,672,000). The six preparation packages' sizes come with their
-merges in A-0. For reference, before 0.7, at WP-15's final head (`64f8aaa`, 2026-10-24, AC62:109):
-app binary 2,837,888 B (ceiling 3,000,000), widget binary 778,640 B (818,000), DMG 1,257,281 B
-(1,520,000), `app_kb` 4,004 (4,840); string tables 238,124 B at 0.6.1 (R:529; ceiling 251,000). At
-`0ecca33` itself (CI run 41077479486, from `0d26a6d`'s message): widget binary 778,672 B, string
-tables 239,574 B. Ceilings: `scripts/size-budget.json`.
+(147,200), the DMG 1,591,826 B (1,672,000). **After the carry-over** (the intake's head `2ca4c9b`,
+`ci.yml` run 613, Appendix C's carry-over block), what the rounds start from: the app binary
+3,283,984 B (129,016 B left), its `__text` 2,198,896 B (84,104 B left), `app_kb` 5,236 (178 left),
+the widget binary 1,665,952 B (**30,048 B left**), its `__text` 1,047,248 B (**30,752 B left**),
+`widget_appintents_bytes` 27,404 B (1,396 B left), `strings_bytes` 140,189 B (7,011 B left), the DMG
+1,620,770 B (51,230 B left, +1.8 % over the published v0.7.1); no ceiling raised. The six packages
+grew the widget more than the app (its binary +50,800 B, the app's +34,272 B), though the widget
+calls none of their code: BatteryCore's code stays in every binary that links it unless nothing can
+reach it, and an async function, a type's value witnesses and conformances only tests use all keep
+it reachable (A-6a's `3741d40`, which kept most of the report out for that reason). Each branch's
+own CI, against v0.7.1's widget `__text`: X-1a +13,404 B (`ChartSummary`), A-6a +6,600 B, E-2 +2,932
+B, P-2a +1,004 B, E-3 −2,804 B, X-2a −476 B; and the binary grows mostly in 16 KB pages (X-1a's 13
+KB of `__text` took it up 33,152 B), so 30 KB is one or two pages. For reference, before 0.7, at
+WP-15's final head (`64f8aaa`, 2026-10-24, AC62:109): app binary 2,837,888 B (ceiling 3,000,000),
+widget binary 778,640 B (818,000), DMG 1,257,281 B (1,520,000), `app_kb` 4,004 (4,840); string
+tables 238,124 B at 0.6.1 (R:529; ceiling 251,000). At `0ecca33` itself (CI run 41077479486, from
+`0d26a6d`'s message): widget binary 778,672 B, string tables 239,574 B. Ceilings:
+`scripts/size-budget.json`.
 
 **0.8's growth [estimate]:**
 - **Strings:** about 90-130 keys, with A-4's long texts the bulk: about 150-300 B of Russian per
   key per table, in the app's bundle alone, since 0.7.1's widget has a table of its own that takes
   only the keys its sources name (SIZ-07, `scripts/widget-strings.swift`), A-2's few among them:
-  so about 15-40 KB of `strings_bytes`, against the 7,011 B left under its ceiling at v0.7.1. A
-  raise at D1 in its own commit.
+  so about 15-40 KB of `strings_bytes`, against the 7,011 B left under its ceiling. The first
+  package that adds a few dozen keys crosses it, and the size report then fails the macOS job, so
+  that package raises it in a commit of its own (the rules below), not D1.
 - **App binary:** about 60-150 KB for the report, the explanations, the descriptors and the
-  installer checks. Against 3,413,000 B (163,288 B left at v0.7.1), a raise at D1 is possible;
-  the app's `__text`, with 108,824 B left under 2,283,000, is the tighter; C6's 5 MB outer bound
+  installer checks. Against 3,413,000 B (129,016 B left after the carry-over), a raise is likely;
+  the app's `__text`, with 84,104 B left under 2,283,000, is the tighter; C6's 5 MB outer bound
   holds.
-- **Widget:** A-2's widget half only (a field's value and its words, in A-2's messages, §3).
-- **DMG:** about 20-40 KB compressed, against the 80,174 B left at v0.7.1.
+- **Widget:** A-2's widget half (a field's value and its words, in A-2's messages, §3), and
+  whatever of the new BatteryCore code the widget can reach, with about 30 KB left under both of
+  its ceilings. A-1 to A-5's BatteryCore halves keep app-only code out of its reach as `3741d40`
+  did (no async function in BatteryCore, inputs passed as parameters, no conformance only tests
+  use), and a package whose CI still crosses a widget ceiling raises it as below, with the
+  widget's growth in its message.
+- **DMG:** about 20-40 KB compressed, against the 51,230 B left after the carry-over.
 
-**Rules:** each raise is a commit of its own that says why, at the RC plus about 5 % (P7 §9);
-outer bounds: the app binary under 5 MB (C6); every other ceiling starts from 0.7.1's D1 (AC71's
-D1 item 6), where 0.7.1's outer bounds left them. **Cut order if a bound is crossed:** A-4's long
-texts shortened first (SIZ-07 shipped in 0.7.1); then the cut line (§7.2).
+**Rules:** a package that crosses a ceiling raises it in a commit of its own that says why, at its
+build plus about 5 %, as 0.7's W-3a and 0.7.1's Z-1 did (G8-12); D1 sets every ceiling at the RC
+plus about 5 % (P7 §9). Outer bounds: the app binary under 5 MB (C6); every other ceiling starts
+from 0.7.1's D1 (AC71's D1 item 6), where 0.7.1's outer bounds left them. **Cut order if a bound
+is crossed:** A-4's long texts shortened first (SIZ-07 shipped in 0.7.1); then the cut line (§7.2).
 
 ---
 
@@ -2047,6 +2070,7 @@ UID to an opaque `_NSKeyedArchiverUID` that casts to nothing, so a generic walk 
 | §2.1's last column: what 0.7.0 and 0.7.1 shipped of I-1 to I-16 | A-0: filled (A-0's block below) | §4's conditional work |
 | v0.7.1's CI sizes and the `.public` baseline | A-0: filled (below) | §9; E-3's allow list |
 | G7-17's placements; 0.7.1's after-publishing results; v0.7.0's and v0.7.1's week-later counts | A-0: filled, the counts when due (below) | F-1, T-1 item 7, A-3; ROADMAP |
+| The carry-over: the six packages' merges, the fixes where they met, CI and sizes at the intake's head, what later packages inherit | A-0: filled (the carry-over block below) | §9; §4's carried sections; §5 |
 | The Charge Limit's reads per limit, on AC, on battery and after a plug-in; the app's logged number; `CHLT` and `CHNC`; the samples | §6.1 step 2 | G8-1 |
 | The weak-adapter captures | §6.1 step 4 | G8-3 |
 | The optimized hold's capture | 0.8's `hold-watch` (0.7.0 and 0.7.1 ran none, I-8) | G8-2 |
@@ -2070,3 +2094,15 @@ UID to an opaque `_NSKeyedArchiverUID` that casts to nothing, so a generic walk 
 | **G7-17 measured: WidgetKit's `currentConfigurations()` answers this ad-hoc-signed app with its real placements.** After 0.7.1's update on the M5 (AP71, 2026-11-06 19:28:33, the Mac's time, +0300), the app logged "Placed widgets, for the widget feed: 2 in all, 1 Battery, 0 Accessories, 0 History, 1 iPhone & iPad", and the refresher logged the same counts twice (the maintainer's `log show`). The Battery one is his medium widget (AP71's D3-widgets); the iPhone & iPad one, which no shot showed, is most likely the small one Session F added from the gallery and didn't remove at its end (F-keep-widgets n; F's report records no removal) [inference], and it is why AP71's feed held 4 devices | the maintainer's `log show`; AP71 (D3-widgets, the feed's check); AC71's F rows | F-1 (an answer asked again is a real one); T-1 item 7; the fail-open for an empty or failed answer stays, and whether an empty answer means none placed stays open (AC71's D3 rows); ROADMAP's "Placements fail open … (G7-17, not measured yet)", for L-1 (§12) |
 | **0.7.1's after-publishing check** (AP71, 2026-11-06, 19:25 to 19:33 +0300 on the M5, hands-free, from his 0.7.0 (9)): **every answer the expected one** (y; 1 for the widgets and Login Items). Install and Relaunch by the session to 0.7.1 (26740846): the extension ended before the swap (1 found, 1 by SIGTERM, 65 ms), no CHSErrorDomain 1103 line, `codesign` `flags=0x10002(adhoc,runtime)`, no quarantine; What's New once, with no version-count row (from 0.7.0); his medium Battery widget the same; History, the settings, the menu bar, Login Items and Notifications as before; the feed 0600 in a 0700 folder, version 1, written 14 s before, the widget's exception its one read-only path; the popover and the widget at 56 %. **0.7.1's S-1 confirmed on the M5:** Settings → General scrolls to its last row and footer above the Dock, where under 0.7.0 it ran under the Dock. **Maximum capacity:** 100 % in System Settings' Battery Health (Condition Normal) and in BatteryPulse (100.0 %), 100 % from `system_profiler`, with `NominalChargeCapacity` 5935 of the 5760 mAh design (103.0 %), `AppleRawMaxCapacity` 5791 (100.5 %), 54 cycles. Not run: the version count's wait (v0.7.0's asset already counted, AC71) | AP71 | ROADMAP Stage 1.9's after-publishing item and `docs/VERIFICATION.md` (§12); A-3's maximum capacity as System Settings shows it, capped at 100 % (a nominal capacity above the design shows 100 %); W-17 item 18's third reading (AC71's D3 rows) |
 | **v0.7.0's and v0.7.1's week-later download counts: pending.** v0.7.0 was published at 16:28 UTC on 2026-10-31, so its counts are due after 16:28 UTC on 2026-11-07; v0.7.1 at 12:03 UTC on 2026-11-06, due after 12:03 UTC on 2026-11-13. At 17:51 UTC on 2026-11-06: v0.7.0's DMG 3, signature 3, `BatteryPulse-count.txt` 3, dSYMs 2; v0.7.1's DMG 2, signature 2, count 0, dSYMs 1 (its count comes a day after a Mac first runs it) | GitHub's API (`gh api …/releases/tags/<tag>`); `scripts/release-stats.swift` when due | ROADMAP's Releases table, each in a commit of its own (§13 step 8; NEW-23) |
+
+**A-0's carry-over** (2026-11-06: the six preparation packages merged onto `63a01f2`, and the
+intake's review; the head `2ca4c9b` is the code the rounds start from):
+
+| Fact | Shown by | Decides |
+|---|---|---|
+| **The merges,** `--no-ff` in this order: E-3 `8836130` (`claude/080-e3-r` at `bca07f5`), E-2 `be58f92` (`4a5a366`), X-1a `8539670` (`ccadd9f`), X-2a `8edc000` (`891e1bd`), A-6a `70529a8` (`3d6d700`), P-2a `599bad8` (`032a3ae`), then A-0's plan `7211a98` (`f822235`). Every carried commit is the same patch with the same message as on its branch from `cf847d0` (`git range-diff`: all `=`), and each branch adds only its adaptation commits for 0.7.0 and 0.7.1; no merge needed a hand resolution (`git show --remerge-diff` empty for all seven), and every file a package changed is in the head as that package left it, but `HistoryStore.swift` (E-3 and E-2) and `LogPrivacyGuardTests.swift` (the fix below) | `git` | §4's carried sections |
+| **Where the packages met,** two fixes: `3dc4d19` lets P-2a's launch-marker errno (`failure`, a number) log as public, and rewords the installer's `reason` entry, which `needsNewerMacOS`'s minimum macOS version now feeds: the allow list holds **58 entries and 86 values in 15 files**, every `.public` value of the head; `2ca4c9b` removes `HistoryStore`'s `readLines` and `writeLines`, whose callers E-3 (the migration) and E-2 (the days file's own read and write) each took one of; Swift doesn't warn about an unused private function | the two commits | E-3's count (§4); later packages add their `.public` entries |
+| **CI at the head,** `ci.yml` run 613 (id 42274865821) at `2ca4c9b`, green on both jobs with no compiler warning: Linux 1,168 tests (BatteryCoreTests 1,037 in 97 suites, from 929 in 89 at v0.7.1: E-3 +14, E-2 +27, X-1a +12, X-2a +8, A-6a +36, P-2a +11), the DocC link check and Session R's dry run; macOS 1,226 tests (BatteryCoreTests 1,038), packaging, the size report, the install the way 0.6.1 does, and P-2a's "Check the relaunch fallback": an update that exits at launch opened after 2 s and the previous version was back and open after 45 s; the CI-built app stayed, and deleted the previous version and the downloads | the run's two job logs | A-0's acceptance (with the review's head) |
+| **Sizes at the head** (run 613): DMG 1,620,770 B (+1.8 % over the published v0.7.1), `app_kb` 5,236, app binary 3,283,984 B, app `__text` 2,198,896 B, widget binary 1,665,952 B, widget `__text` 1,047,248 B, `widget_appintents_bytes` 27,404 B, `strings_bytes` 140,189 B, icon 215,181 B, every hygiene count 0, no ceiling raised. Against v0.7.1's RC-U: the widget binary +50,800 B, the app binary +34,272 B; each branch's own CI puts the widget's `__text` growth on X-1a (+13,404 B), A-6a (+6,600 B), E-2 (+2,932 B) and P-2a (+1,004 B), less E-3 (−2,804 B) and X-2a (−476 B) | the size reports of run 613 and of each branch's last run (42259762075, 42263127912, 42263818055, 42259821459, 42262324731, 42263110182) | §9's start: about 30 KB left under both widget ceilings |
+| **The review's checks** (on `2ca4c9b`, beside the CI): the privacy guard fails on an unlisted public value, on a device's name (as unlisted and as a denied word), on one occurrence too many and on one too few, each naming the entry to add, raise or remove; the feed's pins fail on a decoder that accepts a higher version, a 0644 file, an unknown state no longer read as unknown (both of its layers), a removal that takes the folder and unsorted keys; `ProblemReportTests` fails on a new settings key and on a `WidgetFeed` reference in the report; every signpost name CL lists reaches `PerfSummary.session` through the two `Diagnostics` twins; every settings key of the app is included or left out with a reason (34 and 1); the DocC check fails on a broken link in `ChartSummary` and in `AccessibilityText`. Each mutation reverted | the review's runs | the carried adaptations stand |
+| **What later packages inherit:** X-2b moves the five waiting phrases from `AccessibilityTextTests.pendingKeys` into the catalog and counts `AccessibilityText.catalogKeys` as used (X-2b item 4); A-6b widens `theReportsFilesUseNoNetwork`'s two-file list and keeps the `DiagnosticReports` guard to `Sources` (A-6's guards); P-2b gives `needsNewerMacOS` and `swapUnsupported` their own words (P-2b); `DegradationTests`' pinned source text (E-2); `ci.yml`'s order around P-2a's step (§5); the names L-1 adds to CLAUDE.md (§12). And with E-2, a `devices.json` holding fields this version doesn't know lists no device, so the feed holds none either (E-2) | the carried branches' tests and messages; the carry-over agents' notes, each checked against the head | the sections named |
