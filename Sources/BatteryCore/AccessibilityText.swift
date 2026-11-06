@@ -74,12 +74,12 @@ public struct AccessibilityText: Sendable, Equatable {
             value: bars.flatMap { [.key($0.kind.titleKey), .verbatim(formatter.milliampHours($0.capacityMAh))] })
     }
 
-    /// The charge ring: "Charge", "70 %".
+    /// The charge ring: "Charge", "70%".
     public static func chargeRing(percent: Double, formatter: BatteryFormatter) -> AccessibilityText {
         AccessibilityText(label: .key("Charge"), value: [.verbatim(formatter.percent(percent))])
     }
 
-    /// The maximum capacity ring: "Maximum capacity", "100 %".
+    /// The maximum capacity ring: "Maximum capacity", "100%".
     public static func maximumCapacityRing(percent: Double, formatter: BatteryFormatter) -> AccessibilityText {
         AccessibilityText(label: .key("Maximum capacity"), value: [.verbatim(formatter.percent(percent))])
     }
@@ -109,7 +109,7 @@ public struct PowerFlowText: Sendable, Equatable {
     /// The battery's arrow points into the battery, or rests that way
     /// (``BatteryMotionKey/batteryArrowPointsIntoBattery``).
     public var intoBattery: Bool
-    /// The charge, "70 %".
+    /// The charge, "70%".
     public var charge: String?
 
     public init(_ s: BatterySnapshot, formatter: BatteryFormatter) {
