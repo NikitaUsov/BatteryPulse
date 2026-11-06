@@ -5,12 +5,12 @@ import SwiftUI
 import WidgetKit
 
 /// A line under the main value: one line at full size, and a VoiceOver element of its own,
-/// except the state, which the charge's element reads. Where a detail's label or the attention
-/// row's words don't fit, the line takes the field's or the condition's shorter words. Every
-/// language has them and picks them on its own, so a Russian line can show the shorter words
-/// beside an English line with the full ones (small's Maximum capacity and Service Recommended),
-/// laid out alike: one line at full size. Only a line longer still shrinks a little. A value is
-/// never cut.
+/// except the state, which the charge's element reads. A detail's label takes the one form its
+/// place shows in the widget's language, whatever the value (BatteryCore's `labelForm`); the
+/// attention row's words take the condition's shorter ones where they don't fit. Every language
+/// has them and picks them on its own, so a Russian line can show the shorter words beside an
+/// English line with the full ones (small's Maximum capacity and Service Recommended), laid out
+/// alike: one line at full size. Only a line longer still shrinks a little. A value is never cut.
 struct WidgetLineView: View {
     let line: WidgetLine
     let tinted: Bool
@@ -89,29 +89,26 @@ struct WidgetDetailList: View {
     }
 }
 
-/// A detail's label and its value on one line at full size: the field's label, or its shorter one
-/// where the label doesn't fit beside the value (every language has one, so a language whose
-/// label is longer lays out as the others do, with the shorter words), or a state or condition
-/// alone, which says what it is. Only when nothing fits does the
-/// label shrink a little, then truncate; the value never does. Medium's row `spreads` across its
-/// column, with the value at the trailing edge; small's line keeps the value beside its label.
+/// A detail's label and its value on one line at full size, the label in the one form its place
+/// shows in the widget's language whatever the value (BatteryCore's `labelForm`): the field's
+/// label, its shorter one where the label doesn't fit beside the place's widest value (every
+/// language has one, so a language whose label is longer lays out as the others do, with the
+/// shorter words), or none, a state alone, which says what it is. So the label never changes
+/// with the value. Only a value wider than the place's widest shrinks the label a little, then
+/// truncates it; the value never does. Medium's row `spreads` across its column, with the value at
+/// the trailing edge; small's line keeps the value beside its label.
 struct WidgetDetailRow: View {
     let row: WidgetRow
     let tinted: Bool
     let spreads: Bool
     @Environment(\.widgetStrings) private var strings
+    @Environment(\.locale) private var locale
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            line(widgetText(row.field.label, strings))
-            if let short = row.field.shortLabel {
-                line(widgetText(short, strings))
-            }
-            if row.standsAlone {
-                value
-            }
-            line(widgetText(row.field.shortLabel ?? row.field.label, strings))
-                .minimumScaleFactor(0.8)
+        switch row.field.labelForm(in: spreads ? .medium : .small, locale: locale) {
+        case .full: line(widgetText(row.field.label, strings))
+        case .short: line(widgetText(row.field.shortLabel ?? row.field.label, strings))
+        case .none: value
         }
     }
 
@@ -119,6 +116,7 @@ struct WidgetDetailRow: View {
         HStack(spacing: spreads ? 0 : 4) {
             label
                 .foregroundStyle(.secondary)
+                .minimumScaleFactor(0.8)
             if spreads {
                 Spacer(minLength: 8)
             }
@@ -126,21 +124,12 @@ struct WidgetDetailRow: View {
         }
     }
 
-    /// Medium's values line up their digits in a column, as 0.6.x's did.
+    /// Medium's values line up their digits in a column, as 0.6.x's did. A time on battery shows
+    /// its hours, or its minutes under an hour, so it fits the line beside its label.
     private var value: some View {
-        WidgetValueLabel(row: row, tinted: tinted)
+        WidgetValueLabel(row: row, tinted: tinted, oneLine: true)
             .font(spreads ? Font.caption.monospacedDigit() : .caption)
             .fixedSize()
-    }
-}
-
-extension WidgetRow {
-    /// A value whose words say what it is, so it can stand without its label: a state, a condition.
-    fileprivate var standsAlone: Bool {
-        switch value {
-        case .state, .condition: true
-        case .text, .onOff, .time, .reached: false
-        }
     }
 }
 
@@ -227,23 +216,55 @@ struct WidgetTile: View {
 struct WidgetValueLabel: View {
     let row: WidgetRow
     let tinted: Bool
-    @Environment(\.widgetStrings) private var strings
+    /// A line's place rather than a tile's (``WidgetPlainValue/oneLine``).
+    var oneLine = false
 
     var body: some View {
         HStack(spacing: 2) {
             if let cue = row.cue {
                 WidgetCueSymbol(cue: cue, tinted: tinted)
             }
-            switch row.value {
-            case .text(let text): Text(verbatim: text)
-            case .state(let word): widgetText(word.title, strings)
-            case .condition(let condition): condition.text(strings)
-            case .onOff(true): Text("On", bundle: strings)
-            case .onOff(false): Text("Off", bundle: strings)
-            case .time(let time): WidgetTimeLabel(time: time)
-            case .reached: Text("Reached", bundle: strings)
-            }
+            WidgetPlainValue(value: row.value, oneLine: oneLine)
         }
+    }
+}
+
+/// A value as the plan formatted it, or its words in the widget's language.
+struct WidgetPlainValue: View {
+    let value: WidgetValue
+    /// A line's place: a time on battery shows one field, its hours or, under an hour, its
+    /// minutes; a tile has room for both.
+    var oneLine = false
+    @Environment(\.widgetStrings) private var strings
+
+    var body: some View {
+        switch value {
+        case .text(let text): Text(verbatim: text)
+        case .state(let word): widgetText(word.title, strings)
+        case .condition(let condition): condition.text(strings)
+        case .onOff(true): Text("On", bundle: strings)
+        case .onOff(false): Text("Off", bundle: strings)
+        case .time(let time): WidgetTimeLabel(time: time)
+        case .reached: Text("Reached", bundle: strings)
+        case .perHour(let text): Text("\(text) per hour", bundle: strings)
+        case .since(let date): WidgetOffsetText(date: date, fields: oneLine ? 1 : 2)
+        }
+    }
+}
+
+/// The widget's one self-updating text: the time between now and `date` in hours and minutes,
+/// which the system keeps current by the minute without a reload. It counts down to an estimate's
+/// end (the time left) and up from an unplug (the time on battery). Never seconds or a sign: the
+/// default sign puts a minus before a later end (W0-6).
+struct WidgetOffsetText: View {
+    let date: Date
+    /// The most fields it shows: "2 hours, 13 minutes", or "2 hours" where one line is tight.
+    var fields = 2
+
+    var body: some View {
+        Text(
+            .currentDate,
+            format: .offset(to: date, allowedFields: [.hour, .minute], maxFieldCount: fields, sign: .never))
     }
 }
 
@@ -277,7 +298,7 @@ struct WidgetTimeLabel: View {
                 }
             }
         case .timeLeft:
-            Text(.currentDate, format: .offset(to: time.end, allowedFields: [.hour, .minute], sign: .never))
+            WidgetOffsetText(date: time.end)
         }
     }
 }

@@ -27,9 +27,10 @@ jobs:
     runs-on: xcode-27
     environment: release
     env:
-      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it, for now as
-      # Apple's release candidate (27B48), which Xcode_27.2.app names until the image carries the
-      # release. Use the newest release or its release candidate, never a beta.
+      # The image's default is Xcode 27.1 (27A9275); 27.2 is installed beside it. Image
+      # 20261104.0337 replaced its release candidate (27B48) with the release (27B52) at
+      # Xcode_27.2.app; a runner still on an older image runs the release candidate from the same
+      # path. Use the newest release or its release candidate, never a beta.
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     # A hung step would otherwise hold the runner for GitHub's 6-hour default.
     timeout-minutes: 60
@@ -38,6 +39,14 @@ jobs:
         with:
           # gh gets the token through GH_TOKEN, so it isn't left in .git/config for the build.
           persist-credentials: false
+      - name: Toolchain
+        # The Xcodes on the image too, for moving DEVELOPER_DIR to a newer release; listed first,
+        # so they show even when DEVELOPER_DIR's Xcode is gone. One command a line: bash -e fails
+        # the step on any of them, but not on the first of an && list.
+        run: |
+          ls -d /Applications/Xcode*.app
+          xcodebuild -version
+          swift --version
       - name: Check the release notes
         # The notes become the release's text, which the Software Update window shows to everyone
         # updating, so they must open with this version's heading: "## What's new in 0.6.1", or
@@ -123,9 +132,14 @@ jobs:
             exit 1
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Read the build number
+        # The clock that ci.yml reads too (scripts/build-number.sh), so a release sits above
+        # every candidate built before it. Read once for the job, into BUILD_NUMBER.
+        run: |
+          build_number="$(scripts/build-number.sh)"
+          echo "Build $build_number"
+          echo "BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
       - name: Package app (DMG)
-        env:
-          BUILD_NUMBER: ${{ github.run_number }}
         run: scripts/build-app.sh
       - name: Refuse a profiling build
         # PROFILING=1 signs the app with get-task-allow (scripts/build-app.sh); such a build is

@@ -214,6 +214,8 @@ enum WidgetKeys {
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
         case .systemChargeLimit: "Charge limit"
+        case .averageDrain: "Average drain"
+        case .timeOnBattery: "Time on battery"
         }
     }
 }

@@ -133,7 +133,8 @@ struct WidgetPreviewTests {
 
     // MARK: Scenes
 
-    /// What a picture shows: a battery, a configuration and the timeline's moment.
+    /// What a picture shows: a battery, a configuration, the timeline's moment and the feed the
+    /// app wrote, which large's History chart and the two feed details show.
     struct Scene: Sendable {
         var name: String
         var title: String
@@ -141,10 +142,14 @@ struct WidgetPreviewTests {
         var configuration = BatteryWidgetConfiguration()
         /// The reading is 50 minutes old: the timeline's stale entry.
         var stale = false
+        var feed: WidgetFeed? = WidgetPreviewTests.sampleFeed
     }
 
     /// The reading's time: now, as the time left counts from the moment the view draws.
     static let date = Date.now
+
+    /// A made-up feed written now (BatteryCore's sample), as the gallery shows it.
+    nonisolated static let sampleFeed = WidgetFeed.sample(at: .now)
 
     static func battery(_ scenario: DemoScenario, minutesAgo: Double = 0) -> BatterySnapshot? {
         scenario.battery?.reading(at: date.addingTimeInterval(-minutesAgo * 60)).snapshot
@@ -280,7 +285,9 @@ struct WidgetPreviewTests {
 
     /// The widget as it draws `scene` in `size`, `look` and `language`, in its place.
     static func widget(_ scene: Scene, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
-        let entry = BatteryEntry(snapshot: scene.snapshot, moment: moment(scene), configuration: scene.configuration)
+        let entry = BatteryEntry(
+            snapshot: scene.snapshot, moment: moment(scene), configuration: scene.configuration,
+            feed: scene.feed.map { WidgetFeedState.feed($0) })
         return framed(
             BatteryWidgetView(entry: entry, size: size, formatter: language.formatter, timeZone: timeZone), size, look,
             language)

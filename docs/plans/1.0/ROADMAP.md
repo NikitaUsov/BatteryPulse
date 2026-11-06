@@ -45,19 +45,45 @@ as it stood:
    session and to report if something goes wrong, so nothing of 0.7 was seen on the M5 before the
    release: its evidence is CI's and the look checks he answered on CI's pictures. §3.2's exit
    criterion "Seen before release" is set aside by that decision, and QUA-16, 0.7's own M5 session,
-   moves to 0.7.1's M5 session (`docs/plans/0.7.1/widgets.md`, "0.7's M5 checks").
+   moves to 0.7.1's M5 session (`docs/plans/0.7.1/widgets.md`, "0.7's M5 checks", readable since
+   0.7.1's release at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head).
 2. **The stretch and the widget's language go to 0.7.1, not 1.1:** FEA-10, FEA-11 and FEA-12, with
    SEC-08 and DOC-08 (W-5 to W-7: the feed, the History widget and the iPhone & iPad widget), and the
    widget following the app's own language (plan-0.7.0 W-0 item 8). So by his decision the feed's
    new file and the widget's read-only exception come in a 0.7.x release, announced in its notes,
    where §3.2 had held them for a minor release under the frozen-outputs rule. Their design is in
-   `docs/plans/0.7.1/widgets.md`.
+   `docs/plans/0.7.1/widgets.md`, readable since 0.7.1's release at
+   `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head.
 3. **NEW-13, the backup release key, goes to 0.8.** The build-number clock (plan-0.7.0 D1), a
    technical choice, comes before 0.7.1's first candidate; 0.7.0 takes `release.yml`'s run number,
    above 0.6.2's 8.
 4. 1.1 keeps macOS 28's compatibility work (NEW-21) and FEA-20; ROADMAP also places there extra
    large, which the look check left out of 0.7 (its question 3 = 3). The order is now 0.7.0, 0.7.1,
    then 0.8 (ROADMAP's versions table).
+
+**Updated 2026-11-06, with 0.7.1's packages merged on its integration branch** (before its M5
+session and its release; `docs/plans/0.7.1/PLAN.md` §12, readable at
+`dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head):
+1. **Built for 0.7.1:** FEA-10 (the feed, W-5), FEA-11 (the History widget, with the Battery
+   widget's History chart and its two feed details, W-6) and FEA-12 (the iPhone & iPad widget,
+   W-7), with SEC-08 (the reader's checks and the feed's modes) and DOC-08 (the privacy line in
+   the guide, README and the notes), and the widget following the app's own language (W-15). They
+   ship with 0.7.1. **Carried:** QUA-16, 0.7's own M5 session, is 0.7.1's M5 session, not yet run.
+2. **C1's widget sentence** now counts the two widgets once they ship in 0.7.1 (C1 below).
+3. **SIZ-07 is built for 0.7.1:** the widget has a string table of its own (W-7,
+   `scripts/widget-strings.swift`), the catalog's keys its sources name; the app's and the
+   widget's localized strings went from 253,312 B at W-6's merge to 139,587 B at W-7's head (CI's
+   size report), with W-7's own keys added.
+4. **C10's charts** are the app's: a widget's chart is a small chart with one succinct VoiceOver
+   label, as the HIG allows for one (C10 below).
+
+**Updated 2026-11-06, at 0.7.1's release.** QUA-16, 0.7's own M5 session, ran in part in 0.7.1's
+short feed check (Session F, the maintainer's choice in place of the full session and its logged
+day): the feed through the widget's exception, placed widgets across the update from 0.7.0, the
+new widgets from the gallery and their clicks, and no crash report or fault. The rest goes to
+0.8's M5 session, with 0.7.1's own checks the feed check didn't run (ROADMAP Stages 1.8 and 1.9,
+`docs/VERIFICATION.md`). 0.7.1's plan folder left at the release (plan-0.7.1 below); its
+Appendix C and the session tools are in `docs/plans/0.8.0/`.
 
 **Sources and how they are cited**
 
@@ -67,8 +93,9 @@ as it stood:
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus 0.6.2's plan, so these lines are v0.6.1's |
-| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, is in `docs/plans/0.7.1/widgets.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
-| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C is copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build is in `docs/plans/0.7.1/widgets.md` |
+| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, went on to `docs/plans/0.7.1/widgets.md`, removed at 0.7.1's release and readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
+| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C was copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build went to `docs/plans/0.7.1/widgets.md`, both readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head |
+| plan-0.7.1 | 0.7.1's plan, `docs/plans/0.7.1/PLAN.md`, removed at 0.7.1's release: readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head, with Session F's report beside it (`sessions/F.md`). Its Appendix C is copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`, and the session tools moved to `docs/plans/0.8.0/` |
 | INV | `docs/plans/1.0/INVENTORY.md`; its row IDs (`FEA-01` …) are used throughout |
 | P1, PB, RES-x | the 0.6.1 plan, playbook and research files in `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
 | V, Q, D | the three independent proposals for 1.0 this roadmap judged: user value (V), quality and trust (Q), distribution and platform (D); working notes, not in the repository |
@@ -254,8 +281,9 @@ that exists.
   - 0.8's answers (§3.3): why the battery isn't charging (causes confirmed by captures only), a
     health summary, in-app explanations of the numbers, a first-run Welcome, and Report a
     Problem. An item 0.8's cut line moves lands in 0.9.0 instead, still before 1.0.
-  - The History and iPhone & iPad widgets count toward 1.0 only if they shipped in 0.7.0
-    (§3.2).
+  - The History and iPhone & iPad widgets count toward 1.0 once they ship in 0.7.1, where the
+    maintainer moved them on 2026-10-31 (§3.2 had them in 0.7.0); a widget cut from 0.7.1 counts
+    from the release that ships it.
 - **C2 Every feature seen in a packaged build.** A verification matrix (NEW-18) maps each
   USER_GUIDE feature to the session and the evidence (screenshot or log) from a DMG build. Every
   open "Check on the M5" line in ROADMAP is ticked, or listed under Known limitations in the guide
@@ -347,10 +375,13 @@ that exists.
 - **C10 Accessibility.**
   - **VoiceOver:** every control on every page, the menu bar panel, every Settings pane and every
     widget family is reachable and named, in English and Russian.
-  - **Charts:** every chart has a descriptor
+  - **Charts:** every chart of the app has a descriptor
     (https://developer.apple.com/documentation/swiftui/view/accessibilitychartdescriptor(_:)).
     Today the chart parts are hidden (ChargeChart.swift:31, PowerChart.swift:29) and none has a
-    descriptor (R:573).
+    descriptor (R:573). A widget's chart (0.7.1's History widget and the large Battery widget's
+    History chart) is a small chart, so it has one succinct label instead, its series, span and
+    lowest, highest and latest values (`WidgetChartSummary`), as the HIG's Charts page allows for
+    one.
   - **Keyboard:** the sidebar, toolbar, tile pickers, Raw Data and the update window can be used
     without a pointer.
   - **Contrast:** Xcode is on the M5 (Q-B7), so the maintainer runs Accessibility Inspector from
@@ -664,8 +695,10 @@ optional steps.
      (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its files) into
      `docs/plans/0.7.0/`, beside `widgets.md`, which reach main with 0.6.2's squash merge; the
      release PR's `refs/pull/12/head` keeps 0.6.2's whole plan reachable either way (plan-0.7.0
-     D-1, D-11). That folder left at 0.7.0's release in turn, after its session tools were
-     copied to `docs/plans/0.7.1/` (readable at the commit plan-0.7.0 names).
+     D-1, D-11). That folder left at 0.7.0's release in turn, after its session tools were copied to
+     `docs/plans/0.7.1/` (readable at the commit plan-0.7.0 names), which left at 0.7.1's release in
+     turn, after they moved on to `docs/plans/0.8.0/` (readable at
+     `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
      run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
      0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from
@@ -1300,7 +1333,7 @@ condition or the reason.
 | QUA-13 | SUI-09 `@State` initialized once | 0.6.2 | P3 |
 | QUA-14 | CB-02 device JSON dates ISO 8601 | 0.7 | With NEW-11 |
 | QUA-15 | Remove legacy `samples.jsonl` migration | 0.8 | Engineering lane; a line in the notes |
-| QUA-16 | 0.7's own M5 session | 0.7.1 (2026-10-31; was 0.7) | 0.7.0 shipped without it; 0.7.1's M5 session runs its checks |
+| QUA-16 | 0.7's own M5 session | 0.8 (2026-11-06; was 0.7.1, and before it 0.7) | 0.7.0 shipped without it, and 0.7.1 ran only the short feed check (Session F), a part of its checks; 0.8's M5 session runs the rest |
 | ENG-01 | Menu bar energy vs 0.6.0/0.6.1/RC | 0.6.2 | Becomes C5's budgets |
 | ENG-02 | Launch to `menuBarReady` | 0.6.2 | Becomes C5's budget |
 | ENG-03 | Energy per window style | 0.6.2 | |

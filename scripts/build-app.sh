@@ -145,12 +145,21 @@ APPEX="$APP/Contents/PlugIns/BatteryPulseWidget.appex"
 WIDGET="$APPEX/Contents/MacOS/BatteryPulseWidget"
 mkdir -p "$APPEX/Contents/MacOS" "$APPEX/Contents/Resources"
 cp "$BIN_PATH/BatteryPulseWidget" "$WIDGET"
-cp -R "$APP/Contents/Resources/"*.lproj "$APPEX/Contents/Resources/"
-# Both bundles must keep an en.lproj and, for each translation, a table with every catalog key.
-# English ships no table while every one of its entries is its own key, as xcstringstool writes
-# the strings keyed by their English text: a lookup without a table returns the key anyway. A
-# table with any other entry is kept.
-swift scripts/string-tables.swift Resources/Localizable.xcstrings "$APP/Contents/Resources" "$APPEX/Contents/Resources"
+# The widget's own string table (INV SIZ-07): only the catalog's keys its sources name, about a
+# fifth of them, so its .lproj folders don't carry the app's words.
+WIDGET_CATALOG="$BUILD_DIR/widget-strings/Localizable.xcstrings"
+mkdir -p "$(dirname "$WIDGET_CATALOG")"
+swift scripts/widget-strings.swift Resources/Localizable.xcstrings "$WIDGET_CATALOG" Sources/BatteryPulseWidget Sources/BatteryCore/Widget
+xcrun xcstringstool compile --output-directory "$APPEX/Contents/Resources" "$WIDGET_CATALOG"
+mkdir -p "$APPEX/Contents/Resources/en.lproj"
+# Both bundles must keep an en.lproj and, for each translation, a table with every key of their
+# catalog: the app's every catalog key, the widget's every key of its own. English ships no table
+# while every one of its entries is its own key, as xcstringstool writes the strings keyed by
+# their English text: a lookup without a table returns the key anyway. A table with any other
+# entry is kept.
+swift scripts/string-tables.swift Resources/Localizable.xcstrings "$APP/Contents/Resources"
+swift scripts/string-tables.swift "$WIDGET_CATALOG" "$APPEX/Contents/Resources"
+rm -rf "$(dirname "$WIDGET_CATALOG")"
 cat > "$APPEX/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

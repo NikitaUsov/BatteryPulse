@@ -5,13 +5,23 @@ import SwiftUI
 import WidgetKit
 
 /// Reads the widget's family and hands the views its size: `\.widgetFamily` can only be read, so
-/// the views take the size as an input, which a preview can set.
+/// the views take the size as an input, which a preview can set. Sets the language the entry
+/// draws in, BatteryPulse's own from the feed, for everything below.
 struct BatteryWidgetRoot: View {
     let entry: BatteryEntry
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        BatteryWidgetView(entry: entry, size: WidgetSize(family))
+        Self.content(entry, size: WidgetSize(family))
+    }
+
+    /// The widget for `entry` in `size`, in the entry's language: its words, locale and numbers.
+    /// The previews draw it too.
+    static func content(_ entry: BatteryEntry, size: WidgetSize, timeZone: TimeZone = .autoupdatingCurrent)
+        -> some View
+    {
+        BatteryWidgetView(entry: entry, size: size, formatter: entry.language.formatter, timeZone: timeZone)
+            .widgetLanguage(entry.language)
     }
 }
 
@@ -46,7 +56,7 @@ struct BatteryWidgetView: View {
     var body: some View {
         let plan = WidgetLayoutPlan.make(
             size: size, configuration: entry.configuration, snapshot: entry.snapshot, entry: entry.moment,
-            formatter: formatter, timeZone: timeZone)
+            formatter: formatter, timeZone: timeZone, feed: entry.feed?.feed)
         Group {
             switch plan {
             case .battery(let layout):
@@ -74,17 +84,30 @@ struct BatteryWidgetView: View {
     }
 }
 
-/// Large: the charge block at the top and the details below it, in two columns of tiles.
+/// Large: the charge block at the top and the details below it, in two columns of tiles, and the
+/// History chart in the last row's place, which takes what is left of the height.
 struct WidgetLargeLayout: View {
     let layout: BatteryWidgetLayout
 
     var body: some View {
+        let below = !layout.details.isEmpty || layout.chart != nil
         VStack(alignment: .leading, spacing: 8) {
-            WidgetChargeBlock(layout: layout, size: .large, fills: layout.details.isEmpty)
-            if !layout.details.isEmpty {
-                Spacer(minLength: 0)
+            // Beside the chart, which takes what is left, the charge block keeps its own height:
+            // its number never shrinks for it.
+            WidgetChargeBlock(layout: layout, size: .large, fills: !below)
+                .layoutPriority(layout.chart == nil ? 0 : 1)
+            if below {
+                // The chart, when it shows, takes the rest of the height; else the details go to
+                // the bottom.
+                if layout.chart == nil { Spacer(minLength: 0) }
                 Divider()
-                WidgetTileGrid(details: layout.details, tinted: layout.tinted)
+                if !layout.details.isEmpty {
+                    WidgetTileGrid(details: layout.details, tinted: layout.tinted)
+                }
+                if let chart = layout.chart {
+                    WidgetChartPlace(content: chart)
+                        .frame(minHeight: 40, maxHeight: .infinity)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

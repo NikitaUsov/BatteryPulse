@@ -20,9 +20,10 @@ public struct WidgetRow: Sendable, Equatable {
 
     /// `field`'s row for `snapshot`, or `nil` when the reading doesn't have it: a Mac without a
     /// pack temperature, an adapter while on battery. `time` is the entry's time text, which only
-    /// the planner knows.
+    /// the planner knows; `feed` the app's, whose fields show "—" without it.
     init?(
-        _ field: BatteryWidgetField, snapshot s: BatterySnapshot, time: WidgetTimeText?, formatter f: BatteryFormatter
+        _ field: BatteryWidgetField, snapshot s: BatterySnapshot, time: WidgetTimeText?, formatter f: BatteryFormatter,
+        feed: WidgetFeed? = nil
     ) {
         let value: WidgetValue
         var tier = BatteryPresentation.LevelTier.normal
@@ -79,6 +80,15 @@ public struct WidgetRow: Sendable, Equatable {
             // The limit itself is in no key BatteryPulse reads, so the row shows only that it holds.
             guard s.isAtSystemChargeLimit else { return nil }
             value = .reached
+        case .averageDrain:
+            value = .averageDrain(feed?.statistics24h?.averageDrainPercentPerHour, f)
+        case .timeOnBattery:
+            // Since the unplug the feed last saw, while this reading is on battery too.
+            if s.isExternalPowerConnected != true, s.chargeState == .discharging, let since = feed?.onBatterySince {
+                value = .since(since)
+            } else {
+                value = .text(WidgetValue.missing)
+            }
         }
         self.init(field: field, value: value, tier: tier)
     }
@@ -95,6 +105,11 @@ public enum WidgetValue: Sendable, Equatable {
     case time(WidgetTimeText)
     /// "Reached": the Charge Limit holds the charge.
     case reached
+    /// "%@ per hour", the value pre-formatted: the average drain.
+    case perHour(String)
+    /// The time since a moment, which the system counts up between reloads with the widget's one
+    /// self-updating text: the time on battery since the last unplug.
+    case since(Date)
 }
 
 /// The Mac battery's state in the words the widget and the app use, decided once for both so

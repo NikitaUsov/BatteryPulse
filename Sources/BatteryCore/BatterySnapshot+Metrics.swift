@@ -4,8 +4,9 @@ extension BatterySnapshot {
     /// Full-charge capacity relative to design capacity, in percent, unclamped: a new battery
     /// often holds more than its design capacity (an M5 at 48 cycles reads 104 %).
     ///
-    /// Uses the nominal capacity when available (it backs "Maximum Capacity" on Apple Silicon),
-    /// otherwise the gauge's measured full-charge capacity.
+    /// Uses the nominal capacity when available, otherwise the gauge's measured full-charge
+    /// capacity. System Settings' "Maximum Capacity" is close to this ratio, capped, but not always
+    /// equal: on the M5 at cycle 52 it said 100 % where ``healthPercent`` gave 99 %.
     public var capacityToDesignPercent: Double? {
         guard let design = designCapacityMAh, design > 0,
             let full = nominalChargeCapacityMAh ?? fullChargeCapacityMAh
@@ -13,7 +14,10 @@ extension BatterySnapshot {
         return Double(full) / Double(design) * 100
     }
 
-    /// "Maximum Capacity" as macOS shows it: ``capacityToDesignPercent`` capped at 100 %.
+    /// The maximum capacity BatteryPulse shows: ``capacityToDesignPercent`` (the nominal capacity,
+    /// or without one the full-charge capacity, against the design capacity) capped at 100 %, as
+    /// System Settings caps its "Maximum Capacity", which can differ from this figure by a point or
+    /// two.
     public var healthPercent: Double? {
         capacityToDesignPercent.map { min(100, $0) }
     }

@@ -50,9 +50,11 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
         self.kinds = kinds
     }
 
-    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable, and the
-    /// Accessories kind. Battery's Details is an entity, whose ids are ``BatteryWidgetField``'s raw
-    /// values; Accessories' Hide fully charged is a Bool.
+    /// The widgets the extension declares today: 0.6.x's Battery kind, configurable, the
+    /// Accessories kind, the History kind and the iPhone & iPad kind. Battery's Details is an
+    /// entity, whose ids are ``BatteryWidgetField``'s raw values, and so is the iPhone & iPad
+    /// kind's Device, whose ids are ``DeviceKey`` strings; Battery's History chart, Accessories'
+    /// Hide fully charged and History's Statistics are Bools.
     static let shipping = WidgetIntentManifest(kinds: [
         Kind(
             .battery, families: [.small, .medium, .large],
@@ -67,6 +69,7 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
                     Parameter(name: "time", values: WidgetTimeStyle.allCases.map(\.rawValue)),
                     Parameter(name: "colors", values: WidgetColorStyle.allCases.map(\.rawValue)),
                     Parameter(name: "updateTime", values: WidgetUpdateTimeStyle.allCases.map(\.rawValue)),
+                    Parameter(name: "historyChart"),
                 ])),
         Kind(
             .accessories, families: [.small, .medium, .large],
@@ -75,6 +78,23 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
                 parameters: [
                     Parameter(name: "mode", values: AccessoryWidgetMode.allCases.map(\.rawValue)),
                     Parameter(name: "hideFullyCharged"),
+                ])),
+        Kind(
+            .history, families: [.medium, .large],
+            intent: Intent(
+                type: "HistoryWidgetIntent",
+                parameters: [
+                    Parameter(name: "period", values: HistoryWidgetPeriod.allCases.map(\.rawValue)),
+                    Parameter(name: "series", values: HistoryWidgetSeries.allCases.map(\.rawValue)),
+                    Parameter(name: "statistics"),
+                ])),
+        Kind(
+            .devices, families: [.small, .medium, .large],
+            intent: Intent(
+                type: "DevicesWidgetIntent",
+                parameters: [
+                    Parameter(name: "show", values: DevicesWidgetShow.allCases.map(\.rawValue)),
+                    Parameter(name: "device"),
                 ])),
     ])
 

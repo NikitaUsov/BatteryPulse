@@ -1,3 +1,38 @@
+## What's new in 0.7.1
+
+- **History widget:** the last 24 hours or 7 days of your Mac's charge, battery power or
+  temperature, or the last 90 days of its capacity compared with design and its cycle count, on
+  the desktop or in Notification Center, in medium and large, with the stretches on the adapter
+  shaded. The large one adds the average drain, time on battery and charging sessions of the
+  last 24 hours, or of the last 7 days under a 7-day or 90-day chart. A click opens History.
+- **iPhone and iPad widget:** your iPhones' and iPads' charge as BatteryPulse last read them, in
+  small, medium and large: the most recently read, the one with the lowest charge, all of them,
+  or one you choose in **Edit Widget**, each with when it was read. A click opens the device's
+  page.
+- **Large Battery widgets now show the last day's charge in place of their last two rows; Edit
+  Widget turns it off.** The Custom layout also offers two new details, Average drain and Time on
+  battery.
+- **Widgets in BatteryPulse's language:** the widgets should now follow the language you chose for
+  BatteryPulse in System Settings → General → Language & Region, once you reopen it (Edit
+  Widget's sheet and the gallery follow your Mac's).
+- **Widgets and privacy.** The History and iPhone and iPad widgets can't read BatteryPulse's
+  history or your devices themselves, so BatteryPulse keeps a small copy of what they show (the
+  last day's and week's readings, the last 24 hours' and the last 7 days' figures, up to 90 days
+  of capacity and cycle count, and your iPhones' and iPads' last readings) in its own folder,
+  which only you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`.
+  The widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
+  and it is rewritten at once when you clear the history, forget a device or turn a reading off.
+- **What's New** now appears after every update, this one included.
+- **Fixes:** Settings fit the screen: a Settings pane taller than your screen, and the welcome
+  window's settings, now scroll, so every setting can be reached on a MacBook's display.
+
+Updating from 0.7.0 or 0.6.2: **Install and Relaunch** in the update window installs 0.7.1 from
+inside the app. Placed widgets should keep their choices. If one has lost them, Control-click it
+and choose **Edit Widget** to choose again; if one is gone or blank, remove the blank one and add
+it again from the gallery: Control-click the desktop and choose **Edit Widgets…**. If you go back
+to 0.7.0 later, remove the History and iPhone and iPad widgets first: 0.7.0 doesn't have them, so
+they would stay as they last were.
+
 ## What's new in 0.7.0
 
 - **Widgets you configure:** your Battery widget keeps its look. Control-click it and choose

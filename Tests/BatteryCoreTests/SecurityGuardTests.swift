@@ -13,9 +13,9 @@ import Testing
 /// - an IOKit user-client call (`IOServiceOpen`, `IOConnect…`) outside the SMC client, and a
 ///   registry write anywhere;
 /// - starting a process outside the installer, or signalling one outside the widget refresher;
-/// - in the widget and BatteryArt, the painter it links, any file API, dynamic loading, URL
-///   session or Network framework (``widgetForbidden``): the widget reads no file of ours and
-///   makes no request;
+/// - in the widget and BatteryArt, the painter it links, any dynamic loading, URL session or
+///   Network framework (``widgetForbidden``), and any file API (``widgetFileAPIs``) outside the
+///   feed's reader: the widget reads only the feed the app writes for it, and makes no request;
 /// - a handler of URLs or activities outside the app delegate's two widget-click handlers: no
 ///   `onOpenURL`, `handlesExternalEvents` or `onContinueUserActivity`, and no other delegate
 ///   method that opens something. The app's Info.plist registers no URL scheme either
@@ -155,14 +155,28 @@ import Testing
     }
 
     /// The widget's own target and BatteryArt, the painter it shares with the app, which read the
-    /// battery and nothing else of ours (P2 §8.8): no file API, no `dlopen` or `dlsym`, no
-    /// `URLSession` and no Network framework (REJ-57). The battery and accessory reads it links
-    /// live in BatterySource, under the placements above.
+    /// battery and the feed and nothing else of ours (P2 §8.8): no `dlopen` or `dlsym`, no
+    /// `URLSession` and no Network framework (REJ-57), in any of their files. The battery and
+    /// accessory reads it links live in BatterySource, under the placements above.
     static var widgetForbidden: Regex<Substring> {
         words(
-            #/\bFileManager\b|\bFileHandle\b|\bcontentsOf(?:File)?\s*:|\bfopen\s*\(|\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
+            #/\bdl(?:open|sym)\b|\bURLSession\b|\bimport\s+Network\b|\bNW(?:Connection|Listener|PathMonitor|Browser|Endpoint)\b/#
         )
     }
+
+    /// The file APIs, Foundation's and the POSIX calls the feed's reader makes and their kin
+    /// (paths, links, folders, the System module's descriptors), which only ``feedReader`` may use
+    /// in the widget and BatteryArt. Not `read(`, which `MacAccessoryProvider().read()` is;
+    /// `getpw\w*` covers `getpwnam` and `getpwuid_r` too.
+    static var widgetFileAPIs: Regex<Substring> {
+        words(
+            #/\bFileManager\b|\bFileHandle\b|\bNSFileCoordinator\b|\bFileDescriptor\b|\bimport\s+System\b|\bcontentsOf(?:File)?\s*:|\bf(?:d|re)?open\s*\(|\b(?:open|openat|creat|stat|lstat|fstat|fstatat|access|faccessat|readlink|realpath|opendir|scandir)\s*\(|\bgetpw\w*/#
+        )
+    }
+
+    /// The one widget file that reads a file: the feed's, at the one path of the widget's
+    /// entitlement (``theFeedReaderOpensOnlyTheFeed()``).
+    static let feedReader = "BatteryPulseWidget/WidgetFeedReader.swift"
 
     /// The app delegate's file, with `application(_:open:)` and
     /// `application(_:continue:restorationHandler:)`.
@@ -171,7 +185,8 @@ import Testing
     /// The sources ``widgetForbidden`` covers: the widget's own, and BatteryArt's, which the
     /// widget links.
     static let widgetFolders = ["BatteryPulseWidget/", "BatteryArt/"]
-    static let widgetMessage = "the widget reads no file of ours and makes no request"
+    static let widgetMessage = "the widget loads no code and makes no request"
+    static let widgetFileMessage = "the widget reads only the feed, in WidgetFeedReader"
 
     /// The targets that build with strict memory safety: the parsers of untrusted input
     /// (BatteryCore, bpulse) and the system bindings (BatterySource, BatteryKit).
@@ -196,6 +211,11 @@ import Testing
         if widgetFolders.contains(where: { path.hasPrefix($0) }) {
             for match in code.matches(of: widgetForbidden) {
                 found.append((match.range.lowerBound, widgetMessage))
+            }
+            if path != feedReader {
+                for match in code.matches(of: widgetFileAPIs) {
+                    found.append((match.range.lowerBound, widgetFileMessage))
+                }
             }
         }
         return found.sorted { $0.0 < $1.0 }.map { index, message in
@@ -417,26 +437,102 @@ import Testing
         #expect(!text.contains("CFBundleURLSchemes"))
     }
 
-    /// The widget and the painter it links have no file or network API, wherever else the app
-    /// may use one.
+    /// The widget and the painter it links have no file API but the feed's reader, wherever else
+    /// the app may use one.
     @Test(arguments: [
         "let data = try Data(contentsOf: url)",
         "let entries = try FileManager.default.contentsOfDirectory(atPath: path)",
         "let handle = FileHandle(forReadingAtPath: path)",
         "let text = try String(contentsOfFile: path, encoding: .utf8)",
         "let file = fopen(path, mode)",
+        "let descriptor = Darwin.open(path, O_RDONLY)",
+        "let descriptor = open(path, O_RDONLY | O_NOFOLLOW)",
+        "let descriptor = openat(folder, name, O_RDONLY)",
+        "guard fstat(descriptor, &info) == 0 else { return }",
+        "_ = stat(path, &info)",
+        "_ = lstat(path, &info)",
+        "let entry = getpwuid(getuid())",
+        "let entry = getpwnam(name)",
+        "_ = getpwuid_r(uid, &entry, &buffer, size, &result)",
+        "let file = fdopen(descriptor, mode)",
+        "let file = freopen(path, mode, stream)",
+        "let descriptor = creat(path, 0o600)",
+        "guard access(path, R_OK) == 0 else { return }",
+        "_ = fstatat(folder, name, &info, 0)",
+        "let count = readlink(path, &buffer, size)",
+        "let resolved = realpath(path, nil)",
+        "let folder = opendir(path)",
+        "let descriptor = try FileDescriptor.open(path, .readOnly)",
+        "import System",
+        "let coordinator = NSFileCoordinator(filePresenter: nil)",
+    ])
+    func theWidgetHasNoFileAPIButTheFeedReader(source: String) {
+        for widget in ["BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift"] {
+            #expect(
+                Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetFileMessage) },
+                "\(widget): \(source)")
+        }
+        #expect(Self.violations(in: source, path: Self.feedReader).isEmpty, "\(source)")
+        let app = "BatteryPulseApp/Updates/UpdateNetwork.swift"
+        #expect(!Self.violations(in: source, path: app).contains { $0.hasSuffix(Self.widgetFileMessage) })
+    }
+
+    /// No widget file loads code or makes a request, the feed's reader included.
+    @Test(arguments: [
+        "let image = dlopen(path, RTLD_NOW)",
+        "let symbol = dlsym(handle, name)",
         "let session = URLSession(configuration: .ephemeral)",
         "import Network",
         "let connection = NWConnection(host: host, port: port, using: .tcp)",
     ])
-    func theWidgetHasNoFileOrNetworkAPI(source: String) {
-        for widget in ["BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift"] {
+    func theWidgetHasNoNetworkOrLoading(source: String) {
+        let files = [
+            "BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryArt/BatteryIconPainter.swift", Self.feedReader,
+        ]
+        for widget in files {
             #expect(
                 Self.violations(in: source, path: widget).contains { $0.hasSuffix(Self.widgetMessage) },
                 "\(widget): \(source)")
         }
         let app = "BatteryPulseApp/Updates/UpdateNetwork.swift"
         #expect(!Self.violations(in: source, path: app).contains { $0.hasSuffix(Self.widgetMessage) })
+    }
+
+    /// The reader opens one file, without following a link, read-only, at the entitlement's path
+    /// (`WidgetFeedStore`'s); no other widget file passes it a path of its own.
+    @Test func theFeedReaderOpensOnlyTheFeed() throws {
+        let reader = try SourceScanner.file(Self.feedReader).code
+        let open = #/\bopen\s*\(([^)]*)\)/#.wordBoundaryKind(.simple)
+        let opens = reader.matches(of: open).map { String($0.output.1) }
+        #expect(opens.count == 1)
+        for flag in ["O_RDONLY", "O_NOFOLLOW", "O_CLOEXEC"] {
+            #expect(opens.first?.contains(flag) == true, "\(flag)")
+        }
+        #expect(!reader.contains(Self.words(#/\bO_(?:WRONLY|RDWR|CREAT|TRUNC|APPEND)\b/#)))
+        #expect(!reader.contains(Self.words(#/\b(?:FileManager|contentsOf|openat|lstat)\b/#)))
+        #expect(reader.contains("WidgetFeedStore.homeRelativePath + WidgetFeedStore.fileName"))
+        #expect(reader.contains("fstat(descriptor, &info)"))
+        for file in try SourceScanner.files.get()
+        where file.path.hasPrefix("BatteryPulseWidget/") && file.path != Self.feedReader {
+            #expect(!file.code.contains(Self.words(#/\bWidgetFeedReader\s*\.\s*read\s*\(\s*path\s*:/#)), "\(file.path)")
+        }
+    }
+
+    /// W-7: One device's entity query lists the feed's devices through the read every kind
+    /// shares (`WidgetReads.feed`, which reads through ``feedReader``), in the extension only, and
+    /// has no file API of its own.
+    @Test func theDeviceQueryReadsOnlyThroughTheFeedReader() throws {
+        let path = "BatteryPulseWidget/DevicesWidgetIntent.swift"
+        let code = try SourceScanner.file(path).code
+        let query = try #require(
+            code.firstMatch(of: #/struct DevicesWidgetDeviceQuery: EntityQuery \{([\s\S]*?)\n\}/#)?.output.1)
+        #expect(query.contains("await WidgetReads.feed.value()"))
+        #expect(
+            query.replacing(#/\s+/#, with: " ").contains(
+                "static var allowedExecutionTargets: IntentExecutionTargets { .widgetKitExtension }"))
+        #expect(!code.contains(Self.widgetFileAPIs))
+        #expect(!code.contains(Self.words(#/\bWidgetFeedReader\b/#)))
+        #expect(Self.violations(inCode: code, path: path).isEmpty)
     }
 
     @Test func theWidgetMayNameFilesInText() {

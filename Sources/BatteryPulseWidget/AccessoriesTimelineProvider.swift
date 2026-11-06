@@ -5,14 +5,16 @@ import Foundation
 import WidgetKit
 
 /// One entry of an Accessories widget's timeline: what the read found, when, the moment of the
-/// timeline it stands for (``WidgetTimelinePlan/accessories(at:)``), and the widget's
-/// configuration.
+/// timeline it stands for (``WidgetTimelinePlan/accessories(at:)``), the widget's configuration,
+/// and the language it draws in.
 struct AccessoriesEntry: TimelineEntry {
     /// `nil` when this macOS publishes no accessory batteries.
     let accessories: [AccessoryBattery]?
     let readAt: Date
     let moment: WidgetTimelinePlan.Entry
     let configuration: AccessoriesWidgetConfiguration
+    /// BatteryPulse's own, from the feed; the extension's own without one.
+    var language = WidgetLanguageTable.extensionOwn
 
     var date: Date {
         moment.date
@@ -30,10 +32,11 @@ struct AccessoriesTimelineProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: AccessoriesWidgetIntent, in context: Context) async -> AccessoriesEntry {
         let accessories = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
         return AccessoriesEntry(
             accessories: accessories, readAt: .now,
             moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: false),
-            configuration: AccessoriesWidgetConfiguration(configuration))
+            configuration: AccessoriesWidgetConfiguration(configuration), language: language)
     }
 
     /// The app reloads the widget at once when an accessory connects or disconnects while it runs,
@@ -43,11 +46,13 @@ struct AccessoriesTimelineProvider: AppIntentTimelineProvider {
         let interval = Diagnostics.begin("widget.timeline", trigger: WidgetKindID.accessories.signpostName)
         defer { interval.end() }
         let accessories = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
         let now = Date.now
         let plan = WidgetTimelinePlan.accessories(at: now)
         let options = AccessoriesWidgetConfiguration(configuration)
         let entries = plan.entries.map {
-            AccessoriesEntry(accessories: accessories, readAt: now, moment: $0, configuration: options)
+            AccessoriesEntry(
+                accessories: accessories, readAt: now, moment: $0, configuration: options, language: language)
         }
         return Timeline(entries: entries, policy: .after(plan.nextReload))
     }

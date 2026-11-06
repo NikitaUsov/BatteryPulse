@@ -40,9 +40,9 @@ final class WidgetReadCache<Value: Sendable>: Sendable {
     }
 }
 
-/// The extension's reads, one cache per kind, which every widget of the kind shares. The
-/// sandboxed extension has no shared container with the app under ad-hoc signing, so it reads
-/// for itself.
+/// The extension's reads, one cache per source, which every widget that reads it shares. The
+/// sandboxed extension has no shared container with the app under ad-hoc signing, so it reads the
+/// battery and the accessories for itself, and what it can't read, from the feed the app writes.
 enum WidgetReads {
     /// The battery; `nil` without one, which is never kept.
     static let battery = WidgetReadCache<BatterySnapshot> { await readBattery() }
@@ -51,11 +51,30 @@ enum WidgetReads {
     /// empty list when none is connected, which is.
     static let accessories = WidgetReadCache<[AccessoryBattery]> { await readAccessories() }
 
+    /// The feed the app writes (``WidgetFeedReader``): a feed, none, or why it was turned down.
+    /// Never `nil`, so "none" is shared like a feed, and every kind and widget reads the file once
+    /// per burst.
+    static let feed = WidgetReadCache<WidgetFeedState> { await readFeed() }
+
+    /// The feed the History widget and the large Battery widget's chart draw, through ``feed``,
+    /// boxed as the read keeps it. In the widget gallery, a Mac without a feed shows BatteryCore's
+    /// made-up history instead of a message, so the gallery shows the widget.
+    static func feedContent(preview: Bool) async -> WidgetFeedState? {
+        let state = await Self.feed.value()
+        guard preview, state?.feed == nil else { return state }
+        return .feed(.sample(at: .now))
+    }
+
     /// Reads IOKit directly, off the caller's thread. The SMC can't be opened from the sandbox, so
     /// it is skipped. A new provider for each read, which reads the registry in full and never
     /// reuses an earlier read's.
     @concurrent private static func readBattery() async -> BatterySnapshot? {
         MacBatteryProvider(readsSMC: false).readNonisolated(scope: .full)?.snapshot
+    }
+
+    /// One read of the feed's file, off the caller's thread.
+    @concurrent private static func readFeed() async -> WidgetFeedState? {
+        WidgetFeedReader.read()
     }
 
     /// One read of the power sources the accessories publish, on the main actor, where the

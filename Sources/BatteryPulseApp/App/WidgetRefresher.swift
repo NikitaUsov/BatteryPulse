@@ -8,41 +8,114 @@ import os
 
 /// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
 /// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
-/// read the battery and the accessories themselves; this only says when. Demo Mode never reaches
-/// the widgets.
+/// read the battery and the accessories themselves; this only says when. It also has the widget's
+/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``), and once a write
+/// took out what the user removed, replaced a feed the widgets couldn't use or that had aged, or
+/// added a section, reloads the kinds that show it. Demo Mode never reaches the widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private let accessories: AccessoryMonitor
+    private let devices: IDeviceMonitor
+    private let feed: WidgetFeedWriter
     private var planner = WidgetReloadPlanner()
     private var placements = WidgetPlacements()
     private var batteryObservation: Task<Void, Never>?
     private var accessoryObservation: Task<Void, Never>?
+    private var deviceObservation: Task<Void, Never>?
+    private var feedObservation: Task<Void, Never>?
+    /// The adapter as the feed was last told of it, outside Demo Mode.
+    private var feedPlugged: Bool?
+    /// Demo Mode was on at the last battery change: its end rewrites the feed.
+    private var feedSawDemo = false
+    /// The devices as the feed was last told of them, read times aside: a read that changed
+    /// nothing else writes nothing.
+    private var feedDevices: WidgetFeed.DevicesContent?
+    /// The feed writer of the refresher the app started, for the launch's language reload, which
+    /// writes the feed first: `start()` runs before ``endPreviousExtension(versionChanged:)``.
+    private static weak var launchFeed: WidgetFeedWriter?
 
-    init(monitor: BatteryMonitor, accessories: AccessoryMonitor) {
+    init(
+        monitor: BatteryMonitor, accessories: AccessoryMonitor, feed: WidgetFeedWriter,
+        devices: IDeviceMonitor = AppDevices.monitor
+    ) {
         self.monitor = monitor
         self.accessories = accessories
+        self.feed = feed
+        self.devices = devices
     }
 
     /// Evaluates every change of the battery and of the accessory list. The values at the start
-    /// are no change: the planner records them as what the widgets show, so a launch reloads
-    /// nothing.
+    /// are no change: the planner records them as what the widgets show, so they reload nothing.
+    /// The launch's first write of the feed reloads every placed kind once instead
+    /// (``WidgetReloadPlanner/Reason/repair``), through the feed's observation below.
     func start() {
         guard batteryObservation == nil else { return }
+        Self.launchFeed = feed
         if !isDemo {
             let now = Date.now
-            if let snapshot = monitor.snapshot { _ = planner.battery(snapshot, at: now) }
+            if let snapshot = monitor.snapshot {
+                _ = planner.battery(snapshot, at: now)
+                _ = planner.history(snapshot, at: now)
+            }
             _ = planner.accessories(accessories.accessories, at: now)
+            _ = planner.devices(devices.remembered, at: now)
         }
+        feedSawDemo = monitor.isOverridden
+        if !feedSawDemo { feedPlugged = monitor.snapshot?.isExternalPowerConnected }
+        feedDevices = devicesContent()
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
+                // The History widget and the large Battery widget's chart read the feed, and the
+                // extension shares one read of it for a few seconds: the reloads wait for its
+                // rewrite, so they find the new one.
+                if let reason = self.feedReasonForBattery() {
+                    await self.feed.writeAndWait(reason)
+                }
                 await self.evaluateBattery()
+                await self.evaluateHistory()
+                await self.reload(self.planner.pendingReloads(at: .now))
             }
         }
         accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
             for await _ in Observations({ accessories.accessories }).dropFirst() {
                 guard let self else { return }
                 await self.evaluateAccessories()
+            }
+        }
+        // A new reading, Forget, and reads turned on or off each change the remembered devices or
+        // the monitor's state. Only a change the feed shows rewrites it: a read every 5 minutes
+        // that read the same again doesn't. The iPhone & iPad widget reads the feed, so its reload
+        // waits for the rewrite.
+        deviceObservation = Task(name: "WidgetRefresher.devices") { [weak self, devices] in
+            for await _ in Observations({ (devices.remembered, devices.isEnabled) }).dropFirst() {
+                guard let self else { return }
+                let content = self.devicesContent()
+                if content != self.feedDevices {
+                    // Reads off and Forget take devices out of the feed: their kind reloads after it.
+                    let removes = self.feedDevices.map { content.removesDevices(since: $0) } ?? false
+                    self.feedDevices = content
+                    await self.feed.writeAndWait(.devices, removing: removes ? [.devices] : [])
+                }
+                // A reading that waited for the planner's interval is in the feed already.
+                await self.evaluateDevices()
+                await self.reload(self.planner.pendingReloads(at: .now))
+            }
+        }
+        // Clear History, recording off, reads off and Forget, in Demo Mode too, and a write in
+        // place of a feed the widgets couldn't use or that had aged, or with a section added: once
+        // the write is done, the kinds that show it reload, rather than at their own timeline's
+        // refresh.
+        feedObservation = Task(name: "WidgetRefresher.feedChanges") { [weak self, feed] in
+            for await _ in Observations({ feed.changesWritten }).dropFirst() {
+                guard let self else { return }
+                let changes = feed.takeChanges()
+                var reloads: [WidgetReloadPlanner.FeedReload] = []
+                for section in WidgetFeed.Section.allCases where changes.removed.contains(section) {
+                    reloads += self.planner.removal(of: section, at: .now)
+                }
+                reloads += self.planner.written(changes.effect, at: .now)
+                await self.reload(reloads)
             }
         }
     }
@@ -52,6 +125,37 @@ final class WidgetRefresher {
         batteryObservation = nil
         accessoryObservation?.cancel()
         accessoryObservation = nil
+        deviceObservation?.cancel()
+        deviceObservation = nil
+        feedObservation?.cancel()
+        feedObservation = nil
+    }
+
+    /// The remembered devices as the feed would hold them, read times aside.
+    private func devicesContent() -> WidgetFeed.DevicesContent {
+        let remembered = devices.remembered
+        return WidgetFeed.DevicesContent(
+            readsDevices: AppSettings.readsDevices, remembered: remembered,
+            modelNames: WidgetFeedWriter.modelNames(of: remembered))
+    }
+
+    /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end
+    /// of Demo Mode, whose readings never count as a plug change.
+    private func feedReasonForBattery() -> WidgetFeed.WriteReason? {
+        guard !monitor.isOverridden else {
+            feedSawDemo = true
+            return nil
+        }
+        let plugged = monitor.snapshot?.isExternalPowerConnected
+        var reason: WidgetFeed.WriteReason?
+        if feedSawDemo {
+            feedSawDemo = false
+            reason = .demoEnded
+        } else if let plugged, let last = feedPlugged, plugged != last {
+            reason = .plug
+        }
+        if let plugged { feedPlugged = plugged }
+        return reason
     }
 
     /// The app's effective language at its last launch (the first of
@@ -70,12 +174,17 @@ final class WidgetRefresher {
     /// widget stays frozen, then goes blank. WidgetKit starts the new extension on the next
     /// request, which follows here. After an in-app install, ``endExtensionBeforeSwap()`` has
     /// usually ended it already, and this finds nothing, or the new extension WidgetKit started
-    /// meanwhile, which a reload brings back.
+    /// meanwhile, which a reload brings back. The end doesn't wait for the feed: the launch's first
+    /// write follows and reloads every placed kind through the planner, after the extension was
+    /// ended, so the feed reaches them even after an update from 0.7.0, which left none.
     ///
     /// A language chosen for BatteryPulse alone (System Settings → General → Language & Region →
     /// Applications) applies at the next launch, and every placed widget keeps its render in the
     /// previous language until it reloads, so a language change reloads every kind even when no
-    /// extension was running.
+    /// extension was running. The widgets take the language from the feed, so a language change
+    /// writes it first and waits for the write, off the main actor, before it ends the extension
+    /// and reloads (``WidgetReloadPlanner/LaunchReason/steps``): the extension the reload starts
+    /// reads the new language, and a running one can't keep its read of the old one.
     static func endPreviousExtension(versionChanged: Bool) {
         let defaults = UserDefaults.standard
         let lastLanguage = defaults.string(forKey: lastSeenLanguageKey)
@@ -87,6 +196,19 @@ final class WidgetRefresher {
             let reason = WidgetReloadPlanner.launchReason(
                 versionChanged: versionChanged, lastLanguage: lastLanguage, language: language)
         else { return }
+        guard reason.steps.first == .writeFeed, let feed = launchFeed else {
+            endAndReload(reason)
+            return
+        }
+        Task(name: "WidgetRefresher.languageReload") {
+            await feed.writeAndWait(.language)
+            Self.endAndReload(reason)
+        }
+    }
+
+    /// Ends the extension a previous launch left running and, a second later, reloads every kind:
+    /// after an update only when one was ended. The launch's last two steps.
+    private static func endAndReload(_ reason: WidgetReloadPlanner.LaunchReason) {
         var ended = false
         if let processes = extensionProcesses() {
             // Another user's copy can't be signalled anyway.
@@ -99,7 +221,7 @@ final class WidgetRefresher {
         }
         guard ended || reason.reloadsAnyway else { return }
         // On the main actor, like the rest of the app.
-        Task {
+        Task(name: "WidgetRefresher.launchReload") {
             try? await Task.sleep(for: .seconds(1))
             WidgetCenter.shared.reloadAllTimelines()
             switch reason {
@@ -203,6 +325,48 @@ final class WidgetRefresher {
         )
     }
 
+    /// The History kind: a plug change, at most hourly (``WidgetReloadPlanner``).
+    private func evaluateHistory() async {
+        guard !isDemo, let snapshot = monitor.snapshot, let reason = planner.history(snapshot, at: .now),
+            await isPlaced(.history)
+        else { return }
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.history.rawValue)
+        Diagnostics.event("widget.reload", trigger: "policy.history")
+        Diagnostics.widget.notice("Reloading the History widget: \(reason.rawValue, privacy: .public)")
+    }
+
+    /// The iPhone & iPad kind: a new reading that moved 3 points or changed state, at most every
+    /// 15 minutes (``WidgetReloadPlanner``).
+    private func evaluateDevices() async {
+        guard !isDemo, let reason = planner.devices(devices.remembered, at: .now), await isPlaced(.devices) else {
+            return
+        }
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.devices.rawValue)
+        Diagnostics.event("widget.reload", trigger: "policy.devices")
+        Diagnostics.widget.notice("Reloading the iPhone & iPad widget: \(reason.rawValue, privacy: .public)")
+    }
+
+    /// Reloads the placed kinds of `reloads`, after a write changed what they show
+    /// (``WidgetReloadPlanner/removal(of:at:)``, ``WidgetReloadPlanner/written(_:at:)``): each
+    /// with its kind's trigger, and one line each with its reason.
+    private func reload(_ reloads: [WidgetReloadPlanner.FeedReload]) async {
+        // A section the feed's writer added for a kind its own, newer answer lists: this answer may
+        // be older and leave the kind out, so it asks again rather than skip the new widget.
+        for item in reloads where await isPlaced(item.kind, askingAgain: item.reason == .addition) {
+            WidgetCenter.shared.reloadTimelines(ofKind: item.kind.rawValue)
+            switch item.kind {
+            case .battery: Diagnostics.event("widget.reload", trigger: "policy")
+            case .accessories: Diagnostics.event("widget.reload", trigger: "policy.accessories")
+            case .history: Diagnostics.event("widget.reload", trigger: "policy.history")
+            case .devices: Diagnostics.event("widget.reload", trigger: "policy.devices")
+            }
+            let name = item.kind.signpostName.description
+            Diagnostics.widget.notice(
+                "Reloading the \(name, privacy: .public) widget kind: \(item.reason.rawValue, privacy: .public)"
+            )
+        }
+    }
+
     private func evaluateAccessories() async {
         let list = accessories.accessories
         guard !isDemo, let reason = planner.accessories(list, at: .now), await isPlaced(.accessories) else { return }
@@ -214,16 +378,17 @@ final class WidgetRefresher {
     }
 
     /// Whether `kind` is placed, asking WidgetKit first when the answer in memory can't tell
-    /// (``WidgetPlacements``). Only at a reload moment, so it adds no wake-up. Each answer logs
-    /// its count per kind; a failure counts as every kind placed.
-    private func isPlaced(_ kind: WidgetKindID) async -> Bool {
-        if placements.needsAnswer(toReload: kind, at: .now) {
+    /// (``WidgetPlacements``), or, `askingAgain`, when it leaves the kind out, whatever its age.
+    /// Only at a reload moment, so it adds no wake-up. Each answer logs its count per kind; a
+    /// failure counts as every kind placed.
+    private func isPlaced(_ kind: WidgetKindID, askingAgain: Bool = false) async -> Bool {
+        if placements.needsAnswer(toReload: kind, at: .now) || (askingAgain && !placements.isPlaced(kind)) {
             do {
                 let kinds = try await PlacedWidgets.kinds()
                 placements.record(answer: kinds, at: .now)
                 let counts = WidgetPlacements.counts(in: kinds)
                 Diagnostics.widget.notice(
-                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories"
+                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories, \(counts[.history] ?? 0, privacy: .public) History, \(counts[.devices] ?? 0, privacy: .public) iPhone & iPad"
                 )
             } catch {
                 placements.recordFailure(at: .now)
@@ -237,10 +402,10 @@ final class WidgetRefresher {
     }
 }
 
-/// WidgetKit's list of the placed widgets, as their kind strings. Nonisolated: `WidgetCenter`
-/// declares no `Sendable` conformance, so it is asked off the main actor, and only the strings
-/// come back.
-private nonisolated enum PlacedWidgets {
+/// WidgetKit's list of the placed widgets, as their kind strings, for the reloads and the feed.
+/// Nonisolated: `WidgetCenter` declares no `Sendable` conformance, so it is asked off the main
+/// actor, and only the strings come back.
+nonisolated enum PlacedWidgets {
     @concurrent static func kinds() async throws -> [String] {
         try await WidgetCenter.shared.currentConfigurations().map(\.kind)
     }

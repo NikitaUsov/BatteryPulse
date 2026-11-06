@@ -151,6 +151,7 @@ public enum Diagnostics {
     public static let device = Logger(subsystem: subsystem, category: "device")
     public static let accessory = Logger(subsystem: subsystem, category: "accessory")
     public static let update = Logger(subsystem: subsystem, category: "update")
+    public static let widget = Logger(subsystem: subsystem, category: "widget")
     /// The `perf` lines of ``signposts``.
     public static let perf = Logger(subsystem: subsystem, category: "perf")
     public static let signposts = Signposts(subsystem: subsystem, log: perf)

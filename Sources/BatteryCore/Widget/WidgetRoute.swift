@@ -137,14 +137,20 @@ extension WidgetKindID {
         switch self {
         case .battery: "BatteryWidgetIntent"
         case .accessories: "AccessoriesWidgetIntent"
+        case .history: "HistoryWidgetIntent"
+        case .devices: "DevicesWidgetIntent"
         }
     }
 
     /// The page a click on the kind's widget opens when it names none: the kind's own subject.
+    /// The iPhone & iPad widget names its device's page when it shows one; a click that carries no
+    /// URL opens the Devices section.
     var page: PageID {
         switch self {
         case .battery: .overview
         case .accessories: .accessories
+        case .history: .history
+        case .devices: .devices
         }
     }
 }

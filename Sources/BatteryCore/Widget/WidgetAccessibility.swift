@@ -64,6 +64,9 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
     /// The time left, which the system counts down in the text itself: that text is the element,
     /// and its label stays the system's.
     case timeLeft(until: Date)
+    /// A label's key and the time since a moment, which the system counts up in the text itself:
+    /// the element combines the label and that text, as the system reads them.
+    case counting(label: String, since: Date)
 
     /// The label in one language; `nil` for the time left, whose words only the system has.
     public func text(_ localize: (String) -> String) -> String? {
@@ -78,8 +81,11 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
 
     /// Every catalog key the label uses.
     var keys: [String] {
-        guard case .phrases(let phrases) = self else { return [] }
-        return phrases.flatMap(\.keys)
+        switch self {
+        case .phrases(let phrases): phrases.flatMap(\.keys)
+        case .timeLeft: []
+        case .counting(let label, _): [label]
+        }
     }
 }
 
@@ -110,6 +116,7 @@ enum WidgetAccessibility {
             if let main = layout.mainLabel { elements.append(main) }
             elements += layout.lines.compactMap(\.spokenLabel)
             elements += layout.details.map(\.spokenLabel)
+            if let chart = layout.chart { elements += Self.elements(chart) }
             if !layout.powerDetails.isEmpty {
                 if layout.panelHeadings { elements.append(WidgetPanel.power.spokenLabel) }
                 elements += layout.powerDetails.map(\.spokenLabel)
@@ -160,11 +167,24 @@ extension WidgetRow {
     public var spokenLabel: WidgetSpokenLabel {
         switch value {
         case .time(let time): time.spokenLabel
-        case .text(let text): .phrases([.key(field.labelKey), .verbatim(text)])
-        case .state(let word): .phrases([.key(field.labelKey), word.phrase])
-        case .condition(let condition): .phrases([.key(field.labelKey), condition.phrase])
-        case .onOff(let on): .phrases([.key(field.labelKey), .key(on ? "On" : "Off")])
-        case .reached: .phrases([.key(field.labelKey), .key("Reached")])
+        case .since(let date): .counting(label: field.labelKey, since: date)
+        case .text, .state, .condition, .onOff, .reached, .perHour: .phrases([.key(field.labelKey)] + value.phrases)
+        }
+    }
+}
+
+extension WidgetValue {
+    /// What VoiceOver reads for the value after its label; nothing for a time, which the system's
+    /// own text reads.
+    var phrases: [WidgetPhrase] {
+        switch self {
+        case .text(let text): [.verbatim(text)]
+        case .state(let word): [word.phrase]
+        case .condition(let condition): [condition.phrase]
+        case .onOff(let on): [.key(on ? "On" : "Off")]
+        case .reached: [.key("Reached")]
+        case .perHour(let text): [.key("%@ per hour", [.verbatim(text)])]
+        case .time, .since: []
         }
     }
 }
@@ -250,14 +270,16 @@ extension BatteryWidgetField {
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
         case .systemChargeLimit: "Charge limit"
+        case .averageDrain: "Average drain"
+        case .timeOnBattery: "Time on battery"
         }
     }
 
-    /// The shorter label the widget shows where the label and its value don't fit one line at
-    /// full size: the Russian for Maximum capacity beside 100% in medium. Every language has it
-    /// and picks the first that fits on its own (``WidgetTextBudget``), so the two languages lay
-    /// out alike even where only one shows the shorter label; VoiceOver keeps ``labelKey``. `nil`
-    /// for a label that always fits.
+    /// The shorter label the widget shows where the label and the place's widest value don't fit
+    /// one line at full size: the Russian for Maximum capacity beside 100% in medium. Every
+    /// language has it, and each place of each language shows one form whatever the value
+    /// (``labelForm(in:locale:)``), so the two languages lay out alike even where only one shows
+    /// the shorter label; VoiceOver keeps ``labelKey``. `nil` for a label that always fits.
     var shortLabelKey: String? {
         switch self {
         case .maximumCapacity: "Max capacity"
@@ -267,9 +289,50 @@ extension BatteryWidgetField {
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
         case .cellBalance: "Balance"
+        case .averageDrain: "Drain"
+        case .timeOnBattery: "Unplugged"
         case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }
+    }
+}
+
+/// How a one-line place, small's detail or a medium row, labels a field's value: its label, its
+/// shorter label (``BatteryWidgetField/shortLabelKey``), or none, the value alone, for words that
+/// say what they are (a state).
+public enum WidgetLabelForm: Sendable, Equatable {
+    case full, short, none
+}
+
+extension BatteryWidgetField {
+    /// The one form a place shows the field's label in, in `locale`'s language, whatever its
+    /// value: the first that fits the place's widest value on one line at full size (a 9,999, a
+    /// 99.9% per hour, "23 hours"), so a label never switches with its value's length (Russian's
+    /// Time on battery, its shorter Unplugged beside "9 hours" and its full words beside "—", in
+    /// 0.7.1's first pictures). `WidgetTextBudgetTests` derives
+    /// each entry from the budget and fails on one that differs. Large's and extra large's tiles
+    /// have a line of their own for the label, which is always full. A language the widget has no
+    /// table for is laid out as English, its development language.
+    public func labelForm(in size: WidgetSize, locale: Locale) -> WidgetLabelForm {
+        guard size == .small || size == .medium else { return .full }
+        let russian = locale.language.languageCode?.identifier == "ru"
+        if russian && self == .state { return .none }
+        let short: Set<BatteryWidgetField> =
+            switch (russian, size) {
+            case (false, .small): [.adapterInput, .remainingCapacity, .averageDrain]
+            case (false, _): [.remainingCapacity, .averageDrain]
+            case (true, .small):
+                [
+                    .maximumCapacity, .batteryPower, .adapterInput, .lowPowerMode, .remainingCapacity, .cycleLifeUsed,
+                    .cellBalance, .averageDrain, .timeOnBattery,
+                ]
+            case (true, _):
+                [
+                    .maximumCapacity, .batteryPower, .adapterInput, .lowPowerMode, .remainingCapacity, .cycleLifeUsed,
+                    .averageDrain, .timeOnBattery,
+                ]
+            }
+        return short.contains(self) ? .short : .full
     }
 }
 

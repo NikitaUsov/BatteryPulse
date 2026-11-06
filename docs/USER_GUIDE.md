@@ -65,6 +65,31 @@ start (**Check Now** or **Check for Updates…**) never counts. While Check for 
 the switch is greyed out and keeps its value. [Updates](#updates) lists every request
 BatteryPulse sends.
 
+**Widgets and privacy.** The widgets run in macOS's sandbox, which keeps them from reading
+BatteryPulse's history and devices themselves, so BatteryPulse keeps a small copy of what the
+History and iPhone and iPad widgets show (and the large Battery widget's chart), `feed.json`, in a
+folder of its own that only your account can read:
+`~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. While history is
+recorded, it holds the last day's and week's charge, battery power, temperature and plugged-in
+state in 15-minute and 2-hour steps, the last 24 hours' and the last 7 days' average drain, time
+on battery and charging sessions, when the Mac was last unplugged (while it runs on battery), and
+up to 90 days of capacity compared with design and cycle count, all of it already in the History
+folder beside it. While **Read iPhone and iPad batteries** is on, it also holds the names and last
+readings of up to 8 iPhones and iPads BatteryPulse remembers (the charge, what the battery was
+doing, maximum capacity, cycle count, temperature, the model and when each was read), as the Devices
+folder beside it does: each device is known by the same key made from its identifier and a secret of
+this Mac, never by its identifier or serial number. It also holds BatteryPulse's language and
+whether history recording and iPhone and iPad reads are on. It never holds Demo Mode's readings or
+an accessory. When macOS lists the BatteryPulse widgets you have placed, it holds only what they can
+show: the devices only while an iPhone and iPad widget is placed, the history only while a History
+or a Battery widget is; when macOS lists none, as it does when you have placed none, it holds all
+the settings allow, and a kind you remove can still count until BatteryPulse quits. The widgets' one
+exception to the sandbox is read-only and names that folder alone, and they open no other file of
+BatteryPulse's. Nothing in it leaves your Mac. While BatteryPulse runs, it rewrites the file about
+every 15 minutes, and at once when you clear the history or turn recording off, which takes the
+history out of it, and when you turn reading devices off or forget a device, which takes the devices
+out, or that device.
+
 ## Where BatteryPulse lives
 
 By default BatteryPulse sits in the **menu bar**. Click its icon for a quick look at charge,
@@ -389,8 +414,10 @@ each device's name (as its label), model, OS version, last values and history un
 from its identifier and a secret of this Mac; the identifier itself, serial numbers and raw
 device data are never written. Only your account can read the folder, and BatteryPulse's
 messages in the system log keep device names, serial numbers and identifiers private. Demo Mode
-shows a simulated iPhone in place of your devices. Nothing about your devices goes to the
-internet; [Privacy](#privacy) lists what does.
+shows a simulated iPhone in place of your devices. While an iPhone and iPad widget is placed, each
+device's name and last reading are also copied for it into the widgets' folder beside Devices
+(see [Privacy](#privacy)). Nothing about your devices goes to the internet; [Privacy](#privacy)
+lists what does.
 
 ## Accessories
 
@@ -444,24 +471,35 @@ like. BatteryPulse has to be running to notify you.
 
 ## Widget
 
-BatteryPulse has two widgets for the desktop and Notification Center, each in small, medium and
-large:
+BatteryPulse has four widgets for the desktop and Notification Center:
 
-- **Battery** shows the charge, what the battery is doing and when it will be full or empty, and
-  the details you choose. As it comes, it looks the way BatteryPulse's widget always has: the
-  small one shows the charge with its state and time, and the medium one adds maximum capacity,
-  cycle count and temperature. The large one adds the adapter, system load, battery power, Low
-  Power Mode and the remaining capacity, in two columns.
-- **Accessories** shows the batteries of the keyboards, mice, trackpads and headphones the
-  [Accessories](#accessories) page lists, each with its charge.
+- **Battery**, in small, medium and large, shows the charge, what the battery is doing and when
+  it will be full or empty, and the details you choose. As it comes, it looks the way
+  BatteryPulse's widget always has: the small one shows the charge with its state and time, and
+  the medium one adds maximum capacity, cycle count and temperature. The large one adds the
+  adapter, system load and battery power, in two columns, and under them the last 24 hours'
+  charge as a chart (the **History chart**).
+- **Accessories**, in small, medium and large, shows the batteries of the keyboards, mice,
+  trackpads and headphones the [Accessories](#accessories) page lists, each with its charge.
+- **History**, in medium and large, charts the last 24 hours or 7 days of the charge, battery
+  power or temperature, or the last 90 days of the capacity compared with design or the cycle
+  count, with the stretches on the adapter shaded, as the [History](#history) page does, with the
+  series' name and its latest value above the chart; the large one also shows the average drain,
+  time on battery and charging sessions under it: the last 24 hours' under a 24-hour chart, the
+  last 7 days' under a 7-day or 90-day one.
+- **iPhone and iPad**, in small, medium and large, shows your iPhones' and iPads' charge as
+  BatteryPulse last read it (see [iPhone and iPad](#iphone-and-ipad)), with what the battery was
+  doing and when it was read: *Updated 14:05*, or the date when it wasn't today. A single device
+  shows its charge large, with its name; the medium and large ones add its maximum capacity, cycle
+  count and temperature, beside it in medium and under it in large.
 
 To add one:
 
 1. Open BatteryPulse once after installing it, so macOS finds the widgets.
 2. Control-click the desktop and choose **Edit Widgets…** (or click the date in the menu bar
    and **Edit Widgets** at the bottom).
-3. Search for **BatteryPulse**, choose **Battery** or **Accessories** and a size, and drag the
-   widget where you want it.
+3. Search for **BatteryPulse**, choose **Battery**, **Accessories**, **History** or **iPhone and
+   iPad** and a size, and drag the widget where you want it.
 
 ### Choosing what a widget shows
 
@@ -472,7 +510,9 @@ its look until you change something here. The Battery widget offers:
   under **Details**, in your order: one in small, where it takes the time line's place, up to
   four in medium and up to eight in large. Besides Automatic's, you can pick the state, the time
   to full or empty, the condition, the power from the adapter, cycle life used, cell balance, the
-  voltage and the Charge Limit.
+  voltage, the Charge Limit, and two from BatteryPulse's history: **Average drain** over the last
+  24 hours on battery, and **Time on battery** since the Mac was last unplugged, which counts up by
+  the minute on its own and shows *—* on the adapter.
 - **Main value:** the charge, maximum capacity, temperature or battery power. Battery power can be
   up to half an hour old in a widget, so it always comes with the time it was read.
 - **Main visual:** the number with the level symbol, a ring, or a drawn battery like the menu
@@ -485,6 +525,9 @@ its look until you change something here. The Battery widget offers:
 - **Colors:** the level colors the app uses, or monochrome.
 - **Update time:** *When old* shows *Updated 14:05* once the reading is over 45 minutes old;
   *Always* shows it all the time.
+- **History chart** (large only, on as it comes): the last 24 hours' charge under the details,
+  in place of the last two, whichever layout you chose; a large widget placed before 0.7.1 shows
+  it too. Turn it off for all eight details.
 
 Whatever you choose, a battery condition other than Normal, or a Mac running hot, takes the
 widget's last row (in small, the time line's place), and a value that needs attention, such as a
@@ -496,19 +539,53 @@ The Accessories widget offers **Show**, *All* or *Lowest only* (the accessory wi
 charge), and **Hide fully charged**, which leaves out accessories at 100%. With no accessory to
 show, it says *No accessories with batteries connected*, or that all of them are fully charged.
 
+The History widget offers **Period**, *24 Hours* (as it comes) or *7 Days*, **Series**, the
+charge (as it comes), battery power, temperature, capacity compared with design or cycle count,
+and, in large, **Statistics**, the figures under the chart, on or off: the last 24 hours' under a
+24-hour chart, the last 7 days' under a 7-day one and under the capacity and the cycle count. The
+capacity and the cycle count always cover the last 90 days, so Period hides for them.
+
+The iPhone and iPad widget offers **Show**: *Most recently read* (as it comes), *Lowest charge*,
+*All*, a row for each device in medium and large, the most recently read first (three in medium,
+six in large; small shows the most recently read), or *One device*, which adds **Device** to choose
+it from the devices BatteryPulse remembers; until you choose one, it shows the most recently read.
+A device has the name its page in BatteryPulse shows, marked as private, so macOS can hide it where
+it hides a widget's private data.
+
+**When there is nothing to show.** The History widget and the Battery widget's History chart say
+*No History Yet* until BatteryPulse has recorded some, and *Turn on Record battery history in
+BatteryPulse* while recording is off (Settings → Advanced). The iPhone and iPad widget says *Turn
+on Read iPhone and iPad batteries in BatteryPulse* while reading devices is off (Settings →
+General), *Connect an iPhone or iPad with a cable* until a device has been read, and *This device
+was forgotten* when the device chosen under One device has been forgotten; choose another in
+Edit Widget. An iPhone and iPad widget you have just placed may say *Open BatteryPulse to update*
+for up to about half an hour, until BatteryPulse writes the devices for it. Once their data is two
+hours old, as when BatteryPulse isn't running, these widgets keep their last readings, each with its
+time, and add *Open BatteryPulse to update*; until BatteryPulse first writes their data, that is
+all they show.
+
 ### Clicking a widget
 
 A click opens BatteryPulse's main window at the matching page, even if you use the compact
 window: Overview for the charge, Health for maximum capacity, Power for temperature and battery
 power, and Accessories for the Accessories widget. A Battery widget without a battery to show
+opens Overview. The History widget opens History. The iPhone and iPad widget opens the page of the
+device it shows, and Devices for All or a message; before BatteryPulse has written its data, it
 opens Overview.
 
 ### How widgets stay current
 
-The widgets read the battery and the accessories themselves, so they keep working while
-BatteryPulse isn't running. macOS limits how often widgets refresh, so they may lag behind: by up
-to half an hour while BatteryPulse isn't running. While it runs, BatteryPulse asks macOS to
-refresh only the kinds of widget you have placed:
+The Battery and Accessories widgets read the battery and the accessories themselves, so they keep
+working while BatteryPulse isn't running. The History and iPhone and iPad widgets, and the
+Battery widget's History chart and its Average drain and Time on battery details, show what
+BatteryPulse last wrote for them (see [Privacy](#privacy)): BatteryPulse writes it about every 15
+minutes while it runs, and at once when you plug in or unplug, when a device's new reading changes
+what the widget shows, and when you clear the history, forget a device or turn recording or
+reading devices on or off. So they show nothing newer while BatteryPulse is quit.
+
+macOS limits how often widgets refresh, so they may lag behind: by up to half an hour while
+BatteryPulse isn't running. While it runs, BatteryPulse asks macOS to refresh only the kinds of
+widget you have placed:
 
 - **Battery:** right away when you plug in or unplug, when the battery's state changes, and once
   macOS has its first estimate; at most every 5 minutes when Low Power Mode turns on or off, the
@@ -517,14 +594,26 @@ refresh only the kinds of widget you have placed:
   of an hour while the charge, the estimate or the temperature moves.
 - **Accessories:** right away when an accessory connects or disconnects, and at most every
   quarter of an hour while a charge moves.
+- **History:** when you plug in or unplug, at most once an hour; it also refreshes itself every
+  hour.
+- **iPhone and iPad:** when a device is read for the first time, or its charge moves 3 points or
+  what its battery is doing changes, at most every quarter of an hour; it also refreshes itself
+  every half hour.
 
-When your Mac's language changes, BatteryPulse refreshes every widget the next time it opens, so
-none keeps the old language's words; after an update, it does the same if the old version's
-widget is still running.
+When you clear the history, turn recording off, turn reading devices off or forget a device,
+BatteryPulse refreshes the widgets that showed it right away, or a few minutes later if it has
+just refreshed them, so they don't keep showing what you removed. It does the same when you turn
+recording or reading devices on, when it first writes the data a widget you just placed needs, when
+it opens, and when it writes again after an hour or more without writing (after the Mac slept,
+say), so *Open BatteryPulse to update* goes soon after BatteryPulse runs. When your Mac's language
+or BatteryPulse's own changes, BatteryPulse refreshes every widget the next time it opens, so none
+keeps the old language's words; after an update, it does the same if the old version's widget is
+still running.
 
 VoiceOver reads the Battery widget's charge as one item ("Battery charge: 70%, On battery") and
 each detail as one, its label and value together; the Accessories widget reads one item per
-accessory.
+accessory, the History widget's chart one item with its lowest, highest and latest values, and
+the iPhone and iPad widget one item per device, with its name, charge, state and read time.
 
 ### Widgets across updates
 
@@ -532,6 +621,9 @@ accessory.
 it replaces the app, so macOS takes the new version's widgets in their place. Replacing
 BatteryPulse from the DMG by hand may remove them. If a widget is gone or blank after an update,
 remove the blank one and add it again from the gallery as above.
+
+Going back to 0.7.0 leaves any History and iPhone and iPad widgets you placed frozen on their last
+picture, since 0.7.0 doesn't have them: remove them before you go back, or afterwards.
 
 ## Demo Mode
 
@@ -560,7 +652,8 @@ always contains real data. The demo stops when you quit or turn the Developer se
 
 ## Settings
 
-Open Settings with ⌘, or the gear button in the menu bar popover.
+Open Settings with ⌘, or the gear button in the menu bar popover. A tab taller than your screen
+scrolls, as the welcome window's settings do, so every setting can be reached on a small display.
 
 | Tab | What it controls |
 |-----|------------------|
@@ -617,8 +710,8 @@ limits requests from your network, the check waits and tries again later. Each r
 that turn a crash report into readable function names, and, from 0.7.0, `BatteryPulse-count.txt`,
 the file the version count downloads; you don't need any of them.
 
-After an update that adds features, a **What's New** window lists them once; it's also in the
-Help menu.
+After every update, a **What's New** window lists what it brings, once; it's also in the Help
+menu.
 
 **BatteryPulse → About BatteryPulse**, the ⓘ button in the menu bar popover and the Version row
 in Settings → Advanced open the About window: the version and build, links to the project, this
@@ -634,17 +727,22 @@ language. To use a different language for BatteryPulse only:
 2. Under **Applications**, click **+**, choose BatteryPulse and pick a language.
 3. Quit and reopen BatteryPulse.
 
-The widgets most likely follow your Mac's language, so a language chosen for BatteryPulse alone
-may not reach them.
+The widgets should follow the language you choose for BatteryPulse too, once you reopen it:
+BatteryPulse passes its language to them with the data it writes for them (see
+[Privacy](#privacy)), and they refresh in it. Until BatteryPulse has written that data once, they
+use your Mac's language. Edit Widget's sheet and the widget gallery belong to macOS, so they stay
+in your Mac's language, and so may the time left and *Time on battery*, which macOS keeps
+counting in the widget by itself.
 
 ## Understanding the numbers
 
 - **Charge** is the percentage macOS shows. The smaller *Gauge* value under it is the battery
   controller's own measurement (remaining ÷ full-charge mAh); macOS keeps a small reserve, so the
   two differ slightly.
-- **Maximum capacity** matches System Settings → Battery → Battery Health. macOS caps it at 100 %;
-  a new battery often holds more than its design capacity, and BatteryPulse shows the real ratio
-  under Health.
+- **Maximum capacity** is the battery's nominal capacity against its design capacity, capped at
+  100 % as System Settings → Battery → Battery Health caps it. System Settings' own figure can
+  differ from it by a point or two. A new battery often holds more than its design capacity, and
+  BatteryPulse shows the real ratio under Health.
 - **Cycle count** is out of the rated cycle life reported by the battery (1,000 on current Mac
   notebooks).
 - **Time remaining** comes from macOS. Right after you plug in or unplug, macOS takes a minute to

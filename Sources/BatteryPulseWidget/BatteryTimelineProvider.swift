@@ -5,14 +5,47 @@ import Foundation
 import WidgetKit
 
 /// One entry of a Battery widget's timeline: the reading, the moment of the timeline it stands
-/// for (``WidgetTimelinePlan``), and the widget's configuration.
+/// for (``WidgetTimelinePlan``), the widget's configuration, the language it draws in, and the
+/// feed the History chart and the two feed details come from.
 struct BatteryEntry: TimelineEntry {
-    let snapshot: BatterySnapshot?
+    /// The reading; `nil` without one.
+    var snapshot: BatterySnapshot? {
+        reading?.snapshot
+    }
     let moment: WidgetTimelinePlan.Entry
     let configuration: BatteryWidgetConfiguration
+    /// BatteryPulse's own, from the feed; the extension's own without one.
+    var language: WidgetLanguageTable
+    /// What the read of the feed found; `nil` without a read. Boxed, as the read keeps it, so an
+    /// entry and every view that holds one stay small to copy.
+    var feed: WidgetFeedState?
+    /// The reading, boxed as the feed is: inline, its many fields made the value witnesses of the
+    /// entry and of every view that holds one, which copy it field by field, the widget's largest
+    /// code.
+    private let reading: Reading?
+
+    init(
+        snapshot: BatterySnapshot?, moment: WidgetTimelinePlan.Entry, configuration: BatteryWidgetConfiguration,
+        language: WidgetLanguageTable = .extensionOwn, feed: WidgetFeedState? = nil
+    ) {
+        reading = snapshot.map(Reading.init)
+        self.moment = moment
+        self.configuration = configuration
+        self.language = language
+        self.feed = feed
+    }
 
     var date: Date {
         moment.date
+    }
+
+    /// A reading on the heap, which every copy of the entry shares.
+    final class Reading: Sendable {
+        let snapshot: BatterySnapshot
+
+        init(_ snapshot: BatterySnapshot) {
+            self.snapshot = snapshot
+        }
     }
 }
 
@@ -22,7 +55,7 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> BatteryEntry {
         BatteryEntry(
             snapshot: Self.sample, moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: true),
-            configuration: BatteryWidgetConfiguration())
+            configuration: BatteryWidgetConfiguration(), feed: .feed(.sample(at: .now)))
     }
 
     private static var sample: BatterySnapshot {
@@ -33,9 +66,11 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: BatteryWidgetIntent, in context: Context) async -> BatteryEntry {
         let snapshot = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
+        let feed = await WidgetReads.feedContent(preview: context.isPreview)
         return BatteryEntry(
             snapshot: snapshot, moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: true),
-            configuration: BatteryWidgetConfiguration(configuration))
+            configuration: BatteryWidgetConfiguration(configuration), language: language, feed: feed)
     }
 
     /// The app reloads the widget when the battery changes while it runs; the timeline's own
@@ -44,9 +79,13 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
         let interval = Diagnostics.begin("widget.timeline", trigger: WidgetKindID.battery.signpostName)
         defer { interval.end() }
         let snapshot = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
+        let feed = await WidgetReads.feedContent(preview: context.isPreview)
         let plan = WidgetTimelinePlan(snapshot: snapshot, at: .now)
         let options = BatteryWidgetConfiguration(configuration)
-        let entries = plan.entries.map { BatteryEntry(snapshot: snapshot, moment: $0, configuration: options) }
+        let entries = plan.entries.map {
+            BatteryEntry(snapshot: snapshot, moment: $0, configuration: options, language: language, feed: feed)
+        }
         return Timeline(entries: entries, policy: .after(plan.nextReload))
     }
 
@@ -66,7 +105,7 @@ extension BatteryWidgetConfiguration {
         self.init(
             layout: intent.layout.mode, main: intent.mainValue.main, visual: intent.mainVisual.visual,
             details: (intent.details ?? []).map(\.field), time: intent.time.style, colors: intent.colors.style,
-            updateTime: intent.updateTime.style)
+            updateTime: intent.updateTime.style, historyChart: intent.historyChart)
         if let lines = intent.statusLines {
             statusLines = lines.map(\.line)
         }

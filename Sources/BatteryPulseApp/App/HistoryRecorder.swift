@@ -16,9 +16,11 @@ enum AppHistory {
 /// Writes a history sample about once a minute while BatteryPulse runs, right away when the
 /// battery changes state, and the day's battery condition. The first sample after launch and
 /// after the Mac wakes carries that event, so the chart can tell sleep from the app not
-/// running. Skipped while recording is off or Demo Mode shows simulated data.
+/// running. Skipped while recording is off or Demo Mode shows simulated data. Its minute tick
+/// also drives the widget feed's routine write, recording on or off.
 final class HistoryRecorder {
     private let monitor: BatteryMonitor
+    private let feed: WidgetFeedWriter
     private let store: HistoryStore
     private var task: Task<Void, Never>?
     private var observation: Task<Void, Never>?
@@ -29,8 +31,9 @@ final class HistoryRecorder {
     /// in the menu bar, the monitor reads every 10 s anyway.
     static let freshReadAge: Duration = .seconds(20)
 
-    init(monitor: BatteryMonitor, store: HistoryStore = AppHistory.store) {
+    init(monitor: BatteryMonitor, feed: WidgetFeedWriter, store: HistoryStore = AppHistory.store) {
         self.monitor = monitor
+        self.feed = feed
         self.store = store
     }
 
@@ -56,6 +59,9 @@ final class HistoryRecorder {
         task = Task(name: "HistoryRecorder.tick") { [weak self] in
             while !Task.isCancelled {
                 await self?.recordNow(refreshing: true)
+                // Outside `recordNow`, whose guard returns while recording is off: the feed's
+                // `writtenAt` must keep saying that BatteryPulse runs.
+                self?.feed.tick()
                 // The tolerance lets macOS coalesce this wake-up with others.
                 try? await Task.sleep(for: .seconds(HistoryPolicy.interval), tolerance: .seconds(15))
             }
