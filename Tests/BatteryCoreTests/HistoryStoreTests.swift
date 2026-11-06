@@ -38,7 +38,6 @@ import Testing
         let activity = await store.activity
         #expect(activity.appends == 120)
         #expect(activity.daysWrites <= 2)
-        #expect(activity.legacyChecks == 1)
         // A sample the policy rejects does nothing on disk.
         #expect(try await store.record(sample(119.5, 78)) == false)
         #expect(await store.activity == activity)
@@ -157,30 +156,26 @@ import Testing
         #expect(await store.activity.decodedSampleLines == decoded + 3)
     }
 
-    @Test func theLegacyMigrationRunsOncePerSession() async throws {
+    /// QUA-15: `samples.jsonl`, the single file of development builds before 0.3, which no release
+    /// wrote, is neither read nor removed, by this session or the next.
+    @Test func aLegacySamplesFileIsNeitherReadNorRemoved() async throws {
         defer { removeDirectory() }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let legacy = directory.appendingPathComponent("samples.jsonl")
-        func writeLegacy(_ samples: [HistorySample]) throws {
-            let encoder = JSONEncoder()
-            let lines = try samples.map { String(decoding: try encoder.encode($0), as: UTF8.self) }
-            try (lines.joined(separator: "\n") + "\n").write(to: legacy, atomically: true, encoding: .utf8)
+        let encoder = JSONEncoder()
+        let lines = try [sample(0, 90), sample(24 * 60, 80)].map {
+            String(decoding: try encoder.encode($0), as: UTF8.self)
         }
-        try writeLegacy([sample(0, 90), sample(24 * 60, 80)])
+        let contents = Data((lines.joined(separator: "\n") + "\n").utf8)
+        try contents.write(to: legacy)
         let store = store()
-        #expect(try await store.samples(from: .distantPast).count == 2)
-        #expect(!FileManager.default.fileExists(atPath: legacy.path))
-        #expect(try await store.samples(from: .distantPast).count == 2)
-        #expect(await store.activity.decodedSampleLines == 2, "the split files are decoded once")
-        // No version writes the old file any more: this session doesn't look for it again...
-        try writeLegacy([sample(2 * 24 * 60, 70)])
-        try await store.record(sample(24 * 60 + 1, 79))
-        #expect(try await store.samples(from: .distantPast).count == 3)
-        #expect(await store.activity.legacyChecks == 1)
-        #expect(FileManager.default.fileExists(atPath: legacy.path))
-        // ...and the next one splits it.
-        #expect(try await onDisk().count == 4)
-        #expect(!FileManager.default.fileExists(atPath: legacy.path))
+        #expect(try await store.samples(from: .distantPast).isEmpty)
+        #expect(try await store.latestSampleTime() == nil)
+        #expect(try await store.record(sample(1, 89)))
+        #expect(try await store.samples(from: .distantPast).map(\.percent) == [89])
+        #expect(await store.activity.decodedSampleLines == 1, "only the day file's line")
+        #expect(try await onDisk().map(\.percent) == [89])
+        #expect(try Data(contentsOf: legacy) == contents)
     }
 
     @Test func theCacheAlwaysMatchesTheFiles() async throws {
