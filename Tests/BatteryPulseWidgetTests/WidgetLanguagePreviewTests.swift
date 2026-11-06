@@ -119,7 +119,7 @@ struct WidgetLanguagePreviewTests {
     static func battery(_ scene: Scene, _ size: WidgetSize, _ language: WidgetLanguageTable) -> some View {
         let entry = BatteryEntry(
             snapshot: scene.snapshot, moment: WidgetPreviewTests.moment(scene), configuration: scene.configuration,
-            language: language)
+            language: language, feed: scene.feed)
         return WidgetPreviewTests.framed(
             BatteryWidgetRoot.content(entry, size: size, timeZone: WidgetPreviewTests.timeZone), size, .standard,
             .english)

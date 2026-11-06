@@ -127,6 +127,16 @@ jobs:
           name: widget-previews-${{ github.sha }}
           path: build/widget-previews/*.png
           if-no-files-found: error
+      - name: Upload Look 1's contact sheets
+        # 0.7.1's first look (plan-0.7.1 §6.1), apart from the rest, small enough to open on a
+        # phone: the History widget, the large Battery widget's chart, the two new details, the
+        # states and the edit sheet's words, in English and Russian, light and dark. It goes with
+        # the plan folder at 0.7.1's D3.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: look1-sheets-${{ github.sha }}
+          path: build/widget-previews/sheet-look1-*.png
+          if-no-files-found: error
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Peak memory of the parser
