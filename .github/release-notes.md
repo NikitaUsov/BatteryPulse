@@ -17,11 +17,11 @@
   Widget's sheet and the gallery follow your Mac's).
 - **Widgets and privacy.** The History and iPhone and iPad widgets can't read BatteryPulse's
   history or your devices themselves, so BatteryPulse keeps a small copy of what they show (the
-  last day and week of readings with the last 24 hours' and the last 7 days' figures, and your
-  iPhones' and iPads' last readings) in its own folder, which only you can read:
-  `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The widgets read
-  that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac, and it is
-  rewritten at once when you clear the history, forget a device or turn a reading off.
+  last day's and week's readings, the last 24 hours' and the last 7 days' figures, up to 90 days
+  of capacity and cycle count, and your iPhones' and iPads' last readings) in its own folder,
+  which only you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`.
+  The widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
+  and it is rewritten at once when you clear the history, forget a device or turn a reading off.
 - **What's New** now appears after every update, this one included.
 - **Fixes:** Settings fit the screen: a Settings pane taller than your screen, and the welcome
   window's settings, now scroll, so every setting can be reached on a MacBook's display.

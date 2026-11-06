@@ -45,8 +45,9 @@ final class WidgetRefresher {
     }
 
     /// Evaluates every change of the battery and of the accessory list. The values at the start
-    /// are no change: the planner records them as what the widgets show, so a launch reloads
-    /// nothing.
+    /// are no change: the planner records them as what the widgets show, so they reload nothing.
+    /// The launch's first write of the feed reloads every placed kind once instead
+    /// (``WidgetReloadPlanner/Reason/repair``), through the feed's observation below.
     func start() {
         guard batteryObservation == nil else { return }
         Self.launchFeed = feed

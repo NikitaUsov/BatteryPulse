@@ -1570,12 +1570,12 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 **The privacy line** (the notes, and the guide's and README's Privacy sections, by W-18):
 
 > **Widgets and privacy.** The History and iPhone & iPad widgets can't read BatteryPulse's history
-> or your devices themselves, so BatteryPulse keeps a small copy of what they show (the last day
-> and week of readings with the last 24 hours' and the last 7 days' figures, and your iPhones'
-> and iPads' last readings) in its own folder, which only you can read:
-> `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The widgets read
-> that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac, and it is
-> rewritten at once when you clear the history, forget a device or turn a reading off.
+> or your devices themselves, so BatteryPulse keeps a small copy of what they show (the last
+> day's and week's readings, the last 24 hours' and the last 7 days' figures, up to 90 days of
+> capacity and cycle count, and your iPhones' and iPads' last readings) in its own folder, which
+> only you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`.
+> The widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
+> and it is rewritten at once when you clear the history, forget a device or turn a reading off.
 
 ---
 
@@ -1944,3 +1944,4 @@ built on `claude/071-x2` from `claude/071-integration`'s `2bd74f5`, each its own
 | **The texts** (`ec2aedc`): every one L-1's row lists now names the last 24 hours' and the last 7 days' figures, the release notes' privacy line and §11's too, and the guide's single device has medium's three details; What's New's iPhone & iPad detail says "a small copy of what they show", in both languages, the old key removed | `LocalizationCatalogTests` | item 5; §11 |
 | **`WidgetPlacements`** (`367ae2a`): each answer replaces the one before, but a listed kind is never asked about again, so a removed kind counts until an answer asked for another kind leaves it out, or until BatteryPulse quits: its comment, W-5 item 4, §11 and the guide said "until the app quits" | — | item 6 |
 | **Sizes** at `5370295` (run 582, id 42175791212), against `2bd74f5`'s run 579 (id 42170896929): app `__text` 2,174,176 B (+7,120), app binary 3,249,712 B (+96), `app_kb` 5,156 (+0), widget `__text` 1,026,448 B (+992), widget binary 1,615,152 B (+32), `widget_appintents_bytes` 27,404 B (+0), `strings_bytes` 140,189 B (+28), DMG 1,591,710 B (+4,224), 8,290 B under its ceiling; no ceiling raised | CI | Z-1 |
+| **The review's fixes:** the privacy line (the notes and §11) also names the up to 90 days of capacity and cycle count the feed holds, as the guide's and README's Privacy sections do; the guide's waiting-state sentence names the iPhone & iPad widget, the one it applies to; the refresher's `start()` comment no longer says a launch reloads nothing. Comments and docs only. Left open beside the History analog above: the extension shares one read of the feed for `ReadCoalescer.window` (5 s), so a repair reload within 5 s of a timeline read (possible at login) may get the old read until the kind's own refresh; the M5 session's launch after a long quit shows whether it happens | — | items 1, 3, 5 |

@@ -558,10 +558,11 @@ BatteryPulse* while recording is off (Settings → Advanced). The iPhone and iPa
 on Read iPhone and iPad batteries in BatteryPulse* while reading devices is off (Settings →
 General), *Connect an iPhone or iPad with a cable* until a device has been read, and *This device
 was forgotten* when the device chosen under One device has been forgotten; choose another in
-Edit Widget. One you have just placed may say *Open BatteryPulse to update* for up to about half an
-hour, until BatteryPulse writes the devices for it. Once their data is two hours old, as when
-BatteryPulse isn't running, these widgets keep their last readings, each with its time, and add
-*Open BatteryPulse to update*; until BatteryPulse first writes their data, that is all they show.
+Edit Widget. An iPhone and iPad widget you have just placed may say *Open BatteryPulse to update*
+for up to about half an hour, until BatteryPulse writes the devices for it. Once their data is two
+hours old, as when BatteryPulse isn't running, these widgets keep their last readings, each with its
+time, and add *Open BatteryPulse to update*; until BatteryPulse first writes their data, that is
+all they show.
 
 ### Clicking a widget
 
