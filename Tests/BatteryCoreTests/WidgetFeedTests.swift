@@ -159,6 +159,18 @@ import Testing
         #expect(device.readAt == Self.now)
     }
 
+    /// X-1: a device read while the clock ran ahead, set right since, keeps a read time ahead of
+    /// now until it is read again. The builder writes it as now, in the read order it had, so the
+    /// reader, which turns down a whole feed with a date over 10 minutes ahead, keeps the feed.
+    @Test func aReadTimeAheadOfNowIsWrittenAsNow() throws {
+        let ahead = Self.device(Self.key(1), read: Self.now.addingTimeInterval(3 * 3_600))
+        let earlier = Self.device(Self.key(2), read: Self.now.addingTimeInterval(-60))
+        let feed = try Self.build(Self.source(devices: [earlier, ahead]))
+        #expect(feed.devices?.map(\.key) == [Self.key(1), Self.key(2)])
+        #expect(feed.devices?.map(\.readAt) == [Self.now, Self.now.addingTimeInterval(-60)])
+        #expect(try WidgetFeed.decode(Self.data(feed), now: Self.now) == feed)
+    }
+
     /// The most recently read 8, newest first.
     @Test func devicesAreTheEightReadLast() throws {
         let devices = (0..<10).map { index in
