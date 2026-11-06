@@ -257,8 +257,14 @@ columns stay as written.
   sent; crash-report contents only on a second choice.
 - **M-1** (no paid account), **M-5** (no dates), **M-12** (about two sittings per release; one
   VoiceOver and keyboard sitting) and **C14** (1.x only adds) hold as in RD §6 and §2.3.
+- **M-9** (RD; decided yes by delegation, 2026-10-22): a backup release key, which only he
+  generates; K-1 moved to 0.8 (I-11) and waits for its public half (§14).
+- **0.8's own questions (§14), at the intake (2026-11-06):** Q8-1 to Q8-6 are unanswered, so their
+  defaults hold until he answers. The look review (§6.2) asks the look questions, Q8-3 is asked
+  before the look shoot, and Q8-6 at Session R8's day end; nothing is asked of him now.
 - **The maintainer's standing requests:** hands-free sessions (2026-10-23); he decides only what he
-  sees or does (RD §1.2 item 8).
+  sees or does (RD §1.2 item 8); What's New for every version, from 0.7.1 on (his standing rule;
+  ROADMAP Stage 1.9's decisions).
 
 ### 2.4 Where this plan departs from RD §3.3, and why
 
@@ -1740,6 +1746,13 @@ they lead to are still his to sign off in the look review (§6.2). Technical cho
 (RD §1.2 item 8): the parse method, the reader's triggers, the report's file format, the
 sentinel's files, the guards and the order.
 
+**At the intake (A-0, 2026-11-06) none of Q8-1 to Q8-6 is answered,** so each default below holds
+until he answers. The look review (§6.2) asks the look questions, Q8-1 and Q8-4 as its questions 2
+and 5; Q8-3 is asked before the look shoot (§6.1), since it needs an adapter at hand; Q8-6 at
+Session R8's day end (§6.5); and Q8-2 and Q8-5 keep their defaults (no) unless he raises them.
+Nothing here needs his answer now, and the intake adds no question: F-1 and T-1's item 7 are his
+own additions, and A-2's widget half and the re-planned rounds are technical (RD §1.2 item 8).
+
 - **Q8-1 (no proven cause).** When the Mac is on the adapter, not charging and not full, and the
   battery reports no cause BatteryPulse can prove, should an info button beside "Not charging"
   list Apple's possible reasons (battery health features, a warm battery, an adapter too weak to
@@ -1769,8 +1782,10 @@ sentinel's files, the guards and the order.
   VoiceOver reading Overview, Power and Health in Russian: "y = the names make sense".
   - **Recommended: yes, if you have the five minutes.** The tree read checks every name; only an
     ear checks how they sound. **Default: skipped;** NEW-20 (0.9.0) looks again.
-- **M-9, the backup key** (only if 0.7's K-1 moved here, I-11): the steps are P7 §14's M-9. If
-  the key never exists, ROADMAP records the accepted risk (C15).
+- **M-9, the backup key** (decided yes, 2026-10-22; 0.7's K-1 moved here, I-11): not a question.
+  Generating the key is his, with RD M-9's steps (P7 §14's M-9), whenever he chooses; K-1 runs in
+  C8 once its public half is posted. If the key never exists, ROADMAP records the accepted risk
+  (C15).
 
 **Nothing here reopens M-3:** 0.8 reads the limit from a file and never sets one, and PowerUI stays
 out.
