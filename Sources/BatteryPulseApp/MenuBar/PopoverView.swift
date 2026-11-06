@@ -146,13 +146,38 @@ private struct PopoverSummary: View {
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(snapshot.chargePercent)
-                    Text(Phrases.stateWithPower(snapshot, formatter))
-                        .font(.subheadline)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(Phrases.stateWithPower(snapshot, formatter))
+                            .font(.subheadline)
+                        // On the adapter and not charging, with no cause the battery reports: Apple's
+                        // possible reasons as a help tag, since the menu bar's window opens no
+                        // popover of its own (HIG, Popovers).
+                        if snapshot.isNotChargingWithoutCause {
+                            Image(systemName: "info.circle")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .help(Phrases.notChargingReasonsHelp(formatter))
+                                .accessibilityLabel(Phrases.whyNotCharging)
+                        }
+                    }
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
+                }
+            }
+
+            // Why the battery isn't charging, for a cause BatteryPulse can prove, and the pane that
+            // changes it: BatteryPulse only reads the cause.
+            if let sentence = Phrases.notChargingSentence(snapshot) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sentence)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Link("Battery Settings…", destination: AppLinks.batterySettings)
+                        .font(.subheadline)
                 }
             }
 

@@ -1,4 +1,5 @@
 #if os(macOS)
+import AppKit
 import BatteryCore
 import SwiftUI
 
@@ -57,15 +58,29 @@ struct OverviewView: View {
                         .font(.system(size: 46, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                         .monospacedDigit()
                         .numericValue(snapshot.chargePercent)
-                    // No animation of its own: the watts in it change with every reading.
-                    Text(Phrases.stateWithPower(snapshot, formatter))
-                        .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
-                    // BatteryPulse only reads the limit; the user sets it in System Settings.
-                    if snapshot.isAtSystemChargeLimit {
-                        Text("Charging stopped at the Charge Limit set in System Settings → Battery.")
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .transition(motion.fadeTransition)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        // No animation of its own: the watts in it change with every reading.
+                        Text(Phrases.stateWithPower(snapshot, formatter))
+                            .font(look.boldNumerals ? .title3.weight(.medium) : .title3)
+                        // On the adapter and not charging, with no cause the battery reports: Apple's
+                        // possible reasons, naming none.
+                        if snapshot.isNotChargingWithoutCause {
+                            NotChargingReasonsButton()
+                                .transition(motion.fadeTransition)
+                        }
+                    }
+                    // Why the battery isn't charging, for a cause BatteryPulse can prove, and the pane
+                    // that changes it: BatteryPulse only reads the cause.
+                    if let sentence = Phrases.notChargingSentence(snapshot) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(sentence)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Battery Settings…") {
+                                NSWorkspace.shared.open(AppLinks.batterySettings)
+                            }
+                        }
+                        .transition(motion.fadeTransition)
                     }
                     if let time = Phrases.timeRemaining(snapshot, formatter) {
                         Text(time)
@@ -130,6 +145,55 @@ struct OverviewView: View {
         }
         // Tiles share the tallest tile's height.
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// The info button beside "Not charging" when the battery reports no cause BatteryPulse can prove.
+/// Its popover lists Apple's possible reasons and names none: they are general, so they can't be
+/// wrong about this Mac.
+private struct NotChargingReasonsButton: View {
+    @State private var isShowingReasons = false
+
+    var body: some View {
+        Button {
+            isShowingReasons.toggle()
+        } label: {
+            Image(systemName: "info.circle")
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help(Phrases.whyNotCharging)
+        .accessibilityLabel(Phrases.whyNotCharging)
+        .popover(isPresented: $isShowingReasons) {
+            NotChargingReasons()
+        }
+    }
+}
+
+/// Apple's possible reasons why a Mac on its adapter isn't charging, and what BatteryPulse names.
+private struct NotChargingReasons: View {
+    private let formatter = BatteryFormatter.app
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(Phrases.whyNotCharging)
+                .font(.headline)
+            Text(Phrases.notChargingReasonsIntro)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(Phrases.notChargingReasons(formatter), id: \.self) { reason in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(verbatim: "•")
+                        .accessibilityHidden(true)
+                    Text(reason)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Text(Phrases.notChargingReasonsFootnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(width: 320, alignment: .leading)
+        .padding(16)
     }
 }
 #endif

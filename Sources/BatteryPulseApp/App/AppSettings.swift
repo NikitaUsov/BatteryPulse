@@ -204,6 +204,10 @@ enum AppLinks {
     // swift-format-ignore: NeverForceUnwrap
     static let notificationSettings = URL(
         string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
+    /// System Settings → Battery, where the Charge Limit and Optimized Battery Charging are set:
+    /// the pane a cause for not charging is changed in, since BatteryPulse only reads it.
+    // swift-format-ignore: NeverForceUnwrap
+    static let batterySettings = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension")!
 }
 
 /// Whether BatteryPulse shows a Dock icon.

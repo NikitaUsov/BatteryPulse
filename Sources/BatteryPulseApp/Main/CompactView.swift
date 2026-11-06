@@ -69,6 +69,8 @@ struct CompactView: View {
                     .font(.system(size: 34, weight: look.boldNumerals ? .bold : .semibold, design: .rounded))
                     .monospacedDigit()
                     .numericValue(s.chargePercent)
+                // The state word only: why the battery isn't charging, with Battery Settings… or
+                // Apple's possible reasons, is Overview's and the menu bar popover's.
                 Text(Phrases.stateWithPower(s, formatter))
                     .font(look.boldNumerals ? .callout.weight(.medium) : .callout)
                 if let time = Phrases.timeRemaining(s, formatter) {
