@@ -83,9 +83,9 @@ struct DevicesWidgetPlanTests {
         }
         let unknownFirst = Self.feed([Self.four[3], Self.four[1]])
         #expect(Self.names(try Self.layout(.small, .lowest, feed: unknownFirst)) == ["iPad Air"])
-        // Equal charges: the more recently read.
+        // Equal charges: the first in the feed, which the app writes the most recently read first.
         let equal = Self.feed([
-            Self.device("5", name: "Old", percent: 40, minutes: 60), Self.device("6", name: "New", percent: 40),
+            Self.device("6", name: "New", percent: 40), Self.device("5", name: "Old", percent: 40, minutes: 60),
         ])
         #expect(Self.names(try Self.layout(.small, .lowest, feed: equal)) == ["New"])
     }
@@ -127,11 +127,12 @@ struct DevicesWidgetPlanTests {
         #expect(plan(one(Self.key("9")), feed: nil) == .empty(.noFeed))
     }
 
-    /// All lists the devices the most recently read first: three in medium, six in large, one
-    /// fewer while the old feed's line shows; small has room for one, the most recently read.
+    /// All lists the devices in the feed's order, which the app writes the most recently read
+    /// first: three in medium, six in large, one fewer while the old feed's line shows; small has
+    /// room for one, the most recently read.
     @Test func allListsAsManyAsTheSizeHasRoomFor() throws {
         let eight = (0..<8).map { Self.device(Character(String($0)), name: "Device \($0)", minutes: Double($0 + 1)) }
-        let feed = Self.feed(eight.reversed())
+        let feed = Self.feed(eight)
         let medium = try Self.layout(.medium, .all, feed: feed)
         #expect(!medium.showsOne && Self.names(medium) == ["Device 0", "Device 1", "Device 2"])
         #expect(medium.rows.allSatisfy { $0.details.isEmpty })

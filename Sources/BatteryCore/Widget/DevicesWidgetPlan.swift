@@ -26,9 +26,10 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 ///   size): its charge large, its name, state and read time; medium adds its maximum capacity,
 ///   large its cycle count and temperature too. A click opens its page. A chosen device the feed
 ///   no longer holds was forgotten, which the widget says.
-/// - **All** (medium and large): a row per device, the most recently read first, each with its
-///   charge, state and read time: three in medium and six in large, one fewer while "Open
-///   BatteryPulse to update" takes the last row's place. A click opens the Devices section.
+/// - **All** (medium and large): a row per device in the feed's order, the most recently read
+///   first, each with its charge, state and read time: three in medium and six in large, one
+///   fewer while "Open BatteryPulse to update" takes the last row's place. A click opens the
+///   Devices section.
 ///
 /// A row carries the device's `DeviceKey`, an HMAC with a key only the app reads, for the click
 /// alone: never a UDID, ECID or serial number.
@@ -66,8 +67,8 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
     ) -> DevicesWidgetPlan {
         guard let feed else { return .empty(.noFeed) }
         guard feed.readsDevices else { return .empty(.readsOff) }
-        let devices = ordered(feed.devices ?? [], by: c.show)
-        guard var first = devices.first else { return .empty(.noDevices) }
+        let devices = feed.devices ?? []
+        guard var first = one(of: devices, by: c.show) else { return .empty(.noDevices) }
         if c.show == .oneDevice, let key = c.device {
             guard let chosen = devices.first(where: { $0.key == key }) else { return .empty(.forgotten) }
             first = chosen
@@ -82,23 +83,15 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
         return .devices(DevicesWidgetLayout(rows: rows, showsOne: showsOne, isOutdated: isOutdated))
     }
 
-    /// The devices in `show`'s order: the most recently read first, or the lowest charge first
-    /// (one without a charge last). Equal ones keep the feed's order, which is the most recently
-    /// read first.
-    static func ordered(_ devices: [WidgetFeed.Device], by show: DevicesWidgetShow) -> [WidgetFeed.Device] {
-        let recent = devices.enumerated()
-            .sorted { a, b in
-                let (left, right) = (a.element.readAt ?? .distantPast, b.element.readAt ?? .distantPast)
-                return left != right ? left > right : a.offset < b.offset
-            }
-            .map(\.element)
-        guard show == .lowest else { return recent }
-        return recent.enumerated()
-            .sorted { a, b in
-                let (left, right) = (a.element.percent ?? .max, b.element.percent ?? .max)
-                return left != right ? left < right : a.offset < b.offset
-            }
-            .map(\.element)
+    /// The one device `show` picks: the lowest charge (one without a charge only when none has
+    /// one), else the most recently read; equal ones, the first in the feed. All lists the feed in
+    /// its order, which the app writes the most recently read first, so no choice sorts: a
+    /// sort's generic code is the widget's largest per item it shows.
+    static func one(of devices: [WidgetFeed.Device], by show: DevicesWidgetShow) -> WidgetFeed.Device? {
+        guard show == .lowest else {
+            return devices.max { ($0.readAt ?? .distantPast) < ($1.readAt ?? .distantPast) }
+        }
+        return devices.min { ($0.percent ?? .max) < ($1.percent ?? .max) }
     }
 
     /// One device opens its page; All, and every message, the Devices section, which lists the

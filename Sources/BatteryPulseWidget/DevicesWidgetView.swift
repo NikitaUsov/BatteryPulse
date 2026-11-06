@@ -4,8 +4,8 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
-/// Reads the widget's family and hands the views its size, and sets the language the entry draws
-/// in, as the Battery widget's root does.
+/// Reads the widget's family and hands the views its size and the entry's plan, in the language the
+/// entry draws in, as the Battery widget's root does.
 struct DevicesWidgetRoot: View {
     let entry: DevicesEntry
     @Environment(\.widgetFamily) private var family
@@ -15,16 +15,21 @@ struct DevicesWidgetRoot: View {
     }
 
     /// The widget for `entry` in `size`, in the entry's language, as the Battery widget's root
-    /// draws its own. The previews draw it too.
+    /// draws its own. The previews draw it too. The view holds only the plan, so it stays small.
     static func content(_ entry: DevicesEntry, size: WidgetSize, timeZone: TimeZone = .autoupdatingCurrent)
         -> some View
     {
-        DevicesWidgetView(entry: entry, size: size, formatter: entry.language.formatter, timeZone: timeZone)
-            .widgetLanguage(entry.language)
+        DevicesWidgetView(
+            plan: DevicesWidgetPlan.make(
+                size: size, configuration: entry.configuration, feed: entry.feed?.feed, entry: entry.moment,
+                formatter: entry.language.formatter, timeZone: timeZone),
+            size: size
+        )
+        .widgetLanguage(entry.language)
     }
 }
 
-/// One entry of the iPhone & iPad widget, as ``DevicesWidgetPlan`` lays it out for the size.
+/// One entry of the iPhone & iPad widget, as ``DevicesWidgetPlan`` laid it out for the size.
 ///
 /// - One device: its charge large, its name, state and read time; medium adds its details beside
 ///   it and large under it, as the Battery widget lays out its own.
@@ -33,15 +38,10 @@ struct DevicesWidgetRoot: View {
 /// Names may be their owners' own, so they are privacy sensitive; the numbers stay. A feed over
 /// two hours old keeps its last readings and says "Open BatteryPulse to update" under them.
 struct DevicesWidgetView: View {
-    let entry: DevicesEntry
+    let plan: DevicesWidgetPlan
     let size: WidgetSize
-    var formatter = BatteryFormatter.widget
-    var timeZone = TimeZone.autoupdatingCurrent
 
     var body: some View {
-        let plan = DevicesWidgetPlan.make(
-            size: size, configuration: entry.configuration, feed: entry.feed?.feed, entry: entry.moment,
-            formatter: formatter, timeZone: timeZone)
         Group {
             switch plan {
             case .devices(let layout):
@@ -72,10 +72,7 @@ struct DeviceOneView: View {
 
     var body: some View {
         let details = row.details.map(WidgetDetail.row)
-        switch size {
-        case .small:
-            DeviceBlock(row: row, roomy: false)
-        case .medium:
+        if size == .small || size == .medium {
             HStack(spacing: 16) {
                 DeviceBlock(row: row, roomy: false)
                 if !details.isEmpty {
@@ -83,7 +80,7 @@ struct DeviceOneView: View {
                     WidgetDetailList(details: details, tinted: true)
                 }
             }
-        case .large, .extraLarge, .extraLargePortrait:
+        } else {
             VStack(alignment: .leading, spacing: 8) {
                 DeviceBlock(row: row, roomy: true)
                 if !details.isEmpty {
@@ -102,34 +99,20 @@ struct DeviceBlock: View {
     /// Large has room for a bigger number.
     let roomy: Bool
     @Environment(\.widgetStrings) private var strings
-    @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             decorativeSymbol(row.symbolName)
                 .font(roomy ? .title : .title2)
             Spacer(minLength: 0)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(verbatim: row.charge)
-                    .font(.system(size: roomy ? 40 : 34, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.7)
-                    .foregroundStyle(row.chargeStyle(renderingMode))
-                if row.isCharging {
-                    decorativeSymbol("bolt.fill")
-                        .font(.caption)
-                }
-                if let cue = row.cue {
-                    WidgetCueSymbol(cue: cue, tinted: true)
-                }
-            }
+            DeviceChargeLabel(row: row, boltFont: .caption)
+                .font(.system(size: roomy ? 40 : 34, weight: .semibold, design: .rounded))
+                .minimumScaleFactor(0.7)
             DeviceNameText(name: row.name)
                 .font(.caption)
             VStack(alignment: .leading, spacing: 4) {
-                widgetText(row.state.title, strings)
-                if let updated = row.updated {
-                    Text("Updated \(updated)", bundle: strings)
-                }
+                row.stateText(strings)
+                row.updatedText(strings)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -148,7 +131,6 @@ struct DeviceListView: View {
     /// Large spaces its rows out and draws them a size larger.
     let roomy: Bool
     @Environment(\.widgetStrings) private var strings
-    @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: roomy ? 12 : 6) {
@@ -162,27 +144,14 @@ struct DeviceListView: View {
                         HStack(spacing: 8) {
                             DeviceNameText(name: row.name)
                             Spacer(minLength: 8)
-                            HStack(spacing: 2) {
-                                if let cue = row.cue {
-                                    WidgetCueSymbol(cue: cue, tinted: true)
-                                }
-                                Text(verbatim: row.charge)
-                                    .monospacedDigit()
-                                    .foregroundStyle(row.chargeStyle(renderingMode))
-                                if row.isCharging {
-                                    decorativeSymbol("bolt.fill")
-                                        .font(.caption2)
-                                }
-                            }
-                            .fixedSize()
+                            DeviceChargeLabel(row: row, boltFont: .caption2)
+                                .fixedSize()
                         }
                         .font(roomy ? .body : .callout)
                         HStack(spacing: 8) {
-                            widgetText(row.state.title, strings)
+                            row.stateText(strings)
                             Spacer(minLength: 8)
-                            if let updated = row.updated {
-                                Text("Updated \(updated)", bundle: strings)
-                            }
+                            row.updatedText(strings)
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -193,6 +162,29 @@ struct DeviceListView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// A device's charge, with the symbol of a low one before it and a bolt after it while it charges,
+/// in the font around it; the bolt in `boltFont`.
+struct DeviceChargeLabel: View {
+    let row: DeviceWidgetRow
+    let boltFont: Font
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            if let cue = row.cue {
+                WidgetCueSymbol(cue: cue, tinted: true)
+            }
+            Text(verbatim: row.charge)
+                .monospacedDigit()
+                .foregroundStyle(row.chargeStyle(renderingMode))
+            if row.isCharging {
+                decorativeSymbol("bolt.fill")
+                    .font(boltFont)
+            }
+        }
     }
 }
 
@@ -243,6 +235,16 @@ extension DeviceWidgetRow {
     /// without colour.
     func chargeStyle(_ renderingMode: WidgetRenderingMode) -> AnyShapeStyle {
         renderingMode == .fullColor && tier != .normal ? AnyShapeStyle(tier.color) : AnyShapeStyle(.primary)
+    }
+
+    /// The state's words.
+    func stateText(_ strings: Bundle?) -> Text {
+        widgetText(state.title, strings)
+    }
+
+    /// "Updated 14:05", "Updated Oct 30"; nothing without a read time.
+    func updatedText(_ strings: Bundle?) -> Text? {
+        updated.map { Text("Updated \($0)", bundle: strings) }
     }
 }
 

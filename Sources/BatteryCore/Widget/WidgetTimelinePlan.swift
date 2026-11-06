@@ -110,23 +110,18 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
     public static func devices(writtenAt: Date?, at date: Date, timeZone: TimeZone) -> WidgetTimelinePlan {
         let next = date.addingTimeInterval(refreshInterval)
         let outdated = writtenAt?.addingTimeInterval(WidgetFeed.outdatedAge)
-        var dates = [date]
         let calendar = HistoryDay.gregorian(in: timeZone)
-        if let midnight = calendar.nextDate(
-            after: date, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime),
-            midnight < next
-        {
-            dates.append(midnight)
+        let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date)).flatMap {
+            $0 > date && $0 < next ? $0 : nil
         }
-        var outdatedEntry: Date?
-        if let outdated, outdated > date {
-            outdatedEntry = max(outdated, date.addingTimeInterval(minimumReloadInterval))
-        }
-        if let outdatedEntry, !dates.contains(outdatedEntry) { dates.append(outdatedEntry) }
-        let entries = dates.sorted().map { entry in
-            Entry(
-                date: entry, showsEstimate: false,
-                isStale: outdated.map { entry >= $0 } == true || entry == outdatedEntry)
+        let oldEntry = outdated.flatMap { $0 > date ? max($0, date.addingTimeInterval(minimumReloadInterval)) : nil }
+        // In time order without a sort: the old feed's entry may come before midnight or after it.
+        var dates = [date]
+        if let midnight, oldEntry.map({ midnight < $0 }) ?? true { dates.append(midnight) }
+        if let oldEntry { dates.append(oldEntry) }
+        if let midnight, let oldEntry, oldEntry < midnight { dates.append(midnight) }
+        let entries = dates.map { entry in
+            Entry(date: entry, showsEstimate: false, isStale: outdated.map { entry >= $0 } == true || entry == oldEntry)
         }
         return WidgetTimelinePlan(entries: entries, nextReload: next)
     }
