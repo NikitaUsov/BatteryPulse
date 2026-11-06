@@ -22,6 +22,8 @@ public enum WidgetKindID: String, Sendable, CaseIterable {
     /// Today's kind, so widgets placed by 0.6.x stay.
     case battery = "io.github.nikitausov.BatteryPulse.battery"
     case accessories = "io.github.nikitausov.BatteryPulse.accessories"
+    /// The History widget, which charts what the app's feed carries (``WidgetFeed``).
+    case history = "io.github.nikitausov.BatteryPulse.history"
 
     /// The trigger of the widget's `widget.timeline` signpost: the kind's short name, never its
     /// string, so every part of the `perf` line stays static text.
@@ -29,6 +31,7 @@ public enum WidgetKindID: String, Sendable, CaseIterable {
         switch self {
         case .battery: "battery"
         case .accessories: "accessories"
+        case .history: "history"
         }
     }
 }
@@ -66,6 +69,12 @@ public enum BatteryWidgetField: String, Sendable, CaseIterable {
     /// (``BatterySnapshot/isAtSystemChargeLimit``), and dropped otherwise. Its meaning is frozen,
     /// its value isn't: a later release can show the limit's percentage in the same field.
     case systemChargeLimit
+    /// The last 24 hours' average drain on battery, from the app's feed ("%@ per hour", as the
+    /// History page shows it); "—" without one. Custom only.
+    case averageDrain
+    /// How long the Mac has run on battery since it was last unplugged, from the app's feed,
+    /// counted by the system between reloads; "—" on the adapter or without one. Custom only.
+    case timeOnBattery
 }
 
 /// The value the Battery widget shows large.
@@ -113,6 +122,29 @@ public enum WidgetUpdateTimeStyle: String, Sendable, CaseIterable {
     /// Once the reading is old: from the timeline's stale entry on.
     case whenOld
     case always
+}
+
+/// What the History widget charts: the last 24 hours or 7 days of a reading, or the 90-day trend
+/// of the battery's health, whatever the period.
+public enum HistoryWidgetSeries: String, Sendable, CaseIterable {
+    case charge, batteryPower, temperature
+    /// The capacity compared with design, over the last 90 days.
+    case capacityToDesign
+    /// Over the last 90 days.
+    case cycleCount
+
+    /// Whether the series is the 90-day trend of the daily summaries, which ignores the period.
+    public var isDaily: Bool {
+        self == .capacityToDesign || self == .cycleCount
+    }
+}
+
+/// The span the History widget charts its readings over.
+public enum HistoryWidgetPeriod: String, Sendable, CaseIterable {
+    /// The last 24 hours, in the feed's steps of 15 minutes.
+    case day
+    /// The last 7 days, in the feed's steps of 2 hours.
+    case week
 }
 
 /// Which accessories the Accessories widget lists in medium and large; small always shows the

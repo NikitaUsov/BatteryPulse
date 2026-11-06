@@ -12,12 +12,16 @@ public struct BatteryWidgetConfiguration: Sendable, Equatable {
     public var time: WidgetTimeStyle
     public var colors: WidgetColorStyle
     public var updateTime: WidgetUpdateTimeStyle
+    /// Large only: the last 24 hours' charge from the app's feed, in place of the last two
+    /// details. On by default from 0.7.1, for widgets placed before it too; it belongs to its own
+    /// parameter, so Automatic's details per size stay as they shipped.
+    public var historyChart: Bool
 
     public init(
         layout: WidgetLayoutMode = .automatic, main: BatteryWidgetMain = .charge, visual: BatteryWidgetVisual = .symbol,
         statusLines: [WidgetStatusLine] = [.state, .time], details: [BatteryWidgetField] = [],
         time: WidgetTimeStyle = .clockTime, colors: WidgetColorStyle = .levelColors,
-        updateTime: WidgetUpdateTimeStyle = .whenOld
+        updateTime: WidgetUpdateTimeStyle = .whenOld, historyChart: Bool = true
     ) {
         self.layout = layout
         self.main = main
@@ -27,6 +31,7 @@ public struct BatteryWidgetConfiguration: Sendable, Equatable {
         self.time = time
         self.colors = colors
         self.updateTime = updateTime
+        self.historyChart = historyChart
     }
 }
 
@@ -80,11 +85,15 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         }
     }
 
+    /// The details the History chart takes from large while it shows: the last two.
+    static let chartSlots = 2
+
     /// The plan for `entry` of a timeline made for `snapshot`; `nil` means the widget read no
-    /// battery. Clock times are in `formatter`'s locale and `timeZone`.
+    /// battery. `feed` is the one the app writes, `nil` without one: the History chart and the
+    /// two feed details come from it. Clock times are in `formatter`'s locale and `timeZone`.
     public static func make(
         size: WidgetSize, configuration c: BatteryWidgetConfiguration, snapshot: BatterySnapshot?,
-        entry: WidgetTimelinePlan.Entry, formatter: BatteryFormatter, timeZone: TimeZone
+        entry: WidgetTimelinePlan.Entry, formatter: BatteryFormatter, timeZone: TimeZone, feed: WidgetFeed? = nil
     ) -> WidgetLayoutPlan {
         guard let snapshot else { return .empty(.noBattery) }
         guard let percent = snapshot.chargePercent else { return .empty(.noInformation) }
@@ -111,10 +120,17 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         if case .condition = attention { seen.insert(.condition) }
         let rows = fields.compactMap { field -> WidgetRow? in
             guard seen.insert(field).inserted else { return nil }
-            return WidgetRow(field, snapshot: snapshot, time: time, formatter: formatter)
+            return WidgetRow(field, snapshot: snapshot, time: time, formatter: formatter, feed: feed)
         }
 
-        let slots = detailSlots(size)
+        // The History chart: large only, in place of the last two details, whatever the layout,
+        // and in its place a message without a feed's history.
+        let chart =
+            size == .large && c.historyChart
+            ? WidgetChartContent.make(
+                .charge, period: .day, feed: feed, at: entry.date, formatter: formatter, timeZone: timeZone)
+            : nil
+        let slots = detailSlots(size) - (chart == nil ? 0 : chartSlots)
         let panels = size == .extraLarge || size == .extraLargePortrait
         let shownRows: [WidgetRow]
         var powerRows: [WidgetRow] = []
@@ -181,7 +197,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
                 visual: c.visual, level: WidgetLevel(percent: percent, snapshot: snapshot, formatter: formatter),
                 main: main, lines: lines, details: details, powerDetails: powerDetails,
                 // Custom's panels hold whatever was chosen, which their names wouldn't fit.
-                panelHeadings: panels && c.layout == .automatic, tinted: c.colors == .levelColors))
+                panelHeadings: panels && c.layout == .automatic, tinted: c.colors == .levelColors, chart: chart))
     }
 
     /// The page a click opens: the one about the main value, or the one that fixes an empty state.
@@ -233,6 +249,9 @@ public struct BatteryWidgetLayout: Sendable, Equatable {
     public var panelHeadings: Bool
     /// Level colours on; tiers still carry their ``WidgetCue`` when off.
     public var tinted: Bool
+    /// Large's History chart, under the details, or the message in its place; `nil` when it
+    /// doesn't show.
+    public var chart: WidgetChartContent? = nil
 }
 
 /// The charge, as the level symbol, a ring or the drawn battery shows it.

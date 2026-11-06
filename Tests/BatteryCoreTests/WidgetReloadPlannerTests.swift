@@ -339,15 +339,82 @@ struct WidgetReloadPlannerTests {
         #expect(reasons.count(where: { $0 != nil }) < 40)
     }
 
-    /// Every MVP kind placed (Battery on the harder day, Accessories): under 100 app-initiated
-    /// reloads a day.
+    // MARK: History
+
+    /// The History kind's reasons for `(minutes, snapshot)`, the first its start value.
+    static func history(_ steps: [(Double, BatterySnapshot)]) -> [Reason?] {
+        var planner = WidgetReloadPlanner()
+        return steps.map { minutes, snapshot in planner.history(snapshot, at: at(minutes: minutes)) }
+    }
+
+    static func plugged(_ connected: Bool?, percent: Double = 80) -> BatterySnapshot {
+        var snapshot = Self.snapshot(percent: percent)
+        snapshot.isExternalPowerConnected = connected
+        snapshot.chargeState = connected == true ? .charging : .discharging
+        return snapshot
+    }
+
+    /// A plug change reloads the History kind, at most once an hour; one that waited reloads once
+    /// the hour has passed, if the plug still differs from what the kind showed. Nothing else
+    /// reloads it: its timeline reads the feed again every hour.
+    @Test func aPlugChangeReloadsHistoryAtMostHourly() {
+        let result = Self.history([
+            (0, Self.plugged(false)),
+            (1, Self.plugged(false, percent: 60)),
+            (5, Self.plugged(true)),
+            // Within the hour: waits.
+            (20, Self.plugged(false)),
+            (30, Self.plugged(true)),
+            (64, Self.plugged(true)),
+            (66, Self.plugged(false)),
+            (100, Self.plugged(true)),
+            // Back to what the kind showed before the hour was up: nothing to reload.
+            (120, Self.plugged(false)),
+            (130, Self.plugged(false)),
+            (200, Self.plugged(true)),
+        ])
+        #expect(result == [nil, nil, .plug, nil, nil, nil, .plug, nil, nil, nil, .plug])
+    }
+
+    /// The start value is recorded without a reload, and a reading that doesn't say whether the
+    /// adapter is connected changes nothing.
+    @Test func historyStartsWithoutAReloadAndSkipsUnknownPlugs() {
+        #expect(
+            Self.history([(0, Self.plugged(nil)), (5, Self.plugged(true)), (10, Self.plugged(false))]) == [
+                nil, nil, .plug,
+            ])
+        #expect(
+            Self.history([(0, Self.plugged(true)), (5, Self.plugged(nil)), (70, Self.plugged(nil))]) == [nil, nil, nil])
+    }
+
+    static func historyReloads(_ snapshots: [BatterySnapshot], minutes: [Int]) -> [Reason?] {
+        var planner = WidgetReloadPlanner()
+        return zip(minutes, snapshots).map { minute, snapshot in
+            planner.history(snapshot, at: at(minutes: Double(minute)))
+        }
+    }
+
+    /// E15's day: its six plug changes, each over an hour after the one before, reload the History
+    /// kind six times, well within its budget beside its 24 hourly timelines.
+    @Test func aHistoryDayStaysWellWithinItsBudget() {
+        let day = Day()
+        let reasons = Self.historyReloads(day.snapshots, minutes: day.minutes)
+        #expect(reasons.allSatisfy { $0 == nil || $0 == .plug })
+        #expect(reasons.count(where: { $0 == .plug }) == Day.unplugs.count + Day.plugs.count - 1)
+        #expect(reasons.count(where: { $0 != nil }) + 24 < 40)
+    }
+
+    /// Every kind placed (Battery on the harder day, Accessories, History): under 100
+    /// app-initiated reloads a day.
     @Test func everyKindPlacedStaysUnderAHundredADay() {
         let battery = HarderDay()
         let batteryCount = Self.reloads(battery.snapshots, minutes: battery.minutes).count(where: { $0 != nil })
         let accessoryCount = Self.accessoryReloads(AccessoryDay()).count(where: { $0 != nil })
+        let historyCount = Self.historyReloads(battery.snapshots, minutes: battery.minutes).count(where: { $0 != nil })
         #expect(batteryCount < 70)
         #expect(accessoryCount < 40)
-        #expect(batteryCount + accessoryCount < 100)
+        #expect(historyCount <= 6)
+        #expect(batteryCount + accessoryCount + historyCount < 100)
     }
 
     // MARK: Launch
@@ -442,9 +509,10 @@ struct WidgetReloadPlannerTests {
 
     @Test func countsPerKind() {
         let battery = WidgetKindID.battery.rawValue
-        #expect(WidgetPlacements.counts(in: []) == [.battery: 0, .accessories: 0])
+        #expect(WidgetPlacements.counts(in: []) == [.battery: 0, .accessories: 0, .history: 0])
         #expect(
-            WidgetPlacements.counts(in: [battery, battery, WidgetKindID.accessories.rawValue, "other"])
-                == [.battery: 2, .accessories: 1])
+            WidgetPlacements.counts(
+                in: [battery, battery, WidgetKindID.accessories.rawValue, WidgetKindID.history.rawValue, "other"])
+                == [.battery: 2, .accessories: 1, .history: 1])
     }
 }

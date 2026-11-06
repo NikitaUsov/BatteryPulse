@@ -64,6 +64,9 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
     /// The time left, which the system counts down in the text itself: that text is the element,
     /// and its label stays the system's.
     case timeLeft(until: Date)
+    /// A label's key and the time since a moment, which the system counts up in the text itself:
+    /// the element combines the label and that text, as the system reads them.
+    case counting(label: String, since: Date)
 
     /// The label in one language; `nil` for the time left, whose words only the system has.
     public func text(_ localize: (String) -> String) -> String? {
@@ -78,8 +81,11 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
 
     /// Every catalog key the label uses.
     var keys: [String] {
-        guard case .phrases(let phrases) = self else { return [] }
-        return phrases.flatMap(\.keys)
+        switch self {
+        case .phrases(let phrases): phrases.flatMap(\.keys)
+        case .timeLeft: []
+        case .counting(let label, _): [label]
+        }
     }
 }
 
@@ -110,6 +116,7 @@ enum WidgetAccessibility {
             if let main = layout.mainLabel { elements.append(main) }
             elements += layout.lines.compactMap(\.spokenLabel)
             elements += layout.details.map(\.spokenLabel)
+            if let chart = layout.chart { elements += Self.elements(chart) }
             if !layout.powerDetails.isEmpty {
                 if layout.panelHeadings { elements.append(WidgetPanel.power.spokenLabel) }
                 elements += layout.powerDetails.map(\.spokenLabel)
@@ -160,11 +167,24 @@ extension WidgetRow {
     public var spokenLabel: WidgetSpokenLabel {
         switch value {
         case .time(let time): time.spokenLabel
-        case .text(let text): .phrases([.key(field.labelKey), .verbatim(text)])
-        case .state(let word): .phrases([.key(field.labelKey), word.phrase])
-        case .condition(let condition): .phrases([.key(field.labelKey), condition.phrase])
-        case .onOff(let on): .phrases([.key(field.labelKey), .key(on ? "On" : "Off")])
-        case .reached: .phrases([.key(field.labelKey), .key("Reached")])
+        case .since(let date): .counting(label: field.labelKey, since: date)
+        case .text, .state, .condition, .onOff, .reached, .perHour: .phrases([.key(field.labelKey)] + value.phrases)
+        }
+    }
+}
+
+extension WidgetValue {
+    /// What VoiceOver reads for the value after its label; nothing for a time, which the system's
+    /// own text reads.
+    var phrases: [WidgetPhrase] {
+        switch self {
+        case .text(let text): [.verbatim(text)]
+        case .state(let word): [word.phrase]
+        case .condition(let condition): [condition.phrase]
+        case .onOff(let on): [.key(on ? "On" : "Off")]
+        case .reached: [.key("Reached")]
+        case .perHour(let text): [.key("%@ per hour", [.verbatim(text)])]
+        case .time, .since: []
         }
     }
 }
@@ -250,6 +270,8 @@ extension BatteryWidgetField {
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
         case .systemChargeLimit: "Charge limit"
+        case .averageDrain: "Average drain"
+        case .timeOnBattery: "Time on battery"
         }
     }
 
@@ -267,6 +289,8 @@ extension BatteryWidgetField {
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
         case .cellBalance: "Balance"
+        case .averageDrain: "Drain"
+        case .timeOnBattery: "Unplugged"
         case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }

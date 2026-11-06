@@ -227,12 +227,21 @@ import Testing
         #expect(sections(placements, devices: false) == [])
     }
 
-    /// No kind shows the devices yet: they are never written, even before WidgetKit answers.
-    @Test func noKindShowsTheDevicesYet() {
-        #expect(WidgetFeed.Section.history.readers == [.battery])
+    /// The large Battery widget and the History widget show the history; no kind shows the
+    /// devices yet: they are never written, even before WidgetKit answers.
+    @Test func theHistoryHasItsReadersAndNoKindShowsTheDevicesYet() {
+        #expect(WidgetFeed.Section.history.readers == [.battery, .history])
         #expect(WidgetFeed.Section.devices.readers == [])
         #expect(
             WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: WidgetPlacements()) == [.history])
+        // A History widget alone keeps the history, and so does a Battery widget alone.
+        var placements = WidgetPlacements()
+        for kind in [WidgetKindID.history, .battery] {
+            placements.record(answer: [kind.rawValue], at: Self.now)
+            #expect(WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: placements) == [.history])
+        }
+        placements.record(answer: [WidgetKindID.accessories.rawValue], at: Self.now)
+        #expect(WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: placements).isEmpty)
     }
 
     @Test func placementsAreAskedOnlyWhenTheyCouldChangeASection() {

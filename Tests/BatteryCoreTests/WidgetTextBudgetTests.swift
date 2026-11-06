@@ -79,7 +79,31 @@ struct WidgetTextBudgetTests {
         case .cellBalance: [f.millivolts(999)]
         case .voltage: [f.volts(millivolts: 13_050)]
         case .systemChargeLimit: try words(["Reached"])
+        case .averageDrain: try perHour(f.percent(99.9, fractionDigits: 1), language)
+        // The system's own text, one field in a line's place (hours, or minutes under an hour).
+        case .timeOnBattery:
+            [systemDuration(minutes: 59, [.minutes], language), systemDuration(minutes: 23 * 60, [.hours], language)]
         }
+    }
+
+    /// A duration in full words, as the system's self-updating offset writes it ("59 minutes")
+    /// [estimate: Foundation's own wide units in the language].
+    static func systemDuration(minutes: Int, _ units: Set<Duration.UnitsFormatStyle.Unit>, _ language: Language)
+        -> String
+    {
+        var style = Duration.UnitsFormatStyle(allowedUnits: units, width: .wide)
+        style.locale = language.locale
+        return Duration.seconds(minutes * 60).formatted(style)
+    }
+
+    /// "%@ per hour" with `value`, in `language`.
+    static func perHour(_ value: String, _ language: Language) throws -> [String] {
+        try [text("%@ per hour", language)].compactMap { $0?.replacingOccurrences(of: "%@", with: value) }
+    }
+
+    /// The time on battery in a tile, which has room for both fields.
+    static func timeOnBatteryTile(_ language: Language) -> String {
+        systemDuration(minutes: 23 * 60 + 59, [.hours, .minutes], language)
     }
 
     static let stateKeys = WidgetStateWord.allCases.map(WidgetKeys.state)
@@ -193,8 +217,9 @@ struct WidgetTextBudgetTests {
                                 oneLine(labels, after: before, place) || alone, "\(labels.last ?? "") \(value)",
                                 "a detail, \(size)")
                         case .large, .extraLarge, .extraLargePortrait:
+                            let tile = field == .timeOnBattery ? Self.timeOnBatteryTile(language) : value
                             check(oneLine([labels[0]], place), labels[0], "a tile's label, \(size)")
-                            check(Budget.lines(value, width: place, .title3) <= 2, value, "a tile's value, \(size)")
+                            check(Budget.lines(tile, width: place, .title3) <= 2, tile, "a tile's value, \(size)")
                         }
                     }
                 }
@@ -207,6 +232,47 @@ struct WidgetTextBudgetTests {
                 for status in AccessoryWidgetStatus.allCases {
                     let words = try choices(status.phrase.keys + [status.shortKey], language)
                     check(oneLine(words, Budget.contentWidth(size)), words.last ?? "", "an accessory's state, \(size)")
+                }
+            }
+        }
+        // The line under a feed's last data once it is old, on one line across a chart's place:
+        // the whole width of the History widget and of the large Battery widget's chart.
+        for language in Language.allCases {
+            let outdated = try choices([HistoryWidgetEmptyReason.outdatedKey], language)
+            for size in [WidgetSize.medium, .large] {
+                check(
+                    oneLine(outdated, Budget.contentWidth(size)), outdated.last ?? "",
+                    "a chart's old-data line, \(size)")
+            }
+        }
+        // The History widget, medium and large, the whole width: the chart's name beside its
+        // latest value, and in large the last 24 hours' figures as rows of a label and its value,
+        // each on one line.
+        for language in Language.allCases {
+            let f = try formatter(language)
+            for size in [WidgetSize.medium, .large] {
+                let place = Budget.contentWidth(size)
+                for series in HistoryWidgetSeries.allCases {
+                    let title = try choices([series.titleKey], language)
+                    let latest = series.valueLabel(series == .cycleCount ? 9_999 : -88.8, f)
+                    check(
+                        oneLine(title, after: Budget.width(latest) + Budget.gap(.medium), place),
+                        "\(title.last ?? "") \(latest)", "the History chart's header, \(size)")
+                }
+                let statistics = [
+                    (
+                        HistoryWidgetStatistic.Kind.averageDrain,
+                        try perHour(f.percent(99.9, fractionDigits: 1), language)
+                    ),
+                    (.onBattery, [f.duration(minutes: 23 * 60 + 59)]), (.chargingSessions, ["9,999"]),
+                ]
+                for (kind, values) in statistics where size == .large {
+                    let label = try choices([kind.labelKey], language)
+                    for value in values {
+                        check(
+                            oneLine(label, after: Budget.width(value) + Budget.gap(.medium), place),
+                            "\(label.last ?? "") \(value)", "a History figure, \(size)")
+                    }
                 }
             }
         }
@@ -223,6 +289,24 @@ struct WidgetTextBudgetTests {
             (["No accessories with batteries connected"], .caption),
             (["All accessories are fully charged"], .caption),
         ]
+        // The History widget's and the large Battery widget's chart: medium and large only.
+        let historyMessages = HistoryWidgetEmptyReason.allCases.map {
+            (keys: [$0.messageKey] as [String?], style: Budget.Style.caption)
+        }
+        for size in WidgetSize.allCases where size == .medium || size == .large {
+            let place = Budget.contentWidth(size)
+            for message in historyMessages {
+                func shown(_ language: Language) throws -> Int {
+                    let words = try choices(message.keys, language)
+                    let width = language == .russian ? place * Budget.margin : place
+                    return words.map { Budget.lines($0, width: width, message.style) }.first ?? 0
+                }
+                let english = try shown(.english)
+                let russian = try shown(.russian)
+                let text = try text(message.keys[0] ?? "", .russian) ?? ""
+                check(russian == english && english == 1, text, "a History message of \(english) lines, \(size)")
+            }
+        }
         for size in WidgetSize.allCases {
             let place = Budget.contentWidth(size)
             for message in messages {

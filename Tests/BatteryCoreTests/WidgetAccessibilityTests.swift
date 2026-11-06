@@ -123,7 +123,9 @@ struct WidgetAccessibilityTests {
                 let main = layout.main.kind == .charge ? 0 : 1
                 let lines = layout.lines.filter { if case .state = $0 { false } else { true } }.count
                 let rows = layout.details.count + layout.powerDetails.count
-                #expect(elements.count == headings + 1 + main + lines + rows, "\(c)")
+                // Large's History chart, or the message in its place, after the details.
+                let chart = layout.chart.map { WidgetAccessibility.elements($0).count } ?? 0
+                #expect(elements.count == headings + 1 + main + lines + rows + chart, "\(c)")
             }
         }
         // The medium widget of 0.6.1's look, with a pack temperature: the charge, the time line
@@ -152,7 +154,10 @@ struct WidgetAccessibilityTests {
             let localize = Self.localize(c.language)
             let details = layout.details + layout.powerDetails
             let headings = WidgetPanel.allCases.map(\.spokenLabel)
-            let elements = WidgetAccessibility.elements(c.plan).filter { !headings.contains($0) }
+            let chart = layout.chart.map(WidgetAccessibility.elements) ?? []
+            let all = WidgetAccessibility.elements(c.plan).filter { !headings.contains($0) }
+            #expect(Array(all.suffix(chart.count)) == chart, "\(c)")
+            let elements = all.dropLast(chart.count)
             #expect(Array(elements.suffix(details.count)) == details.map(\.spokenLabel), "\(c)")
             for detail in layout.details + layout.powerDetails {
                 guard case .row(let row) = detail else { continue }

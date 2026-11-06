@@ -47,7 +47,10 @@ final class WidgetRefresher {
         Self.launchFeed = feed
         if !isDemo {
             let now = Date.now
-            if let snapshot = monitor.snapshot { _ = planner.battery(snapshot, at: now) }
+            if let snapshot = monitor.snapshot {
+                _ = planner.battery(snapshot, at: now)
+                _ = planner.history(snapshot, at: now)
+            }
             _ = planner.accessories(accessories.accessories, at: now)
         }
         feedSawDemo = monitor.isOverridden
@@ -55,8 +58,14 @@ final class WidgetRefresher {
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
-                self.followBatteryForFeed()
+                // The History widget and the large Battery widget's chart read the feed, and the
+                // extension shares one read of it for a few seconds: the reloads wait for its
+                // rewrite, so they find the new one.
+                if let reason = self.feedReasonForBattery() {
+                    await self.feed.writeAndWait(reason)
+                }
                 await self.evaluateBattery()
+                await self.evaluateHistory()
             }
         }
         accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
@@ -84,21 +93,23 @@ final class WidgetRefresher {
         deviceObservation = nil
     }
 
-    /// A plug change rewrites the feed at once, and so does the end of Demo Mode, whose readings
-    /// never count as a plug change.
-    private func followBatteryForFeed() {
+    /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end
+    /// of Demo Mode, whose readings never count as a plug change.
+    private func feedReasonForBattery() -> WidgetFeed.WriteReason? {
         guard !monitor.isOverridden else {
             feedSawDemo = true
-            return
+            return nil
         }
         let plugged = monitor.snapshot?.isExternalPowerConnected
+        var reason: WidgetFeed.WriteReason?
         if feedSawDemo {
             feedSawDemo = false
-            feed.write(.demoEnded)
+            reason = .demoEnded
         } else if let plugged, let last = feedPlugged, plugged != last {
-            feed.write(.plug)
+            reason = .plug
         }
         if let plugged { feedPlugged = plugged }
+        return reason
     }
 
     /// The app's effective language at its last launch (the first of
@@ -266,6 +277,16 @@ final class WidgetRefresher {
         )
     }
 
+    /// The History kind: a plug change, at most hourly (``WidgetReloadPlanner``).
+    private func evaluateHistory() async {
+        guard !isDemo, let snapshot = monitor.snapshot, let reason = planner.history(snapshot, at: .now),
+            await isPlaced(.history)
+        else { return }
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.history.rawValue)
+        Diagnostics.event("widget.reload", trigger: "policy.history")
+        Diagnostics.widget.notice("Reloading the History widget: \(reason.rawValue, privacy: .public)")
+    }
+
     private func evaluateAccessories() async {
         let list = accessories.accessories
         guard !isDemo, let reason = planner.accessories(list, at: .now), await isPlaced(.accessories) else { return }
@@ -286,7 +307,7 @@ final class WidgetRefresher {
                 placements.record(answer: kinds, at: .now)
                 let counts = WidgetPlacements.counts(in: kinds)
                 Diagnostics.widget.notice(
-                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories"
+                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories, \(counts[.history] ?? 0, privacy: .public) History"
                 )
             } catch {
                 placements.recordFailure(at: .now)

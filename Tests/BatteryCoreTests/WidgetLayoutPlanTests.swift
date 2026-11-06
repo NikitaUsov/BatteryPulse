@@ -41,7 +41,10 @@ struct WidgetLayoutPlanTests {
             #expect(layout.lines.last.map { if case .detail = $0 { true } else { false } } == true)
         } else {
             let shown = layout.details.count + layout.powerDetails.count
-            #expect(shown == min(WidgetLayoutPlan.detailSlots(size), Self.everyField.count))
+            // Large's History chart takes its last two slots.
+            let chart = layout.chart == nil ? 0 : WidgetLayoutPlan.chartSlots
+            #expect(shown == min(WidgetLayoutPlan.detailSlots(size) - chart, Self.everyField.count))
+            #expect((layout.chart != nil) == (size == .large))
         }
         let panels = size == .extraLarge || size == .extraLargePortrait
         #expect(layout.powerDetails.isEmpty == !panels)

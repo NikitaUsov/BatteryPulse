@@ -137,6 +137,7 @@ extension WidgetKindID {
         switch self {
         case .battery: "BatteryWidgetIntent"
         case .accessories: "AccessoriesWidgetIntent"
+        case .history: "HistoryWidgetIntent"
         }
     }
 
@@ -145,6 +146,7 @@ extension WidgetKindID {
         switch self {
         case .battery: .overview
         case .accessories: .accessories
+        case .history: .history
         }
     }
 }

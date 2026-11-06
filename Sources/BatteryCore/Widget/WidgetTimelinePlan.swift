@@ -77,6 +77,29 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
             nextReload: date.addingTimeInterval(refreshInterval))
     }
 
+    /// How often the History widget reads the feed again when the app doesn't ask first: its
+    /// series move in steps of 15 minutes and 2 hours.
+    public static let historyRefreshInterval: TimeInterval = 60 * 60
+
+    /// The History widget's timeline: the feed as read now, then the moment it turns two hours
+    /// old (``WidgetFeed/outdatedAge``), when the widget adds "Open BatteryPulse to update" to its
+    /// last data. That entry shows only if WidgetKit postpones the hourly reload that far, and
+    /// comes at least ``minimumReloadInterval`` after the first. `writtenAt` is the feed's;
+    /// without a feed, one entry.
+    public static func history(writtenAt: Date?, at date: Date) -> WidgetTimelinePlan {
+        var entries = [Entry(date: date, showsEstimate: false)]
+        if let writtenAt {
+            let outdated = writtenAt.addingTimeInterval(WidgetFeed.outdatedAge)
+            if outdated <= date {
+                entries[0].isStale = true
+            } else {
+                let at = max(outdated, date.addingTimeInterval(minimumReloadInterval))
+                entries.append(Entry(date: at, showsEstimate: false, isStale: true))
+            }
+        }
+        return WidgetTimelinePlan(entries: entries, nextReload: date.addingTimeInterval(historyRefreshInterval))
+    }
+
     private init(entries: [Entry], nextReload: Date) {
         self.entries = entries
         self.nextReload = nextReload

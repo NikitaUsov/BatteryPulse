@@ -12,12 +12,13 @@ struct WidgetSurfaceTests {
         #expect(
             WidgetKindID.allCases.map(\.rawValue) == [
                 "io.github.nikitausov.BatteryPulse.battery", "io.github.nikitausov.BatteryPulse.accessories",
+                "io.github.nikitausov.BatteryPulse.history",
             ])
     }
 
     /// The `widget.timeline` signpost's triggers, which measurements compare by name.
     @Test func timelineSignpostTriggers() {
-        #expect(WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories"])
+        #expect(WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories", "history"])
     }
 
     @Test func sizes() {
@@ -30,7 +31,7 @@ struct WidgetSurfaceTests {
             BatteryWidgetField.allCases.map(\.rawValue) == [
                 "state", "time", "maximumCapacity", "condition", "cycleCount", "temperature", "adapter",
                 "systemLoad", "batteryPower", "adapterInput", "lowPowerMode", "remainingCapacity", "cycleLifeUsed",
-                "cellBalance", "voltage", "systemChargeLimit",
+                "cellBalance", "voltage", "systemChargeLimit", "averageDrain", "timeOnBattery",
             ])
         #expect(
             BatteryWidgetMain.allCases.map(\.rawValue) == ["charge", "maximumCapacity", "temperature", "batteryPower"])
@@ -41,6 +42,11 @@ struct WidgetSurfaceTests {
         #expect(WidgetColorStyle.allCases.map(\.rawValue) == ["levelColors", "monochrome"])
         #expect(WidgetUpdateTimeStyle.allCases.map(\.rawValue) == ["whenOld", "always"])
         #expect(AccessoryWidgetMode.allCases.map(\.rawValue) == ["all", "lowest"])
+        #expect(HistoryWidgetPeriod.allCases.map(\.rawValue) == ["day", "week"])
+        #expect(
+            HistoryWidgetSeries.allCases.map(\.rawValue) == [
+                "charge", "batteryPower", "temperature", "capacityToDesign", "cycleCount",
+            ])
     }
 
     /// The pages' strings, which `@SceneStorage("mainSelection")` keeps and a click names.
@@ -81,11 +87,17 @@ struct WidgetSurfaceTests {
                 {"name": "details"},
                 {"name": "time", "values": ["clockTime", "timeLeft"]},
                 {"name": "colors", "values": ["levelColors", "monochrome"]},
-                {"name": "updateTime", "values": ["whenOld", "always"]}]}},
+                {"name": "updateTime", "values": ["whenOld", "always"]},
+                {"name": "historyChart"}]}},
               {"kind": "io.github.nikitausov.BatteryPulse.accessories", "families": ["small", "medium", "large"],
               "intent": {"type": "AccessoriesWidgetIntent", "parameters": [
                 {"name": "mode", "values": ["all", "lowest"]},
-                {"name": "hideFullyCharged"}]}}]}
+                {"name": "hideFullyCharged"}]}},
+              {"kind": "io.github.nikitausov.BatteryPulse.history", "families": ["medium", "large"],
+              "intent": {"type": "HistoryWidgetIntent", "parameters": [
+                {"name": "period", "values": ["day", "week"]},
+                {"name": "series", "values": ["charge", "batteryPower", "temperature", "capacityToDesign", "cycleCount"]},
+                {"name": "statistics"}]}}]}
             """
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }

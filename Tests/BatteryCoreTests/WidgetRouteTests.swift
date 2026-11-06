@@ -94,10 +94,11 @@ struct WidgetRouteTests {
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent", manifest: Self.configurable)?.page == .overview)
         #expect(
             WidgetRoute(activityType: "AccessoriesWidgetIntent", manifest: Self.configurable)?.page == .accessories)
-        #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories])
+        #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories, .history])
         // The app's route, over the intents that ship.
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent")?.page == .overview)
         #expect(WidgetRoute(activityType: "AccessoriesWidgetIntent")?.page == .accessories)
+        #expect(WidgetRoute(activityType: "HistoryWidgetIntent")?.page == .history)
     }
 
     /// The app's route names the intents the manifest ships, kind by kind, so it opens a page for
