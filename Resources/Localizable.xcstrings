@@ -1572,14 +1572,13 @@
         }
       }
     },
-    "Charge, power or temperature over the last day or week.": {
+    "Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.": {
       "extractionState": "manual",
-      "comment": "Widget gallery: the History widget's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, мощность или температура за последние сутки или неделю."
+            "value": "Заряд, мощность или температура за последние сутки или неделю либо ёмкость и циклы перезарядки за 90 дней."
           }
         }
       }

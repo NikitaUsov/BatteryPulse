@@ -66,7 +66,7 @@ struct HistoryWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("History")
-        .description("Charge, power or temperature over the last day or week.")
+        .description("Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
