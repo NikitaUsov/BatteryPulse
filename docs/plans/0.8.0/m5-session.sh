@@ -5833,7 +5833,7 @@ lint_kept() {
 # Never another branch, never a pull request. His yes first (<session>-send y, after the contact
 # sheet and the summary), then the privacy lint.
 step_send() {
-  local dry_run="" clone="$WORK/send" base name email total kept folder report="$WORK/$SESSION.md" candidate
+  local dry_run="" clone="$WORK/send" base name email total kept folder file report="$WORK/$SESSION.md" candidate
   [ "$SESSION" != none ] || fail "send runs from a session's frozen worktree"
   if [ "${1:-}" = --dry-run ]; then dry_run=1; fi
   mkdir -p "$WORK"
@@ -5880,10 +5880,22 @@ step_send() {
       cp "$PUBLISH/$file" "$clone/docs/plans/0.8.0/sessions/$SESSION/"
     done
   fi
+  # A property list goes in as XML, its content unchanged: the repository reads every .plist under
+  # docs/ and Tests/ as UTF-8 text (LocalizationCatalogTests' russianTextOnlyInTheCatalog), which a
+  # binary one, as powerd's file likely is, would fail. The copy on the Mac stays as it was saved.
   for folder in samples captures; do
     [ -n "$(find "$WORK/$folder" -type f 2>/dev/null | head -1)" ] || continue
     mkdir -p "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder"
-    cp "$WORK/$folder"/* "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder/"
+    for file in "$WORK/$folder"/*; do
+      [ -f "$file" ] || continue
+      case "$file" in
+        *.plist)
+          plutil -convert xml1 -o "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder/$(basename "$file")" "$file" ||
+            fail "$folder/$(basename "$file") isn't a property list plutil writes as XML: nothing was sent; delete it from $WORK, then send again"
+          ;;
+        *) cp "$file" "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder/" ;;
+      esac
+    done
   done
   git -C "$clone" add -A docs/plans/0.8.0/sessions
   if git -C "$clone" diff --cached --quiet; then
