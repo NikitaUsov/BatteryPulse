@@ -5,7 +5,9 @@ import Synchronization
 ///
 /// Both `Diagnostics` twins feed ``session`` through BatterySource's `Signposts`, so a problem
 /// report can say what this launch measured: the `perf` lines themselves are debug lines, which
-/// the system doesn't keep, so the app can't read them back. Recording is a dictionary update
+/// the system doesn't keep, so the app can't read them back. Each process has its own: the
+/// widget extension counts its signposts (`widget.timeline`, `widget.feed.read` and its reads) in
+/// a summary of its own, which the app's report can't see. Recording is a dictionary update
 /// behind a `Mutex`, with no I/O; the keys are the signposts' static names and triggers, so the
 /// dictionary stays small however long the app runs.
 public final class PerfSummary: Sendable {
