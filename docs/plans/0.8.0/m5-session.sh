@@ -2942,10 +2942,17 @@ step_preflight() {
   done <"$PROOFS"
   park_pointer
   echo
-  echo "Now, with the session's own calls: proof P1 at each widget's centre (and widget <name> for each),"
-  echo "proof P10 (the app batch, a widget's click-to-add and its removal, a screenshot after the first action, one System"
-  echo "Settings click; then a computer-use move of the pointer to bare desktop). Each family of the session's commands"
-  echo "runs once here, so every prompt comes now:"
+  if [ "$SESSION" = L ]; then
+    # The look shoot shoots no widget and adds none (T-1 item 7: every widget a session adds must
+    # come back by the app's counts), so neither P1 nor P10's click-to-add is its.
+    echo "The look shoot shoots and adds no widget: no proof P1 or P10. Each family of the session's commands runs once"
+    echo "here, so every prompt comes now:"
+  else
+    echo "Now, with the session's own calls: proof P1 at each widget's centre (and widget <name> for each),"
+    echo "proof P10 (the app batch, a widget's click-to-add and its removal, a screenshot after the first action, one System"
+    echo "Settings click; then a computer-use move of the pointer to bare desktop). Each family of the session's commands"
+    echo "runs once here, so every prompt comes now:"
+  fi
   echo "RUN $SCRIPT ui idle; $SCRIPT ui guard; $SCRIPT shot preflight-family;$(if [ "$SESSION" = R ]; then echo " $SCRIPT heartbeat preflight;"; fi)"
   echo "RUN $SCRIPT measure / judge on one shot; $SCRIPT status"
   # PLAN.md §6.0 rule 2: a menu-bar app has no Dock icon without a window, and computer use's
@@ -5294,16 +5301,22 @@ placed_lines() {
   done <<<"$diffs"
 }
 
-# widgets_verdict: placed_lines into the section, and `restored desktop-widgets` recorded by the
-# script when no line is an ALERT (back at prepare's counts, or above them only where he keeps the
-# gallery's widgets): never on the session's word (step_restored refuses it).
+# widgets_verdict: the section, written anew at each read from placed.tsv, which holds them all
+# (prepare's counts, each read since in words, then placed_lines), so no read shows twice; and
+# `restored desktop-widgets` recorded by the script when no line is an ALERT (back at prepare's
+# counts, or above them only where he keeps the gallery's widgets): never on the session's word
+# (step_restored refuses it).
 widgets_verdict() {
-  local lines moment line
+  local lines moment line when counts
   lines="$(placed_lines)"
   moment="$(placed_latest | cut -f1)"
-  use_section 96-widgets "The session's widgets, by the app's counts (T-1 item 7)"
+  begin_section 96-widgets "The session's widgets, by the app's counts (T-1 item 7)"
   out "- prepare: $(placed_words "$(placed_of prepare)")"
-  awk -F '\t' '$1 != "prepare" { print "- " $1 " (" $2 "): " $3 }' "$PLACED" 2>/dev/null | while IFS= read -r line; do out "$line"; done
+  if [ -f "$PLACED" ]; then
+    while IFS="$TAB" read -r line when counts; do
+      [ "$line" = prepare ] || out "- $line ($when): $(placed_words "$counts")"
+    done <"$PLACED"
+  fi
   while IFS= read -r line; do out "- $line"; done <<<"$lines"
   if [ -n "$(original_of desktop-widgets)" ] && ! is_restored desktop-widgets && ! grep -q '^ALERT' <<<"$lines"; then
     mark_restored desktop-widgets "script: the app's counts after $moment against prepare's ($(grep -c '^KEPT' <<<"$lines" || true) kinds kept on his word)"
@@ -6570,6 +6583,19 @@ dry_run() {
   printed="$(step_summary end)"
   is_restored desktop-widgets && ! grep -q '^ALERT desktop-widgets' <<<"$printed" && grep -q '^WIDGETS back at prepare' <<<"$printed" &&
     check ok "counts back at prepare's record desktop-widgets back, by the script" || check fail "counts back at prepare's didn't record desktop-widgets back"
+  # The section is written anew from placed.tsv at each read: every read once, in words.
+  [ "$(grep -c '^- end (' "$WORK/sections/96-widgets.md")" = 1 ] && grep -q '^- check-2 (.*): 1 in all: 1 Battery' "$WORK/sections/96-widgets.md" &&
+    check ok "the report's section lists each read once, in words" || check fail "the report's section repeats a read or misses one"
+  # He keeps the gallery's widgets (R-keep-widgets y): a count above prepare's is KEPT, on his word.
+  sleep 1
+  step_change desktop-widgets "his: 1 Battery" "the gallery's: 1 History" >/dev/null
+  step_answer --by person R-keep-widgets y >/dev/null
+  placed_record check-4 "2 1 0 1 0"
+  printed="$(widgets_verdict)"
+  grep -q '^desktop-widgets: back' <<<"$printed" && grep -q '^- KEPT desktop-widgets: History 1, prepare 0' <<<"$printed" &&
+    ! grep -q 'ALERT' <<<"$printed" && check ok "a count above prepare's that he keeps (R-keep-widgets y) is KEPT, back on his word" ||
+    check fail "a kept widget didn't read as KEPT ($(tr '\n' ' ' <<<"$printed"))"
+  step_answer --by person R-keep-widgets n >/dev/null
   : >"$PLACED"
   placed_record prepare unknown
   placed_record check-3 "1 1 0 0 0"
