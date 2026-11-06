@@ -18,15 +18,15 @@ public enum SystemChargeLimit {
 
 extension BatterySnapshot {
     /// macOS's Charge Limit holds the charge: bit 24 of `NotChargingReason`
-    /// (``SystemChargeLimit``), on external power, not charging.
+    /// (``SystemChargeLimit``), on external power, not charging. The widget's state word and its
+    /// Charge limit field read it.
     ///
-    /// The parser's plug-in rule runs first and turns a measured charge current into `.charging`,
-    /// so a battery that charges is never at the limit. With Optimized Battery Charging's hold
-    /// reported as well (never seen together), that hold wins: its flag names its cause, while bit
-    /// 24 may be shared. `ChargeState` has no case of its own for the hold, since History and
-    /// `bpulse --json` store the five there are.
+    /// A convenience for ``BatterySnapshot/notChargingCause``, whose precedence it keeps: the
+    /// parser's plug-in rule runs first and turns a measured charge current into `.charging`, so a
+    /// battery that charges is never at the limit, and with Optimized Battery Charging's hold
+    /// reported as well (never seen together), that hold wins. `ChargeState` has no case of its
+    /// own for the hold, since History and `bpulse --json` store the five there are.
     public var isAtSystemChargeLimit: Bool {
-        guard let reason = notChargingReason, reason & SystemChargeLimit.heldBit != 0 else { return false }
-        return isExternalPowerConnected == true && chargeState == .notCharging && isOptimizedChargingEngaged != true
+        notChargingCause == .systemChargeLimit
     }
 }
