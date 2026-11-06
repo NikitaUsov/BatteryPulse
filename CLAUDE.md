@@ -52,12 +52,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   and whether it is placed), `ReadCoalescer` (one read per burst of timeline requests),
   `WidgetFeed` (the feed: the small copy of the history the sandboxed widget can't read itself,
   with BatteryPulse's languages and the two reading toggles; version 1, whose schema only gains
-  fields; its builder, sections by placed kind, the routine write once per 15-minute step and the
-  widget's validating decoder, `WidgetFeedState`; never Demo Mode's data, and the devices only
-  once a kind that shows them joins `Section.readers`) and `WidgetFeedStore` (its file,
-  `Widget/feed.json` beside `History/` and `Devices/`: the folder 0700, each write a 0600
-  temporary file renamed into place; `homeRelativePath` is the widget entitlement's path). Must
-  stay free of Apple-only frameworks.
+  fields; its builder, sections by placed kind, the routine write once per 15-minute step, and the
+  widget's validating decoder with `WidgetFeedState`, what a read found (a feed, none, a rejection
+  or an errno); never Demo Mode's data, and the devices only once a kind that shows them joins
+  `Section.readers`) and `WidgetFeedStore` (its file, `Widget/feed.json` beside `History/` and
+  `Devices/`: the folder 0700, each write a 0600 temporary file renamed into place;
+  `homeRelativePath` is the widget entitlement's path). Must stay free of Apple-only frameworks.
 - `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
   widget links besides BatteryCore and BatteryArt (no CryptoKit, no MobileDevice).
   `BatteryProvider` protocol (a read's `BatteryReadScope` is two decisions, `rereadsRegistry` and
@@ -86,13 +86,14 @@ through the App Store. Reference hardware: MacBook Air M5.
   `ScreenActivity`, which slow or stop polls, and `WidgetRefresher`, the widget reloads: each
   placed kind as `WidgetReloadPlanner` decides, and at a launch of another version or in another
   language (`lastSeenLanguage`, a settings key since 0.7) the old extension ended and every kind
-  reloaded, and `WidgetFeedWriter`, the feed's writes, at moments that already happen: once per
-  15-minute step at `HistoryRecorder`'s minute tick, recording on or off, and at once on Clear
-  History and the recording toggle (Settings → Advanced calls it) and on a change of the
-  remembered devices or of their reads' switch, a plug change and Demo Mode's end
-  (`WidgetRefresher` follows them), never in Demo Mode, one write at a time; a widget's click reaches the app delegate's `application(_:open:)` as a
+  reloaded; a widget's click reaches the app delegate's `application(_:open:)` as a
   `batterypulse://page/…` URL, with no scheme registered, or `application(_:continue:…)` as an
-  activity of the intent's type, and opens the main window at the page), `Main/` (sidebar window:
+  activity of the intent's type, and opens the main window at the page; and `WidgetFeedWriter`,
+  the feed's writes, at moments that already happen: once per 15-minute step at
+  `HistoryRecorder`'s minute tick, recording on or off, and at once on Clear History and the
+  recording toggle (Settings → Advanced calls it) and on a change of the remembered devices or of
+  their reads' switch, a plug change and Demo Mode's end (`WidgetRefresher` follows them), never
+  in Demo Mode, one write at a time), `Main/` (sidebar window:
   Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
   iPhone/iPad and Accessories, and the Developer section with Raw Data and Demo Mode; the compact
   window; `Main/Components/`, one file per component, `Card.swift` with `Card`, `CardGroup` and
@@ -115,12 +116,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   small, medium and large: `BatteryWidget` (0.6's `…battery` kind, configured by
   `BatteryWidgetIntent`) and `AccessoriesWidget` (`…accessories`, `AccessoriesWidgetIntent`);
   extra large isn't declared, and a family is only ever added. App Intents types and their
-  strings live only here. It draws what BatteryCore's `Widget/` plans, reads only the feed, in
-  `WidgetFeedReader` (the real home from `getpwuid`, since the sandbox's home is the extension's
-  container; `open` with `O_NOFOLLOW`, a regular file of at most 32 KB, then BatteryCore's
-  decoder; a rejection logs its case name at notice, and so does an `open` that fails but for a
-  missing file or a link, with its errno, which is how a narrowed exception shows), shared per
-  burst through `WidgetReads.feed`, and makes no request.
+  strings live only here. It draws what BatteryCore's `Widget/` plans, of our files reads only
+  the feed, in `WidgetFeedReader` (the real home from `getpwuid`, since the sandbox's home is the
+  extension's container; `open` with `O_NOFOLLOW`, a regular file of at most 32 KB, then
+  BatteryCore's decoder; a rejection logs its case name at notice, and so does an `open` that
+  fails but for a missing file or a link, with its errno, which is how a narrowed exception
+  shows), shared per burst through `WidgetReads.feed`, and makes no request.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
   `--device <n> [--json | --raw]` read a connected iPhone or iPad; `--accessories [--json |

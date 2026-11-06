@@ -166,6 +166,8 @@ is on by default, never happens when Check for updates is Never, and turns off w
 this Mac in the anonymous version count** in Settings → General. Reading an iPhone or iPad over
 Wi-Fi (opt-in) stays on your local network.
 
+The [User Guide](docs/USER_GUIDE.md#privacy) says when each request happens.
+
 **Widgets and privacy.** The widgets run in macOS's sandbox and can't read BatteryPulse's history
 themselves, so BatteryPulse keeps a small copy for them, `feed.json`, in a folder of its own that
 only your account can read:
@@ -173,11 +175,9 @@ only your account can read:
 recorded, it holds the last day's and week's readings, the last 24 hours' figures and up to 90
 days of capacity and cycle count; it also holds BatteryPulse's language and whether history
 recording and iPhone and iPad reads are on, and never Demo Mode's data or an accessory. The
-widgets' one exception to the sandbox is read-only and names that folder alone. Nothing in it
-leaves your Mac, and BatteryPulse rewrites it about every 15 minutes while it runs, and at once
-when you clear the history or turn recording off.
-
-The [User Guide](docs/USER_GUIDE.md#privacy) says when each request happens.
+widgets' one exception to the sandbox is read-only and names that folder alone, and they open no
+other file of BatteryPulse's. Nothing in it leaves your Mac, and BatteryPulse rewrites it about
+every 15 minutes while it runs, and at once when you clear the history or turn recording off.
 
 ## Command-line report
 
