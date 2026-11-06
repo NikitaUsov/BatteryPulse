@@ -57,11 +57,11 @@ You run BatteryPulse 0.8's Session R8. The start printed this section alone. `$S
   call over 2 minutes (`preflight`, `placed his 5`, `placed 062 5`, `app-language`, `language`,
   `display-shots`, `menubar`, `look`, `tick`, `count-toggle`, `plug`, `f12 after`, every `restore`,
   `widgets-check`, `day-end`, `send`). Anything near the tool's 10-minute limit runs as a background
-  task: `prepare` and `wp18 timing`. **Never end your turn while a background task runs:** wait on
-  it with `$S wait <minutes>` (1-9) in the foreground, with `timeout: 600000`; it returns within a
-  minute of the task's end, or after that many minutes; then read the task's output, and wait again
-  until it ended. Never `sleep`, and never a quick loop of reads. While a task runs, the screen is
-  the task's: no GUI action.
+  task: `prepare`, `wp18 timing` and `charge-limit hold wait`. **Never end your turn while a
+  background task runs:** wait on it with `$S wait <minutes>` (1-9) in the foreground, with
+  `timeout: 600000`; it returns within a minute of the task's end, or after that many minutes; then
+  read the task's output, and wait again until it ended. Never `sleep`, and never a quick loop of
+  reads. While a task runs, the screen is the task's: no GUI action.
 - **Heartbeat.** Every script call but `help` and `status` touches it, and the script keeps its own
   every minute while a call runs (at most 45 minutes). After `mark away` the arm window takes 20
   minutes without either for a stall and starts the logged day without you. So after `mark away`
@@ -315,8 +315,10 @@ own close button, `$S ui close BatteryPulse --window "<its title>"` (rule 8).
 8. **Step 9, the Charge Limit live** (only with `R-limit` y and G8-1 passed; else `$S note "step 9
    not run: <why>"`): `$S change charge-limit <prepare's> <n>` (the step at or just below the
    charge; under 80 %, 80), System Settings → Battery → (i) next to Charging, the slider by computer
-   use, `$S charge-limit set <n>`, then `$S charge-limit hold` between the next steps until `HELD`
-   (at most an hour); then `$S pages limit Overview Power` and judge `R-limit-live` from the shots
+   use, `$S charge-limit set <n>`, then `$S charge-limit hold` between the next steps, never inside
+   one (a `HELD` read relaunches BatteryPulse), until `HELD` (at most an hour; with no step left
+   before the hand-over, `$S charge-limit hold wait` as a background task, `$S wait 9` until it
+   ends); then `$S pages limit Overview Power` and judge `R-limit-live` from the shots
    against the `HELD` read's battlimit. The slider back to prepare's value, `$S charge-limit back`.
 9. **Step 10, Report a Problem on the RC:** Help → Report a Problem… by `$S ui press`; Save… with
    each choice (the second: Include the crash reports' contents) into `~/bp-080/R/report/` (the save

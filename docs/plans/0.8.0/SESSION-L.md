@@ -48,10 +48,11 @@ You run the BatteryPulse 0.8 look shoot. The start printed this section alone. `
   a password, never approve a permission or authorization dialog, never toggle anything in Privacy &
   Security, Users & Groups or Passwords.
 - **Long calls.** Give every script call the Bash tool's `timeout: 600000`. `prepare`, `charge-limit
-  unplug` and `weak-adapter in` run as background tasks: wait on them with `$S wait <minutes>` (1-9)
-  in the foreground, with `timeout: 600000`, until they end; never `sleep`, never a quick loop of
-  reads, and never end your turn while a background task runs. While a task runs, the screen is the
-  task's: no GUI action, but for the Charge Limit's hold, which waits between your screens (L1).
+  unplug`, `charge-limit hold wait` and `weak-adapter in` run as background tasks: wait on them with
+  `$S wait <minutes>` (1-9) in the foreground, with `timeout: 600000`, until they end; never
+  `sleep`, never a quick loop of reads, and never end your turn while a background task runs. While
+  a task runs, the screen is the task's: no GUI action. The Charge Limit's hold looks between your
+  screens instead (L1).
 - **Order of means.** The script and `ui` (AX, CGEvent, CGWindowList) first, computer use where they
   can't reach. Neither ever sends Esc (it would end your turn) or a key press `ui`'s rules don't
   allow. Before any change by computer use or AX outside the script: `$S change <setting> <original>
@@ -150,8 +151,12 @@ The Mac stays on the adapter. A slider move that asks for a password or Touch ID
    charge under 80 %, 80 (the Mac charges to 80 and holds there; step 3's screens run meanwhile). `$S
    change charge-limit <prepare's> <n>`; System Settings → Battery → (i) next to Charging, the slider
    to `n`, by computer use; `$S charge-limit set <n>`. Then `$S charge-limit hold`: `HELD` takes the
-   reads; `NOT YET` means go to L2, and call `$S charge-limit hold` again between its screens until
-   `HELD` (at most an hour after the set; then it records "not checked" itself).
+   reads; `NOT YET` means go to L2, and call `$S charge-limit hold` again between its numbered steps,
+   never inside one (a `HELD` read relaunches BatteryPulse, which ends Demo Mode), until `HELD`, at
+   most an hour after the set (then it records "not checked" itself). With no step of L2 left: `$S
+   charge-limit hold wait` as a background task, `$S wait 9` until it ends. Once `HELD` came, finish
+   the L2 step at hand, then 3 to 7 below (he must be at the Mac for step 5's beeps: ask him first),
+   then L2 from where it stopped.
 3. **A second limit above the charge,** if one exists below 100: `$S change charge-limit <n> <m>`, the
    slider, `$S charge-limit set <m>`, `$S charge-limit read second` (charging toward it).
 4. **100 %:** `$S change charge-limit <m or n> 100`, the slider, `$S charge-limit set 100` (its reads
@@ -168,7 +173,8 @@ The Mac stays on the adapter. A slider move that asks for a password or Touch ID
 Run the whole list in English, then `$S app-language ru` and the list again (skipping what says
 English only), then `$S app-language back`. In Russian, `ui press` takes the Russian labels (`$S ui
 tree BatteryPulse --match <word>` finds them). Every shot is the script's (`screen`, `pages`,
-`scene-shots`); between them, `$S charge-limit hold` while L1's hold waits.
+`scene-shots`); between the numbered steps, never inside one, `$S charge-limit hold` while L1's hold
+waits (L1 step 2).
 
 1. **A-1's causes:** `$S main`; Developer → Demo Mode by `$S ui select-row BatteryPulse "Demo Mode"`;
    `$S change demo-mode off on` (each time Demo Mode starts); for each scene that names why the

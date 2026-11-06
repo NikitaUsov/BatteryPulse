@@ -6154,8 +6154,8 @@ limit_verdicts() {
   ask G8-5-limit
 }
 
-# charge-limit read <tag> | set <n> | hold | unplug | back | verdicts (the look shoot's step 2,
-# Session R8's step 9; PLAN.md §6.1 step 2): G8-1, the Charge Limit's number read by the app from
+# charge-limit read <tag> | set <n> | hold [wait] | unplug | back | verdicts (the look shoot's step
+# 2, Session R8's step 9; PLAN.md §6.1 step 2): G8-1, the Charge Limit's number read by the app from
 # powerd's file against pmset -g battlimit, defaults and bpulse --smc, on the adapter and on battery.
 #   read <tag>: every read now (limit_read), BatteryPulse relaunched for its own;
 #   set <n>:    after the session moved the slider by computer use (System Settings → Battery → (i)
@@ -6163,7 +6163,9 @@ limit_verdicts() {
 #               battlimit to hold n (none for 100), then the reads, tagged full at 100;
 #   hold:       one look, no wait: is the charge held at the limit (bpulse --json: not charging on
 #               the adapter, or bit 24)? Then the reads, tagged hold; else when to look again (the
-#               session shoots step 3's screens meanwhile, at most an hour after the set);
+#               session shoots step 3's screens meanwhile, at most an hour after the set); with
+#               wait (a background task, once no screen is left to shoot), a look every 30 s until
+#               the hold or that hour's end;
 #   unplug:     a beep to unplug (a background task, about 9 minutes): reads 1 and 6 minutes on
 #               battery, a second beep to plug in, reads 5 s and 1 minute after it, from one capture
 #               of the app's lines (the power change is the app's own trigger);
@@ -6192,23 +6194,29 @@ step_charge_limit() {
       fi
       ;;
     hold)
+      case "${2:-}" in "" | wait) ;; *) fail "usage: $SCRIPT charge-limit hold [wait]" ;; esac
       mkdir -p "$LIMIT_DIR"
-      bpulse_json "$LIMIT_DIR/hold-look.json" || fail "bpulse isn't built (see $BIN/bpulse.log)"
-      now="$(charge_row "$LIMIT_DIR/hold-look.json")"
-      case "$now" in
-        *"external power true"*"bit 24: yes"* | *notCharging*"external power true"*)
-          echo "HELD: $now"
-          limit_read hold
-          ;;
-        *)
-          at="$(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/limit-set.time" 2>/dev/null || clock)" +%s 2>/dev/null || date +%s)"
-          if [ $(($(date +%s) - at)) -gt 3600 ]; then
-            not_checked G8-1-hold "no hold within an hour of the set: $now"
-          else
-            echo "NOT YET ($now): shoot step 3's next screen, then $SCRIPT charge-limit hold again (until $(epoch_hm $((at + 3600))))"
-          fi
-          ;;
-      esac
+      at="$(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/limit-set.time" 2>/dev/null || clock)" +%s 2>/dev/null || date +%s)"
+      while :; do
+        bpulse_json "$LIMIT_DIR/hold-look.json" || fail "bpulse isn't built (see $BIN/bpulse.log)"
+        now="$(charge_row "$LIMIT_DIR/hold-look.json")"
+        case "$now" in
+          *"external power true"*"bit 24: yes"* | *notCharging*"external power true"*)
+            echo "HELD: $now"
+            limit_read hold
+            return 0
+            ;;
+        esac
+        if [ $(($(date +%s) - at)) -gt 3600 ]; then
+          not_checked G8-1-hold "no hold within an hour of the set: $now"
+          return 0
+        fi
+        if [ "${2:-}" != wait ]; then
+          echo "NOT YET ($now): shoot step 3's next screen, then $SCRIPT charge-limit hold again (until $(epoch_hm $((at + 3600)))); with no screen left to shoot, $SCRIPT charge-limit hold wait as a background task"
+          return 0
+        fi
+        sleep 30
+      done
       ;;
     unplug)
       ! on_battery || fail "the adapter must be in at the start: plug it in first"
@@ -6269,7 +6277,7 @@ step_charge_limit() {
       [ "$SESSION" = L ] || fail "charge-limit verdicts is the look shoot's (G8-1); Session R8's step 9 answers R-limit-live"
       limit_verdicts
       ;;
-    *) fail "usage: $SCRIPT charge-limit read <tag> | set <n> | hold | unplug | back | verdicts" ;;
+    *) fail "usage: $SCRIPT charge-limit read <tag> | set <n> | hold [wait] | unplug | back | verdicts" ;;
   esac
 }
 
@@ -6703,7 +6711,8 @@ The start (he is there):
   preflight; main (before the one computer-use access request); ui access; prepare reads
 L1, the Charge Limit (G8-1), with him there for the beeps:
   change charge-limit <his> <n>, the slider by computer use, charge-limit set <n>; charge-limit hold (again
-  between step 3's screens until HELD); charge-limit read second (a limit above the charge); charge-limit set 100;
+  between step 3's screens until HELD; with no screen left, hold wait as a background task); then, with him there,
+  charge-limit read second (a limit above the charge); charge-limit set 100;
   charge-limit set <n> (back to the hold's); charge-limit unplug (a background task: two beeps); the slider back
   to his, charge-limit back; charge-limit verdicts
 L2, the screens, in English, then after app-language ru in Russian, then app-language back:
@@ -6758,7 +6767,7 @@ The GUI phase (heartbeat <step and expected time> after each step, at least ever
   0.8's steps: app-tree <surface> [ru]; tree [ru]; keys walk <surface> [<n>] | keys <key> [--on <text>];
   window-style standard|frosted | back; appearance-set light|dark|back; display-shots <tag>;
   menubar [contrast | transparency] (with that option on); app-language ru | back; pages <tag> [<page>...];
-  screen <name> [main|front|popover]; charge-limit set|hold|read|back; report-check;
+  screen <name> [main|front|popover]; charge-limit set|hold [wait]|read|back; report-check;
   sentinel place | check [accessories|devices]; help-link; wp18 previews|timing
   step 11c: install start; placed 062 before | 1 | 5 | compare; whats-new 062 [ru]; gallery <name>;
   feed history | cold | demo-start | demo-end | reads-on | reads-off | cleared; edit-shot <tag> [<widget>];
