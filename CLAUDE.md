@@ -49,15 +49,25 @@ through the App Store. Reference hardware: MacBook Air M5.
   Linux), `WidgetRoute` and `PageID` (the page a click opens; the `mainSelection` strings),
   `WidgetIntentManifest` (`scripts/widget-manifest.json`, the names that freeze),
   `WidgetReloadPolicy`, `WidgetReloadPlanner` and `WidgetPlacements` (which kind to reload when,
-  and whether it is placed), `ReadCoalescer` (one read per burst of timeline requests),
-  `WidgetFeed` (the feed: the small copy of the history the sandboxed widget can't read itself,
-  with BatteryPulse's languages and the two reading toggles; version 1, whose schema only gains
-  fields; its builder, sections by placed kind, the routine write once per 15-minute step, and the
-  widget's validating decoder with `WidgetFeedState`, what a read found (a feed, none, a rejection
-  or an errno); never Demo Mode's data, and the devices only once a kind that shows them joins
-  `Section.readers`) and `WidgetFeedStore` (its file, `Widget/feed.json` beside `History/` and
-  `Devices/`: the folder 0700, each write a 0600 temporary file renamed into place;
-  `homeRelativePath` is the widget entitlement's path). Must stay free of Apple-only frameworks.
+  and whether it is placed; a removal reloads the kinds that showed it), `ReadCoalescer` (one read
+  per burst of timeline requests), `HistoryWidgetPlan` (the History widget: its configuration,
+  the chart and, in large, the last 24 hours' figures, or its message), `WidgetChart` (the chart
+  the History widget and the large Battery widget's History chart stroke, with
+  `WidgetChartContent`, the chart or the message in its place, and `WidgetChartSummary`, its one
+  VoiceOver label), `DevicesWidgetPlan` (the iPhone & iPad widget: one device or All's rows, each
+  known by its `DeviceKey`, or its message), `WidgetLanguage` (the language the widgets draw in:
+  the feed's languages against the widget's localizations, as
+  `Bundle.preferredLocalizations(from:forPreferences:)` chooses, in the Mac's region; without a
+  feed, the extension's own), `WidgetFeed` (the feed: the small copy of the history and the
+  remembered iPhones' and iPads' last readings that the sandboxed widget can't read itself, with
+  BatteryPulse's languages and the two reading toggles; version 1, whose schema only gains
+  fields; its builder, sections by placed kind (`Section.readers`: the history for the Battery and
+  History kinds, the devices for the iPhone & iPad kind), the routine write once per 15-minute
+  step, a removal's rewrite, and the widget's validating decoder with `WidgetFeedState`, what a
+  read found (a feed, none, a rejection or an errno); never Demo Mode's data) and
+  `WidgetFeedStore` (its file, `Widget/feed.json` beside `History/` and `Devices/`: the folder
+  0700, each write a 0600 temporary file renamed into place; `homeRelativePath` is the widget
+  entitlement's path). Must stay free of Apple-only frameworks.
 - `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
   widget links besides BatteryCore and BatteryArt (no CryptoKit, no MobileDevice).
   `BatteryProvider` protocol (a read's `BatteryReadScope` is two decisions, `rereadsRegistry` and
@@ -91,10 +101,11 @@ through the App Store. Reference hardware: MacBook Air M5.
   activity of the intent's type, and opens the main window at the page; and `WidgetFeedWriter`,
   the feed's writes, at moments that already happen: once per 15-minute step at
   `HistoryRecorder`'s minute tick, recording on or off, and at once on Clear History and the
-  recording toggle (Settings → Advanced calls it) and on a change of the remembered devices or of
-  their reads' switch, a plug change and Demo Mode's end (`WidgetRefresher` follows them), never
-  in Demo Mode, one write at a time), `Main/` (sidebar window:
-  Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
+  recording toggle (Settings → Advanced calls it), on a device's read that changes what the widget
+  shows, a Forget or the reads' switch, a plug change and Demo Mode's end (`WidgetRefresher`
+  follows them), and at a launch in another language before the widgets reload; in Demo Mode only
+  the user's removals, taken out of the feed last written; one write at a time), `Main/` (sidebar
+  window: Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
   iPhone/iPad and Accessories, and the Developer section with Raw Data and Demo Mode; the compact
   window; `Main/Components/`, one file per component, `Card.swift` with `Card`, `CardGroup` and
   `LookForm`), `Updates/` (update check and `UpdateNetwork`, Software Update and What's New
@@ -112,16 +123,24 @@ through the App Store. Reference hardware: MacBook Air M5.
   `scripts/appintents-check.swift` against `scripts/widget-manifest.json` and the catalog) and
   signed by `scripts/build-app.sh` with `Resources/BatteryPulseWidget.entitlements`: the app
   sandbox and one read-only home-relative exception, whose one path is the feed's folder
-  (`WidgetSurfaceTests` pins it to `WidgetFeedStore.homeRelativePath`). Two kinds, each in
-  small, medium and large: `BatteryWidget` (0.6's `…battery` kind, configured by
-  `BatteryWidgetIntent`) and `AccessoriesWidget` (`…accessories`, `AccessoriesWidgetIntent`);
-  extra large isn't declared, and a family is only ever added. App Intents types and their
-  strings live only here. It draws what BatteryCore's `Widget/` plans, of our files reads only
-  the feed, in `WidgetFeedReader` (the real home from `getpwuid`, since the sandbox's home is the
-  extension's container; `open` with `O_NOFOLLOW`, a regular file of at most 32 KB, then
-  BatteryCore's decoder; a rejection logs its case name at notice, and so does an `open` that
-  fails but for a missing file or a link, with its errno, which is how a narrowed exception
-  shows), shared per burst through `WidgetReads.feed`, and makes no request.
+  (`WidgetSurfaceTests` pins it to `WidgetFeedStore.homeRelativePath`). Four kinds:
+  `BatteryWidget` (0.6's `…battery` kind, configured by `BatteryWidgetIntent`, whose
+  `historyChart` draws large's History chart) and `AccessoriesWidget` (`…accessories`,
+  `AccessoriesWidgetIntent`), each in small, medium and large; `HistoryWidget` (`…history`,
+  `HistoryWidgetIntent`), in medium and large; and `DevicesWidget` (`…devices`,
+  `DevicesWidgetIntent`, in small, medium and large), whose One device chooses
+  `DevicesWidgetDevice`, an `AppEntity` whose id is the device's `DeviceKey` string, listed by
+  `DevicesWidgetDeviceQuery` in the extension from the feed. Extra large isn't declared, and a
+  family is only ever added. App Intents types and their strings live only here. The language a
+  timeline draws in is a `WidgetLanguageTable` (`WidgetWords.swift`): the chosen language's
+  `.lproj` folder of the widget's own string table as the bundle its words come from, its locale
+  and its formatter, from the feed through `WidgetLanguage`. It draws what BatteryCore's
+  `Widget/` plans, of our files reads only the feed, in `WidgetFeedReader` (the real home from
+  `getpwuid`, since the sandbox's home is the extension's container; `open` with `O_NOFOLLOW`, a
+  regular file of at most 32 KB, then BatteryCore's decoder; a rejection logs its case name at
+  notice, and so does an `open` that fails but for a missing file or a link, with its errno, which
+  is how a narrowed exception shows), shared per burst through `WidgetReads.feed`, and makes no
+  request.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
   `--device <n> [--json | --raw]` read a connected iPhone or iPad; `--accessories [--json |
@@ -147,10 +166,15 @@ through the App Store. Reference hardware: MacBook Air M5.
   info -plist` (`UpdateInstallPolicy`); updaters up to 0.6.1 use `hdiutil`, and CI's install step
   runs both. Never ask for or handle the private key.
 - `scripts/` — `build-app.sh` (packages the app, `PROFILING=1` for an Instruments build, and
-  fails on any signing-posture violation, listing each), `build-number.sh` (the build number's
-  clock, above), `size-report.sh` with
-  `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated
-  table has every catalog key), `appintents-check.swift` with `widget-manifest.json` and
+  fails on any signing-posture violation, listing each; it gives the widget its own string table,
+  made by `widget-strings.swift`, and checks both bundles' tables with `string-tables.swift`),
+  `build-number.sh` (the build number's clock, above), `size-report.sh` with
+  `size-budget.json` (CI's size report and ceilings), `widget-strings.swift` (the widget's own
+  String Catalog, INV SIZ-07: the entries of the app's catalog whose keys the widget's sources and
+  BatteryCore's `Widget/` name, so the extension's `.lproj` folders hold its words alone;
+  `WidgetStringsTests` holds the widget's words to that rule on Linux, and CI's widget previews
+  draw Russian from it), `string-tables.swift` (every translated table has every key of its
+  catalog, the app's or the widget's own), `appintents-check.swift` with `widget-manifest.json` and
   `appintents-sample.actionsdata` (the widget's App Intents metadata against the manifest and the
   catalog), `perf-stats.swift` (sums the `perf` log lines, the widget's per kind),
   `rusage.swift` (one process's energy and wake-ups), `release-stats.swift` (each release's DMG,
@@ -265,11 +289,13 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `cached` or `cached.slow`, is what the read fetched: `BatteryReadScope.signpostName`) with
   `registry`, `iops`, `adapter`, `smc.power`, `smc.other`, `children` and `parse`;
   `history.load`, `history.record`, `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`,
-  `device.read`, `accessory.read`, `widget.timeline` (its trigger the kind, `battery` or
-  `accessories`), `widget.feed.write` (the app's; its trigger the `WidgetFeed.WriteReason`,
-  `step`, `historyCleared`, `recording`, `devices`, `plug` or `demoEnded`) and `widget.feed.read`
-  (the widget's, with no trigger); the events `widget.reload` (`policy`, `policy.accessories`,
-  `update`, `language`), `menuBarReady` and
+  `device.read`, `accessory.read`, `widget.timeline` (its trigger the kind, `battery`,
+  `accessories`, `history` or `devices`: `WidgetKindID.signpostName`), `widget.feed.write` (the
+  app's; its trigger the `WidgetFeed.WriteReason`, `step`, `historyCleared`, `recording`,
+  `devices`, `plug`, `demoEnded` or `language`) and `widget.feed.read` (the widget's, with no
+  trigger); the events `widget.reload` (`policy`, `policy.accessories`, `policy.history`,
+  `policy.devices`, `update`, `language`; a removal's reload takes its kind's policy trigger and
+  logs the reason `removal`), `menuBarReady` and
   `registry.missed` (a read that fetched the registry found an update no notification announced;
   its trigger is the refresh's). Keep them stable: measurements compare by name.
 - Guard suites run on Linux over the sources with comments and strings blanked

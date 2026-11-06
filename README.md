@@ -86,11 +86,19 @@ dependencies.
 - A Battery widget for the desktop and Notification Center, in small, medium and large: charge,
   state, when the battery will be full or empty, maximum capacity, cycles and temperature as it
   comes, and in Edit Widget the main value, a ring or a drawn battery, clock time or time left,
-  level colors or monochrome and the details you choose. A widget placed before 0.7 keeps its
-  look.
+  level colors or monochrome and the details you choose, among them the last day's average drain
+  and the time on battery. The large one shows the last 24 hours' charge as a chart under its
+  details. A widget placed before 0.7 keeps its look.
 - An Accessories widget, in the same three sizes: the batteries of your keyboard, mouse,
   trackpad and headphones, all of them or the lowest.
-- A click opens the matching page in the main window.
+- A History widget (from 0.7.1), in medium and large: the last 24 hours or 7 days of charge,
+  battery power or temperature, or 90 days of capacity and cycle count, with the charging
+  stretches shaded and, in large, the last day's figures.
+- An iPhone and iPad widget (from 0.7.1), in small, medium and large: the charge of your iPhones
+  and iPads as BatteryPulse last read it, the most recently read, the lowest, all of them or one
+  you choose, each with when it was read.
+- A click opens the matching page in the main window. The widgets should follow the language you
+  choose for BatteryPulse.
 
 **Menu bar**
 - Any mix of the battery icon, charge, battery power and temperature.
@@ -132,7 +140,7 @@ dependencies.
   [Privacy](#privacy)), and the download of an update you chose to install. Reading an iPhone or
   iPad over Wi-Fi (opt-in) stays on your local network.
 - *Check for Updates…* in the app menu, an automatic check daily, weekly, monthly or never
-  (Settings → General), and a What's New window after updates that add features. From 0.4.0,
+  (Settings → General), and a What's New window after every update. From 0.4.0,
   *Install and Relaunch* installs the next version from inside the app; each release is
   signed, and the app checks the signature before replacing itself.
 - An About window with the version, links and the license.
@@ -169,15 +177,20 @@ Wi-Fi (opt-in) stays on your local network.
 The [User Guide](docs/USER_GUIDE.md#privacy) says when each request happens.
 
 **Widgets and privacy.** The widgets run in macOS's sandbox and can't read BatteryPulse's history
-themselves, so BatteryPulse keeps a small copy for them, `feed.json`, in a folder of its own that
-only your account can read:
+or your devices themselves, so BatteryPulse keeps a small copy of what the History and iPhone and
+iPad widgets show (the last day and week of readings, and your iPhones' and iPads' last
+readings), `feed.json`, in a folder of its own that only your account can read:
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. While history is
 recorded, it holds the last day's and week's readings, the last 24 hours' figures and up to 90
-days of capacity and cycle count; it also holds BatteryPulse's language and whether history
-recording and iPhone and iPad reads are on, and never Demo Mode's data or an accessory. The
-widgets' one exception to the sandbox is read-only and names that folder alone, and they open no
-other file of BatteryPulse's. Nothing in it leaves your Mac, and BatteryPulse rewrites it about
-every 15 minutes while it runs, and at once when you clear the history or turn recording off.
+days of capacity and cycle count; while iPhone and iPad reads are on, the names and last readings
+of up to 8 remembered iPhones and iPads, known by a key made on this Mac, never by an identifier
+or serial number; and BatteryPulse's language and whether history recording and iPhone and iPad
+reads are on. It never holds Demo Mode's data or an accessory, and once macOS lists your placed
+widgets, only what they can show. The widgets' one exception to the sandbox is read-only and names
+that folder alone, and they open no other file of BatteryPulse's. Nothing in it leaves your Mac.
+BatteryPulse rewrites it about every 15 minutes while it runs, and at once when you clear the
+history, forget a device or turn recording or iPhone and iPad reads off, which takes out what
+you removed.
 
 ## Command-line report
 

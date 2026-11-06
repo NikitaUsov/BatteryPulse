@@ -1027,17 +1027,24 @@ C (`0.7.0-appendix-c.md`).
 
 - [x] The small copy of the last readings the app writes for the widgets (the feed, W-5), in a
   folder only the user can read, which the widget reads through one read-only sandbox exception;
-  rewritten at once when history is cleared, a device forgotten or a reading turned off. The
-  devices are written only once a widget that shows them ships; until then the file holds none,
-  so forgetting a device leaves it as it was
-- [ ] The History widget (W-6), with the 24-hour and 7-day charts and the 90-day capacity and cycle
-  trend, and the Battery widget's feed-backed options: the History chart in large, average drain
-  and time on battery
-- [ ] The iPhone & iPad widget (W-7): the most recently read device, all of them or a chosen one,
-  with its reading's age
-- [ ] The widget following the app's own language: a language chosen for BatteryPulse alone in
-  System Settings reaches the widget too. 0.7 reloads every widget when the app's language
-  changes, but the sandboxed widget most likely still follows the system's language
+  rewritten at once when history is cleared, a device forgotten or a reading turned off. It holds
+  the remembered devices' names and last readings only while an iPhone & iPad widget is placed
+  (or while WidgetKit lists no placed widget), and a removal reloads the kinds that showed it
+- [x] The History widget (W-6), with the 24-hour and 7-day charts and the 90-day capacity and cycle
+  trend, and the Battery widget's feed-backed options: the History chart in large, on by default
+  and on placed large widgets too, average drain and time on battery
+- [x] The iPhone & iPad widget (W-7): the most recently read device, the lowest, all of them or a
+  chosen one, with its reading's age
+- [x] The widget following the app's own language: a language chosen for BatteryPulse alone in
+  System Settings reaches the widgets through the feed (W-15), once BatteryPulse is reopened; the
+  edit sheet and the gallery stay in the Mac's language, which the system draws. Seen in CI's
+  renders; the M5 session checks it the user's way
+- [x] Settings that fit the screen (S-1, from the maintainer's report): a Settings pane, or the
+  welcome window's settings, taller than the screen scrolls, so every setting can be reached on a
+  MacBook's display
+- [x] What's New for 0.7.1 (Q71-3), the first of What's New for every version: the two widgets, the
+  feed's privacy sentence, the language and the fitted Settings, and the version count's row for
+  anyone coming from before 0.7
 - [ ] 0.7's M5 checks, which Session R would have run: placed widgets across the update to a
   configurable widget, every size from the gallery, the edit sheet in both languages, a
   parameter added to a shipped widget keeping its choices, the rendering modes, time left, the

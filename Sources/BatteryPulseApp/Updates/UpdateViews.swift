@@ -385,9 +385,10 @@ struct WhatsNewView: View {
 
 /// The features of this version, for What's New.
 enum WhatsNew {
-    /// The version these features arrived in; What's New appears once after updating to it or
-    /// past it, and not again for later bug-fix releases.
-    nonisolated static let version = AppVersion(parts: [0, 7, 0])
+    /// The version these features arrived in: What's New appears once after updating to it or past
+    /// it. Every release has What's New since 0.7.1, a fix release too (ROADMAP's decisions), so
+    /// each sets this to its own version with its own rows.
+    nonisolated static let version = AppVersion(parts: [0, 7, 1])
 
     struct Feature: Identifiable {
         let id: Int
@@ -398,19 +399,23 @@ enum WhatsNew {
 
     static let features: [Feature] = [
         Feature(
-            id: 1, symbol: "square.grid.2x2", title: "Widgets you configure",
+            id: 1, symbol: "chart.xyaxis.line", title: "History widget",
             detail:
-                "Control-click the Battery widget and choose Edit Widget to pick what it shows, now in a large size too. A placed widget keeps its look, and a click opens the matching page."
+                "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days. The large Battery widget charts the last day's charge too."
         ),
         Feature(
-            id: 2, symbol: "keyboard", title: "Accessories widget",
+            id: 2, symbol: "iphone", title: "iPhone and iPad widget",
             detail:
-                "Your keyboard's, mouse's, trackpad's and headphones' batteries at a glance, in small, medium and large."
+                "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read; nothing in it leaves your Mac."
         ),
         Feature(
-            id: 3, symbol: "battery.75percent", title: "Charged to limit",
+            id: 3, symbol: "globe", title: "Widgets in BatteryPulse's language",
             detail:
-                "When the Charge Limit in System Settings → Battery stops charging, BatteryPulse says so in the app, its menu bar panel and the Battery widget."
+                "A language you choose for BatteryPulse alone in System Settings should reach its widgets too, once you reopen BatteryPulse."
+        ),
+        Feature(
+            id: 4, symbol: "gearshape", title: "Settings fit the screen",
+            detail: "A Settings pane taller than your screen now scrolls, so every setting can be reached."
         ),
     ]
 

@@ -59,6 +59,21 @@ as it stood:
    large, which the look check left out of 0.7 (its question 3 = 3). The order is now 0.7.0, 0.7.1,
    then 0.8 (ROADMAP's versions table).
 
+**Updated 2026-11-06, with 0.7.1's packages merged on its integration branch** (before its M5
+session and its release; `docs/plans/0.7.1/PLAN.md` §12):
+1. **Built for 0.7.1:** FEA-10 (the feed, W-5), FEA-11 (the History widget, with the Battery
+   widget's History chart and its two feed details, W-6) and FEA-12 (the iPhone & iPad widget,
+   W-7), with SEC-08 (the reader's checks and the feed's modes) and DOC-08 (the privacy line in
+   the guide, README and the notes), and the widget following the app's own language (W-15). They
+   ship with 0.7.1. **Carried:** QUA-16, 0.7's own M5 session, is 0.7.1's M5 session, not yet run.
+2. **C1's widget sentence** now counts the two widgets once they ship in 0.7.1 (C1 below).
+3. **SIZ-07 is built for 0.7.1:** the widget has a string table of its own (W-7,
+   `scripts/widget-strings.swift`), the catalog's keys its sources name; the app's and the
+   widget's localized strings went from 253,312 B at W-6's merge to 139,587 B at W-7's head (CI's
+   size report), with W-7's own keys added.
+4. **C10's charts** are the app's: a widget's chart is a small chart with one succinct VoiceOver
+   label, as the HIG allows for one (C10 below).
+
 **Sources and how they are cited**
 
 | Short | Source |
@@ -254,8 +269,9 @@ that exists.
   - 0.8's answers (§3.3): why the battery isn't charging (causes confirmed by captures only), a
     health summary, in-app explanations of the numbers, a first-run Welcome, and Report a
     Problem. An item 0.8's cut line moves lands in 0.9.0 instead, still before 1.0.
-  - The History and iPhone & iPad widgets count toward 1.0 only if they shipped in 0.7.0
-    (§3.2).
+  - The History and iPhone & iPad widgets count toward 1.0 once they ship in 0.7.1, where the
+    maintainer moved them on 2026-10-31 (§3.2 had them in 0.7.0); a widget cut from 0.7.1 counts
+    from the release that ships it.
 - **C2 Every feature seen in a packaged build.** A verification matrix (NEW-18) maps each
   USER_GUIDE feature to the session and the evidence (screenshot or log) from a DMG build. Every
   open "Check on the M5" line in ROADMAP is ticked, or listed under Known limitations in the guide
@@ -347,10 +363,13 @@ that exists.
 - **C10 Accessibility.**
   - **VoiceOver:** every control on every page, the menu bar panel, every Settings pane and every
     widget family is reachable and named, in English and Russian.
-  - **Charts:** every chart has a descriptor
+  - **Charts:** every chart of the app has a descriptor
     (https://developer.apple.com/documentation/swiftui/view/accessibilitychartdescriptor(_:)).
     Today the chart parts are hidden (ChargeChart.swift:31, PowerChart.swift:29) and none has a
-    descriptor (R:573).
+    descriptor (R:573). A widget's chart (0.7.1's History widget and the large Battery widget's
+    History chart) is a small chart, so it has one succinct label instead, its series, span and
+    lowest, highest and latest values (`WidgetChartSummary`), as the HIG's Charts page allows for
+    one.
   - **Keyboard:** the sidebar, toolbar, tile pickers, Raw Data and the update window can be used
     without a pointer.
   - **Contrast:** Xcode is on the M5 (Q-B7), so the maintainer runs Accessibility Inspector from
