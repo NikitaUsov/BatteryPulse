@@ -32,8 +32,18 @@ public enum WidgetLanguage {
     /// with it (the hour cycle, the first weekday, a region whose formats the user chose), so the
     /// numbers and times keep the region's formats, as BatteryPulse's own do when it runs in a
     /// language chosen for it alone ("ru" on a US Mac writes "5,497", as the app does).
+    ///
+    /// When `localization` is the Mac's own language, `mac` comes back as it is: a locale built
+    /// from components keeps only what its identifier says, not the formats the user chose in
+    /// System Settings (a number format, for one), which the widgets kept before 0.7.1 and the
+    /// app keeps in its own language. The Mac's autoupdating locale stays autoupdating.
     public static func locale(_ localization: String, mac: Locale) -> Locale {
         let language = Locale.Language.Components(identifier: localization)
+        if language.languageCode == mac.language.languageCode,
+            language.script == nil || language.script == mac.language.script
+        {
+            return mac
+        }
         var components = Locale.Components(locale: mac)
         components.languageComponents.languageCode = language.languageCode
         components.languageComponents.script = language.script

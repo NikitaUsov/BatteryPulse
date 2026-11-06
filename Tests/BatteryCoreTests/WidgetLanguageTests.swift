@@ -50,6 +50,10 @@ struct WidgetLanguageTests {
         #expect(choice("zh-Hant-TW") == "zh-Hant")
         #expect(choice("zh-Hans-CN") == "zh-Hans")
         #expect(choice("zh-Hant-MO") == "zh-Hant")
+        // Every more general one before another region's: "zh-Hant-TW", then "zh-Hant", then "zh".
+        #expect(
+            WidgetLanguage.localization(for: ["zh-Hant-TW"], available: ["en", "zh-HK", "zh"], development: "en")
+                == "zh")
         // Another region's of the same language.
         #expect(choice("pt-BR") == "pt-PT")
         // Never another script's.
@@ -94,6 +98,24 @@ struct WidgetLanguageTests {
         #expect(traditional.region?.identifier == "RS")
         #expect(
             WidgetLanguage.locale("ru", mac: Locale(identifier: "sr_Latn_RS")).language.script?.identifier != "Latn")
+    }
+
+    /// In the Mac's own language the Mac's locale stays as it is, so the formats the user chose in
+    /// System Settings, which a locale built from components drops, still apply, and the
+    /// autoupdating locale keeps following the Mac.
+    @Test func theMacsOwnLanguageKeepsTheMacsLocale() throws {
+        let russianMac = Locale(identifier: "ru_RU@hours=h12")
+        #expect(WidgetLanguage.locale("ru", mac: russianMac) == russianMac)
+        #expect(WidgetLanguage.locale("ru-RU", mac: russianMac) == russianMac)
+        let traditional = Locale(identifier: "zh_TW")
+        #expect(WidgetLanguage.locale("zh-Hant", mac: traditional) == traditional)
+        // Another script of the same language is another language here.
+        #expect(WidgetLanguage.locale("zh-Hans", mac: traditional).language.script?.identifier == "Hans")
+
+        // Equal only to an autoupdating locale: one built from its components is a fixed one.
+        let mac = Locale.autoupdatingCurrent
+        let code = try #require(mac.language.languageCode?.identifier)
+        #expect(WidgetLanguage.locale(code, mac: mac) == mac)
     }
 
     /// The widget's percentages keep no space before the sign in the language it draws in.
