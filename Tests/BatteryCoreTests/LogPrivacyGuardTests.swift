@@ -72,8 +72,23 @@ import Testing
             PublicValue("what", reason: "the write, static text from the callers, such as the day's summary"),
             PublicValue("error.domain", reason: "the error's domain, a constant such as NSCocoaErrorDomain"),
         ],
+        "BatteryPulseApp/App/WidgetFeedWriter.swift": [
+            PublicValue(
+                "error.domain", count: 4,
+                reason: "the error's domain, a constant such as NSCocoaErrorDomain, or WidgetKit's for the placements"),
+            PublicValue("reason.rawValue", count: 7, reason: "a WidgetFeed.WriteReason case name, such as step"),
+            PublicValue("bytes", count: 2, reason: "the feed's size in bytes"),
+            PublicValue("steps", reason: "a count of the day's steps with a charge"),
+            PublicValue("days", reason: "a count of the feed's daily summaries"),
+            PublicValue("devices", reason: "a count of the feed's iPhones and iPads"),
+            PublicValue("kinds.count", reason: "the number of placed widgets"),
+            PublicValue("counts[.battery] ?? 0", reason: "the number of placed Battery widgets"),
+            PublicValue("counts[.accessories] ?? 0", reason: "the number of placed Accessories widgets"),
+            PublicValue("counts[.history] ?? 0", reason: "the number of placed History widgets"),
+            PublicValue("counts[.devices] ?? 0", reason: "the number of placed iPhone & iPad widgets"),
+        ],
         "BatteryPulseApp/App/WidgetRefresher.swift": [
-            PublicValue("reason.rawValue", count: 3, reason: "a reload or launch reason's case name"),
+            PublicValue("reason.rawValue", count: 5, reason: "a reload or launch reason's case name"),
             PublicValue("found", reason: "a count of widget extension processes"),
             PublicValue("byTerm", reason: "a count of widget extension processes"),
             PublicValue("byKill", reason: "a count of widget extension processes"),
@@ -81,10 +96,16 @@ import Testing
             PublicValue("elapsed", reason: "milliseconds"),
             PublicValue("snapshot.chargeState.rawValue", reason: "a ChargeState case name"),
             PublicValue("percent", reason: "the charge in whole percent, or -"),
+            PublicValue(
+                "name", overridesName: true,
+                reason: "a widget kind's signpost name, a StaticString such as history; never the kind's string"),
+            PublicValue("item.reason.rawValue", reason: "a feed reload's reason, a case name such as removal"),
             PublicValue("list.count", reason: "the number of accessories"),
             PublicValue("kinds.count", reason: "the number of placed widgets"),
             PublicValue("counts[.battery] ?? 0", reason: "the number of placed Battery widgets"),
             PublicValue("counts[.accessories] ?? 0", reason: "the number of placed Accessories widgets"),
+            PublicValue("counts[.history] ?? 0", reason: "the number of placed History widgets"),
+            PublicValue("counts[.devices] ?? 0", reason: "the number of placed iPhone & iPad widgets"),
             PublicValue("error.domain", reason: "WidgetKit's error domain, a constant"),
         ],
         "BatteryPulseApp/Main/History/HistoryView.swift": [
@@ -94,6 +115,10 @@ import Testing
         "BatteryPulseApp/Settings/AdvancedSettings.swift": [
             PublicValue("error.domain", reason: "the error's domain, a constant such as NSCocoaErrorDomain")
         ],
+        "BatteryPulseApp/Updates/UpdateChecker.swift": [
+            PublicValue("outcome.rawValue", reason: "the version count's outcome, a case name such as counted"),
+            PublicValue("code", reason: "the answer's HTTP status, or a URLError's code: a number, never the URL"),
+        ],
         "BatteryPulseApp/Updates/UpdateInstaller.swift": [
             PublicValue("version", reason: "the release's version number, such as 0.7.0"),
             PublicValue(
@@ -101,6 +126,12 @@ import Testing
                 reason: "an UpdateInstallError's case name (no case has a value), and strerror's text for an errno"),
             PublicValue("status", count: 2, reason: "an OSStatus, Launch Services' or the code signature check's"),
             PublicValue("status ?? -1", reason: "diskutil's exit status, -1 when it didn't start"),
+        ],
+        "BatteryPulseWidget/WidgetFeedReader.swift": [
+            PublicValue("code", count: 3, reason: "an errno from open or fstat, or the read's error code: a number"),
+            PublicValue("data.count", reason: "the feed's size in bytes"),
+            PublicValue("rejection.rawValue", reason: "a WidgetFeed.Rejection case name, such as malformed"),
+            PublicValue("bytes", reason: "the rejected file's size in bytes"),
         ],
         "BatterySource/Diagnostics.swift": [
             PublicValue("text", count: 2, reason: "a signpost's trigger, a StaticString such as poll, or -"),
