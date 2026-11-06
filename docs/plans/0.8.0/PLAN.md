@@ -35,7 +35,7 @@ and FEA-20's widget field stays in 1.1: 0.8 keeps off the widget.
 
 | Short | Source |
 |---|---|
-| P7 | `docs/plans/0.7.0/PLAN.md` at `0ecca33` (main's copy; the package branches cut from 0.6.1 carry an older one, and `claude/070-w0` and `-integration` W-0's re-resolved copy, so A-0 reads P7 at the v0.7.0 tag) |
+| P7 | `docs/plans/0.7.0/PLAN.md` at `0ecca33` (main's copy; the package branches cut from 0.6.1 carry an older one, and `claude/070-w0` and `-integration` W-0's re-resolved copy). The v0.7.0 tag won't hold it: 0.7's last commit removes `docs/plans/0.7.0/` (P7:3025-3029), so A-0 reads P7, its Appendix C included, at 0.7's `<keep>`, the commit before that removal, reachable through the 0.7.0 release PR's `refs/pull/<n>/head` |
 | W | `docs/plans/0.7.0/widgets.md` |
 | AC62 | `docs/plans/0.7.0/0.6.2-appendix-c.md` (0.6.2's Appendix C), with `sessions/A.md` and `sessions/B.md` |
 | RD, INV | `docs/plans/1.0/ROADMAP.md`, `docs/plans/1.0/INVENTORY.md` |
@@ -142,10 +142,11 @@ Contents:
     day, and 3-4 at its end (F12 is the session's), plus 1 once before to check the CLI; 5 more
     only if he chooses to listen to VoiceOver (Q8-6).
   - **The after-publishing check,** a short session: about 2 minutes.
+  - **Optional:** the hold watch (I-8, G8-2), a night of his choosing before D1: about 2 minutes.
   - In all about 42-48 minutes, against about 135 by hand in RD §3 (40 + 85 + 10 for Xcode).
-- **Budget** [estimate]: about 28-39 implementation and review runs (§7.2; RD §3.3 says 30-38),
-  plus 3 for fixing forward; 1-4 more if 0.7 left a conditional item (§2.1). The never-cut set is
-  about 22-29.
+- **Budget** [estimate]: about 29-40 implementation and review runs (§7.2; RD §3.3 says 30-38),
+  plus 3 for fixing forward; 1-6 more if 0.7 left a conditional item (§2.1). The never-cut set is
+  about 23-30.
 - **Not in 0.8** (Appendix A has each row): `bpulse` inside the app (M-7), `SECURITY.md`, the 1.0
   docs and README's status line, closing the verification matrix, the Russian screenshot set and
   the beta styles' final stance (all 0.9.0); the soak, energy budgets and upgrade matrix (0.9.x);
@@ -158,7 +159,8 @@ Contents:
 
 ### 2.1 What 0.8 takes from 0.7, and what it does if that is missing
 
-0.8 starts from the v0.7.0 tag. A-0 checks each row against 0.7.0's Appendix C.
+0.8 starts from the v0.7.0 tag. A-0 checks each row against 0.7.0's Appendix C, read at 0.7's
+`<keep>` (the tag no longer holds `docs/plans/0.7.0/`, P7:3025-3029).
 
 | # | 0.7 item | What 0.8 needs from it | If it was cut, moved or missing |
 |---|---|---|---|
@@ -168,14 +170,14 @@ Contents:
 | I-4 | W-1: `localizedLiterals(in:)` in `LocalizationCatalogTests` and the widget types in `BatteryCore/Widget/` | X-2 extends the scanner to `accessibilityValue(`/`accessibilityHint(`; A-3 reuses `WidgetCondition` if it fits | X-2 extends today's `localizingCall` regex (`LocalizationCatalogTests.swift:19-21`) instead |
 | I-5 | W-6's `WidgetChartSummary` (stretch, P7:1954) | X-1 reuses it for chart descriptors | **Expected missing** (W-6 is stretch): X-1a builds `ChartSummary` in BatteryCore (+1 run, RD §3.3) |
 | I-6 | W-5's feed (stretch) | The widget field `systemChargeLimit` could show "80 %" | **Expected missing:** the field keeps "Reached" (RD §3.3); FEA-35's widget half goes to 1.1 with the feed |
-| I-7 | W-12: the session script with `charge-limit` and `hold-watch` steps, the hands-free helpers, the menu-bar shot method that replaces CGWindowList (P7:524-532, P7:1339-1344), and `SESSION-R.md` | T-1 builds 0.8's sessions on them | **Expected missing:** P7's D3 removes `docs/plans/0.7.0/` and copies nothing forward (P7:2044-2047), unlike 0.6.2's D3, which copied the tooling for 0.7 (P7:263). So A-0 restores them from 0.7.0's `<keep>` commit or the release PR's head into `docs/plans/0.8.0/` (+1 run in T-1), unless 0.7's D3 is asked to copy them first. No menu-bar method: T-1 uses the AX frame of the status item, else a computer-use crop (§6.7) |
+| I-7 | W-12: the session script with `charge-limit` and `hold-watch` steps, the hands-free helpers, the menu-bar shot method that replaces CGWindowList (P7:524-532, P7:1339-1344), and `SESSION-R.md` | T-1 builds 0.8's sessions on them | **Expected missing:** P7's D3 removes `docs/plans/0.7.0/` and copies nothing forward (P7:2044-2047), unlike 0.6.2's D3, which copied the tooling for 0.7 (P7:263). So A-0 restores them from 0.7.0's `<keep>` commit or the release PR's head into `docs/plans/0.8.0/` (T-1 counts the run that adapts them), unless 0.7's D3 is asked to copy them first. No menu-bar method: T-1 uses the AX frame of the status item, else a computer-use crop (§6.7) |
 | I-8 | QUA-06's `hold-watch` night (P7:2436-2438): whether an optimized hold was seen, and whether it sets bit 24 | G8-2: the optimized-hold cause | **No hold seen** (nobody knows which night macOS holds): T-1 offers the step again before 0.8's D1; still none: that cause waits until after 1.0, and today's "Charging on hold" stays (RD §5.1 QUA-06) |
 | I-9 | D1's build-number clock that only grows (P7:2022-2028) | 0.8's look-shoot build and RCs must sit above the installed 0.7.0 | If 0.7 shipped without it: 0.8's A-0 lands it first (one commit), before any M5 build |
 | I-10 | The installer's pre-swap end of the widget extension, pinned by a source test (P7:953-956) | P-2 edits the same function; the test keeps the order | If the test is missing: P-2 adds it |
 | I-11 | K-1, the backup key's public half (P7:1641-1652, cut-order 8) | C15 needs two keys at 1.0 | **If it moved to 0.8:** K-1 runs here, once the maintainer has generated the key (§14 M-9 steps); if he never does, ROADMAP records the accepted risk (C15) |
 | I-12 | R-1's `docs/VERIFICATION.md` (NEW-18; cut-order 7) | D3 fills 0.8's rows | **If it moved to 0.8:** V-1 creates it from `origin/claude/070-r1`'s draft (`583c67f`, +153 lines) |
 | I-13 | G7-11's reload-delivery measurement (P7:2598) | — | If the logged day gave none: Session R8's day measures it (§6.5) |
-| I-14 | W-0 item 9's open checks: the menu bar item on a dark bar and WP-18's Xcode items (P7:524-541), if 0.7's Session R didn't close them | — | Session R8 runs them (§6.4 step 7, and step 11b for the Xcode items) |
+| I-14 | W-0 item 9's open checks: the menu bar item on a dark bar and WP-18's Xcode items (P7:524-541), if 0.7's Session R didn't close them; and G7-12's widget tree read in English and Russian (P7:2367-2386), whose default leaves the row open (P7:2599) | C10 counts every widget family as reachable and named (RD:326-327), and 0.8's is the VoiceOver and keyboard sitting that passes C10's script (M-12; RD §3.3's exit criteria) | Session R8 runs them (§6.4 step 7, step 3 for the widgets, and step 11b for the Xcode items) |
 | I-15 | W-3c: `PageID`, `WindowOpener.showMainWindow(page:)`, and the History-over-Raw-Data fix (P7:518-523) | A-4's popovers and X-2's keyboard paths run on `MainView` as W-3c leaves it | If it slipped: X-2 takes the History fix if Session R8's keyboard walk reproduces it |
 | I-16 | 0.7's toolchain: CI's macOS job on Xcode 27.2 (Apple's release candidate 27B48), the Linux job still on Swift 6.4, the cloud sessions on Swift 6.4.2 (`origin/claude/070-toolchain`, `0d26a6d`'s message) | A-6 uses `fileExporter(…item:…)`; the `FileDocument` overload is deprecated in the 27.2 SDK (Appendix B) | Nothing changes: the `item:` overload is what the app already uses (`DeveloperView.swift:125-133`) |
 
@@ -290,14 +292,16 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
 
 - **Source:** P7 D3; 0.7.0's Appendix C; §2 above.
 - **Items:**
-  1. Read 0.7.0's Appendix C and fill §2.1's last column with what happened to each row (I-1 to
-     I-16): whether W-13 and W-14 shipped as planned, K-1, the NEW-18 file, W-5 and W-6, the
-     hold-watch night, G7-11's measurement, the menu-bar method, and Session R's open checks.
+  1. Read 0.7.0's Appendix C at 0.7's `<keep>` (from the 0.7.0 release PR's `refs/pull/<n>/head`)
+     and fill §2.1's last column with what happened to each row (I-1 to I-16): whether W-13 and
+     W-14 shipped as planned, K-1, the NEW-18 file, W-5 and W-6, the hold-watch night, G7-11's
+     measurement, the menu-bar method, and Session R's open checks, G7-12's widget tree included.
   2. Merge `claude/080-plan` into `claude/080-integration` (this file), and restore 0.7's session
      tooling into `docs/plans/0.8.0/` from `<keep>` (I-7: P7's D3 copies nothing forward), unless
      0.7's D3 already did.
   3. Re-resolve every file:line of this plan at the v0.7.0 tag. W-14, W-13, W-3c and W-1 move most
-     of the app files 0.8 touches.
+     of the app files 0.8 touches. P7, W, AC62 and the session reports stay cited at `0ecca33` or
+     0.7's `<keep>`, since the tag no longer holds them.
   4. Check that every decision is as recorded (§2.3, §14), and that 0.7's build-number clock
      shipped (I-9).
   5. Record v0.7.0's CI sizes (§9) and the `.public` baseline for E-3 at the tag.
@@ -786,14 +790,22 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
 - **Source:** RD §3.3 NEW-08 (after 0.7's CB-02, so the goldens pin the 1.x shapes); C14
   (RD:354-417); M-6; W-1's `WidgetSurfaceTests` (widgets, already pinned).
 - **Items:**
-  1. **Goldens:** for every fixture, `bpulse --input <f>` (the text report) and `--input <f>
-     --json`, plus `--accessories --json` and `--device --json` forms where a fixture exists, as
-     committed files compared on Linux and in the macOS job; an intended change updates the file
-     in the same commit and, for a machine output, is an addition only.
+  1. **Goldens:** for every fixture, `bpulse --input <f>` (the text report), `--input <f> --json`,
+     `--input <f> --raw` (the redacted capture) and the compact JSON line `--watch --json` prints,
+     plus `--accessories --json|--raw` and `--device --json|--raw` forms where a fixture exists,
+     and `--export csv` (samples, `--days`, `--decimal-comma`) and `--export json` over a committed
+     History folder (`HistoryExport`, `formatVersion` 1, `HistoryExport.swift:135`), as committed
+     files compared on Linux and in the macOS job: every machine output C14 item 4 lists. An
+     intended change updates the file in the same commit and, for a machine output, is an addition
+     only.
   2. **`FrozenSurfaceTests`:** the settings keys (names, types, defaults: those of
-     `App/AppSettings.swift:10-55` plus W-13's three), the storage file names under `History/` and
-     `Devices/`, the capture format's four top-level keys (`MacPowerParser.swift:40-45`), `bpulse`'s
-     options and exit codes 0, 1, 2, the release asset names (with `BatteryPulse-count.txt`), the
+     `App/AppSettings.swift:10-55` plus W-13's three) and their legacy migrations' BatteryCore
+     halves (`MenuBarContent.migrated(legacyStyle:legacyIcon:)`, `MenuBarContent.swift:97`;
+     `UpdateFrequency.stored(_:legacyEnabled:)`, `Updates.swift:205`; C14 item 1), the storage file
+     names under `History/` and `Devices/`, the capture format's four top-level keys
+     (`MacPowerParser.swift:40-45`), `bpulse`'s options and exit codes 0, 1, 2, the `--record`
+     folder's file names (`CaptureRecorder.fileName(number:reason:date:)`,
+     `CaptureRecorder.swift:331-332`), the release asset names (with `BatteryPulse-count.txt`), the
      bundle IDs and the log subsystem.
   3. **M-6 enters ROADMAP's Decisions:** machine outputs and exit codes frozen for 1.x; the text
      report, `--help` and the text of `--smc` and `--watch` may change with a line in the notes.
@@ -838,7 +850,9 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
      `udid` or a device key; `catches` cases for each.
   2. **QUA-15:** remove `legacySamplesURL` and its migration (`HistoryStore.swift:15`, `:24-26`,
      `:41-42`, `:98-100`, `:121`, `:147`, `:176-192`, `:246`) and the two test expectations that
-     count it (`HistoryStoreTests.swift:41`, `:160-184`); one line in the notes.
+     count it (`HistoryStoreTests.swift:41`, `:160-184`). The removed test,
+     `theLegacyMigrationRunsOncePerSession`, gives way to one that a `samples.jsonl` in the folder
+     is neither read nor removed, so the test count still only grows (C12); one line in the notes.
 - **Files:** `Tests/BatteryCoreTests/{LogPrivacyGuardTests, HistoryStoreTests}.swift`,
   `Sources/BatteryCore/HistoryStore.swift`.
 - **Acceptance:** both jobs green; the storage round trip at D1 is byte-identical.
@@ -858,7 +872,8 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
      (`m5-session.sh:3768`, `:6623`, `:6911`), while Session A recorded `chargeSocLimitSoc = 80`;
      T-1 parses both forms, from A-2's verbatim sample [unverified until the sample].
   3. **Runbooks:** `docs/plans/0.8.0/SESSION-L.md` (the look shoot) and `SESSION-R.md` (R8, its
-     day's end and After publishing), each with Session B's rules, privacy and proofs.
+     day's end, Hold watch and After publishing, each short section making its own worktree under
+     `~/bp-080/`), each with Session B's rules, privacy and proofs.
   4. **`docs/plans/0.8.0/section.sh`:** prints one section of a runbook by its heading, so a start
      sentence shows the session only its section (§6.0).
   5. **Today's rules** in preflight and the steps (§6.0): Dock presence before access, widget shots
@@ -868,7 +883,8 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
 - **Files:** `docs/plans/0.8.0/*` (the script, helpers, runbooks, `section.sh`),
   `.github/workflows/ci.yml`.
 - **Acceptance:** CI's dry run and `bash -n` green; the look shoot runs from it.
-- **Effort:** M, 1-2 runs (+1 if I-7's copy is missing). **Rollback:** fix forward.
+- **Effort:** M, 2-3 runs, one of them adapting the tooling A-0 restores (I-7, expected); 1-2 if
+  0.7's D3 copied it forward. **Rollback:** fix forward.
 
 ### K-1 and V-1: 0.7's conditional carry-overs
 
@@ -922,6 +938,11 @@ As P7 D1-D3, with 0.8's differences.
   `docs/VERIFICATION.md`'s 0.8 rows.
 - Move this plan's lasting decisions to ROADMAP (M-6, the Charge Limit's source and its caveat,
   the cause rule, the sentinel's files).
+- **Move what 0.8 didn't build forward** (RD §1.2 item 9), as 0.7's D3 moves its leftovers to
+  `docs/plans/1.1/widgets.md` (P7:2040-2043): a package §7.2 cut, with its §4 section, its gate and
+  its strings, to `docs/plans/0.9.0/from-0.8.md`, which 0.9.0 lands before its freeze; the causes
+  still waiting for a capture (G8-2 to G8-4, their gates and fixture rule) and G8-1's `battlimit`
+  fallback, if unused, to the same file under "After 1.0", linked from ROADMAP's entries.
 - **Copy the session tooling forward** to `docs/plans/0.9.0/` (the script, helpers, runbooks,
   `section.sh`), as 0.6.2's D3 did for 0.7 (P7:263; 0.7's D3 doesn't, I-7), then remove
   `docs/plans/0.8.0/` and the ci.yml lines that name it, noting `<keep>`.
@@ -947,10 +968,10 @@ once (P7 §5). Slot 1 owns the catalog; slot 2 never touches it. One-line additi
 | C6 | P-1 | X-1a, then X-2a | A-5 (the catalog) |
 | C7 | A-6b | E-2 | P-1 (`AccessoryMonitor`, the sentinel); A-6a |
 | **Look shoot** | the M5, hands-free (§6.1), on a CI build of C7's merge | | A-1 to A-6 merged; T-1 |
-| **Look review, Russian review** | the maintainer at his desk (§6.2, §6.3) | | the shots |
-| C8 | the look's fixes; X-1b, then P-2b | K-1, V-1 (only if I-11, I-12) | the reviews; X-1a; P-2a |
+| **Look review** | the maintainer at his desk (§6.2) | | the shots |
+| C8 | the look's fixes; X-1b, then P-2b | K-1, V-1 (only if I-11, I-12) | the look review; X-1a; P-2a |
 | C9 | X-2b; E-2's gaps (their strings) | | X-2a; E-2 |
-| C10 | L-1 (merges last) | | everything above |
+| C10 | L-1: its key list, **the Russian review** on it (§6.3), the answers, the docs; merges last | | everything above |
 | D1 | freeze; RC-U and RC-F | | C10 |
 | **Session R8** and its day | the M5, hands-free (§6.4, §6.5) | | D1 |
 | D3 | release; after publishing (§6.6); a week later, the counts | | Session R8 |
@@ -963,6 +984,9 @@ once (P7 §5). Slot 1 owns the catalog; slot 2 never touches it. One-line additi
 - **The look shoot after C7,** when every new screen exists: one shoot and one review, as RD asks
   ("one look review and one Russian review"). X-1 and X-2 change little that shows, so they follow
   the review, and Session R8 checks them.
+- **The Russian review inside L-1,** on L-1's list of every key 0.8 added: the keys C8 and C9 add
+  after the shoot (X-1b, P-2b, X-2b, E-2's gaps) would otherwise miss it, and RD §3.3 sends every
+  new string through it.
 - **The engineering lane fills slot 2** (E-3, E-1, E-2), with the core halves (A-6a, P-2a, X-1a,
   X-2a) and the tooling (T-1), so slot 2 never waits on a look.
 - **Catalog order:** A-1, A-2, A-3, A-4, A-5, P-1, A-6b, the look's fixes, X-1b, P-2b, X-2b, E-2's
@@ -1014,8 +1038,11 @@ does. The new rules, each from a session of 0.6.2:
    the occlusion check, `sessions/B.md` 12:24), and after any script desktop click, which leaves
    the click-wallpaper-to-show-desktop state on, one computer-use click on bare desktop ends it
    (Session B, `sessions/B.md` 12:37, 13:13).
+8. **Window shots use `screencapture -R` at the window's frame after the occlusion check, never
+   `-l`:** `-l` leaves out what lies behind a glass sheet, so a Translucent or Clear window (Q8-4's
+   badge is Clear's) would be shot without its background (Session B's P3, `sessions/B.md:97`).
 
-**His part in all** [estimate]: about 42-48 minutes, plus 7 optional, against about 135 by hand
+**His part in all** [estimate]: about 42-48 minutes, plus 9 optional, against about 135 by hand
 (RD §3: a 40-minute look sitting, an 85-minute RC sitting and 10 for Xcode).
 
 | Sitting | Where | His time |
@@ -1027,6 +1054,7 @@ does. The new rules, each from a session of 0.6.2:
 | §6.4 Session R8's start: the line, one yes, the approvals, quitting his apps | the M5 | 6-8 min |
 | §6.5 Its day (passive) and its end: "day-end", the batch, his yes to `send` | the M5 | 3-4 min (+5 with Q8-6's listen) |
 | §6.6 After publishing: the line, the approvals, his yes | the M5 | about 2 min |
+| Optional, any night before D1: the hold watch (I-8, G8-2), started like §6.1 with `SESSION-R.md`'s section Hold watch; the line in the evening, plugged in with the lid open, his yes before `send` in the morning | the M5 | about 2 min |
 
 ### 6.1 The look shoot (hands-free, about 5-8 minutes of his)
 
@@ -1042,10 +1070,11 @@ The flags are [check on his CLI once before], as in P7 §6.2.
 
 **His part:** the line; one yes to the list of changes (the build installed over 0.7.0 and put back,
 the Charge Limit set to two values and put back, the app's language switched and back,
-`hasSeenWelcome` cleared and restored, Demo Mode on and off); the approvals (computer use for
-BatteryPulse, System Settings and Finder, after rule 2's window); quitting his own apps; then the
-adapter: unplug at a beep, plug in at a second beep about 7 minutes later. With Q8-3's yes, a
-low-wattage USB-C adapter in at a third beep and the usual one back at a fourth.
+`hasSeenWelcome` cleared and restored, Demo Mode on and off, the window style set to Clear for
+Q8-4's badge (beta styles on) and back, a sentinel file placed and removed); the approvals
+(computer use for BatteryPulse, System Settings and Finder, after rule 2's window); quitting his
+own apps; then the adapter: unplug at a beep, plug in at a second beep about 7 minutes later. With
+Q8-3's yes, a low-wattage USB-C adapter in at a third beep and the usual one back at a fourth.
 
 **The steps** (the session's; each failure is "not checked" with its reason, and its gate takes
 its default):
@@ -1071,7 +1100,7 @@ its default):
    - his Charge Limit set back to prepare's value, confirmed by a shot.
 3. **The screens,** in English, then Russian (the app's language in System Settings → Language &
    Region → Applications, then a relaunch): every new screen, by AX and the script's window shots
-   (`screencapture -l`):
+   (rule 8):
    - each Demo Mode scene of A-1 (Overview, the popover, Power) and A-2's number;
    - Health's summary (A-3) and Clear's badge in the worn-battery scene (Q8-4);
    - one row's help tag and info popover per page (A-4);
@@ -1079,6 +1108,9 @@ its default):
    - Report a Problem (A-6): the window, the preview's top and its end, both choices; the file it
      saves goes to the session folder, and the script checks it for this Mac's serial (from
      `ioreg`), the user name and the home path;
+   - P-1's note: with BatteryPulse quit, the script places the accessory sentinel file and
+     relaunches; the Accessories page with the note and **Turn On Again**, then an AX press on it
+     and the file gone (RD §3.3: the resilience strings ride with the look review);
    - the help link's URL (A-7), read from the log line, not the browser.
 4. **The weak adapter (Q8-3, optional):** a low-wattage adapter in at a beep, a bounded CPU load the
    script runs for 2 minutes, `bpulse --raw` captures at 30 s and 2 minutes, the usual adapter back
@@ -1106,16 +1138,21 @@ item 8). He answers in the comment; without an answer, the defaults apply.
    (default y)
 7. "Welcome (one window, six lines): y, or say which line." (default y)
 8. "Report a Problem: the window and its preview: y, or say what." (default y)
-9. Any further cause G8-2 to G8-4 brings: "its sentence and Demo scene: y, or say which."
+9. "Accessories after a read was interrupted (P-1): the note and Turn On Again: y, or say
+   what." (default y)
+10. Any further cause G8-2 to G8-4 brings: "its sentence and Demo scene: y, or say which."
 
 **Pre-answers:** the orchestrator checks each shot against the plan's text and the catalog first,
 and marks what it found, so he mostly confirms.
 
 ### 6.3 The Russian review (at the desk, about 10 minutes)
 
-A second PR comment: the same screens in Russian beside the English, and L-1's list of every new
-key with its Russian (§8). "y = reads right, or name the key and the word." A fix is one key in the
-catalog slot before C10. Without an answer, L-1's terminology pass stands.
+A second PR comment, posted by L-1 in C10 once every other catalog package has merged: the look
+shoot's screens in Russian beside the English, and L-1's list of every new key with its Russian
+(§8). The keys no shot shows (C8's and C9's: X-1b's and X-2b's VoiceOver words, P-2b's two update
+errors, which need a refused update to appear, and E-2's gap explanations) are reviewed as words,
+English beside Russian. "y = reads right, or name the key and the word." L-1 applies each fix as a
+one-key commit before it merges. Without an answer, L-1's terminology pass stands.
 
 ### 6.4 Session R8 (the release candidate, hands-free; about 6-8 minutes at its start)
 
@@ -1145,7 +1182,10 @@ removed (step 11). Xcode's components: if Xcode asks to install them (Session B,
    non-empty label, that only decorative images lack one, that `PowerFlowView`, `CapacityBars` and
    the rings read as one element with a value, and that each chart has its label and descriptor
    (X-1) [uncertain: whether AX exposes the descriptor; else Accessibility Inspector by computer
-   use, a shot per chart].
+   use, a shot per chart]. **The widgets** (C10 names every family): `ui tree` at each placed
+   BatteryPulse widget, against `WidgetAccessibility`'s labels, as 0.7's Session R step 7 did
+   (P7:2367-2386), in Russian after a redraw (rule 4); only the families and languages 0.7 left
+   open (I-14), else one family as a check that 0.8 changed nothing.
 4. **The keyboard (C10):** with Keyboard navigation on, posted Tab, Shift-Tab, arrows, Space and
    Return, and after each the focused element read by AX: the sidebar, the toolbar, the tile
    pickers, Raw Data's table and filter, the update window, Report a Problem's Save. Each path
@@ -1191,10 +1231,12 @@ removed (step 11). Xcode's components: if Xcode asks to install them (Session B,
 ### 6.6 After publishing (a short session, about 2 minutes of his; D3)
 
 From the restored 0.7.0, with his widgets placed. D3 posts the start line on the release PR, with
-`<n>` (the release PR) and `<keep>` (the last commit holding `docs/plans/0.8.0/`) filled in:
+`<n>` (the release PR) and `<keep>` (the last commit holding `docs/plans/0.8.0/`) filled in. Rules 3
+and 4 need the script, so the line carries its allow rule, and the section first makes the worktree
+`~/bp-080/D3/run` at `<keep>`, as P7 §6.2's short sessions do (0.6.2's check had no script):
 
 ```
-DISABLE_AUTOUPDATER=1 claude --permission-mode auto 'Run the BatteryPulse 0.8.0 after-publishing check hands-free: in ~/BatteryPulse run git fetch origin refs/pull/<n>/head && bash <(git show <keep>:docs/plans/0.8.0/section.sh) <keep> SESSION-R.md After publishing, then follow only what it prints. Do not let anyone install the update before the before-picture.'
+DISABLE_AUTOUPDATER=1 claude --allowedTools 'Bash(bash ~/bp-080/D3/run/docs/plans/0.8.0/m5-session.sh:*)' --permission-mode auto 'Run the BatteryPulse 0.8.0 after-publishing check hands-free: in ~/BatteryPulse run git fetch origin refs/pull/<n>/head && bash <(git show <keep>:docs/plans/0.8.0/section.sh) <keep> SESSION-R.md After publishing, then follow only what it prints. Do not let anyone install the update before the before-picture.'
 ```
 
 1. **Before anything:** he hasn't installed 0.8.0 (rule 6); the session opens BatteryPulse's main
@@ -1206,8 +1248,9 @@ DISABLE_AUTOUPDATER=1 claude --permission-mode auto 'Run the BatteryPulse 0.8.0 
 3. The widgets after a redraw (rule 4): **1** same, **2** blank or grey, **3** gone, **4**
    different; the `update` log's pre-swap line and no CHSErrorDomain 1103.
 4. P7 §6.4's list: History, settings, `codesign -dv` (`flags=0x10002(adhoc,runtime)`), no
-   quarantine, the login item, notification permission; plus Help → Report a Problem… opens, and
-   Help opens the guide at `v0.8.0` (from the log line).
+   quarantine, the login item, notification permission; no prompt for BatteryPulse's own data
+   after the update (SEC-06, "repeated in every after-publishing check", RD §5.1); plus Help →
+   Report a Problem… opens, and Help opens the guide at `v0.8.0` (from the log line).
 5. **On a 2 or 4, or any other failure:** `gh release edit v0.8.0 --prerelease`, on his yes, and
    fix forward.
 6. The first day's comparison: the popover against the widget, as P7 §6.4 step 7.
@@ -1241,7 +1284,7 @@ DISABLE_AUTOUPDATER=1 claude --permission-mode auto 'Run the BatteryPulse 0.8.0 
 | **G8-3** a weak adapter's cause | `NotChargingCause.insufficientPower` | §6.1 step 4 (Q8-3): a capture with a low-wattage adapter under load that shows a key for it (a `NotChargingReason` or `SlowChargingReason` bit, or `AdapterDetails.ErrorFlags`) | No capture, or only a heuristic (input power against the load): not shown; Q8-1's general line covers it |
 | **G8-4** heat's cause | `NotChargingCause.heat` | Any `bpulse --record` capture (CL) or session capture that shows a charger key at the time (`TimeChargingThermallyLimited` or a reason bit) with a high battery temperature; nobody heats the Mac on purpose | Not shown in 0.8 (Q8-5); Power's thermal row and the heat alert stay as today |
 | **G8-5** reads from the app's own process | A-2's file read, A-6's crash-folder listing | §6.1 steps 2-3 and §6.4 step 10: no prompt, and the app's values equal Terminal's | A prompt or a refusal: that read is dropped before D1 (A-2: G8-1's default; A-6: the names read "not readable") |
-| **G8-6** VoiceOver's view (C10) | X-1, X-2 | §6.4 step 3 in both languages, Q8-6's optional listen | "Not checked": 0.8 ships the code (it removes nothing), the row stays open in `docs/VERIFICATION.md`, and 0.9.0's sitting runs it again |
+| **G8-6** VoiceOver's view (C10) | X-1, X-2; the widget rows 0.7 left open (I-14) | §6.4 step 3 in both languages, Q8-6's optional listen | "Not checked": 0.8 ships the code (it removes nothing), the row stays open in `docs/VERIFICATION.md`, and 0.9.0's sitting runs it again |
 | **G8-7** the contrast audit (C10, A11Y-03) | colour fixes | §6.4 step 5 | A failure in Standard or Frosted: a fix before D3 (a tone-map value), or the row stays open with its reason; not run: 0.9.0's sitting |
 | **G8-8** the keyboard paths (C10) | X-2 | §6.4 step 4 | As G8-6 |
 | **G8-9** the update path | the release | F12 (§6.4 step 12); §6.6; P-2's CI checks (99.0 refused; the fallback check) | F12 fails: the installer's last good code (as 0.6.2's G-16). §6.6 step 3 shows 2 or 4: `--prerelease`, fix forward |
@@ -1277,14 +1320,14 @@ C17):
 | A-4 | 2-3 | | E-1 | 2 |
 | A-5 | 1-2 | | E-2 | 2-3 |
 | A-6 (a, b) | 3 | | E-3 | 1-2 |
-| A-7 | 1 | | T-1 | 1-2 |
+| A-7 | 1 | | T-1 | 2-3 |
 | X-1 (a, b) | 1-2 | | L-1 | 2 |
 | | | | D1+D3 | 2-3 |
 
-- **Totals:** about 28-39 runs, close to RD §3.3's 30-38, plus 3 to fix forward. The never-cut
-  set is about 22-29.
-- **Extra work:** W-14 moved whole (+2), W-13 moved whole (+2), K-1 (+1), V-1 (+1), the session
-  tooling restored (+1), `battlimit`'s fallback (+1), each cause G8-2 to G8-4 brings (+1 each).
+- **Totals:** about 29-40 runs, close to RD §3.3's 30-38, plus 3 to fix forward. The never-cut
+  set is about 23-30.
+- **Extra work:** W-14 moved whole (+2), W-13 moved whole (+2), K-1 (+1), V-1 (+1), `battlimit`'s
+  fallback (+1), each cause G8-2 to G8-4 brings (+1 each).
 
 ### 7.3 Frozen surfaces 0.8 changes on purpose, and how the notes say so
 
@@ -1461,8 +1504,8 @@ As P7 §13, with 0.8's lines:
    - QUA-15's line;
    - "Updating from 0.7.x: Install and Relaunch."
 3. **ROADMAP:** a Releases row, its counts left for step 8; §12's changes.
-4. **Copy the tooling to `docs/plans/0.9.0/`, then remove `docs/plans/0.8.0/`** in the last
-   commits (D3); the commit before the removal is `<keep>`.
+4. **Copy the tooling and `from-0.8.md` to `docs/plans/0.9.0/`, then remove `docs/plans/0.8.0/`**
+   in the last commits (D3); the commit before the removal is `<keep>`.
 5. **The PR** `claude/080-integration` → `main`: ready with the numbers, Appendix C and the session
    results; both jobs green with 0 warnings; merged after the maintainer's OK.
 6. **Tag and release:** the maintainer approves the `release` environment run; `release.yml`
@@ -1574,6 +1617,12 @@ out.
 | NEW-11 `formatVersion` | RD:1370 | 0.7; A-2's key is an addition, no bump (§2.4) |
 | 0.7's `charge-limit` step | P7:2238, P7:2435 | T-1 rebuilds it for G8-1 (§6.1 step 2) |
 | 0.7's What's New row | P7:1772-1776 | L-1 item 3 |
+| W-13 moved whole (only on a broken promise of P7 §11) | P7:2611 | Carried whole before A-5, +2 runs (I-2) |
+| W-3c's History-over-Raw-Data fix | P7:518-523 | X-2, if W-3c slipped and Session R8's keyboard walk reproduces it (I-15) |
+| G7-12's widget tree read, if left open (C10's widget families) | P7:2367-2386, P7:2599 | Session R8 step 3 (I-14, G8-6) |
+| SIZ-07 widget-only string table | RD:1306; P7:1988, P7:2621 (0.7's cut 3) | L-1 item 5, only if 0.7 didn't ship it and §9 favours it |
+| SEC-06 no prompt for own data after an update | RD:1297 ("repeated in every after-publishing check") | §6.6 step 4 |
+| DIS-06 widgets kept across an in-app update | RD:1312 | §6.6 step 3 (evidence for C7) |
 | 0.7's pre-swap extension end | P7:953-956 | P-2 keeps it and its test (I-10) |
 | 0.7's growing build number | P7:2022-2028 | Checked by A-0 (I-9) |
 | 0.7's `WidgetChartSummary` | P7:1954 | X-1a reuses it, or builds `ChartSummary` (I-5) |
@@ -1582,7 +1631,8 @@ out.
 | W-9 widget extras | W:536, W:650 | Not in 0.8 (after 1.0) |
 | The feed, History and iPhone & iPad widgets | RD §3.2, §4.1 | Not in 0.8 (1.1) |
 | 0.9.0's contents: `bpulse` in the app (M-7), `SECURITY.md` (NEW-15), the 1.0 docs (NEW-17), README's status line (DIS-10), closing NEW-18, NEW-20, SEC-02, M-8 | RD §3.5 | Not in 0.8 |
-| 0.9.x: the soak, energy budgets, the upgrade matrix, C13 | RD §3.6 | Not in 0.8 |
+| 0.9.x: the soak, energy budgets, the upgrade matrix (NEW-19), C13 | RD §3.6 | Not in 0.8 |
+| NEW-21 macOS 28 compatibility | RD §3.8 | Not in 0.8 (1.1) |
 | Grades of our own; telemetry beyond the count; MetricKit (REJ-36); an admin-prompt installer | RD §4.3 | Rejected, not in 0.8 |
 | Developer ID | RD §3.4; M-1 | Not planned |
 
