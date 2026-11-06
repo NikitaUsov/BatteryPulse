@@ -401,21 +401,21 @@ enum WhatsNew {
         Feature(
             id: 1, symbol: "chart.xyaxis.line", title: "History widget",
             detail:
-                "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days, on your desktop. The large Battery widget charts the last day's charge too."
+                "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days. The large Battery widget charts the last day's charge too."
         ),
         Feature(
             id: 2, symbol: "iphone", title: "iPhone and iPad widget",
             detail:
-                "Your iPhones' and iPads' charge as BatteryPulse last read it: the most recently read, the lowest, all or one you choose. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read, and nothing in it leaves your Mac."
+                "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read; nothing in it leaves your Mac."
         ),
         Feature(
             id: 3, symbol: "globe", title: "Widgets in BatteryPulse's language",
             detail:
-                "A language you choose for BatteryPulse alone in System Settings → General → Language & Region should reach its widgets too, once you reopen BatteryPulse."
+                "A language you choose for BatteryPulse alone in System Settings should reach its widgets too, once you reopen BatteryPulse."
         ),
         Feature(
             id: 4, symbol: "gearshape", title: "Settings fit the screen",
-            detail: "A Settings pane taller than your screen now scrolls, so every setting can be reached on a MacBook."
+            detail: "A Settings pane taller than your screen now scrolls, so every setting can be reached."
         ),
     ]
 

@@ -188,14 +188,14 @@
         }
       }
     },
-    "A language you choose for BatteryPulse alone in System Settings → General → Language & Region should reach its widgets too, once you reopen BatteryPulse.": {
+    "A language you choose for BatteryPulse alone in System Settings should reach its widgets too, once you reopen BatteryPulse.": {
       "extractionState": "manual",
       "comment": "What's New for 0.7.1: a language chosen for BatteryPulse alone reaches the widgets",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Язык, выбранный только для BatteryPulse в Системных настройках → «Основные» → «Язык и регион», должен применяться и к его виджетам после повторного открытия BatteryPulse."
+            "value": "Язык, выбранный только для BatteryPulse в Системных настройках, должен применяться и к его виджетам после повторного открытия BatteryPulse."
           }
         }
       }
@@ -211,14 +211,14 @@
         }
       }
     },
-    "A Settings pane taller than your screen now scrolls, so every setting can be reached on a MacBook.": {
+    "A Settings pane taller than your screen now scrolls, so every setting can be reached.": {
       "extractionState": "manual",
       "comment": "What's New for 0.7.1: Settings panes scroll when taller than the screen",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вкладка настроек, которая выше экрана, теперь прокручивается, поэтому на MacBook доступен каждый параметр."
+            "value": "Вкладка настроек выше экрана теперь прокручивается, так что доступен каждый параметр."
           }
         }
       }
@@ -1584,14 +1584,14 @@
         }
       }
     },
-    "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days, on your desktop. The large Battery widget charts the last day's charge too.": {
+    "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days. The large Battery widget charts the last day's charge too.": {
       "extractionState": "manual",
       "comment": "What's New for 0.7.1: the History widget, and the large Battery widget's chart",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, мощность аккумулятора или температура за последние сутки или неделю либо ёмкость и циклы перезарядки за 90 дней — на рабочем столе. Большой виджет «Аккумулятор» теперь тоже показывает график заряда за последние сутки."
+            "value": "Заряд, мощность аккумулятора или температура за последние сутки или неделю либо ёмкость и циклы перезарядки за 90 дней. Большой виджет «Аккумулятор» теперь тоже показывает график заряда за сутки."
           }
         }
       }
@@ -7575,6 +7575,18 @@
         }
       }
     },
+    "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read; nothing in it leaves your Mac.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: the iPhone & iPad widget, and the feed's privacy sentence",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд ваших iPhone и iPad по последним данным BatteryPulse. Для этого виджета и виджета «История» BatteryPulse хранит небольшую копию их данных в папке, доступной только вам; ничто из неё не покидает ваш Mac."
+          }
+        }
+      }
+    },
     "The charts start over. This can't be undone.": {
       "extractionState": "manual",
       "localizations": {
@@ -9058,18 +9070,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "У вас BatteryPulse %@."
-          }
-        }
-      }
-    },
-    "Your iPhones' and iPads' charge as BatteryPulse last read it: the most recently read, the lowest, all or one you choose. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read, and nothing in it leaves your Mac.": {
-      "extractionState": "manual",
-      "comment": "What's New for 0.7.1: the iPhone & iPad widget's choices, and the feed's privacy sentence",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заряд ваших iPhone и iPad по последним данным BatteryPulse: устройства, считанного последним, устройства с наименьшим зарядом, всех сразу или выбранного. Для этого виджета и виджета «История» BatteryPulse хранит небольшую копию их данных в папке, доступной только вам, и ничто из неё не покидает ваш Mac."
           }
         }
       }
