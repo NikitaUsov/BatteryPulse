@@ -13,7 +13,10 @@ extension BatterySnapshot {
         return Double(full) / Double(design) * 100
     }
 
-    /// "Maximum Capacity" as macOS shows it: ``capacityToDesignPercent`` capped at 100 %.
+    /// The maximum capacity BatteryPulse shows: ``capacityToDesignPercent`` (the nominal capacity,
+    /// or without one the full-charge capacity, against the design capacity) capped at 100 %, as
+    /// System Settings caps its "Maximum Capacity", which can differ from this figure by a point or
+    /// two.
     public var healthPercent: Double? {
         capacityToDesignPercent.map { min(100, $0) }
     }
