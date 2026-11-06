@@ -5096,7 +5096,7 @@ step_day_end() {
   out_block "$LOGS/day-update.txt"
   asserts="$(pmset -g assertions 2>/dev/null | grep -c BatteryPulse || true)"
   out "- pmset -g assertions naming BatteryPulse now: $asserts (must be 0); other processes' keep-awake holders: $(keepawake_holders | grep -c . || true)"
-  echo "NEXT: $SCRIPT plug (with him, the two beeps), $SCRIPT capacity day-end, then F12 ($SCRIPT f12 rate, install F, f12 before, Check for Updates and Install and Relaunch by ui press, f12 after), then batch, send --dry-run, his yes, send, restore end"
+  echo "NEXT: $SCRIPT plug (with him, the two beeps), $SCRIPT capacity day-end, Q8-6's optional listen while RC-U still runs (app-language ru, back), then F12 ($SCRIPT f12 rate, install F, f12 before, Check for Updates and Install and Relaunch by ui press, f12 after), then batch, send --dry-run, his yes, send, restore end, each RESTORE item, widgets-check, summary end, and send again (the widgets' counts)"
 }
 
 # MARK: - Session R: F12 at the day's end (D-12, G8-9)
@@ -6719,8 +6719,9 @@ The GUI phase (heartbeat <step and expected time> after each step, at least ever
   ui <command...>            the hands (ui.swift's usage), through the script only
   restore gui; summary; ready (last: the arm window starts the logged day)
 The day's end (on his "day-end"):
-  day-end; plug (his two beeps); capacity day-end; f12 rate; install F; f12 before; f12 after; batch;
-  send --dry-run; his R-send; send; restore end; each RESTORE item; widgets-check; summary end
+  day-end; plug (his two beeps); capacity day-end; Q8-6's optional listen on RC-U (app-language ru | back);
+  f12 rate; install F; f12 before; f12 after; batch; send --dry-run; his R-send; send; restore end; each RESTORE
+  item; widgets-check; summary end; send again (his yes stands: R.md gains the widgets' counts after the restore)
 While a background task runs: wait [<minutes, 1-9>] in the foreground, again until it ended.
 Any time: status, note, shot, crop, attach, unattach, faults, help; dry-run anywhere (CI); capacity <tag> by hand
 from the checkout, without a session (P71's W-17 item 18).

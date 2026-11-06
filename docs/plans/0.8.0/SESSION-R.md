@@ -433,14 +433,15 @@ own close button, `$S ui close BatteryPulse --window "<its title>"` (rule 8).
    reloads and the placed widgets' answers over it; answer `R9-plug`.
 3. `$S capacity day-end` with System Settings → Battery → Battery Health's shot: answer
    `R-capacity-day-end`.
-4. **F12 (G8-9):** `$S f12 rate` (fewer than 10 requests left: wait in the background for the
+4. **Q8-6, the optional VoiceOver listen,** before F12, while the release candidate still runs: the
+   listen is for 0.8's VoiceOver names (G8-6), and F12 leaves the published 0.7.1 installed until
+   `restore end`. Ask him whether he has five minutes for VoiceOver on Overview, Power and Health in
+   Russian (`$S app-language ru` first, `$S app-language back` after); he turns VoiceOver on and off
+   himself (Command-F5). His answer is `R-listen` (`--by person`); without one, skipped.
+5. **F12 (G8-9):** `$S f12 rate` (fewer than 10 requests left: wait in the background for the
    reset, at most an hour, with `$S wait 9`, then again; else "not run: rate-limited"). `$S install
    F`, `$S f12 before`; Check for Updates, then Install and Relaunch, by `$S ui press BatteryPulse
    ...`; `$S f12 after`; answer `F12-version`, `F12-widget` and `F12-new-kinds`.
-5. **Q8-6, the optional VoiceOver listen:** ask him whether he has five minutes for VoiceOver on
-   Overview, Power and Health in Russian (`$S app-language ru` first, `$S app-language back`
-   after); he turns VoiceOver on and off himself (Command-F5). His answer is `R-listen` (`--by
-   person`); without one, skipped.
 6. `$S batch`: the items you answered 3 or unsure, offered in one line ("N items I wasn't sure
    about: look now, or skip and they keep their defaults?"); on "look", give each picture's full
    path (he types `! open <path>`; you never open a file by computer use) and record each with
@@ -456,7 +457,11 @@ own close button, `$S ui close BatteryPulse --window "<its title>"` (rule 8).
    when BatteryPulse's counts are back at prepare's; anything else not confirmed earlier. `$S summary
    end`, and tell him in Russian what is back, each widget kind that stayed or is gone by count (an
    `ALERT` each), and what is his (the Focus; at the end of the series, Terminal's Accessibility,
-   unless he keeps it). End.
+   unless he keeps it).
+9. **`$S send` once more** (T-1 item 7): step 7's send went before the restore, so `R.md` had no
+   counts after it; now it gains the restore's section and the widgets' counts after each read, what
+   stayed by kind and count. His yes stands for the same report (tell him what it adds); nothing new
+   is attached, and the privacy lint runs again. End.
 
 ## If the session restarts or compacts
 
