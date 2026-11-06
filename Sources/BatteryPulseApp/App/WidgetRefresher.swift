@@ -90,11 +90,13 @@ final class WidgetRefresher {
             for await _ in Observations({ (devices.remembered, devices.isEnabled) }).dropFirst() {
                 guard let self else { return }
                 let content = self.devicesContent()
-                guard content != self.feedDevices else { continue }
-                // Reads off and Forget take devices out of the feed: their kind reloads after it.
-                let removes = self.feedDevices.map { content.removesDevices(since: $0) } ?? false
-                self.feedDevices = content
-                await self.feed.writeAndWait(.devices, removing: removes ? [.devices] : [])
+                if content != self.feedDevices {
+                    // Reads off and Forget take devices out of the feed: their kind reloads after it.
+                    let removes = self.feedDevices.map { content.removesDevices(since: $0) } ?? false
+                    self.feedDevices = content
+                    await self.feed.writeAndWait(.devices, removing: removes ? [.devices] : [])
+                }
+                // A reading that waited for the planner's interval is in the feed already.
                 await self.evaluateDevices()
                 await self.reload(removed: self.planner.pendingRemovals(at: .now))
             }
