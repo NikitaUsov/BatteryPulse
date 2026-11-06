@@ -51,9 +51,9 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
     }
 
     /// The widgets the extension declares today: 0.6.x's Battery kind, configurable, the
-    /// Accessories kind and the History kind. Battery's Details is an entity, whose ids are
-    /// ``BatteryWidgetField``'s raw values; Battery's History chart, Accessories' Hide fully
-    /// charged and History's Statistics are Bools.
+    /// Accessories kind, the History kind and the iPhone & iPad kind. Battery's Details is an
+    /// entity, whose ids are ``BatteryWidgetField``'s raw values; Battery's History chart,
+    /// Accessories' Hide fully charged and History's Statistics are Bools.
     static let shipping = WidgetIntentManifest(kinds: [
         Kind(
             .battery, families: [.small, .medium, .large],
@@ -86,6 +86,13 @@ struct WidgetIntentManifest: Codable, Sendable, Equatable {
                     Parameter(name: "period", values: HistoryWidgetPeriod.allCases.map(\.rawValue)),
                     Parameter(name: "series", values: HistoryWidgetSeries.allCases.map(\.rawValue)),
                     Parameter(name: "statistics"),
+                ])),
+        Kind(
+            .devices, families: [.small, .medium, .large],
+            intent: Intent(
+                type: "DevicesWidgetIntent",
+                parameters: [
+                    Parameter(name: "show", values: DevicesWidgetShow.allCases.map(\.rawValue))
                 ])),
     ])
 

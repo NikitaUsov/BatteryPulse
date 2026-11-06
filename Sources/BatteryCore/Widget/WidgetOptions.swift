@@ -24,6 +24,9 @@ public enum WidgetKindID: String, Sendable, CaseIterable {
     case accessories = "io.github.nikitausov.BatteryPulse.accessories"
     /// The History widget, which charts what the app's feed carries (``WidgetFeed``).
     case history = "io.github.nikitausov.BatteryPulse.history"
+    /// The iPhone & iPad widget, which shows the remembered devices' last readings from the app's
+    /// feed.
+    case devices = "io.github.nikitausov.BatteryPulse.devices"
 
     /// The trigger of the widget's `widget.timeline` signpost: the kind's short name, never its
     /// string, so every part of the `perf` line stays static text.
@@ -32,6 +35,7 @@ public enum WidgetKindID: String, Sendable, CaseIterable {
         case .battery: "battery"
         case .accessories: "accessories"
         case .history: "history"
+        case .devices: "devices"
         }
     }
 }
@@ -145,6 +149,18 @@ public enum HistoryWidgetPeriod: String, Sendable, CaseIterable {
     case day
     /// The last 7 days, in the feed's steps of 2 hours.
     case week
+}
+
+/// Which of the remembered iPhones and iPads the iPhone & iPad widget shows: one of them, the
+/// most recently read or the lowest, or all of them, as many as the size has room for. Small has
+/// room for one, so All shows the most recently read there.
+public enum DevicesWidgetShow: String, Sendable, CaseIterable {
+    /// The device BatteryPulse read last: the one most likely in hand or on its cable.
+    case mostRecent
+    /// The device with the lowest charge, the one to charge next.
+    case lowest
+    /// Every device, the most recently read first.
+    case all
 }
 
 /// Which accessories the Accessories widget lists in medium and large; small always shows the

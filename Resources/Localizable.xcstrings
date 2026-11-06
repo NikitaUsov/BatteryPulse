@@ -1860,6 +1860,17 @@
         }
       }
     },
+    "Choose iPhone and iPad": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать iPhone и iPad"
+          }
+        }
+      }
+    },
     "Choose what the Battery widget shows.": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: the Battery widget configuration's description",
@@ -1892,6 +1903,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите, аккумуляторы каких аксессуаров показывает виджет."
+          }
+        }
+      }
+    },
+    "Choose which iPhones and iPads the widget shows.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, какие iPhone и iPad показывает виджет."
           }
         }
       }
@@ -2039,6 +2061,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подключите клавиатуру, мышь, трекпад или наушники Bluetooth, и здесь появится уровень их заряда."
+          }
+        }
+      }
+    },
+    "Connect an iPhone or iPad with a cable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите iPhone или iPad кабелем"
           }
         }
       }
@@ -4356,6 +4389,17 @@
         }
       }
     },
+    "Lowest charge": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С наименьшим зарядом"
+          }
+        }
+      }
+    },
     "Lowest only": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: what the Accessories widget shows, the accessory with the lowest charge alone",
@@ -4677,6 +4721,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ещё"
+          }
+        }
+      }
+    },
+    "Most recently read": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считанный последним"
           }
         }
       }
@@ -7440,6 +7495,17 @@
         }
       }
     },
+    "The charge of your iPhone and iPad, as BatteryPulse last read it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд iPhone и iPad по последним данным BatteryPulse."
+          }
+        }
+      }
+    },
     "The charts start over. This can't be undone.": {
       "extractionState": "manual",
       "localizations": {
@@ -8047,6 +8113,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Включить"
+          }
+        }
+      }
+    },
+    "Turn on Read iPhone and iPad batteries in BatteryPulse": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в BatteryPulse"
           }
         }
       }

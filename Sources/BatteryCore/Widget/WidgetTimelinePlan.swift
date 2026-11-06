@@ -100,6 +100,37 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
         return WidgetTimelinePlan(entries: entries, nextReload: date.addingTimeInterval(historyRefreshInterval))
     }
 
+    /// The iPhone & iPad widget's timeline: the feed as read now and a new read every half hour,
+    /// as the Accessories widget's, with up to two entries before it: local midnight, when a read
+    /// time of today turns into its date, if it comes before the reload; and the moment the feed
+    /// turns two hours old (``WidgetFeed/outdatedAge``), when the widget adds "Open BatteryPulse
+    /// to update" to its last readings, at least ``minimumReloadInterval`` after the first entry.
+    /// Both show only if WidgetKit postpones the reload past them. `writtenAt` is the feed's;
+    /// without a feed, the midnight entry alone may follow.
+    public static func devices(writtenAt: Date?, at date: Date, timeZone: TimeZone) -> WidgetTimelinePlan {
+        let next = date.addingTimeInterval(refreshInterval)
+        let outdated = writtenAt?.addingTimeInterval(WidgetFeed.outdatedAge)
+        var dates = [date]
+        let calendar = HistoryDay.gregorian(in: timeZone)
+        if let midnight = calendar.nextDate(
+            after: date, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime),
+            midnight < next
+        {
+            dates.append(midnight)
+        }
+        var outdatedEntry: Date?
+        if let outdated, outdated > date {
+            outdatedEntry = max(outdated, date.addingTimeInterval(minimumReloadInterval))
+        }
+        if let outdatedEntry, !dates.contains(outdatedEntry) { dates.append(outdatedEntry) }
+        let entries = dates.sorted().map { entry in
+            Entry(
+                date: entry, showsEstimate: false,
+                isStale: outdated.map { entry >= $0 } == true || entry == outdatedEntry)
+        }
+        return WidgetTimelinePlan(entries: entries, nextReload: next)
+    }
+
     private init(entries: [Entry], nextReload: Date) {
         self.entries = entries
         self.nextReload = nextReload

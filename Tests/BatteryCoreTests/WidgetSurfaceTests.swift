@@ -12,13 +12,14 @@ struct WidgetSurfaceTests {
         #expect(
             WidgetKindID.allCases.map(\.rawValue) == [
                 "io.github.nikitausov.BatteryPulse.battery", "io.github.nikitausov.BatteryPulse.accessories",
-                "io.github.nikitausov.BatteryPulse.history",
+                "io.github.nikitausov.BatteryPulse.history", "io.github.nikitausov.BatteryPulse.devices",
             ])
     }
 
     /// The `widget.timeline` signpost's triggers, which measurements compare by name.
     @Test func timelineSignpostTriggers() {
-        #expect(WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories", "history"])
+        #expect(
+            WidgetKindID.allCases.map(\.signpostName.description) == ["battery", "accessories", "history", "devices"])
     }
 
     @Test func sizes() {
@@ -47,6 +48,7 @@ struct WidgetSurfaceTests {
             HistoryWidgetSeries.allCases.map(\.rawValue) == [
                 "charge", "batteryPower", "temperature", "capacityToDesign", "cycleCount",
             ])
+        #expect(DevicesWidgetShow.allCases.map(\.rawValue) == ["mostRecent", "lowest", "all"])
     }
 
     /// The pages' strings, which `@SceneStorage("mainSelection")` keeps and a click names.
@@ -97,7 +99,10 @@ struct WidgetSurfaceTests {
               "intent": {"type": "HistoryWidgetIntent", "parameters": [
                 {"name": "period", "values": ["day", "week"]},
                 {"name": "series", "values": ["charge", "batteryPower", "temperature", "capacityToDesign", "cycleCount"]},
-                {"name": "statistics"}]}}]}
+                {"name": "statistics"}]}},
+              {"kind": "io.github.nikitausov.BatteryPulse.devices", "families": ["small", "medium", "large"],
+              "intent": {"type": "DevicesWidgetIntent", "parameters": [
+                {"name": "show", "values": ["mostRecent", "lowest", "all"]}]}}]}
             """
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }

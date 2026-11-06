@@ -19,6 +19,10 @@ import Foundation
 ///   ``historyInterval``; a change that waited reloads once the interval has passed, if the plug
 ///   still differs from what the kind last showed. Its timeline refreshes hourly in between
 ///   (``WidgetTimelinePlan/history(writtenAt:at:)``).
+/// - **iPhone & iPad:** a new reading that moved a device's charge ``deviceStep`` points, changed
+///   its state or read a device for the first time, at most once per ``devicesInterval``; a
+///   change that waited reloads once the interval has passed. Its timeline refreshes every half
+///   hour in between (``WidgetTimelinePlan/devices(writtenAt:at:timeZone:)``).
 ///
 /// The app never reads a placed widget's configuration, so one plan serves every configuration
 /// and accepts the odd reload a widget doesn't need. Each kind's first evaluation is the value the
@@ -36,6 +40,10 @@ public struct WidgetReloadPlanner: Sendable {
     static let accessoryInterval: TimeInterval = 15 * 60
     /// The least time between two reloads of the History kind.
     static let historyInterval: TimeInterval = 60 * 60
+    /// In percentage points of any iPhone's or iPad's charge.
+    static let deviceStep = 3
+    /// The least time between two reloads of the iPhone & iPad kind for a new reading.
+    static let devicesInterval: TimeInterval = 15 * 60
 
     /// Why a kind reloads; logged as its case name.
     public enum Reason: String, Sendable, CaseIterable {
@@ -60,6 +68,9 @@ public struct WidgetReloadPlanner: Sendable {
         case level
         /// The adapter was plugged in or out: the History kind's charging stretches.
         case plug
+        /// An iPhone or iPad was read for the first time, or its charge moved
+        /// ``WidgetReloadPlanner/deviceStep`` points, or its state changed.
+        case reading
     }
 
     /// What the Battery widget shows besides ``WidgetReloadPolicy``'s values, as of its last reload.
@@ -127,6 +138,39 @@ public struct WidgetReloadPlanner: Sendable {
         }
     }
 
+    /// Each real device's charge and state, by its key, as of the iPhone & iPad kind's last
+    /// reload.
+    private struct DevicesShown: Sendable {
+        struct Reading: Sendable, Equatable {
+            var percent: Int?
+            var state: ChargeState
+        }
+
+        var readings: [DeviceKey: Reading]
+
+        init(_ devices: [RememberedDevice]) {
+            readings = Dictionary(
+                devices.filter { $0.id != .demo }.map { device in
+                    let percent = device.battery?.chargePercent.flatMap { $0.isFinite ? Int($0.rounded()) : nil }
+                    return (device.id, Reading(percent: percent, state: device.battery?.chargeState ?? .unknown))
+                },
+                uniquingKeysWith: { first, _ in first })
+        }
+
+        /// A device read for the first time, or one both have whose charge moved
+        /// ``WidgetReloadPlanner/deviceStep`` points or whose state changed.
+        func moved(to next: DevicesShown) -> Bool {
+            next.readings.contains { key, reading in
+                guard let shown = readings[key] else { return true }
+                if reading.state != shown.state { return true }
+                guard let percent = reading.percent, let shownPercent = shown.percent else {
+                    return (reading.percent == nil) != (shown.percent == nil)
+                }
+                return abs(percent - shownPercent) >= WidgetReloadPlanner.deviceStep
+            }
+        }
+    }
+
     private var policy = WidgetReloadPolicy()
     private var batteryShown: BatteryShown?
     /// Whether the Mac runs hot, with the heat alert's hysteresis over every evaluation, reloaded
@@ -142,6 +186,8 @@ public struct WidgetReloadPlanner: Sendable {
     private var historyPlugged: Bool?
     private var historyStarted = false
     private var lastHistoryReload: Date?
+    private var devicesShown: DevicesShown?
+    private var lastDevicesReload: Date?
 
     public init() {}
 
@@ -225,6 +271,26 @@ public struct WidgetReloadPlanner: Sendable {
         historyPlugged = plugged
         lastHistoryReload = date
         return .plug
+    }
+
+    /// Why the iPhone & iPad kind reloads for the remembered `devices` now, or `nil` when it
+    /// waits; records the reload. The first evaluation records `devices` and returns `nil`, Demo
+    /// Mode's device never counts, and a device no longer remembered only leaves the record:
+    /// Forget reloads through the removal that rewrites the feed.
+    public mutating func devices(_ devices: [RememberedDevice], at date: Date) -> Reason? {
+        let next = DevicesShown(devices)
+        guard var shown = devicesShown else {
+            devicesShown = next
+            return nil
+        }
+        shown.readings = shown.readings.filter { next.readings[$0.key] != nil }
+        guard shown.moved(to: next), Self.hasPassed(Self.devicesInterval, since: lastDevicesReload, at: date) else {
+            devicesShown = shown
+            return nil
+        }
+        devicesShown = next
+        lastDevicesReload = date
+        return .reading
     }
 
     /// Whether `interval` has passed since `last`; with no `last`, or a clock set back before it,

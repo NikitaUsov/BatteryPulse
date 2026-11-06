@@ -64,6 +64,14 @@ struct WidgetWordTests {
         }
     }
 
+    /// The iPhone & iPad widget's messages and its name for a device without one.
+    @Test func devicesWords() {
+        for reason in DevicesWidgetEmptyReason.allCases {
+            #expect(reason.message.key == reason.messageKey, "\(reason)")
+        }
+        #expect(DeviceWidgetName.unknown.phrase == .key("Unknown Device"))
+    }
+
     @Test func thermalStates() {
         for state in ThermalState.allCases {
             #expect(WidgetPhrase.key(state.title.key) == state.phrase, "\(state)")
