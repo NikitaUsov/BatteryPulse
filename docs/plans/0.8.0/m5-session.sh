@@ -5915,15 +5915,19 @@ limit_number_of() {
   awk '{ n = split($0, w, /[^0-9]+/); for (i = 1; i <= n; i++) if (w[i] != "" && w[i] + 0 >= 50 && w[i] + 0 <= 100) { print w[i] + 0; exit } }' <<<"$1"
 }
 
-# limit_sample <tag> <battlimit's number or none>: A-2's scripts/charge-limit-sample.swift (A-2
-# item 6) on powerd's file, called as `xcrun swift scripts/charge-limit-sample.swift <powerd's
-# file> <the redacted copy>`: it copies the file, zeroes bootSessionUUID, the token's bytes and
-# owner's value in place, checks that the copy still decodes to the same number and prints it.
-# The copy, battlimit's verbatim text and defaults' beside it, wait in samples/ for his yes before
-# send (powerd-charging-<n>-<tag>.*: A-2's fixtures are named by the number). Until A-2 lands the
-# script: "not run". Prints one phrase.
+# limit_sample <tag>: A-2's scripts/charge-limit-sample.swift (A-2 item 6) on powerd's file, called
+# as `xcrun swift scripts/charge-limit-sample.swift <powerd's file> <the redacted copy>`: it copies
+# the file, zeroes bootSessionUUID, the token's bytes and owner's value in place, checks that the
+# copy still decodes to the same number and prints it. The copy, battlimit's verbatim text and
+# defaults' beside it, wait in samples/ for his yes before send, named by the read's tag alone
+# (<tag>-powerd-charging.plist, <tag>-battlimit.txt, <tag>-batteryui.txt), never by a number
+# battlimit_value read: the verbatim text is what checks battlimit_value (T-1 item 2), and a name
+# taken from its own reading would pass any misread. A-2's fixtures take the number the policy
+# decodes to (powerd-charging-<n>.plist, -none at 100 %), battlimit's text beside one the same
+# number (powerd-charging-<n>-battlimit.txt), which the dry run holds battlimit_value to. Until A-2
+# lands the script: "not run". Prints one phrase.
 limit_sample() {
-  local tag="$1" number="$2" script="$ROOT/scripts/charge-limit-sample.swift" base log
+  local tag="$1" script="$ROOT/scripts/charge-limit-sample.swift" base log
   [ -f "$script" ] || {
     echo "not run: no scripts/charge-limit-sample.swift at the frozen commit"
     return 0
@@ -5933,14 +5937,15 @@ limit_sample() {
     return 0
   }
   mkdir -p "$WORK/samples"
-  base="$WORK/samples/powerd-charging-$number-$tag"
+  base="$WORK/samples/$tag"
   log="$LIMIT_DIR/$tag-sample.txt"
-  if (cd "$ROOT" && xcrun swift "$script" "$LIMIT_PLIST" "$base.plist") >"$log" 2>&1 && [ -s "$base.plist" ]; then
+  if (cd "$ROOT" && xcrun swift "$script" "$LIMIT_PLIST" "$base-powerd-charging.plist") >"$log" 2>&1 &&
+    [ -s "$base-powerd-charging.plist" ]; then
     cp "$LIMIT_DIR/$tag-battlimit.txt" "$base-battlimit.txt"
     cp "$LIMIT_DIR/$tag-batteryui.txt" "$base-batteryui.txt"
-    echo "saved $(basename "$base").plist, its decoded number: $(limit_number_of "$(tail -1 "$log")" || true)"
+    echo "saved $tag-powerd-charging.plist, its decoded number: $(limit_number_of "$(tail -1 "$log")" || true)"
   else
-    rm -f "$base.plist"
+    rm -f "$base-powerd-charging.plist"
     echo "failed: $(tail -1 "$log" | cut -c1-100)"
   fi
 }
@@ -5998,7 +6003,7 @@ limit_read() {
     policy=none
   fi
   if on_battery; then power=battery; else power=ac; fi
-  sample="$(limit_sample "$tag" "${battlimit:-none}")"
+  sample="$(limit_sample "$tag")"
   mkdir -p "$WORK"
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$tag" "$since" "$power" "${battlimit:-none}" "${key:--}" "${number:--}" \
     "$(if [ -n "$line" ]; then echo yes; else echo no; fi)" "$(printf '%s' "$policy" | tr '\t' ' ')" "$(printf '%s' "$sample" | tr '\t' ' ')" >>"$LIMIT_TABLE"
@@ -6448,10 +6453,11 @@ dry_run() {
   (privacy_lint "$report" >/dev/null 2>&1) && check ok "the privacy lint passes a clean report" ||
     check fail "the privacy lint refused a clean report"
   # T-1 item 2: these two forms are Session A's paraphrase of pmset -g battlimit, not its verbatim
-  # text, which only A-2's sample brings (the look shoot saves it as samples/powerd-charging-<n or
-  # none>-<tag>-battlimit.txt). Each such file in the repository, beside A-2's fixtures or in a
-  # session's results, must read as the number its name carries; until one is there, the parse
-  # stays unverified, for A-2 to close.
+  # text, which only A-2's sample brings (the look shoot saves it as samples/<tag>-battlimit.txt,
+  # named by the read alone). Committed beside A-2's fixtures, it takes the number its policy
+  # decodes to, A-2's parser's and not battlimit_value's (powerd-charging-<n or none>-battlimit.txt,
+  # as powerd-charging-<n>.plist), and must read as that number: a name from battlimit_value's own
+  # reading would pass any misread. Until one is there, the parse stays unverified, for A-2 to close.
   [ "$(battlimit_value <(printf ' Battery level limits:\n  chargeSocLimitSoc = 80\n'))" = 80 ] &&
     check ok "battlimit's chargeSocLimitSoc reads as the limit [Session A's paraphrase]" || check fail "battlimit's value isn't read"
   [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none [Session A's paraphrase]" ||
@@ -6460,16 +6466,18 @@ dry_run() {
   while IFS= read -r file; do
     [ -n "$file" ] || continue
     found=$((found + 1))
-    want="$(basename "$file" | sed -n 's/^powerd-charging-\([0-9a-z]*\)-.*battlimit\.txt$/\1/p')"
+    want="$(basename "$file" | sed -E -n 's/^powerd-charging-([0-9]+|none)(-[A-Za-z0-9.]+)*-battlimit\.txt$/\1/p')"
     got="$(battlimit_value "$file")"
-    if { [ "$want" = none ] && [ -z "$got" ]; } || { [ -n "$got" ] && [ "$got" = "$want" ]; }; then
-      check ok "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}"
+    if [ -z "$want" ]; then
+      check fail "battlimit's verbatim $(basename "$file") isn't named powerd-charging-<the number its policy decodes to, or none>-battlimit.txt"
+    elif { [ "$want" = none ] && [ -z "$got" ]; } || { [ -n "$got" ] && [ "$got" = "$want" ]; }; then
+      check ok "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, the number its policy decodes to"
     else
-      check fail "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, not ${want:-the number in its name}: battlimit_value misreads it"
+      check fail "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, not $want, the number its policy decodes to: battlimit_value misreads it"
     fi
   done < <(find "$ROOT/Tests/BatteryCoreTests/Fixtures" "$HERE/sessions" -type f -name 'powerd-charging-*battlimit*.txt' 2>/dev/null | sort)
   [ "$found" -gt 0 ] ||
-    echo "unverified: pmset -g battlimit's verbatim text: no A-2 sample (powerd-charging-*-battlimit.txt) yet, so the forms above are Session A's paraphrase (T-1 item 2)"
+    echo "unverified: pmset -g battlimit's verbatim text: no A-2 sample beside its fixture yet (powerd-charging-<n or none>-battlimit.txt, named by the number its policy decodes to), so the forms above are Session A's paraphrase (T-1 item 2)"
   # The feed's facts on W-5's format (WidgetFeed.encoded: compact, sorted keys, dates in seconds).
   feed="$WORK/feed.json"
   printf '%s' '{"day":{"batteryWatts10":[null,-52,null],"percent":[null,81,80],"plugged":[null,false,false],"start":1730800800,"step":900,"temperature10":[null,301,null]},"devices":[{"deviceClass":"iPhone","key":"0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d","name":"Phone","percent":64,"readAt":1730801400,"state":"charging"},{"key":"9f8e7d6c5b4a39281706f5e4d3c2b1a0","state":"unknown"}],"languages":["ru","en"],"readsDevices":true,"recordsHistory":true,"version":1,"writtenAt":1730801700}' >"$feed"
