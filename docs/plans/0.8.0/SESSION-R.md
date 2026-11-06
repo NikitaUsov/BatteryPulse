@@ -5,9 +5,9 @@
 > candidates (PLAN.md W-16), with 0.7.1's own checks (W-17); 0.7.1 ran only its short feed check,
 > Session F, and at its release this file and its tools were copied here from `docs/plans/0.7.1/`
 > for 0.8's M5 sessions, which re-point them. PLAN.md and its § references are 0.7.1's
-> `docs/plans/0.7.1/PLAN.md`, readable at `<keep>` in the 0.7.1 release PR's head; 0.7's package
-> IDs (W-3b, W-11, W-13) are 0.7.0's `docs/plans/0.7.0/PLAN.md`, readable at
-> `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`.
+> `docs/plans/0.7.1/PLAN.md`, readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1
+> release PR's head; 0.7's package IDs (W-3b, W-11, W-13) are 0.7.0's `docs/plans/0.7.0/PLAN.md`,
+> readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`.
 
 Session R of BatteryPulse 0.7.1 runs on the release candidates on the MacBook Air M5. One local
 Claude Code session with computer use does every step itself, through `m5-session.sh` and its `ui`

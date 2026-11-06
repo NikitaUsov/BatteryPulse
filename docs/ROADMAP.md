@@ -898,12 +898,13 @@ Limit shown; released on 2026-10-31. The plan, removed at the release, is readab
 `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head` (`docs/plans/0.7.0/PLAN.md` there,
 with the widget design it took from 0.6.2's plan beside it); what 0.7 didn't build moved to
 `docs/plans/0.7.1/widgets.md`, and its Appendix C and session tools were copied to
-`docs/plans/0.7.1/`, a folder that left at 0.7.1's release in turn (readable at `<keep>` in the
-0.7.1 release PR's head; the tools moved on to `docs/plans/0.8.0/`). Three sittings at the desk,
-answered on CI's pictures (2026-10-31): the look check, a second look and a layout confirmation. No
-M5 session: the maintainer released 0.7.0 without Session R and its logged day (2026-10-31), so
-nothing of 0.7 was seen on the M5 before the release, only in CI. 0.7.1's short feed check saw a few
-of 0.7's checks (below), and the rest wait for 0.8's M5 session.
+`docs/plans/0.7.1/`, a folder that left at 0.7.1's release in turn (readable at
+`dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head; the tools moved on to
+`docs/plans/0.8.0/`). Three sittings at the desk, answered on CI's pictures (2026-10-31): the look
+check, a second look and a layout confirmation. No M5 session: the maintainer released 0.7.0 without
+Session R and its logged day (2026-10-31), so nothing of 0.7 was seen on the M5 before the release,
+only in CI. 0.7.1's short feed check saw a few of 0.7's checks (below), and the rest wait for 0.8's
+M5 session.
 
 - [x] Widget customization: the Battery widget's own edit sheet (App Intents, Edit Widget)
   chooses what it shows, with Automatic keeping a placed widget's look: Layout (Automatic or
@@ -964,7 +965,7 @@ of 0.7's checks (below), and the rest wait for 0.8's M5 session.
   rendering modes, VoiceOver, the Battery and Accessories widgets' clicks and a click with
   BatteryPulse quit, the Charge Limit's hold, the version count and the JSON's dates. 0.8's M5
   session runs them (the list: `docs/plans/0.7.1/widgets.md`, "0.7's M5 checks", readable at
-  `<keep>` in the 0.7.1 release PR's head)
+  `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head)
 - [ ] A week after publishing: v0.7.0's DMG, signature and `BatteryPulse-count.txt` downloads in
   the Releases table, from `scripts/release-stats.swift`. Not due at 0.7.1's release: v0.7.0 was
   published at 16:28 UTC on 2026-10-31, so its week ends at 16:28 UTC on 2026-11-07 (its count file
@@ -1039,17 +1040,18 @@ Decisions that last beyond 0.7:
 
 What 0.7 left for the release after it, before 0.8, as the maintainer decided on 2026-10-31, and
 Settings that fit the screen; released on 2026-11-06. The plan, removed at the release, is readable
-at `<keep>` in the 0.7.1 release PR's head (`docs/plans/0.7.1/PLAN.md` there, with what 0.7 left
-for it, `widgets.md`, 0.7.0's Appendix C and Session F's report beside it); its Appendix C was
-copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`, and the session tools moved to
-`docs/plans/0.8.0/` for 0.8's M5 sessions. Three looks at the desk, answered on CI's pictures in
-English and Russian: Look 1 (the History widget and the large Battery widget's chart) and Look 2
-(the iPhone & iPad widget) together, with every decided answer and two additions (the large History
-widget's statistics follow the chart's period; the medium widget for one device shows cycle count
-and temperature too), and Look 3 (2026-11-06), every new widget laid out alike in both languages.
-On the M5, in place of the full session and its logged day, the short feed check (Session F, the
-maintainer's choice, 2026-11-06): his start and his yes to send, with about half an hour hands-free
-between them, on the release candidate over his 0.7.0, which came back at the end.
+at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head
+(`docs/plans/0.7.1/PLAN.md` there, with what 0.7 left for it, `widgets.md`, 0.7.0's Appendix C and
+Session F's report beside it); its Appendix C was copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`,
+and the session tools moved to `docs/plans/0.8.0/` for 0.8's M5 sessions. Three looks at the desk,
+answered on CI's pictures in English and Russian: Look 1 (the History widget and the large Battery
+widget's chart) and Look 2 (the iPhone & iPad widget) together, with every decided answer and two
+additions (the large History widget's statistics follow the chart's period; the medium widget for
+one device shows cycle count and temperature too), and Look 3 (2026-11-06), every new widget laid
+out alike in both languages. On the M5, in place of the full session and its logged day, the short
+feed check (Session F, the maintainer's choice, 2026-11-06): his start and his yes to send, with
+about half an hour hands-free between them, on the release candidate over his 0.7.0, which came back
+at the end.
 
 - [x] The small copy of the last readings the app writes for the widgets (the feed, W-5), in a
   folder only the user can read, which the widget reads through one read-only sandbox exception;

@@ -46,13 +46,14 @@ as it stood:
    release: its evidence is CI's and the look checks he answered on CI's pictures. §3.2's exit
    criterion "Seen before release" is set aside by that decision, and QUA-16, 0.7's own M5 session,
    moves to 0.7.1's M5 session (`docs/plans/0.7.1/widgets.md`, "0.7's M5 checks", readable since
-   0.7.1's release at `<keep>` in the 0.7.1 release PR's head).
+   0.7.1's release at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head).
 2. **The stretch and the widget's language go to 0.7.1, not 1.1:** FEA-10, FEA-11 and FEA-12, with
    SEC-08 and DOC-08 (W-5 to W-7: the feed, the History widget and the iPhone & iPad widget), and the
    widget following the app's own language (plan-0.7.0 W-0 item 8). So by his decision the feed's
    new file and the widget's read-only exception come in a 0.7.x release, announced in its notes,
    where §3.2 had held them for a minor release under the frozen-outputs rule. Their design is in
-   `docs/plans/0.7.1/widgets.md`, readable since 0.7.1's release at `<keep>` in the 0.7.1 release PR's head.
+   `docs/plans/0.7.1/widgets.md`, readable since 0.7.1's release at
+   `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head.
 3. **NEW-13, the backup release key, goes to 0.8.** The build-number clock (plan-0.7.0 D1), a
    technical choice, comes before 0.7.1's first candidate; 0.7.0 takes `release.yml`'s run number,
    above 0.6.2's 8.
@@ -61,7 +62,8 @@ as it stood:
    then 0.8 (ROADMAP's versions table).
 
 **Updated 2026-11-06, with 0.7.1's packages merged on its integration branch** (before its M5
-session and its release; `docs/plans/0.7.1/PLAN.md` §12, readable at `<keep>` in the 0.7.1 release PR's head):
+session and its release; `docs/plans/0.7.1/PLAN.md` §12, readable at
+`dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head):
 1. **Built for 0.7.1:** FEA-10 (the feed, W-5), FEA-11 (the History widget, with the Battery
    widget's History chart and its two feed details, W-6) and FEA-12 (the iPhone & iPad widget,
    W-7), with SEC-08 (the reader's checks and the feed's modes) and DOC-08 (the privacy line in
@@ -91,9 +93,9 @@ Appendix C and the session tools are in `docs/plans/0.8.0/`.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | file:line | a file in `Sources`, `scripts`, `.github` or `Tests`. The working copy is `eebf748` on `claude/nice-faraday-k08mhb`, which is v0.6.1 (`7622373`) plus 0.6.2's plan, so these lines are v0.6.1's |
-| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, went on to `docs/plans/0.7.1/widgets.md`, removed at 0.7.1's release and readable at `<keep>` in the 0.7.1 release PR's head; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
-| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C was copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build went to `docs/plans/0.7.1/widgets.md`, both readable at `<keep>` in the 0.7.1 release PR's head |
-| plan-0.7.1 | 0.7.1's plan, `docs/plans/0.7.1/PLAN.md`, removed at 0.7.1's release: readable at `<keep>` in the 0.7.1 release PR's head, with Session F's report beside it (`sessions/F.md`). Its Appendix C is copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`, and the session tools moved to `docs/plans/0.8.0/` |
+| P2 | the verified 0.6.2 plan (section, package `WP-…`/`W-…`, or question `Q-…`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, went on to `docs/plans/0.7.1/widgets.md`, removed at 0.7.1's release and readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
+| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C was copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build went to `docs/plans/0.7.1/widgets.md`, both readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head |
+| plan-0.7.1 | 0.7.1's plan, `docs/plans/0.7.1/PLAN.md`, removed at 0.7.1's release: readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head, with Session F's report beside it (`sessions/F.md`). Its Appendix C is copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`, and the session tools moved to `docs/plans/0.8.0/` |
 | INV | `docs/plans/1.0/INVENTORY.md`; its row IDs (`FEA-01` …) are used throughout |
 | P1, PB, RES-x | the 0.6.1 plan, playbook and research files in `6aec4d2:docs/plans/0.6.1/` (in PR 11's history) |
 | V, Q, D | the three independent proposals for 1.0 this roadmap judged: user value (V), quality and trust (Q), distribution and platform (D); working notes, not in the repository |
@@ -693,9 +695,10 @@ optional steps.
      (`0.6.2-appendix-c.md`) and Session A's report (`sessions/A.md` with its files) into
      `docs/plans/0.7.0/`, beside `widgets.md`, which reach main with 0.6.2's squash merge; the
      release PR's `refs/pull/12/head` keeps 0.6.2's whole plan reachable either way (plan-0.7.0
-     D-1, D-11). That folder left at 0.7.0's release in turn, after its session tools were
-     copied to `docs/plans/0.7.1/` (readable at the commit plan-0.7.0 names), which left at
-     0.7.1's release in turn, after they moved on to `docs/plans/0.8.0/` (readable at `<keep>` in the 0.7.1 release PR's head).
+     D-1, D-11). That folder left at 0.7.0's release in turn, after its session tools were copied to
+     `docs/plans/0.7.1/` (readable at the commit plan-0.7.0 names), which left at 0.7.1's release in
+     turn, after they moved on to `docs/plans/0.8.0/` (readable at
+     `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head).
   7. **A second step of 0.6.2's D3, and of every later release (NEW-23):** a week after publishing,
      run `swift scripts/release-stats.swift` and record its counts in ROADMAP's Releases table.
      0.6.2's D3 adds the two columns (DMG, `.sig`) and fills them for the earlier releases from

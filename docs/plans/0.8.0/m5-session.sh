@@ -4,9 +4,10 @@
 # maintainer's decision, 2026-10-31), and re-pointed at 0.7.1 (PLAN.md W-16), which ran only its
 # short feed check, Session F; copied again from docs/plans/0.7.1/ at 0.7.1's release for 0.8's M5
 # sessions, which re-point it. PLAN.md and a bare § below are 0.7.1's docs/plans/0.7.1/PLAN.md,
-# readable at <keep> in the 0.7.1 release PR's head; plan-0.7.0, and 0.7's package, decision and
-# step IDs (W-12, D-17, step 12), are 0.7.0's docs/plans/0.7.0/PLAN.md, readable at
-# ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
+# readable at dbc696a979b0cad265ae554d1e6d69db1eac1572 in the 0.7.1 release PR's head; plan-0.7.0,
+# and 0.7's package, decision and step IDs (W-12, D-17, step 12), are 0.7.0's
+# docs/plans/0.7.0/PLAN.md, readable at ebe654772c7f06d5e136327e0e6a236fed71cdc9 in
+# refs/pull/13/head.
 #
 #   bash docs/plans/0.8.0/m5-session.sh help
 #
