@@ -248,8 +248,8 @@ struct WidgetTextBudgetTests {
             }
         }
         // The History widget, medium and large, the whole width: the chart's name beside its
-        // latest value, and in large the last 24 hours' figures as rows of a label and its value,
-        // each on one line.
+        // latest value, and in large the period's figures as rows of a label and its value, each on
+        // one line: the last 24 hours' or 7 days', whose time on battery has three digits of hours.
         for language in Language.allCases {
             let f = try formatter(language)
             for size in [WidgetSize.medium, .large] {
@@ -266,7 +266,8 @@ struct WidgetTextBudgetTests {
                         HistoryWidgetStatistic.Kind.averageDrain,
                         try perHour(f.percent(99.9, fractionDigits: 1), language)
                     ),
-                    (.onBattery, [f.duration(minutes: 23 * 60 + 59)]), (.chargingSessions, ["9,999"]),
+                    (.onBattery, [f.duration(minutes: 23 * 60 + 59), f.duration(minutes: 7 * 24 * 60 - 1)]),
+                    (.chargingSessions, ["9,999"]),
                 ]
                 for (kind, values) in statistics where size == .large {
                     let label = try choices([kind.labelKey], language)
@@ -299,6 +300,20 @@ struct WidgetTextBudgetTests {
             }
             for line in states + updated {
                 check(oneLine([line], Budget.lineWidth(.small)), line, "a device's line, small")
+            }
+            // One device's details in medium: rows beside its block, the medium Battery widget's
+            // place, each label in the form that place shows (Look 2's answer added cycle count and
+            // temperature to maximum capacity).
+            for field in DevicesWidgetPlan.detailFields(.medium) {
+                let shown = try Self.label(field, field.labelForm(in: .medium, locale: language.locale), language)
+                for value in try widestValues(field, language) {
+                    let fits =
+                        shown.map {
+                            Budget.fits(
+                                Self.before(field, value, .medium) + Budget.width($0), in: Budget.detailWidth(.medium))
+                        } ?? oneLine([value], Budget.detailWidth(.medium))
+                    check(fits, "\(shown ?? "") \(value)", "a device's detail, medium")
+                }
             }
             let row = Budget.contentWidth(.medium) - 20 - 8
             for state in states {

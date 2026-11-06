@@ -44,6 +44,7 @@ import Testing
     /// figures, start on battery or daily summaries. The steps stay where they were.
     @Test func clearHistoryLeavesGapsOverTheSameSteps() throws {
         let feed = try Self.feed()
+        #expect(feed.statistics24h != nil && feed.statistics7d != nil)
         let cleared = feed.removing(Self.removal(historyCleared: true))
         let day = try #require(cleared.day)
         let week = try #require(cleared.week)
@@ -55,7 +56,8 @@ import Testing
             #expect(series.temperature10.allSatisfy { $0 == nil })
             #expect(series.plugged.allSatisfy { $0 == nil })
         }
-        #expect(cleared.statistics24h == nil && cleared.onBatterySince == nil && cleared.daily == nil)
+        #expect(cleared.statistics24h == nil && cleared.statistics7d == nil)
+        #expect(cleared.onBatterySince == nil && cleared.daily == nil)
         #expect(cleared.recordsHistory)
         // The devices and everything else stay.
         #expect(cleared.devices == feed.devices && cleared.writtenAt == feed.writtenAt)
@@ -64,7 +66,7 @@ import Testing
         let empty = try #require(
             WidgetFeed.build(WidgetFeedTests.source(devices: [WidgetFeedTests.device(WidgetFeedTests.phone)])))
         #expect(empty.day?.percent == day.percent && empty.week?.plugged == week.plugged)
-        #expect(empty.statistics24h == nil && empty.daily == nil)
+        #expect(empty.statistics24h == nil && empty.statistics7d == nil && empty.daily == nil)
         // The reader takes it.
         #expect(try WidgetFeed.decode(WidgetFeed.encoded(cleared), now: Self.now) == cleared)
     }
@@ -73,7 +75,7 @@ import Testing
         let feed = try Self.feed()
         let off = feed.removing(Self.removal(recordsHistory: false))
         #expect(!off.recordsHistory)
-        #expect(off.day == nil && off.week == nil && off.statistics24h == nil)
+        #expect(off.day == nil && off.week == nil && off.statistics24h == nil && off.statistics7d == nil)
         #expect(off.onBatterySince == nil && off.daily == nil)
         #expect(off.devices == feed.devices)
         // Clearing it too changes nothing more.
@@ -105,6 +107,7 @@ import Testing
         feed.day = nil
         feed.week = nil
         feed.statistics24h = nil
+        feed.statistics7d = nil
         feed.onBatterySince = nil
         feed.daily = nil
         feed.devices = nil

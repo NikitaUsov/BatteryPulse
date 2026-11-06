@@ -31,8 +31,9 @@ struct DevicesWidgetRoot: View {
 
 /// One entry of the iPhone & iPad widget, as ``DevicesWidgetPlan`` laid it out for the size.
 ///
-/// - One device: its charge large, its name, state and read time; medium adds its details beside
-///   it and large under it, as the Battery widget lays out its own.
+/// - One device: its charge large, its name, state and read time; medium adds its maximum
+///   capacity, cycle count and temperature beside it and large under it, as the Battery widget lays
+///   out its own details.
 /// - All: a row per device, its name and charge over its state and read time.
 ///
 /// Names may be their owners' own, so they are privacy sensitive; the numbers stay. A feed over

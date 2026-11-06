@@ -94,6 +94,7 @@ import Testing
         feed.statistics24h = WidgetFeed.Statistics(
             averageDrainPercentPerHour: 999.9, timeOnBattery: WidgetFeed.Bounds.timeOnBattery.upperBound,
             chargingSessions: WidgetFeed.Bounds.sessions.upperBound)
+        feed.statistics7d = feed.statistics24h
         feed.onBatterySince = now.addingTimeInterval(-3_600)
         let longestState = ChargeState.allCases.max { $0.rawValue.utf8.count < $1.rawValue.utf8.count }
         feed.devices = feed.devices?.map { device in
@@ -348,7 +349,10 @@ import Testing
         // 10:00 starts a 2-hour step too.
         #expect(week.date(ofStep: 83) == Date(timeIntervalSince1970: 1_793_872_800))
         #expect(Int(week.start.timeIntervalSince1970) % 7_200 == 0)
-        #expect(WidgetFeed.historyStart(at: Self.now) == week.start)
+        // The samples start at the History page's 7 days, under a step (here 112.5 minutes) before
+        // the week's first.
+        #expect(WidgetFeed.historyStart(at: Self.now) == Self.now.addingTimeInterval(-7 * 86_400))
+        #expect(week.start.timeIntervalSince(WidgetFeed.historyStart(at: Self.now)) == 112.5 * 60)
         #expect(day.percent.last == 50)
         #expect(day.percent.dropLast().allSatisfy { $0 == nil })
     }
@@ -410,6 +414,31 @@ import Testing
         #expect(statistics.averageDrainPercentPerHour == (drain * 10).rounded() / 10)
         // No sample in the last day: no figures.
         #expect(try Self.build(Self.source(samples: [old])).statistics24h == nil)
+    }
+
+    /// The 7 days' figures are the History page's for its 7 days: from the samples since 7 days
+    /// before now, before the week series' first step too.
+    @Test func theWeeksStatisticsAreTheLastSevenDays() throws {
+        let week = 7 * 24 * 60.0
+        // On battery from 7 days ago for 2 hours, from 100% to 76%; then plugged in; then on
+        // battery again for the last 2 hours. A sample just over 7 days old is left out.
+        let first = (0...120).map { Self.sample(week - 1 - Double($0), percent: 100 - Double($0) / 5) }
+        let plugged = Self.sample(week - 130, percent: 76, plugged: true)
+        let last = (0...120).reversed().map { Self.sample(Double($0), percent: 90 - Double(120 - $0) / 20) }
+        let old = Self.sample(week + 1, percent: 100, plugged: true)
+        let feed = try Self.build(Self.source(samples: [old] + first + [plugged] + last))
+        let expected = HistoryStatistics(samples: first + [plugged] + last)
+        let statistics = try #require(feed.statistics7d)
+        #expect(statistics.timeOnBattery == Int(expected.timeOnBattery))
+        #expect(statistics.timeOnBattery == 4 * 3_600)
+        #expect(statistics.chargingSessions == expected.chargingSessions && statistics.chargingSessions == 1)
+        let drain = try #require(expected.averageDrainPercentPerHour)
+        #expect(statistics.averageDrainPercentPerHour == (drain * 10).rounded() / 10)
+        // The day's figures are the last run's alone.
+        #expect(feed.statistics24h == WidgetFeed.Statistics(HistoryStatistics(samples: last)))
+        #expect(feed.statistics(for: .day) == feed.statistics24h && feed.statistics(for: .week) == statistics)
+        // No sample in the last 7 days: no figures.
+        #expect(try Self.build(Self.source(samples: [old])).statistics7d == nil)
     }
 
     // MARK: On battery since
@@ -520,7 +549,8 @@ import Testing
 
     @Test func aFullFeedRoundTrips() throws {
         let feed = try Self.fullFeed()
-        #expect(feed.statistics24h != nil && feed.onBatterySince != nil && feed.daily != nil)
+        #expect(feed.statistics24h != nil && feed.statistics7d != nil)
+        #expect(feed.onBatterySince != nil && feed.daily != nil)
         #expect(try WidgetFeed.decode(Self.data(feed), now: Self.now) == feed)
         #expect(WidgetFeedState(data: try Self.data(feed), now: Self.now) == .feed(feed))
         // Compact: one line, no slash escaped.
@@ -534,12 +564,14 @@ import Testing
         #expect(
             object.keys.sorted() == [
                 "daily", "day", "devices", "languages", "onBatterySince", "readsDevices", "recordsHistory",
-                "statistics24h", "version", "week", "writtenAt",
+                "statistics24h", "statistics7d", "version", "week", "writtenAt",
             ])
         let day = try #require(object["day"] as? [String: Any])
         #expect(day.keys.sorted() == ["batteryWatts10", "percent", "plugged", "start", "step", "temperature10"])
-        let statistics = try #require(object["statistics24h"] as? [String: Any])
-        #expect(statistics.keys.sorted() == ["averageDrainPercentPerHour", "chargingSessions", "timeOnBattery"])
+        for name in ["statistics24h", "statistics7d"] {
+            let statistics = try #require(object[name] as? [String: Any])
+            #expect(statistics.keys.sorted() == ["averageDrainPercentPerHour", "chargingSessions", "timeOnBattery"])
+        }
         let daily = try #require(object["daily"] as? [String: Any])
         #expect(daily.keys.sorted() == ["capacityToDesign10", "cycleCount", "firstDay"])
         let device = try #require((object["devices"] as? [[String: Any]])?.first)
@@ -639,6 +671,9 @@ import Testing
         feed.statistics24h?.averageDrainPercentPerHour = .nan
         #expect(throws: WidgetFeed.Rejection.notFinite) { try feed.validate(now: Self.now) }
         feed = try Self.fullFeed()
+        feed.statistics7d?.averageDrainPercentPerHour = .infinity
+        #expect(throws: WidgetFeed.Rejection.notFinite) { try feed.validate(now: Self.now) }
+        feed = try Self.fullFeed()
         feed.writtenAt = Date(timeIntervalSince1970: .infinity)
         #expect(throws: WidgetFeed.Rejection.notFinite) { try feed.validate(now: Self.now) }
     }
@@ -669,6 +704,8 @@ import Testing
         feed.day?.percent[0] = 101
         feed.week?.batteryWatts10[0] = -1_000_000
         feed.languages = ["ru", "\u{202E}en"]
+        feed.statistics7d = WidgetFeed.Statistics(
+            averageDrainPercentPerHour: 1_000, timeOnBattery: 8 * 86_400, chargingSessions: -1)
         let read = try WidgetFeed.decode(Self.data(feed), now: Self.now)
         #expect(read.devices?.count == 8)
         #expect(read.devices?.allSatisfy { $0.key == Self.phone } == true)
@@ -678,6 +715,10 @@ import Testing
         #expect(read.day?.percent.first == .some(nil))
         #expect(read.week?.batteryWatts10.first == .some(nil))
         #expect(read.languages == ["ru"])
+        #expect(
+            read.statistics7d
+                == WidgetFeed.Statistics(averageDrainPercentPerHour: nil, timeOnBattery: 0, chargingSessions: 0))
+        #expect(read.statistics24h == feed.statistics24h)
     }
 
     @Test func anUnknownStateReadsAsUnknown() throws {

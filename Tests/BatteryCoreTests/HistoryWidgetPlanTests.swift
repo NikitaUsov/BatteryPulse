@@ -37,7 +37,7 @@ struct HistoryWidgetPlanTests {
 
     enum PlanError: Error { case empty }
 
-    /// Medium charts the series; large adds the last 24 hours' figures, unless Statistics is off.
+    /// Medium charts the series; large adds the period's figures, unless Statistics is off.
     @Test func eachFamilyShowsItsParts() throws {
         let feed = Self.feed(percent: [80, 79, 78])
         let medium = try Self.layout(.medium, feed: feed)
@@ -57,6 +57,42 @@ struct HistoryWidgetPlanTests {
         #expect(try Self.layout(.large, feed: none).statistics.map(\.value) == Array(repeating: .text("—"), count: 3))
         #expect(Self.plan(.medium, feed: feed).route.url.absoluteString == "batterypulse://page/history")
         #expect(Self.plan(.medium, feed: nil).route.page == .history)
+    }
+
+    /// Large's figures are the chart's period's, as the History page's are its own: the last 24
+    /// hours' under a 24-hour chart, the last 7 days' under a 7-day chart and under the 90-day
+    /// series, whatever their hidden period.
+    @Test func theFiguresFollowTheChartsPeriod() throws {
+        let feed = WidgetFeed.sample(at: Self.now)
+        let day = try #require(feed.statistics24h)
+        let week = try #require(feed.statistics7d)
+        #expect(day != week)
+        func figures(_ series: HistoryWidgetSeries, _ period: HistoryWidgetPeriod) throws -> [HistoryWidgetStatistic] {
+            try Self.layout(.large, HistoryWidgetConfiguration(period: period, series: series), feed: feed).statistics
+        }
+        let dayFigures = HistoryWidgetStatistic.all(day, formatter: Self.formatter)
+        let weekFigures = HistoryWidgetStatistic.all(week, formatter: Self.formatter)
+        for series in HistoryWidgetSeries.allCases where !series.isDaily {
+            #expect(try figures(series, .day) == dayFigures, "\(series)")
+            #expect(try figures(series, .week) == weekFigures, "\(series)")
+        }
+        for series in HistoryWidgetSeries.allCases where series.isDaily {
+            #expect(try figures(series, .day) == weekFigures, "\(series)")
+            #expect(try figures(series, .week) == weekFigures, "\(series)")
+        }
+        #expect(
+            weekFigures.map(\.value) == [
+                .perHour("3.5%"), .text(Self.formatter.duration(minutes: 96 * 60)), .text("5"),
+            ])
+        // A feed without the week's figures: each "—" under a 7-day chart, the day's still under a
+        // 24-hour one.
+        var dayOnly = feed
+        dayOnly.statistics7d = nil
+        let weekLayout = try Self.layout(.large, HistoryWidgetConfiguration(period: .week), feed: dayOnly)
+        #expect(weekLayout.statistics.map(\.value) == Array(repeating: .text("—"), count: 3))
+        #expect(try Self.layout(.large, feed: dayOnly).statistics == dayFigures)
+        // Medium shows none, whatever the period.
+        #expect(try Self.layout(.medium, HistoryWidgetConfiguration(period: .week), feed: feed).statistics.isEmpty)
     }
 
     /// Without a feed, with recording off or with nothing of the series: a message.
@@ -94,19 +130,23 @@ struct HistoryWidgetPlanTests {
         let f = try WidgetTextBudgetTests.formatter(language)
         let feed = WidgetFeed.sample(at: Self.now)
         for series in HistoryWidgetSeries.allCases {
-            let plan = Self.plan(.large, HistoryWidgetConfiguration(series: series), feed: feed, formatter: f)
-            guard case .history(let layout) = plan else {
-                Issue.record("\(series): \(plan)")
-                continue
-            }
-            let elements = WidgetAccessibility.elements(plan)
-            #expect(elements == [layout.chart.summary.spokenLabel] + layout.statistics.map(\.spokenLabel))
-            for element in elements {
-                let text = try #require(element.text(localize))
-                #expect(!text.contains("%@"), "\(text)")
-            }
-            for key in elements.flatMap(\.keys) {
-                #expect(try WidgetTextBudgetTests.text(key, .russian)?.isEmpty == false, "\(key)")
+            for period in HistoryWidgetPeriod.allCases {
+                let plan = Self.plan(
+                    .large, HistoryWidgetConfiguration(period: period, series: series), feed: feed, formatter: f)
+                guard case .history(let layout) = plan else {
+                    Issue.record("\(series), \(period): \(plan)")
+                    continue
+                }
+                let elements = WidgetAccessibility.elements(plan)
+                #expect(elements == [layout.chart.summary.spokenLabel] + layout.statistics.map(\.spokenLabel))
+                #expect(layout.statistics.count == 3)
+                for element in elements {
+                    let text = try #require(element.text(localize))
+                    #expect(!text.contains("%@"), "\(text)")
+                }
+                for key in elements.flatMap(\.keys) {
+                    #expect(try WidgetTextBudgetTests.text(key, .russian)?.isEmpty == false, "\(key)")
+                }
             }
         }
         #expect(
