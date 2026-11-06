@@ -462,8 +462,10 @@ extension WidgetReloadPlanner {
 /// The answer is asked for only at a reload moment, never on a schedule of its own: before the
 /// first reload, and again while the answer lists no widget of the kind that is due (an empty or
 /// failed answer included) once it is ``maximumAge`` old. So a widget placed since is reloaded
-/// within that time while the app runs, and the counts the app logs follow it. A kind the answer
-/// lists stays placed until the app quits.
+/// within that time while the app runs, and the counts the app logs follow it. Each answer
+/// replaces the one before (``record(answer:at:)``), but a kind the answer lists is never asked
+/// about again: once its last widget is removed, it still counts as placed until an answer asked
+/// for a kind the answer leaves out no longer lists it, or until the app quits.
 public struct WidgetPlacements: Sendable {
     static let maximumAge: TimeInterval = 15 * 60
 

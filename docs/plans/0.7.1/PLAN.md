@@ -513,10 +513,12 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
        until it ends, when the write at once repairs it [inference].
      - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`, as it decides for the
        reloads: the answer is re-asked at a write moment once it is older than 15 minutes
-       (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs,
-       and a kind it lists stays placed until the app quits (`WidgetReloadPlanner.swift:236-241,
-       269-274`). So a removed iPhone & iPad widget's devices stay in the feed until the next
-       launch (§11 says so), and a new one gets them within 15 minutes and a write moment.
+       (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs.
+       Each answer replaces the one before, but a kind it lists is never asked about again, so it
+       stays placed until an answer asked for another kind no longer lists it, or the app quits
+       (`WidgetReloadPlanner.swift:236-241, 269-274`; X-2 corrected "until the app quits"). So a
+       removed iPhone & iPad widget's devices can stay in the feed until the next launch (§11 says
+       so), and a new one gets them within 15 minutes and a write moment.
      - Recording off or reads off drop their sections at once, placed or not.
   5. **The reader** (`Sources/BatteryPulseWidget/WidgetFeedReader.swift`, the one widget file
      allowed a file API): the real home from `getpwuid(getuid())`, because `NSHomeDirectory()` is
@@ -1526,9 +1528,12 @@ never `Devices/key`; never Demo Mode's data; never an accessory; nothing that is
 an iPhone & iPad widget is placed, the history only while a History or Battery widget is (§2.3
 item 2). An empty or failed answer, which is also how "no BatteryPulse widget placed" reads,
 writes every section the toggles allow, so a Mac without BatteryPulse widgets keeps the file too
-[inference; G7-17]. A kind the answer once listed counts as placed until BatteryPulse quits
-(`WidgetPlacements`, W-5 item 4), so removing the last iPhone & iPad widget drops the devices at
-the next launch, not at once. Clear History, Forget, and turning recording or device reads off
+[inference; G7-17]. A kind the answer lists is never asked about again, and each answer replaces
+the one before (`WidgetPlacements.record(answer:at:)`, W-5 item 4): a removed kind counts as placed
+until an answer asked for another kind no longer lists it (a section or a reload needs a kind the
+answer leaves out, once it is 15 minutes old), or until BatteryPulse quits. So removing the last
+iPhone & iPad widget drops the devices at the next such answer, or at the next launch, not at
+once. Clear History, Forget, and turning recording or device reads off
 rewrite it at once, placed or not, and in Demo Mode too, where the rewrite only takes their part
 out of the feed last written, from the real settings and devices, never the demo's (W-5 item 4).
 

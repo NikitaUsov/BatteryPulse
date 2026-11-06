@@ -83,7 +83,7 @@ whether history recording and iPhone and iPad reads are on. It never holds Demo 
 an accessory. When macOS lists the BatteryPulse widgets you have placed, it holds only what they can
 show: the devices only while an iPhone and iPad widget is placed, the history only while a History
 or a Battery widget is; when macOS lists none, as it does when you have placed none, it holds all
-the settings allow, and a kind you remove still counts until BatteryPulse quits. The widgets' one
+the settings allow, and a kind you remove can still count until BatteryPulse quits. The widgets' one
 exception to the sandbox is read-only and names that folder alone, and they open no other file of
 BatteryPulse's. Nothing in it leaves your Mac. While BatteryPulse runs, it rewrites the file about
 every 15 minutes, and at once when you clear the history or turn recording off, which takes the
