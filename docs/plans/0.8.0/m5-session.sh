@@ -320,34 +320,34 @@ question() {
     R-feed-reads) echo "yn|judge|Read iPhone and iPad batteries turned on, then off: the feed rewritten within a minute each time, readsDevices following (the script reads them)" ;;
     R-feed-cleared) echo "yn|judge|Clear History on the session's own data: the feed rewritten within a minute, with an empty day (the script reads it)" ;;
     D3-feed) echo "yn|judge|After the update: Widget/feed.json 0600 in a 0700 folder, version 1, written within 15 minutes; the widget's entitlements the sandbox and one read-only path, Widget/ (the script reads them)" ;;
-    R4-1-chooser) echo "3|judge|Step 4.1, Details' chooser (W0-1 (b)): 1 it lists the fields, Average drain and Time on battery among them, 2 some are missing (which), 3 it is empty or doesn't open" ;;
-    R4-1-shows) echo "yn|judge|Step 4.1: the medium widget shows the choices made (Custom, the first three details and Average drain, time left if offered, monochrome)" ;;
-    R4-2-kept) echo "yn|judge|Step 4.2: Edit Widget again shows the choices made" ;;
-    R4-3-sheet) echo "3|judge|Step 4.3, Edit Widget with BatteryPulse in Russian: 1 all Russian, 2 some English (which), 3 the sheet didn't change language (not checked)" ;;
-    R4-3-widgets) echo "3|judge|Step 4.3, the placed widgets after the language switch, the reload and a new extension: 1 Russian, 2 still English (which), 3 no redraw (not checked)" ;;
-    R4-5-automatic) echo "yn|judge|Step 4.5: the medium widget back on Automatic, as before step 4" ;;
-    R4-6-history) echo "yn|judge|Step 4.6, the History widget's edit sheet: its options listed (the series, the period), and a choice shows on the widget after Done" ;;
-    R4-6-device) echo "3|judge|Step 4.6, the iPhone & iPad widget's edit sheet, One device (G71-4): 1 its chooser opens (empty while no device is remembered), 2 it doesn't open or shows an error, 3 no One device option" ;;
+    R4-1-chooser) echo "3|judge|Step 11c (4.1), Details' chooser (W0-1 (b)): 1 it lists the fields, Average drain and Time on battery among them, 2 some are missing (which), 3 it is empty or doesn't open" ;;
+    R4-1-shows) echo "yn|judge|Step 11c (4.1): the medium widget shows the choices made (Custom, the first three details and Average drain, time left if offered, monochrome)" ;;
+    R4-2-kept) echo "yn|judge|Step 11c (4.2): Edit Widget again shows the choices made" ;;
+    R4-3-sheet) echo "3|judge|Step 11c (4.3), Edit Widget with BatteryPulse in Russian: 1 all Russian, 2 some English (which), 3 the sheet didn't change language (not checked)" ;;
+    R4-3-widgets) echo "3|judge|Step 11c (4.3), the placed widgets after the language switch, the reload and a new extension: 1 Russian, 2 still English (which), 3 no redraw (not checked)" ;;
+    R4-5-automatic) echo "yn|judge|Step 11c (4.5): the medium widget back on Automatic, as before step 4" ;;
+    R4-6-history) echo "yn|judge|Step 11c (4.6), the History widget's edit sheet: its options listed (the series, the period), and a choice shows on the widget after Done" ;;
+    R4-6-device) echo "3|judge|Step 11c (4.6), the iPhone & iPad widget's edit sheet, One device (G71-4): 1 its chooser opens (empty while no device is remembered), 2 it doesn't open or shows an error, 3 no One device option" ;;
     R5-always-default | R5-always-dark | R5-always-clear | R5-always-tinted | R5-auto-default | R5-auto-dark | R5-auto-clear | R5-auto-tinted | \
       R5-nc-default | R5-nc-dark | R5-nc-clear | R5-nc-tinted | R5-contrast | R5-transparency)
       rest="${1#R5-}"
-      echo "yn|judge|Step 5, $rest: every widget can be read, and a low or Service Recommended state still shows without colour (beside each crop's contrast)"
+      echo "yn|judge|Step 11c, the looks, $rest: every widget can be read, and a low or Service Recommended state still shows without colour (beside each crop's contrast)"
       ;;
-    R6-12-hour) echo "yn|judge|Step 6, 24-hour time off: the widget shows '4:39 PM'-style times" ;;
-    R6-tick) echo "4|judge|Step 6, a time-left widget 65 s apart: 1 the minutes went down by one, 2 no, 3 it shows seconds, 4 it starts with a minus sign" ;;
-    R6-count-toggle) echo "yn|judge|Step 6, the version count's toggle and footer: readable in English and Russian, greyed out under Never" ;;
+    R6-12-hour) echo "yn|judge|Step 11c, 24-hour time off: the widget shows '4:39 PM'-style times" ;;
+    R6-tick) echo "4|judge|Step 11c, a time-left widget 65 s apart: 1 the minutes went down by one, 2 no, 3 it shows seconds, 4 it starts with a minus sign" ;;
+    R6-count-toggle) echo "yn|judge|Step 11c, the version count's toggle and footer: readable in English and Russian, greyed out under Never" ;;
     R7-tree) echo "yn|judge|Step 3 (C10), each placed widget's tree, every kind and family: no symbol name, the charge one element with its value, one element per row, no empty group, a chart one element with its one label (W-3b item 5, WidgetChartSummary)" ;;
     R7-tree-ru) echo "yn|judge|Step 3 (C10), the same widget trees in Russian, after a redraw" ;;
-    R7-text-size) echo "3|judge|Step 7, Text size at its largest: the widgets' words 1 grow, 2 stay unchanged (expected), 3 get cut off (which)" ;;
+    R7-text-size) echo "3|judge|Step 11c, Text size at its largest: the widgets' words 1 grow, 2 stay unchanged (expected), 3 get cut off (which)" ;;
     R8-quit | R8-running | R8-accessories | R8-health | R8-main | R8-compact | R8-history | R8-device)
       echo "3|judge|A click on the widget (${1#R8-}): 1 the expected page opened, 2 another page (which, and its route), 3 nothing opened"
       ;;
     R9-plug) echo "yn|judge|The day's end, the unplug and plug-in: the Battery widget's state matches bpulse --json within a minute (at the limit: Not charging, then Charged to limit)" ;;
     R9-accessory) echo "3|judge|An accessory disconnected and reconnected: 1 the Accessories widget changed within a minute, 2 it didn't, 3 not run" ;;
-    R9b-demo) echo "yn|judge|Step 9b, Demo Mode's Charge limit scene: Overview, the popover and the compact window say Charged to limit, Power says Charge limit: Reached (or its number)" ;;
-    R9b-demo-ru) echo "yn|judge|Step 9b, the same in Russian, in the catalog's terms" ;;
-    R9b-widgets) echo "yn|judge|Step 9b, with bit 24 now: the Battery widgets say Charged to limit" ;;
-    R9b-settings-ru) echo "3|judge|Step 9b, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
+    R9b-demo) echo "yn|judge|Step 11c, Demo Mode's Charge limit scene: Overview, the popover and the compact window say Charged to limit, Power says Charge limit: Reached (or its number)" ;;
+    R9b-demo-ru) echo "yn|judge|Step 11c, the same scene in Russian (after app-language ru), in the catalog's terms" ;;
+    R9b-widgets) echo "yn|judge|Step 11c, with bit 24 now: the Battery widgets say Charged to limit" ;;
+    R9b-settings-ru) echo "3|judge|Step 11c, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
     R-settings) echo "yn|judge|Settings on the Air's display (S-1): every Settings pane and the Welcome window, scrolled to its end: the last row's control reachable; a pane that fits shows no scroll bar and doesn't move (n names the pane)" ;;
     V01-menubar) echo "yn|judge|The menu bar item on a light and on a dark menu bar (the crops): legible, not clipped" ;;
     R-menu-bar-same) echo "2|judge|menu-bar-shots before ($START_VERSION's painter) against after (RC-U's), each look and style: 1 BatteryPulse's item drawn the same (the clock, the system's items and a charge that moved between them aside), 2 it differs (which)" ;;
@@ -3211,8 +3211,8 @@ step_whats_new() {
 
 # gallery <name>: after computer use added that widget from the gallery (click-to-add, then one
 # slow `ui drag`) and its frame is recorded (`widget <name> ...`): its crop after the desktop
-# click, against the CI render of its kind and family (previews/, from RC-U's run). The large
-# Battery widget is step 2's, already placed.
+# click, against the CI render of its kind and family (previews/, from RC-U's run). Each one the
+# session adds is a desktop-widgets change, which only the app's counts confirm gone (T-1 item 7).
 step_gallery() {
   r_only gallery
   local name="${1:-}"
@@ -3220,7 +3220,7 @@ step_gallery() {
   [ -n "$(widget_rect "$name")" ] || fail "no frame recorded for $name: $SCRIPT widget $name <x> <y> <w> <h> first (ui frame --widgets lists them)"
   click_desktop || not_checked "R3-$name" "no desktop spot"
   crop_widgets "$SHOTS/gallery" added | grep -F "/$name-" || true
-  use_section 15-gallery "Step 3: the gallery"
+  use_section 15-gallery "Step 11c: the gallery"
   out "- $name added and cropped ($(clock))"
   echo "The CI renders to compare with: $(find "$WORK/previews" -name '*.png' 2>/dev/null | sort | tr '\n' ' ')"
   ask "R3-$name"
@@ -3338,7 +3338,7 @@ step_look() {
     *) fail "usage: $SCRIPT look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour | text-size" ;;
   esac
   tag="${id#R?-}"
-  use_section 30-look "Step 5: rendering modes and places (G7-4), and steps 6 and 7's looks"
+  use_section 30-look "Step 11c: rendering modes and places (G7-4), and time's and Text size's looks"
   if [ "$where" = nc ]; then
     ui_run click --ax "Control Center" clock >/dev/null 2>&1 || {
       not_checked "$id" "Notification Center didn't open by an AX click on the clock"
@@ -3401,7 +3401,7 @@ step_tick() {
   crop_widgets "$SHOTS/tick" first | grep -F '/medium-' || true
   sleep 65
   crop_widgets "$SHOTS/tick" second | grep -F '/medium-' || true
-  use_section 35-time "Step 6: time and the version count"
+  use_section 35-time "Step 11c: time and the version count"
   out "- the time-left tick: two crops 65 s apart ($(clock))"
   ask R6-tick
 }
@@ -3414,7 +3414,7 @@ step_count_toggle() {
   local his lang value
   his="$(setting_of updateFrequency)"
   case "$his" in never | "default (unset)") value=weekly ;; *) value="$his" ;; esac
-  use_section 35-time "Step 6: time and the version count"
+  use_section 35-time "Step 11c: time and the version count"
   for lang in en ru; do
     for state in on never; do
       quit_app
@@ -3445,7 +3445,7 @@ step_tree() {
   case "$suffix" in en | ru) ;; *) fail "usage: $SCRIPT tree [ru]" ;; esac
   host="$(head -1 "$WORK/ui-hosts" 2>/dev/null || true)"
   [ -n "$host" ] || fail "no widget host recorded: proof P1 first"
-  use_section 40-tree "Step 7: the trees VoiceOver walks (G7-12)"
+  use_section 40-tree "Step 3: the widgets' trees VoiceOver walks (C10, G7-12)"
   for name in $(widget_names); do
     file="$LOGS/tree-$name-$suffix.txt"
     # The frame is four arguments: x y width height.
@@ -3509,7 +3509,7 @@ step_click_widget() {
     not_checked "R8-$case_" "the click at the widget was refused"
   sleep 6
   widget_log_since "$since" "$LOGS/click-$case_.txt"
-  use_section 45-clicks "Step 8: clicks (G7-9)"
+  use_section 45-clicks "Step 11c: clicks (G7-9)"
   out "- $case_ ($since): BatteryPulse $(if app_running; then echo runs; else echo "doesn't run"; fi); its log lines since the click:"
   grep -i -E 'url|activity|route|page|open' "$LOGS/click-$case_.txt" | head -8 >"$LOGS/click-$case_.public" || true
   out_block "$LOGS/click-$case_.public"
@@ -3575,7 +3575,7 @@ step_accessories_watch() {
   r_only accessories-watch
   local what="${1:-}" i count
   case "$what" in disconnect | reconnect) ;; *) fail "usage: $SCRIPT accessories-watch disconnect | reconnect" ;; esac
-  use_section 52-accessories "Step 9: an accessory disconnected and reconnected"
+  use_section 52-accessories "Step 11c: an accessory disconnected and reconnected"
   for i in 0 1 2 3 4 5 6; do
     count="$(pmset -g accps 2>/dev/null | grep -v -i 'InternalBattery' | grep -c -E '[0-9]+%' || true)"
     out "- $what +$((i * 10)) s: pmset -g accps lists $count accessory sources"
@@ -3585,31 +3585,29 @@ step_accessories_watch() {
   if [ "$what" = reconnect ]; then ask R9-accessory; fi
 }
 
-# demo-shots [ru]: step 9b, with Demo Mode's Charge limit scene chosen by AX (the session's ui
-# press): Overview, Power, the menu bar popover and the compact window, in English or Russian; and
-# the Battery widgets when bpulse --json shows bit 24 now.
+# demo-shots [ru]: step 11c's Demo Mode, with its Charge limit scene chosen by AX (the session's ui
+# press): Overview, Power, the menu bar popover and the compact window, in the language BatteryPulse
+# runs in; and the Battery widgets when bpulse --json shows bit 24 now. Demo Mode is never stored,
+# so a relaunch ends it: ru only after `app-language ru` and the scene chosen again in Russian (its
+# row's label from the catalog), never a relaunch here, which would shoot the real state.
 step_demo_shots() {
   r_only demo-shots
   local lang="${1:-en}" item json
   case "$lang" in en | ru) ;; *) fail "usage: $SCRIPT demo-shots [ru]" ;; esac
-  if [ "$lang" = ru ]; then
-    quit_app
-    open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(ru)"
-    wait_for_app
-    echo "DO (session): Demo Mode's Charge limit scene again if the relaunch left it (ui press), then this runs on"
-  fi
+  [ "$lang" = "$(ui_lang)" ] ||
+    fail "BatteryPulse runs in $(ui_lang): demo-shots $lang needs $SCRIPT app-language $(if [ "$lang" = ru ]; then echo ru; else echo back; fi) first, then Demo Mode's Charge limit scene again by ui press (a relaunch ends Demo Mode)"
   open_main
   place_window
   for item in Overview Power; do
-    select_page "$item" || not_checked "R9b-$lang" "$item wasn't selected"
+    select_page "$(page_label "$item")" || not_checked "R9b-$lang" "$item wasn't selected"
     sleep 2
     window_shot "$SHOTS/demo/$(tr '[:upper:]' '[:lower:]' <<<"$item")-$lang.png" || not_checked "R9b-$lang" "no shot of $item"
   done
   popover_shot "$SHOTS/demo/popover-$lang.png" || not_checked "R9b-popover-$lang" "no shot of the popover"
   park_pointer
-  use_section 55-limit "Step 9b: the Charge Limit (W-14, G7-18)"
+  use_section 55-limit "Step 11c: Demo Mode's Charge limit scene (W-14, G7-18)"
   out "- Demo Mode's Charge limit scene, $lang ($(clock)): Overview, Power, the popover"
-  echo "DO (session): the compact window by computer use or ui (Window to open), shot with $SCRIPT ui frame BatteryPulse and rect, else note it"
+  echo "DO (session): the compact window by computer use or ui, shot with $SCRIPT screen demo-compact front, else note it"
   json="$LOGS/limit-now.json"
   if bpulse_json "$json"; then
     out "- now: $(charge_row "$json")"
@@ -5324,7 +5322,7 @@ restore_gui_scriptable() {
   local app setting
   stream_stop gui-stream
   if [ -s "$GUI_STREAM" ]; then
-    use_section 58-gui-stream "Steps 2-9: the widget's reloads and timelines (W-4 item 3)"
+    use_section 58-gui-stream "The GUI phase: the widgets' reloads and timelines (W-4 item 3)"
     if [ -x "$BIN/perf-stats" ]; then
       perf_stats "$GUI_STREAM" >"$LOGS/gui-perf-stats.txt" 2>&1 || true
       out_block "$LOGS/gui-perf-stats.txt"
