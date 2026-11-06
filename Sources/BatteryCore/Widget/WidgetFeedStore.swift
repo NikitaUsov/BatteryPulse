@@ -52,6 +52,9 @@ public final class WidgetFeedStore: Sendable {
         case written(bytes: Int)
         /// The feed differs from the file only in `writtenAt`, so nothing was written.
         case unchanged
+        /// A rewrite before the store's first write removed the file a previous launch left
+        /// (``rewrite(_:)``).
+        case removed
     }
 
     /// Why a write failed, besides an error of the file system.
@@ -69,6 +72,27 @@ public final class WidgetFeedStore: Sendable {
             if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return .unchanged }
             let bytes = try replace(with: WidgetFeed.encoded(feed))
             written = feed
+            return .written(bytes: bytes)
+        }
+    }
+
+    /// Rewrites the feed this store last wrote with `change` applied, and nothing else read or
+    /// built: in Demo Mode, whose readings never reach the feed, what the user removes still
+    /// leaves it at once (``WidgetFeed/removing(_:)``). Before this store's first write there is
+    /// no feed to take a part out of, so the file a previous launch left, if any, is removed
+    /// whole, which only removes; the next full write makes it again. `nil` when there is no file
+    /// either.
+    public func rewrite(_ change: (WidgetFeed) -> WidgetFeed) throws -> Outcome? {
+        try written.withLock { written in
+            guard let feed = written else {
+                guard exists(fileURL) || exists(temporaryURL) else { return nil }
+                try removeFiles()
+                return .removed
+            }
+            let changed = change(feed)
+            guard changed != feed else { return .unchanged }
+            let bytes = try replace(with: WidgetFeed.encoded(changed))
+            written = changed
             return .written(bytes: bytes)
         }
     }
@@ -111,9 +135,14 @@ public final class WidgetFeedStore: Sendable {
     public func remove() throws {
         try written.withLock { written in
             written = nil
-            for url in [fileURL, temporaryURL] where exists(url) {
-                try FileManager.default.removeItem(at: url)
-            }
+            try removeFiles()
+        }
+    }
+
+    /// Removes the feed's file and a temporary one; a link is removed, never followed.
+    private func removeFiles() throws {
+        for url in [fileURL, temporaryURL] where exists(url) {
+            try FileManager.default.removeItem(at: url)
         }
     }
 

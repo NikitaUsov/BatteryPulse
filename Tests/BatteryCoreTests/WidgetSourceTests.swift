@@ -16,14 +16,45 @@ struct WidgetSourceTests {
             .map { "\($0.output.1): \($0.output.2)" }
     }
 
-    /// The widget's numbers use the app's unit symbols, the same six catalog keys (L10N-05).
+    /// Each unit symbol the widget's per-language formatter looks up in its table, as
+    /// `label: key`, from `symbol("…")` calls.
+    static func tableSymbolKeys(in path: String, declaration: String) throws -> [String] {
+        let text = try SourceScanner.file(path).text
+        let start = try #require(text.range(of: declaration), "\(path): no \(declaration)")
+        let end = try #require(text.range(of: ")))", range: start.upperBound..<text.endIndex), "\(path): no end")
+        return text[start.upperBound..<end.upperBound].matches(of: #/(\w+):\s*symbol\(\s*"([^"]*)"\s*\)/#)
+            .map { "\($0.output.1): \($0.output.2)" }
+    }
+
+    /// The widget's numbers use the app's unit symbols, the same six catalog keys (L10N-05), in
+    /// the extension's own language and in the one it draws in from the feed (W-15).
     @Test func theWidgetsUnitSymbolsAreTheApps() throws {
         let app = try Self.unitSymbolKeys(
             in: "BatteryPulseApp/App/Localized.swift", declaration: "static let app = BatteryFormatter(")
         let widget = try Self.unitSymbolKeys(
             in: "BatteryPulseWidget/WidgetFormatter.swift", declaration: "static let widget = BatteryFormatter(")
+        let perLanguage = try Self.tableSymbolKeys(
+            in: "BatteryPulseWidget/WidgetFormatter.swift",
+            declaration: "static func widget(locale: Locale, strings: Bundle) -> BatteryFormatter {")
         #expect(app.count == 6)
         #expect(widget == app)
+        #expect(perLanguage == app)
+    }
+
+    /// W-15: both root views draw in the entry's language, its words, locale and formatter, and
+    /// both providers resolve it from the feed for each timeline and snapshot.
+    @Test func theWidgetsDrawInTheFeedsLanguage() throws {
+        for path in ["BatteryPulseWidget/BatteryWidgetView.swift", "BatteryPulseWidget/AccessoriesWidgetView.swift"] {
+            let code = try SourceScanner.file(path).code
+            #expect(code.contains("formatter: entry.language.formatter"), "\(path)")
+            #expect(code.contains(".widgetLanguage(entry.language)"), "\(path)")
+        }
+        for path in [
+            "BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryPulseWidget/AccessoriesTimelineProvider.swift",
+        ] {
+            let code = try SourceScanner.file(path).code
+            #expect(code.ranges(of: "await WidgetLanguageTable.current()").count == 2, "\(path)")
+        }
     }
 
     /// The widget target's sources, as code without comments and strings.

@@ -5,11 +5,13 @@ import Foundation
 import WidgetKit
 
 /// One entry of a Battery widget's timeline: the reading, the moment of the timeline it stands
-/// for (``WidgetTimelinePlan``), and the widget's configuration.
+/// for (``WidgetTimelinePlan``), the widget's configuration, and the language it draws in.
 struct BatteryEntry: TimelineEntry {
     let snapshot: BatterySnapshot?
     let moment: WidgetTimelinePlan.Entry
     let configuration: BatteryWidgetConfiguration
+    /// BatteryPulse's own, from the feed; the extension's own without one.
+    var language = WidgetLanguageTable.extensionOwn
 
     var date: Date {
         moment.date
@@ -33,9 +35,10 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: BatteryWidgetIntent, in context: Context) async -> BatteryEntry {
         let snapshot = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
         return BatteryEntry(
             snapshot: snapshot, moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: true),
-            configuration: BatteryWidgetConfiguration(configuration))
+            configuration: BatteryWidgetConfiguration(configuration), language: language)
     }
 
     /// The app reloads the widget when the battery changes while it runs; the timeline's own
@@ -44,9 +47,12 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
         let interval = Diagnostics.begin("widget.timeline", trigger: WidgetKindID.battery.signpostName)
         defer { interval.end() }
         let snapshot = await Self.read(preview: context.isPreview)
+        let language = await WidgetLanguageTable.current()
         let plan = WidgetTimelinePlan(snapshot: snapshot, at: .now)
         let options = BatteryWidgetConfiguration(configuration)
-        let entries = plan.entries.map { BatteryEntry(snapshot: snapshot, moment: $0, configuration: options) }
+        let entries = plan.entries.map {
+            BatteryEntry(snapshot: snapshot, moment: $0, configuration: options, language: language)
+        }
         return Timeline(entries: entries, policy: .after(plan.nextReload))
     }
 

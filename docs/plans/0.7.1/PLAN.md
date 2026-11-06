@@ -502,9 +502,15 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
        makes it before `HistoryRecorder`, :41): a closure-typed property may need a fifth
        `@MainActor`, as the pages' `(DeviceKey) -> Void` does, which `IsolationGuardTests`' four
        refuse (`IsolationGuardTests.swift:19-26`) [inference].
-     - **Never** while `monitor.isOverridden` (Demo Mode), as `HistoryRecorder.swift:77` does. So
-       a Demo Mode longer than 2 hours shows the widgets' "Open BatteryPulse to update" until it
-       ends, when the write at once repairs it [inference].
+     - **Never** while `monitor.isOverridden` (Demo Mode), as `HistoryRecorder.swift:77` does,
+       but for a rewrite that only removes (W-15, which settled this item's conflict with §11):
+       Clear History, recording off, device reads off and Forget take their part out of the feed
+       last written at once, from the real settings and the real remembered devices, never the
+       demo's values, and add, update or move nothing, `writtenAt` included
+       (`WidgetFeed.removing`, `WidgetFeedStore.rewrite`); before the launch's first write, which
+       left no feed in memory to take a part out of, the file goes whole. Nothing else is written
+       while the demo runs. So a Demo Mode longer than 2 hours shows the widgets' "Open BatteryPulse to update"
+       until it ends, when the write at once repairs it [inference].
      - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`, as it decides for the
        reloads: the answer is re-asked at a write moment once it is older than 15 minutes
        (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs,
@@ -1471,8 +1477,8 @@ change don't count. BatteryPulse is an agent app that is rarely in front, so its
   app runs (§2.3 item 3): at most 96 writes a day of at most 8-12 KB, each an atomic rename
   [estimate]. The immediate rewrites ride user actions, the existing battery observation and one
   new observation of the remembered devices (W-5 item 4), which runs only when they change.
-- Nothing is written in Demo Mode. An empty answer, which is also how "no BatteryPulse widget
-  placed" reads, writes as if every kind were placed (§2.3 item 2), so the writes above hold for
+- Nothing is written in Demo Mode but a removal the user makes meanwhile (W-5 item 4). An empty
+  answer, which is also how "no BatteryPulse widget placed" reads, writes as if every kind were placed (§2.3 item 2), so the writes above hold for
   every Mac that runs 0.7.1 [inference].
 - `EnergyGuardTests` is unchanged: no sleep, timer or activity is added, and no task that wakes
   on its own.
@@ -1522,7 +1528,8 @@ writes every section the toggles allow, so a Mac without BatteryPulse widgets ke
 [inference; G7-17]. A kind the answer once listed counts as placed until BatteryPulse quits
 (`WidgetPlacements`, W-5 item 4), so removing the last iPhone & iPad widget drops the devices at
 the next launch, not at once. Clear History, Forget, and turning recording or device reads off
-rewrite it at once, placed or not.
+rewrite it at once, placed or not, and in Demo Mode too, where the rewrite only takes their part
+out of the feed last written, from the real settings and devices, never the demo's (W-5 item 4).
 
 **Who can read it:**
 - The folder is 0700 and the file 0600, owned by the user, like `Devices/` when its key creates it

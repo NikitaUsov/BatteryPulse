@@ -5,13 +5,23 @@ import SwiftUI
 import WidgetKit
 
 /// Reads the widget's family and hands the views its size: `\.widgetFamily` can only be read, so
-/// the views take the size as an input, which a preview can set.
+/// the views take the size as an input, which a preview can set. Sets the language the entry
+/// draws in, BatteryPulse's own from the feed, for everything below.
 struct BatteryWidgetRoot: View {
     let entry: BatteryEntry
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        BatteryWidgetView(entry: entry, size: WidgetSize(family))
+        Self.content(entry, size: WidgetSize(family))
+    }
+
+    /// The widget for `entry` in `size`, in the entry's language: its words, locale and numbers.
+    /// The previews draw it too.
+    static func content(_ entry: BatteryEntry, size: WidgetSize, timeZone: TimeZone = .autoupdatingCurrent)
+        -> some View
+    {
+        BatteryWidgetView(entry: entry, size: size, formatter: entry.language.formatter, timeZone: timeZone)
+            .widgetLanguage(entry.language)
     }
 }
 
