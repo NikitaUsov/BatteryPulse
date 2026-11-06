@@ -49,9 +49,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   Linux), `WidgetRoute` and `PageID` (the page a click opens; the `mainSelection` strings),
   `WidgetIntentManifest` (`scripts/widget-manifest.json`, the names that freeze),
   `WidgetReloadPolicy`, `WidgetReloadPlanner` and `WidgetPlacements` (which kind to reload when,
-  and whether it is placed; a removal reloads the kinds that showed it), `ReadCoalescer` (one read
+  and whether it is placed; a removal reloads the kinds that showed it, and a write's
+  `WidgetFeed.WriteEffect`, a feed in place of one the widgets couldn't use or that had aged, or a
+  section added, the kinds that show it), `ReadCoalescer` (one read
   per burst of timeline requests), `HistoryWidgetPlan` (the History widget: its configuration,
-  the chart and, in large, the last 24 hours' figures, or its message), `WidgetChart` (the chart
+  the chart and, in large, the figures of the last 24 hours under a 24-hour chart, else of the
+  last 7 days, or its message), `WidgetChart` (the chart
   the History widget and the large Battery widget's History chart stroke, with
   `WidgetChartContent`, the chart or the message in its place, and `WidgetChartSummary`, its one
   VoiceOver label), `DevicesWidgetPlan` (the iPhone & iPad widget: one device or All's rows, each

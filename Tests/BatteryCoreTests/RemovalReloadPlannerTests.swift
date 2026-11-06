@@ -16,8 +16,11 @@ struct RemovalReloadPlannerTests {
     /// the iPhone & iPad widget. The Accessories widget shows neither.
     @Test func aRemovalReloadsTheKindsThatShowIt() {
         var planner = WidgetReloadPlanner()
-        #expect(planner.removal(of: .history, at: Self.at(minutes: 0)) == [.battery, .history])
-        #expect(planner.removal(of: .devices, at: Self.at(minutes: 0)) == [.devices])
+        #expect(
+            planner.removal(of: .history, at: Self.at(minutes: 0)) == [
+                .init(.battery, .removal), .init(.history, .removal),
+            ])
+        #expect(planner.removal(of: .devices, at: Self.at(minutes: 0)).map(\.kind) == [.devices])
         #expect(WidgetReloadPlanner.Reason.removal.rawValue == "removal")
     }
 
@@ -25,13 +28,13 @@ struct RemovalReloadPlannerTests {
     /// first evaluation after the minimum, once; nothing reloads on its own in between.
     @Test func aRemovalWithinTheMinimumWaitsForTheNextEvaluation() {
         var planner = WidgetReloadPlanner()
-        #expect(planner.removal(of: .devices, at: Self.at(minutes: 0)) == [.devices])
-        #expect(planner.removal(of: .devices, at: Self.at(minutes: 2)) == [])
-        #expect(planner.pendingRemovals(at: Self.at(minutes: 4)) == [])
-        #expect(planner.pendingRemovals(at: Self.at(minutes: 5)) == [.devices])
-        #expect(planner.pendingRemovals(at: Self.at(minutes: 6)) == [])
+        #expect(planner.removal(of: .devices, at: Self.at(minutes: 0)).map(\.kind) == [.devices])
+        #expect(planner.removal(of: .devices, at: Self.at(minutes: 2)).map(\.kind) == [])
+        #expect(planner.pendingReloads(at: Self.at(minutes: 4)).map(\.kind) == [])
+        #expect(planner.pendingReloads(at: Self.at(minutes: 5)).map(\.kind) == [.devices])
+        #expect(planner.pendingReloads(at: Self.at(minutes: 6)).map(\.kind) == [])
         // Each kind has its own minimum: the history's removal doesn't wait for the devices'.
-        #expect(planner.removal(of: .history, at: Self.at(minutes: 6)) == [.battery, .history])
+        #expect(planner.removal(of: .history, at: Self.at(minutes: 6)).map(\.kind) == [.battery, .history])
     }
 
     /// The Battery kind's removal shares the minimum of its five immediate reasons: a Low Power
@@ -42,8 +45,8 @@ struct RemovalReloadPlannerTests {
         let on = WidgetReloadPlannerTests.snapshot(lowPower: true)
         #expect(planner.battery(off, at: Self.at(minutes: 0)) == nil)
         #expect(planner.battery(on, at: Self.at(minutes: 1)) == .lowPowerMode)
-        #expect(planner.removal(of: .history, at: Self.at(minutes: 2)) == [.history])
-        #expect(planner.pendingRemovals(at: Self.at(minutes: 6)) == [.battery])
+        #expect(planner.removal(of: .history, at: Self.at(minutes: 2)).map(\.kind) == [.history])
+        #expect(planner.pendingReloads(at: Self.at(minutes: 6)).map(\.kind) == [.battery])
         #expect(planner.battery(off, at: Self.at(minutes: 7)) == nil)
         #expect(planner.battery(off, at: Self.at(minutes: 11)) == .lowPowerMode)
     }

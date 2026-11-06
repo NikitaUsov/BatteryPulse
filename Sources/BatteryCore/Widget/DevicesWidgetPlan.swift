@@ -20,7 +20,10 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 /// Its data is the feed the app writes (``WidgetFeed/devices``): the remembered devices' last
 /// readings, never Demo Mode's. No feed, device reads off and no device remembered each show a
 /// message; a feed over two hours old shows its last readings, each with its time, and "Open
-/// BatteryPulse to update".
+/// BatteryPulse to update". A feed written while no iPhone & iPad widget counted as placed holds
+/// no devices yet, and shows the no-feed message until BatteryPulse writes them, within 15 minutes
+/// and a write moment, about half an hour at most, never "Connect an iPhone or iPad with a
+/// cable".
 ///
 /// - **One device** (small, and the most recently read, the lowest or the chosen one in every
 ///   size): its charge large, its name, state and read time; medium and large add its maximum
@@ -64,7 +67,8 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
     ) -> DevicesWidgetPlan {
         guard let feed else { return .empty(.noFeed) }
         guard feed.readsDevices else { return .empty(.readsOff) }
-        let devices = feed.devices ?? []
+        // Reads on but no devices section: written before the kind counted as placed.
+        guard let devices = feed.devices else { return .empty(.noFeed) }
         guard var first = one(of: devices, by: c.show) else { return .empty(.noDevices) }
         if c.show == .oneDevice, let key = c.device {
             guard let chosen = devices.first(where: { $0.key == key }) else { return .empty(.forgotten) }
@@ -110,8 +114,8 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
 /// Why the iPhone & iPad widget shows a message instead of a device: one line, and a click opens
 /// the page that fixes it.
 public enum DevicesWidgetEmptyReason: Sendable, Equatable, CaseIterable {
-    /// No feed: BatteryPulse hasn't written one, or the widget couldn't read it ("Open
-    /// BatteryPulse to update").
+    /// No feed: BatteryPulse hasn't written one, or the widget couldn't read it, or the one it
+    /// wrote doesn't hold the devices yet ("Open BatteryPulse to update").
     case noFeed
     /// Read iPhone and iPad batteries is off ("Turn on Read iPhone and iPad batteries in
     /// BatteryPulse").

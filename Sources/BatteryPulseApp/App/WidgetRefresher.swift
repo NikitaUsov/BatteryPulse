@@ -9,9 +9,9 @@ import os
 /// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
 /// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
 /// read the battery and the accessories themselves; this only says when. It also has the widget's
-/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``), and once a rewrite
-/// took out what the user removed, reloads the kinds that show it. Demo Mode never reaches the
-/// widgets.
+/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``), and once a write
+/// took out what the user removed, replaced a feed the widgets couldn't use or that had aged, or
+/// added a section, reloads the kinds that show it. Demo Mode never reaches the widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private let accessories: AccessoryMonitor
@@ -22,7 +22,7 @@ final class WidgetRefresher {
     private var batteryObservation: Task<Void, Never>?
     private var accessoryObservation: Task<Void, Never>?
     private var deviceObservation: Task<Void, Never>?
-    private var removalObservation: Task<Void, Never>?
+    private var feedObservation: Task<Void, Never>?
     /// The adapter as the feed was last told of it, outside Demo Mode.
     private var feedPlugged: Bool?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
@@ -45,8 +45,9 @@ final class WidgetRefresher {
     }
 
     /// Evaluates every change of the battery and of the accessory list. The values at the start
-    /// are no change: the planner records them as what the widgets show, so a launch reloads
-    /// nothing.
+    /// are no change: the planner records them as what the widgets show, so they reload nothing.
+    /// The launch's first write of the feed reloads every placed kind once instead
+    /// (``WidgetReloadPlanner/Reason/repair``), through the feed's observation below.
     func start() {
         guard batteryObservation == nil else { return }
         Self.launchFeed = feed
@@ -73,7 +74,7 @@ final class WidgetRefresher {
                 }
                 await self.evaluateBattery()
                 await self.evaluateHistory()
-                await self.reload(removed: self.planner.pendingRemovals(at: .now))
+                await self.reload(self.planner.pendingReloads(at: .now))
             }
         }
         accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
@@ -98,20 +99,23 @@ final class WidgetRefresher {
                 }
                 // A reading that waited for the planner's interval is in the feed already.
                 await self.evaluateDevices()
-                await self.reload(removed: self.planner.pendingRemovals(at: .now))
+                await self.reload(self.planner.pendingReloads(at: .now))
             }
         }
-        // Clear History, recording off, reads off and Forget: once their rewrite is done, the
-        // kinds that show what they removed reload, in Demo Mode too.
-        removalObservation = Task(name: "WidgetRefresher.removals") { [weak self, feed] in
-            for await _ in Observations({ feed.removalsWritten }).dropFirst() {
+        // Clear History, recording off, reads off and Forget, in Demo Mode too, and a write in
+        // place of a feed the widgets couldn't use or that had aged, or with a section added: once
+        // the write is done, the kinds that show it reload, rather than at their own timeline's
+        // refresh.
+        feedObservation = Task(name: "WidgetRefresher.feedChanges") { [weak self, feed] in
+            for await _ in Observations({ feed.changesWritten }).dropFirst() {
                 guard let self else { return }
-                let removed = feed.takeRemovedSections()
-                var kinds: [WidgetKindID] = []
-                for section in WidgetFeed.Section.allCases where removed.contains(section) {
-                    kinds += self.planner.removal(of: section, at: .now)
+                let changes = feed.takeChanges()
+                var reloads: [WidgetReloadPlanner.FeedReload] = []
+                for section in WidgetFeed.Section.allCases where changes.removed.contains(section) {
+                    reloads += self.planner.removal(of: section, at: .now)
                 }
-                await self.reload(removed: kinds)
+                reloads += self.planner.written(changes.effect, at: .now)
+                await self.reload(reloads)
             }
         }
     }
@@ -123,8 +127,8 @@ final class WidgetRefresher {
         accessoryObservation = nil
         deviceObservation?.cancel()
         deviceObservation = nil
-        removalObservation?.cancel()
-        removalObservation = nil
+        feedObservation?.cancel()
+        feedObservation = nil
     }
 
     /// The remembered devices as the feed would hold them, read times aside.
@@ -170,7 +174,9 @@ final class WidgetRefresher {
     /// widget stays frozen, then goes blank. WidgetKit starts the new extension on the next
     /// request, which follows here. After an in-app install, ``endExtensionBeforeSwap()`` has
     /// usually ended it already, and this finds nothing, or the new extension WidgetKit started
-    /// meanwhile, which a reload brings back.
+    /// meanwhile, which a reload brings back. The end doesn't wait for the feed: the launch's first
+    /// write follows and reloads every placed kind through the planner, after the extension was
+    /// ended, so the feed reaches them even after an update from 0.7.0, which left none.
     ///
     /// A language chosen for BatteryPulse alone (System Settings → General → Language & Region →
     /// Applications) applies at the next launch, and every placed widget keeps its render in the
@@ -340,20 +346,23 @@ final class WidgetRefresher {
         Diagnostics.widget.notice("Reloading the iPhone & iPad widget: \(reason.rawValue, privacy: .public)")
     }
 
-    /// Reloads `kinds`, the placed ones, after a removal rewrote the feed
-    /// (``WidgetReloadPlanner/removal(of:at:)``): each with its kind's trigger, and one line each.
-    private func reload(removed kinds: [WidgetKindID]) async {
-        for kind in kinds where await isPlaced(kind) {
-            WidgetCenter.shared.reloadTimelines(ofKind: kind.rawValue)
-            switch kind {
+    /// Reloads the placed kinds of `reloads`, after a write changed what they show
+    /// (``WidgetReloadPlanner/removal(of:at:)``, ``WidgetReloadPlanner/written(_:at:)``): each
+    /// with its kind's trigger, and one line each with its reason.
+    private func reload(_ reloads: [WidgetReloadPlanner.FeedReload]) async {
+        // A section the feed's writer added for a kind its own, newer answer lists: this answer may
+        // be older and leave the kind out, so it asks again rather than skip the new widget.
+        for item in reloads where await isPlaced(item.kind, askingAgain: item.reason == .addition) {
+            WidgetCenter.shared.reloadTimelines(ofKind: item.kind.rawValue)
+            switch item.kind {
             case .battery: Diagnostics.event("widget.reload", trigger: "policy")
             case .accessories: Diagnostics.event("widget.reload", trigger: "policy.accessories")
             case .history: Diagnostics.event("widget.reload", trigger: "policy.history")
             case .devices: Diagnostics.event("widget.reload", trigger: "policy.devices")
             }
-            let name = kind.signpostName.description
+            let name = item.kind.signpostName.description
             Diagnostics.widget.notice(
-                "Reloading the \(name, privacy: .public) widget kind: \(WidgetReloadPlanner.Reason.removal.rawValue, privacy: .public)"
+                "Reloading the \(name, privacy: .public) widget kind: \(item.reason.rawValue, privacy: .public)"
             )
         }
     }
@@ -369,10 +378,11 @@ final class WidgetRefresher {
     }
 
     /// Whether `kind` is placed, asking WidgetKit first when the answer in memory can't tell
-    /// (``WidgetPlacements``). Only at a reload moment, so it adds no wake-up. Each answer logs
-    /// its count per kind; a failure counts as every kind placed.
-    private func isPlaced(_ kind: WidgetKindID) async -> Bool {
-        if placements.needsAnswer(toReload: kind, at: .now) {
+    /// (``WidgetPlacements``), or, `askingAgain`, when it leaves the kind out, whatever its age.
+    /// Only at a reload moment, so it adds no wake-up. Each answer logs its count per kind; a
+    /// failure counts as every kind placed.
+    private func isPlaced(_ kind: WidgetKindID, askingAgain: Bool = false) async -> Bool {
+        if placements.needsAnswer(toReload: kind, at: .now) || (askingAgain && !placements.isPlaced(kind)) {
             do {
                 let kinds = try await PlacedWidgets.kinds()
                 placements.record(answer: kinds, at: .now)

@@ -513,10 +513,12 @@ package lists: Source; Items; Files; Linux tests; Guards; Acceptance; Effort; Ri
        until it ends, when the write at once repairs it [inference].
      - **Sections by placement** (§2.3 item 2), through `WidgetPlacements`, as it decides for the
        reloads: the answer is re-asked at a write moment once it is older than 15 minutes
-       (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs,
-       and a kind it lists stays placed until the app quits (`WidgetReloadPlanner.swift:236-241,
-       269-274`). So a removed iPhone & iPad widget's devices stay in the feed until the next
-       launch (§11 says so), and a new one gets them within 15 minutes and a write moment.
+       (`WidgetPlacements.maximumAge`) and only while it doesn't list a kind the section needs.
+       Each answer replaces the one before, but a kind it lists is never asked about again, so it
+       stays placed until an answer asked for another kind no longer lists it, or the app quits
+       (`WidgetReloadPlanner.swift:236-241, 269-274`; X-2 corrected "until the app quits"). So a
+       removed iPhone & iPad widget's devices can stay in the feed until the next launch (§11 says
+       so), and a new one gets them within 15 minutes and a write moment.
      - Recording off or reads off drop their sections at once, placed or not.
   5. **The reader** (`Sources/BatteryPulseWidget/WidgetFeedReader.swift`, the one widget file
      allowed a file API): the real home from `getpwuid(getuid())`, because `NSHomeDirectory()` is
@@ -1494,6 +1496,11 @@ change don't count. BatteryPulse is an agent app that is rarely in front, so its
   inside the 5-minute minimum the immediate reasons share.
 - **The "Open BatteryPulse to update" line** is a precomputed entry at `writtenAt` + 2 hours, not a
   reload; at most 3 entries per timeline, never closer than 15 minutes.
+- **A write that repairs or adds** (X-2): a launch's first write reloads every placed kind once,
+  a write that replaces a feed an hour old or more (the Mac asleep, Demo Mode, failed writes) the
+  three feed kinds, and a write that adds a section (recording or reads turned on, a kind newly
+  listed) the kinds that show it, each inside the 5-minute minimum the immediate reasons share,
+  never on a timer (`WidgetFeed.WriteEffect`, `WidgetReloadPlanner.written(_:at:)`).
 - **All four kinds placed:** under about 100 app-initiated reloads a day, each kind within its own
   budget, the target P2 §8.10 set for these four kinds (`ebe6547:docs/plans/0.7.0/widgets.md:457`;
   INV ENG-16; RD:832) and 0.7.0's day test pins for its two
@@ -1526,9 +1533,12 @@ never `Devices/key`; never Demo Mode's data; never an accessory; nothing that is
 an iPhone & iPad widget is placed, the history only while a History or Battery widget is (§2.3
 item 2). An empty or failed answer, which is also how "no BatteryPulse widget placed" reads,
 writes every section the toggles allow, so a Mac without BatteryPulse widgets keeps the file too
-[inference; G7-17]. A kind the answer once listed counts as placed until BatteryPulse quits
-(`WidgetPlacements`, W-5 item 4), so removing the last iPhone & iPad widget drops the devices at
-the next launch, not at once. Clear History, Forget, and turning recording or device reads off
+[inference; G7-17]. A kind the answer lists is never asked about again, and each answer replaces
+the one before (`WidgetPlacements.record(answer:at:)`, W-5 item 4): a removed kind counts as placed
+until an answer asked for another kind no longer lists it (a section or a reload needs a kind the
+answer leaves out, once it is 15 minutes old), or until BatteryPulse quits. So removing the last
+iPhone & iPad widget drops the devices at the next such answer, or at the next launch, not at
+once. Clear History, Forget, and turning recording or device reads off
 rewrite it at once, placed or not, and in Demo Mode too, where the rewrite only takes their part
 out of the feed last written, from the real settings and devices, never the demo's (W-5 item 4).
 
@@ -1560,10 +1570,11 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 **The privacy line** (the notes, and the guide's and README's Privacy sections, by W-18):
 
 > **Widgets and privacy.** The History and iPhone & iPad widgets can't read BatteryPulse's history
-> or your devices themselves, so BatteryPulse keeps a small copy of what they show (the last day
-> and week of readings, and your iPhones' and iPads' last readings) in its own folder, which only
-> you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The
-> widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
+> or your devices themselves, so BatteryPulse keeps a small copy of what they show (the last
+> day's and week's readings, the last 24 hours' and the last 7 days' figures, up to 90 days of
+> capacity and cycle count, and your iPhones' and iPads' last readings) in its own folder, which
+> only you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`.
+> The widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
 > and it is rewritten at once when you clear the history, forget a device or turn a reading off.
 
 ---
@@ -1917,3 +1928,20 @@ still resolves there):
 | The statistics per period (`c01fcd4`): under a 24-hour chart the last 24 hours' figures, under a 7-day chart and under the 90-day capacity and cycle count series the last 7 days', `HistoryWidgetConfiguration.statisticsPeriod`. The feed gains the optional `statistics7d`, `HistoryStatistics` of the samples since 7 days before now (the History page's 7 days), checked, bounded and removed as `statistics24h`; a feed without it shows "—" under a 7-day chart. `historyStart(at:)` moves to 7 days before now, up to a 2-hour step before the week series' first, so a feed's read always covers 8 UTC days, as V-0's 11,520 samples assumed (before, sometimes 7). The largest feed: 11,778 → **11,877 B**, under its 12 KB. The labels name no period: no new key, VoiceOver unchanged; the text budget adds a 7-day time on battery (167 hours, 59 minutes) | `WidgetFeedTests`, `WidgetFeedRemovalTests`, `HistoryWidgetPlanTests`, `WidgetTextBudgetTests`; CI's Look 1 sheets at `acf7bd4` | W-5 item 1's schema (one field gained); W-6 item 2's `statistics`; §10; §11's "What the feed holds" (now with the 7 days' figures); for W-18, every text that says the feed or the large History widget holds only the last 24 hours' (or the last day's) figures, at `claude/071-w18b`'s `bb86a44`: the guide's feed paragraph (`USER_GUIDE.md:74`), its History widget (:487-488) and its Statistics option (:543), README's History widget (:96) and feed paragraph (:184), the release notes' History widget (`.github/release-notes.md:6`), CLAUDE.md's `HistoryWidgetPlan` (:54), and the catalog's comment on "Statistics" |
 | The medium details (`acf7bd4`): one device in medium (the most recently read, the lowest, one chosen) shows its maximum capacity, cycle count and temperature as rows beside it, each when its reading has it, as the medium Battery widget's details; large's tiles, small and All unchanged. Russian shows maximum capacity's shorter label there, as the medium Battery widget does; VoiceOver reads 4 elements, as large; no new key | `DevicesWidgetPlanTests`, `WidgetTextBudgetTests`; CI's Look 2 sheets at `acf7bd4` | W-7 item 1 (medium's details); for W-18, the guide's single device, whose medium one adds only its maximum capacity (`USER_GUIDE.md:492-493` at `bb86a44`) |
 | Sizes (`size-…` artifacts): at `3b37285` (`ci.yml` run id 42161760591) widget `__text` 1,024,972 B, binary 1,615,120 B, `widget_appintents_bytes` 27,404 B, `strings_bytes` 139,587 B, app `__text` 2,165,596 B, `app_kb` 5,156, DMG 1,587,242 B; at `c01fcd4` (run 573, id 42166099523) widget `__text` +436 B, app `__text` +628 B, DMG +76 B; at `acf7bd4` (run 575, id 42167118216) widget `__text` **1,025,412 B** (+440), binary 1,615,120 B (+0), app `__text` **2,166,224 B** (+628), app binary 3,249,600 B (−16), `app_kb` 5,156, DMG 1,587,522 B (+280), the rest unchanged; both runs green on both jobs. No ceiling raised: 24,588 B under the widget's `__text` ceiling, 12,478 B under the DMG's | CI | Z-1 |
+
+**X-2** (the integration review's design findings, decided by the orchestrator as technical
+choices within "the new widgets fill in once BatteryPulse has run", and the texts L-1 left stale,
+built on `claude/071-x2` from `claude/071-integration`'s `2bd74f5`, each its own commit):
+
+| Fact | Shown by | Decides |
+|---|---|---|
+| **Repair** (`312533c`, `5370295`): a launch's first write reloads every placed kind once (`WidgetFeed.Repair.unusable`: the file a previous launch left may be none, turned down or hours old, and isn't read); a write that replaces a feed written an hour or more before reloads Battery, History and iPhone & iPad (`.outdated`); a last feed dated over 10 minutes ahead (a clock set back) counts as unusable. The hour is `WidgetFeed.repairAge`, the 2-hour limit less the History widget's hourly refresh: a timeline made from a younger feed reads again before the feed turns 2 hours old, one made from an older feed may not (a Mac asleep for 90 minutes). Through `WidgetReloadPlanner.written(_:at:)` and `Reason.repair`, inside the 5-minute minimum the immediate reasons share, never on a timer. The first build read and decoded the previous launch's file to reload only when needed, which brought the feed's decoder into the app: app `__text` +17,752 B and the DMG at 1,598,678 of its 1,600,000 B (run 581, `4082a4a`), so `5370295` repairs at every launch instead, as the task allowed | `WriteEffectTests`, `RemovalReloadPlannerTests`; CI runs 581 and 582 | item 1; §10 |
+| **The update path:** `LaunchReason.update` keeps `[.endExtension, .reload]`, so ending the previous version's extension stays first and immediate (PF-4); the first write's repair reload comes after the end, so the extension an update starts finds the feed, after a 0.7.0 → 0.7.1 update too, whose large Battery widgets had no feed until a reload. A language launch may reload a kind twice, its repair and the reload of every kind, once per language change | `WidgetReloadPlannerTests` (unchanged steps) | item 1 |
+| **Addition** (`a5c69c1`): `WidgetFeed.holds(_:)` (the history's series whenever written with them, the devices' list whenever written with it) and `WriteEffect.added`, the sections a write holds that the last one didn't; their readers reload with `Reason.addition`, inside the same minimum, so a toggle flipped off and on reloads once. The refresher asks WidgetKit again before skipping an addition's kind its own, older answer leaves out | `WriteEffectTests` | item 2 |
+| **The day's budget,** all four kinds: 76 app reloads (Battery 43 on the harder day, Accessories 16, History 5, iPhone & iPad 12) plus `WriteEffectTests.FeedDay`'s 17 (a launch, recording and reads turned on, two wakes after over an hour asleep, an iPhone & iPad widget placed, Clear History and a Forget: Battery 5, Accessories 1, History 5, iPhone & iPad 6) = 93, under 100; the iPhone & iPad kind 12 + its 48 half-hourly timelines + 6 = 66, under 70; History 5 + 24 + 5 = 34, under 40 | `DevicesReloadPlannerTests`, `WidgetReloadPlannerTests` | items 1, 2; §10 |
+| **The waiting state** (`c82dfeb`): device reads on and no devices section show the no-feed state, "Open BatteryPulse to update", opening Overview, never "Connect an iPhone or iPad with a cable"; drawn as `devices-<family>-devices-not-written[-ru]`, outside Look 2's sheets. Left open for the orchestrator: the History analog, recording on and no history section, still says "No History Yet" in a History widget or large Battery chart placed beside only iPhone & iPad or Accessories widgets, until the addition reload; Look 1's "No History Yet" scene draws such a feed | `DevicesWidgetPlanTests`, `DevicesWidgetPreviewTests` | item 3 |
+| **A history read that keeps failing** (`6529575`) logs at error once per streak, then at debug until a read succeeds, as the placement answer's `lastAnswerFailed` | CI compiles it (app code) | item 4 |
+| **The texts** (`ec2aedc`): every one L-1's row lists now names the last 24 hours' and the last 7 days' figures, the release notes' privacy line and §11's too, and the guide's single device has medium's three details; What's New's iPhone & iPad detail says "a small copy of what they show", in both languages, the old key removed | `LocalizationCatalogTests` | item 5; §11 |
+| **`WidgetPlacements`** (`367ae2a`): each answer replaces the one before, but a listed kind is never asked about again, so a removed kind counts until an answer asked for another kind leaves it out, or until BatteryPulse quits: its comment, W-5 item 4, §11 and the guide said "until the app quits" | — | item 6 |
+| **Sizes** at `5370295` (run 582, id 42175791212), against `2bd74f5`'s run 579 (id 42170896929): app `__text` 2,174,176 B (+7,120), app binary 3,249,712 B (+96), `app_kb` 5,156 (+0), widget `__text` 1,026,448 B (+992), widget binary 1,615,152 B (+32), `widget_appintents_bytes` 27,404 B (+0), `strings_bytes` 140,189 B (+28), DMG 1,591,710 B (+4,224), 8,290 B under its ceiling; no ceiling raised | CI | Z-1 |
+| **The review's fixes:** the privacy line (the notes and §11) also names the up to 90 days of capacity and cycle count the feed holds, as the guide's and README's Privacy sections do; the guide's waiting-state sentence names the iPhone & iPad widget, the one it applies to; the refresher's `start()` comment no longer says a launch reloads nothing. Comments and docs only. Left open beside the History analog above: the extension shares one read of the feed for `ReadCoalescer.window` (5 s), so a repair reload within 5 s of a timeline read (possible at login) may get the old read until the kind's own refresh; the M5 session's launch after a long quit shows whether it happens | — | items 1, 3, 5 |

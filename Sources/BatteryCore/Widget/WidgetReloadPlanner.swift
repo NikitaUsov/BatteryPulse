@@ -28,8 +28,14 @@ import Foundation
 ///   show it then reload at once (``removal(of:at:)``), so a placed widget doesn't keep showing it
 ///   until its own timeline's reload: within each kind's immediate reasons' shared minimum,
 ///   ``immediateInterval``, the Battery kind's shared with its five above. A removal that waits
-///   reloads at the first evaluation after the minimum (``pendingRemovals(at:)``), never on a
+///   reloads at the first evaluation after the minimum (``pendingReloads(at:)``), never on a
 ///   timer of its own.
+/// - **A repair or an addition:** a write that replaced a feed the widgets couldn't use or that
+///   had aged (``WidgetFeed/Repair``), or that added a section they show (Record battery history
+///   or device reads turned on, a kind newly placed), reloads the kinds that show it the same way
+///   (``written(_:at:)``): so "Open BatteryPulse to update", or a state that waits for the
+///   section, goes soon after BatteryPulse writes, not at the kind's own hourly or half-hourly
+///   refresh.
 ///
 /// The app never reads a placed widget's configuration, so one plan serves every configuration
 /// and accepts the odd reload a widget doesn't need. Each kind's first evaluation is the value the
@@ -81,6 +87,24 @@ public struct WidgetReloadPlanner: Sendable {
         /// The feed was rewritten without what the user removed, which the kind shows: the
         /// history (Clear History, recording off) or the devices (reads off, Forget).
         case removal
+        /// The feed was written in place of one the widgets couldn't use or that had aged
+        /// (``WidgetFeed/Repair``).
+        case repair
+        /// The feed was written with a section the kind shows that the one before left out
+        /// (``WidgetFeed/WriteEffect/added``).
+        case addition
+    }
+
+    /// A kind to reload now, and why: a change of the feed it shows (``Reason/removal``,
+    /// ``Reason/repair`` or ``Reason/addition``).
+    public struct FeedReload: Sendable, Equatable {
+        public var kind: WidgetKindID
+        public var reason: Reason
+
+        public init(_ kind: WidgetKindID, _ reason: Reason) {
+            self.kind = kind
+            self.reason = reason
+        }
     }
 
     /// What the Battery widget shows besides ``WidgetReloadPolicy``'s values, as of its last reload.
@@ -198,10 +222,11 @@ public struct WidgetReloadPlanner: Sendable {
     private var lastHistoryReload: Date?
     private var devicesShown: DevicesShown?
     private var lastDevicesReload: Date?
-    /// The kinds a removal reloads that wait for their kind's minimum.
-    private var pendingRemovalKinds: Set<WidgetKindID> = []
-    /// The last immediate reload of the History and the iPhone & iPad kinds, a removal's; the
-    /// Battery kind's is ``lastImmediateReload``.
+    /// The kinds a change of the feed reloads that wait for their kind's minimum, each with the
+    /// reason it first waited for.
+    private var pendingFeedReloads: [WidgetKindID: Reason] = [:]
+    /// The last immediate reload of the Accessories, History and iPhone & iPad kinds, for a change
+    /// of the feed; the Battery kind's is ``lastImmediateReload``.
     private var lastImmediateReloads: [WidgetKindID: Date] = [:]
 
     public init() {}
@@ -311,28 +336,49 @@ public struct WidgetReloadPlanner: Sendable {
     /// The kinds that show `section` (``WidgetFeed/Section/readers``) to reload with
     /// ``Reason/removal`` now that a removal rewrote the feed without it, each at once unless its
     /// kind reloaded for an immediate reason less than ``immediateInterval`` ago; those wait for
-    /// ``pendingRemovals(at:)``. Records the reloads. Demo Mode included: the rewrite took out only
+    /// ``pendingReloads(at:)``. Records the reloads. Demo Mode included: the rewrite took out only
     /// what the user removed, and no widget shows the demo.
-    public mutating func removal(of section: WidgetFeed.Section, at date: Date) -> [WidgetKindID] {
-        pendingRemovalKinds.formUnion(section.readers)
-        return pendingRemovals(at: date)
+    public mutating func removal(of section: WidgetFeed.Section, at date: Date) -> [FeedReload] {
+        wait(section.readers, for: .removal)
+        return pendingReloads(at: date)
     }
 
-    /// The kinds whose removal reload waited and may reload now, in ``WidgetKindID``'s order;
-    /// records the reloads. The app asks at every evaluation, so a removal that waited reloads at
-    /// the first one after its minimum.
-    public mutating func pendingRemovals(at date: Date) -> [WidgetKindID] {
-        let due = WidgetKindID.allCases.filter { kind in
-            pendingRemovalKinds.contains(kind)
-                && Self.hasPassed(Self.immediateInterval, since: lastImmediate(kind), at: date)
+    /// The kinds that show what a write of the feed changed (``WidgetFeed/WriteEffect``) to
+    /// reload now, as ``removal(of:at:)``'s do: with ``Reason/repair`` those that show the feed it
+    /// replaced (``WidgetFeed/Repair/readers``), and with ``Reason/addition`` those that show a
+    /// section it added. Records the reloads; none for ``WidgetFeed/WriteEffect/nothing``.
+    public mutating func written(_ effect: WidgetFeed.WriteEffect, at date: Date) -> [FeedReload] {
+        if let repair = effect.repair { wait(repair.readers, for: .repair) }
+        for section in WidgetFeed.Section.allCases where effect.added.contains(section) {
+            wait(section.readers, for: .addition)
         }
-        for kind in due {
-            pendingRemovalKinds.remove(kind)
-            if kind == .battery {
+        return pendingReloads(at: date)
+    }
+
+    /// Adds `kinds` to the reloads that wait; a kind that waits already keeps its first reason.
+    private mutating func wait(_ kinds: [WidgetKindID], for reason: Reason) {
+        for kind in kinds where pendingFeedReloads[kind] == nil {
+            pendingFeedReloads[kind] = reason
+        }
+    }
+
+    /// The kinds whose reload for a change of the feed waited and may reload now, in
+    /// ``WidgetKindID``'s order; records the reloads. The app asks at every evaluation, so a reload
+    /// that waited comes at the first one after its minimum, never on a timer of its own.
+    public mutating func pendingReloads(at date: Date) -> [FeedReload] {
+        let due = WidgetKindID.allCases.compactMap { kind in
+            pendingFeedReloads[kind].flatMap { reason in
+                Self.hasPassed(Self.immediateInterval, since: lastImmediate(kind), at: date)
+                    ? FeedReload(kind, reason) : nil
+            }
+        }
+        for reload in due {
+            pendingFeedReloads[reload.kind] = nil
+            if reload.kind == .battery {
                 lastImmediateReload = date
                 lastBatteryReload = date
             } else {
-                lastImmediateReloads[kind] = date
+                lastImmediateReloads[reload.kind] = date
             }
         }
         return due
@@ -371,7 +417,11 @@ extension WidgetReloadPlanner {
         /// and waits for it: the widgets take BatteryPulse's language from it
         /// (``WidgetLanguage``), so the extension the reload starts must find the new one, and a
         /// running one must not keep a read of the old one. An update ends the previous version's
-        /// extension at once, as before.
+        /// extension at once, as before, and its reload doesn't wait for a write: the sooner an
+        /// extension of the previous version is gone, the less WidgetKit hears from it. The
+        /// launch's first write, after the end, then reloads every placed kind through the planner
+        /// (``WidgetReloadPlanner/Reason/repair``), so the extension the update starts finds the
+        /// feed: after an update from 0.7.0 there was none.
         public var steps: [LaunchStep] {
             switch self {
             case .update: [.endExtension, .reload]
@@ -412,8 +462,10 @@ extension WidgetReloadPlanner {
 /// The answer is asked for only at a reload moment, never on a schedule of its own: before the
 /// first reload, and again while the answer lists no widget of the kind that is due (an empty or
 /// failed answer included) once it is ``maximumAge`` old. So a widget placed since is reloaded
-/// within that time while the app runs, and the counts the app logs follow it. A kind the answer
-/// lists stays placed until the app quits.
+/// within that time while the app runs, and the counts the app logs follow it. Each answer
+/// replaces the one before (``record(answer:at:)``), but a kind the answer lists is never asked
+/// about again: once its last widget is removed, it still counts as placed until an answer asked
+/// for a kind the answer leaves out no longer lists it, or until the app quits.
 public struct WidgetPlacements: Sendable {
     static let maximumAge: TimeInterval = 15 * 60
 

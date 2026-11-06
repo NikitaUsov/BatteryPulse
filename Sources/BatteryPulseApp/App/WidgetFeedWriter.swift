@@ -30,9 +30,11 @@ enum AppWidgetFeed {
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
 /// moment only. One write runs at a time; the requests meanwhile make one follow-on write. A write
-/// for what the user removed counts in ``removalsWritten`` once the file is without it, the one
-/// property anything observes: ``WidgetRefresher`` then reloads the kinds that show it
-/// (``takeRemovedSections()``).
+/// that shows the widgets something their own timelines would show only later counts in
+/// ``changesWritten``, the one property anything observes: what the user removed, once the file
+/// is without it, and what a write brought (``WidgetFeed/WriteEffect``), a feed in place of one
+/// they couldn't use or that had aged, or a section added. ``WidgetRefresher`` then reloads the
+/// kinds that show it (``takeChanges()``).
 /// Observable for that, and to be in the Settings pane's environment.
 @Observable
 final class WidgetFeedWriter {
@@ -45,6 +47,9 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var answeredCounts: [WidgetKindID: Int]?
     /// The last question failed: a failure that repeats at every routine write logs at error once.
     @ObservationIgnored private var lastAnswerFailed = false
+    /// The last read of the history for the feed failed: as the question's, a failure that repeats
+    /// at every routine write logs at error once, then at debug until a read succeeds.
+    @ObservationIgnored private var lastHistoryReadFailed = false
     @ObservationIgnored private var writing: Task<Void, Never>?
     /// What the requests made while a write ran ask for after it.
     @ObservationIgnored private var queued: (reason: WidgetFeed.WriteReason, unchanged: Bool)?
@@ -55,9 +60,12 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var queuedRemovals: Set<WidgetFeed.Section> = []
     /// The sections the removals written since the refresher last asked took out.
     @ObservationIgnored private var removedSections: Set<WidgetFeed.Section> = []
-    /// How many writes took out what the user removed: each left the file without it, whether it
-    /// took it out or found it out already.
-    private(set) var removalsWritten = 0
+    /// What the writes since the refresher last asked brought the widgets.
+    @ObservationIgnored private var writtenEffect = WidgetFeed.WriteEffect.nothing
+    /// How many writes showed the widgets something they see only after a reload: a removal, each
+    /// leaving the file without it, whether it took it out or found it out already, or a write's
+    /// effect.
+    private(set) var changesWritten = 0
 
     init(
         monitor: BatteryMonitor, history: HistoryStore = AppHistory.store, store: WidgetFeedStore = AppWidgetFeed.store
@@ -96,11 +104,14 @@ final class WidgetFeedWriter {
         await writing?.value
     }
 
-    /// The sections the removals written since the last call took out, for the kinds that show
-    /// them to reload.
-    func takeRemovedSections() -> Set<WidgetFeed.Section> {
-        defer { removedSections = [] }
-        return removedSections
+    /// What the writes since the last call showed the widgets: the sections the removals took
+    /// out, and what the full writes brought; for the kinds that show them to reload.
+    func takeChanges() -> (removed: Set<WidgetFeed.Section>, effect: WidgetFeed.WriteEffect) {
+        defer {
+            removedSections = []
+            writtenEffect = .nothing
+        }
+        return (removedSections, writtenEffect)
     }
 
     /// Runs the queued writes one after another until none is left. A write that didn't fail
@@ -116,19 +127,27 @@ final class WidgetFeedWriter {
             switch result {
             case .failed:
                 queuedRemovals.formUnion(removals)
-            case .changed, .unchanged:
-                if !removals.isEmpty {
-                    removedSections.formUnion(removals)
-                    removalsWritten += 1
-                }
+            case .changed(let effect):
+                record(removals, effect)
+            case .unchanged:
+                record(removals, .nothing)
             }
         }
         writing = nil
     }
 
-    /// What a write did to the file.
+    /// Keeps what a write showed the widgets for ``takeChanges()``, and counts it once.
+    private func record(_ removals: Set<WidgetFeed.Section>, _ effect: WidgetFeed.WriteEffect) {
+        guard !removals.isEmpty || effect != .nothing else { return }
+        removedSections.formUnion(removals)
+        writtenEffect.formUnion(effect)
+        changesWritten += 1
+    }
+
+    /// What a write did to the file, and, when it wrote a feed, what that showed the widgets.
     private enum WriteResult {
-        case changed, unchanged, failed
+        case changed(WidgetFeed.WriteEffect)
+        case unchanged, failed
     }
 
     /// Writes the feed for `reason`. `removals` are the sections the requests it serves take out:
@@ -160,7 +179,23 @@ final class WidgetFeedWriter {
             readsDevices: readsDevices, sections: sections,
             current: snapshot.map { HistorySample($0, at: now) },
             devices: devices, modelNames: modelNames)
-        guard let feed = await FeedBuild.make(source, history: history) else {
+        let built: WidgetFeed?
+        do {
+            built = try await FeedBuild.make(source, history: history)
+            if source.includesHistory { lastHistoryReadFailed = false }
+        } catch {
+            // The error's domain and code are public, its description, which can name a path, is
+            // not.
+            let level: OSLogType = lastHistoryReadFailed ? .debug : .error
+            lastHistoryReadFailed = true
+            let error = error as NSError
+            Diagnostics.history.log(
+                level: level,
+                "Reading the history for the widget feed failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+            )
+            built = nil
+        }
+        guard let feed = built else {
             // The history couldn't be read, so the previous feed stays; a clear, a device
             // forgotten or reads turned off still leave it.
             return clearing || !removals.isEmpty ? await removeOnly(reason, historyCleared: clearing) : .failed
@@ -171,9 +206,9 @@ final class WidgetFeedWriter {
             return await removeInDemoMode(reason, historyCleared: clearing, removing: removals)
         }
         do {
-            let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
+            let (outcome, effect) = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
             Self.log(outcome, of: feed, reason: reason)
-            return outcome == .unchanged ? .unchanged : .changed
+            return outcome == .unchanged ? .unchanged : .changed(effect)
         } catch {
             if clearing { historyCleared = true }
             // The widgets keep the previous feed and, two hours after it, say so. The error's
@@ -239,12 +274,12 @@ final class WidgetFeedWriter {
                 Diagnostics.widget.notice(
                     "Took a removal out of the widget feed (\(reason.rawValue, privacy: .public)), nothing added: \(bytes, privacy: .public) bytes"
                 )
-                return .changed
+                return .changed(.nothing)
             case .removed:
                 Diagnostics.widget.notice(
                     "Removed the widget feed for a removal (\(reason.rawValue, privacy: .public)): none was written since launch"
                 )
-                return .changed
+                return .changed(.nothing)
             case .unchanged, nil:
                 Diagnostics.widget.debug(
                     "Nothing to take out of the widget feed (\(reason.rawValue, privacy: .public))")
@@ -309,33 +344,24 @@ private nonisolated enum FeedBuild {
         try store.rewrite { $0.removing(removal) }
     }
 
-    /// Writes `feed` through `store`, which blocks on the file system.
+    /// Writes `feed` through `store`, which blocks on the file system, and says what the write
+    /// showed the widgets (``WidgetFeedStore/writeReporting(_:unchanged:)``).
     @concurrent
     static func write(_ feed: WidgetFeed, to store: WidgetFeedStore, unchanged: Bool) async throws
-        -> WidgetFeedStore.Outcome
+        -> (outcome: WidgetFeedStore.Outcome, effect: WidgetFeed.WriteEffect)
     {
-        try store.write(feed, unchanged: unchanged)
+        try store.writeReporting(feed, unchanged: unchanged)
     }
 
     /// Reads what of the history `source` includes from `store`, then builds the feed; `nil` in
-    /// Demo Mode, or when the history can't be read, so the previous feed stays rather than one
-    /// that lost the history.
+    /// Demo Mode. Throws when the history can't be read, so the previous feed stays rather than
+    /// one that lost the history, and the writer logs it.
     @concurrent
-    static func make(_ source: WidgetFeed.Source, history store: HistoryStore) async -> WidgetFeed? {
+    static func make(_ source: WidgetFeed.Source, history store: HistoryStore) async throws -> WidgetFeed? {
         var source = source
         if source.includesHistory {
-            do {
-                source.samples = try await store.samples(from: WidgetFeed.historyStart(at: source.now))
-                source.days = try await store.dailySummaries()
-            } catch {
-                // The error's domain and code are public, its description, which can name a
-                // path, is not.
-                let error = error as NSError
-                Diagnostics.history.error(
-                    "Reading the history for the widget feed failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
-                )
-                return nil
-            }
+            source.samples = try await store.samples(from: WidgetFeed.historyStart(at: source.now))
+            source.days = try await store.dailySummaries()
         }
         return WidgetFeed.build(source)
     }

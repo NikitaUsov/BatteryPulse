@@ -98,6 +98,9 @@ struct DevicesWidgetPreviewTests {
     static let old = scene("feed-old", "The feed 3 hours old", feed: feed(writtenMinutesAgo: 3 * 60))
     static let oldAll = scene("feed-old-all", "All, the feed 3 hours old", .all, feed: feed(writtenMinutesAgo: 3 * 60))
     static let noFeed = scene("no-feed", "No feed", feed: nil)
+    /// Reads on, but the feed was written while no iPhone & iPad widget counted as placed: it
+    /// holds no devices yet, and the widget waits as without a feed (X-2).
+    static let notWritten = scene("devices-not-written", "Reads on, the devices not written yet", feed: feed(nil))
 
     static let choices: [Scene] = [mostRecent, lowest, all, oneDevice]
     static let states: [Scene] = [readsOff, noDevices, forgotten, old, oldAll, noFeed]
@@ -151,10 +154,25 @@ struct DevicesWidgetPreviewTests {
     func rendersEveryFamilyAndScene(_ language: Language) throws {
         guard WidgetPreviewTests.languages.contains(language) else { return }
         for size in Self.families {
-            for scene in Self.choices + [Self.notChosen, Self.unnamed, Self.yesterday] + Self.states {
+            for scene in Self.choices + [Self.notChosen, Self.unnamed, Self.yesterday, Self.notWritten] + Self.states {
                 try WidgetPreviewTests.write(
                     Self.widget(scene, size, .standard, language),
                     "devices-\(WidgetPreviewTests.fileName(size))-\(scene.name)\(language.suffix)")
+            }
+        }
+    }
+
+    /// A feed without the devices yet draws the no-feed message, "Open BatteryPulse to update",
+    /// in every family and choice, never "Connect an iPhone or iPad with a cable"
+    /// (`devices-<family>-devices-not-written[-ru].png`).
+    @Test func aFeedWithoutTheDevicesYetDrawsTheNoFeedMessage() {
+        for size in Self.families {
+            for show in DevicesWidgetShow.allCases {
+                let plan = DevicesWidgetPlan.make(
+                    size: size, configuration: DevicesWidgetConfiguration(show: show), feed: Self.notWritten.feed,
+                    entry: WidgetTimelinePlan.Entry(date: Self.now, showsEstimate: false),
+                    formatter: Language.english.formatter, timeZone: WidgetPreviewTests.timeZone)
+                #expect(plan == .empty(.noFeed), "\(size) \(show)")
             }
         }
     }

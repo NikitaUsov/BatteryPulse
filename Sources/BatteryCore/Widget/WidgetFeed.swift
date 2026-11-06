@@ -295,6 +295,17 @@ extension WidgetFeed {
             }
         }
     }
+
+    /// Whether the feed holds `section`: the builder writes the history's series whenever it holds
+    /// the history, gaps and all, and the devices' list whenever it holds the devices, empty or
+    /// not. A feed whose setting is on but that leaves a section out was written while no kind that
+    /// shows it counted as placed.
+    public func holds(_ section: Section) -> Bool {
+        switch section {
+        case .history: day != nil || week != nil || daily != nil
+        case .devices: devices != nil
+        }
+    }
 }
 
 // MARK: - Writes
@@ -376,6 +387,86 @@ extension WidgetFeed {
             lastStep = step
             return true
         }
+    }
+
+    /// How old the feed a write replaces may be before the widgets need a reload to leave it: a
+    /// feed this old can reach ``outdatedAge`` before the History widget's own hourly refresh
+    /// (``WidgetTimelinePlan/historyRefreshInterval``) reads the next one, so a widget whose
+    /// timeline was made from it would add "Open BatteryPulse to update" while BatteryPulse runs.
+    /// The app writes at least once per 15 minutes while it runs, so only a gap reaches it:
+    /// BatteryPulse not running, the Mac asleep, Demo Mode, or writes that failed.
+    public static let repairAge: TimeInterval = outdatedAge - WidgetTimelinePlan.historyRefreshInterval
+
+    /// What a write shows the placed widgets that their own timelines would show only at their
+    /// next refresh, up to an hour later: a feed in place of one they couldn't use or that had
+    /// aged, and a section they show added. The kinds that show it then reload
+    /// (``WidgetReloadPlanner/written(_:at:)``).
+    public struct WriteEffect: Sendable, Equatable {
+        /// Why the widgets need a reload to leave the feed the write replaced, if they do.
+        public var repair: Repair?
+        /// The sections the feed holds and the one it replaced didn't: Record battery history or
+        /// device reads turned on, or a kind that WidgetKit's answer now lists.
+        public var added: Set<Section>
+
+        public init(repair: Repair? = nil, added: Set<Section> = []) {
+            self.repair = repair
+            self.added = added
+        }
+
+        /// Nothing a reload must show.
+        public static let nothing = WriteEffect()
+
+        /// The effects of two writes, for the reloads that serve both: the larger repair, and
+        /// every section added.
+        public mutating func formUnion(_ other: WriteEffect) {
+            if let next = other.repair, repair.map({ $0 < next }) ?? true { repair = next }
+            added.formUnion(other.added)
+        }
+    }
+
+    /// Why the widgets need a reload to leave the feed a write replaced.
+    public enum Repair: Int, Sendable, Comparable {
+        /// It was ``WidgetFeed/repairAge`` old or older: the History, iPhone & iPad and large
+        /// Battery widgets show its last data with "Open BatteryPulse to update", or soon would.
+        case outdated
+        /// The widgets may not have been able to use it: before this launch's first write, the
+        /// file a previous launch left may be none (BatteryPulse installed or updated from 0.7.0,
+        /// or a removal took the file before the write), one they turn down, or hours old, and
+        /// isn't read to tell; or the last feed written was dated over
+        /// ``WidgetFeed/futureTolerance`` ahead (a clock set back since), which they turn down.
+        /// Without a feed, those three say "Open BatteryPulse to update", and every kind draws in
+        /// the extension's own language rather than BatteryPulse's.
+        case unusable
+
+        public static func < (lhs: Repair, rhs: Repair) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+
+        /// The kinds that show what the repair changes, in ``WidgetKindID``'s order: those that
+        /// show a section for an old feed, and every kind for one they couldn't use, since each
+        /// takes its language from the feed.
+        public var readers: [WidgetKindID] {
+            switch self {
+            case .outdated:
+                WidgetKindID.allCases.filter { kind in Section.allCases.contains { $0.readers.contains(kind) } }
+            case .unusable:
+                WidgetKindID.allCases
+            }
+        }
+    }
+
+    /// What writing this feed shows the placed widgets in place of `previous`, the feed this
+    /// launch last wrote; `nil` before its first write, which repairs every kind
+    /// (``Repair/unusable``). The builder dates nothing in a feed after its `writtenAt`, so a
+    /// `previous` written over the reader's tolerance ahead of this one is the one date the widget
+    /// would turn down.
+    public func effect(replacing previous: WidgetFeed?) -> WriteEffect {
+        let added = Set(Section.allCases.filter(holds))
+        guard let previous, previous.writtenAt.timeIntervalSince(writtenAt) <= Self.futureTolerance else {
+            return WriteEffect(repair: .unusable, added: added)
+        }
+        let repair: Repair? = writtenAt.timeIntervalSince(previous.writtenAt) >= Self.repairAge ? .outdated : nil
+        return WriteEffect(repair: repair, added: added.filter { !previous.holds($0) })
     }
 
     /// The devices section a write would hold, but for the read times: what tells a change the

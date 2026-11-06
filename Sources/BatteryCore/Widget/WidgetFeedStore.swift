@@ -11,6 +11,9 @@ import Synchronization
 ///   never a part; the new file keeps its own 0600, not the old file's mode.
 /// - A feed that differs from the last one written only in `writtenAt` isn't written, unless the
 ///   caller says so (the routine write).
+/// - A write can say what it replaced (``writeReporting(_:unchanged:)``), so the kinds that would
+///   otherwise keep "Open BatteryPulse to update" or a missing section until their own refresh
+///   reload.
 ///
 /// Foundation alone, so it needs no pointer and no `unsafe`. Its calls block on the file system,
 /// so the app makes them off the main actor; one runs at a time. A final class rather than an
@@ -68,11 +71,22 @@ public final class WidgetFeedStore: Sendable {
     /// Writes `feed`, unless it differs from the file only in `writtenAt` and `unchanged` is
     /// false.
     public func write(_ feed: WidgetFeed, unchanged: Bool = false) throws -> Outcome {
+        try writeReporting(feed, unchanged: unchanged).outcome
+    }
+
+    /// Writes `feed` as ``write(_:unchanged:)`` does, and says what the write shows the placed
+    /// widgets that their own timelines would show only later (``WidgetFeed/effect(replacing:)``),
+    /// against the feed this store last wrote: before its first write, the file a previous launch
+    /// left isn't read, so that write repairs every kind. Nothing, when nothing was written.
+    public func writeReporting(_ feed: WidgetFeed, unchanged: Bool = false) throws -> (
+        outcome: Outcome, effect: WidgetFeed.WriteEffect
+    ) {
         try written.withLock { written in
-            if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return .unchanged }
+            if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return (.unchanged, .nothing) }
+            let previous = written
             let bytes = try replace(with: WidgetFeed.encoded(feed))
             written = feed
-            return .written(bytes: bytes)
+            return (.written(bytes: bytes), feed.effect(replacing: previous))
         }
     }
 

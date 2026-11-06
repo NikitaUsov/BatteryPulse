@@ -406,7 +406,7 @@ enum WhatsNew {
         Feature(
             id: 2, symbol: "iphone", title: "iPhone and iPad widget",
             detail:
-                "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read; nothing in it leaves your Mac."
+                "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of what they show in a folder only you can read; nothing in it leaves your Mac."
         ),
         Feature(
             id: 3, symbol: "globe", title: "Widgets in BatteryPulse's language",
