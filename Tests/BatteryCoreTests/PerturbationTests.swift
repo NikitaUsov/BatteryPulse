@@ -133,6 +133,29 @@ import Testing
         #expect(s.voltageMV.map(Plausible.packVoltageMV.contains) == true)
         #expect(s.amperageMA != nil)
         #expect(s.chargePercent != nil)
+        // The charger's registers read as the capture holds them, the charger's entry first:
+        // the Charge Limit's bit 24 (``SystemChargeLimit``) is a reading, never dropped.
+        let reading = try fixture.reading()
+        let entry = RegistryChildren.chargerData(in: reading.smartBattery)
+        let top = reading.smartBattery["ChargerData"]?.dictionaryValue ?? [:]
+        for (key, value) in [("NotChargingReason", s.notChargingReason), ("SlowChargingReason", s.slowChargingReason)] {
+            #expect(value == (entry[key] ?? top[key])?.intValue, "\(key)")
+        }
+    }
+
+    /// Every capture in `Fixtures/` is swept: a Mac's through ``Fixture`` by
+    /// ``everyKeyOfAMacCapture(_:)``, the iPhone's and the accessories' by their own. A capture
+    /// added later, as 0.7.0 added the Charge Limit's, fails here until a sweep reads it.
+    @Test func everyCaptureIsSwept() throws {
+        let folder = try #require(Bundle.module.url(forResource: "Fixtures", withExtension: nil))
+        let captures = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            .filter { $0.hasSuffix(".plist") }.map { String($0.dropLast(".plist".count)) }
+        let swept =
+            Fixture.allCases.map(\.rawValue) + [
+                RealIDeviceCaptureTests.iPhone17ProMax, AccessoryFixture.synthetic.rawValue,
+            ]
+        #expect(Set(captures) == Set(swept))
+        #expect(captures.contains(Fixture.m5ChargeLimit.rawValue))
     }
 }
 
@@ -315,6 +338,8 @@ enum Perturbation {
             ("cellVoltageSpreadMV", s.cellVoltageSpreadMV),
             // `false` is also what an unknown request reads.
             ("isChargingVoltagePerCell", s.isChargingVoltagePerCell ? true : nil),
+            // `false` is also what a capture without the reason, the plug or the state reads.
+            ("isAtSystemChargeLimit", s.isAtSystemChargeLimit ? true : nil),
             ("estimatedTimeToEmptyMinutes", s.estimatedTimeToEmptyMinutes),
             ("estimatedTimeToFullMinutes", s.estimatedTimeToFullMinutes),
         ])
