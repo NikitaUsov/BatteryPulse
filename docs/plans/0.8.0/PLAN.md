@@ -5,6 +5,16 @@ Written 2026-10-30, the day 0.6.2 was released (`v0.6.2`, `main` at `0ecca33`), 
 Nothing in 0.8 starts before 0.7.0 is published. Every 0.7 result this plan depends on is named in
 §2, with what 0.8 does if it never comes.
 
+**Taken in on 2026-11-06 (A-0),** the day 0.7.1 ("The widgets that waited for the feed", ROADMAP
+Stage 1.9) shipped, a release this plan didn't foresee: 0.8 starts from v0.7.1 (`main` at
+`48b5da0`), not from v0.7.0 (`5e2e5c7`). 0.7.1 brought the feed (`Widget/feed.json`), the History
+and iPhone & iPad widgets, the large Battery widget's History chart, the widgets in BatteryPulse's
+language, Settings that scroll (0.7.1's S-1), What's New after every update, and the build-number
+clock (0.7.1's B-1). §2.1's last column says what 0.7.0 and 0.7.1 shipped of this plan's inputs;
+the six preparation packages (E-3, A-6a, P-2a, X-1a, X-2a, E-2), built and reviewed before 0.7.1,
+come in with A-0; the maintainer added F-1 and T-1's item 7 (2026-11-06); and the rounds (§5) hold
+what remains.
+
 **Scope.** RD §3.3 is the scope: four answers a non-expert gets inside the app (is my battery OK,
 why isn't it charging, what does this number mean, how do I report a problem), working with
 VoiceOver and the keyboard. M-10 and M-11 set the rules (decided by delegation, 2026-10-22). It
@@ -38,13 +48,18 @@ and FEA-20's widget field stays in 1.1: 0.8 keeps off the widget.
 | P7 | `docs/plans/0.7.0/PLAN.md` at `0ecca33` (main's copy; the package branches cut from 0.6.1 carry an older one, and `claude/070-w0` and `-integration` W-0's re-resolved copy). The v0.7.0 tag won't hold it: 0.7's last commit removes `docs/plans/0.7.0/` (P7:3025-3029), so A-0 reads P7, its Appendix C included, at 0.7's `<keep>`, the commit before that removal, reachable through the 0.7.0 release PR's `refs/pull/<n>/head` |
 | W | `docs/plans/0.7.0/widgets.md` |
 | AC62 | `docs/plans/0.7.0/0.6.2-appendix-c.md` (0.6.2's Appendix C), with `sessions/A.md` and `sessions/B.md` |
+| P71 | `docs/plans/0.7.1/PLAN.md`, 0.7.1's plan, readable at `dbc696a979b0cad265ae554d1e6d69db1eac1572` in the 0.7.1 release PR's head (`refs/pull/14/head`) |
+| AC70 | 0.7.0's Appendix C, `docs/plans/0.7.1/0.7.0-appendix-c.md` at the same commit |
+| AC71 | 0.7.1's Appendix C, `docs/plans/0.8.0/0.7.1-appendix-c.md` |
+| AP71 | 0.7.1's after-publishing check on the M5 (its Session D3, 2026-11-06), `docs/plans/0.8.0/0.7.1-session-d3.md` |
 | RD, INV | `docs/plans/1.0/ROADMAP.md`, `docs/plans/1.0/INVENTORY.md` |
 | R, UG, RM, CL | `docs/ROADMAP.md`, `docs/USER_GUIDE.md`, `README.md`, `CLAUDE.md` (CL wins over every other source) |
 | file:line | a file in `Sources`, `Tests`, `scripts`, `Resources` or `.github` |
 | HIG | Apple's Human Interface Guidelines pages, named by topic |
 
-- **Revision:** every file:line is at `0ecca33` (v0.6.2) unless it names a branch. 0.7 edits many
-  of the same files (W-14, W-13, W-3c, W-1), so A-0 re-resolves them at the v0.7.0 tag.
+- **Revision:** every file:line is at `0ecca33` (v0.6.2) unless it names a branch. 0.7.0 and 0.7.1
+  edited many of the same files, so each package re-resolves its own at its start (A-0 item 3);
+  the intake's own citations (§2.1's last column, Appendix C) are at v0.7.1 (`48b5da0`).
 - **0.7 branches** are cited as `origin/claude/070-<pkg>` at the commit read on 2026-10-30: `s1`
   `1ddbe23`, `w3a` `2435519`, `w13` `f94e3d1`, `r1` `583c67f`, `toolchain` `0d26a6d`,
   `integration` `8a0b222`.
@@ -150,8 +165,9 @@ Contents:
 - **Not in 0.8** (Appendix A has each row): `bpulse` inside the app (M-7), `SECURITY.md`, the 1.0
   docs and README's status line, closing the verification matrix, the Russian screenshot set and
   the beta styles' final stance (all 0.9.0); the soak, energy budgets and upgrade matrix (0.9.x);
-  the History and iPhone & iPad widgets, the feed and FEA-20 (1.1); W-9 (after 1.0); setting a
-  limit (FEA-27, M-3); grades of our own; telemetry beyond the version count; MetricKit; °F.
+  FEA-20 (1.1); W-9 (after 1.0); setting a limit (FEA-27, M-3); grades of our own; telemetry
+  beyond the version count; MetricKit; °F. The History and iPhone & iPad widgets and the feed,
+  which this line once gave to 1.1, shipped in 0.7.1 (Stage 1.9).
 
 ---
 
@@ -159,27 +175,30 @@ Contents:
 
 ### 2.1 What 0.8 takes from 0.7, and what it does if that is missing
 
-0.8 starts from the v0.7.0 tag. A-0 checks each row against 0.7.0's Appendix C, read at 0.7's
-`<keep>` (the tag no longer holds `docs/plans/0.7.0/`, P7:3025-3029).
+0.8 starts from v0.7.1 (`48b5da0`), not the v0.7.0 tag this plan was written for. A-0 checked each
+row on 2026-11-06 against 0.7.0's Appendix C (AC70), 0.7.1's plan (P71, whose §5 names the rows
+0.7.1 changes: I-5, I-6, I-7, I-9, I-13, I-14), 0.7.1's Appendix C (AC71), its after-publishing
+check (AP71) and the code at v0.7.1; the last column says what happened, and the third and fourth
+columns stay as written.
 
-| # | 0.7 item | What 0.8 needs from it | If it was cut, moved or missing |
-|---|---|---|---|
-| I-1 | W-14: `SystemChargeLimit`, `isAtSystemChargeLimit`, `WidgetStateWord.chargedToLimit`, `BatteryMotionKey`'s flag, the Demo scene, Power's "Charge limit: Reached", and the fixture `m5-macos27-charge-limit.plist` (P7:1444-1527) | A-1's cause type grows from it; A-2's number fills its row | **Moved whole to 0.8** (only by G7-18, already answered: the capture came, P7:2605): A-1 first lands W-14 as P7 specifies (+2 runs, its frozen field raw value `systemChargeLimit` included), then generalizes it |
-| I-2 | W-13: the version-count toggle in Settings → General, three settings keys, What's New's "Anonymous version count" row for updaters from before 0.7 (P7:1729-1731, P7:1772-1776) | A-5 keeps the toggle in Welcome (NEW-24's announcement); L-1 keeps appending the row | **Moved to 0.8** (only if review found a promise of P7 §11 it couldn't keep, P7:2611): 0.8 carries W-13 whole before A-5 (+2 runs), with its own privacy review; A-5 then places the toggle |
-| I-3 | S-1: `MachineJSON` with `formatVersion` (`MachineJSON.swift:7-8` on `origin/claude/070-s1`) and ISO 8601 device dates | E-1's goldens pin these 1.x shapes; A-2 adds a key under its rule | Never cut in 0.7 (G7-14). If absent: E-1 waits for it, and A-2's key goes in without a version field |
-| I-4 | W-1: `localizedLiterals(in:)` in `LocalizationCatalogTests` and the widget types in `BatteryCore/Widget/` | X-2 extends the scanner to `accessibilityValue(`/`accessibilityHint(`; A-3 reuses `WidgetCondition` if it fits | X-2 extends today's `localizingCall` regex (`LocalizationCatalogTests.swift:19-21`) instead |
-| I-5 | W-6's `WidgetChartSummary` (stretch, P7:1954) | X-1 reuses it for chart descriptors | **Expected missing** (W-6 is stretch): X-1a builds `ChartSummary` in BatteryCore (+1 run, RD §3.3) |
-| I-6 | W-5's feed (stretch) | The widget field `systemChargeLimit` could show "80 %" | **Expected missing:** the field keeps "Reached" (RD §3.3); FEA-35's widget half goes to 1.1 with the feed |
-| I-7 | W-12: the session script with `charge-limit` and `hold-watch` steps, the hands-free helpers, the menu-bar shot method that replaces CGWindowList (P7:524-532, P7:1339-1344), and `SESSION-R.md` | T-1 builds 0.8's sessions on them | **Expected missing:** P7's D3 removes `docs/plans/0.7.0/` and copies nothing forward (P7:2044-2047), unlike 0.6.2's D3, which copied the tooling for 0.7 (P7:263). So A-0 restores them from 0.7.0's `<keep>` commit or the release PR's head into `docs/plans/0.8.0/` (T-1 counts the run that adapts them), unless 0.7's D3 is asked to copy them first. No menu-bar method: T-1 uses the AX frame of the status item, else a computer-use crop (§6.7) |
-| I-8 | QUA-06's `hold-watch` night (P7:2436-2438): whether an optimized hold was seen, and whether it sets bit 24 | G8-2: the optimized-hold cause | **No hold seen** (nobody knows which night macOS holds): T-1 offers the step again before 0.8's D1; still none: that cause waits until after 1.0, and today's "Charging on hold" stays (RD §5.1 QUA-06) |
-| I-9 | D1's build-number clock that only grows (P7:2022-2028) | 0.8's look-shoot build and RCs must sit above the installed 0.7.0 | If 0.7 shipped without it: 0.8's A-0 lands it first (one commit), before any M5 build |
-| I-10 | The installer's pre-swap end of the widget extension, pinned by a source test (P7:953-956) | P-2 edits the same function; the test keeps the order | If the test is missing: P-2 adds it |
-| I-11 | K-1, the backup key's public half (P7:1641-1652, cut-order 8) | C15 needs two keys at 1.0 | **If it moved to 0.8:** K-1 runs here, once the maintainer has generated the key (§14 M-9 steps); if he never does, ROADMAP records the accepted risk (C15) |
-| I-12 | R-1's `docs/VERIFICATION.md` (NEW-18; cut-order 7) | D3 fills 0.8's rows | **If it moved to 0.8:** V-1 creates it from `origin/claude/070-r1`'s draft (`583c67f`, +153 lines) |
-| I-13 | G7-11's reload-delivery measurement (P7:2598) | — | If the logged day gave none: Session R8's day measures it (§6.5) |
-| I-14 | W-0 item 9's open checks: the menu bar item on a dark bar and WP-18's Xcode items (P7:524-541), if 0.7's Session R didn't close them; and G7-12's widget tree read in English and Russian (P7:2367-2386), whose default leaves the row open (P7:2599) | C10 counts every widget family as reachable and named (RD:326-327), and 0.8's is the VoiceOver and keyboard sitting that passes C10's script (M-12; RD §3.3's exit criteria) | Session R8 runs them (§6.4 step 7, step 3 for the widgets, and step 11b for the Xcode items) |
-| I-15 | W-3c: `PageID`, `WindowOpener.showMainWindow(page:)`, and the History-over-Raw-Data fix (P7:518-523) | A-4's popovers and X-2's keyboard paths run on `MainView` as W-3c leaves it | If it slipped: X-2 takes the History fix if Session R8's keyboard walk reproduces it |
-| I-16 | 0.7's toolchain: CI's macOS job on Xcode 27.2 (Apple's release candidate 27B48), the Linux job still on Swift 6.4, the cloud sessions on Swift 6.4.2 (`origin/claude/070-toolchain`, `0d26a6d`'s message) | A-6 uses `fileExporter(…item:…)`; the `FileDocument` overload is deprecated in the 27.2 SDK (Appendix B) | Nothing changes: the `item:` overload is what the app already uses (`DeveloperView.swift:125-133`) |
+| # | 0.7 item | What 0.8 needs from it | If it was cut, moved or missing | What happened (A-0, 2026-11-06) |
+|---|---|---|---|---|
+| I-1 | W-14: `SystemChargeLimit`, `isAtSystemChargeLimit`, `WidgetStateWord.chargedToLimit`, `BatteryMotionKey`'s flag, the Demo scene, Power's "Charge limit: Reached", and the fixture `m5-macos27-charge-limit.plist` (P7:1444-1527) | A-1's cause type grows from it; A-2's number fills its row | **Moved whole to 0.8** (only by G7-18, already answered: the capture came, P7:2605): A-1 first lands W-14 as P7 specifies (+2 runs, its frozen field raw value `systemChargeLimit` included), then generalizes it | **Shipped whole in 0.7.0** (G7-18 answered): `SystemChargeLimit.swift`, `isAtSystemChargeLimit`, `WidgetStateWord.chargedToLimit`, `BatteryMotionKey`'s flag, the Demo scene (`DemoBattery`'s `isAtSystemChargeLimit`, which sets bit 24), Power's "Charge limit: Reached" and the fixture are at v0.7.1. So no +2: A-1 generalizes them. Never seen on the M5 (Session R's step 9b never ran: AC70, AC71's F rows), so the look shoot and Session R8 see them first (§6.1 steps 2-3, §6.4 step 9) |
+| I-2 | W-13: the version-count toggle in Settings → General, three settings keys, What's New's "Anonymous version count" row for updaters from before 0.7 (P7:1729-1731, P7:1772-1776) | A-5 keeps the toggle in Welcome (NEW-24's announcement); L-1 keeps appending the row | **Moved to 0.8** (only if review found a promise of P7 §11 it couldn't keep, P7:2611): 0.8 carries W-13 whole before A-5 (+2 runs), with its own privacy review; A-5 then places the toggle | **Shipped in 0.7.0 as planned:** the toggle, `anonymousVersionCount`, `lastCountedVersion`, `versionFirstLaunch`, and What's New's row for updaters from before 0.7 (absent after 0.7.1's update from 0.7.0, as it should be: AP71's D3-count-row); v0.7.0's `BatteryPulse-count.txt` had 3 downloads on 2026-11-06 (AC71's D3 rows). So no +2: A-5 places the toggle, L-1 keeps the row. The toggle was seen on in Settings → General (AP71's notes), not yet greyed under Never |
+| I-3 | S-1: `MachineJSON` with `formatVersion` (`MachineJSON.swift:7-8` on `origin/claude/070-s1`) and ISO 8601 device dates | E-1's goldens pin these 1.x shapes; A-2 adds a key under its rule | Never cut in 0.7 (G7-14). If absent: E-1 waits for it, and A-2's key goes in without a version field | **Shipped in 0.7.0:** `MachineJSON` with `formatVersion` 1 per shape (`snapshotFormatVersion`, `deviceBatteryFormatVersion`) and ISO 8601 device dates (AC70's S-1 row); 0.7.1's D1 found no output difference from v0.7.0 (AC71's D1 item 1). E-1 pins them; A-2's key goes in under the rule |
+| I-4 | W-1: `localizedLiterals(in:)` in `LocalizationCatalogTests` and the widget types in `BatteryCore/Widget/` | X-2 extends the scanner to `accessibilityValue(`/`accessibilityHint(`; A-3 reuses `WidgetCondition` if it fits | X-2 extends today's `localizingCall` regex (`LocalizationCatalogTests.swift:19-21`) instead | **Shipped in 0.7.0:** `localizedLiterals(in:)` (`LocalizationCatalogTests.swift`) and the widget model in `BatteryCore/Widget/`, `WidgetCondition` with it. The scan doesn't read `accessibilityValue(` or `accessibilityHint(` yet, so X-2b extends `localizedLiterals(in:)` |
+| I-5 | W-6's `WidgetChartSummary` (stretch, P7:1954) | X-1 reuses it for chart descriptors | **Expected missing** (W-6 is stretch): X-1a builds `ChartSummary` in BatteryCore (+1 run, RD §3.3) | **Shipped in 0.7.1** (W-6): `WidgetChartSummary` (`BatteryCore/Widget/WidgetChart.swift`), one VoiceOver label per widget chart, not a descriptor model (P71 §2.3 item 13). So X-1a built `ChartSummary` for the app's charts anyway (done before 0.7.1; its carry-over names the widgets' label beside it), and X-1b maps it |
+| I-6 | W-5's feed (stretch) | The widget field `systemChargeLimit` could show "80 %" | **Expected missing:** the field keeps "Reached" (RD §3.3); FEA-35's widget half goes to 1.1 with the feed | **Shipped in 0.7.1** (W-5): the feed, version 1, whose schema only gains fields, read by the widget through its one read-only exception (seen on the M5: AC71's F rows, AP71). So the widget can show the number: A-2 takes FEA-35's widget half, as §3 allows (A-2 item 8: a feed field and the `systemChargeLimit` field's value, whose meaning is frozen and value isn't), still first to cut, +1 run [estimate] |
+| I-7 | W-12: the session script with `charge-limit` and `hold-watch` steps, the hands-free helpers, the menu-bar shot method that replaces CGWindowList (P7:524-532, P7:1339-1344), and `SESSION-R.md` | T-1 builds 0.8's sessions on them | **Expected missing:** P7's D3 removes `docs/plans/0.7.0/` and copies nothing forward (P7:2044-2047), unlike 0.6.2's D3, which copied the tooling for 0.7 (P7:263). So A-0 restores them from 0.7.0's `<keep>` commit or the release PR's head into `docs/plans/0.8.0/` (T-1 counts the run that adapts them), unless 0.7's D3 is asked to copy them first. No menu-bar method: T-1 uses the AX frame of the status item, else a computer-use crop (§6.7) | **Came forward, nothing to restore:** 0.7.1's D3 moved its seven tools (`m5-session.sh`, `SESSION-R.md`, `ui.swift`, `frames.swift`, `swap.swift`, `start-session-r.sh`, `start-short-session.sh`) to `docs/plans/0.8.0/`, with `ci.yml`'s dry run, `bash -n` lines and type-checks (AC71's D3 rows). They still name 0.7.1 (`claude/071-integration`, `~/bp-071/`), which T-1 re-points. Their launchers already print only their runbook section, and P11 reads the menu bar item's frame by AX (Session F, AP71), so T-1 starts from both |
+| I-8 | QUA-06's `hold-watch` night (P7:2436-2438): whether an optimized hold was seen, and whether it sets bit 24 | G8-2: the optimized-hold cause | **No hold seen** (nobody knows which night macOS holds): T-1 offers the step again before 0.8's D1; still none: that cause waits until after 1.0, and today's "Charging on hold" stays (RD §5.1 QUA-06) | **No hold seen:** neither release ran the `hold-watch` night (0.7.0 had no Session R, AC70; 0.7.1 only the short feed check, AC71's F rows). The step is in the tools (`hold-watch`, `SESSION-R.md`'s Hold watch); T-1 offers it again before D1 (§6, optional); still none: G8-2's default |
+| I-9 | D1's build-number clock that only grows (P7:2022-2028) | 0.8's look-shoot build and RCs must sit above the installed 0.7.0 | If 0.7 shipped without it: 0.8's A-0 lands it first (one commit), before any M5 build | **Shipped in 0.7.1** (B-1): `scripts/build-number.sh`, whole seconds since 2026-01-01T00:00:00Z, read once per job in `ci.yml` and `release.yml`, pinned by `BuildNumberTests`: RC-U 26725241, RC-F 26725995, the published v0.7.1 26740846 (AP71's About), v0.7.0 9. Every 0.8 CI build sits above v0.7.1; no A-0 commit |
+| I-10 | The installer's pre-swap end of the widget extension, pinned by a source test (P7:953-956) | P-2 edits the same function; the test keeps the order | If the test is missing: P-2 adds it | **In place since 0.6.2:** `UpdateInstallTests.endsTheWidgetExtensionRightBeforeTheSwap`; seen on the M5 at RC-U's install (Session F) and at 0.7.1's update (AP71: 1 found, 1 ended by SIGTERM, 65 ms, no CHSErrorDomain 1103 line). P-2a (done) keeps the order and its test |
+| I-11 | K-1, the backup key's public half (P7:1641-1652, cut-order 8) | C15 needs two keys at 1.0 | **If it moved to 0.8:** K-1 runs here, once the maintainer has generated the key (§14 M-9 steps); if he never does, ROADMAP records the accepted risk (C15) | **Moved to 0.8** (the maintainer's decision, 2026-10-31, AC70): `ReleaseSigning.publicKeys` holds one key at v0.7.1. K-1 runs in C8 once he has generated the key (M-9, §14); else ROADMAP records the accepted risk (C15) |
+| I-12 | R-1's `docs/VERIFICATION.md` (NEW-18; cut-order 7) | D3 fills 0.8's rows | **If it moved to 0.8:** V-1 creates it from `origin/claude/070-r1`'s draft (`583c67f`, +153 lines) | **Shipped in 0.7.0** (R-1), with 0.7.1's Session F column since its D3 (AC71's D3 rows). So no V-1: D3 fills 0.8's rows and Session R8's column. 0.7.1's after-publishing check (AP71) isn't in it yet (§12) |
+| I-13 | G7-11's reload-delivery measurement (P7:2598) | — | If the logged day gave none: Session R8's day measures it (§6.5) | **Still open:** 0.7.0 ran no logged day (AC70) and 0.7.1 only the short feed check (AC71's F rows), so G7-11's default holds for all four kinds; Session R8's day measures reload delivery per kind (§6.5) |
+| I-14 | W-0 item 9's open checks: the menu bar item on a dark bar and WP-18's Xcode items (P7:524-541), if 0.7's Session R didn't close them; and G7-12's widget tree read in English and Russian (P7:2367-2386), whose default leaves the row open (P7:2599) | C10 counts every widget family as reachable and named (RD:326-327), and 0.8's is the VoiceOver and keyboard sitting that passes C10's script (M-12; RD §3.3's exit criteria) | Session R8 runs them (§6.4 step 7, step 3 for the widgets, and step 11b for the Xcode items) | **Still open, all of it:** neither 0.7.0 nor 0.7.1's short feed check ran the dark bar, WP-18's Xcode items or the trees (AC71's F rows, `docs/VERIFICATION.md`), and 0.7.1 added the History and iPhone & iPad kinds, whose trees were never read either. Session R8 runs them (§6.4 steps 3, 7 and 11b), the trees for every kind in both languages, with the rest of the M5 checks 0.7.0 and 0.7.1 shipped without (ROADMAP Stages 1.8 and 1.9; §6.4 step 11c) |
+| I-15 | W-3c: `PageID`, `WindowOpener.showMainWindow(page:)`, and the History-over-Raw-Data fix (P7:518-523) | A-4's popovers and X-2's keyboard paths run on `MainView` as W-3c leaves it | If it slipped: X-2 takes the History fix if Session R8's keyboard walk reproduces it | **Shipped in 0.7.0** (W-3c): `PageID` (`BatteryCore/Widget/WidgetRoute.swift`), `WindowOpener.showMainWindow(page:)` (`App/AppSettings.swift`) and Raw Data leaving at once on a page switch (`MainView`). The fix isn't seen on the M5 (`docs/VERIFICATION.md`'s History row), so Session R8's keyboard walk checks it |
+| I-16 | 0.7's toolchain: CI's macOS job on Xcode 27.2 (Apple's release candidate 27B48), the Linux job still on Swift 6.4, the cloud sessions on Swift 6.4.2 (`origin/claude/070-toolchain`, `0d26a6d`'s message) | A-6 uses `fileExporter(…item:…)`; the `FileDocument` overload is deprecated in the 27.2 SDK (Appendix B) | Nothing changes: the `item:` overload is what the app already uses (`DeveloperView.swift:125-133`) | **Moved on:** CI's macOS job has Xcode 27.2's release (27B52; a runner on an older image still has the candidate, 27B48, at the same path) with Swift 6.4.2, the Linux job `swift:6.4-noble`, cloud sessions Swift 6.4.2 (AC71's V-0 rows; CL). The app's `fileExporter` calls use `item:` (`DeveloperView.swift`, `Main/HistoryExport.swift`): nothing changes |
 
 ### 2.2 The facts 0.8 builds on (from 0.6.2's record)
 
@@ -1582,7 +1601,7 @@ out.
 | … candidate 3, `CHLT` | RD:887-890 | `bpulse --smc` reads it as evidence (A-2 item 4); not read by the app in 0.8 |
 | … candidate 4, `pmset -g battlimit` | RD:891-895 | Not built; the fallback only by G8-1 (+1 run) |
 | … candidate 5, PowerUI | RD:896-897; M-3 | Never (M-3) |
-| … the widget's number | RD:902-903; FEA-10 | Not in 0.8 without the feed (I-6); 1.1 with it |
+| … the widget's number | RD:902-903; FEA-10 | A-2 item 8, through the feed 0.7.1 shipped (I-6) |
 | … a ring or battery marker | P7:1439-1440, P7:1636-1640 ("perhaps the marker") | Not in 0.8: RD §3.3 lists none, and the number is unknown on battery |
 | NEW-02 Health summary | RD §3.3 | A-3 (never cut) |
 | NEW-03 Explanations and their guard | RD §3.3; C12 | A-4 (never cut) |
@@ -1609,27 +1628,27 @@ out.
 | QUA-05 Charge Limit capture | RD:1262 | Done (0.6.2, 0.7's fixture); A-1's and A-2's base |
 | FEA-20 the widget's cause field | RD:1242, RD:1150 | Not in 0.8 (1.1): "keeps 0.8 off the widget" |
 | FEA-27 setting a limit | RD §4.2; M-3 | Not in 1.x |
-| NEW-13 backup key | RD:1372; P7 K-1 | K-1, only if it moved here (I-11) |
-| NEW-18 verification matrix | RD:1377 | 0.8's rows at D3; V-1 only if the file moved here (I-12); closed in 0.9.0 |
+| NEW-13 backup key | RD:1372; P7 K-1 | K-1: it moved here (I-11), and runs once the key exists (M-9) |
+| NEW-18 verification matrix | RD:1377 | 0.8's rows at D3; no V-1, since the file shipped in 0.7.0 (I-12); closed in 0.9.0 |
 | NEW-22 the quick check after each macOS 27.x update | RD:1381 | Ongoing; T-1 keeps 0.7's step |
 | NEW-23 download counts | RD:1382 | §13 step 8 |
 | NEW-24 the version count's announcement | RD:1383 | A-5 keeps it in Welcome; L-1 keeps What's New's row |
 | NEW-11 `formatVersion` | RD:1370 | 0.7; A-2's key is an addition, no bump (§2.4) |
 | 0.7's `charge-limit` step | P7:2238, P7:2435 | T-1 rebuilds it for G8-1 (§6.1 step 2) |
 | 0.7's What's New row | P7:1772-1776 | L-1 item 3 |
-| W-13 moved whole (only on a broken promise of P7 §11) | P7:2611 | Carried whole before A-5, +2 runs (I-2) |
-| W-3c's History-over-Raw-Data fix | P7:518-523 | X-2, if W-3c slipped and Session R8's keyboard walk reproduces it (I-15) |
-| G7-12's widget tree read, if left open (C10's widget families) | P7:2367-2386, P7:2599 | Session R8 step 3 (I-14, G8-6) |
-| SIZ-07 widget-only string table | RD:1306; P7:1988, P7:2621 (0.7's cut 3) | L-1 item 5, only if 0.7 didn't ship it and §9 favours it |
+| W-13 moved whole (only on a broken promise of P7 §11) | P7:2611 | Not needed: W-13 shipped in 0.7.0 (I-2) |
+| W-3c's History-over-Raw-Data fix | P7:518-523 | Shipped in 0.7.0, not seen on the M5: Session R8's keyboard walk checks it, and X-2 fixes it only if the walk reproduces it (I-15) |
+| G7-12's widget tree read (C10's widget families), left open by 0.7.0 and 0.7.1 | P7:2367-2386, P7:2599; AC71 | Session R8 step 3, every kind (I-14, G8-6) |
+| SIZ-07 widget-only string table | RD:1306; P7:1988, P7:2621 (0.7's cut 3) | Shipped in 0.7.1 (the widget's own string table, `scripts/widget-strings.swift`): L-1 item 5 has nothing left |
 | SEC-06 no prompt for own data after an update | RD:1297 ("repeated in every after-publishing check") | §6.6 step 4 |
 | DIS-06 widgets kept across an in-app update | RD:1312 | §6.6 step 3 (evidence for C7) |
-| 0.7's pre-swap extension end | P7:953-956 | P-2 keeps it and its test (I-10) |
-| 0.7's growing build number | P7:2022-2028 | Checked by A-0 (I-9) |
-| 0.7's `WidgetChartSummary` | P7:1954 | X-1a reuses it, or builds `ChartSummary` (I-5) |
-| G7-11's measurement | P7:2598 | Session R8's day, if handed on (I-13) |
-| 0.6.2's open checks (the dark bar, WP-18's Xcode items) | P7:524-541 | Session R8 steps 7 and 11b, if 0.7 didn't close them (I-14) |
+| 0.7's pre-swap extension end | P7:953-956 | In place since 0.6.2; P-2 keeps it and its test (I-10) |
+| 0.7's growing build number | P7:2022-2028 | Shipped in 0.7.1 (I-9) |
+| 0.7's `WidgetChartSummary` | P7:1954 | Shipped in 0.7.1 as the widgets' one chart label; X-1a's `ChartSummary` stays, for the app's charts (I-5) |
+| G7-11's measurement | P7:2598 | Session R8's day (I-13: 0.7.0 and 0.7.1 left it open) |
+| 0.6.2's open checks (the dark bar, WP-18's Xcode items) | P7:524-541 | Session R8 steps 7 and 11b (I-14: still open) |
 | W-9 widget extras | W:536, W:650 | Not in 0.8 (after 1.0) |
-| The feed, History and iPhone & iPad widgets | RD §3.2, §4.1 | Not in 0.8 (1.1) |
+| The feed, History and iPhone & iPad widgets | RD §3.2, §4.1 | Shipped in 0.7.1 (Stage 1.9), not 0.8's |
 | 0.9.0's contents: `bpulse` in the app (M-7), `SECURITY.md` (NEW-15), the 1.0 docs (NEW-17), README's status line (DIS-10), closing NEW-18, NEW-20, SEC-02, M-8 | RD §3.5 | Not in 0.8 |
 | 0.9.x: the soak, energy budgets, the upgrade matrix (NEW-19), C13 | RD §3.6 | Not in 0.8 |
 | NEW-21 macOS 28 compatibility | RD §3.8 | Not in 0.8 (1.1) |
