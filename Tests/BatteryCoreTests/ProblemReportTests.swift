@@ -260,8 +260,13 @@ import Testing
     /// forgotten.
     @Test func everySettingsKeyIsIncludedOrLeftOut() throws {
         let keys = try Self.appSettingsKeys()
-        // The scan finds the keys: AppSettings' and the widget refresher's.
-        #expect(keys.isSuperset(of: ["showInMenuBar", "updateLeftover", "readDevices", "lastSeenLanguage"]))
+        // The scan finds the keys: AppSettings', the version count's among them, and the widget
+        // refresher's.
+        #expect(
+            keys.isSuperset(of: [
+                "showInMenuBar", "updateLeftover", "readDevices", "anonymousVersionCount", "lastCountedVersion",
+                "versionFirstLaunch", "lastSeenLanguage",
+            ]))
         for key in keys.sorted() {
             #expect(
                 ProblemReport.includedSettings.contains(key) || ProblemReport.excludedSettings[key] != nil,
@@ -332,6 +337,20 @@ import Testing
         #expect(ProblemReport.settingText(key: "alertLowBattery", value: nil) == "not set")
         #expect(ProblemReport.settingText(key: "glassCards", value: .other) == "left out: not a plain value")
         #expect(ProblemReport.settingText(key: "glassCards", value: .data(Data([1, 2, 3]))) == "left out: binary data")
+    }
+
+    /// The keys 0.7.0 added go in as the app stores them: the version count's switch, the last
+    /// version it is done with (`x.y.z`) and when this version first ran; and the app's language at
+    /// its last launch, a localization's name.
+    @Test func theVersionCountAndTheLanguageShowAsStored() {
+        let lines = ProblemReport.settingsLines([
+            "anonymousVersionCount": .bool(false), "lastCountedVersion": .string("0.7.1"),
+            "versionFirstLaunch": .date(Date(timeIntervalSince1970: 1_800_000_000)), "lastSeenLanguage": .string("ru"),
+        ])
+        #expect(lines.contains("anonymousVersionCount: false"))
+        #expect(lines.contains("lastCountedVersion: 0.7.1"))
+        #expect(lines.contains("versionFirstLaunch: 2027-01-15T08:00:00Z"))
+        #expect(lines.contains("lastSeenLanguage: ru"))
     }
 
     /// The battery's alert state goes in as its flags and date.

@@ -615,12 +615,14 @@ extension ProblemReport {
         "betaWindowStyles",
         // Updates.
         "updateFrequency", "lastUpdateCheck", "skippedVersion", "lastSeenVersion",
-        // History, devices and the widget's language.
+        // History, devices, and the app's language at its last launch ("en" or "ru"), whose change
+        // reloads the widgets.
         "recordHistory", "readDevices", "lastSeenLanguage",
         // Notifications.
         "alertChargeLimit", "alertLowBattery", "alertService", "alertHeat", "alertState", "alertAccessoryLow",
         "accessoryAlertState",
-        // 0.7's anonymous version count (W-13), listed ahead of its keys.
+        // The anonymous version count (0.7.0): its switch, the last version it is done with, and
+        // when this version first ran.
         "anonymousVersionCount", "lastCountedVersion", "versionFirstLaunch",
     ]
 
