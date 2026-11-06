@@ -254,4 +254,46 @@ import Testing
         #expect(BatteryMotionKey(nil).notChargingCause == nil)
         #expect(BatteryMotionKey(device: nil).notChargingCause == nil)
     }
+
+    // MARK: Demo Mode
+
+    static func snapshot(_ scenario: DemoScenario) -> BatterySnapshot? {
+        scenario.battery?.reading(at: Fixture.timestamp).snapshot
+    }
+
+    /// Each cause has a Demo Mode scene that gives it through the real parser, by the same
+    /// decision, so its look is reviewed without the real state.
+    @Test(arguments: NotChargingCause.allCases)
+    func eachCauseHasADemoScene(_ cause: NotChargingCause) {
+        #expect(DemoScenario.allCases.contains { Self.snapshot($0)?.notChargingCause == cause })
+    }
+
+    /// One scene is on the adapter and not charging with no cause, as the M5 read 10 s after a
+    /// plug-in, for the main window's possible reasons; the Charge Limit's scene gives its cause,
+    /// and every other scene and animation names nothing.
+    @Test func demoModeShowsTheCausesAndNone() throws {
+        #expect(Self.snapshot(.systemChargeLimit)?.notChargingCause == .systemChargeLimit)
+        let none = try #require(Self.snapshot(.notChargingWithoutCause))
+        #expect(none.notChargingReason == 0x80)
+        #expect(none.isExternalPowerConnected == true)
+        #expect(none.notChargingCause == nil)
+        #expect(none.isNotChargingWithoutCause)
+        #expect(WidgetStateWord(none) == .notCharging)
+        #expect(BatteryReport.lines(for: none).first { $0.label == "Not charging reason" }?.value == "0x80")
+
+        for scenario in DemoScenario.allCases where ![.systemChargeLimit, .notChargingWithoutCause].contains(scenario) {
+            #expect(Self.snapshot(scenario)?.notChargingCause == nil, "\(scenario)")
+            #expect(Self.snapshot(scenario)?.isNotChargingWithoutCause != true, "\(scenario)")
+        }
+        for animation in DemoAnimation.allCases {
+            for step in 0...20 {
+                let s = animation.battery(progress: Double(step) / 20).reading(at: Fixture.timestamp).snapshot
+                #expect(s.notChargingCause == nil && !s.isNotChargingWithoutCause, "\(animation) \(step)")
+            }
+        }
+        // Without a cause the reason reads as the M5's: 0x80 on battery, 0 on the adapter.
+        #expect(Self.snapshot(.onBattery)?.notChargingReason == 0x80)
+        #expect(Self.snapshot(.charging)?.notChargingReason == 0)
+        #expect(Self.snapshot(.optimizedHold)?.notChargingReason == 0)
+    }
 }

@@ -5980,6 +5980,18 @@
         }
       }
     },
+    "Plugged in but not charging, for no reason BatteryPulse can name.": {
+      "extractionState": "manual",
+      "comment": "Demo Mode: the scene of a Mac on its adapter that isn't charging, with no cause the battery reports",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключён, но не заряжается, и BatteryPulse не может назвать причину."
+          }
+        }
+      }
+    },
     "Poor": {
       "extractionState": "manual",
       "localizations": {
