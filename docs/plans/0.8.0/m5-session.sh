@@ -4732,16 +4732,22 @@ step_raw_history() {
   ask "R-raw-history-$tag"
 }
 
-# menubar: the menu bar item on a light and a dark bar (V01-menubar's dark half, C-1):
-# scripts/menu-bar-shots.sh's light and dark looks (it sets the appearance and a plain wallpaper and
-# puts both back itself), then each main-display shot cropped to the item's AX frame (P11) with 4
-# points around it.
+# menubar [contrast | transparency]: the menu bar item on a light and a dark bar (V01-menubar's
+# dark half, C-1; with contrast or transparency, A11Y-04's: after the session turned Increase
+# Contrast or Reduce Transparency on, `change` first): scripts/menu-bar-shots.sh's light and dark
+# looks (it sets the appearance and a plain wallpaper and puts both back itself), then each
+# main-display shot cropped to the item's AX frame (P11) with 4 points around it.
 step_menubar() {
   r_only menubar
-  local screen width scale file rect x y w h
-  [ -s "$WORK/status-item" ] || fail "no menu bar item frame (proof P11): V01-menubar is not checked"
-  run_menu_bar_shots v01 --looks light,dark ||
-    not_checked V01-menubar "menu-bar-shots.sh didn't finish (logs/menubar-v01.txt on the Mac), or prepare didn't read the appearance or the wallpaper"
+  local screen width scale file rect x y w h tag="v01" id=V01-menubar
+  case "${1:-}" in
+    "") ;;
+    contrast | transparency) tag="$1" id=R-menubar-a11y ;;
+    *) fail "usage: $SCRIPT menubar [contrast | transparency]" ;;
+  esac
+  [ -s "$WORK/status-item" ] || fail "no menu bar item frame (proof P11): $id is not checked"
+  run_menu_bar_shots "$tag" --looks light,dark ||
+    not_checked "$id" "menu-bar-shots.sh didn't finish (logs/menubar-$tag.txt on the Mac), or prepare didn't read the appearance or the wallpaper"
   relaunch_r
   screen="$(ui_run screen 2>/dev/null || true)"
   width="$(sed -n 's/^main=[-0-9]* [-0-9]* \([0-9]*\) .*/\1/p' <<<"$screen")"
@@ -4754,14 +4760,14 @@ step_menubar() {
     x = int((a[1] - 4) * s) - left; if (x < 0) x = 0
     h = int((a[2] + a[4] + 4) * s); if (h > 120) h = 120
     printf "%d %d %d %d", x, 0, int((a[3] + 8) * s), h }')"
-  for file in "$SHOTS"/menubar/v01-*-d1.png; do
+  for file in "$SHOTS"/menubar/"$tag"-*-d1.png; do
     [ -f "$file" ] || continue
     "$BIN/frames" crop "$file" "$x" "$y" "$w" "$h" "${file%.png}-item.png" >/dev/null 2>&1 &&
       register_shot "${file%.png}-item.png" && echo "LOOK ${file%.png}-item.png"
   done
-  use_section 65-menubar "The menu bar item on a light and a dark bar (V01-menubar)"
-  out "- $(find "$SHOTS/menubar" -name 'v01-*-item.png' | grep -c . || true) crops at the item's AX frame ($rect), from menu-bar-shots.sh's light and dark looks"
-  ask V01-menubar
+  use_section 65-menubar "The menu bar item on a light and a dark bar (V01-menubar, A11Y-04)"
+  out "- $tag: $(find "$SHOTS/menubar" -name "$tag-*-item.png" | grep -c . || true) crops at the item's AX frame ($rect), from menu-bar-shots.sh's light and dark looks"
+  ask "$id"
 }
 
 # menu-bar-shots before | after [arguments]: scripts/menu-bar-shots.sh into shots/menubar, W-11's
@@ -6626,9 +6632,10 @@ The start (on the adapter, he is there):
 The GUI phase (heartbeat <step and expected time> after each step, at least every 10 minutes):
   capacity start; feed before; placed his before | 1 | 5 | compare; install U; whats-new rc [ru]
   0.8's steps: app-tree <surface> [ru]; tree [ru]; keys walk <surface> [<n>] | keys <key> [--on <text>];
-  window-style standard|frosted | back; appearance-set light|dark|back; display-shots <tag>; menubar;
-  app-language ru | back; pages <tag> [<page>...]; screen <name> [main|front|popover]; charge-limit set|hold|read|back;
-  report-check; sentinel place | check [accessories|devices]; help-link; wp18 previews|timing
+  window-style standard|frosted | back; appearance-set light|dark|back; display-shots <tag>;
+  menubar [contrast | transparency] (with that option on); app-language ru | back; pages <tag> [<page>...];
+  screen <name> [main|front|popover]; charge-limit set|hold|read|back; report-check;
+  sentinel place | check [accessories|devices]; help-link; wp18 previews|timing
   step 11c: install start; placed 062 before | 1 | 5 | compare; whats-new 062 [ru]; gallery <name>;
   feed history | cold | demo-start | demo-end | reads-on | reads-off | cleared; edit-shot <tag> [<widget>];
   language ru | back; look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour |
@@ -6757,7 +6764,7 @@ case "$COMMAND" in
   accessories-watch) run_step step_accessories_watch "$@" ;;
   demo-shots) run_step step_demo_shots "$@" ;;
   raw-history) run_step step_raw_history "$@" ;;
-  menubar) run_step step_menubar ;;
+  menubar) run_step step_menubar "$@" ;;
   menu-bar-shots) run_step step_menu_bar_shots "$@" ;;
   wp18) run_step step_wp18 "$@" ;;
   tools) run_step step_tools ;;
