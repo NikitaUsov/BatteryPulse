@@ -269,9 +269,9 @@ struct HistoryWidgetPreviewTests {
                         Text(verbatim: row.0)
                         Text(verbatim: row.1)
                     }
-                    .font(.system(size: 15))
                 }
             }
+            .font(.system(size: 15))
         }
         .foregroundStyle(Color(white: 0.1))
         .padding(32)
