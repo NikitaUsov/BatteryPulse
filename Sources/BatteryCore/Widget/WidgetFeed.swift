@@ -353,6 +353,28 @@ extension WidgetFeed {
         }
     }
 
+    /// The devices section a write would hold, but for the read times: what tells a change the
+    /// widget shows (a device read for the first time, forgotten or renamed, a new charge, state or
+    /// detail, another device read last, reads turned on or off) from a read that only read the same
+    /// again, every 5 minutes while a device is on its cable. Such a read writes nothing; its time
+    /// reaches the feed with the next write, the routine one within 15 minutes.
+    public struct DevicesContent: Sendable, Equatable {
+        var readsDevices: Bool
+        var devices: [Device]
+
+        /// `remembered` as the builder writes it, `modelNames` as the app resolves them.
+        public init(readsDevices: Bool, remembered: [RememberedDevice], modelNames: [String: String]) {
+            self.readsDevices = readsDevices
+            devices =
+                readsDevices
+                ? WidgetFeed.devices(remembered, modelNames: modelNames).map { device in
+                    var device = device
+                    device.readAt = nil
+                    return device
+                } : []
+        }
+    }
+
     /// What the user removed while Demo Mode runs, from the real settings and the real remembered
     /// devices, never the demo's: the one change the feed takes then (``removing(_:)``).
     public struct Removal: Sendable, Equatable {

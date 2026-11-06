@@ -25,6 +25,9 @@ final class WidgetRefresher {
     private var feedPlugged: Bool?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
     private var feedSawDemo = false
+    /// The devices as the feed was last told of them, read times aside: a read that changed
+    /// nothing else writes nothing.
+    private var feedDevices: WidgetFeed.DevicesContent?
     /// The feed writer of the refresher the app started, for the launch's language reload, which
     /// writes the feed first: `start()` runs before ``endPreviousExtension(versionChanged:)``.
     private static weak var launchFeed: WidgetFeedWriter?
@@ -56,6 +59,7 @@ final class WidgetRefresher {
         }
         feedSawDemo = monitor.isOverridden
         if !feedSawDemo { feedPlugged = monitor.snapshot?.isExternalPowerConnected }
+        feedDevices = devicesContent()
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
@@ -76,11 +80,15 @@ final class WidgetRefresher {
             }
         }
         // A new reading, Forget, and reads turned on or off each change the remembered devices or
-        // the monitor's state; the writer skips a feed whose content didn't change. The iPhone &
-        // iPad widget reads the feed, so its reload waits for the rewrite.
+        // the monitor's state. Only a change the feed shows rewrites it: a read every 5 minutes
+        // that read the same again doesn't. The iPhone & iPad widget reads the feed, so its reload
+        // waits for the rewrite.
         deviceObservation = Task(name: "WidgetRefresher.devices") { [weak self, devices] in
             for await _ in Observations({ (devices.remembered, devices.isEnabled) }).dropFirst() {
                 guard let self else { return }
+                let content = self.devicesContent()
+                guard content != self.feedDevices else { continue }
+                self.feedDevices = content
                 await self.feed.writeAndWait(.devices)
                 await self.evaluateDevices()
             }
@@ -94,6 +102,14 @@ final class WidgetRefresher {
         accessoryObservation = nil
         deviceObservation?.cancel()
         deviceObservation = nil
+    }
+
+    /// The remembered devices as the feed would hold them, read times aside.
+    private func devicesContent() -> WidgetFeed.DevicesContent {
+        let remembered = devices.remembered
+        return WidgetFeed.DevicesContent(
+            readsDevices: AppSettings.readsDevices, remembered: remembered,
+            modelNames: WidgetFeedWriter.modelNames(of: remembered))
     }
 
     /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end

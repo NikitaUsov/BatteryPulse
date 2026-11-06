@@ -109,10 +109,7 @@ final class WidgetFeedWriter {
             recordsHistory: recordsHistory, readsDevices: readsDevices, placements: placements)
         // The devices and their model names as the app shows them, on the main actor.
         let devices = sections.contains(.devices) && readsDevices ? AppDevices.monitor.remembered : []
-        var modelNames: [String: String] = [:]
-        for productType in Set(devices.compactMap(\.productType)) {
-            modelNames[productType] = IDeviceModelName.name(productType: productType)
-        }
+        let modelNames = Self.modelNames(of: devices)
         let now = Date.now
         let source = WidgetFeed.Source(
             now: now, languages: Bundle.main.preferredLocalizations, recordsHistory: recordsHistory,
@@ -142,6 +139,15 @@ final class WidgetFeedWriter {
                 "Writing the widget feed failed (\(reason.rawValue, privacy: .public); \(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
             )
         }
+    }
+
+    /// The model names of `devices`' product types, as the app shows them.
+    static func modelNames(of devices: [RememberedDevice]) -> [String: String] {
+        var names: [String: String] = [:]
+        for productType in Set(devices.compactMap(\.productType)) {
+            names[productType] = IDeviceModelName.name(productType: productType)
+        }
+        return names
     }
 
     /// An immediate write logs its bytes and section counts, so `log show` finds it; the routine

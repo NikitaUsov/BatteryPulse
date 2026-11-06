@@ -168,6 +168,31 @@ import Testing
         #expect(feed.devices?.map(\.key) == devices.prefix(8).map(\.id))
     }
 
+    /// W-5's review: a device read every 5 minutes that read the same again changes nothing the
+    /// feed shows, so the devices' observation writes nothing for it; a change the widget shows
+    /// does.
+    @Test func onlyAChangeTheFeedShowsRewritesTheDevices() {
+        func content(_ devices: [RememberedDevice], reads: Bool = true) -> WidgetFeed.DevicesContent {
+            WidgetFeed.DevicesContent(
+                readsDevices: reads, remembered: devices, modelNames: ["iPhone18,2": "iPhone 17 Pro Max"])
+        }
+        let phone = Self.device(Self.phone, read: Self.now)
+        let pad = Self.device(Self.key(2), name: "Pad", read: Self.now.addingTimeInterval(-600))
+        let before = content([phone, pad])
+        // Read again five minutes later, the same.
+        #expect(content([Self.device(Self.phone, read: Self.now.addingTimeInterval(300)), pad]) == before)
+        #expect(content([pad, phone]) == before)
+        #expect(content([phone, pad, Self.device(.demo)]) == before)
+        // A new charge, another device read last, a name, a device forgotten, reads off.
+        #expect(content([Self.device(Self.phone, percent: 79), pad]) != before)
+        #expect(
+            content([phone, Self.device(Self.key(2), name: "Pad", read: Self.now.addingTimeInterval(60))]) != before)
+        #expect(content([Self.device(Self.phone, name: "Anna's"), pad]) != before)
+        #expect(content([phone]) != before)
+        #expect(content([phone, pad], reads: false) != before)
+        #expect(content([phone, pad], reads: false) == content([], reads: false))
+    }
+
     @Test func readsOffWriteNoDevices() throws {
         let feed = try Self.build(Self.source(devices: [Self.device(Self.phone)], readsDevices: false))
         #expect(feed.devices == nil)
