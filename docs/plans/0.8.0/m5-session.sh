@@ -1,31 +1,34 @@
 #!/bin/bash
-# BatteryPulse 0.7.1: the M5 sessions (PLAN.md §6), one command per call.
-# 0.7.0's, copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R (the
-# maintainer's decision, 2026-10-31), and re-pointed at 0.7.1 (PLAN.md W-16), which ran only its
-# short feed check, Session F; copied again from docs/plans/0.7.1/ at 0.7.1's release for 0.8's M5
-# sessions, which re-point it. PLAN.md and a bare § below are 0.7.1's docs/plans/0.7.1/PLAN.md,
-# readable at dbc696a979b0cad265ae554d1e6d69db1eac1572 in the 0.7.1 release PR's head; plan-0.7.0,
-# and 0.7's package, decision and step IDs (W-12, D-17, step 12), are 0.7.0's
+# BatteryPulse 0.8: the M5 sessions (PLAN.md §6), one command per call.
+# 0.7.0's, built on 0.6.2's Session B, re-pointed at 0.7.1 (0.7.1's W-16 and W-17) and moved here by
+# 0.7.1's D3 for 0.8's M5 sessions, which T-1 re-points (PLAN.md §4 T-1). PLAN.md and a bare §
+# below are docs/plans/0.8.0/PLAN.md, whose IDs (G8-n, Q8-n, A-n, T-1) are its own; P71 is 0.7.1's
+# docs/plans/0.7.1/PLAN.md, readable at dbc696a979b0cad265ae554d1e6d69db1eac1572 in the 0.7.1
+# release PR's head, whose IDs (W-5 to W-17, G71-n, PF-n, Q71-n) stay its own; plan-0.7.0, and 0.7's
+# package, decision, gate and step IDs (W-3b, W-12, D-17, G7-n), are 0.7.0's
 # docs/plans/0.7.0/PLAN.md, readable at ebe654772c7f06d5e136327e0e6a236fed71cdc9 in
 # refs/pull/13/head.
 #
 #   bash docs/plans/0.8.0/m5-session.sh help
 #
-# Session R (hands-free; PLAN.md §6.2; its runbook is SESSION-R.md beside this file): one local
-# Claude Code session with computer use runs it from the frozen worktree ~/bp-071/R/run (a script
-# run from there is Session R), drives the GUI through `ui` (ui.swift, with safety rules of its own)
-# and judges the pictures beside the script's pixel measurements. The arm window keeps the display
-# awake for the GUI phase and starts the logged day (§6.3) on `ready`. Everything lands in
-# ~/bp-071/R: each change goes into changes.tsv before it is made, and every restore works from that
-# file (`restore gui` before the logged day, `restore end` after it); `send` commits R.md to
-# docs/plans/0.8.0/sessions/R.md on claude/071-session-r after his yes, through a privacy lint.
-#
-# The short sessions run the same way from their own frozen worktrees (SESSION-R.md, "The short
-# sessions"): ~/bp-071/C/run is the Charge limit capture (`charge-limit`), ~/bp-071/H/run the Hold
-# watch (`hold-watch`), ~/bp-071/D3/run the After publishing check (`after`, `count-check`),
-# ~/bp-071/F/run the short feed check (PLAN.md §6.5: `feed`, step 2's second half, one language
-# look, one click per new kind); each keeps its files in ~/bp-071/<C|H|D3|F> and sends
-# <C|H|D3|F>.md on claude/071-session-<c|h|d3|f>.
+# Four sessions, each run by one local Claude Code session with computer use from its own frozen
+# worktree, whose path names the session (the start line's one allow rule names it): it drives the
+# GUI through `ui` (ui.swift, with safety rules of its own) and judges the pictures beside the
+# script's pixel measurements. Each keeps its files in ~/bp-080/<session>, records each change in
+# changes.tsv before it is made and puts it back from that file, and `send` commits <session>.md
+# to docs/plans/0.8.0/sessions/ on claude/080-session-<session> after his yes, through a privacy
+# lint. Each start line prints one runbook section (section.sh beside this file, PLAN.md §6.0):
+#   L   the look shoot (PLAN.md §6.1; SESSION-L.md, "Look shoot"), ~/bp-080/L/run: a CI build of
+#       the integration branch over his 0.7.1, the Charge Limit's check (G8-1), every new screen in
+#       English and Russian, the optional weak adapter (Q8-3), then his 0.7.1 back;
+#   R   Session R8 (PLAN.md §6.4-§6.5; SESSION-R.md, "R8"), ~/bp-080/R/run: the release candidate
+#       over his 0.7.1, the GUI phase (C10's trees and keyboard, the audits, the checks 0.7.0 and
+#       0.7.1 shipped without), the arm window that keeps the display awake for it and starts the
+#       logged day on `ready`, and the day's end (`day-end`, F12, `restore end`);
+#   H   the hold watch (SESSION-R.md, "Hold watch"), ~/bp-080/H/run: a night's recording on the
+#       adapter (QUA-06, G8-2);
+#   D3  the after-publishing check (PLAN.md §6.6; SESSION-R.md, "After publishing"), ~/bp-080/D3/run
+#       at <keep>: Install and Relaunch to 0.8.0 from his restored 0.7.1.
 #
 # An automated step that can't run records "not checked" or "not run" with its reason, and the
 # session goes on. Builds stay in their DMGs and the backup in its zip, so the only
@@ -36,46 +39,52 @@
 # installer does since 0.6.2, D-17), a copy staged on the same volume, one atomic swap (swap.swift:
 # renamex_np with RENAME_SWAP), lsregister -f, a relaunch; the extension's pids before and after,
 # and any CHSErrorDomain 1103 line, go into the step's section (G7-2). A build whose CFBundleVersion
-# isn't higher than the installed one is refused (WidgetKit caches by it), except v0.6.2 over his
-# newer app at the start, the base and his backed-up app.
+# isn't higher than the installed one is refused (WidgetKit caches by it), except v0.6.2 over a
+# newer app (step 11c) and his backed-up app.
 #
-# Wording (PLAN.md §3, §6): every y/n question means "y = looks right"; everything else is a
+# Wording (PLAN.md §6.0): every y/n question means "y = looks right"; everything else is a
 # numbered choice. A step prints its questions as ASK lines and its hands-on tasks as DO lines;
 # `judge` and `answer` record the replies. The script reads the logs and counts the crash reports.
 #
 # It needs macOS 27, Xcode or the Command Line Tools, and the GitHub CLI (https://cli.github.com),
-# signed in (the short sessions C and H need neither gh nor a build from CI). No python or perl;
-# it runs on macOS's bash 3.2. Millisecond times come from zsh's zsh/datetime module.
+# signed in (the hold watch needs neither gh nor a build from CI). No python or perl; it runs on
+# macOS's bash 3.2. Millisecond times come from zsh's zsh/datetime module.
 set -euo pipefail
 
 # MARK: - Builds and places
 
 REPO="NikitaUsov/BatteryPulse"
-INTEGRATION_BRANCH="claude/071-integration"
+INTEGRATION_BRANCH="claude/080-integration"
 
-# Session R's builds (PLAN.md §6.2, D1), each a CI artifact. D1 dispatches ci.yml on the frozen
-# code in this order, each with the build-number clock (B-1), so each build number is higher than
-# the one installed before it:
-#   U   the release candidate as 0.7.1 (RC-U): step 2's second half installs it over 0.7.0, and the
-#       rest of the session and the logged day run on it (the short feed check's one build);
-#   F   the release candidate as 0.6.99 (RC-F): F12 at the day's end, whose update check offers the
-#       real 0.7.0.
+# Session R's builds (PLAN.md §6.4, D1), each a CI artifact. D1 dispatches ci.yml on the frozen
+# code in this order, each with the build-number clock (0.7.1's B-1, scripts/build-number.sh), so
+# each build number is higher than the one installed before it:
+#   U   the release candidate as 0.7.99 (RC-U): step 2 installs it over his 0.7.1, and the rest of
+#       the session and the logged day run on it;
+#   F   the release candidate as 0.5.99 (RC-F): F12 at the day's end, whose update check offers the
+#       published 0.7.1.
 # Both are found by the frozen commit's code (locate_builds). A pin (RUN_<name> and
 # ARTIFACT_<name>) overrides the search.
 RUN_U=""
 ARTIFACT_U=""
 RUN_F=""
 ARTIFACT_F=""
-# The published builds step 2 crosses (W-17 item 1), each from its release: v0.6.2, the start, put
-# in place by prepare unless the Mac runs it (a static Battery widget placed under it, then the
-# update to a configurable one); v0.7.0, the base, which step 2's first half installs, its second
-# half updates from, and F12 installs.
+# The look shoot's build (PLAN.md §6.1), L: the newest CI build of the frozen code on the
+# integration branch, a push's (version 0.0.0) or a dispatch's, its build number the clock's, above
+# v0.7.1's (locate_build_l). A pin overrides the search.
+RUN_L=""
+ARTIFACT_L=""
+# The published builds, each from its release: v0.6.2, the start, whose static Battery widget is
+# placed under it and then updated to a configurable one; v0.7.1, the base, his own 0.7.x, which F12
+# comes back to.
 TAG_START="v0.6.2"
 START_VERSION="0.6.2"
-TAG_BASE="v0.7.0"
-BASE_VERSION="0.7.0"
-RC_VERSION="0.7.1"
-F_VERSION="0.6.99"
+TAG_BASE="v0.7.1"
+BASE_VERSION="0.7.1"
+RC_VERSION="0.7.99"
+F_VERSION="0.5.99"
+# The release the after-publishing check installs by Install and Relaunch (PLAN.md §6.6).
+RELEASE_VERSION="0.8.0"
 
 BUNDLE_ID="io.github.nikitausov.BatteryPulse"
 WIDGET_ID="$BUNDLE_ID.Widget"
@@ -103,36 +112,35 @@ esac
 # it); none elsewhere, where only help and the dry run work. BP_SESSION chooses one only off the
 # Mac (a dry run): on the Mac the path alone decides, so no variable turns a fence off.
 case "$HERE" in
-  "$ACCOUNT_HOME"/bp-071/R/run/*) SESSION=R ;;
-  "$ACCOUNT_HOME"/bp-071/C/run/*) SESSION=C ;;
-  "$ACCOUNT_HOME"/bp-071/H/run/*) SESSION=H ;;
-  "$ACCOUNT_HOME"/bp-071/D3/run/*) SESSION=D3 ;;
-  "$ACCOUNT_HOME"/bp-071/F/run/*) SESSION=F ;;
+  "$ACCOUNT_HOME"/bp-080/R/run/*) SESSION=R ;;
+  "$ACCOUNT_HOME"/bp-080/L/run/*) SESSION=L ;;
+  "$ACCOUNT_HOME"/bp-080/H/run/*) SESSION=H ;;
+  "$ACCOUNT_HOME"/bp-080/D3/run/*) SESSION=D3 ;;
   *) SESSION=none ;;
 esac
 if [ "$(uname -s)" != Darwin ]; then SESSION="${BP_SESSION:-$SESSION}"; fi
 # Session R's folder, whatever this run's own folder is: its fence (ready before day-end) holds for
 # every session's script.
-R_HOME="$ACCOUNT_HOME/bp-071/R"
+R_HOME="$ACCOUNT_HOME/bp-080/R"
 # dry-run (CI on Linux) is Session R's bookkeeping in a folder of its own. On the Mac nothing else
 # moves the folder: a BP_WORK of the caller's would hold no fence and no change record.
 if [ "${1:-}" = dry-run ]; then
   SESSION=R
-  BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-071-dry.XXXXXX")"
+  BP_WORK="$(mktemp -d "${TMPDIR:-/tmp}/bp-080-dry.XXXXXX")"
 elif [ "$(uname -s)" = Darwin ]; then
   BP_WORK=""
 fi
 case "$SESSION" in
-  R | C | H | D3 | F) RESULTS_BRANCH="claude/071-session-$(tr '[:upper:]' '[:lower:]' <<<"$SESSION")" ;;
+  R | L | H | D3) RESULTS_BRANCH="claude/080-session-$(tr '[:upper:]' '[:lower:]' <<<"$SESSION")" ;;
   none) RESULTS_BRANCH="" ;;
   *)
-    echo "error: BP_SESSION is R, C, H, D3 or F" >&2
+    echo "error: BP_SESSION is R, L, H or D3" >&2
     exit 1
     ;;
 esac
 TAB="$(printf '\t')"
 # BP_WORK only moves the folder for the dry run and for the bookkeeping commands off the Mac.
-WORK="${BP_WORK:-$ACCOUNT_HOME/bp-071/$SESSION}"
+WORK="${BP_WORK:-$ACCOUNT_HOME/bp-080/$SESSION}"
 BACKUP="$WORK/backup"
 BUILDS="$WORK/builds"
 BIN="$WORK/bin"
@@ -252,102 +260,134 @@ out_block() {
 # question <id>: "<kind>|<who>|<text>". kind: yn (y = looks right), 2-5 (numbered choices) or text;
 # who: person (only he can say) or judge (the session judges from the evidence the step names,
 # beside the script's measurement where one exists, and his batch takes what it can't tell). Each
-# judged one has its written criteria and default in SESSION-R.md.
+# judged one has its written criteria and default in its runbook's Answers.
 question() {
   local rest
   case "$1" in
     R-yes) echo "yn|person|The list of changes and the start (SESSION-R.md, the start message): y = go ahead" ;;
     R-back) echo "text|person|When he is back at the Mac, HH:MM (default: 4 hours after the start); a daytime session works" ;;
-    R-keep-ax) echo "yn|person|Keep Terminal's Accessibility after Session R: y = keep (default: reminded to revoke it at the end of the series)" ;;
-    R-keep-widgets | F-keep-widgets) echo "yn|person|Keep the widgets the session adds from the gallery: y = keep (default: removed at the end)" ;;
-    R-usage | C-usage | H-usage | D3-usage | F-usage) echo "text|person|What /usage showed at the start" ;;
-    R-send | C-send | H-send | D3-send | F-send)
-      echo "yn|person|Send ${1%-send}.md and the attached images to claude/071-session-$(tr '[:upper:]' '[:lower:]' <<<"${1%-send}"), after the contact sheet and the summary: y = send"
+    R-keep-ax) echo "yn|person|Keep Terminal's Accessibility after Session R8: y = keep (default: reminded to revoke it at the end of the series)" ;;
+    R-keep-widgets) echo "yn|person|Keep the widgets the session adds from the gallery: y = keep (default: removed at the end, and the app's counts must be back at prepare's)" ;;
+    R-limit) echo "yn|person|Step 9, the Charge Limit live: set to the hold and put back, only if G8-1 passed: y = go ahead (default: step 9 not run)" ;;
+    R-usage | L-usage | H-usage | D3-usage) echo "text|person|What /usage showed at the start" ;;
+    R-send | L-send | H-send | D3-send)
+      echo "yn|person|Send ${1%-send}.md and the attached images to claude/080-session-$(tr '[:upper:]' '[:lower:]' <<<"${1%-send}"), after the contact sheet and the summary: y = send"
       ;;
-    C-yes) echo "yn|person|The Charge limit capture with the adapter in: the recording, the limit at 100 % for at most 10 minutes and back: y = go ahead" ;;
+    L-yes) echo "yn|person|The look shoot's list of changes (SESSION-L.md, the start message): y = go ahead" ;;
+    L-adapter) echo "yn|person|Q8-3: a low-wattage USB-C adapter at hand for step 4, about 2 minutes, two more beeps: y = yes (default: step 4 skipped)" ;;
     H-yes) echo "yn|person|The hold watch tonight: the recording under caffeinate -i, the Mac on the adapter with the lid open: y = go ahead" ;;
-    D3-yes) echo "yn|person|The after-publishing check: the update to $RC_VERSION by Install and Relaunch: y = go ahead" ;;
-    F-yes) echo "yn|person|The short feed check (SESSION-R.md, Feed check): RC-U over his $BASE_VERSION, which comes back at the end: y = go ahead" ;;
+    D3-yes) echo "yn|person|The after-publishing check: the update to $RELEASE_VERSION by Install and Relaunch: y = go ahead" ;;
     prep-charge-limit) echo "text|judge|The Charge Limit (pmset -g battlimit on the adapter, else the Battery pane's shot), in %" ;;
     prep-widget-style) echo "text|judge|System Settings → Appearance → Icon & widget style (computer use from the sidebar, its shot): Default, Dark, Clear or Tinted" ;;
     prep-dim-widgets) echo "text|judge|System Settings → Desktop & Dock → Dim widgets on desktop (its shot): Automatically, Always or Never" ;;
     prep-open-at-login) echo "2|judge|Open at login (BatteryPulse's own toggle, by AX or its Settings shot): 1 on, 2 off" ;;
-    prep-widgets) echo "2|judge|A BatteryPulse widget on the desktop for proof P1: 1 yes, 2 no (P1 then runs in step 2, on its first new widget)" ;;
+    prep-keyboard-navigation) echo "text|judge|System Settings → Keyboard → Keyboard navigation at prepare: on or off (AppleKeyboardUIMode, else the pane's shot)" ;;
+    prep-widgets) echo "2|judge|A BatteryPulse widget on the desktop for proof P1: 1 yes, 2 no (P1 then runs on the first widget the session adds)" ;;
     R-capacity-start | R-capacity-day-end | D3-capacity)
       case "$1" in R-capacity-start) rest="at the GUI phase's start" ;; R-capacity-day-end) rest="at the day's end" ;; *) rest="after publishing" ;; esac
-      echo "text|judge|Maximum capacity $rest: System Settings → Battery → Battery Health's figure (computer use, the pane's shot), in % (W-17 item 18; the script's capacity line stands beside it)"
+      echo "text|judge|Maximum capacity $rest: System Settings → Battery → Battery Health's figure (computer use, the pane's shot), in % (P71's W-17 item 18; the script's capacity line stands beside it)"
       ;;
+    R-feed-before) echo "yn|judge|The feed under his $BASE_VERSION, before RC-U: $BASE_VERSION's Widget/feed.json, 0600 in a 0700 folder, version 1, no udid, serial or demo key (the script reads it)" ;;
+    R2-small | R2-medium | R2-large)
+      echo "4|judge|Step 2, the ${1#R2-} widget placed under his $BASE_VERSION, after RC-U's install, its redraw and the desktop click, against its -before.png: 1 the same layout and choices with fresh values, 2 blank or grey, 3 gone, 4 different (note)"
+      ;;
+    R2-whats-new-rc) echo "yn|judge|What's New after RC-U's install over $BASE_VERSION, at 520 points, in English and in Russian: 0.8's rows without the version count's row, every row and its text readable, nothing cut" ;;
     R2-062-small | R2-062-medium)
-      echo "4|judge|Step 2's first half, the ${1#R2-062-} widget placed from $START_VERSION's gallery, after $BASE_VERSION's install and the desktop click, against its -before.png: 1 the same layout with fresh values, 2 blank or grey, 3 gone, 4 different (note)"
+      echo "4|judge|Step 11c, the ${1#R2-062-} widget placed from $START_VERSION's gallery, after RC-U's install, its redraw and the desktop click, against its -before.png: 1 the same layout with fresh values, 2 blank or grey, 3 gone, 4 different (note)"
       ;;
-    R2-small) echo "4|judge|Step 2's second half, the small widget (Automatic) after RC-U's install over $BASE_VERSION and the desktop click, against its -before.png: 1 the same layout with fresh values, 2 blank or grey, 3 gone, 4 different (note)" ;;
-    R2-medium) echo "4|judge|Step 2's second half, the medium widget set to Custom under $BASE_VERSION, after RC-U's install: 1 its choices kept, with fresh values, 2 blank or grey, 3 gone, 4 different (note: choices lost?)" ;;
-    R2-large) echo "4|judge|Step 2's second half, the large widget placed under $BASE_VERSION (Automatic), after RC-U's install: 1 the History chart in place of the last two rows, 2 blank or grey, 3 gone, 4 different (note: the eight rows kept?)" ;;
-    R2-whats-new-base | R2-whats-new-rc)
-      if [ "$1" = R2-whats-new-base ]; then rest="$BASE_VERSION's, from $START_VERSION: three rows and the version count's row"; else rest="$RC_VERSION's, from $BASE_VERSION"; fi
-      echo "yn|judge|What's New after the update ($rest), at 520 points, in English and in Russian: every row and its text readable, nothing cut"
+    R2-whats-new-062) echo "yn|judge|What's New after RC-U's install over $START_VERSION, at 520 points, in English and in Russian: 0.8's rows and the version count's row, every row readable, nothing cut" ;;
+    R-tree-app | R-tree-app-ru)
+      if [ "$1" = R-tree-app ]; then rest="in English"; else rest="in Russian"; fi
+      echo "yn|judge|Step 3 (C10), BatteryPulse's trees $rest (every page, the compact window, the popover, each Settings pane, About, What's New, Software Update, Welcome, Report a Problem): every control a role and a label, only decorative images without one, the power flow, the capacity bars and each ring one element with a value (n names the surface and the element)"
       ;;
+    R-charts) echo "3|judge|Step 3 (X-1), each chart's label and its descriptor: 1 read (by AX or Accessibility Inspector's shot), 2 a chart without one (which), 3 not readable by either (not checked)" ;;
+    R-keyboard) echo "yn|judge|Step 4 (C10), the keyboard with Keyboard navigation on: the sidebar, the toolbar, the tile pickers, Raw Data's table and filter, the update window and Report a Problem's Save each reached and focused (n names the control)" ;;
+    R-contrast) echo "3|judge|Step 5 (A11Y-03), Accessibility Inspector's audit on each page in Standard and Frosted, Light and Dark, and with Increase Contrast: 1 no failure, 2 failures (listed in the note), 3 not run" ;;
+    R-display) echo "yn|judge|Step 6 (A11Y-02), each display option on and off (the Liquid Glass slider at both ends, Reduce Motion, Prefer Cross-Fade Transitions, Reduce Transparency, Increase Contrast, Show Borders): the main and compact windows and the popover readable and whole in every shot (n names the shot)" ;;
+    R-menubar-a11y) echo "yn|judge|Step 7 (A11Y-04), the menu bar item with Increase Contrast and with Reduce Transparency, on a light and a dark bar: legible, not clipped" ;;
+    R-russian) echo "yn|judge|Step 8, every page and window in Russian, against the Russian review's answers: every word Russian but names and units, nothing cut (n names the page)" ;;
+    R-limit-live) echo "3|judge|Step 9, the Charge Limit live at the hold: 1 Overview's sentence and Power's number equal pmset -g battlimit's, 2 they differ (how), 3 not run (G8-1 failed, his no, or no hold)" ;;
+    R-report) echo "yn|judge|Step 10 (A-6), Report a Problem on the RC: both choices saved, no serial, user name or home path in either file, and the crash reports' names as ls lists them (the script reads them)" ;;
+    R-sentinel) echo "yn|judge|Step 11 (P-1), the accessory sentinel: the note and Turn On Again on Accessories, then the file gone and the page reading again (the script reads the file)" ;;
+    R-listen) echo "yn|person|Q8-6, the optional VoiceOver listen at the day's end (five minutes on Overview, Power and Health, in Russian): y = the names make sense (default: skipped)" ;;
     R3-large | R3-accessories-small | R3-accessories-medium | R3-accessories-large | R3-history-medium | R3-history-large | \
       R3-devices-small | R3-devices-medium | R3-devices-large)
-      echo "yn|judge|Step 3, the ${1#R3-} widget added from the gallery, against the CI render of its kind and family: looks right (n names the picture)"
+      echo "yn|judge|Step 11c, the ${1#R3-} widget added from the gallery, against the CI render of its kind and family: looks right (n names the picture)"
       ;;
-    R-feed-before) echo "yn|judge|The feed under $BASE_VERSION, before RC-U: no Widget/feed.json ($BASE_VERSION writes none); the script reads it" ;;
     R-feed-history) echo "yn|judge|The feed within 15 minutes of the first History widget: 0600 in a 0700 folder, version 1, at most 32 KB, written within 15 minutes, no udid, serial or demo key; the widget's entitlements the sandbox and one read-only path, Widget/; no sandbox denial; the widget read it (the script reads it)" ;;
     R-feed-cold) echo "yn|judge|A feed written while no widget process ran, then read by the extension the reload started, without a rejection or an open failure (the script reads the stream's order)" ;;
     R-feed-demo) echo "yn|judge|The feed across Demo Mode (step 9b): its modification time and writtenAt unchanged (the script reads them)" ;;
     R-feed-reads) echo "yn|judge|Read iPhone and iPad batteries turned on, then off: the feed rewritten within a minute each time, readsDevices following (the script reads them)" ;;
     R-feed-cleared) echo "yn|judge|Clear History on the session's own data: the feed rewritten within a minute, with an empty day (the script reads it)" ;;
     D3-feed) echo "yn|judge|After the update: Widget/feed.json 0600 in a 0700 folder, version 1, written within 15 minutes; the widget's entitlements the sandbox and one read-only path, Widget/ (the script reads them)" ;;
-    R4-1-chooser) echo "3|judge|Step 4.1, Details' chooser (W0-1 (b)): 1 it lists the fields, Average drain and Time on battery among them, 2 some are missing (which), 3 it is empty or doesn't open" ;;
-    R4-1-shows) echo "yn|judge|Step 4.1: the medium widget shows the choices made (Custom, the first three details and Average drain, time left if offered, monochrome)" ;;
-    R4-2-kept) echo "yn|judge|Step 4.2: Edit Widget again shows the choices made" ;;
-    R4-3-sheet) echo "3|judge|Step 4.3, Edit Widget with BatteryPulse in Russian: 1 all Russian, 2 some English (which), 3 the sheet didn't change language (not checked)" ;;
-    R4-3-widgets) echo "3|judge|Step 4.3, the placed widgets after the language switch, the reload and a new extension: 1 Russian, 2 still English (which), 3 no redraw (not checked)" ;;
-    R4-5-automatic) echo "yn|judge|Step 4.5: the medium widget back on Automatic, as before step 4" ;;
-    R4-6-history) echo "yn|judge|Step 4.6, the History widget's edit sheet: its options listed (the series, the period), and a choice shows on the widget after Done" ;;
-    R4-6-device) echo "3|judge|Step 4.6, the iPhone & iPad widget's edit sheet, One device (G71-4): 1 its chooser opens (empty while no device is remembered), 2 it doesn't open or shows an error, 3 no One device option" ;;
+    R4-1-chooser) echo "3|judge|Step 11c (4.1), Details' chooser (W0-1 (b)): 1 it lists the fields, Average drain and Time on battery among them, 2 some are missing (which), 3 it is empty or doesn't open" ;;
+    R4-1-shows) echo "yn|judge|Step 11c (4.1): the medium widget shows the choices made (Custom, the first three details and Average drain, time left if offered, monochrome)" ;;
+    R4-2-kept) echo "yn|judge|Step 11c (4.2): Edit Widget again shows the choices made" ;;
+    R4-3-sheet) echo "3|judge|Step 11c (4.3), Edit Widget with BatteryPulse in Russian: 1 all Russian, 2 some English (which), 3 the sheet didn't change language (not checked)" ;;
+    R4-3-widgets) echo "3|judge|Step 11c (4.3), the placed widgets after the language switch, the reload and a new extension: 1 Russian, 2 still English (which), 3 no redraw (not checked)" ;;
+    R4-5-automatic) echo "yn|judge|Step 11c (4.5): the medium widget back on Automatic, as before step 4" ;;
+    R4-6-history) echo "yn|judge|Step 11c (4.6), the History widget's edit sheet: its options listed (the series, the period), and a choice shows on the widget after Done" ;;
+    R4-6-device) echo "3|judge|Step 11c (4.6), the iPhone & iPad widget's edit sheet, One device (G71-4): 1 its chooser opens (empty while no device is remembered), 2 it doesn't open or shows an error, 3 no One device option" ;;
     R5-always-default | R5-always-dark | R5-always-clear | R5-always-tinted | R5-auto-default | R5-auto-dark | R5-auto-clear | R5-auto-tinted | \
       R5-nc-default | R5-nc-dark | R5-nc-clear | R5-nc-tinted | R5-contrast | R5-transparency)
       rest="${1#R5-}"
-      echo "yn|judge|Step 5, $rest: every widget can be read, and a low or Service Recommended state still shows without colour (beside each crop's contrast)"
+      echo "yn|judge|Step 11c, the looks, $rest: every widget can be read, and a low or Service Recommended state still shows without colour (beside each crop's contrast)"
       ;;
-    R6-12-hour) echo "yn|judge|Step 6, 24-hour time off: the widget shows '4:39 PM'-style times" ;;
-    R6-tick) echo "4|judge|Step 6, a time-left widget 65 s apart: 1 the minutes went down by one, 2 no, 3 it shows seconds, 4 it starts with a minus sign" ;;
-    R6-count-toggle) echo "yn|judge|Step 6, the version count's toggle and footer: readable in English and Russian, greyed out under Never" ;;
-    R7-tree) echo "yn|judge|Step 7, each widget's tree: no symbol name, the charge one element with its value, one element per row, no empty group, a chart one element with its one label (W-3b item 5, WidgetChartSummary)" ;;
-    R7-tree-ru) echo "yn|judge|Step 7, the same trees in Russian" ;;
-    R7-text-size) echo "3|judge|Step 7, Text size at its largest: the widgets' words 1 grow, 2 stay unchanged (expected), 3 get cut off (which)" ;;
+    R6-12-hour) echo "yn|judge|Step 11c, 24-hour time off: the widget shows '4:39 PM'-style times" ;;
+    R6-tick) echo "4|judge|Step 11c, a time-left widget 65 s apart: 1 the minutes went down by one, 2 no, 3 it shows seconds, 4 it starts with a minus sign" ;;
+    R6-count-toggle) echo "yn|judge|Step 11c, the version count's toggle and footer: readable in English and Russian, greyed out under Never" ;;
+    R7-tree) echo "yn|judge|Step 3 (C10), each placed widget's tree, every kind and family: no symbol name, the charge one element with its value, one element per row, no empty group, a chart one element with its one label (W-3b item 5, WidgetChartSummary)" ;;
+    R7-tree-ru) echo "yn|judge|Step 3 (C10), the same widget trees in Russian, after a redraw" ;;
+    R7-text-size) echo "3|judge|Step 11c, Text size at its largest: the widgets' words 1 grow, 2 stay unchanged (expected), 3 get cut off (which)" ;;
     R8-quit | R8-running | R8-accessories | R8-health | R8-main | R8-compact | R8-history | R8-device)
-      echo "3|judge|Step 8, a click on the widget (${1#R8-}): 1 the expected page opened, 2 another page (which, and its route), 3 nothing opened"
+      echo "3|judge|A click on the widget (${1#R8-}): 1 the expected page opened, 2 another page (which, and its route), 3 nothing opened"
       ;;
     R9-plug) echo "yn|judge|The day's end, the unplug and plug-in: the Battery widget's state matches bpulse --json within a minute (at the limit: Not charging, then Charged to limit)" ;;
-    R9-accessory) echo "3|judge|Step 9, the accessory disconnected and reconnected: 1 the Accessories widget changed within a minute, 2 it didn't, 3 not run" ;;
-    R9b-demo) echo "yn|judge|Step 9b, Demo Mode's Charge limit scene: Overview, the popover and the compact window say Charged to limit, Power says Charge limit: Reached" ;;
-    R9b-demo-ru) echo "yn|judge|Step 9b, the same in Russian, in the catalog's terms" ;;
-    R9b-widgets) echo "yn|judge|Step 9b, with bit 24 now: the Battery widgets say Charged to limit" ;;
-    R9b-settings-ru) echo "3|judge|Step 9b, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
+    R9-accessory) echo "3|judge|An accessory disconnected and reconnected: 1 the Accessories widget changed within a minute, 2 it didn't, 3 not run" ;;
+    R9b-demo) echo "yn|judge|Step 11c, Demo Mode's Charge limit scene: Overview, the popover and the compact window say Charged to limit, Power says Charge limit: Reached (or its number)" ;;
+    R9b-demo-ru) echo "yn|judge|Step 11c, the same scene in Russian (after app-language ru), in the catalog's terms" ;;
+    R9b-widgets) echo "yn|judge|Step 11c, with bit 24 now: the Battery widgets say Charged to limit" ;;
+    R9b-settings-ru) echo "3|judge|Step 11c, System Settings → Battery's Charge Limit with System Settings in Russian: 1 Russian, as the catalog's words, 2 Russian, other words (which), 3 not in Russian (not checked)" ;;
     R-settings) echo "yn|judge|Settings on the Air's display (S-1): every Settings pane and the Welcome window, scrolled to its end: the last row's control reachable; a pane that fits shows no scroll bar and doesn't move (n names the pane)" ;;
     V01-menubar) echo "yn|judge|The menu bar item on a light and on a dark menu bar (the crops): legible, not clipped" ;;
     R-menu-bar-same) echo "2|judge|menu-bar-shots before ($START_VERSION's painter) against after (RC-U's), each look and style: 1 BatteryPulse's item drawn the same (the clock, the system's items and a charge that moved between them aside), 2 it differs (which)" ;;
     R-raw-history-rc)
       echo "3|judge|A pointer-free switch from Raw Data to History (rc): 1 History at once, 2 History's title over Raw Data's table first (for how long), 3 something else (note)"
       ;;
-    F12-version) echo "yn|judge|F12: after Install and Relaunch on RC-F, BatteryPulse came back as $BASE_VERSION" ;;
-    F12-widget) echo "4|judge|F12: the Battery and Accessories widgets after the update against the before shots: 1 same, 2 blank or grey, 3 gone, 4 different (note)" ;;
-    F12-new-kinds) echo "4|judge|F12: the History and iPhone & iPad widgets under $BASE_VERSION, which lacks their kinds: 1 they keep their last picture (PF-10), 2 blank or grey, 3 gone, 4 different (note)" ;;
-    C-bit24) echo "3|judge|At the limit on the adapter, when charging stopped: 1 NotChargingReason gained bit 24, 2 it didn't, 3 not reached" ;;
-    C-full) echo "yn|judge|The limit at 100 % (computer use or his hand at the beeps), confirmed by pmset -g battlimit or the pane's shot" ;;
-    C-back) echo "yn|judge|The limit back at its value, confirmed by pmset -g battlimit or the pane's shot" ;;
+    F12-version) echo "yn|judge|F12: after Install and Relaunch on RC-F, BatteryPulse came back as the published $BASE_VERSION" ;;
+    F12-widget) echo "4|judge|F12: the Battery and Accessories widgets after the update and its redraw, against the before shots: 1 same, 2 blank or grey, 3 gone, 4 different (note)" ;;
+    F12-new-kinds) echo "4|judge|F12: the History and iPhone & iPad widgets under the published $BASE_VERSION, which has their kinds: 1 same, with fresh values, 2 blank or grey, 3 gone, 4 different (note)" ;;
+    G8-1-hold) echo "yn|judge|G8-1 at the hold (the limit at or just below the charge, on the adapter): the app's logged number equals pmset -g battlimit's, and bpulse --json's key with it (the script reads them)" ;;
+    G8-1-second) echo "yn|judge|G8-1 at a second limit above the charge (charging toward it): the app's logged number equals battlimit's, or both show none (the script reads them)" ;;
+    G8-1-full) echo "yn|judge|G8-1 at 100 %: battlimit shows no limit, and neither the app's line nor bpulse --json gives a number (the script reads them)" ;;
+    G8-1-battery) echo "yn|judge|G8-1 on battery, 1 and 6 minutes after the unplug: no number from the app or bpulse --json; by 6 minutes powerd holds no policy (the script reads them)" ;;
+    G8-1-plugin) echo "yn|judge|G8-1 after the plug-in, at 5 s and at 1 minute: battlimit holds the limit again, and the app's number with it (the script reads them)" ;;
+    G8-5-limit) echo "yn|judge|G8-5: no prompt while BatteryPulse read powerd's file (the screen at each read: no dialog came)" ;;
+    L-samples) echo "3|judge|A-2's sample script at each read on the adapter: 1 every redacted copy decodes to battlimit's number, 2 a copy failed or decoded another number (which), 3 no sample script at the frozen commit (not run)" ;;
+    L-limit-back) echo "yn|judge|The Charge Limit back at prepare's value (pmset -g battlimit on the adapter, or the Battery pane's shot)" ;;
+    L-a1-scenes) echo "yn|judge|Step 3 (A-1): each Demo Mode scene that names a cause, and the one whose info button lists Apple's reasons, shot on Overview, Power and the popover, in English and Russian (n names the scene)" ;;
+    L-a2-number) echo "3|judge|Step 3 (A-2): the Charge Limit's number in its Demo Mode scene: 1 Power and Overview's sentence show it, 2 not shown (which), 3 no such scene in this build" ;;
+    L-a3-health) echo "yn|judge|Step 3 (A-3): Health's summary at the top (Condition, Maximum capacity, Cycle count), in English and Russian" ;;
+    L-q84-badge) echo "3|judge|Step 3 (Q8-4): Clear's badge in the worn-battery scene, beta styles on and Clear chosen: 1 the capacity's own words (Maximum capacity below 80 percent), 2 Service Recommended, 3 not shot (why)" ;;
+    L-a4-help) echo "yn|judge|Step 3 (A-4): one row's help tag and its info popover per page (Overview, Power, Health, a device page when one is remembered) and the popover's help tag, in English and Russian (n names the page)" ;;
+    L-a5-welcome) echo "yn|judge|Step 3 (A-5): Welcome with hasSeenWelcome cleared, its lines and controls, in English and Russian; hasSeenWelcome back as it was (the script reads it)" ;;
+    L-a6-window) echo "yn|judge|Step 3 (A-6): Report a Problem's window, its preview's top and its end, and both choices, in English and Russian" ;;
+    L-a6-file) echo "yn|judge|Step 3 (A-6, G8-13): every report saved into the session's report folder holds no serial of this Mac or its battery, no user name and no home path (the script reads them)" ;;
+    L-p1-note) echo "yn|judge|Step 3 (P-1): after the accessory sentinel, Accessories shows the note with Turn On Again; an AX press on it, and the file is gone (the script reads it)" ;;
+    L-a7-link) echo "3|judge|Step 3 (A-7): the user guide's link (About's User Guide, else the log line): 1 this build's ref (main for 0.0.0, v<version> otherwise), 2 another ref (which), 3 not read (not checked)" ;;
+    L-weak-adapter) echo "3|judge|Step 4 (Q8-3, G8-3): the captures with the low-wattage adapter under load: 1 a charger key shows it (which), 2 none does, 3 not run" ;;
     H-hold) echo "3|judge|The night on the adapter: 1 a hold was seen (the charge held below 100 % with NotChargingReason set), 2 none, 3 not readable" ;;
-    D3-version) echo "yn|judge|After Install and Relaunch, About shows $RC_VERSION" ;;
-    D3-whats-new) echo "yn|judge|What's New appeared once" ;;
+    D3-version) echo "yn|judge|After Install and Relaunch, About shows $RELEASE_VERSION" ;;
+    D3-whats-new) echo "yn|judge|What's New appeared once, with 0.8's rows" ;;
     D3-count-row) echo "yn|judge|What's New lists Anonymous version count only for an update from before 0.7 (from $BASE_VERSION: not listed)" ;;
-    D3-widgets) echo "4|judge|The widgets against the before-picture, after the desktop click: 1 same (Battery and Accessories as before; a History or iPhone & iPad widget he kept now shows data), 2 blank or grey, 3 gone, 4 different" ;;
+    D3-widgets) echo "4|judge|The widgets against the before-picture, after their redraw and the desktop click: 1 same, 2 blank or grey, 3 gone, 4 different" ;;
     D3-history) echo "yn|judge|History shows the past days" ;;
     D3-settings) echo "yn|judge|The settings and the menu bar look are as in the before shots" ;;
     D3-login-item) echo "2|judge|Login Items: 1 BatteryPulse still listed (or Open at login was off), 2 gone" ;;
     D3-notifications) echo "yn|judge|BatteryPulse's Settings → Notifications as before the update" ;;
-    D3-count) echo "3|judge|The version count: 1 counted, and release-stats shows 1 or more, 2 noCounter, failed or 0, 3 no update line" ;;
+    D3-prompt) echo "yn|judge|No prompt for BatteryPulse's own data after the update (SEC-06)" ;;
+    D3-report) echo "yn|judge|Help → Report a Problem… opens its window (a shot)" ;;
+    D3-help) echo "3|judge|The user guide's link at $RELEASE_VERSION (About's User Guide, else the log line): 1 v$RELEASE_VERSION, 2 another ref (which), 3 not read" ;;
     D3-first-day) echo "yn|judge|The popover's charge and Lasts until against the widget's: within 2 points and about 15 minutes" ;;
     *) return 1 ;;
   esac
@@ -357,26 +397,33 @@ question() {
 questions_list() {
   case "$SESSION" in
     R)
-      echo R-yes R-back R-keep-ax R-keep-widgets R-usage
-      echo prep-charge-limit prep-widget-style prep-dim-widgets prep-open-at-login prep-widgets R-capacity-start
-      echo R2-062-small R2-062-medium R2-whats-new-base R-feed-before R2-small R2-medium R2-large R2-whats-new-rc
+      echo R-yes R-back R-keep-ax R-keep-widgets R-limit R-usage
+      echo prep-charge-limit prep-widget-style prep-dim-widgets prep-open-at-login prep-keyboard-navigation prep-widgets R-capacity-start
+      echo R-feed-before R2-small R2-medium R2-large R2-whats-new-rc
+      echo R-tree-app R-tree-app-ru R-charts R7-tree R7-tree-ru R-keyboard R-contrast R-display R-menubar-a11y V01-menubar
+      echo R-russian R-limit-live R-report R-sentinel
+      echo R2-062-small R2-062-medium R2-whats-new-062
       echo R3-large R3-accessories-small R3-accessories-medium R3-accessories-large R3-history-medium R3-history-large
       echo R3-devices-small R3-devices-medium R3-devices-large R-feed-history R-feed-cold
       echo R4-1-chooser R4-1-shows R4-2-kept R4-3-sheet R4-3-widgets R4-5-automatic R4-6-history R4-6-device
       echo R5-always-default R5-always-dark R5-always-clear R5-always-tinted R5-auto-default R5-auto-dark R5-auto-clear R5-auto-tinted
       echo R5-nc-default R5-nc-dark R5-nc-clear R5-nc-tinted R5-contrast R5-transparency
-      echo R6-12-hour R6-tick R6-count-toggle R7-tree R7-tree-ru R7-text-size
+      echo R6-12-hour R6-tick R6-count-toggle R7-text-size
       echo R8-quit R8-running R8-accessories R8-health R8-main R8-compact R8-history R8-device R9-accessory
       echo R9b-demo R9b-demo-ru R9b-widgets R9b-settings-ru R-feed-demo R-feed-reads R-feed-cleared R-settings
-      echo V01-menubar R-menu-bar-same R-raw-history-rc
-      echo R9-plug R-capacity-day-end F12-version F12-widget F12-new-kinds R-send
+      echo R-menu-bar-same R-raw-history-rc
+      echo R9-plug R-capacity-day-end F12-version F12-widget F12-new-kinds R-listen R-send
       ;;
-    C) echo C-yes C-usage prep-charge-limit C-bit24 C-full C-back C-send ;;
+    L)
+      echo L-yes L-usage L-adapter prep-charge-limit
+      echo G8-1-hold G8-1-second G8-1-full G8-1-battery G8-1-plugin G8-5-limit L-samples L-limit-back
+      echo L-a1-scenes L-a2-number L-a3-health L-q84-badge L-a4-help L-a5-welcome L-a6-window L-a6-file L-p1-note L-a7-link
+      echo L-weak-adapter L-send
+      ;;
     H) echo H-yes H-usage H-hold H-send ;;
-    D3) echo D3-yes D3-usage D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications D3-feed D3-capacity D3-count D3-first-day D3-send ;;
-    F)
-      echo F-yes F-usage F-keep-widgets R-feed-before R2-small R2-medium R2-large R3-history-medium R3-devices-small
-      echo R-feed-history R-feed-cold R4-3-widgets R4-6-device R8-history R8-device F-send
+    D3)
+      echo D3-yes D3-usage D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications
+      echo D3-feed D3-capacity D3-prompt D3-report D3-help D3-first-day D3-send
       ;;
   esac
 }
@@ -578,6 +625,28 @@ wallpapers() {
 WIDGET_EXEC='^/[^ ]*/BatteryPulseWidget\.appex/Contents/MacOS/BatteryPulseWidget( |$)'
 widget_pids() { pgrep -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
+# fresh_widget_pid <the pids before, space-separated> [<seconds, 60 by default>]: a widget
+# extension process that wasn't among them, waited for up to that long (PLAN.md §6.0 rule 4: an
+# update ends the extension before its swap, and the new version's launch reloads every kind, so
+# a new process is the redraw); printed, or nothing when none came in time.
+fresh_widget_pid() {
+  local before=" $1 " waited=0 pid
+  while :; do
+    for pid in $(widget_pids); do
+      case "$before" in
+        *" $pid "*) ;;
+        *)
+          echo "$pid"
+          return 0
+          ;;
+      esac
+    done
+    [ "$waited" -lt "${2:-60}" ] || return 0
+    sleep 5
+    waited=$((waited + 5))
+  done
+}
+
 end_widget_extension() { pkill -TERM -f "$WIDGET_EXEC" 2>/dev/null || true; }
 
 # end_widget_extension_and_wait: ends every BatteryPulseWidget process before a swap and waits for
@@ -605,7 +674,7 @@ end_widget_extension_and_wait() {
 
 MOUNT=""
 mount_dmg() {
-  MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/bp-071-mount.XXXXXX")"
+  MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/bp-080-mount.XXXXXX")"
   hdiutil attach -quiet -nobrowse -readonly -noautoopen -mountpoint "$MOUNT" "$1" || fail "can't mount $1"
 }
 
@@ -712,13 +781,45 @@ fetch_rc_u() {
   fetch_previews
 }
 
-# Session R's: the start (v0.6.2) and the base (v0.7.0) beside each other, then U and F.
+# Session R8's: the start (v0.6.2) for step 11c, then U and F. His own 0.7.1 is the base step 2
+# updates from: no published 0.7.x is installed.
 fetch_builds_r() {
   mkdir -p "$BUILDS"
   fetch_release start "$TAG_START"
-  fetch_release base "$TAG_BASE"
   fetch_rc_u
   fetch_one F "$RUN_F" "$ARTIFACT_F" "$LOC_F"
+}
+
+# locate_build_l: the look shoot's build (PLAN.md §6.1, "a CI build of C7's merge"): the newest
+# successful ci.yml run on the integration branch whose commit is the frozen one or an ancestor
+# with the same code (Sources, Resources, Package.swift, build-app.sh), with an unexpired DMG
+# artifact: a push's BatteryPulse-<sha> (version 0.0.0) or a dispatch's BatteryPulse-<version>-<sha>.
+# Its build number is the clock's (0.7.1's B-1), above v0.7.1's.
+LOC_L=""
+locate_build_l() {
+  local head run sha names artifact
+  head="$(git -C "$ROOT" rev-parse HEAD)"
+  LOC_L=""
+  while IFS=$'\t' read -r run sha; do
+    [ -n "$run" ] || continue
+    git -C "$ROOT" merge-base --is-ancestor "$sha" "$head" 2>/dev/null || continue
+    git -C "$ROOT" diff --quiet "$sha" "$head" -- Sources Resources Package.swift scripts/build-app.sh 2>/dev/null || continue
+    names="$(gh api "repos/$REPO/actions/runs/$run/artifacts?per_page=100" --jq '.artifacts[] | select(.expired | not) | .name' 2>/dev/null || true)"
+    artifact="$(grep -x -E "BatteryPulse-([0-9]+\.[0-9]+\.[0-9]+-)?$sha" <<<"$names" | head -1 || true)"
+    if [ -n "$artifact" ]; then
+      LOC_L="$run$TAB$artifact"
+      return 0
+    fi
+  done < <(gh run list -R "$REPO" -b "$INTEGRATION_BRANCH" -w ci.yml -s success -L 40 --json databaseId,headSha \
+    --jq '.[] | [.databaseId, .headSha] | @tsv' 2>/dev/null || true)
+}
+
+# fetch_build_l: the look shoot's build L, pinned or located (gh lists the newest run first).
+fetch_build_l() {
+  mkdir -p "$BUILDS"
+  if [ ! -f "$BUILDS/L.dmg" ]; then locate_build_l; fi
+  fetch_one L "$RUN_L" "$ARTIFACT_L" "$LOC_L"
+  [ -f "$BUILDS/L.dmg" ] || fail "no CI build of the frozen code on $INTEGRATION_BRANCH (a push's ci.yml run makes one; or pin RUN_L and ARTIFACT_L)"
 }
 
 # fetch_previews: the widget's CI renders from RC-U's run (ci.yml's widget-previews-<sha>), which
@@ -737,14 +838,13 @@ fetch_previews() {
   fi
 }
 
-# install_build <start|base|U|F|backup> [--no-launch]: the build's app into /Applications the way
+# install_build <start|U|F|L|backup> [--no-launch]: the build's app into /Applications the way
 # UpdateInstaller does it: the widget extension ended first and waited for (D-17), a copy staged on
 # the same volume, its bundle ID and code signature checked, one atomic swap with the installed copy
 # (swap.swift), the old copy deleted once it has quit, lsregister -f, a relaunch. WidgetKit caches
 # by CFBundleVersion, so a build whose number isn't higher than the installed one is refused, except
-# the start 0.6.2 over his newer app (prepare), the base 0.7.0 and his backed-up app. The
-# extension's pids before the swap and 10 s after the relaunch go into installs.tsv and the step's
-# section (G7-2).
+# the start 0.6.2 over a newer app (step 11c) and his backed-up app. The extension's pids before the
+# swap and 10 s after the relaunch go into installs.tsv and the step's section (G7-2).
 install_build() {
   local name="$1" launch_after=1 staging staged bundle version build installed last_seen why="higher" before after ended
   if [ "${2:-}" = --no-launch ]; then launch_after=0; fi
@@ -793,14 +893,12 @@ install_build() {
   case "$build$installed" in "" | *[!0-9]*) fail "a build number isn't a number ($build, $installed)" ;; esac
   if [ "$build" -le "$installed" ]; then
     if [ "$name" = start ]; then
-      why="the start $START_VERSION, below his app (step 2's first half)"
-    elif [ "$name" = base ]; then
-      why="the base $BASE_VERSION reinstall"
+      why="the start $START_VERSION, below the installed app (step 11c)"
     elif [ "$name" = backup ]; then
       why="restore puts his app back"
     else
       rm -rf "$staging"
-      fail "refusing $name: its build $build isn't higher than the installed $installed, and WidgetKit caches by it (D1 dispatches U and F in this order)"
+      fail "refusing $name: its build $build isn't higher than the installed $installed, and WidgetKit caches by it (D1 dispatches U and F in this order; L is a CI build above v$BASE_VERSION)"
     fi
     echo "note: $name's build $build isn't higher than the installed $installed: $why"
   fi
@@ -836,12 +934,12 @@ install_build() {
 
 installed_build() { plist_value "$APP/Contents/Info.plist" CFBundleVersion; }
 
-# install <start|base|U|F|backup>: one build, as every step installs it, with its section lines:
-# the pids, and CHSErrorDomain 1103 lines since the install (read again by the step's later shots).
+# install <start|U|F|L|backup>: one build, as every step installs it, with its section lines: the
+# pids, and CHSErrorDomain 1103 lines since the install (read again by the step's later shots).
 step_install() {
-  rf_only install
-  [ $# -eq 1 ] || fail "usage: $SCRIPT install <start|base|U|F|backup>"
-  case "$SESSION:$1" in R:start | R:base | R:U | R:F | R:backup | F:U | F:backup) ;; *) fail "no build $1 in Session $SESSION" ;; esac
+  rl_only install
+  [ $# -eq 1 ] || fail "usage: $SCRIPT install <start|U|F|L|backup>"
+  case "$SESSION:$1" in R:start | R:U | R:F | R:backup | L:L | L:backup) ;; *) fail "no build $1 in Session $SESSION" ;; esac
   [ "$1" = backup ] || [ -n "$(original_of app)" ] || fail "prepare records the app's change first: $SCRIPT prepare"
   install_build "$1"
   use_section 05-installs "Installs"
@@ -891,6 +989,7 @@ build_tools() {
 # rest, a short session by its `tools` call.
 build_gui_tools() {
   mkdir -p "$BIN"
+  write_sheet_words
   if tools_need_build frames "$HERE/frames.swift"; then
     echo "building frames.swift..."
     if ! xcrun swiftc -O "$HERE/frames.swift" -o "$BIN/frames" 2>"$BIN/frames.log"; then
@@ -908,8 +1007,9 @@ build_gui_tools() {
 }
 
 # tools: a short session's first script call: ui and frames built from its own frozen worktree
-# into ~/bp-071/<C|H|D3|F>/bin, where ui finds its session's folder (Session R's prepare builds
-# them in ~/bp-071/R/bin). The After publishing check clicks, crops and reads AX through them.
+# into ~/bp-080/<H|D3>/bin, where ui finds its session's folder (Session R8's and the look shoot's
+# prepare build them in their own bin/). The After publishing check clicks, crops and reads AX
+# through them.
 step_tools() {
   [ "$(uname -s)" = Darwin ] || fail "this runs on the Mac"
   xcode-select -p >/dev/null 2>&1 ||
@@ -1149,10 +1249,10 @@ check_tools() {
   case "$(sw_vers -productVersion)" in 27.*) ;; *) warn "this session was planned for macOS 27" ;; esac
 }
 
-# A fresh backup into ~/bp-071/R/backup (PLAN.md §6.2, R0): the app, the defaults domain (his
-# settings: Check for updates, Window to open, the app's own AppleLanguages), Application Support,
-# the widget extension's AppleLanguages, the appearance, the 24-hour setting. A second prepare keeps
-# it unless asked for a fresh one.
+# A fresh backup into ~/bp-080/<R|L>/backup (PLAN.md §6.1 step 1, §6.4 step 1): the app, the
+# defaults domain (his settings: Check for updates, Window to open, the window style, the app's own
+# AppleLanguages), Application Support, the widget extension's AppleLanguages, the appearance, the
+# 24-hour setting. A second prepare keeps it unless asked for a fresh one.
 backup() {
   if [ -f "$BACKUP/done" ] && [ "${1:-}" != --fresh-backup ]; then
     echo "keeping the backup of $(cat "$BACKUP/done") in $BACKUP (prepare --fresh-backup takes a new one)"
@@ -1187,7 +1287,7 @@ setting_of() {
   value="$(plutil -extract "$1" raw -o - "$BACKUP/defaults.plist" 2>/dev/null || true)"
   printf '%s\n' "${value:-default (unset)}"
 }
-# MARK: - Session R: bookkeeping (PLAN.md §6.2, 0.6.2's hands-free mode)
+# MARK: - The sessions' bookkeeping (0.6.2's hands-free mode)
 
 # The session's files, beside the shared ones (answers.tsv, notes.tsv, sections/).
 CHANGES="$WORK/changes.tsv"
@@ -1221,14 +1321,14 @@ DAY_STREAM="$LOGS/day.ndjson"
 GUI_STREAM="$LOGS/gui.ndjson"
 DRY_RUN=""
 
-r_only() { [ "$SESSION" = R ] || fail "$1 is a Session R command: run it from the frozen worktree ~/bp-071/R/run"; }
+r_only() { [ "$SESSION" = R ] || fail "$1 is a Session R command: run it from the frozen worktree ~/bp-080/R/run"; }
 
-# rf_only <command>: a command Session R shares with the short feed check, which runs step 2's
-# second half, the feed's reads and a few of R's looks from its own worktree (~/bp-071/F/run).
-rf_only() { [ "$SESSION" = R ] || [ "$SESSION" = F ] || fail "$1 is a Session R or feed-check command: run it from ~/bp-071/R/run or ~/bp-071/F/run"; }
+# rl_only <command>: a command Session R8 shares with the look shoot, which installs its own build
+# over his 0.7.1 and puts his back at its end, from its own worktree (~/bp-080/L/run).
+rl_only() { [ "$SESSION" = R ] || [ "$SESSION" = L ] || fail "$1 is a Session R8 or look-shoot command: run it from ~/bp-080/R/run or ~/bp-080/L/run"; }
 
 # session_only <session> <command>: a short session's command, from its own frozen worktree.
-session_only() { [ "$SESSION" = "$1" ] || fail "$2 is the $1 session's command: run it from ~/bp-071/$1/run"; }
+session_only() { [ "$SESSION" = "$1" ] || fail "$2 is the $1 session's command: run it from ~/bp-080/$1/run"; }
 
 # app_pid_of <app>: the main process of TextEdit, System Settings, Xcode or Accessibility Inspector,
 # by its executable's path at the start of the argument list (pgrep -x can't match past 16
@@ -1509,11 +1609,11 @@ r_fence() {
   day_fence
 }
 
-# The arm window of ~/bp-071/R (arm.pid) is this call's ancestor.
+# The arm window of ~/bp-080/R (arm.pid) is this call's ancestor.
 caller_is_r_arm() { arm_is_ancestor "$R_HOME/arm.pid"; }
 
 # day_fence: Session R's fence for every run of this script, wherever it runs from (a short
-# session's worktree, his checkout): ~/bp-071/R's ready without a newer day-ended stops every acting
+# session's worktree, his checkout): ~/bp-080/R's ready without a newer day-ended stops every acting
 # command but the arm's own and day-end.
 day_fence() {
   if [ -f "$R_HOME/ready" ] && ! ended_after "$R_HOME" ready && ! caller_is_r_arm; then
@@ -1584,7 +1684,7 @@ other_calls() {
 }
 
 # wait [<minutes>] (1-9, 5 by default): the session's wait on its background task (prepare, a
-# long step, count-check's 10 minutes, the charge-limit's hold), in the foreground under the start
+# long step, the charge limit's unplug, the weak adapter's load), in the foreground under the start
 # line's one allow rule, which no sleep of the session's own passes. It ends within a minute of the
 # task's end (no other script call runs), or after that many minutes, then prints the status. Like
 # every call it touches the heartbeat and keeps the script's own while it waits, so waiting never
@@ -1668,6 +1768,8 @@ changed_settings() {
 # restored <setting> [how]: the session put it back and confirmed it with a read or a shot.
 step_restored() {
   [ $# -ge 1 ] || fail "usage: $SCRIPT restored <setting> [how it was confirmed]"
+  [ "$1" != desktop-widgets ] ||
+    fail "desktop-widgets comes back only by the app's counts, never on the session's word: remove the widgets the session added, then $SCRIPT widgets-check"
   english_only "$*"
   printf '%s\t%s\t%s\n' "$1" "$(clock)" "$(shift && printf '%s' "$*" | tr '\t\n' '  ')" >>"$RESTORED"
   echo "restored: $1"
@@ -1850,11 +1952,12 @@ step_ui() {
   ui_run "$@"
 }
 
-# launch_r [arguments...]: the installed app without its saved windows, in English for the GUI
-# phase's AX labels (a launch argument only; no setting changes). The language step and the
-# logged day launch it without the argument (launch_plain).
+# launch_r [arguments...]: the installed app without its saved windows, in the session's language
+# (ui_lang: English for the GUI phase's AX labels, Russian after `app-language ru`; a launch
+# argument only, no setting changes). The language step and the logged day launch it without the
+# argument (launch_plain).
 launch_r() {
-  open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(en)" "$@"
+  open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "($(ui_lang))" "$@"
   wait_for_app
 }
 
@@ -2104,9 +2207,10 @@ select_page() {
   ui_run select-row BatteryPulse "$1" --within AXOutline >/dev/null 2>&1
 }
 
-# MARK: - Session R: the start (prepare attempt, prepare, prepare reads)
+# MARK: - The start (prepare attempt, prepare, prepare reads)
 
-# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-071/R/attempt).
+# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-080/R/attempt, or the
+# look shoot's ~/bp-080/L/attempt).
 attempt_head() { git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown; }
 
 # attempt_current: the session's folder is this attempt's (its attempt file names this commit).
@@ -2122,7 +2226,7 @@ attempt_fence() {
 
 # prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"] (the start's first
 # call, right after the worktree): a clean start. A session folder that holds an earlier attempt's
-# files (no attempt file, or another commit's) moves aside to ~/bp-071/<session>-attempt-<that
+# files (no attempt file, or another commit's) moves aside to ~/bp-080/<session>-attempt-<that
 # attempt's date>, never deleted, once no arm window of that attempt runs and every change its
 # changes.tsv lists was put back (restored.tsv). Until then attempt_fence refuses `restored`, so the
 # two options record it here: --restored, the session put a setting back at the new start and
@@ -2165,6 +2269,8 @@ step_attempt() {
           how="$(printf '%s' "$3" | tr '\t\n' '  ')"
           for setting in $(tr ',' ' ' <<<"$2"); do
             changed_settings | grep -qx -- "$setting" || fail "$setting isn't in the earlier attempt's changes.tsv; nothing moved"
+            [ "$setting" != desktop-widgets ] ||
+              fail "desktop-widgets comes back only by the app's counts, never on the session's word: --kept desktop-widgets on his word that the widgets are as he wants them; nothing moved"
             is_restored "$setting" || mark_restored "$setting" "put back by the session at the new start: $how"
           done
           shift 3
@@ -2187,10 +2293,10 @@ step_attempt() {
     fi
     epoch="$(cat "$WORK/prepare.epoch" 2>/dev/null || mtime_of "$old")"
     when="$(date -r "$epoch" '+%Y-%m-%d' 2>/dev/null || date -d "@$epoch" '+%Y-%m-%d')"
-    dest="$ACCOUNT_HOME/bp-071/$SESSION-attempt-$when"
+    dest="$ACCOUNT_HOME/bp-080/$SESSION-attempt-$when"
     while [ -e "$dest" ]; do
       n=$((n + 1))
-      dest="$ACCOUNT_HOME/bp-071/$SESSION-attempt-$when-$n"
+      dest="$ACCOUNT_HOME/bp-080/$SESSION-attempt-$when-$n"
     done
     mkdir -p "$dest"
     # A directory moves to another parent only when it is writable (its .. entry changes).
@@ -2212,7 +2318,7 @@ step_attempt() {
 }
 
 
-# prepare_start <session's yes> [--fresh-backup]: what Session R's and the feed check's prepare
+# prepare_start <session's yes> [--fresh-backup]: what Session R8's and the look shoot's prepare
 # share: the tools checked, his yes, the backup, the session's times, leftovers stopped.
 prepare_start() {
   check_tools
@@ -2255,6 +2361,13 @@ prepare_report() {
   if [ -f "$BUILDS/F.none" ]; then out "- $(cat "$BUILDS/F.none")"; fi
 }
 
+# prepare_placed: the placed widgets as his own BatteryPulse counts them (T-1 item 7), read once,
+# before the session changes anything: the counts restore end's are held against.
+prepare_placed() {
+  if [ -z "$(placed_of prepare)" ] && [ -z "$(original_of app)" ]; then placed_read prepare >/dev/null; fi
+  out "- the placed widgets, as his BatteryPulse counts them (WidgetKit's answer, G7-17): $(placed_words "$(placed_of prepare)")"
+}
+
 # prepare_changes <what the app becomes>: changes.tsv's first lines, once, then his remembered
 # iPhones and iPads out of sight: outside Demo Mode the sidebar's Devices section lists them by
 # name, so every shot of the main window would show them. They stay in the backup, which restore
@@ -2274,29 +2387,26 @@ prepare_changes() {
   fi
 }
 
-# prepare [--fresh-backup] (the start, a background task): the backup into ~/bp-071/R, the builds
-# (start, base, U, F) and the tools (ui, frames, swap, perf-stats, bpulse), his remembered devices
-# out of the session's sight, v0.6.2 put in place unless the Mac runs it (step 2's first half starts
-# from it; his own app waits in the backup) and running with the session's settings, then a beep.
-# Only after his yes to the list of changes (answer --by person R-yes y).
+# prepare [--fresh-backup] (the start, a background task): the backup into ~/bp-080/R, the builds
+# (start, U, F) and the tools (ui, frames, swap, perf-stats, bpulse), his remembered devices out of
+# the session's sight, his own 0.7.x left in place (step 2 installs RC-U over it and his widgets
+# placed under it) and relaunched with the session's settings, then a beep. Only after his yes to
+# the list of changes (answer --by person R-yes y).
 step_prepare_r() {
   prepare_start R-yes "${1:-}"
   fetch_builds_r
   build_tools
   prepare_report "Prepare (the start)"
   out "- he is back at: $(epoch_hm "$(back_epoch)") (the GUI phase stops 10 minutes before, at most 4 hours after mark away)"
-  prepare_changes "v$START_VERSION, v$BASE_VERSION and the release candidates"
-  # Step 2's first half starts on 0.6.2 whatever the Mac runs (PLAN.md Q71-2): checked against the
-  # start's version, not the base's.
+  prepare_placed
+  prepare_changes "the release candidates RC-U and RC-F (and v$START_VERSION for step 11c)"
   case "$(app_version)" in
-    "$START_VERSION "*) out "- $START_VERSION runs: step 2 starts from it" ;;
+    "$BASE_VERSION "*) out "- his $BASE_VERSION runs: step 2 installs RC-U over it" ;;
     *)
-      # A prepare run again once step 2 installed a later build leaves that one.
-      if [ -s "$WORK/installed" ] && ! grep -q -E '^(start|backup) ' "$WORK/installed"; then
-        out "- step 2 has begun ($(cut -d' ' -f1 "$WORK/installed") installed): prepare leaves $(app_version) as it is"
+      if [ -s "$WORK/installed" ] && ! grep -q -E '^backup ' "$WORK/installed"; then
+        out "- the session has begun ($(cut -d' ' -f1 "$WORK/installed") installed): prepare leaves $(app_version) as it is"
       else
-        install_build start --no-launch
-        out "- $START_VERSION put in place for step 2's first half (his $(cat "$BACKUP/version") waits in the backup)"
+        out "- $(app_version) runs, not $BASE_VERSION: step 2 installs RC-U over what runs (his comes back from the backup)"
       fi
       ;;
   esac
@@ -2305,43 +2415,56 @@ step_prepare_r() {
   echo "BEEP (prepare is done): when he is back and has quit his own apps: $SCRIPT prepare reads"
 }
 
-# prepare [--fresh-backup] (the feed check's start, a background task): the backup into
-# ~/bp-071/F, RC-U and the CI renders, the tools, his remembered devices out of sight, his own
-# 0.7.0 relaunched with the session's settings (step 2's second half updates it), the GUI stream
-# for the widget's reads, the display kept awake until restore end, then a beep. Only on his 0.7.0
-# and after his yes (F-yes).
-step_prepare_f() {
-  # A second prepare, after the session changed the app, keeps going.
-  if [ -z "$(original_of app)" ]; then
-    case "$(app_version)" in
-      "$BASE_VERSION "*) ;;
-      *) fail "the feed check starts from his $BASE_VERSION and his placed widgets, and this Mac runs $(app_version): nothing was done" ;;
-    esac
-  fi
-  prepare_start F-yes "${1:-}"
-  mkdir -p "$BUILDS"
-  fetch_rc_u
+# prepare [--fresh-backup] (the look shoot's start, a background task; PLAN.md §6.1 step 1): the
+# backup into ~/bp-080/L, the look shoot's CI build L, the tools (ui, frames, swap, bpulse), his
+# remembered devices out of sight, L installed the UpdateInstaller way over his 0.7.1 (which comes
+# back at the end with his settings and data) and running with the session's settings, the display
+# kept awake until restore end, then a beep. Only after his yes (L-yes).
+step_prepare_l() {
+  prepare_start L-yes "${1:-}"
+  fetch_build_l
   build_tools
-  prepare_report "Prepare (the feed check's start)"
+  prepare_report "Prepare (the look shoot's start)"
   out "- BatteryPulse's own languages (its AppleLanguages): $(if [ -f "$BACKUP/app-languages" ]; then tr -s ' \n' ' ' <"$BACKUP/app-languages"; else echo "none (the system's)"; fi)"
-  prepare_changes "the release candidate RC-U"
+  case "$(cat "$BACKUP/version")" in
+    "$BASE_VERSION "*) ;;
+    *) warn "his BatteryPulse is $(cat "$BACKUP/version"), not $BASE_VERSION: the look shoot runs over it and puts it back the same" ;;
+  esac
+  prepare_placed
+  prepare_changes "the look shoot's build L"
+  install_build L --no-launch
+  out "- L installed ($(app_version)) over his $(cat "$BACKUP/version")"
   relaunch_r
-  gui_stream_start
   awake_start
   sound Glass
   echo "BEEP (prepare is done): when he is back and has quit his own apps: $SCRIPT preflight"
 }
 
-# prepare reads (the start): what PLAN.md §6.2's R0 reads, as 0.6.2's prepare did: the Charge
+# keyboard_navigation: System Settings → Keyboard → Keyboard navigation as AppleKeyboardUIMode
+# holds it: on (2 or 3, the values macOS has written for it), off (0 or unset), else unknown
+# [unverified on macOS 27: where the pane's shot disagrees, the shot decides].
+keyboard_navigation() {
+  local mode
+  mode="$(defaults read -g AppleKeyboardUIMode 2>/dev/null || echo unset)"
+  case "$mode" in
+    2 | 3) echo on ;;
+    0 | unset) echo off ;;
+    *) echo unknown ;;
+  esac
+}
+
+# prepare reads (the start): what SESSION-R.md's R0 reads, as 0.6.2's prepare did: the Charge
 # Limit (pmset -g battlimit), the 24-hour setting, Open at login (AX), Check for updates and Window
 # to open (his defaults), the languages (BatteryPulse's own, its widget extension's, the system's),
-# the appearance; Icon & widget style and Dim widgets on desktop by computer use from System
-# Settings' sidebar (0.6.2's P8: their URLs open other panes), answered from its shot. A value it
-# can't read is "unknown" and never changed. Then the desktop's shot and pluginkit, under the
-# start 0.6.2: his own widgets, one of which proof P1 needs.
+# the appearance, Keyboard navigation (AppleKeyboardUIMode, for step 4); Icon & widget style and Dim
+# widgets on desktop by computer use from System Settings' sidebar (0.6.2's P8: their URLs open
+# other panes), answered from its shot. A value it can't read is "unknown" and never changed. Then
+# the desktop's shot and pluginkit, under his 0.7.1: his own widgets, one of which proof P1 needs.
+# report/ is the folder step 10 saves Report a Problem's files into (report-check reads it).
 step_prepare_reads() {
   begin_section 01-reads "Prepare's reads (the start)"
   local limit corner value screen keys
+  mkdir -p "$WORK/report"
   pmset -g battlimit >"$LOGS/battlimit.txt" 2>&1 || true
   limit="$(battlimit_value "$LOGS/battlimit.txt")"
   if [ -n "$limit" ]; then
@@ -2355,6 +2478,9 @@ step_prepare_reads() {
     step_answer --by claude prep-charge-limit 100 "none set: pmset -g battlimit on the adapter" >/dev/null
   fi
   out "- AppleICUForce24HourTime: $(cat "$BACKUP/24-hour")"
+  value="$(keyboard_navigation)"
+  if [ "$value" != unknown ]; then step_answer --by claude prep-keyboard-navigation "$value" "read by AppleKeyboardUIMode" >/dev/null; fi
+  out "- Keyboard navigation (AppleKeyboardUIMode): $value$(if [ "$value" = unknown ]; then echo " (the Keyboard pane's shot answers prep-keyboard-navigation)"; fi)"
   out "- Check for updates (updateFrequency): $(setting_of updateFrequency)"
   out "- Window to open (prefersCompactWindow): $(setting_of prefersCompactWindow)"
   out "- BatteryPulse's own languages (its AppleLanguages): $(if [ -f "$BACKUP/app-languages" ]; then tr -s ' \n' ' ' <"$BACKUP/app-languages"; else echo "none (the system's)"; fi)"
@@ -2376,7 +2502,7 @@ step_prepare_reads() {
   if ui_run press BatteryPulse --menu-cmd , >/dev/null 2>&1; then
     sleep 2
     value="$(ui_run tree BatteryPulse --match "Open at login" 2>/dev/null | sed -n 's/.* value \([01]\) frame.*/\1/p' | head -1 || true)"
-    ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
+    close_front_window || true
   fi
   case "$value" in
     1) step_answer --by claude prep-open-at-login 1 "read by AX" >/dev/null ;;
@@ -2401,12 +2527,43 @@ step_prepare_reads() {
   echo "DO (session): System Settings → Appearance and → Desktop & Dock by computer use from the sidebar (P8), one $SCRIPT shot each (settings-appearance, settings-desktop), then answer from them:"
   ask prep-widget-style prep-dim-widgets
   if [ -z "$(answer_of prep-open-at-login)" ]; then ask prep-open-at-login; fi
+  if [ -z "$(answer_of prep-keyboard-navigation)" ]; then ask prep-keyboard-navigation; fi
   ask prep-widgets
   echo "Then proof P1 at one of his BatteryPulse widgets ($SCRIPT proof P1 --image <shot> <x> <y>; none: in step 2),"
   echo "an empty desktop spot ($SCRIPT desktop-spot --image <shot> <x> <y>), and: $SCRIPT preflight"
 }
 
-# MARK: - Session R: proofs and preflight (the start; 0.6.2's proofs, quick where Session B settled them)
+# prepare reads (the look shoot; PLAN.md §6.1 step 1): the Charge Limit (pmset -g battlimit on the
+# adapter; at 100 % it shows none, as on battery, so the Battery pane's shot by computer use
+# confirms it), BatteryPulse's own languages and the system's, his window style and beta styles,
+# hasSeenWelcome, the appearance, and Demo Mode (never stored: off at every launch); report/, the
+# folder the session saves Report a Problem's files into.
+step_prepare_reads_l() {
+  local limit
+  begin_section 01-reads "Prepare's reads (the look shoot)"
+  mkdir -p "$WORK/report"
+  pmset -g battlimit >"$LOGS/battlimit.txt" 2>&1 || true
+  limit="$(battlimit_value "$LOGS/battlimit.txt")"
+  if [ -n "$limit" ]; then
+    step_answer --by claude prep-charge-limit "$limit" "read by pmset -g battlimit" >/dev/null
+    out "- Charge Limit: $limit % (pmset -g battlimit)"
+  elif on_battery; then
+    out "- Charge Limit: pmset -g battlimit holds none on battery: read from the Battery pane by computer use"
+    ask prep-charge-limit
+  else
+    step_answer --by claude prep-charge-limit 100 "none set: pmset -g battlimit on the adapter; the Battery pane's shot confirms it" >/dev/null
+    out "- Charge Limit: none set (pmset -g battlimit on the adapter: $(head -1 "$LOGS/battlimit.txt" | cut -c1-60)), so 100 %: the Battery pane's shot confirms it"
+    echo "DO (session): System Settings → Battery → (i) next to Charging by computer use, a $SCRIPT shot settings-battery; if it shows another limit, $SCRIPT judge prep-charge-limit <n> \"<the shot>\""
+  fi
+  out "- BatteryPulse's own languages (its AppleLanguages): $(if [ -f "$BACKUP/app-languages" ]; then tr -s ' \n' ' ' <"$BACKUP/app-languages"; else echo "none (the system's)"; fi); the system's first language: $(defaults read -g AppleLanguages 2>/dev/null | tr -d ' \n()"' | cut -d, -f1 || echo unknown)"
+  out "- the window style (windowLook): $(setting_of windowLook); beta window styles: $(setting_of betaWindowStyles); hasSeenWelcome: $(setting_of hasSeenWelcome)"
+  out "- appearance: dark mode $(cat "$BACKUP/dark-mode"), automatic $(cat "$BACKUP/auto-appearance")"
+  out "- Demo Mode: never stored (off at every launch); Report a Problem's files go to $WORK/report"
+  out "- charge: $(battery_percent) %, $(if on_battery; then echo on battery; else echo on the adapter; fi)"
+  echo "NEXT: the Charge Limit (SESSION-L.md, L1): $SCRIPT charge-limit read start, then the hold"
+}
+
+# MARK: - Proofs and preflight (the start; 0.6.2's proofs, quick where Session B settled them)
 
 # proof_record <P#> pass|fail|not-run <detail> [fallback]: one row of proofs.tsv, which a rerun
 # replaces.
@@ -2461,7 +2618,7 @@ holder_is_ours() {
   path="$(ps -o comm= -p "$pid" 2>/dev/null || true)"
   # Gone since pmset listed it: its assertion went with it.
   [ -n "$path" ] || return 0
-  # The feed check's own display assertion (awake_start), detached from the script that started it.
+  # The look shoot's own display assertion (awake_start), detached from the script that started it.
   if [ "$pid" = "$(cat "$WORK/awake.pid" 2>/dev/null || true)" ]; then return 0; fi
   claude="$(claude_pids)"
   if grep -qx -- "$pid" <<<"$claude"; then return 0; fi
@@ -2785,20 +2942,32 @@ step_preflight() {
   done <"$PROOFS"
   park_pointer
   echo
-  echo "Now, with the session's own calls: proof P1 at each widget's centre (and widget <name> for each),"
-  echo "proof P10 (the app batch, a widget's click-to-add and its removal, a screenshot after the first action, one System"
-  echo "Settings click; then a computer-use move of the pointer to bare desktop). Each family of the session's commands"
-  echo "runs once here, so every prompt comes now:"
+  if [ "$SESSION" = L ]; then
+    # The look shoot shoots no widget and adds none (T-1 item 7: every widget a session adds must
+    # come back by the app's counts), so neither P1 nor P10's click-to-add is its.
+    echo "The look shoot shoots and adds no widget: no proof P1 or P10. Each family of the session's commands runs once"
+    echo "here, so every prompt comes now:"
+  else
+    echo "Now, with the session's own calls: proof P1 at each widget's centre (and widget <name> for each),"
+    echo "proof P10 (the app batch, a widget's click-to-add and its removal, a screenshot after the first action, one System"
+    echo "Settings click; then a computer-use move of the pointer to bare desktop). Each family of the session's commands"
+    echo "runs once here, so every prompt comes now:"
+  fi
   echo "RUN $SCRIPT ui idle; $SCRIPT ui guard; $SCRIPT shot preflight-family;$(if [ "$SESSION" = R ]; then echo " $SCRIPT heartbeat preflight;"; fi)"
   echo "RUN $SCRIPT measure / judge on one shot; $SCRIPT status"
-  if [ "$SESSION" = F ]; then
-    echo "NEXT: $SCRIPT feed before, then step 2's second half (SESSION-R.md, Feed check)"
+  # PLAN.md §6.0 rule 2: a menu-bar app has no Dock icon without a window, and computer use's
+  # access request can't name it then.
+  if [ ! -f "$WORK/main.time" ]; then
+    echo "DO (session): $SCRIPT main before computer use asks for access to BatteryPulse or acts in it (rule 2: its window gives it the Dock icon the request names)"
+  fi
+  if [ "$SESSION" = L ]; then
+    echo "NEXT: $SCRIPT main, then the one computer-use access request, then $SCRIPT prepare reads and the Charge Limit (SESSION-L.md, L1)"
   else
-    echo "NEXT: $SCRIPT arm open; $SCRIPT mark away; then R1, from capacity start and step 2's first half"
+    echo "NEXT: $SCRIPT arm open; $SCRIPT mark away; then R1, from capacity start and step 2"
   fi
 }
 
-# MARK: - Session R: the streams, the widgets' crops and the windows
+# MARK: - The streams, the widgets' crops and the windows
 
 # The perf and widget lines BatteryPulse and its extension log: reload requests, timelines, reads,
 # and W-4's per-kind answers of currentConfigurations().
@@ -2822,20 +2991,20 @@ stream_start() {
   echo "the $1 runs (pid $pid) into $2"
 }
 
-# awake_start: the feed check's display assertion, which Session R's arm window keeps for its GUI
-# phase and the arm-less feed check needs as much (an hour hands-free, a 5-minute wait in step 2,
-# the display off and the screen locked otherwise): caffeinate -d -i for at most 2.5 hours,
-# detached, its pid in awake.pid. restore end (stop_leftovers) ends it; keepawake_check counts it as
-# the script's own.
+# awake_start: the look shoot's display assertion, which Session R8's arm window keeps for its GUI
+# phase and the arm-less look shoot needs as much (about two hours hands-free, the hold's wait and
+# the adapter's beeps, the display off and the screen locked otherwise): caffeinate -d -i for at
+# most 3 hours, detached, its pid in awake.pid. restore end (stop_leftovers) ends it;
+# keepawake_check counts it as the script's own.
 awake_start() {
   if leftover_running awake; then
     echo "the display assertion runs already (pid $(cat "$WORK/awake.pid"))"
     return 0
   fi
-  nohup caffeinate -d -i -t 9000 >/dev/null 2>&1 </dev/null &
+  nohup caffeinate -d -i -t 10800 >/dev/null 2>&1 </dev/null &
   echo "$!" >"$WORK/awake.pid"
   disown "$!" 2>/dev/null || true
-  echo "the display stays awake until restore end, at most 2.5 hours (caffeinate pid $(cat "$WORK/awake.pid"))"
+  echo "the display stays awake until restore end, at most 3 hours (caffeinate pid $(cat "$WORK/awake.pid"))"
 }
 
 # stream_stop <name>: ends it the way Control-C does.
@@ -2896,13 +3065,34 @@ lowest_contrast() {
   [ -z "$best" ] || echo "$best $low"
 }
 
+# activate_app: BatteryPulse made the active app by an Apple Event to it alone (preflight's
+# tell-target check allows BatteryPulse and System Events), so its window is key and a menu command
+# acts on it: Session F's Command-W left What's New open while BatteryPulse, an agent app, wasn't
+# active after its relaunch. Never when it doesn't run (the event would launch it).
+activate_app() {
+  app_running || return 0
+  osascript -e "tell application id \"$BUNDLE_ID\" to activate" >/dev/null 2>&1 || true
+  sleep 0.5
+}
+
+# close_front_window: BatteryPulse's front window closed by an AX press on its own close button
+# (`ui close`, by the window's title), else with BatteryPulse made active first, by its Close menu
+# item (Command-W, by AX): Session F's rule (AC71's F rows). False when neither closed one.
+close_front_window() {
+  local title
+  title="$(ui_run title BatteryPulse 2>/dev/null | sed -n 's/^title: //p' | head -1 || true)"
+  if [ -n "$title" ] && ui_run close BatteryPulse --window "$title" >/dev/null 2>&1; then return 0; fi
+  activate_app
+  ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1
+}
+
 # popover_shot <file>: the menu bar popover by an AX press on the menu bar item (ui press
 # --status-item: macOS 27.2 lists no window for it, so a click there never passes ui's checks),
 # shot by its AX frame, and closed by a second press. BatteryPulse's other windows are closed first
-# (Command-W, by AX), so the front window is the popover; nothing is shot when the press fails.
+# (close_front_window), so the front window is the popover; nothing is shot when the press fails.
 popover_shot() {
   local tries=0
-  while ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 && [ "$tries" -lt 3 ]; do
+  while close_front_window && [ "$tries" -lt 3 ]; do
     tries=$((tries + 1))
     sleep 1
   done
@@ -2939,57 +3129,65 @@ widget_log_since() {
 
 # main: BatteryPulse's main window by a reopen event, placed on the right. Computer use finds a
 # menu-bar-only app only once it has a window (0.6.2's after-publishing check), so the session
-# calls this before its first computer-use action in BatteryPulse.
+# calls this before computer use asks for access to BatteryPulse and before its first computer-use
+# action in it (PLAN.md §6.0 rule 2); main.time records that it ran, which preflight checks.
 step_main() {
   app_running || launch_r
   open_main
   place_window
+  clock >"$WORK/main.time"
   echo "the main window: $(main_window_line)"
 }
 
-# MARK: - Session R: step 2, placed widgets across the two updates (G7-2)
+# MARK: - Session R8, steps 2 and 11c: placed widgets across RC-U's install (G7-2)
 
-# placed <first|second> before | 1 | 5 | compare: step 2's two halves (W-17 item 1). first: the
-# small and medium widgets placed from 0.6.2's gallery, across the base 0.7.0's install (a static
-# Battery widget becomes a configurable one); second: under 0.7.0, the small one (Automatic), the
-# medium one set to Custom and a large one, across RC-U's install (a parameter added to a shipped
-# intent: the History chart, and the two new Details ids). before: a crop of each after the desktop
-# click; 1 and 5: a minute and five minutes after that half's install (waits until then),
-# pluginkit, a full shot (local) and the crops, the extension's pids and the CHSErrorDomain 1103
-# lines; compare: the crops after the desktop click, against before's, with that half's questions.
+# placed <his|062> before | 1 | 5 | compare: placed widgets across RC-U's install (G7-2; P71's W-17
+# item 1). his: step 2, his widgets placed under his 0.7.1 (each recorded with `widget`), across
+# RC-U's install over it; 062: step 11c, the small and medium Battery widgets placed from 0.6.2's
+# gallery after `install start`, across RC-U's install again (a static Battery widget becomes a
+# configurable one: what an updater from 0.6.2 sees). before: a crop of each after the desktop
+# click, and the extension's pids; 1 and 5: a minute and five minutes after RC-U's install (waits
+# until then), pluginkit, a full shot (local) and the crops, the pids and the CHSErrorDomain 1103
+# lines; compare: the crops after the desktop click, against before's, once the widgets redrew
+# (rule 4: an extension process that wasn't there before the install; none is "not checked").
 step_placed() {
-  rf_only placed
-  local half="${1:-}" moment="${2:-}" build names prefix at name
+  r_only placed
+  local half="${1:-}" moment="${2:-}" names prefix at name title fresh=""
   case "$half" in
-    first) build=base names="small medium" prefix=R2-062- ;;
-    second) build=U names="small medium large" prefix=R2- ;;
-    *) fail "usage: $SCRIPT placed first|second before | 1 | 5 | compare" ;;
+    his) names="small medium large" prefix=R2- title="Step 2: his widgets across RC-U's install over $BASE_VERSION (G7-2)" ;;
+    062) names="small medium" prefix=R2-062- title="Step 11c: $START_VERSION's widgets across RC-U's install (G7-2)" ;;
+    *) fail "usage: $SCRIPT placed his|062 before | 1 | 5 | compare" ;;
   esac
-  [ "$SESSION" = R ] || [ "$half" = second ] || fail "the feed check runs step 2's second half only"
-  use_section "10-placed-$half" "Step 2's $half half: placed widgets across the update to $(if [ "$build" = U ]; then echo "RC-U"; else echo "$BASE_VERSION"; fi) (G7-2)"
+  use_section "10-placed-$half" "$title"
   case "$moment" in
     before)
       click_desktop || not_checked "${prefix}before" "no desktop spot"
       crop_widgets "$SHOTS/placed-$half" before
-      out "- before ($(clock)): $(app_version); widget extension pids: $(widget_pids | tr '\n' ' ')"
+      widget_pids | tr '\n' ' ' >"$WORK/placed-$half.pids"
+      out "- before ($(clock)): $(app_version); widget extension pids: $(cat "$WORK/placed-$half.pids")"
       ;;
     1 | 5)
-      [ -f "$WORK/installed.time" ] && grep -q "^$build " "$WORK/installed" 2>/dev/null ||
-        fail "$build isn't installed yet: $SCRIPT install $build first"
+      [ -f "$WORK/installed.time" ] && grep -q "^U " "$WORK/installed" 2>/dev/null ||
+        fail "RC-U isn't installed yet: $SCRIPT install U first"
       at="$(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/installed.time")" +%s 2>/dev/null || date +%s)"
       sleep_until $((at + moment * 60))
       pluginkit -mv -i "$WIDGET_ID" >"$LOGS/pluginkit-$half-$moment.txt" 2>&1 || true
       park_pointer
       shot "placed-$half-$moment"
       crop_widgets "$SHOTS/placed-$half" "${moment}min"
-      out "- $moment minute(s) after $build's install ($(clock)): $(app_version); widget extension pids: $(widget_pids | tr '\n' ' '); $(chs_since "$(cat "$WORK/installed.time")")"
+      out "- $moment minute(s) after RC-U's install ($(clock)): $(app_version); widget extension pids: $(widget_pids | tr '\n' ' '); $(chs_since "$(cat "$WORK/installed.time")")"
       out "- pluginkit:"
       out_block "$LOGS/pluginkit-$half-$moment.txt"
       ;;
     compare)
+      fresh="$(fresh_widget_pid "$(cat "$WORK/placed-$half.pids" 2>/dev/null || true)" 30)"
       click_desktop || not_checked "${prefix}compare" "no desktop spot"
       crop_widgets "$SHOTS/placed-$half" now
-      out "- compared ($(clock)): $(chs_since "$(cat "$WORK/installed.time" 2>/dev/null || cat "$WORK/prepare.time")")"
+      out "- compared ($(clock)): a widget extension process since before: ${fresh:-none}; $(chs_since "$(cat "$WORK/installed.time" 2>/dev/null || cat "$WORK/prepare.time")")"
+      if [ -z "$fresh" ]; then
+        for name in $names; do not_checked "$prefix$name" "no redraw: no widget extension process that wasn't there before the install"; done
+        return 0
+      fi
       echo "Compare each crop with its -before.png beside it (what Session B's F12 answered: 1 same, with fresh values)."
       for name in $names; do
         [ -z "$(widget_rect "$name")" ] || step_measure "$prefix$name" blank "$SHOTS/placed-$half/$name-now.png" >/dev/null || true
@@ -2998,77 +3196,79 @@ step_placed() {
       # shellcheck disable=SC2046
       ask $(for name in $names; do printf '%s%s ' "$prefix" "$name"; done)
       ;;
-    *) fail "usage: $SCRIPT placed first|second before | 1 | 5 | compare" ;;
+    *) fail "usage: $SCRIPT placed his|062 before | 1 | 5 | compare" ;;
   esac
 }
 
-# whats-new [ru]: What's New after an update (W-17 item 11), at its 520 points. Without ru: the
-# window that opened by itself at the install's launch, in English, shot by its AX frame and closed
-# (Command-W, by AX), with no relaunch, so step 2's minute shots see the update alone. ru, after
-# them: the last-seen version set back once to the one before (What's New shows once per update),
-# BatteryPulse relaunched in Russian, the window shot and closed, then the English relaunch.
+# whats-new rc|062 [ru]: What's New after RC-U's install (P71's W-17 item 11), at its 520 points:
+# rc after step 2's install over his 0.7.1 (no version count row: 0.7 announced it), 062 after step
+# 11c's over 0.6.2 (the row, for an updater from before 0.7). Without ru: the window that opened by
+# itself at the install's launch, in English, shot by its AX frame and closed by its own close
+# button (rule from Session F), with no relaunch, so the minute shots see the update alone. ru,
+# after them: the last-seen version set back once to the one before (What's New shows once per
+# update), BatteryPulse relaunched in Russian, the window shot and closed, then the session's
+# language again.
 step_whats_new() {
   r_only whats-new
-  local version previous id rect width file
-  version="$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)"
-  case "$version" in
-    "$BASE_VERSION") previous="$START_VERSION" id=R2-whats-new-base ;;
-    "$RC_VERSION") previous="$BASE_VERSION" id=R2-whats-new-rc ;;
-    *) fail "What's New is checked after the update to $BASE_VERSION or $RC_VERSION; $version is installed" ;;
+  local from="${1:-}" lang="${2:-en}" version previous id rect width file
+  case "$from:$lang" in
+    rc:en | rc:ru) previous="$BASE_VERSION" id=R2-whats-new-rc ;;
+    062:en | 062:ru) previous="$START_VERSION" id=R2-whats-new-062 ;;
+    *) fail "usage: $SCRIPT whats-new rc|062 [ru]" ;;
   esac
-  use_section 12-whats-new "What's New after each update (W-17 item 11)"
-  file="$SHOTS/whats-new/$version-${1:-en}.png"
-  if [ "${1:-}" = ru ]; then
+  version="$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)"
+  [ "$version" = "$RC_VERSION" ] || fail "What's New is checked after RC-U's install; $version is installed"
+  use_section 12-whats-new "What's New after RC-U's install (P71's W-17 item 11)"
+  file="$SHOTS/whats-new/$from-$lang.png"
+  if [ "$lang" = ru ]; then
     quit_app
     set_default lastSeenVersion -string "$previous"
     open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(ru)"
     wait_for_app
     sleep 2
-  elif [ -n "${1:-}" ]; then
-    fail "usage: $SCRIPT whats-new [ru]"
   fi
   rect="$(ui_run frame BatteryPulse 2>/dev/null || true)"
   width="$(awk '{ print $3 }' <<<"$rect")"
   if [ -n "$rect" ] && front_shot "$file" >/dev/null; then
-    out "- $version, ${1:-en} ($(clock)): the front window ${width:-?} points wide (What's New is 520); LOOK $file"
+    out "- from $previous, $lang ($(clock)): the front window ${width:-?} points wide (What's New is 520); LOOK $file"
     echo "LOOK $file"
   else
-    not_checked "$id-${1:-en}" "no BatteryPulse window after $(if [ "${1:-}" = ru ]; then echo "the Russian relaunch"; else echo "the install (What's New opens once after the update)"; fi)"
+    not_checked "$id-$lang" "no BatteryPulse window after $(if [ "$lang" = ru ]; then echo "the Russian relaunch"; else echo "the install (What's New opens once after the update)"; fi)"
   fi
-  ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
-  if [ "${1:-}" = ru ]; then
+  close_front_window || true
+  if [ "$lang" = ru ]; then
     relaunch_r
     ask "$id"
   else
-    echo "Then $SCRIPT placed ... 1, 5 and compare; after them, $SCRIPT whats-new ru"
+    echo "Then $SCRIPT placed ... 1, 5 and compare; after them, $SCRIPT whats-new $from ru"
   fi
 }
 
-# MARK: - Session R: step 3, the gallery
+# MARK: - Session R8, step 11c: the gallery
 
 # gallery <name>: after computer use added that widget from the gallery (click-to-add, then one
 # slow `ui drag`) and its frame is recorded (`widget <name> ...`): its crop after the desktop
-# click, against the CI render of its kind and family (previews/, from RC-U's run). The large
-# Battery widget is step 2's, already placed.
+# click, against the CI render of its kind and family (previews/, from RC-U's run). Each one the
+# session adds is a desktop-widgets change, which only the app's counts confirm gone (T-1 item 7).
 step_gallery() {
-  rf_only gallery
+  r_only gallery
   local name="${1:-}"
   case " $WIDGET_NAMES " in *" $name "*) ;; *) fail "usage: $SCRIPT gallery <$(tr ' ' '|' <<<"$WIDGET_NAMES")>" ;; esac
   [ -n "$(widget_rect "$name")" ] || fail "no frame recorded for $name: $SCRIPT widget $name <x> <y> <w> <h> first (ui frame --widgets lists them)"
   click_desktop || not_checked "R3-$name" "no desktop spot"
   crop_widgets "$SHOTS/gallery" added | grep -F "/$name-" || true
-  use_section 15-gallery "Step 3: the gallery"
+  use_section 15-gallery "Step 11c: the gallery"
   out "- $name added and cropped ($(clock))"
   echo "The CI renders to compare with: $(find "$WORK/previews" -name '*.png' 2>/dev/null | sort | tr '\n' ' ')"
   ask "R3-$name"
 }
 
-# MARK: - Session R: step 4, the edit sheet and the language
+# MARK: - Session R8, step 11c: the edit sheet and the language
 
 # edit-shot <tag> [<widget>]: one widget (the medium Battery one by default) after the desktop
 # click, one crop per state of step 4 (the choices made, back to Automatic, 4.6's choices).
 step_edit_shot() {
-  rf_only edit-shot
+  r_only edit-shot
   [ $# -ge 1 ] && [ $# -le 2 ] || fail "usage: $SCRIPT edit-shot <tag> [<widget name>]"
   case "$1" in *[!A-Za-z0-9._-]*) fail "a tag is letters, digits, dots, dashes and underscores" ;; esac
   [ -n "$(widget_rect "${2:-medium}")" ] || fail "no frame recorded for ${2:-medium}"
@@ -3120,19 +3320,22 @@ launch_redraw() {
   launch_r
 }
 
-# language ru | back: step 4.3 the way a user does it (PLAN.md W-17 item 6): the session sets
-# BatteryPulse's language in System Settings → General → Language & Region → Applications by
-# computer use first (`change app-language <his> ru`), then this relaunches BatteryPulse in the
-# language his settings give it, so the app writes it into the widget's feed (W-15), waits for the
-# reload notice and a new widget extension process, and only then crops every widget. No reload in
-# time is "not checked: no redraw", never "n". The extension's own AppleLanguages is never set: it
-# would hide W-15's fix. back: the same after the session put his language back.
+# language ru | back: step 11c's widgets in BatteryPulse's own language set the user's way (P71's
+# W-17 item 6, T-1 item 5): BatteryPulse's AppleLanguages written as System Settings → General →
+# Language & Region → Applications writes it (app_language_write: that pane's menu belongs to System
+# Settings' own process, out of computer use's reach in Session F), then BatteryPulse relaunched in
+# the language its settings give it, so the app writes it into the widget's feed (W-15); the
+# reload notice and a new widget extension process waited for, and only then every widget cropped.
+# No reload in time is "not checked: no redraw", never "n". The extension's own AppleLanguages is
+# never set: it would hide W-15's fix. back: the same with his own language put back.
 step_language() {
-  rf_only language
+  r_only language
   local lang="${1:-}" since
   case "$lang" in ru | back) ;; *) fail "usage: $SCRIPT language ru | back" ;; esac
   [ $# -eq 1 ] || fail "usage: $SCRIPT language ru | back"
-  use_section 20-language "Step 4.3: the language, the way a user sets it"
+  use_section 20-language "Step 11c: the widgets in BatteryPulse's own language, set the user's way"
+  quit_app
+  app_language_write "$lang"
   out "- BatteryPulse's AppleLanguages now: $(defaults read "$BUNDLE_ID" AppleLanguages 2>/dev/null | tr -d ' \n' || echo none)"
   since="$(clock)"
   if ! relaunch_for_redraw "$LOGS/language-$lang.ndjson" launch_plain; then
@@ -3147,7 +3350,7 @@ step_language() {
   if [ "$lang" = ru ]; then ask R4-3-widgets; fi
 }
 
-# MARK: - Session R: step 5, rendering modes and places (G7-4)
+# MARK: - Session R8, step 11c: rendering modes and places (G7-4)
 
 # look <always|auto> <default|dark|clear|tinted> | look nc <style> | look contrast | transparency |
 # 12-hour | text-size: after the session set the style (and Dim widgets on desktop) by computer use,
@@ -3172,7 +3375,7 @@ step_look() {
     *) fail "usage: $SCRIPT look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour | text-size" ;;
   esac
   tag="${id#R?-}"
-  use_section 30-look "Step 5: rendering modes and places (G7-4), and steps 6 and 7's looks"
+  use_section 30-look "Step 11c: rendering modes and places (G7-4), and time's and Text size's looks"
   if [ "$where" = nc ]; then
     ui_run click --ax "Control Center" clock >/dev/null 2>&1 || {
       not_checked "$id" "Notification Center didn't open by an AX click on the clock"
@@ -3217,7 +3420,7 @@ step_look() {
       files="$files $(for line in $(widget_names); do printf '%s ' "$SHOTS/look/$line-$tag-$n.png"; done)"
       [ "$n" = 2 ] || sleep 3
     done
-    ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
+    close_front_window || true
   fi
   # shellcheck disable=SC2086
   low="$(lowest_contrast $files)"
@@ -3226,7 +3429,7 @@ step_look() {
   ask "$id"
 }
 
-# MARK: - Session R: step 6, time and the version count's toggle
+# MARK: - Session R8, step 11c: time and the version count's toggle
 
 # tick: two crops of the medium widget 65 s apart (a time-left widget counts down by itself).
 step_tick() {
@@ -3235,7 +3438,7 @@ step_tick() {
   crop_widgets "$SHOTS/tick" first | grep -F '/medium-' || true
   sleep 65
   crop_widgets "$SHOTS/tick" second | grep -F '/medium-' || true
-  use_section 35-time "Step 6: time and the version count"
+  use_section 35-time "Step 11c: time and the version count"
   out "- the time-left tick: two crops 65 s apart ($(clock))"
   ask R6-tick
 }
@@ -3248,7 +3451,7 @@ step_count_toggle() {
   local his lang value
   his="$(setting_of updateFrequency)"
   case "$his" in never | "default (unset)") value=weekly ;; *) value="$his" ;; esac
-  use_section 35-time "Step 6: time and the version count"
+  use_section 35-time "Step 11c: time and the version count"
   for lang in en ru; do
     for state in on never; do
       quit_app
@@ -3259,7 +3462,7 @@ step_count_toggle() {
       ui_run press BatteryPulse --menu-cmd , >/dev/null 2>&1 || not_checked "R6-count-$lang-$state" "Settings didn't open"
       sleep 2
       front_shot "$SHOTS/count/settings-$lang-$state.png" || not_checked "R6-count-$lang-$state" "no shot"
-      ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
+      close_front_window || true
     done
   done
   relaunch_r
@@ -3268,18 +3471,18 @@ step_count_toggle() {
   ask R6-count-toggle
 }
 
-# MARK: - Session R: step 7, the trees VoiceOver walks (G7-12)
+# MARK: - Session R8, step 3: the widgets' trees VoiceOver walks (C10, G7-12)
 
 # tree [ru]: `ui tree` of every recorded widget, inside its frame in its host (P1's), roles and
 # labels; the Accessories and iPhone & iPad widgets' labels (accessory and device names) stay on
 # the Mac, the report gets their roles. ru: after `language ru`, while BatteryPulse is Russian.
 step_tree() {
-  rf_only tree
+  r_only tree
   local suffix="${1:-en}" name host file
   case "$suffix" in en | ru) ;; *) fail "usage: $SCRIPT tree [ru]" ;; esac
   host="$(head -1 "$WORK/ui-hosts" 2>/dev/null || true)"
   [ -n "$host" ] || fail "no widget host recorded: proof P1 first"
-  use_section 40-tree "Step 7: the trees VoiceOver walks (G7-12)"
+  use_section 40-tree "Step 3: the widgets' trees VoiceOver walks (C10, G7-12)"
   for name in $(widget_names); do
     file="$LOGS/tree-$name-$suffix.txt"
     # The frame is four arguments: x y width height.
@@ -3299,7 +3502,7 @@ step_tree() {
   if [ "$suffix" = ru ]; then ask R7-tree-ru; else ask R7-tree; fi
 }
 
-# MARK: - Session R: step 8, clicks (G7-9)
+# MARK: - Session R8, step 11c: clicks (G7-9)
 
 # click-widget <quit|running|accessories|health|main|compact|history|device>: the app put in that
 # state, then a CGEvent click at the widget's recorded frame (the Battery widget, the Accessories
@@ -3309,7 +3512,7 @@ step_tree() {
 # `activity`, and the page) and the window that opened. compact sets Window to open to compact
 # through defaults while the app is quit, and the session's setting again after.
 step_click_widget() {
-  rf_only click-widget
+  r_only click-widget
   local case_="${1:-}" name=small host since rect
   case "$case_" in
     quit | running | main | compact) ;;
@@ -3343,7 +3546,7 @@ step_click_widget() {
     not_checked "R8-$case_" "the click at the widget was refused"
   sleep 6
   widget_log_since "$since" "$LOGS/click-$case_.txt"
-  use_section 45-clicks "Step 8: clicks (G7-9)"
+  use_section 45-clicks "Step 11c: clicks (G7-9)"
   out "- $case_ ($since): BatteryPulse $(if app_running; then echo runs; else echo "doesn't run"; fi); its log lines since the click:"
   grep -i -E 'url|activity|route|page|open' "$LOGS/click-$case_.txt" | head -8 >"$LOGS/click-$case_.public" || true
   out_block "$LOGS/click-$case_.public"
@@ -3356,7 +3559,7 @@ step_click_widget() {
   ask "R8-$case_"
 }
 
-# MARK: - Session R: step 9, plug, unplug and accessories; 9b, the Charge Limit
+# MARK: - Session R8: the plug, the accessories and Demo Mode's Charge limit (step 11c)
 
 # plug: at the day's end, with him (W-17 item 13: it measures the candidate with every kind
 # placed): a beep for the unplug, a crop of every widget and `bpulse --json` every 10 s; 70 s later
@@ -3409,7 +3612,7 @@ step_accessories_watch() {
   r_only accessories-watch
   local what="${1:-}" i count
   case "$what" in disconnect | reconnect) ;; *) fail "usage: $SCRIPT accessories-watch disconnect | reconnect" ;; esac
-  use_section 52-accessories "Step 9: an accessory disconnected and reconnected"
+  use_section 52-accessories "Step 11c: an accessory disconnected and reconnected"
   for i in 0 1 2 3 4 5 6; do
     count="$(pmset -g accps 2>/dev/null | grep -v -i 'InternalBattery' | grep -c -E '[0-9]+%' || true)"
     out "- $what +$((i * 10)) s: pmset -g accps lists $count accessory sources"
@@ -3419,31 +3622,29 @@ step_accessories_watch() {
   if [ "$what" = reconnect ]; then ask R9-accessory; fi
 }
 
-# demo-shots [ru]: step 9b, with Demo Mode's Charge limit scene chosen by AX (the session's ui
-# press): Overview, Power, the menu bar popover and the compact window, in English or Russian; and
-# the Battery widgets when bpulse --json shows bit 24 now.
+# demo-shots [ru]: step 11c's Demo Mode, with its Charge limit scene chosen by AX (the session's ui
+# press): Overview, Power, the menu bar popover and the compact window, in the language BatteryPulse
+# runs in; and the Battery widgets when bpulse --json shows bit 24 now. Demo Mode is never stored,
+# so a relaunch ends it: ru only after `app-language ru` and the scene chosen again in Russian (its
+# row's label from the catalog), never a relaunch here, which would shoot the real state.
 step_demo_shots() {
   r_only demo-shots
   local lang="${1:-en}" item json
   case "$lang" in en | ru) ;; *) fail "usage: $SCRIPT demo-shots [ru]" ;; esac
-  if [ "$lang" = ru ]; then
-    quit_app
-    open "$APP" --args -ApplePersistenceIgnoreState YES -AppleLanguages "(ru)"
-    wait_for_app
-    echo "DO (session): Demo Mode's Charge limit scene again if the relaunch left it (ui press), then this runs on"
-  fi
+  [ "$lang" = "$(ui_lang)" ] ||
+    fail "BatteryPulse runs in $(ui_lang): demo-shots $lang needs $SCRIPT app-language $(if [ "$lang" = ru ]; then echo ru; else echo back; fi) first, then Demo Mode's Charge limit scene again by ui press (a relaunch ends Demo Mode)"
   open_main
   place_window
   for item in Overview Power; do
-    select_page "$item" || not_checked "R9b-$lang" "$item wasn't selected"
+    select_page "$(page_label "$item")" || not_checked "R9b-$lang" "$item wasn't selected"
     sleep 2
     window_shot "$SHOTS/demo/$(tr '[:upper:]' '[:lower:]' <<<"$item")-$lang.png" || not_checked "R9b-$lang" "no shot of $item"
   done
   popover_shot "$SHOTS/demo/popover-$lang.png" || not_checked "R9b-popover-$lang" "no shot of the popover"
   park_pointer
-  use_section 55-limit "Step 9b: the Charge Limit (W-14, G7-18)"
+  use_section 55-limit "Step 11c: Demo Mode's Charge limit scene (W-14, G7-18)"
   out "- Demo Mode's Charge limit scene, $lang ($(clock)): Overview, Power, the popover"
-  echo "DO (session): the compact window by computer use or ui (Window to open), shot with $SCRIPT ui frame BatteryPulse and rect, else note it"
+  echo "DO (session): the compact window by computer use or ui, shot with $SCRIPT screen demo-compact front, else note it"
   json="$LOGS/limit-now.json"
   if bpulse_json "$json"; then
     out "- now: $(charge_row "$json")"
@@ -3456,7 +3657,586 @@ step_demo_shots() {
   if [ "$lang" = ru ]; then ask R9b-demo-ru; else ask R9b-demo; fi
 }
 
-# MARK: - The widget's feed (W-17 item 7; G71-2)
+# MARK: - The new screens (the look shoot's step 3, Session R8's steps 3-11)
+
+# The pages of the main window's sidebar, by their English labels (MainView's SidebarItem), split
+# at "|" since some have spaces: iPhone and iPad is the Devices section's page while no device is
+# remembered (prepare hides his), Raw Data and Demo Mode the Developer section's (the session's
+# settings show it).
+PAGES="Overview|Power|History|Health|Accessories|iPhone and iPad|Raw Data|Demo Mode"
+
+# ui_lang: the language BatteryPulse runs in for the session's shots: en, or ru after
+# `app-language ru` (launch_r passes it, so every relaunch keeps it).
+ui_lang() { cat "$WORK/ui-language" 2>/dev/null || echo en; }
+
+# catalog_ru <English key>: its Russian in the frozen worktree's String Catalog, read from its JSON
+# text (an entry opens with `    "<key>": {`; plutil's key paths can't hold the dots many keys
+# have), for an AX press or a sidebar row in Russian, or the widget sheet's words; the key itself
+# when it has none.
+catalog_ru() {
+  local value
+  value="$(awk -v key="    \"$1\": {" '
+    !inside && $0 == key { inside = 1; next }
+    inside && /^    "/ { exit }
+    inside && /"value": "/ { sub(/^[^:]*: "/, ""); sub(/",?$/, ""); print; exit }' "$ROOT/Resources/Localizable.xcstrings" 2>/dev/null || true)"
+  printf '%s\n' "${value:-$1}"
+}
+
+# write_sheet_words: the widget kinds' gallery descriptions (the widget's .description(...) at the
+# frozen commit), in English and in Russian, into sheet-words, which ui's Sheet rules require the
+# widget edit sheet to show before it presses anything there (T-1 item 5). Local only.
+write_sheet_words() {
+  local text
+  mkdir -p "$WORK"
+  : >"$WORK/sheet-words"
+  grep -o '\.description("[^"]*")' "$ROOT/Sources/BatteryPulseWidget/BatteryPulseWidget.swift" 2>/dev/null |
+    sed 's/^\.description("//; s/")$//' | while IFS= read -r text; do
+    printf '%s\n%s\n' "$text" "$(catalog_ru "$text")" >>"$WORK/sheet-words"
+  done
+}
+
+# page_label <English label>: the sidebar row's label in the session's language now.
+page_label() { if [ "$(ui_lang)" = ru ]; then catalog_ru "$1"; else printf '%s\n' "$1"; fi; }
+
+# screen <name> [main|front|popover]: what BatteryPulse shows now (the session opened it by AX or
+# computer use), shot by the script (rule 8: -R at the frame after the occlusion check, never -l):
+# the main window (default), the front window (Settings, Welcome, Report a Problem, About) or the
+# menu bar popover, into shots/screens/<name>-<language>.png.
+step_screen() {
+  rl_or_d3 screen
+  [ $# -ge 1 ] && [ $# -le 2 ] || fail "usage: $SCRIPT screen <name> [main|front|popover]"
+  case "$1" in *[!A-Za-z0-9._-]*) fail "a screen's name is letters, digits, dots, dashes and underscores" ;; esac
+  local file
+  file="$SHOTS/screens/$1-$(ui_lang).png"
+  case "${2:-main}" in
+    main) window_shot "$file" ;;
+    front) front_shot "$file" ;;
+    popover) popover_shot "$file" ;;
+    *) fail "usage: $SCRIPT screen <name> [main|front|popover]" ;;
+  esac >/dev/null || {
+    not_checked "screen-$1-$(ui_lang)" "no shot of the ${2:-main} window"
+    return 0
+  }
+  park_pointer
+  use_section 30-screens "The screens (PLAN.md §6.1 step 3, §6.4 steps 8-10)"
+  out "- $1 ($(ui_lang), ${2:-main}, $(clock)): shots/screens/$(basename "$file")"
+  echo "LOOK $file"
+}
+
+# pages <tag> [<page>...]: the main window's pages (all of PAGES by default; a page of two words is
+# one quoted argument, "Raw Data"), each selected by its sidebar row in the session's language and
+# shot, into shots/screens/<tag>-<page>-<language>.png: a Demo Mode scene on Overview and Power (the
+# look shoot), every page in Russian (R8's step 8).
+step_pages() {
+  rl_only pages
+  [ $# -ge 1 ] || fail "usage: $SCRIPT pages <tag> [<page>...]"
+  case "$1" in *[!A-Za-z0-9._-]*) fail "a tag is letters, digits, dots, dashes and underscores" ;; esac
+  local tag="$1" page lower file pages
+  shift
+  if [ $# -gt 0 ]; then pages=("$@"); else IFS='|' read -r -a pages <<<"$PAGES"; fi
+  app_running || launch_r
+  open_main
+  place_window
+  for page in "${pages[@]}"; do
+    lower="$(tr '[:upper:]' '[:lower:]' <<<"$page" | tr ' ' '-')"
+    select_page "$(page_label "$page")" || {
+      not_checked "pages-$tag-$lower" "the sidebar row $page wasn't selected"
+      continue
+    }
+    sleep 2
+    file="$SHOTS/screens/$tag-$lower-$(ui_lang).png"
+    window_shot "$file" >/dev/null || {
+      not_checked "pages-$tag-$lower" "no shot of $page"
+      continue
+    }
+    echo "LOOK $file"
+  done
+  park_pointer
+  use_section 30-screens "The screens (PLAN.md §6.1 step 3, §6.4 steps 8-10)"
+  out "- $tag ($(ui_lang), $(clock)): $(printf '%s; ' "${pages[@]}")"
+}
+
+# scene-shots <tag>: a Demo Mode scene the session chose by an AX press on its row (Developer →
+# Demo Mode): Overview, Power and the menu bar popover (A-1's causes, A-2's number), in the
+# session's language.
+step_scene_shots() {
+  rl_only scene-shots
+  [ $# -eq 1 ] || fail "usage: $SCRIPT scene-shots <tag>"
+  step_pages "$1" Overview Power
+  step_screen "$1-popover" popover
+}
+
+# app_language_write ru | back: BatteryPulse's own language as System Settings → General →
+# Language & Region → Applications sets it, its AppleLanguages in its own domain, written while
+# BatteryPulse is quit (Session F: that pane's menu belongs to System Settings' own process, which
+# computer use can't act in, AC71's F rows): ru records the change first; back puts his own (the
+# backup's, or none) and reads it back. The session's shots and relaunches follow it (ui_lang).
+app_language_write() {
+  local his now
+  his="$(if [ -f "$BACKUP/app-languages" ]; then tr -d ' \n()"' <"$BACKUP/app-languages"; else echo none; fi)"
+  case "$1" in
+    ru)
+      [ -n "$(original_of app-language)" ] && ! is_restored app-language || record_change app-language "$his" ru
+      defaults write "$BUNDLE_ID" AppleLanguages -array ru en
+      echo ru >"$WORK/ui-language"
+      ;;
+    back)
+      if [ -f "$BACKUP/app-languages" ]; then
+        # One argument per language: a language code has no spaces.
+        # shellcheck disable=SC2046
+        defaults write "$BUNDLE_ID" AppleLanguages -array $(widget_languages_of "$BACKUP/app-languages")
+      else
+        defaults delete "$BUNDLE_ID" AppleLanguages 2>/dev/null || true
+      fi
+      echo en >"$WORK/ui-language"
+      now="$(defaults read "$BUNDLE_ID" AppleLanguages 2>/dev/null | tr -d ' \n()"' || true)"
+      now="${now:-none}"
+      if [ "$now" = "$his" ]; then mark_restored app-language "script: his AppleLanguages read back ($now; none is the system's)"; else
+        warn "BatteryPulse's AppleLanguages reads $now, not his $his: restore end puts his settings back"
+      fi
+      ;;
+  esac
+}
+
+# app-language ru | back: BatteryPulse in Russian for the session's shots (the look shoot's second
+# pass, Session R8's steps 3 and 8), the user's way (app_language_write), then a relaunch; back puts
+# his own. AX labels are then the catalog's Russian (`ui tree BatteryPulse` lists them).
+step_app_language() {
+  rl_only app-language
+  case "${1:-}" in
+    ru | back)
+      quit_app
+      app_language_write "$1"
+      launch_r
+      echo "BatteryPulse runs in $(if [ "$1" = ru ]; then echo Russian; else echo "his language again"; fi) ($(app_version))"
+      ;;
+    *) fail "usage: $SCRIPT app-language ru | back" ;;
+  esac
+}
+
+# welcome first | back (the look shoot's A-5): the Welcome window as a new user meets it,
+# hasSeenWelcome cleared (its value recorded first) and BatteryPulse relaunched, shot as it opens
+# (the session scrolls it by computer use and shoots again with screen); back puts hasSeenWelcome
+# as it was and reads it back. Without an argument: Session R8's look at Welcome on the Air's
+# display (a launch argument only, no setting changed).
+step_welcome() {
+  local was now
+  case "${1:-}" in
+    "")
+      r_only welcome
+      quit_app
+      launch_r -showWelcomeAtLaunch YES
+      sleep 2
+      front_shot "$SHOTS/front/welcome.png" || not_checked R-settings "the Welcome window didn't open"
+      ;;
+    first)
+      session_only L "welcome first"
+      was="$(defaults read "$BUNDLE_ID" hasSeenWelcome 2>/dev/null || echo unset)"
+      [ -n "$(original_of has-seen-welcome)" ] && ! is_restored has-seen-welcome || record_change has-seen-welcome "$was" cleared
+      quit_app
+      defaults delete "$BUNDLE_ID" hasSeenWelcome 2>/dev/null || true
+      launch_r
+      sleep 2
+      front_shot "$SHOTS/screens/welcome-$(ui_lang).png" || not_checked L-a5-welcome "the Welcome window didn't open with hasSeenWelcome cleared"
+      echo "DO (session): read it; scroll it by computer use if it doesn't fit and $SCRIPT screen welcome-end front; then $SCRIPT welcome back"
+      ;;
+    back)
+      session_only L "welcome back"
+      was="$(original_of has-seen-welcome)"
+      [ -n "$was" ] || fail "welcome first hasn't run"
+      close_front_window || true
+      quit_app
+      case "$was" in
+        unset) defaults delete "$BUNDLE_ID" hasSeenWelcome 2>/dev/null || true ;;
+        1 | true | YES) defaults write "$BUNDLE_ID" hasSeenWelcome -bool true ;;
+        *) defaults write "$BUNDLE_ID" hasSeenWelcome -bool false ;;
+      esac
+      now="$(defaults read "$BUNDLE_ID" hasSeenWelcome 2>/dev/null || echo unset)"
+      if [ "$now" = "$was" ] || { [ "$was" = true ] && [ "$now" = 1 ]; }; then mark_restored has-seen-welcome "script, read back ($now)"; else
+        warn "hasSeenWelcome reads $now, not $was: restore end puts his settings back"
+      fi
+      launch_r
+      ;;
+    *) fail "usage: $SCRIPT welcome [first | back]" ;;
+  esac
+}
+
+# report-check: every report Report a Problem saved into the session's report/ folder (the session
+# saves it there by computer use; PLAN.md §6.1 step 3, §6.4 step 10): G8-13, no serial of this Mac
+# (IOPlatformSerialNumber) or of its battery (AppleSmartBattery's Serial), no user name (short or
+# full, the bundle ID and the repository's owner taken out first, as the privacy lint does) and no
+# home path; and G8-5, the crash reports' names it lists against the folder's (ls). Only counts and
+# kinds reach the report; the files stay on the Mac.
+step_report_check() {
+  rl_only report-check
+  local file serial battery checked=0 dirty=0 found names listed=0 named=0 scrubbed="$WORK/report-scrubbed.txt" id
+  if [ "$SESSION" = L ]; then id=L-a6-file; else id=R-report; fi
+  serial="$(ioreg -rd1 -c IOPlatformExpertDevice 2>/dev/null | sed -n 's/.*"IOPlatformSerialNumber" = "\(.*\)"/\1/p' | head -1 || true)"
+  battery="$(ioreg -rn AppleSmartBattery 2>/dev/null | sed -n 's/^ *"Serial" = "\(.*\)"/\1/p' | head -1 || true)"
+  names="$(find "$REPORTS" -maxdepth 1 -type f \( -name 'BatteryPulse*' -o -name 'bpulse*' \) 2>/dev/null | sed 's|.*/||' | sort || true)"
+  use_section 32-report "Report a Problem's files (G8-13, G8-5)"
+  for file in "$WORK"/report/*.txt; do
+    [ -f "$file" ] || continue
+    checked=$((checked + 1))
+    awk -v a="$(tr '[:upper:]' '[:lower:]' <<<"$BUNDLE_ID")" -v b="$(tr '[:upper:]' '[:lower:]' <<<"${REPO%%/*}")" '{
+        l = tolower($0)
+        while ((i = index(l, a)) > 0) l = substr(l, 1, i - 1) substr(l, i + length(a))
+        while ((i = index(l, b)) > 0) l = substr(l, 1, i - 1) substr(l, i + length(b))
+        print l }' "$file" >"$scrubbed"
+    found=""
+    [ -z "$serial" ] || ! grep -q -i -F -- "$serial" "$scrubbed" || found="$found the Mac's serial;"
+    [ -z "$battery" ] || ! grep -q -i -F -- "$battery" "$scrubbed" || found="$found the battery's serial;"
+    ! grep -q -i -w -F -- "$(id -un)" "$scrubbed" || found="$found the user name;"
+    [ -z "$(id -F 2>/dev/null)" ] || ! grep -q -i -F -- "$(id -F)" "$scrubbed" || found="$found the full name;"
+    ! grep -q -i -F -- "$(tr '[:upper:]' '[:lower:]' <<<"$HOME")" "$scrubbed" || found="$found the home path;"
+    listed="$(grep -c . <<<"$names" || true)"
+    named="$(while IFS= read -r one; do [ -z "$one" ] || ! grep -q -F -- "$one" "$file" || echo "$one"; done <<<"$names" | grep -c . || true)"
+    out "- $(basename "$file"): $(wc -c <"$file" | tr -d ' ') bytes; $(if [ -n "$found" ]; then echo "NAMES$found"; else echo "no serial, user name or home path"; fi); crash reports named: $named of the $listed ls lists"
+    [ -z "$found" ] || dirty=$((dirty + 1))
+  done
+  rm -f "$scrubbed"
+  if [ "$checked" = 0 ]; then
+    not_checked "$id" "no .txt in $WORK/report: save Report a Problem's file there first"
+  elif [ "$dirty" = 0 ]; then
+    feed_verdict "$id" y "$checked files without a serial, user name or home path; the crash reports' names against ls in the section" "$WORK/report"
+  else
+    feed_verdict "$id" n "$dirty of $checked files name this Mac or him (the kinds in the section; a leak is fixed before D1, G8-13)" "$WORK/report"
+  fi
+}
+
+# sentinel place [accessories|devices] | check [accessories|devices]: P-1 (PLAN.md §6.1 step 3, §6.4
+# step 11): with BatteryPulse quit, the feature's sentinel file placed, as a read cut short by a
+# crash leaves it (P-1: Application Support/<bundle>/Sentinel/<feature>), then BatteryPulse launched,
+# the page showing the note and Turn On Again, which the session presses by AX; check: the file gone
+# and the page reading again. The file's name is P-1's [unverified until P-1 lands: place warns when
+# its SentinelPolicy.swift doesn't name the feature]; a file Turn On Again left is removed.
+step_sentinel() {
+  rl_only sentinel
+  local feature="${2:-accessories}" file id
+  case "$feature" in accessories | devices) ;; *) fail "usage: $SCRIPT sentinel place|check [accessories|devices]" ;; esac
+  file="$SUPPORT/Sentinel/$feature"
+  if [ "$SESSION" = L ]; then id=L-p1-note; else id=R-sentinel; fi
+  use_section 34-sentinel "The sentinel (P-1)"
+  case "${1:-}" in
+    place)
+      if [ ! -f "$ROOT/Sources/BatteryCore/SentinelPolicy.swift" ]; then
+        not_checked "$id" "no SentinelPolicy.swift at the frozen commit: P-1 hasn't landed"
+        return 0
+      fi
+      grep -q -F "\"$feature\"" "$ROOT/Sources/BatteryCore/SentinelPolicy.swift" ||
+        warn "SentinelPolicy.swift doesn't name \"$feature\": the file's name may not be P-1's"
+      [ -n "$(original_of "sentinel-$feature")" ] && ! is_restored "sentinel-$feature" || record_change "sentinel-$feature" none placed
+      quit_app
+      mkdir -p "$SUPPORT/Sentinel"
+      : >"$file"
+      launch_r
+      open_main
+      place_window
+      select_page "$(page_label "$(if [ "$feature" = accessories ]; then echo Accessories; else echo Devices; fi)")" >/dev/null 2>&1 || true
+      sleep 2
+      out "- placed Sentinel/$feature ($(clock)), BatteryPulse relaunched"
+      echo "DO (session): $SCRIPT screen sentinel-note (the note and Turn On Again), then $SCRIPT ui press BatteryPulse \"$(page_label "Turn On Again")\", then $SCRIPT sentinel check $feature"
+      ;;
+    check)
+      sleep 2
+      if [ -e "$file" ]; then
+        rm -f "$file"
+        mark_restored "sentinel-$feature" "script: removed it, Turn On Again didn't"
+        out "- check ($(clock)): Sentinel/$feature still there after Turn On Again: removed by the script"
+        feed_verdict "$id" n "Sentinel/$feature stayed after Turn On Again" "$SUPPORT/Sentinel"
+      else
+        mark_restored "sentinel-$feature" "the file gone after Turn On Again"
+        out "- check ($(clock)): Sentinel/$feature gone after Turn On Again"
+        echo "DO (session): $SCRIPT screen sentinel-after (the page reading again), then judge $id from both shots"
+        ask "$id"
+      fi
+      ;;
+    *) fail "usage: $SCRIPT sentinel place|check [accessories|devices]" ;;
+  esac
+}
+
+# help-link: the user guide's link (A-7, PLAN.md §6.1 step 3 and §6.6 step 4), read without the
+# browser: About's User Guide link, which opens the same AppLinks.help as Help → BatteryPulse Help,
+# its AXURL by `ui tree` (About opened by its menu item, closed by its button); and BatteryPulse's
+# lines since then that name the guide (A-7 may log the ref it opens). Only the link's blob/<ref>
+# part reaches the report.
+step_help_link() {
+  rl_or_d3 help-link
+  local since url ref line
+  since="$(clock)"
+  app_running || launch_r
+  ui_run press BatteryPulse "$(page_label "About BatteryPulse")" >/dev/null 2>&1 || true
+  sleep 2
+  url="$(ui_run tree BatteryPulse --match "$(page_label "User Guide")" 2>/dev/null | sed -n 's/.* url \(https:[^ ]*\).*/\1/p' | head -1 || true)"
+  close_front_window || true
+  log_since "$since" "subsystem == \"$BUNDLE_ID\" AND category != \"perf\"" "$LOGS/help.ndjson" >/dev/null
+  line="$(messages "$LOGS/help.ndjson" | grep -i -E 'guide|blob/' | tail -1 | sed 's|://[^ ]*blob/|://…/blob/|g' || true)"
+  ref="$(sed -n 's|.*/blob/\([^/]*\)/.*|\1|p' <<<"$url")"
+  use_section 36-help "The user guide's link (A-7)"
+  out "- $(app_version) ($since): About's User Guide link: ${ref:+blob/$ref/docs/USER_GUIDE.md}${ref:-not read}; a log line: ${line:-none}"
+  if [ "$SESSION" = D3 ]; then ask D3-help; else ask L-a7-link; fi
+}
+
+# weak-adapter in | out (the look shoot's step 4, Q8-3's yes, G8-3): in: a beep for the low-wattage
+# adapter, the change waited for (pmset -g adapter's wattage), a bounded CPU load for 2 minutes (one
+# busy loop per core, each ending itself), and bpulse --raw captures at 30 s and 2 minutes into
+# captures/ (serial numbers redacted; sent only after his yes), with their charger keys in the
+# section; out: a beep for his usual adapter, read back.
+adapter_watts() { pmset -g adapter 2>/dev/null | sed -n 's/.*[Ww]attage = \([0-9]*\).*/\1/p' | head -1 || true; }
+step_weak_adapter() {
+  session_only L weak-adapter
+  local usual now waited=0 at cores i capture
+  use_section 40-weak-adapter "The weak adapter (Q8-3, G8-3)"
+  case "${1:-}" in
+    in)
+      [ "$(answer_of L-adapter)" = y ] || fail "Q8-3 is his: $SCRIPT answer --by person L-adapter y first, else step 4 is skipped"
+      build_bpulse
+      [ -x "$BIN/bpulse" ] || fail "bpulse isn't built (see $BIN/bpulse.log)"
+      usual="$(adapter_watts)"
+      echo "${usual:-unknown}" >"$WORK/adapter-usual"
+      out "- the usual adapter: ${usual:-unknown} W ($(clock))"
+      cue "Plug the low-wattage adapter in now"
+      sound Glass
+      while [ "$waited" -lt 180 ]; do
+        now="$(adapter_watts)"
+        if ! on_battery && [ -n "$now" ] && [ "$now" != "$usual" ]; then break; fi
+        sleep 3
+        waited=$((waited + 3))
+      done
+      now="$(adapter_watts)"
+      [ -n "$now" ] && [ "$now" != "$usual" ] && ! on_battery || {
+        not_checked L-weak-adapter "no other adapter within 3 minutes of the beep (${now:-none} W)"
+        return 0
+      }
+      out "- the low-wattage adapter: $now W ($(clock))"
+      cores="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+      at=$(($(date +%s) + 125))
+      # Each loop ends itself after 125 s (bash's SECONDS, no process per turn); cleanup ends them
+      # sooner if this call ends.
+      for i in $(seq 1 "$cores"); do
+        (end=$((SECONDS + 125)); while [ "$SECONDS" -lt "$end" ]; do :; done) </dev/null >/dev/null 2>&1 &
+        BACKGROUND="$BACKGROUND $!"
+      done
+      mkdir -p "$WORK/captures"
+      for i in 30 120; do
+        sleep_until $((at - 125 + i))
+        capture="$WORK/captures/weak-$now-W-${i}s.plist"
+        "$BIN/bpulse" --raw >"$capture" 2>/dev/null || {
+          not_checked L-weak-adapter "bpulse --raw failed at $i s"
+          continue
+        }
+        plutil -p "$capture" 2>/dev/null | grep -E '"(NotChargingReason|SlowChargingReason|ChargerInhibitReason|ErrorFlags|TimeChargingThermallyLimited|IsCharging|ExternalConnected)" =>' |
+          sed 's/^ *//' | sort -u >"$LOGS/weak-$i.txt" || true
+        out "- $i s under load: $(charge_row_raw "$capture")"
+        out_block "$LOGS/weak-$i.txt"
+      done
+      sleep_until "$at"
+      echo "LOOK the charger keys above; then $SCRIPT weak-adapter out (his usual adapter back at the beep)"
+      ;;
+    out)
+      usual="$(cat "$WORK/adapter-usual" 2>/dev/null || true)"
+      cue "Plug your usual adapter back in now"
+      sound Hero
+      while [ "$waited" -lt 180 ]; do
+        now="$(adapter_watts)"
+        if ! on_battery && [ -n "$now" ] && { [ -z "$usual" ] || [ "$usual" = unknown ] || [ "$now" = "$usual" ]; }; then break; fi
+        sleep 3
+        waited=$((waited + 3))
+      done
+      out "- back ($(clock)): ${now:-no} W on the adapter (the usual ${usual:-unknown} W)"
+      ask L-weak-adapter
+      ;;
+    *) fail "usage: $SCRIPT weak-adapter in | out" ;;
+  esac
+}
+
+# charge_row_raw <capture>: the charge, the state's keys and NotChargingReason of a bpulse --raw
+# capture, for the weak adapter's rows.
+charge_row_raw() {
+  printf 'charge %s %%, IsCharging %s, ExternalConnected %s, NotChargingReason %s' \
+    "$(battery_key "$1" CurrentCapacity top)" "$(battery_key "$1" IsCharging top)" \
+    "$(battery_key "$1" ExternalConnected top)" "$(plutil -p "$1" 2>/dev/null | sed -n 's/.*"NotChargingReason" => \([0-9]*\).*/\1/p' | head -1 || true)"
+}
+
+# window-style <standard|frosted|translucent|clear> | back: BatteryPulse's window style (its
+# windowLook, beta styles on for Translucent and Clear) written while BatteryPulse is quit, then a
+# relaunch (Q8-4's Clear badge in the look shoot; the audit's Standard and Frosted in R8); back puts
+# his own (the backup's) and reads it back.
+step_window_style() {
+  rl_only window-style
+  local his
+  his="$(setting_of windowLook)/$(setting_of betaWindowStyles)"
+  case "${1:-}" in
+    standard | frosted | translucent | clear)
+      [ -n "$(original_of bp-window-style)" ] && ! is_restored bp-window-style || record_change bp-window-style "$his" "$1"
+      quit_app
+      set_default windowLook -string "$1"
+      case "$1" in translucent | clear) set_default betaWindowStyles -bool true ;; esac
+      launch_r
+      echo "the window style is $1"
+      ;;
+    back)
+      quit_app
+      put_style_back
+      if [ "$(setting_now windowLook)/$(setting_now betaWindowStyles)" = "$his" ]; then mark_restored bp-window-style "script: his windowLook and betaWindowStyles read back"; fi
+      launch_r
+      ;;
+    *) fail "usage: $SCRIPT window-style standard|frosted|translucent|clear | back" ;;
+  esac
+}
+
+# setting_now <key>: BatteryPulse's setting as its domain holds it now, read the way setting_of
+# reads the backup (plutil's raw form: a Boolean is true or false), or "default (unset)".
+setting_now() {
+  local value
+  defaults export "$BUNDLE_ID" "$WORK/defaults-now.plist" 2>/dev/null || true
+  value="$(plutil -extract "$1" raw -o - "$WORK/defaults-now.plist" 2>/dev/null || true)"
+  printf '%s\n' "${value:-default (unset)}"
+}
+
+# put_style_back: windowLook (a string) and betaWindowStyles (a Boolean) as the backup holds them,
+# or unset.
+put_style_back() {
+  local look beta
+  look="$(setting_of windowLook)"
+  beta="$(setting_of betaWindowStyles)"
+  if [ "$look" = "default (unset)" ]; then defaults delete "$BUNDLE_ID" windowLook 2>/dev/null || true; else set_default windowLook -string "$look"; fi
+  case "$beta" in
+    true) set_default betaWindowStyles -bool true ;;
+    false) set_default betaWindowStyles -bool false ;;
+    *) defaults delete "$BUNDLE_ID" betaWindowStyles 2>/dev/null || true ;;
+  esac
+}
+
+# appearance-set light | dark | back: the system's appearance by System Events (Session R8's audit
+# in Light and Dark), recorded first; back puts prepare's and reads it back (Auto comes back only by
+# hand: then the session, by computer use).
+step_appearance_set() {
+  r_only appearance-set
+  local dark auto
+  dark="$(cat "$BACKUP/dark-mode" 2>/dev/null || echo unknown)"
+  auto="$(cat "$BACKUP/auto-appearance" 2>/dev/null || echo 0)"
+  case "$dark" in true | false) ;; *) fail "the appearance wasn't read at prepare: never changed" ;; esac
+  case "${1:-}" in
+    light | dark)
+      [ -n "$(original_of appearance)" ] && ! is_restored appearance || record_change appearance "dark mode $dark, automatic $auto" "$1"
+      appearance "$1"
+      echo "the appearance is $1"
+      ;;
+    back)
+      if [ "$dark" = true ]; then appearance dark; else appearance light; fi
+      if [ "$(is_dark)" = "$dark" ] && [ "$(defaults read -g AppleInterfaceStyleSwitchesAutomatically 2>/dev/null || echo 0)" = "$auto" ]; then
+        mark_restored appearance "script: read back by System Events"
+      else
+        echo "the appearance needs his Auto setting back by computer use (System Settings → Appearance), then $SCRIPT restored appearance \"<the shot>\""
+      fi
+      ;;
+    *) fail "usage: $SCRIPT appearance-set light | dark | back" ;;
+  esac
+}
+
+# app-tree <surface> [ru]: `ui tree BatteryPulse` of what BatteryPulse shows now (the session
+# opened that page or window: every page, the compact window, the popover, each Settings pane,
+# About, What's New, Software Update, Welcome, Report a Problem), into logs/app-tree/, with C10's
+# checks counted: controls without a label, images without one (decorative only), and the elements
+# that carry a value (the power flow, the capacity bars, the rings). The labels stay on the Mac (an
+# accessory's name may be one); the report gets the counts.
+APP_CONTROLS="AXButton AXCheckBox AXRadioButton AXPopUpButton AXMenuButton AXSlider AXLink AXTextField AXIncrementor AXDisclosureTriangle AXSegmentedControl AXComboBox"
+step_app_tree() {
+  r_only app-tree
+  local surface="${1:-}" lang="${2:-en}" file unlabeled images values total
+  case "$surface" in "" | *[!A-Za-z0-9._-]*) fail "usage: $SCRIPT app-tree <surface> [ru]" ;; esac
+  case "$lang" in en | ru) ;; *) fail "usage: $SCRIPT app-tree <surface> [ru]" ;; esac
+  mkdir -p "$LOGS/app-tree"
+  file="$LOGS/app-tree/$surface-$lang.txt"
+  ui_run tree BatteryPulse --depth 30 >"$file" 2>&1 || {
+    not_checked "R-tree-app-$surface-$lang" "ui tree: $(head -1 "$file")"
+    return 0
+  }
+  total="$(grep -c . "$file" || true)"
+  unlabeled="$(awk -v roles=" $APP_CONTROLS " '{ r = $1; sub(/\/.*/, "", r) } index(roles, " " r " ") && $2 == "\"\"" { n++ } END { print n + 0 }' "$file")"
+  images="$(awk '{ r = $1; sub(/\/.*/, "", r) } r == "AXImage" && $2 == "\"\"" { n++ } END { print n + 0 }' "$file")"
+  values="$(grep -c -v -E ' value - frame ' "$file" || true)"
+  use_section 42-app-tree "Step 3: BatteryPulse's trees (C10)"
+  out "- $surface ($lang): $total elements; controls without a label $unlabeled; images without one $images (decorative only); elements with a value $values"
+  echo "READ $file (controls without a label: $unlabeled; each one names an element to fix or to keep as decorative)"
+}
+
+# keys walk <surface> [<n>] | keys <tab|shift-tab|left|right|up|down> | keys <space|return> --on
+# <text>: the keyboard walk (C10, PLAN.md §6.4 step 4), with Keyboard navigation on (System
+# Settings → Keyboard by computer use, `change keyboard-navigation off on` first): BatteryPulse made
+# active, the key posted to BatteryPulse alone (`ui key`, never Esc), and after each the focused
+# element read by AX, into logs/keys/<surface>.txt; walk posts Tab n times (20 by default). Space
+# and Return press the focused element only when --on names it (ui refuses an install, a quit, a
+# delete and the like). The session reads the list: each named path reached is y.
+step_keys() {
+  r_only keys
+  local surface n i file
+  mkdir -p "$LOGS/keys"
+  activate_app
+  case "${1:-}" in
+    walk)
+      surface="${2:-}"
+      n="${3:-20}"
+      case "$surface" in "" | *[!A-Za-z0-9._-]*) fail "usage: $SCRIPT keys walk <surface> [<n>]" ;; esac
+      case "$n" in [1-9] | [1-5][0-9]) ;; *) fail "a walk is 1-59 Tabs" ;; esac
+      file="$LOGS/keys/$surface.txt"
+      ui_run focused >"$file" 2>&1 || true
+      for i in $(seq 1 "$n"); do
+        ui_run key tab >>"$file" 2>&1 || {
+          echo "the key wasn't posted: $(tail -1 "$file")" >&2
+          break
+        }
+      done
+      use_section 44-keys "Step 4: the keyboard (C10)"
+      out "- walk $surface ($(clock)): $n Tabs, $(grep -c '^focused' "$file" || true) focused elements read (logs/keys/$surface.txt on the Mac)"
+      echo "READ $file"
+      ;;
+    tab | shift-tab | left | right | up | down)
+      ui_run key "$1"
+      ;;
+    space | return)
+      [ "${2:-}" = --on ] && [ -n "${3:-}" ] || fail "usage: $SCRIPT keys $1 --on <the focused element's label>"
+      ui_run key "$1" --on "$3"
+      ;;
+    *) fail "usage: $SCRIPT keys walk <surface> [<n>] | keys <tab|shift-tab|left|right|up|down> | keys <space|return> --on <text>" ;;
+  esac
+}
+
+# display-shots <tag>: Stage 1.4's pass (A11Y-02, PLAN.md §6.4 step 6), after the session switched
+# one display option by computer use (`change` first): the main window, the compact window (Window
+# to open set to compact through defaults while BatteryPulse is quit, and back) and the popover,
+# into shots/display/<tag>-<window>.png.
+step_display_shots() {
+  r_only display-shots
+  local tag="${1:-}"
+  case "$tag" in "" | *[!A-Za-z0-9._-]*) fail "usage: $SCRIPT display-shots <tag>" ;; esac
+  relaunch_r
+  open_main
+  place_window
+  park_pointer
+  window_shot "$SHOTS/display/$tag-main.png" >/dev/null || not_checked "R-display-$tag" "no shot of the main window"
+  quit_app
+  session_settings
+  set_default prefersCompactWindow -bool true
+  launch_r
+  open_main
+  sleep 2
+  front_shot "$SHOTS/display/$tag-compact.png" >/dev/null || not_checked "R-display-$tag" "no shot of the compact window"
+  quit_app
+  session_settings
+  launch_r
+  popover_shot "$SHOTS/display/$tag-popover.png" >/dev/null || not_checked "R-display-$tag" "no shot of the popover"
+  park_pointer
+  use_section 46-display "Step 6: the display options (A11Y-02)"
+  out "- $tag ($(clock)): the main window, the compact window and the popover"
+  echo "LOOK $SHOTS/display/$tag-main.png $SHOTS/display/$tag-compact.png $SHOTS/display/$tag-popover.png"
+}
+
+# rl_or_d3 <command>: a command the look shoot, Session R8 and the after-publishing check share.
+rl_or_d3() { [ "$SESSION" = R ] || [ "$SESSION" = L ] || [ "$SESSION" = D3 ] || fail "$1 runs in Session R8, the look shoot or the after-publishing check"; }
+
+# MARK: - The widget's feed (P71's W-17 item 7; G71-2)
 
 # The feed's runs (feed.tsv): when, the moment, the file's modification time, its writtenAt, and
 # when again in seconds since 1970.
@@ -3539,7 +4319,10 @@ widget_entitlements() {
 # app's writes and their reasons and the widget's rejections and open failures (`log show`: notice
 # lines), and the widget's reads (debug lines, only in this session's stream). FEED_TROUBLE is the
 # sum of the rejections and failures, FEED_REASONS the reasons of the immediate writes logged
-# (WidgetFeed.WriteReason's case names, one per word: `devices`, `historyCleared`, ...).
+# (WidgetFeed.WriteReason's case names, one per word: `devices`, `historyCleared`, ...). A routine
+# write (`step`, every 15 minutes and at a launch) logs only its signpost's debug line, which `log
+# show` never has (Session F read 0 writes after RC-U's launch wrote the file, AC71's F rows): the
+# feed's writtenAt is its sign, never a log line.
 FEED_LOGS=""
 FEED_TROUBLE=0
 FEED_READS=unknown
@@ -3557,7 +4340,7 @@ feed_logs_since() {
     reads="unknown (no stream)"
   fi
   FEED_READS="${reads%% *}"
-  FEED_LOGS="since $since: writes $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true)), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o -E 'failed: (errno|code) -?[0-9]+' <<<"$lines" | sed 's/^failed: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
+  FEED_LOGS="since $since: writes logged (a routine step write logs none: writtenAt shows it) $(grep -c -F 'Wrote the widget feed' <<<"$lines" || true) ($(grep -o 'Wrote the widget feed ([a-zA-Z]*)' <<<"$lines" | sed 's/.*(\(.*\))/\1/' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true)), the widget's reads $reads, rejections $(grep -c -F 'widget feed was rejected' <<<"$lines" || true) ($(grep -o 'widget feed was rejected: [a-zA-Z]*' <<<"$lines" | sed 's/.*: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true)), open or read failures $(grep -c -F 'widget feed failed' <<<"$lines" || true) ($(grep -o -E 'failed: (errno|code) -?[0-9]+' <<<"$lines" | sed 's/^failed: //' | sort -u | tr '\n' ' ' | sed 's/ $//' || true))"
 }
 
 # feed_denials_since <time>: the sandbox's denials of BatteryPulseWidget since then, counted (all,
@@ -3593,13 +4376,14 @@ feed_record() {
 # feed_run <moment>: that moment's line of feed.tsv, else the last run's.
 feed_run() { awk -F '\t' -v m="${1:-}" 'm == "" || $2 == m { l = $0 } END { print l }' "$FEED_RUNS" 2>/dev/null || true; }
 
-# feed_verdict <id> y|n|unsure <note>: the script's own reading of an objective check, recorded as
-# the session's; unsure joins his batch.
+# feed_verdict <id> y|n|unsure|<n> <note> [<evidence>]: the script's own reading of an objective
+# check, recorded as the session's; unsure joins his batch with the evidence's path (the feed by
+# default).
 feed_verdict() {
   local id="$1" value="$2" note="$3"
   english_only "$note"
   if [ "$value" = unsure ]; then
-    printf '%s\t%s\t%s\t%s\n' "$id" "$value" "$(printf '%s' "$note" | tr '\t\n' '  ')" "$FEED_FILE" >>"$BATCH"
+    printf '%s\t%s\t%s\t%s\n' "$id" "$value" "$(printf '%s' "$note" | tr '\t\n' '  ')" "${4:-$FEED_FILE}" >>"$BATCH"
     note="for his batch: $note"
   fi
   step_answer --by claude "$id" "$value" "$note" >/dev/null
@@ -3644,14 +4428,15 @@ set_reads() {
   sleep 1
   ui_run press BatteryPulse "Read iPhone and iPad batteries" >/dev/null 2>&1 || return 1
   sleep 1
-  ui_run press BatteryPulse --menu-cmd w >/dev/null 2>&1 || true
+  close_front_window || true
 }
 
-# feed <moment>: the widget's feed (W-5) at the moments PLAN.md W-17 item 7 names, each with the
+# feed <moment>: the widget's feed (W-5) at the moments P71's W-17 item 7 names, each with the
 # folder's and file's modes, the size, the version, writtenAt's age, no udid, serial or demo key,
 # the device count (no name), the widget's signed entitlements, its sandbox denials and the feed's
 # log lines since the last run. The script reads each verdict itself:
-#   before      under 0.7.0, before RC-U: no file (0.7.0 writes none)           R-feed-before
+#   before      under his 0.7.1, before RC-U: 0.7.1's file, its modes and
+#               version (0.7.0 wrote none; 0.7.1 does at every 15-minute step)  R-feed-before
 #   history     within 15 minutes of the first History widget                   R-feed-history
 #   cold        BatteryPulse quit and the extension ended, then a relaunch that
 #               writes the feed while no widget process runs and reloads every
@@ -3669,9 +4454,8 @@ set_reads() {
 step_feed() {
   local moment="${1:-}" since facts problems="" age written threshold pressed before mtime note value start minutes at
   case "$SESSION:$moment" in
-    R:before | R:history | R:cold | R:demo-start | R:demo-end | R:reads-on | R:reads-off | R:cleared) ;;
-    F:before | F:history | F:cold | D3:check) ;;
-    *) fail "usage: $SCRIPT feed before | history | cold | demo-start | demo-end | reads-on | reads-off | cleared (Session R; the feed check: before, history, cold; after publishing: check)" ;;
+    R:before | R:history | R:cold | R:demo-start | R:demo-end | R:reads-on | R:reads-off | R:cleared | D3:check) ;;
+    *) fail "usage: $SCRIPT feed before | history | cold | demo-start | demo-end | reads-on | reads-off | cleared (Session R8; after publishing: check)" ;;
   esac
   mkdir -p "$LOGS"
   use_section 25-feed "The widget's feed (G71-2; W-17 item 7)"
@@ -3745,8 +4529,11 @@ step_feed() {
   out "- the widget extension's processes: $(widget_pids | grep -c . || true)"
   case "$moment" in
     before)
-      if [ "$facts" = missing ]; then feed_verdict R-feed-before y "no feed.json under $(app_version)"; else
-        feed_verdict R-feed-before n "a feed.json under $(app_version)"
+      # 0.7.1 writes the feed at every 15-minute step, whatever is placed: a file, version 1, with
+      # its modes, is what his 0.7.1 leaves before RC-U.
+      if [ "$facts" = missing ]; then feed_verdict R-feed-before n "no feed.json under $(app_version)"
+      elif [ -n "$problems" ]; then feed_verdict R-feed-before n "$problems"
+      else feed_verdict R-feed-before y "the feed his $(app_version) wrote, written ${age} s ago, as W-5 made it"
       fi
       ;;
     history | check)
@@ -3845,7 +4632,7 @@ feed_cold_verdict() {
   fi
 }
 
-# MARK: - Maximum capacity against macOS's (W-17 item 18), crashes and faults, the front window
+# MARK: - Maximum capacity against macOS's (P71's W-17 item 18), crashes and faults, the front window
 
 # battery_key <capture> <key> data|top: a key of AppleSmartBattery in a `bpulse --raw` capture,
 # looked for in its BatteryData first (data) or at its top (top), then in the other, then in its
@@ -3933,7 +4720,7 @@ step_capacity() {
 }
 
 # faults: the crash reports of BatteryPulse and its widget and the subsystem's fault messages
-# since prepare, which must be 0 (G7-16): the feed check's last read, Session R's at day-end.
+# since prepare, which must be 0 (G7-16, G8-10): the look shoot's last read, Session R8's at day-end.
 step_faults() {
   local faults
   [ -f "$WORK/prepare.marker" ] || fail "prepare hasn't run in $WORK"
@@ -3956,17 +4743,7 @@ step_front() {
   front_shot "$SHOTS/front/$1.png"
 }
 
-# welcome: the Welcome window by a launch argument (showWelcomeAtLaunch for this launch only, no
-# setting changed), shot as it opens; the session scrolls it to its end by computer use.
-step_welcome() {
-  r_only welcome
-  quit_app
-  launch_r -showWelcomeAtLaunch YES
-  sleep 2
-  front_shot "$SHOTS/front/welcome.png" || not_checked R-settings "the Welcome window didn't open"
-}
-
-# MARK: - Session R: the extras (C-1's items in the GUI phase)
+# MARK: - Session R8: the extras (WP-18, the menu bar, Raw Data to History)
 
 # raw-history rc: Session B's finding (1): a pointer-free switch from Raw Data to History by AX
 # selection, the main window shot 0.3 s, 2 s and 8 s after it: does History show its title over Raw
@@ -3994,16 +4771,22 @@ step_raw_history() {
   ask "R-raw-history-$tag"
 }
 
-# menubar: the menu bar item on a light and a dark bar (V01-menubar's dark half, C-1):
-# scripts/menu-bar-shots.sh's light and dark looks (it sets the appearance and a plain wallpaper and
-# puts both back itself), then each main-display shot cropped to the item's AX frame (P11) with 4
-# points around it.
+# menubar [contrast | transparency]: the menu bar item on a light and a dark bar (V01-menubar's
+# dark half, C-1; with contrast or transparency, A11Y-04's: after the session turned Increase
+# Contrast or Reduce Transparency on, `change` first): scripts/menu-bar-shots.sh's light and dark
+# looks (it sets the appearance and a plain wallpaper and puts both back itself), then each
+# main-display shot cropped to the item's AX frame (P11) with 4 points around it.
 step_menubar() {
   r_only menubar
-  local screen width scale file rect x y w h
-  [ -s "$WORK/status-item" ] || fail "no menu bar item frame (proof P11): V01-menubar is not checked"
-  run_menu_bar_shots v01 --looks light,dark ||
-    not_checked V01-menubar "menu-bar-shots.sh didn't finish (logs/menubar-v01.txt on the Mac), or prepare didn't read the appearance or the wallpaper"
+  local screen width scale file rect x y w h tag="v01" id=V01-menubar
+  case "${1:-}" in
+    "") ;;
+    contrast | transparency) tag="$1" id=R-menubar-a11y ;;
+    *) fail "usage: $SCRIPT menubar [contrast | transparency]" ;;
+  esac
+  [ -s "$WORK/status-item" ] || fail "no menu bar item frame (proof P11): $id is not checked"
+  run_menu_bar_shots "$tag" --looks light,dark ||
+    not_checked "$id" "menu-bar-shots.sh didn't finish (logs/menubar-$tag.txt on the Mac), or prepare didn't read the appearance or the wallpaper"
   relaunch_r
   screen="$(ui_run screen 2>/dev/null || true)"
   width="$(sed -n 's/^main=[-0-9]* [-0-9]* \([0-9]*\) .*/\1/p' <<<"$screen")"
@@ -4016,14 +4799,14 @@ step_menubar() {
     x = int((a[1] - 4) * s) - left; if (x < 0) x = 0
     h = int((a[2] + a[4] + 4) * s); if (h > 120) h = 120
     printf "%d %d %d %d", x, 0, int((a[3] + 8) * s), h }')"
-  for file in "$SHOTS"/menubar/v01-*-d1.png; do
+  for file in "$SHOTS"/menubar/"$tag"-*-d1.png; do
     [ -f "$file" ] || continue
     "$BIN/frames" crop "$file" "$x" "$y" "$w" "$h" "${file%.png}-item.png" >/dev/null 2>&1 &&
       register_shot "${file%.png}-item.png" && echo "LOOK ${file%.png}-item.png"
   done
-  use_section 65-menubar "The menu bar item on a light and a dark bar (V01-menubar)"
-  out "- $(find "$SHOTS/menubar" -name 'v01-*-item.png' | grep -c . || true) crops at the item's AX frame ($rect), from menu-bar-shots.sh's light and dark looks"
-  ask V01-menubar
+  use_section 65-menubar "The menu bar item on a light and a dark bar (V01-menubar, A11Y-04)"
+  out "- $tag: $(find "$SHOTS/menubar" -name "$tag-*-item.png" | grep -c . || true) crops at the item's AX frame ($rect), from menu-bar-shots.sh's light and dark looks"
+  ask "$id"
 }
 
 # menu-bar-shots before | after [arguments]: scripts/menu-bar-shots.sh into shots/menubar, W-11's
@@ -4122,7 +4905,7 @@ step_wp18() {
   esac
 }
 
-# MARK: - Session R: the arm window, ready and the logged day (steps 12; §6.3)
+# MARK: - Session R8: the arm window, ready and the logged day (step 13; §6.5)
 
 ARM_PID=""
 ARM_START=""
@@ -4130,7 +4913,7 @@ ARM_GUI_CAFFEINATE=""
 ARM_READY_WAITER=""
 ARM_SHOWN=""
 
-# arm open: writes ~/bp-071/R/arm.command and opens it in a new Terminal window (open -a Terminal:
+# arm open: writes ~/bp-080/R/arm.command and opens it in a new Terminal window (open -a Terminal:
 # no Automation needed). The window runs the frozen worktree's script.
 arm_open() {
   r_fence
@@ -4311,7 +5094,7 @@ step_day_end() {
     clock >"$DAY_END"
   fi
   stream_stop day-stream
-  begin_section 70-day "The logged day (§6.3; G7-11, G7-16)"
+  begin_section 70-day "The logged day (§6.5; G7-11, G8-10)"
   out "- from $(cut -f1 "$WORK/day.started" 2>/dev/null || echo "-") to $(cat "$DAY_END") (day-end); the display assertion released at $(awk -F '\t' 'index($2, "display assertion is released") { t = $1 } END { print t }' "$LOGS/arm.log" 2>/dev/null || echo "-")"
   if [ -s "$DAY_STREAM" ] && [ -x "$BIN/perf-stats" ]; then
     summary="$(perf_stats "$DAY_STREAM" 2>&1 || true)"
@@ -4322,34 +5105,39 @@ step_day_end() {
   else
     not_checked G7-11 "no day stream, or perf-stats isn't built"
   fi
-  out "- crash reports since prepare (BatteryPulse and BatteryPulseWidget; must be 0):"
+  out "- crash reports since prepare (BatteryPulse and BatteryPulseWidget; must be 0, G8-10):"
   crash_summary "$WORK/prepare.marker"
   faults="$(log_since "$(cat "$WORK/prepare.time")" "$FAULT_PREDICATE" "$LOGS/faults.ndjson")"
-  out "- fault messages in the subsystem since prepare: $faults (must be 0)"
+  out "- fault messages in the subsystem since prepare: $faults (must be 0, G8-10)"
   if [ "${faults:-0}" -gt 0 ]; then
     messages "$LOGS/faults.ndjson" | head -10 | public >"$LOGS/faults.txt"
     out_block "$LOGS/faults.txt"
   fi
+  log_since "$(cat "$WORK/prepare.time")" "$MONITOR_PREDICATE" "$LOGS/day-monitor.ndjson" >/dev/null
+  messages "$LOGS/day-monitor.ndjson" | grep -i 'limit' >"$LOGS/day-limit.txt" || true
+  out "- the Charge Limit reader's lines since prepare (A-2 item 7; §10: one read per trigger, never per poll): $(grep -c . "$LOGS/day-limit.txt" || true), by the case names they carry: $(cut -d' ' -f3- "$LOGS/day-limit.txt" | tr -cs 'A-Za-z' '\n' | grep -E '^[a-z]+[A-Z][A-Za-z]*$' | sort | uniq -c | awk '{ printf "%s%s %s", sep, $2, $1; sep = ", " }' || true) [the words unverified until A-2's line]"
   log_since "$(cut -f1 "$WORK/day.started" 2>/dev/null || cat "$WORK/prepare.time")" "$UPDATE_PREDICATE" "$LOGS/day-update.ndjson" >/dev/null
   messages "$LOGS/day-update.ndjson" | grep -i -E 'count|check' | head -8 >"$LOGS/day-update.txt" || true
-  out "- W-13's update lines during the day (an automatic check due on $RC_VERSION gives one noCounter):"
+  out "- W-13's update lines during the day (an automatic check due on $RC_VERSION gives one noCounter, since no release holds its count file):"
   out_block "$LOGS/day-update.txt"
   asserts="$(pmset -g assertions 2>/dev/null | grep -c BatteryPulse || true)"
   out "- pmset -g assertions naming BatteryPulse now: $asserts (must be 0); other processes' keep-awake holders: $(keepawake_holders | grep -c . || true)"
-  echo "NEXT: $SCRIPT plug (with him, the two beeps), $SCRIPT capacity day-end, then F12 ($SCRIPT f12 rate, install F, f12 before, Check for Updates and Install and Relaunch by ui press, f12 after), then batch, send --dry-run, his yes, send, restore end"
+  echo "NEXT: $SCRIPT plug (with him, the two beeps), $SCRIPT capacity day-end, Q8-6's optional listen while RC-U still runs (app-language ru, back), then F12 ($SCRIPT f12 rate, install F, f12 before, Check for Updates and Install and Relaunch by ui press, f12 after), then batch, send --dry-run, his yes, send, restore end, each RESTORE item, widgets-check, summary end, and send again (the widgets' counts)"
 }
 
-# MARK: - Session R: F12 at the day's end (D-12, G7-15)
+# MARK: - Session R: F12 at the day's end (D-12, G8-9)
 
-# f12 rate | before | after: RC-F (0.6.99) installed first (`install F`); Check for Updates, then
-# Install and Relaunch by AX presses, between before and after. after reads the version (0.7.0?),
-# the update log's pre-swap extension end (RC-F's installer, D-17), the eject failures and the
-# CHSErrorDomain 1103 lines, and the widgets after the desktop click, per kind (W-17 item 9): under
-# 0.7.0 the Battery and Accessories widgets come back, and the History and iPhone & iPad ones,
-# whose kinds 0.7.0 lacks, keep their last picture (PF-10).
+# f12 rate | before | after (G8-9; PLAN.md §6.4 step 12): RC-F (0.5.99) installed first (`install
+# F`); Check for Updates, then Install and Relaunch by AX presses, between before and after: RC-F's
+# installer (P-2's checks and relaunch fallback among them) installs the published 0.7.1. after
+# reads the version, the update log's pre-swap extension end (D-17), the eject failures and the
+# CHSErrorDomain 1103 lines, and the widgets after the desktop click, per kind (P71's W-17 item 9),
+# once a widget extension process that wasn't there before Install drew them (PLAN.md §6.0 rule 4;
+# none within a minute is "not checked", never an answer from a stale render): under 0.7.1 every
+# kind comes back, the History and iPhone & iPad ones with the rest.
 step_f12() {
   r_only f12
-  use_section 75-f12 "F12: Install and Relaunch on RC-F's installer (G7-15)"
+  use_section 75-f12 "F12: Install and Relaunch on RC-F's installer (G8-9)"
   case "${1:-}" in
     rate)
       local left
@@ -4365,12 +5153,13 @@ step_f12() {
       clock >"$WORK/f12.time"
       click_desktop || true
       crop_widgets "$SHOTS/f12" before >/dev/null
+      widget_pids | tr '\n' ' ' >"$WORK/f12-before.pids"
       if [ -n "$(widget_pids)" ]; then echo yes >"$WORK/f12-extension"; else echo no >"$WORK/f12-extension"; fi
-      out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension")"
+      out "- before Install ($(cat "$WORK/f12.time")): $(app_version); the widget extension running: $(cat "$WORK/f12-extension") (pids: $(cat "$WORK/f12-before.pids"))"
       echo "DO (session): Check for Updates, then Install and Relaunch, by AX presses (ui press BatteryPulse ...); then: $SCRIPT f12 after"
       ;;
     after)
-      local waited=0 lines swap failures version
+      local waited=0 lines swap failures version fresh
       until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$BASE_VERSION" ] || [ "$waited" -ge 180 ]; do
         sleep 1
         waited=$((waited + 1))
@@ -4387,14 +5176,21 @@ step_f12() {
       out "- the pre-swap extension end: ${swap:-no line}$(if [ "$(cat "$WORK/f12-extension" 2>/dev/null)" = no ]; then echo "; no extension ran before Install: not exercised"; fi)"
       failures="$(messages "$LOGS/f12-update.ndjson" | grep -c -F -e "it can't be ejected by force" -e "Ejecting the update's disk image failed" || true)"
       out "- eject failure lines: ${failures:-0} (must be 0); $(chs_since "$(cat "$WORK/f12.time")")"
-      click_desktop || true
-      crop_widgets "$SHOTS/f12" after
       if [ "$version" = "$BASE_VERSION" ]; then
         step_answer --by claude F12-version y "read from the installed Info.plist: $version" >/dev/null
       else
         step_answer --by claude F12-version n "read from the installed Info.plist: $version" >/dev/null
       fi
       echo "F12-version: $(answer_of F12-version) (the installed version is $version)"
+      fresh="$(fresh_widget_pid "$(cat "$WORK/f12-before.pids" 2>/dev/null || true)")"
+      out "- a widget extension process since before Install (rule 4's redraw): ${fresh:-none within a minute}"
+      if [ -z "$fresh" ]; then
+        not_checked F12-widget "no redraw: no widget extension process that wasn't there before Install"
+        not_checked F12-new-kinds "no redraw: no widget extension process that wasn't there before Install"
+        return 0
+      fi
+      click_desktop || true
+      crop_widgets "$SHOTS/f12" after
       echo "LOOK $SHOTS/f12/*-before.png against *-after.png: F12-widget for small, medium, large and accessories-*, F12-new-kinds for history-* and devices-*"
       ask F12-widget F12-new-kinds
       ;;
@@ -4402,7 +5198,144 @@ step_f12() {
   esac
 }
 
-# MARK: - Session R: restore gui and restore end
+# MARK: - The session's gallery widgets, checked by the app's counts (T-1 item 7)
+
+# What WidgetKit tells BatteryPulse is placed (G7-17, measured at the intake: real answers for this
+# ad-hoc-signed app), one line per read: "<moment>\t<time>\t<all> <battery> <accessories> <history>
+# <devices>", or "unknown". prepare reads it before anything changes; restore end's relaunch and
+# widgets-check read it again. AP71's feed held 4 devices through an iPhone & iPad widget Session F
+# had added and not removed, which nothing flagged: a widget the session adds comes back only by
+# these counts, never on the session's word.
+PLACED="$WORK/placed.tsv"
+
+# placed_counts_in <ndjson>: "<all> <battery> <accessories> <history> <devices>" from the last of
+# BatteryPulse's "Placed widgets" lines in a `log stream --style ndjson` capture: the feed writer's
+# ("Placed widgets, for the widget feed: …", at notice when its counts change, so at its first
+# answer after a launch) or the refresher's ("Placed widgets: …"); empty without one.
+placed_counts_in() {
+  entries "$1" | awk -F '\t' '$2 == "BatteryPulse" && index($3, "Placed widgets") { l = $3 } END { print l }' |
+    sed -n 's/.*: \([0-9][0-9]*\) in all, \([0-9][0-9]*\) Battery, \([0-9][0-9]*\) Accessories, \([0-9][0-9]*\) History, \([0-9][0-9]*\) iPhone & iPad.*/\1 \2 \3 \4 \5/p'
+}
+
+# placed_words <counts>: the counts as words, or the word itself (unknown, none).
+placed_words() {
+  awk -v c="$1" 'BEGIN { if (split(c, n, " ") != 5) { print (c == "" ? "none read" : c); exit }
+    printf "%d in all: %d Battery, %d Accessories, %d History, %d iPhone & iPad", n[1], n[2], n[3], n[4], n[5] }'
+}
+
+# placed_read <moment>: the installed BatteryPulse quit and launched again with its own settings,
+# and its first answer of the placed widgets read from a stream of its widget lines, up to 100 s:
+# its first feed write after a launch (at the history recorder's first minute tick) asks WidgetKit,
+# nothing being in memory, and logs the counts at notice. Into placed.tsv, and printed; "unknown"
+# when no line came (a writer with no section to fill asks nothing: History off and device reads
+# off). F-1, once it ships, renews the answer within about an hour without a relaunch; the relaunch
+# makes it now, and works with his 0.7.1 too.
+placed_read() {
+  local moment="$1" capture="$LOGS/placed-$1.ndjson" stream waited=0 counts=""
+  mkdir -p "$LOGS" "$WORK"
+  /usr/bin/log stream --level debug --style ndjson --predicate "$WIDGET_PREDICATE" >"$capture" 2>"$capture.err" </dev/null &
+  stream=$!
+  STREAMS="$STREAMS $stream"
+  sleep 2
+  quit_app
+  launch_plain
+  while [ "$waited" -lt 100 ]; do
+    counts="$(placed_counts_in "$capture")"
+    [ -z "$counts" ] || break
+    sleep 5
+    waited=$((waited + 5))
+  done
+  perf_stop "$stream"
+  placed_record "$moment" "${counts:-unknown}"
+  echo "${counts:-unknown}"
+}
+
+placed_record() { printf '%s\t%s\t%s\n' "$1" "$(clock)" "$2" >>"$PLACED"; }
+
+# placed_of <moment>: the counts last read at that moment, empty when none was.
+placed_of() { awk -F '\t' -v m="$1" '$1 == m { c = $3 } END { print c }' "$PLACED" 2>/dev/null || true; }
+
+# placed_latest: the newest read after prepare's, as "<moment>\t<counts>", empty when none was.
+placed_latest() { awk -F '\t' '$1 != "prepare" { l = $1 "\t" $3 } END { print l }' "$PLACED" 2>/dev/null || true; }
+
+# placed_differences <prepare's counts> <counts now>: per kind whose count differs,
+# "<kind>\t<now>\t<prepare's>"; nothing when they agree (or either isn't five numbers).
+placed_differences() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    split("Battery|Accessories|History|iPhone & iPad", k, "|")
+    if (split(a, p, " ") != 5 || split(b, q, " ") != 5) exit
+    for (i = 1; i <= 4; i++) if (p[i + 1] + 0 != q[i + 1] + 0) printf "%s\t%d\t%d\n", k[i], q[i + 1], p[i + 1]
+  }'
+}
+
+# placed_lines: what the session's widgets left, by the app's counts against prepare's: an ALERT
+# per kind above prepare's count (a widget the session added stayed; KEPT instead when he keeps
+# the gallery's widgets, R-keep-widgets y) or below it (one of his own is gone), WIDGETS when they
+# agree; an ALERT when either count is unknown, since then nothing confirms them.
+placed_lines() {
+  local before moment="" now="" diffs kind count was
+  before="$(placed_of prepare)"
+  IFS="$TAB" read -r moment now <<<"$(placed_latest)" || true
+  if [ -z "$before" ] || [ "$before" = unknown ]; then
+    echo "ALERT desktop-widgets: prepare's counts of the placed widgets are ${before:-not read}, so no widget the session added can be confirmed gone: look at the desktop and Notification Center by hand"
+    return 0
+  fi
+  if [ -z "$now" ] || [ "$now" = unknown ]; then
+    echo "ALERT desktop-widgets: no counts of the placed widgets since prepare's ($(placed_words "$before"))$(if [ -n "$moment" ]; then echo "; $moment read none"; fi): $SCRIPT widgets-check reads them"
+    return 0
+  fi
+  diffs="$(placed_differences "$before" "$now")"
+  if [ -z "$diffs" ]; then
+    echo "WIDGETS back at prepare's counts ($(placed_words "$now"), read at $moment)"
+    return 0
+  fi
+  while IFS="$TAB" read -r kind count was; do
+    [ -n "$kind" ] || continue
+    if [ "$count" -gt "$was" ] && [ "$(answer_of R-keep-widgets)" = y ]; then
+      echo "KEPT desktop-widgets: $kind $count, prepare $was: $((count - was)) the session added stayed, as he chose (R-keep-widgets y)"
+    elif [ "$count" -gt "$was" ]; then
+      echo "ALERT desktop-widgets: $kind $count, prepare $was: $((count - was)) the session added stayed: remove it by computer use, then $SCRIPT widgets-check"
+    else
+      echo "ALERT desktop-widgets: $kind $count, prepare $was: $((was - count)) of his own gone: add it again from the gallery as prepare's shots show it, then $SCRIPT widgets-check"
+    fi
+  done <<<"$diffs"
+}
+
+# widgets_verdict: the section, written anew at each read from placed.tsv, which holds them all
+# (prepare's counts, each read since in words, then placed_lines), so no read shows twice; and
+# `restored desktop-widgets` recorded by the script when no line is an ALERT (back at prepare's
+# counts, or above them only where he keeps the gallery's widgets): never on the session's word
+# (step_restored refuses it).
+widgets_verdict() {
+  local lines moment line when counts
+  lines="$(placed_lines)"
+  moment="$(placed_latest | cut -f1)"
+  begin_section 96-widgets "The session's widgets, by the app's counts (T-1 item 7)"
+  out "- prepare: $(placed_words "$(placed_of prepare)")"
+  if [ -f "$PLACED" ]; then
+    while IFS="$TAB" read -r line when counts; do
+      [ "$line" = prepare ] || out "- $line ($when): $(placed_words "$counts")"
+    done <"$PLACED"
+  fi
+  while IFS= read -r line; do out "- $line"; done <<<"$lines"
+  if [ -n "$(original_of desktop-widgets)" ] && ! is_restored desktop-widgets && ! grep -q '^ALERT' <<<"$lines"; then
+    mark_restored desktop-widgets "script: the app's counts after $moment against prepare's ($(grep -c '^KEPT' <<<"$lines" || true) kinds kept on his word)"
+    echo "desktop-widgets: back (the app's counts)"
+  fi
+}
+
+# widgets-check: the app's counts read again (BatteryPulse relaunched with its own settings) after
+# the session removed the widgets it added (restore end's RESTORE item), then widgets_verdict. Also
+# usable whenever the session wants the counts now.
+step_widgets_check() {
+  rl_only widgets-check
+  local counts
+  counts="$(placed_read "check-$(date '+%H%M%S')")"
+  echo "the placed widgets now: $(placed_words "$counts")"
+  widgets_verdict
+}
+
+# MARK: - Restore gui and restore end
 
 # When each changed setting comes back: "gui" before the logged day (restore gui: the day runs on
 # the RC with his settings, his remembered devices and the system as he left it), "end" after it
@@ -4419,16 +5352,18 @@ restore_phase() {
 restore_how() {
   case "$1" in
     app | bp-settings | bp-support | widget-data | remembered-devices | widget-languages | history) echo script ;;
-    app-language) echo "computer use (System Settings → General → Language & Region → Applications), else the script's import of his settings" ;;
+    app-language | has-seen-welcome | bp-window-style | sentinel-accessories | sentinel-devices) echo script ;;
     widget-style) echo "computer use (System Settings → Appearance → Icon & widget style)" ;;
     dim-widgets) echo "computer use (System Settings → Desktop & Dock → Dim widgets on desktop)" ;;
-    text-size | increase-contrast | reduce-transparency) echo "computer use (System Settings → Accessibility → Display)" ;;
+    text-size | increase-contrast | reduce-transparency | show-borders | liquid-glass) echo "computer use (System Settings → Accessibility → Display)" ;;
+    reduce-motion | cross-fade) echo "computer use (System Settings → Accessibility → Motion)" ;;
+    keyboard-navigation) echo "computer use (System Settings → Keyboard → Keyboard navigation), confirmed by AppleKeyboardUIMode" ;;
     24-hour) echo "computer use (System Settings → General → Date & Time), confirmed by AppleICUForce24HourTime" ;;
     open-at-login) echo "AX (BatteryPulse's Settings → General → Open at login)" ;;
     bluetooth-accessory) echo "AX or computer use (System Settings → Bluetooth: connect it again)" ;;
     widget-choices) echo "computer use (Edit Widget: back to Automatic)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
-    desktop-widgets) echo "computer use (the widgets he didn't keep removed)" ;;
+    desktop-widgets) echo "computer use (the widgets he didn't keep removed), confirmed only by the app's counts (widgets-check)" ;;
     appearance) echo "computer use (System Settings → Appearance: Light, Dark or Auto, as prepare read it)" ;;
     wallpaper) echo "computer use (System Settings → Wallpaper: his picture, as prepare's desktop shot shows it)" ;;
     *) echo "computer use, confirmed by a read or a shot" ;;
@@ -4441,10 +5376,10 @@ restore_how() {
 # backup once the session cleared its copy (the feed's rewrite check), the extension's languages as
 # prepare found them, the apps the script opened closed, BatteryPulse relaunched in his language.
 restore_gui_scriptable() {
-  local app
+  local app setting
   stream_stop gui-stream
   if [ -s "$GUI_STREAM" ]; then
-    use_section 58-gui-stream "Steps 2-9: the widget's reloads and timelines (W-4 item 3)"
+    use_section 58-gui-stream "The GUI phase: the widgets' reloads and timelines (W-4 item 3)"
     if [ -x "$BIN/perf-stats" ]; then
       perf_stats "$GUI_STREAM" >"$LOGS/gui-perf-stats.txt" 2>&1 || true
       out_block "$LOGS/gui-perf-stats.txt"
@@ -4462,7 +5397,17 @@ restore_gui_scriptable() {
       [ "$(defaults read "$BUNDLE_ID" AppleLanguages 2>/dev/null || echo none)" = "$(cat "$BACKUP/app-languages" 2>/dev/null || echo none)" ]; then
       mark_restored app-language "script: his settings imported, read back"
     fi
+    echo en >"$WORK/ui-language"
+    for setting in has-seen-welcome bp-window-style; do
+      if [ -n "$(original_of "$setting")" ] && ! is_restored "$setting"; then mark_restored "$setting" "script: his settings imported"; fi
+    done
   fi
+  for setting in sentinel-accessories sentinel-devices; do
+    if [ -n "$(original_of "$setting")" ] && ! is_restored "$setting"; then
+      rm -f "$SUPPORT/Sentinel/${setting#sentinel-}"
+      mark_restored "$setting" "script: the sentinel file removed"
+    fi
+  done
   if [ -n "$(original_of remembered-devices)" ] && [ -d "$BACKUP/support/Devices" ]; then
     rm -rf "$SUPPORT/Devices"
     ditto "$BACKUP/support/Devices" "$SUPPORT/Devices" && mark_restored remembered-devices "script (from the backup), read back"
@@ -4495,15 +5440,24 @@ restore_gui_items() {
     [ "$(restore_phase "$setting")" = "$phase" ] || continue
     [ "$(restore_how "$setting")" != script ] || continue
     if is_restored "$setting"; then continue; fi
+    if [ "$setting" = desktop-widgets ]; then
+      if [ "$(answer_of R-keep-widgets)" = y ]; then
+        echo "RESTORE desktop-widgets: he keeps the gallery's widgets (R-keep-widgets y): remove none; $SCRIPT widgets-check records what stayed"
+      else
+        echo "RESTORE desktop-widgets: remove every widget the session added, by computer use (Edit Widgets, then each one's minus), then $SCRIPT widgets-check: it records them gone only when the app's counts are back at prepare's"
+      fi
+      continue
+    fi
     echo "RESTORE $setting back to $(original_of "$setting"), by $(restore_how "$setting"); then: $SCRIPT restored $setting <how it was confirmed>"
   done
 }
 
 # restore_all: his app, the defaults domain, Application Support, the widget extension's
 # languages and the appearance as the backup holds them (restore end), but for History/, which
-# keeps the logged day (0.7.1 changes no storage format, D1's round trip: his own BatteryPulse
-# reads it), so his real day isn't lost. The candidate's Widget/feed.json goes with the rest of the
-# session's data. A History/ moved aside by a restore that stopped early is the one kept.
+# keeps the logged day (0.8 changes no storage format, PLAN.md §7.3 and D1's round trip: his own
+# BatteryPulse reads it), so his real day isn't lost. The candidate's Widget/feed.json and the
+# sentinel's folder go with the rest of the session's data. A History/ moved aside by a restore
+# that stopped early is the one kept.
 restore_all() {
   local kept="$WORK/history-kept"
   [ -f "$BACKUP/done" ] || fail "no backup in $BACKUP"
@@ -4535,12 +5489,15 @@ restore_all() {
 # language, on the Mac only): an ALERT per setting not confirmed back, then every setting the
 # session changed with how it was confirmed, and the Focus.
 step_summary() {
-  rf_only summary
+  rl_only summary
   local setting phase="${1:-gui}" line
   for setting in $(changed_settings); do
     [ "$phase" = end ] || [ "$(restore_phase "$setting")" = gui ] || continue
+    # The session's widgets: their lines come from the app's counts (placed_lines, below).
+    [ "$setting" != desktop-widgets ] || continue
     if ! is_restored "$setting"; then echo "ALERT $setting: not confirmed back (it was $(original_of "$setting"))"; fi
   done
+  if [ "$phase" = end ]; then placed_lines; fi
   for setting in $(changed_settings); do
     [ "$phase" = end ] || [ "$(restore_phase "$setting")" = gui ] || continue
     line="$(awk -F '\t' -v s="$setting" '$1 == s { l = $3 } END { print l }' "$RESTORED" 2>/dev/null || true)"
@@ -4552,10 +5509,10 @@ step_summary() {
   echo "REMIND: turn the Focus off before using the Mac"
 }
 
-# restore gui | end (the feed check: end only)
+# restore gui | end (the look shoot: end only)
 step_restore() {
-  rf_only restore
-  [ "$SESSION" = R ] || [ "${1:-}" = end ] || fail "the feed check has no logged day: $SCRIPT restore end"
+  rl_only restore
+  [ "$SESSION" = R ] || [ "${1:-}" = end ] || fail "the look shoot has no logged day: $SCRIPT restore end"
   case "${1:-}" in
     gui)
       restore_gui_scriptable
@@ -4566,7 +5523,7 @@ step_restore() {
       echo "Then each RESTORE item above, then $SCRIPT summary (for the summary in his language), and last: $SCRIPT ready"
       ;;
     end)
-      local limit now
+      local limit now setting
       stop_leftovers
       restore_all
       begin_section 95-restore "Restore end"
@@ -4578,11 +5535,19 @@ step_restore() {
         mark_restored remembered-devices "script (from the backup), read back"
       fi
       if [ -n "$(original_of history)" ] && ! is_restored history; then mark_restored history "script: his history from the backup"; fi
+      for setting in app-language has-seen-welcome bp-window-style; do
+        if [ -n "$(original_of "$setting")" ] && ! is_restored "$setting"; then mark_restored "$setting" "script: his settings domain imported"; fi
+      done
+      for setting in sentinel-accessories sentinel-devices; do
+        if [ -n "$(original_of "$setting")" ] && ! is_restored "$setting"; then mark_restored "$setting" "script: Application Support from the backup, without the sentinel's folder"; fi
+      done
       out "- restored $(clock): $(app_version), the settings domain, Application Support (History/ kept: $(find "$SUPPORT/History" -type f 2>/dev/null | grep -c . || true) files; the feed $(if [ -e "$FEED_FILE" ]; then echo "still there"; else echo removed; fi)), the widget's languages, the appearance"
       limit="$(answer_of prep-charge-limit)"
       now="$(battlimit_value)"
       out "- the Charge Limit: prepare found ${limit:-unknown}; pmset -g battlimit now: ${now:-none (on battery it holds none: a Battery pane shot confirms it)}"
       if [ -n "$(original_of charge-limit)" ] && [ -n "$now" ] && [ "$now" = "$limit" ]; then mark_restored charge-limit "pmset -g battlimit"; fi
+      out "- the placed widgets after restore end's relaunch: $(placed_words "$(placed_read end)")"
+      widgets_verdict
       restore_gui_items end
       restore_gui_items gui
       echo
@@ -4634,37 +5599,42 @@ question_text() {
   printf '%s' "${spec#*|}"
 }
 
-# The Appendix C facts each session's report answers (PLAN.md §6.2-§6.4), with where.
+# The Appendix C facts each session's report answers (PLAN.md Appendix C, §6.1-§6.6), with where.
 appendix_rows() {
   case "$SESSION" in
     R)
-      cat <<'EOF'
+      cat <<'EOF2'
 | Fact (PLAN.md Appendix C) | Where in this file |
 |---|---|
-| G7-2: 0.6.2's widgets across the update to 0.7.0, and 0.7.0's across RC-U's (a parameter added), the extension's pids, CHSErrorDomain 1103 | Step 2's two halves; Installs; R2-* |
-| What's New at 520 points, English and Russian, for 0.7.0 and 0.7.1 | What's New; R2-whats-new-* |
-| G71-2: the feed through the exception: modes, size, the entitlements, the reads, a cold read, Demo Mode, the rewrites | The widget's feed; R-feed-* |
-| The gallery in every size of the four kinds against the CI renders | Step 3; R3-* |
-| G7-13, G71-3, G71-4: the edit sheets, the language the user's way, One device | Steps 4.1-4.6; R4-* |
-| G7-4: rendering modes and places, with each crop's contrast | Step 5; R5-* |
-| G7-3, W-13's toggle | Step 6; R6-* |
-| G7-12: the trees, Text size | Step 7; R7-* |
-| G7-9: the clicks and their routes | Step 8; R8-* |
-| W-14's states (bit 7, then bit 24), the accessory's disconnect, Demo Mode's Charge limit | The plug; Step 9, 9b; R9-*, R9b-* |
-| G7-17, W-4 item 3: currentConfigurations()'s per-kind answers against the widgets placed | Steps 2-9: the widget's reloads; The plug |
-| G7-11: per kind (Battery, Accessories, History, iPhone & iPad), requested, delivered, the share and the median delay; the feed's writes and reads per day | The logged day |
-| G7-16: crash reports and fault messages since prepare | The logged day |
-| G7-15: F12, per kind | F12; F12-* |
-| S-1: Settings and the Welcome window on the Air's display | R-settings |
-| W-17 item 18: maximum capacity against macOS's, two readings | Maximum capacity; R-capacity-* |
-| Session B's findings: History over Raw Data's table; the menu bar item on a dark bar; W-11's painter pixel for pixel | Raw Data to History; The menu bar item; The menu bar painter |
+| §6.4 step 2: his widgets placed under 0.7.1 across RC-U's install, the extension's pids, CHSErrorDomain 1103 (G7-2) | Step 2; Installs; R2-* |
+| What's New at 520 points, English and Russian, from 0.7.1 and from 0.6.2 | What's New; R2-whats-new-* |
+| G8-6, G8-8: BatteryPulse's trees in English and Russian, the charts' descriptors, the widgets' trees (I-14), the keyboard paths | Step 3: BatteryPulse's trees; Step 4: the keyboard; R-tree-app*, R-charts, R7-tree*, R-keyboard |
+| G8-7: the contrast audit (A11Y-03) | R-contrast |
+| A11Y-02's display options, A11Y-04's menu bar icons | Step 6: the display options; The menu bar item; R-display, R-menubar-a11y, V01-menubar |
+| The Russian pages; the Charge Limit live; Report a Problem's files (G8-5, G8-13); the sentinel (P-1) | The screens; The Charge Limit's check; Report a Problem's files; The sentinel; R-russian, R-limit-live, R-report, R-sentinel |
+| The checks 0.7.0 and 0.7.1 shipped without (step 11c): 0.6.2's widgets across the update, the gallery, the edit sheets, the language, the looks, the trees, the clicks, the accessories, Demo Mode, the feed (G71-2), Settings, the capacity readings | Step 11c; The widget's feed; R2-062-*, R3-* to R9b-*, R-feed-*, R-settings, R-capacity-* |
+| G8-9: F12, per kind | F12; F12-* |
+| G8-10: crash reports and fault messages since prepare; the Charge Limit reader's reads per trigger (§10); G7-11 per kind (I-13) | The logged day |
+| Each session's gallery widgets: the counts at prepare and after its RESTORE items, and what stayed (T-1 item 7) | The session's widgets |
+| Q8-6: the VoiceOver listen | R-listen |
 | The hands-free mode's cost and the preflight's proofs | Timeline; Proofs; Not checked or not run; Notes |
-EOF
+EOF2
       ;;
-    C) printf '%s\n' "| Fact | Where |" "|---|---|" "| QUA-05 / FEA-35: the Charge Limit's bit at the hold, the 100 % diff, the rows around each change | The Charge limit capture; C-* |" ;;
-    H) printf '%s\n' "| Fact | Where |" "|---|---|" "| QUA-06: an optimized-charging hold seen overnight under caffeinate -i | The hold watch; H-hold |" ;;
-    D3) printf '%s\n' "| Fact | Where |" "|---|---|" "| §6.4: the update to $RC_VERSION, the widgets, P2 D3's list, the feed's modes and the widget's exception, the first day's comparison | After publishing; The widget's feed; D3-* |" "| W-17 item 18: maximum capacity, the third reading | Maximum capacity; D3-capacity |" ;;
-    F) printf '%s\n' "| Fact | Where |" "|---|---|" "| §6.5's short feed check: the feed at its real size and a cold read, step 2's second half, the language on one widget, One device, a click per new kind, crash reports and faults | The widget's feed; Step 2's second half; R-feed-*, R2-*, R4-*, R8-*; Crash reports and faults |" ;;
+    L)
+      cat <<'EOF2'
+| Fact (PLAN.md Appendix C) | Where in this file |
+|---|---|
+| G8-1: the Charge Limit's reads per limit, on the adapter, on battery and after a plug-in; the app's logged number; CHLT and CHNC; the samples (G8-5's reads from the app's own process) | The Charge Limit's check; G8-1-*, G8-5-limit, L-samples, L-limit-back |
+| The look review's shots, English and Russian (§6.2, §6.3) | The screens; L-a1-* to L-a7-* |
+| G8-13 and G8-5: Report a Problem's saved files | Report a Problem's files; L-a6-file |
+| P-1: the sentinel's note and Turn On Again | The sentinel; L-p1-note |
+| G8-3: the weak adapter's captures (Q8-3) | The weak adapter; L-weak-adapter |
+| Each session's gallery widgets: the counts at prepare and after its RESTORE items, and what stayed (T-1 item 7) | The session's widgets |
+| Crash reports and faults since prepare | Crash reports and faults |
+EOF2
+      ;;
+    H) printf '%s\n' "| Fact | Where |" "|---|---|" "| G8-2 (QUA-06, I-8): an optimized-charging hold seen overnight under caffeinate -i, its captures and whether bit 24 is set | The hold watch; H-hold |" ;;
+    D3) printf '%s\n' "| Fact | Where |" "|---|---|" "| §6.6: the update to $RELEASE_VERSION, the widgets, P7 §6.4's list, SEC-06, Report a Problem and the guide's link, the feed's modes and the widget's exception, the first day's comparison | After publishing; The widget's feed; The user guide's link; D3-* |" "| P71's W-17 item 18: maximum capacity, a reading after publishing | Maximum capacity; D3-capacity |" ;;
   esac
 }
 
@@ -4685,12 +5655,12 @@ timeline() {
 
 build_report() {
   local id value by at note file caption setting line unrestored=""
-  echo "# Session $SESSION results (BatteryPulse $RC_VERSION)"
+  echo "# Session $SESSION results (BatteryPulse 0.8)"
   echo
   echo "Written by \`docs/plans/0.8.0/m5-session.sh send\` on $(date '+%Y-%m-%d %H:%M %z'). The session ran hands-free"
-  echo "(PLAN.md §6.2): answers marked \"claude\" were judged by the Claude session from the pictures, beside the"
+  echo "(PLAN.md §6.0): answers marked \"claude\" were judged by the Claude session from the pictures, beside the"
   echo "script's pixel measurement where one exists; \"person\" ones came from the maintainer. Full-desktop shots,"
-  echo "recordings and logs stay on the Mac (\`~/bp-071/$SESSION\`)."
+  echo "recordings and logs stay on the Mac (\`~/bp-080/$SESSION\`)."
   echo
   for setting in $(changed_settings); do is_restored "$setting" || unrestored="$unrestored $setting"; done
   for setting in $LEFTOVERS; do
@@ -4806,7 +5776,7 @@ privacy_words() {
   } | awk 'length($0) >= 3' | grep -v -i -x -E 'admin|administrator|user|guest|root|test|owner' | sort -u || true
 }
 
-# privacy_lint <file>: refuses the file if a line names any of them.
+# privacy_lint <file> [<its name in the message>]: refuses the file if a line names any of them.
 privacy_lint() {
   local term found="" scrubbed="$WORK/lint-scrubbed.txt"
   # The bundle ID and the repository's owner are public and may contain his name: taken out first,
@@ -4833,17 +5803,37 @@ privacy_lint() {
     echo "note: the network's name couldn't be read (macOS redacts it), so the report wasn't checked for it"
   fi
   if [ -n "$found" ]; then
-    fail "$SESSION.md names the Mac, him, an accessory, a VPN or the network on line(s)$found: drop them (note, answer or section), then send again"
+    fail "${2:-$SESSION.md} names the Mac, him, an accessory, a VPN or the network on line(s)$found: drop them (note, answer or section; a sample or capture: unattach it by deleting it from $WORK), then send again"
   fi
 }
 
-# send [--dry-run]: <session>.md (and the attached images) committed to docs/plans/0.8.0/sessions/
-# on claude/071-session-<session>, which starts from that branch if it exists, else the
-# integration branch, else main (after 0.7.1's D3 removed both); a fresh shallow clone in the
-# session's folder, so his own checkout stays as it is. Never another branch, never a pull request.
-# His yes first (<session>-send y, after the contact sheet and the summary), then the privacy lint.
+# lint_kept <folder>: the privacy lint over every file a session keeps for a fixture (samples/: A-2's
+# redacted copies of powerd's file with battlimit's and defaults' text; captures/: bpulse's redacted
+# captures), each property list as XML text.
+lint_kept() {
+  local file text
+  for file in "$WORK/$1"/*; do
+    [ -f "$file" ] || continue
+    case "$file" in
+      *.plist)
+        text="$WORK/lint-$(basename "$file").xml"
+        plutil -convert xml1 -o "$text" "$file" 2>/dev/null || cp "$file" "$text"
+        privacy_lint "$text" "$1/$(basename "$file")"
+        rm -f "$text"
+        ;;
+      *) privacy_lint "$file" "$1/$(basename "$file")" ;;
+    esac
+  done
+}
+
+# send [--dry-run]: <session>.md (and the attached images, and the samples and captures a fixture
+# may come from) committed to docs/plans/0.8.0/sessions/ on claude/080-session-<session>, which
+# starts from that branch if it exists, else the integration branch, else main (after 0.8's D3
+# removed both); a fresh shallow clone in the session's folder, so his own checkout stays as it is.
+# Never another branch, never a pull request. His yes first (<session>-send y, after the contact
+# sheet and the summary), then the privacy lint.
 step_send() {
-  local dry_run="" clone="$WORK/send" base name email total report="$WORK/$SESSION.md" candidate
+  local dry_run="" clone="$WORK/send" base name email total kept folder file report="$WORK/$SESSION.md" candidate
   [ "$SESSION" != none ] || fail "send runs from a session's frozen worktree"
   if [ "${1:-}" = --dry-run ]; then dry_run=1; fi
   mkdir -p "$WORK"
@@ -4857,13 +5847,17 @@ step_send() {
   fi
   build_report | public >"$report"
   privacy_lint "$report"
+  lint_kept samples
+  lint_kept captures
   if has_cyrillic "$(cat "$report")"; then
     fail "$SESSION.md contains Russian text; translate the answer or note it comes from, then send again"
   fi
   total=0
   if [ -s "$PUBLISH/captions.tsv" ]; then total="$(du -sk "$PUBLISH" | cut -f1)"; fi
   [ "$total" -le 6144 ] || fail "the attached images take $total KB; unattach some (at most 6 MB)"
-  echo "wrote $report ($(wc -l <"$report" | tr -d ' ') lines, images $total KB)"
+  kept="$(du -sk "$WORK/samples" "$WORK/captures" 2>/dev/null | awk '{ k += $1 } END { print k + 0 }')"
+  [ "$kept" -le 4096 ] || fail "the samples and captures take $kept KB (at most 4 MB): delete the ones no fixture needs from $WORK"
+  echo "wrote $report ($(wc -l <"$report" | tr -d ' ') lines, images $total KB, samples and captures $kept KB: $(find "$WORK/samples" "$WORK/captures" -type f 2>/dev/null | sed 's|.*/||' | tr '\n' ' ')"
   [ -z "$dry_run" ] || return 0
 
   rm -rf "$clone"
@@ -4886,6 +5880,23 @@ step_send() {
       cp "$PUBLISH/$file" "$clone/docs/plans/0.8.0/sessions/$SESSION/"
     done
   fi
+  # A property list goes in as XML, its content unchanged: the repository reads every .plist under
+  # docs/ and Tests/ as UTF-8 text (LocalizationCatalogTests' russianTextOnlyInTheCatalog), which a
+  # binary one, as powerd's file likely is, would fail. The copy on the Mac stays as it was saved.
+  for folder in samples captures; do
+    [ -n "$(find "$WORK/$folder" -type f 2>/dev/null | head -1)" ] || continue
+    mkdir -p "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder"
+    for file in "$WORK/$folder"/*; do
+      [ -f "$file" ] || continue
+      case "$file" in
+        *.plist)
+          plutil -convert xml1 -o "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder/$(basename "$file")" "$file" ||
+            fail "$folder/$(basename "$file") isn't a property list plutil writes as XML: nothing was sent; delete it from $WORK, then send again"
+          ;;
+        *) cp "$file" "$clone/docs/plans/0.8.0/sessions/$SESSION/$folder/" ;;
+      esac
+    done
+  done
   git -C "$clone" add -A docs/plans/0.8.0/sessions
   if git -C "$clone" diff --cached --quiet; then
     echo "nothing new to send"
@@ -4901,9 +5912,9 @@ step_send() {
   TZ=UTC git -C "$clone" -c user.name="$name" -c user.email="$email" commit --quiet -F - <<EOF2
 Record M5 Session $SESSION's results
 
-The answers, counts, perf-stats summaries, public log excerpts and the
-attached crops of Session $SESSION (PLAN.md §6.2), for the packages and
-gates that wait on them.
+The answers, counts, perf-stats summaries, public log excerpts, the
+attached crops and the redacted samples of Session $SESSION (PLAN.md §6),
+for the packages and gates that wait on them.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF2
@@ -4912,7 +5923,7 @@ EOF2
   echo "Sent: https://github.com/$REPO/blob/$RESULTS_BRANCH/docs/plans/0.8.0/sessions/$SESSION.md"
 }
 
-# MARK: - The short sessions: the Charge limit capture (C), the hold watch (H)
+# MARK: - The recording (bpulse --record), the hold watch's
 
 # record_start <folder name>: `caffeinate -i bpulse --record` into a new, empty folder under the
 # session's folder (USER_GUIDE: caffeinate -i keeps the Mac awake, and the folder must not hold an
@@ -4936,154 +5947,380 @@ record_start() {
 
 record_folder() { cat "$WORK/record.folder" 2>/dev/null || true; }
 
-# timeline_rows [<n>]: the recording's last rows (time, percent, state, external, NotChargingReason).
-timeline_rows() {
-  local file
-  file="$(record_folder)/timeline.tsv"
-  [ -s "$file" ] || return 0
-  awk -F '\t' 'NR > 1 { print $1 " " $2 " % " $3 ", external " $4 ", NotChargingReason " $5 }' "$file" | tail -"${1:-3}"
+# MARK: - The Charge Limit's check (G8-1; PLAN.md §6.1 step 2, §6.4 step 9)
+
+# powerd's charging preferences, the one source A-2 reads (PLAN.md A-2): only its presence, size and
+# time reach the report; its contents only through A-2's sample script, which zeroes the identifiers.
+LIMIT_PLIST="/Library/Preferences/com.apple.powerd.charging.plist"
+LIMIT_TABLE="$WORK/charge-limit.tsv"
+LIMIT_DIR="$LOGS/charge-limit"
+MONITOR_PREDICATE="subsystem == \"$BUNDLE_ID\" AND category == \"monitor\""
+
+# limit_line_in <ndjson> [<since>]: the last line of BatteryPulse's `monitor` category since then
+# that names the Charge Limit (A-2 item 7: one line per read, its source's case name and the
+# percent, `.public`) [its words unverified until A-2's line lands]; empty without one.
+limit_line_in() {
+  entries "$1" | awk -F '\t' -v s="${2:-}" '$2 == "BatteryPulse" && $1 >= s && tolower($3) ~ /limit/ { l = $3 } END { print l }'
 }
 
-# timeline_changes: each row where the state or NotChargingReason changed, with the row before it
-# (the rows around each change, plan-0.7.0 W-12 item 1).
-timeline_changes() {
-  local file
-  file="$(record_folder)/timeline.tsv"
-  [ -s "$file" ] || return 0
-  awk -F '\t' 'NR == 2 { print $1 " " $2 " % " $3 ", external " $4 ", NotChargingReason " $5 " (the first row)" }
-    NR > 2 && ($3 != state || $5 != reason) {
-      print "  " prev
-      print $1 " " $2 " % " $3 ", external " $4 ", NotChargingReason " $5
-    }
-    NR > 1 { state = $3; reason = $5; prev = $1 " " $2 " % " $3 ", external " $4 ", NotChargingReason " $5 }' "$file"
+# limit_number_of <line>: the first number in it from 50 to 100 (A-2 reads 80-100, Apple's range),
+# else empty.
+limit_number_of() {
+  awk '{ n = split($0, w, /[^0-9]+/); for (i = 1; i <= n; i++) if (w[i] != "" && w[i] + 0 >= 50 && w[i] + 0 <= 100) { print w[i] + 0; exit } }' <<<"$1"
 }
 
-# bit24_seen: a row of the recording at the limit, not charging, on the adapter, with bit 24.
-bit24_seen() {
-  local file
-  file="$(record_folder)/timeline.tsv"
-  [ -s "$file" ] || return 1
-  awk -F '\t' 'NR > 1 && $3 == "notCharging" && $4 == "true" && $5 ~ /^[0-9]+$/ && int($5 / 16777216) % 2 == 1 { found = 1 } END { exit !found }' "$file"
+# limit_sample <tag>: A-2's scripts/charge-limit-sample.swift (A-2 item 6) on powerd's file, called
+# as `xcrun swift scripts/charge-limit-sample.swift <powerd's file> <the redacted copy>`: it copies
+# the file, zeroes bootSessionUUID, the token's bytes and owner's value in place, checks that the
+# copy still decodes to the same number and prints it. The copy, battlimit's verbatim text and
+# defaults' beside it, wait in samples/ for his yes before send, named by the read's tag alone
+# (<tag>-powerd-charging.plist, <tag>-battlimit.txt, <tag>-batteryui.txt), never by a number
+# battlimit_value read: the verbatim text is what checks battlimit_value (T-1 item 2), and a name
+# taken from its own reading would pass any misread. A-2's fixtures take the number the policy
+# decodes to (powerd-charging-<n>.plist, -none at 100 %), battlimit's text beside one the same
+# number (powerd-charging-<n>-battlimit.txt), which the dry run holds battlimit_value to. Until A-2
+# lands the script: "not run". Prints one phrase.
+limit_sample() {
+  local tag="$1" script="$ROOT/scripts/charge-limit-sample.swift" base log
+  [ -f "$script" ] || {
+    echo "not run: no scripts/charge-limit-sample.swift at the frozen commit"
+    return 0
+  }
+  [ -f "$LIMIT_PLIST" ] || {
+    echo "not run: no powerd file"
+    return 0
+  }
+  mkdir -p "$WORK/samples"
+  base="$WORK/samples/$tag"
+  log="$LIMIT_DIR/$tag-sample.txt"
+  if (cd "$ROOT" && xcrun swift "$script" "$LIMIT_PLIST" "$base-powerd-charging.plist") >"$log" 2>&1 &&
+    [ -s "$base-powerd-charging.plist" ]; then
+    cp "$LIMIT_DIR/$tag-battlimit.txt" "$base-battlimit.txt"
+    cp "$LIMIT_DIR/$tag-batteryui.txt" "$base-batteryui.txt"
+    echo "saved $tag-powerd-charging.plist, its decoded number: $(limit_number_of "$(tail -1 "$log")" || true)"
+  else
+    rm -f "$base-powerd-charging.plist"
+    echo "failed: $(tail -1 "$log" | cut -c1-100)"
+  fi
 }
 
-# charge-limit start | hold | full [--his-hand] | wait100 | back [--his-hand] | stop | check: the
-# Charge limit capture (QUA-05; 0.8's FEA-35 check), from its short session with the adapter in.
-#   start: the limit read on the adapter (pmset -g battlimit, else the Battery pane's shot), the
-#          charge at least 5 points below it, then the recording;
-#   hold:  waits (a background task, at most 3 hours) until charging stops at the limit, and says
-#          whether NotChargingReason gained bit 24;
-#   full:  after the session set the limit to 100 % by computer use (`change charge-limit <n> 100`
-#          first), waits until battlimit shows none; --his-hand beeps twice for his hand instead;
-#   wait100: the 10 minutes at 100 % (a background task), the rows around the change;
-#   back:  after the limit went back, waits until battlimit shows it, then `restored`;
-#   stop:  the recording ended, the rows around each change, the bit-24 verdict;
-#   check: the limit is as at start.
+# limit_read <tag> [--since <time> <monitor capture>]: one row of G8-1's reads (PLAN.md §6.1 step
+# 2), into charge-limit.tsv and the section: the power source and charge, bpulse --json's state,
+# bit 24 and systemChargeLimitPercent (A-2's key, absent before A-2 and whenever unknown), pmset -g
+# battlimit (its number, verbatim on the Mac), defaults read com.apple.batteryui.charging.mac (its
+# limit lines), bpulse --smc's CHLT and CHNC (A-2 item 4 reads their values), powerd's file (present,
+# its size and time, never its contents), the sample, and the app's own read: its `monitor` line
+# about the limit, with BatteryPulse relaunched by default (its first read on the adapter after
+# launch, A-2 item 3), or with --since from a running capture (an external-power change is its
+# own trigger).
+limit_read() {
+  local tag="$1" since="" capture="" stream waited=0 json key row line number battlimit chlt chnc policy sample power
+  case "$tag" in "" | *[!A-Za-z0-9.-]*) fail "a read's tag is letters, digits, dots and dashes" ;; esac
+  mkdir -p "$LIMIT_DIR"
+  if [ "${2:-}" = --since ]; then
+    since="$3"
+    capture="$4"
+  else
+    capture="$LIMIT_DIR/$tag-monitor.ndjson"
+    since="$(clock)"
+    /usr/bin/log stream --level debug --style ndjson --predicate "$MONITOR_PREDICATE" >"$capture" 2>"$capture.err" </dev/null &
+    stream=$!
+    STREAMS="$STREAMS $stream"
+    sleep 2
+    relaunch_r
+    while [ "$waited" -lt 20 ] && [ -z "$(limit_line_in "$capture" "$since")" ]; do
+      sleep 2
+      waited=$((waited + 2))
+    done
+    perf_stop "$stream"
+  fi
+  line="$(limit_line_in "$capture" "$since")"
+  number="$(limit_number_of "$line")"
+  pmset -g battlimit >"$LIMIT_DIR/$tag-battlimit.txt" 2>&1 || true
+  battlimit="$(battlimit_value "$LIMIT_DIR/$tag-battlimit.txt")"
+  defaults read com.apple.batteryui.charging.mac >"$LIMIT_DIR/$tag-batteryui.txt" 2>&1 || true
+  key="-"
+  row="bpulse isn't built"
+  if bpulse_json "$LIMIT_DIR/$tag.json"; then
+    key="$(json_number "$LIMIT_DIR/$tag.json" systemChargeLimitPercent)"
+    row="$(charge_row "$LIMIT_DIR/$tag.json")"
+  fi
+  chlt="-"
+  chnc="-"
+  if [ -x "$BIN/bpulse" ] && "$BIN/bpulse" --smc >"$LIMIT_DIR/$tag-smc.txt" 2>&1; then
+    chlt="$(awk '$1 == "CHLT" { $1 = ""; sub(/^ +/, ""); print; exit }' "$LIMIT_DIR/$tag-smc.txt")"
+    chnc="$(awk '$1 == "CHNC" { $1 = ""; sub(/^ +/, ""); print; exit }' "$LIMIT_DIR/$tag-smc.txt")"
+  fi
+  if [ -f "$LIMIT_PLIST" ]; then
+    policy="$(wc -c <"$LIMIT_PLIST" | tr -d ' ') bytes, modified $(epoch_stamp "$(mtime_of "$LIMIT_PLIST")")"
+  else
+    policy=none
+  fi
+  if on_battery; then power=battery; else power=ac; fi
+  sample="$(limit_sample "$tag")"
+  mkdir -p "$WORK"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$tag" "$since" "$power" "${battlimit:-none}" "${key:--}" "${number:--}" \
+    "$(if [ -n "$line" ]; then echo yes; else echo no; fi)" "$(printf '%s' "$policy" | tr '\t' ' ')" "$(printf '%s' "$sample" | tr '\t' ' ')" >>"$LIMIT_TABLE"
+  use_section 10-charge-limit "The Charge Limit's check (G8-1)"
+  out "- $tag ($since, $power): $row"
+  out "  - pmset -g battlimit: ${battlimit:-none}; bpulse --json's systemChargeLimitPercent: ${key:-absent}; the app's line: ${line:-none} (its number ${number:--})"
+  out "  - CHLT ${chlt:--}; CHNC ${chnc:--}; powerd's file: $policy; the sample: $sample"
+  grep -i -E 'limit|soc' "$LIMIT_DIR/$tag-batteryui.txt" 2>/dev/null | head -6 >"$LIMIT_DIR/$tag-batteryui-limit.txt" || true
+  if [ -s "$LIMIT_DIR/$tag-batteryui-limit.txt" ]; then
+    out "  - defaults read com.apple.batteryui.charging.mac, its limit lines:"
+    out_block "$LIMIT_DIR/$tag-batteryui-limit.txt"
+  fi
+  echo "LOOK the screen for a prompt (G8-5): a dialog now is a no for G8-5-limit"
+}
+
+# limit_wait_for <limit>: up to 3 minutes, on the adapter, for pmset -g battlimit to hold that
+# limit (none for 100); prints what it holds then; true when it came.
+limit_wait_for() {
+  local want="$1" waited=0 now=""
+  while [ "$waited" -le 180 ]; do
+    now="$(battlimit_value)"
+    if { [ "$want" = 100 ] && [ -z "$now" ]; } || { [ -n "$now" ] && [ "$now" = "$want" ]; }; then
+      echo "${now:-none}"
+      return 0
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  echo "${now:-none}"
+  return 1
+}
+
+# limit_column <tag prefix> <column>: that column of the newest read whose tag starts so, else
+# empty (2 time, 3 power, 4 battlimit, 5 the --json key, 6 the app's number, 7 the app's line, 8
+# powerd's file, 9 the sample).
+limit_column() { awk -F '\t' -v p="$1" -v c="$2" 'index($1, p) == 1 { v = $c } END { print v }' "$LIMIT_TABLE" 2>/dev/null || true; }
+
+# limit_agrees <tag prefix>: the newest such read's app number and --json key equal battlimit's,
+# battlimit holding one; prints why not.
+limit_agrees() {
+  local battlimit app key
+  battlimit="$(limit_column "$1" 4)"
+  app="$(limit_column "$1" 6)"
+  key="$(limit_column "$1" 5)"
+  [ -n "$battlimit" ] || {
+    echo "no read tagged $1"
+    return 1
+  }
+  [ "$battlimit" != none ] || {
+    echo "battlimit held no limit"
+    return 1
+  }
+  [ "$app" = "$battlimit" ] || {
+    echo "the app's number ${app} against battlimit's $battlimit$(if [ "$(limit_column "$1" 7)" = no ]; then echo " (no line: A-2's line?)"; fi)"
+    return 1
+  }
+  [ "$key" = "$battlimit" ] || {
+    echo "bpulse --json's key ${key} against battlimit's $battlimit"
+    return 1
+  }
+}
+
+# limit_none <tag prefix>: the newest such read gave no number from the app or --json.
+limit_none() {
+  [ -n "$(limit_column "$1" 2)" ] || return 1
+  [ "$(limit_column "$1" 6)" = - ] && { [ "$(limit_column "$1" 5)" = - ] || [ -z "$(limit_column "$1" 5)" ]; }
+}
+
+# limit_verdicts: G8-1's answers from charge-limit.tsv, the script's reading recorded as the
+# session's (an unsure one joins his batch, with the table as its evidence): hold, second, full,
+# battery, plugin, and the samples, whose decoded numbers the session compares with battlimit's.
+limit_verdicts() {
+  local why id sample
+  if why="$(limit_agrees hold)"; then feed_verdict G8-1-hold y "the app, bpulse --json and battlimit read $(limit_column hold 4)" "$LIMIT_TABLE"
+  elif [ -n "$(limit_column hold 2)" ] && [ "$(limit_column hold 7)" = no ]; then feed_verdict G8-1-hold unsure "$why" "$LIMIT_TABLE"
+  elif [ -n "$(limit_column hold 2)" ]; then feed_verdict G8-1-hold n "$why" "$LIMIT_TABLE"
+  else not_checked G8-1-hold "no read at the hold"; fi
+  if [ -z "$(limit_column second 2)" ]; then not_checked G8-1-second "no second limit above the charge"
+  elif [ "$(limit_column second 4)" = none ] && limit_none second; then feed_verdict G8-1-second y "battlimit, the app and bpulse --json all without a number while charging toward the limit" "$LIMIT_TABLE"
+  elif why="$(limit_agrees second)"; then feed_verdict G8-1-second y "the app, bpulse --json and battlimit read $(limit_column second 4)" "$LIMIT_TABLE"
+  else feed_verdict G8-1-second "$(if [ "$(limit_column second 7)" = no ]; then echo unsure; else echo n; fi)" "$why" "$LIMIT_TABLE"; fi
+  if [ -z "$(limit_column full 2)" ]; then not_checked G8-1-full "no read at 100 %"
+  elif [ "$(limit_column full 4)" = none ] && limit_none full; then feed_verdict G8-1-full y "no limit in battlimit, no number from the app or bpulse --json" "$LIMIT_TABLE"
+  else feed_verdict G8-1-full n "battlimit $(limit_column full 4), the app $(limit_column full 6), bpulse --json $(limit_column full 5)" "$LIMIT_TABLE"; fi
+  if [ -z "$(limit_column battery-1 2)" ] || [ -z "$(limit_column battery-6 2)" ]; then not_checked G8-1-battery "the reads on battery didn't both run"
+  elif limit_none battery-1 && limit_none battery-6; then
+    sample="$(limit_column battery-6 9)"
+    feed_verdict G8-1-battery y "no number at 1 or 6 minutes; the policy at 6 minutes, by the sample: ${sample:-not read}" "$LIMIT_TABLE"
+  else feed_verdict G8-1-battery n "a number on battery: the app $(limit_column battery-1 6) and $(limit_column battery-6 6), bpulse --json $(limit_column battery-1 5) and $(limit_column battery-6 5)" "$LIMIT_TABLE"; fi
+  if [ -z "$(limit_column plugin- 2)" ]; then not_checked G8-1-plugin "no read after the plug-in"
+  else
+    id=""
+    for why in plugin-5s plugin-1min; do
+      if [ "$(limit_column "$why" 4)" != none ] && [ -n "$(limit_column "$why" 4)" ] && limit_agrees "$why" >/dev/null; then id="$why"; fi
+    done
+    if [ -n "$id" ]; then feed_verdict G8-1-plugin y "battlimit and the app's number back at $id ($(limit_column "$id" 4))" "$LIMIT_TABLE"
+    elif [ -n "$(limit_column plugin-1min 4)" ] && [ "$(limit_column plugin-1min 4)" != none ]; then feed_verdict G8-1-plugin unsure "battlimit back ($(limit_column plugin-1min 4)) but the app's number $(limit_column plugin-1min 6)" "$LIMIT_TABLE"
+    else feed_verdict G8-1-plugin n "battlimit holds none a minute after the plug-in" "$LIMIT_TABLE"; fi
+  fi
+  if [ ! -f "$ROOT/scripts/charge-limit-sample.swift" ]; then step_answer --by claude L-samples 3 "no sample script at the frozen commit" >/dev/null
+  elif awk -F '\t' '$3 == "ac" && index($9, "failed") == 1 { f = 1 } END { exit !f }' "$LIMIT_TABLE" 2>/dev/null; then
+    feed_verdict L-samples 2 "a sample failed: see the reads" "$LIMIT_TABLE"
+  else
+    feed_verdict L-samples unsure "every sample saved: compare each decoded number with its battlimit in the reads" "$LIMIT_TABLE"
+  fi
+  ask G8-5-limit
+}
+
+# charge-limit read <tag> | set <n> | hold [wait] | unplug | back | verdicts (the look shoot's step
+# 2, Session R8's step 9; PLAN.md §6.1 step 2): G8-1, the Charge Limit's number read by the app from
+# powerd's file against pmset -g battlimit, defaults and bpulse --smc, on the adapter and on battery.
+#   read <tag>: every read now (limit_read), BatteryPulse relaunched for its own;
+#   set <n>:    after the session moved the slider by computer use (System Settings → Battery → (i)
+#               next to Charging; `change charge-limit <prepare's> <n>` first): up to 3 minutes for
+#               battlimit to hold n (none for 100), then the reads, tagged full at 100;
+#   hold:       one look, no wait: is the charge held at the limit (bpulse --json: not charging on
+#               the adapter, or bit 24)? Then the reads, tagged hold; else when to look again (the
+#               session shoots step 3's screens meanwhile, at most an hour after the set); with
+#               wait (a background task, once no screen is left to shoot), a look every 30 s until
+#               the hold or that hour's end;
+#   unplug:     a beep to unplug (a background task, about 9 minutes): reads 1 and 6 minutes on
+#               battery, a second beep to plug in, reads 5 s and 1 minute after it, from one capture
+#               of the app's lines (the power change is the app's own trigger);
+#   back:       after the slider went back to prepare's value: battlimit holds it (or none for 100),
+#               then `restored charge-limit` by the script;
+#   verdicts:   G8-1's answers from the reads (limit_verdicts).
 step_charge_limit() {
-  session_only C charge-limit
-  local limit now charge waited=0
-  use_section 10-charge-limit "The Charge limit capture (QUA-05)"
+  rl_only charge-limit
+  local limit now at plug waited=0 capture
+  limit="$(answer_of prep-charge-limit)"
   case "${1:-}" in
-    start)
-      [ "$(answer_of C-yes)" = y ] || fail "first his yes, with the adapter in: $SCRIPT answer --by person C-yes y"
-      mkdir -p "$WORK" "$LOGS" "$SECTIONS" "$SHOTS"
-      touch "$CHANGES" "$HEARTBEAT"
-      [ -f "$WORK/prepare.time" ] || clock >"$WORK/prepare.time"
-      ! on_battery || fail "on battery: battlimit holds no limit there; plug the adapter in, then start again"
-      limit="$(battlimit_value)"
-      if [ -n "$limit" ]; then
-        step_answer --by claude prep-charge-limit "$limit" "read by pmset -g battlimit on the adapter" >/dev/null
-      elif [ -z "$(answer_of prep-charge-limit)" ]; then
-        echo "pmset -g battlimit shows no limit: read System Settings → Battery → (i) next to Charging by computer use, then $SCRIPT answer --by claude prep-charge-limit <n> \"<the shot>\", and start again"
-        return 1
+    read)
+      [ $# -eq 2 ] || fail "usage: $SCRIPT charge-limit read <tag>"
+      limit_read "$2"
+      ;;
+    set)
+      case "${2:-}" in 8[0-9] | 9[0-9] | 100) ;; *) fail "usage: $SCRIPT charge-limit set <80-100> (Apple's range)" ;; esac
+      [ -n "$(original_of charge-limit)" ] || fail "record the change first: $SCRIPT change charge-limit ${limit:-<the value prepare read>} $2"
+      ! on_battery || fail "on battery battlimit holds no limit: set it with the adapter in"
+      if now="$(limit_wait_for "$2")"; then
+        clock >"$WORK/limit-set.time"
+        echo "$2" >"$WORK/limit-set.value"
+        if [ "$2" = 100 ]; then limit_read full; else echo "battlimit holds $now: now $SCRIPT charge-limit hold (the hold), or charge-limit read second (a limit above the charge)"; fi
+      else
+        not_checked "charge-limit-$2" "battlimit held $now, not $2, within 3 minutes of the slider"
       fi
-      limit="$(answer_of prep-charge-limit)"
-      [ "$limit" != 100 ] || fail "no Charge Limit is set (100 %): there is no hold to capture"
-      charge="$(battery_percent)"
-      [ "$((charge + 5))" -le "$limit" ] || fail "the charge ($charge %) isn't 5 points below the limit ($limit %): run this after a discharge"
-      out "- the limit: $limit %; the charge at the start: $charge %, on the adapter ($(clock))"
-      record_start "record-$(date '+%Y%m%d-%H%M')"
-      out "- recording into $(basename "$(record_folder)") (on the Mac)"
       ;;
     hold)
-      limit="$(answer_of prep-charge-limit)"
-      while [ "$waited" -lt 10800 ]; do
-        if bit24_seen; then break; fi
-        now="$(timeline_rows 1)"
-        case "$now" in *notCharging*) break ;; esac
+      case "${2:-}" in "" | wait) ;; *) fail "usage: $SCRIPT charge-limit hold [wait]" ;; esac
+      mkdir -p "$LIMIT_DIR"
+      at="$(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/limit-set.time" 2>/dev/null || clock)" +%s 2>/dev/null || date +%s)"
+      while :; do
+        bpulse_json "$LIMIT_DIR/hold-look.json" || fail "bpulse isn't built (see $BIN/bpulse.log)"
+        now="$(charge_row "$LIMIT_DIR/hold-look.json")"
+        case "$now" in
+          *"external power true"*"bit 24: yes"* | *notCharging*"external power true"*)
+            echo "HELD: $now"
+            limit_read hold
+            return 0
+            ;;
+        esac
+        if [ $(($(date +%s) - at)) -gt 3600 ]; then
+          not_checked G8-1-hold "no hold within an hour of the set: $now"
+          return 0
+        fi
+        if [ "${2:-}" != wait ]; then
+          echo "NOT YET ($now): shoot step 3's next screen, then $SCRIPT charge-limit hold again (until $(epoch_hm $((at + 3600)))); with no screen left to shoot, $SCRIPT charge-limit hold wait as a background task"
+          return 0
+        fi
         sleep 30
-        waited=$((waited + 30))
       done
-      out "- the hold ($(clock)), after $((waited / 60)) minutes: $(timeline_rows 1)"
-      if bit24_seen; then
-        step_answer --by claude C-bit24 1 "the recording's rows at the hold" >/dev/null
-      elif [ "$waited" -ge 10800 ]; then
-        step_answer --by claude C-bit24 3 "charging didn't stop within 3 hours" >/dev/null
-      else
-        step_answer --by claude C-bit24 2 "notCharging without bit 24" >/dev/null
-      fi
-      out "- NotChargingReason gained bit 24 when charging stopped at the limit: $(answer_of C-bit24) (1 yes, 2 no, 3 not reached)"
       ;;
-    full | back)
-      limit="$(answer_of prep-charge-limit)"
-      if [ "${2:-}" = --his-hand ]; then
-        cue "Set the Charge Limit to $(if [ "$1" = full ]; then echo 100; else echo "$limit"; fi) % now"
-        sound Glass
-        sound Glass
-      fi
-      [ -n "$(original_of charge-limit)" ] || [ "$1" = back ] ||
-        echo "note: record the change first ($SCRIPT change charge-limit $limit 100); the wait goes on"
-      while [ "$waited" -lt 180 ]; do
-        now="$(battlimit_value)"
-        if [ "$1" = full ] && [ -z "$now" ]; then break; fi
-        if [ "$1" = back ] && [ "$now" = "$limit" ]; then break; fi
-        sleep 5
-        waited=$((waited + 5))
+    unplug)
+      ! on_battery || fail "the adapter must be in at the start: plug it in first"
+      mkdir -p "$LIMIT_DIR"
+      capture="$LIMIT_DIR/unplug-monitor.ndjson"
+      /usr/bin/log stream --level debug --style ndjson --predicate "$MONITOR_PREDICATE" >"$capture" 2>"$capture.err" </dev/null &
+      STREAMS="$STREAMS $!"
+      sleep 2
+      cue "Unplug the adapter now"
+      sound Glass
+      while ! on_battery && [ "$waited" -lt 120 ]; do
+        sleep 2
+        waited=$((waited + 2))
       done
-      now="$(battlimit_value)"
-      out "- $1 ($(clock)): pmset -g battlimit ${now:-shows none}; $(timeline_rows 1)"
-      clock >"$WORK/charge-$1.time"
-      if [ "$1" = full ]; then
-        if [ -z "$now" ]; then step_answer --by claude C-full y "pmset -g battlimit shows none" >/dev/null; else
-          echo "battlimit still shows $now: read the Battery pane's shot, then $SCRIPT judge C-full <y|n>"
-        fi
-      else
-        if [ "$now" = "$limit" ]; then
-          step_answer --by claude C-back y "pmset -g battlimit shows $now" >/dev/null
-          [ -z "$(original_of charge-limit)" ] || mark_restored charge-limit "pmset -g battlimit shows $now"
-        else
-          echo "battlimit shows ${now:-none}, not $limit: read the Battery pane's shot, then $SCRIPT judge C-back <y|n>"
-        fi
+      on_battery || {
+        not_checked G8-1-battery "no unplug within 2 minutes of the beep"
+        return 0
+      }
+      at="$(date +%s)"
+      clock >"$WORK/limit-unplug.time"
+      sleep_until $((at + 60))
+      limit_read battery-1min --since "$(epoch_stamp "$at")" "$capture"
+      sleep_until $((at + 360))
+      limit_read battery-6min --since "$(epoch_stamp $((at + 60)))" "$capture"
+      cue "Plug the adapter in now"
+      sound Hero
+      waited=0
+      while on_battery && [ "$waited" -lt 120 ]; do
+        sleep 1
+        waited=$((waited + 1))
+      done
+      ! on_battery || {
+        not_checked G8-1-plugin "no plug-in within 2 minutes of the beep"
+        return 0
+      }
+      plug="$(date +%s)"
+      sleep_until $((plug + 5))
+      limit_read plugin-5s --since "$(epoch_stamp "$plug")" "$capture"
+      sleep_until $((plug + 60))
+      limit_read plugin-1min --since "$(epoch_stamp "$plug")" "$capture"
+      ;;
+    back)
+      [ -n "$limit" ] || fail "prepare's Charge Limit is unknown (prep-charge-limit): never changed, nothing to put back"
+      if on_battery; then
+        echo "on battery battlimit holds none: confirm the Battery pane's shot, then $SCRIPT restored charge-limit \"<the shot>\""
+        return 0
       fi
-      ;;
-    wait100)
-      [ -f "$WORK/charge-full.time" ] || fail "the limit isn't at 100 % yet: $SCRIPT charge-limit full"
-      sleep_until $(($(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/charge-full.time")" +%s 2>/dev/null || date +%s) + 600))
-      out "- 10 minutes at 100 % ($(clock)): $(timeline_rows 1)"
-      echo "now the limit back by computer use, then: $SCRIPT charge-limit back"
-      ;;
-    stop)
-      stop_leftovers record
-      out "- the recording stopped ($(clock)): $(find "$(record_folder)" -name '*.plist' 2>/dev/null | grep -c . || true) captures (on the Mac; a fixture only on his yes)"
-      out "- the rows around each change (time, charge, state, external power, NotChargingReason):"
-      timeline_changes >"$LOGS/charge-changes.txt"
-      out_block "$LOGS/charge-changes.txt"
-      ;;
-    check)
-      limit="$(answer_of prep-charge-limit)"
-      now="$(battlimit_value)"
-      if [ "$now" = "$limit" ]; then echo "the Charge Limit is back at $now %"; else
-        echo "THE CHARGE LIMIT READS ${now:-none}, NOT $limit %: put it back (computer use, System Settings → Battery), or on battery read the pane's shot"
+      if now="$(limit_wait_for "$limit")"; then
+        mark_restored charge-limit "pmset -g battlimit holds ${now} (prepare's $limit)"
+        [ "$SESSION" != L ] || step_answer --by claude L-limit-back y "pmset -g battlimit holds $now, prepare's $limit" >/dev/null
+        echo "the Charge Limit is back at $limit %"
+      else
+        echo "THE CHARGE LIMIT READS $now, NOT $limit %: put it back by computer use (System Settings → Battery), then charge-limit back again"
         return 1
       fi
       ;;
-    *) fail "usage: $SCRIPT charge-limit start | hold | full [--his-hand] | wait100 | back [--his-hand] | stop | check" ;;
+    verdicts)
+      [ "$SESSION" = L ] || fail "charge-limit verdicts is the look shoot's (G8-1); Session R8's step 9 answers R-limit-live"
+      limit_verdicts
+      ;;
+    *) fail "usage: $SCRIPT charge-limit read <tag> | set <n> | hold [wait] | unplug | back | verdicts" ;;
   esac
 }
 
-# hold-watch start | morning: QUA-06, an optimized-charging hold overnight: the same recording
-# under caffeinate -i, the Mac on the adapter with the lid open; in the morning, whether the charge
-# was held below 100 % on the adapter for 15 minutes or more, with its NotChargingReason values
-# (whether macOS holds the charge while the Mac is kept awake is uncertain).
+# MARK: - The short sessions: the hold watch (H)
+
+# hold_captures: the night's captures whose IOPS power source says Optimized Battery Charging
+# Engaged (G8-2's evidence), each with its NotChargingReason and whether bit 24 is set, into the
+# section; at most three of them copied into captures/, which send commits after his yes.
+hold_captures() {
+  local capture flagged=0 reason text
+  mkdir -p "$WORK/captures"
+  while IFS= read -r capture; do
+    [ -n "$capture" ] || continue
+    # Read whole first: grep -q under pipefail would stop plutil (status 141) and skip a match.
+    text="$(plutil -p "$capture" 2>/dev/null || true)"
+    grep -q -E '"Optimized Battery Charging Engaged" => (1|true)' <<<"$text" || continue
+    flagged=$((flagged + 1))
+    reason="$(sed -n 's/.*"NotChargingReason" => \([0-9]*\).*/\1/p' <<<"$text" | head -1 || true)"
+    out "- $(basename "$capture"): Optimized Battery Charging Engaged, NotChargingReason ${reason:--} (bit 24: $(if [ -n "$reason" ] && [ $((reason & 0x01000000)) -ne 0 ]; then echo yes; else echo no; fi))"
+    if [ "$flagged" -le 3 ]; then cp "$capture" "$WORK/captures/hold-$(basename "$capture")"; fi
+  done < <(find "$(record_folder)" -name '*.plist' -type f 2>/dev/null | sort)
+  out "- captures with Optimized Battery Charging Engaged: $flagged (at most three in captures/, sent only after his yes)"
+}
+
+# hold-watch start | morning: QUA-06 and G8-2, an optimized-charging hold overnight, offered again
+# before 0.8's D1 (PLAN.md I-8): a recording under caffeinate -i, the Mac on the adapter with the
+# lid open; in the morning, whether the charge was held below 100 % on the adapter for 15 minutes
+# or more, with its NotChargingReason values, and the recorded captures whose power source says
+# Optimized Battery Charging Engaged (the evidence G8-2 asks for, with whether bit 24 is set with
+# it), copied into captures/ for his yes before send (bpulse --record keeps them redacted). Whether
+# macOS holds the charge while the Mac is kept awake is uncertain.
 step_hold_watch() {
   session_only H hold-watch
   local file
@@ -5112,6 +6349,7 @@ step_hold_watch() {
         END { if (start != "") print start " to the end, NotChargingReason" reasons }' "$file" >"$LOGS/holds.txt"
       out "- the night ($(head -2 "$file" | tail -1 | cut -f1) to $(tail -1 "$file" | cut -f1)): the spans held below 100 % on the adapter:"
       out_block "$LOGS/holds.txt"
+      hold_captures
       echo "Judge H-hold from them: a span of 15 minutes or more is a hold (1), none is 2"
       ask H-hold
       ;;
@@ -5119,34 +6357,37 @@ step_hold_watch() {
   esac
 }
 
-# MARK: - The short sessions: after publishing (D3; PLAN.md §6.4)
+# MARK: - The short sessions: after publishing (D3; PLAN.md §6.6)
 
-# after before | after | popover: the before-picture (pluginkit, the crops after the desktop click,
-# the time), right before Check for Updates and Install and Relaunch by AX presses; after (waits
-# for 0.7.1, at most 3 minutes): the update log's pre-swap line and CHSErrorDomain 1103, pluginkit,
-# the crops, `codesign -dv --verbose=4` and `xattr -l` (P2 D3's list), then the feed's modes and the
-# widget's exception (`feed check`); popover: the first day's comparison, the popover beside the
-# widgets.
+# after before | after | popover: the after-publishing check (PLAN.md §6.6). before (rule 6: he
+# hasn't installed it himself): pluginkit, the widgets' crops after the desktop click (rule 3), the
+# extension's pids, the time, right before Check for Updates and Install and Relaunch by AX
+# presses; after (waits for 0.8.0, at most 3 minutes): the update log's pre-swap line and
+# CHSErrorDomain 1103, pluginkit, the crops once a new extension process drew them (rule 4: none is
+# "not checked"), `codesign -dv --verbose=4` and `xattr -l` (P7 §6.4's list), then the feed's modes
+# and the widget's exception (`feed check`); popover: the first day's comparison, the popover
+# beside the widgets.
 step_after() {
   session_only D3 after
-  local waited=0 flags quarantine swap
-  use_section 10-after "After publishing (§6.4)"
+  local waited=0 flags quarantine swap fresh=""
+  use_section 10-after "After publishing (§6.6)"
   case "${1:-}" in
     before)
       [ "$(answer_of D3-yes)" = y ] || fail "first his yes: $SCRIPT answer --by person D3-yes y"
       mkdir -p "$WORK" "$LOGS" "$SECTIONS" "$SHOTS"
       [ -f "$WORK/prepare.time" ] || clock >"$WORK/prepare.time"
       clock >"$WORK/after.time"
+      widget_pids | tr '\n' ' ' >"$WORK/after-before.pids"
       pluginkit -mv -i "$WIDGET_ID" >"$LOGS/pluginkit-before.txt" 2>&1 || true
       click_desktop || not_checked D3-widgets "no desktop spot"
       crop_widgets "$SHOTS/after" before
-      out "- before ($(cat "$WORK/after.time")): $(app_version); widget extension pids: $(widget_pids | tr '\n' ' ')"
+      out "- before ($(cat "$WORK/after.time")): $(app_version); widget extension pids: $(cat "$WORK/after-before.pids")"
       out_block "$LOGS/pluginkit-before.txt"
-      echo "DO (session): Check for Updates, then Install and Relaunch to $RC_VERSION, by AX presses; then: $SCRIPT after after"
+      echo "DO (session): Check for Updates, then Install and Relaunch to $RELEASE_VERSION, by AX presses; then: $SCRIPT after after"
       ;;
     after)
       [ -f "$WORK/after.time" ] || fail "first: $SCRIPT after before"
-      until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$RC_VERSION" ] || [ "$waited" -ge 180 ]; do
+      until [ "$(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$RELEASE_VERSION" ] || [ "$waited" -ge 180 ]; do
         sleep 1
         waited=$((waited + 1))
       done
@@ -5160,11 +6401,15 @@ step_after() {
       flags="$(codesign -dv --verbose=4 "$APP" 2>&1 | grep -o 'flags=[^ ]*' | head -1 || true)"
       quarantine="$(xattr -l "$APP" 2>/dev/null | grep -c com.apple.quarantine || true)"
       out "- codesign: ${flags:-no flags line} (expected flags=0x10002(adhoc,runtime)); quarantine lines: $quarantine (expected 0)"
+      fresh="$(fresh_widget_pid "$(cat "$WORK/after-before.pids" 2>/dev/null || true)")"
+      out "- a widget extension process since before (rule 4's redraw): ${fresh:-none within a minute}"
       click_desktop || true
-      crop_widgets "$SHOTS/after" after
+      if [ -n "$fresh" ]; then crop_widgets "$SHOTS/after" after; else
+        not_checked D3-widgets "no redraw: no widget extension process that wasn't there before the update"
+      fi
       step_feed check
-      echo "Read About, What's New, History and the settings by computer use (shots), and Login Items only by $SCRIPT pane login-items and $SCRIPT ui tree \"System Settings\" --match BatteryPulse (no shot of that pane), then answer, and last: $SCRIPT capacity after"
-      ask D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications
+      echo "Read About, What's New, History and the settings by computer use (shots); Help → Report a Problem… by $SCRIPT ui press, then $SCRIPT screen report-problem front (D3-report); $SCRIPT help-link (D3-help); Login Items only by $SCRIPT pane login-items and $SCRIPT ui tree \"System Settings\" --match BatteryPulse (no shot of that pane); then answer, and last: $SCRIPT capacity after"
+      ask D3-version D3-whats-new D3-count-row D3-widgets D3-history D3-settings D3-login-item D3-notifications D3-prompt D3-report
       ;;
     popover)
       click_desktop || true
@@ -5178,56 +6423,6 @@ step_after() {
   esac
 }
 
-# count-check | count-check stats: W-13's version count (plan-0.7.0 §6.4 step 6), with Check for
-# updates set to anything but Never: BatteryPulse quit, lastCountedVersion and lastUpdateCheck cleared,
-# versionFirstLaunch back-dated (the grace day skipped, a check due), BatteryPulse opened again;
-# then W-13's update line (the first automatic check runs 20 s after launch), at most 2 minutes.
-# stats, 10 minutes after that line (a background wait): scripts/release-stats.swift, v0.7.1's
-# count. On failed, noCounter or no line it prints the logged code.
-step_count_check() {
-  session_only D3 count-check
-  local frequency since waited=0 line
-  use_section 20-count "The version count (W-13)"
-  case "${1:-}" in
-    "")
-      frequency="$(defaults read "$BUNDLE_ID" updateFrequency 2>/dev/null || echo "default")"
-      [ "$frequency" != never ] || fail "Check for updates is Never: set it to anything else in BatteryPulse's Settings (his yes), then count-check again"
-      quit_app
-      defaults delete "$BUNDLE_ID" lastCountedVersion 2>/dev/null || true
-      defaults delete "$BUNDLE_ID" lastUpdateCheck 2>/dev/null || true
-      defaults write "$BUNDLE_ID" versionFirstLaunch -date "2026-01-01 00:00:00 +0000"
-      since="$(clock)"
-      echo "$since" >"$WORK/count.time"
-      launch_plain
-      while [ "$waited" -lt 120 ]; do
-        sleep 10
-        waited=$((waited + 10))
-        log_since "$since" "$UPDATE_PREDICATE" "$LOGS/count.ndjson" >/dev/null
-        line="$(messages "$LOGS/count.ndjson" | grep -i -E 'counted|nocounter|count' | head -1 || true)"
-        [ -z "$line" ] || break
-      done
-      out "- count-check at $since (Check for updates: $frequency): ${line:-no update line within 2 minutes}"
-      case "$line" in
-        *ounted*) echo "counted: in 10 minutes, $SCRIPT count-check stats (wait in the background: $SCRIPT wait 9, twice)" ;;
-        *oCounter*) echo "noCounter: the asset is missing: the cloud session runs the gh release upload release.yml's check names, then count-check again" ;;
-        *) echo "no counted line: $(messages "$LOGS/count.ndjson" | tail -3)" ;;
-      esac
-      ;;
-    stats)
-      [ -f "$WORK/count.time" ] || fail "first: $SCRIPT count-check"
-      sleep_until $(($(date -j -f '%Y-%m-%d %H:%M:%S' "$(cat "$WORK/count.time")" +%s 2>/dev/null || date +%s) + 600))
-      (cd "$ROOT" && xcrun swift scripts/release-stats.swift) >"$LOGS/release-stats.txt" 2>&1 ||
-        out "- release-stats failed: $(tail -1 "$LOGS/release-stats.txt")"
-      out "- release-stats (10 minutes after the check):"
-      # Newest first: the header, its rule, then 0.7.1's row.
-      head -3 "$LOGS/release-stats.txt" >"$LOGS/release-stats-071.txt" || true
-      out_block "$LOGS/release-stats-071.txt"
-      ask D3-count
-      ;;
-    *) fail "usage: $SCRIPT count-check [stats]" ;;
-  esac
-}
-
 # MARK: - The dry run (CI on Linux)
 
 # dry-run: Session R's bookkeeping on any machine, in a folder of its own, with nothing of the Mac:
@@ -5236,7 +6431,8 @@ step_count_check() {
 # the change record and its restored lines; the logged day's fence and its day-end; the summary's
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
-  local problems=0 id session setting report printed feed facts counts=""
+  local problems=0 id session setting report printed feed facts counts="" starts runbook section bytes status other
+  local wanted missing name names found file want got
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -5245,7 +6441,7 @@ dry_run() {
     fi
   }
   mkdir -p "$WORK" "$SECTIONS" "$LOGS"
-  for session in R C H D3 F; do
+  for session in R L H D3; do
     SESSION="$session"
     for id in $(questions_list); do
       if question "$id" >/dev/null; then :; else check fail "$session's question $id has no text"; fi
@@ -5255,12 +6451,14 @@ dry_run() {
   SESSION=R
   check ok "every session's questions resolve ($counts)"
   echo "Session R's questions: $(questions_list | tr '\n' ' ')"
-  for setting in app bp-settings bp-support widget-data remembered-devices widget-languages history; do
+  for setting in app bp-settings bp-support widget-data remembered-devices widget-languages history \
+    app-language has-seen-welcome bp-window-style sentinel-accessories sentinel-devices; do
     [ "$(restore_how "$setting")" = script ] && check ok "$setting comes back by the script" ||
       check fail "$setting should come back by the script"
   done
-  for setting in app-language widget-style dim-widgets text-size increase-contrast reduce-transparency 24-hour \
-    open-at-login bluetooth-accessory widget-choices charge-limit desktop-widgets appearance wallpaper; do
+  for setting in widget-style dim-widgets text-size increase-contrast reduce-transparency 24-hour \
+    open-at-login bluetooth-accessory widget-choices charge-limit desktop-widgets appearance wallpaper \
+    keyboard-navigation reduce-motion cross-fade show-borders liquid-glass; do
     [ "$(restore_how "$setting")" != script ] && check ok "$setting comes back by the session ($(restore_phase "$setting"))" ||
       check fail "$setting has no way back for the session"
   done
@@ -5313,10 +6511,32 @@ dry_run() {
   if has_cyrillic "$(cat "$report")"; then check fail "the report has Russian text"; else check ok "the report is English"; fi
   (privacy_lint "$report" >/dev/null 2>&1) && check ok "the privacy lint passes a clean report" ||
     check fail "the privacy lint refused a clean report"
+  # T-1 item 2: these two forms are Session A's paraphrase of pmset -g battlimit, not its verbatim
+  # text, which only A-2's sample brings (the look shoot saves it as samples/<tag>-battlimit.txt,
+  # named by the read alone). Committed beside A-2's fixtures, it takes the number its policy
+  # decodes to, A-2's parser's and not battlimit_value's (powerd-charging-<n or none>-battlimit.txt,
+  # as powerd-charging-<n>.plist), and must read as that number: a name from battlimit_value's own
+  # reading would pass any misread. Until one is there, the parse stays unverified, for A-2 to close.
   [ "$(battlimit_value <(printf ' Battery level limits:\n  chargeSocLimitSoc = 80\n'))" = 80 ] &&
-    check ok "battlimit's chargeSocLimitSoc reads as the limit" || check fail "battlimit's value isn't read"
-  [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none" ||
+    check ok "battlimit's chargeSocLimitSoc reads as the limit [Session A's paraphrase]" || check fail "battlimit's value isn't read"
+  [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none [Session A's paraphrase]" ||
     check fail "no limit didn't read as none"
+  found=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    found=$((found + 1))
+    want="$(basename "$file" | sed -E -n 's/^powerd-charging-([0-9]+|none)(-[A-Za-z0-9.]+)*-battlimit\.txt$/\1/p')"
+    got="$(battlimit_value "$file")"
+    if [ -z "$want" ]; then
+      check fail "battlimit's verbatim $(basename "$file") isn't named powerd-charging-<the number its policy decodes to, or none>-battlimit.txt"
+    elif { [ "$want" = none ] && [ -z "$got" ]; } || { [ -n "$got" ] && [ "$got" = "$want" ]; }; then
+      check ok "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, the number its policy decodes to"
+    else
+      check fail "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, not $want, the number its policy decodes to: battlimit_value misreads it"
+    fi
+  done < <(find "$ROOT/Tests/BatteryCoreTests/Fixtures" "$HERE/sessions" -type f -name 'powerd-charging-*battlimit*.txt' 2>/dev/null | sort)
+  [ "$found" -gt 0 ] ||
+    echo "unverified: pmset -g battlimit's verbatim text: no A-2 sample beside its fixture yet (powerd-charging-<n or none>-battlimit.txt, named by the number its policy decodes to), so the forms above are Session A's paraphrase (T-1 item 2)"
   # The feed's facts on W-5's format (WidgetFeed.encoded: compact, sorted keys, dates in seconds).
   feed="$WORK/feed.json"
   printf '%s' '{"day":{"batteryWatts10":[null,-52,null],"percent":[null,81,80],"plugged":[null,false,false],"start":1730800800,"step":900,"temperature10":[null,301,null]},"devices":[{"deviceClass":"iPhone","key":"0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d","name":"Phone","percent":64,"readAt":1730801400,"state":"charging"},{"key":"9f8e7d6c5b4a39281706f5e4d3c2b1a0","state":"unknown"}],"languages":["ru","en"],"readsDevices":true,"recordsHistory":true,"version":1,"writtenAt":1730801700}' >"$feed"
@@ -5352,6 +6572,81 @@ dry_run() {
     check fail "the 1103 count reads the log tool's own lines ($(chs_line 12:52:01 "$LOGS/dry-chs.ndjson"))"
   [ "$(percent_of 5711 5760)" = 99.15 ] && [ "$(percent_of - 5760)" = - ] && check ok "capacity's ratio reads as the plan's 99.15 %" ||
     check fail "capacity's ratio is wrong"
+  # T-1 item 7: the session's gallery widgets come back only by the app's counts against prepare's.
+  printf '%s\n' \
+    '{"timestamp":"2026-11-06 19:28:20.101010+0300","processImagePath":"/Applications/BatteryPulse.app/Contents/MacOS/BatteryPulse","eventMessage":"Placed widgets: 1 in all, 1 Battery, 0 Accessories, 0 History, 0 iPhone & iPad"}' \
+    '{"timestamp":"2026-11-06 19:28:33.101010+0300","processImagePath":"/Applications/BatteryPulse.app/Contents/MacOS/BatteryPulse","eventMessage":"Placed widgets, for the widget feed: 2 in all, 1 Battery, 0 Accessories, 0 History, 1 iPhone & iPad"}' \
+    '{"count":2,"finished":1}' >"$LOGS/dry-placed.ndjson"
+  [ "$(placed_counts_in "$LOGS/dry-placed.ndjson")" = "2 1 0 0 1" ] &&
+    check ok "the app's counts read from its last Placed widgets line (the feed writer's, as AP71's day logged it)" ||
+    check fail "the Placed widgets line misread ($(placed_counts_in "$LOGS/dry-placed.ndjson"))"
+  placed_record prepare "1 1 0 0 0"
+  step_change desktop-widgets "his: 1 Battery" "the gallery's: 1 iPhone & iPad" >/dev/null
+  if (step_restored desktop-widgets "the session's word" >/dev/null 2>&1); then check fail "restored took desktop-widgets on the session's word"; else
+    check ok "desktop-widgets never comes back on the session's word"
+  fi
+  placed_record end "2 1 0 0 1"
+  widgets_verdict >/dev/null
+  step_summary end >"$LOGS/dry-summary-end.txt"
+  grep -q '^ALERT desktop-widgets: iPhone & iPad 1, prepare 0: 1 the session added stayed' "$LOGS/dry-summary-end.txt" && ! is_restored desktop-widgets &&
+    check ok "a count above prepare's reads as stayed: an ALERT for that kind, and desktop-widgets not back" ||
+    check fail "a count above prepare's didn't read as stayed ($(grep desktop-widgets "$LOGS/dry-summary-end.txt" | head -2 | tr '\n' ' '))"
+  grep -q 'iPhone & iPad 1, prepare 0' "$WORK/sections/96-widgets.md" && check ok "the report's section says what stayed, by kind and count" ||
+    check fail "the report's section misses what stayed"
+  placed_record check-1 "1 0 0 0 1"
+  # Each output is read whole first: grep -q under pipefail would stop its writer (status 141).
+  printed="$(placed_lines)"
+  [ "$(grep -c '^ALERT desktop-widgets' <<<"$printed")" = 2 ] && grep -q 'Battery 0, prepare 1: 1 of his own gone' <<<"$printed" &&
+    check ok "a count below prepare's reads as one of his own gone, each kind its own ALERT" || check fail "a count below prepare's isn't an ALERT ($printed)"
+  placed_record check-2 "1 1 0 0 0"
+  widgets_verdict >/dev/null
+  printed="$(step_summary end)"
+  is_restored desktop-widgets && ! grep -q '^ALERT desktop-widgets' <<<"$printed" && grep -q '^WIDGETS back at prepare' <<<"$printed" &&
+    check ok "counts back at prepare's record desktop-widgets back, by the script" || check fail "counts back at prepare's didn't record desktop-widgets back"
+  # The section is written anew from placed.tsv at each read: every read once, in words.
+  [ "$(grep -c '^- end (' "$WORK/sections/96-widgets.md")" = 1 ] && grep -q '^- check-2 (.*): 1 in all: 1 Battery' "$WORK/sections/96-widgets.md" &&
+    check ok "the report's section lists each read once, in words" || check fail "the report's section repeats a read or misses one"
+  # He keeps the gallery's widgets (R-keep-widgets y): a count above prepare's is KEPT, on his word.
+  sleep 1
+  step_change desktop-widgets "his: 1 Battery" "the gallery's: 1 History" >/dev/null
+  step_answer --by person R-keep-widgets y >/dev/null
+  placed_record check-4 "2 1 0 1 0"
+  printed="$(widgets_verdict)"
+  grep -q '^desktop-widgets: back' <<<"$printed" && grep -q '^- KEPT desktop-widgets: History 1, prepare 0' <<<"$printed" &&
+    ! grep -q 'ALERT' <<<"$printed" && check ok "a count above prepare's that he keeps (R-keep-widgets y) is KEPT, back on his word" ||
+    check fail "a kept widget didn't read as KEPT ($(tr '\n' ' ' <<<"$printed"))"
+  step_answer --by person R-keep-widgets n >/dev/null
+  : >"$PLACED"
+  placed_record prepare unknown
+  placed_record check-3 "1 1 0 0 0"
+  printed="$(placed_lines)"
+  grep -q '^ALERT desktop-widgets: prepare.s counts of the placed widgets are unknown' <<<"$printed" &&
+    check ok "unknown counts at prepare confirm nothing: an ALERT" || check fail "unknown counts at prepare didn't alert"
+  # G8-1's verdicts from the reads' table (the look shoot's step 2).
+  SESSION=L
+  printf '%s\n' \
+    "hold$TAB$(clock)${TAB}ac${TAB}80${TAB}80${TAB}80${TAB}yes${TAB}1210 bytes${TAB}not run" \
+    "second$TAB$(clock)${TAB}ac${TAB}none$TAB-$TAB-${TAB}no${TAB}1210 bytes${TAB}not run" \
+    "full$TAB$(clock)${TAB}ac${TAB}none$TAB-$TAB-${TAB}no${TAB}none${TAB}not run" \
+    "battery-1min$TAB$(clock)${TAB}battery${TAB}none$TAB-$TAB-${TAB}no${TAB}none${TAB}not run" \
+    "battery-6min$TAB$(clock)${TAB}battery${TAB}none$TAB-$TAB-${TAB}no${TAB}none${TAB}not run" \
+    "plugin-5s$TAB$(clock)${TAB}ac${TAB}none$TAB-$TAB-${TAB}no${TAB}none${TAB}not run" \
+    "plugin-1min$TAB$(clock)${TAB}ac${TAB}80${TAB}80${TAB}80${TAB}yes${TAB}1210 bytes${TAB}not run" >"$LIMIT_TABLE"
+  limit_verdicts >/dev/null
+  [ "$(answer_of G8-1-hold)" = y ] && [ "$(answer_of G8-1-second)" = y ] && [ "$(answer_of G8-1-full)" = y ] &&
+    [ "$(answer_of G8-1-battery)" = y ] && [ "$(answer_of G8-1-plugin)" = y ] && [ "$(answer_of L-samples)" = 3 ] &&
+    check ok "G8-1's verdicts read the reads: the hold, a second limit, 100 %, battery and the plug-in" ||
+    check fail "G8-1's verdicts misread the reads ($(for id in hold second full battery plugin; do printf '%s=%s ' "$id" "$(answer_of "G8-1-$id")"; done))"
+  printf '%s\n' "hold$TAB$(clock)${TAB}ac${TAB}80${TAB}80$TAB-${TAB}no${TAB}1210 bytes${TAB}not run" >"$LIMIT_TABLE"
+  limit_verdicts >/dev/null 2>&1
+  [ "$(answer_of G8-1-hold)" = unsure ] && grep -q '^G8-1-hold' "$BATCH" &&
+    check ok "no app line at the hold is unsure, for his batch, never a no" || check fail "no app line at the hold wasn't unsure"
+  [ "$(limit_number_of "Charge Limit read: manualChargeLimit, 85 %, from powerd")" = 85 ] && [ -z "$(limit_number_of "Charge Limit: noPolicy")" ] &&
+    check ok "the app's line gives its number, and none without one [the line's words unverified until A-2's]" ||
+    check fail "the app's line's number is misread"
+  SESSION=R
+  [ "$(catalog_ru "Nonexistent key for the dry run")" = "Nonexistent key for the dry run" ] && [ "$(catalog_ru Overview)" != Overview ] &&
+    check ok "catalog_ru reads a key's Russian from the catalog, and keeps a key without one" || check fail "catalog_ru misreads the catalog"
   # The capture's keys where macOS 27 keeps them (plutil is macOS's: a Mac's dry run reads them).
   feed="$ROOT/Tests/BatteryCoreTests/Fixtures/m5-macos27-charge-limit.plist"
   if command -v plutil >/dev/null 2>&1; then
@@ -5367,14 +6662,44 @@ dry_run() {
     if question "$id" >/dev/null; then :; else check fail "the widget name behind $id has no step 3 question"; fi
   done
   check ok "every widget name has its step 3 question"
-  # The start sentence prints SESSION-R.md up to "The short sessions" (start-session-r.sh's sed)
+  # Every start line prints one runbook section by section.sh (PLAN.md §6.0 rule 1, T-1 item 4),
   # through the Bash tool, which cuts an output past 30,000 characters (a whole runbook printed at
-  # once was too long for 0.6.2's after-publishing check): its bytes, an upper bound of its
-  # characters, stay under 28,500.
-  printed="$(sed "/^## The short sessions/,\$d" "$HERE/SESSION-R.md" 2>/dev/null | wc -c | tr -d ' ')"
-  [ "${printed:-0}" -gt 1000 ] && [ "$printed" -lt 28500 ] &&
-    check ok "Session R's start prints $printed bytes of SESSION-R.md, under 28,500" ||
-    check fail "Session R's start prints ${printed:-no} bytes of SESSION-R.md: keep it under 28,500"
+  # once was too long for 0.6.2's after-publishing check): each section PLAN.md's start lines and
+  # start-session.sh name prints alone, its heading first and no other, under 28,500 bytes (an
+  # upper bound of its characters).
+  starts="$({
+    sed -n 's/.*section\.sh) [^ ]* \(SESSION-[LR]\.md\) \([^,]*\), then follow only what it prints.*/\1 \2/p' "$HERE/PLAN.md"
+    sed -n 's/.*runbook=\(SESSION-[LR]\.md\) section="\([^"]*\)".*/\1 \2/p' "$HERE/start-session.sh"
+  } | sort -u)"
+  [ "$(grep -c . <<<"$starts")" -ge 4 ] && check ok "the start lines name $(grep -c . <<<"$starts") runbook sections" ||
+    check fail "the start lines name too few runbook sections ($(tr '\n' ';' <<<"$starts"))"
+  while read -r runbook section; do
+    [ -n "$runbook" ] || continue
+    printed="$(bash "$HERE/section.sh" --worktree "$runbook" "$section" 2>&1 </dev/null)" || {
+      check fail "section.sh prints no section \"$section\" of $runbook ($(head -1 <<<"$printed"))"
+      continue
+    }
+    bytes="$(printf '%s\n' "$printed" | wc -c | tr -d ' ')"
+    [ "$(head -1 <<<"$printed")" = "## $section" ] && [ "$(grep -c '^## ' <<<"$printed")" = 1 ] &&
+      [ "$bytes" -gt 300 ] && [ "$bytes" -lt 28500 ] &&
+      check ok "the start of \"$section\" prints that section of $runbook alone, $bytes bytes" ||
+      check fail "the start of \"$section\" prints $bytes bytes of $runbook, or more than its section: one section, under 28,500"
+  done <<<"$starts"
+  # The sections a start section sends the session to read, each a heading of its runbook.
+  for wanted in "SESSION-L.md|Rules|Privacy|Decisions you make alone|L0:|L1:|L2:|L3:|L4:|L5:|If the session restarts or compacts|Answers" \
+    "SESSION-R.md|Rules|Privacy|Decisions you make alone|R0:|R1:|R2:|R3:|If the session restarts or compacts|Answers"; do
+    runbook="${wanted%%|*}"
+    missing=""
+    IFS='|' read -r -a names <<<"${wanted#*|}"
+    for name in "${names[@]}"; do grep -q "^## $name" "$HERE/$runbook" || missing="$missing \"$name\""; done
+    [ -z "$missing" ] && check ok "$runbook has every section its start sections name" ||
+      check fail "$runbook lacks the sections$missing, which its start sections name"
+  done
+  bash "$HERE/section.sh" --worktree SESSION-R.md "No such section" >/dev/null 2>&1 && status=0 || status=$?
+  bash "$HERE/section.sh" --worktree PLAN.md R8 >/dev/null 2>&1 && other=0 || other=$?
+  [ "$status" = 1 ] && [ "$other" = 2 ] &&
+    check ok "section.sh refuses a heading its runbook lacks (1) and a file that is no runbook (2)" ||
+    check fail "section.sh's refusals are wrong (a missing heading $status, not 1; another file $other, not 2)"
   rm -rf "$WORK"
   if [ "$problems" -gt 0 ]; then
     echo "dry run: $problems broken rule(s)" >&2
@@ -5387,61 +6712,62 @@ dry_run() {
 
 step_help() {
   case "$SESSION" in
-    C)
-      cat <<EOF
-usage: $SCRIPT <command> [arguments]          (the Charge limit capture; SESSION-R.md, "Charge limit")
+    L)
+      cat <<EOF2
+usage: $SCRIPT <command> [arguments]          (the look shoot; SESSION-L.md is the runbook)
 
-  answer --by person C-yes y; charge-limit start (the adapter in, at least 5 points below the limit)
-  charge-limit hold (a background task: wait 9 until it ends); change charge-limit <n> 100, then the slider
-  by computer use (or --his-hand); charge-limit full; charge-limit wait100 (a background task);
-  the slider back; charge-limit back; restored charge-limit "<how>"; charge-limit stop; charge-limit check
-  then batch, send --dry-run, his C-send, send. Any time: status, note, shot, crop, attach, ui, judge, wait, help
-  (tools first builds ui and frames, which crop, attach, ui and judge need).
-EOF
+The start (he is there):
+  prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]   first: a clean start
+  answer --by person L-yes y (and L-usage, L-adapter); prepare (a background task: wait 9 until it ends): the
+  backup, the CI build L installed over his $BASE_VERSION, the tools, the app's counts of the placed widgets; a beep
+  preflight; main (before the one computer-use access request); ui access; prepare reads
+L1, the Charge Limit (G8-1), with him there for the beeps:
+  change charge-limit <his> <n>, the slider by computer use, charge-limit set <n>; charge-limit hold (again
+  between step 3's screens until HELD; with no screen left, hold wait as a background task); then, with him there,
+  charge-limit read second (a limit above the charge); charge-limit set 100;
+  charge-limit set <n> (back to the hold's); charge-limit unplug (a background task: two beeps); the slider back
+  to his, charge-limit back; charge-limit verdicts
+L2, the screens, in English, then after app-language ru in Russian, then app-language back:
+  scene-shots <tag> (a Demo Mode scene chosen by ui press); pages <tag> [<page>...]; screen <name> [main|front|popover];
+  window-style clear | back (Q8-4); welcome first, welcome back (A-5); report-check (A-6); sentinel place, sentinel
+  check (P-1); help-link (A-7)
+L3, the weak adapter (only with L-adapter y): weak-adapter in (a background task); weak-adapter out
+L4: restore end, each RESTORE item, widgets-check (the app's counts against prepare's), summary end
+L5: batch, send --dry-run, his L-send, send
+While a background task runs: wait [<minutes, 1-9>] in the foreground, again until it ended.
+Any time: status, note, change, restored, shot, crop, front, attach, unattach, ui, measure, judge, faults, help.
+EOF2
       ;;
     H)
-      cat <<EOF
+      cat <<EOF2
 usage: $SCRIPT <command> [arguments]          (the hold watch; SESSION-R.md, "Hold watch")
 
   answer --by person H-yes y; hold-watch start (the adapter in, the lid open); in the morning: hold-watch morning,
-  judge H-hold; then send --dry-run, his H-send, send. Any time: status, note, help.
-EOF
+  judge H-hold; then batch, send --dry-run, his H-send, send. Any time: status, note, help.
+EOF2
       ;;
     D3)
-      cat <<EOF
+      cat <<EOF2
 usage: $SCRIPT <command> [arguments]          (after publishing; SESSION-R.md, "After publishing")
 
   tools (ui and frames, first); answer --by person D3-yes y; main (before computer use asks for access); ui access;
-  proof P1 --image <png> <x> <y>; widget <name> x y w h; desktop-spot ...;
-  proof P11; after before; Check for Updates, Install and Relaunch (ui press); after after (it runs feed check;
-  then judge each D3-*); capacity after; count-check and count-check stats only if v0.7.0's week-later count read 0;
-  after popover; then batch, send --dry-run, his D3-send, send.
+  proof P1 --image <png> <x> <y>; widget <name> x y w h; desktop-spot ...; proof P11; after before; Check for
+  Updates, Install and Relaunch (ui press); after after (it runs feed check); screen report-problem front; help-link;
+  then judge each D3-*; capacity after; after popover; then batch, send --dry-run, his D3-send, send.
   Any time: status, note, shot, crop, front, attach, ui, judge, wait, help.
-EOF
-      ;;
-    F)
-      cat <<EOF
-usage: $SCRIPT <command> [arguments]          (the short feed check; SESSION-R.md, "Feed check")
-
-  answer --by person F-yes y (and F-usage, F-keep-widgets); prepare (a background task: wait 9 until it ends);
-  preflight; main; proof P1 ...; widget <name> x y w h; desktop-spot ...; feed before;
-  placed second before; install U; placed second 1; placed second 5; placed second compare;
-  gallery <name>; feed history; feed cold; language ru | back; edit-shot <tag> [<widget>];
-  click-widget history | device; faults; restore end; summary end; batch; send --dry-run, his F-send, send.
-  Any time: status, note, change, restored, shot, crop, front, attach, ui, measure, judge, wait, help.
-EOF
+EOF2
       ;;
     *)
-      cat <<EOF
-usage: $SCRIPT <command> [arguments]          (Session R, hands-free; SESSION-R.md is the runbook)
+      cat <<EOF2
+usage: $SCRIPT <command> [arguments]          (Session R8, hands-free; SESSION-R.md is the runbook)
 
 The start (on the adapter, he is there):
   prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]   first: a clean start
-  answer --by person R-yes y (and R-back, R-keep-ax, R-keep-widgets, R-usage)
-  prepare [--fresh-backup]   the backup into ~/bp-071/R, the builds (start, base, U, F), the tools, v0.6.2 in
-                             place; a beep
-  prepare reads              the Charge Limit, 24-hour, Open at login, Check for updates, Window to open, the
-                             languages, the appearance; the panes' shots for the two style settings; pluginkit
+  answer --by person R-yes y (and R-back, R-keep-ax, R-keep-widgets, R-limit, R-usage)
+  prepare [--fresh-backup]   the backup into ~/bp-080/R, the builds (start, U, F), the tools, the app's counts of
+                             the placed widgets, his $BASE_VERSION left for step 2; a beep
+  prepare reads              the Charge Limit, 24-hour, Open at login, Keyboard navigation, Check for updates,
+                             Window to open, the languages, the appearance; the panes' shots; pluginkit
   proof P1 --image <png> <x> <y> | P6 | P7 | P8 | P11 | <P#> pass|fail <note>
   widget <name> <x> <y> <w> <h> | widget <name> none (names: $WIDGET_NAMES)
   desktop-spot <x> <y> | --image <png> <x> <y>
@@ -5449,24 +6775,30 @@ The start (on the adapter, he is there):
   preflight                  the checks, P7 P8 P6 P11, the Claude desktop app, pending macOS updates
   arm open; mark away        the arm window, then the GUI phase (no sound from here until his day-end)
 The GUI phase (heartbeat <step and expected time> after each step, at least every 10 minutes):
-  capacity start; menu-bar-shots before | after; placed first|second before | 1 | 5 | compare;
-  install base | U; whats-new [ru]; feed before | history | cold | demo-start | demo-end | reads-on | reads-off |
-  cleared; gallery <name>; edit-shot <tag> [<widget>]; language ru | back
-  look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour | text-size
-  tick; count-toggle; tree [ru]; click-widget quit|running|accessories|health|main|compact|history|device
-  accessories-watch disconnect|reconnect; demo-shots [ru]; front <name>; welcome; raw-history rc; menubar;
-  wp18 previews|timing; pane <$(tr ' ' '|' <<<"$PANES")>; open-app Xcode | TextEdit | "Accessibility Inspector"
+  capacity start; feed before; placed his before | 1 | 5 | compare; install U; whats-new rc [ru]
+  0.8's steps: app-tree <surface> [ru]; tree [ru]; keys walk <surface> [<n>] | keys <key> [--on <text>];
+  window-style standard|frosted | back; appearance-set light|dark|back; display-shots <tag>;
+  menubar [contrast | transparency] (with that option on); app-language ru | back; pages <tag> [<page>...];
+  screen <name> [main|front|popover]; charge-limit set|hold [wait]|read|back; report-check;
+  sentinel place | check [accessories|devices]; help-link; wp18 previews|timing
+  step 11c: install start; placed 062 before | 1 | 5 | compare; whats-new 062 [ru]; gallery <name>;
+  feed history | cold | demo-start | demo-end | reads-on | reads-off | cleared; edit-shot <tag> [<widget>];
+  language ru | back; look <always|auto|nc> <default|dark|clear|tinted> | look contrast | transparency | 12-hour |
+  text-size; tick; count-toggle; click-widget quit|running|accessories|health|main|compact|history|device;
+  accessories-watch disconnect|reconnect; demo-shots [ru]; front <name>; welcome; raw-history rc; menu-bar-shots
+  before | after; pane <$(tr ' ' '|' <<<"$PANES")>; open-app Xcode | TextEdit | "Accessibility Inspector"
   measure <id> blank|same|differs|contrast <arguments>; judge <id> <answer> [--unsure] [note]
   change <setting> <original> <new> (before any change by computer use or AX); restored <setting> <how>
   ui <command...>            the hands (ui.swift's usage), through the script only
   restore gui; summary; ready (last: the arm window starts the logged day)
 The day's end (on his "day-end"):
-  day-end; plug (his two beeps); capacity day-end; f12 rate; install F; f12 before; f12 after; batch;
-  send --dry-run; his R-send; send; restore end; summary end
+  day-end; plug (his two beeps); capacity day-end; Q8-6's optional listen on RC-U (app-language ru | back);
+  f12 rate; install F; f12 before; f12 after; batch; send --dry-run; his R-send; send; restore end; each RESTORE
+  item; widgets-check; summary end; send again (his yes stands: R.md gains the widgets' counts after the restore)
 While a background task runs: wait [<minutes, 1-9>] in the foreground, again until it ended.
 Any time: status, note, shot, crop, attach, unattach, faults, help; dry-run anywhere (CI); capacity <tag> by hand
-from the checkout, without a session (W-17 item 18).
-EOF
+from the checkout, without a session (P71's W-17 item 18).
+EOF2
       ;;
   esac
 }
@@ -5489,8 +6821,9 @@ if [ "$COMMAND" = dry-run ]; then
   exit $?
 fi
 # The start's clean start comes before every fence: an earlier attempt's ready would stop it, and
-# it moves that aside (step_attempt refuses while that attempt's arm window runs).
-if [ "$SESSION" = R ] && [ "$COMMAND" = prepare ] && [ "${1:-}" = attempt ]; then
+# it moves that aside (step_attempt refuses while that attempt's arm window runs). The look shoot's
+# too: an earlier attempt's restored lines would count its changes as back.
+if { [ "$SESSION" = R ] || [ "$SESSION" = L ]; } && [ "$COMMAND" = prepare ] && [ "${1:-}" = attempt ]; then
   shift
   run_step step_attempt "$@"
   exit 0
@@ -5501,20 +6834,20 @@ case "$COMMAND" in
     exit 0
     ;;
 esac
-# The maximum-capacity reading by hand (W-17 item 18, when no session runs): it only reads, and
-# keeps its capture in ~/bp-capacity.
+# The maximum-capacity reading by hand (P71's W-17 item 18, when no session runs): it only reads,
+# and keeps its capture in ~/bp-capacity.
 if [ "$COMMAND" = capacity ] && [ "$SESSION" = none ]; then
   step_capacity "$@"
   exit 0
 fi
 [ "$SESSION" != none ] ||
-  fail "$COMMAND runs from a session's frozen worktree (~/bp-071/R/run, C/run, H/run, D3/run or F/run): see SESSION-R.md"
+  fail "$COMMAND runs from a session's frozen worktree (~/bp-080/R/run, L/run, H/run or D3/run): see SESSION-R.md or SESSION-L.md"
 # From Session R's ready until his day-end, nothing acts, whichever session's script runs: the
 # reads, day-end and the arm itself are let through.
 case "$COMMAND:${1:-}" in
   status:* | day-end:* | arm:) ;;
   *)
-    if [ "$SESSION" = R ]; then attempt_fence; fi
+    if [ "$SESSION" = R ] || [ "$SESSION" = L ]; then attempt_fence; fi
     r_fence
     mkdir -p "$WORK"
     touch "$HEARTBEAT"
@@ -5526,8 +6859,9 @@ case "$COMMAND" in
     case "$SESSION:${1:-}" in
       R:reads) run_step step_prepare_reads ;;
       R:*) step_prepare_r "$@" ;;
-      F:*) step_prepare_f "$@" ;;
-      *) fail "prepare is Session R's or the feed check's: run it from ~/bp-071/R/run or ~/bp-071/F/run" ;;
+      L:reads) run_step step_prepare_reads_l ;;
+      L:*) step_prepare_l "$@" ;;
+      *) fail "prepare is Session R8's or the look shoot's: run it from ~/bp-080/R/run or ~/bp-080/L/run" ;;
     esac
     ;;
   answer) step_answer "$@" ;;
@@ -5555,7 +6889,7 @@ case "$COMMAND" in
   desktop-spot) run_step step_desktop_spot "$@" ;;
   proof) run_step step_proof "$@" ;;
   preflight)
-    rf_only preflight
+    rl_only preflight
     run_step step_preflight "$@"
     ;;
   placed) run_step step_placed "$@" ;;
@@ -5564,7 +6898,7 @@ case "$COMMAND" in
   capacity) run_step step_capacity "$@" ;;
   faults) run_step step_faults ;;
   front) run_step step_front "$@" ;;
-  welcome) run_step step_welcome ;;
+  welcome) run_step step_welcome "$@" ;;
   gallery) run_step step_gallery "$@" ;;
   edit-shot) run_step step_edit_shot "$@" ;;
   language) run_step step_language "$@" ;;
@@ -5577,7 +6911,7 @@ case "$COMMAND" in
   accessories-watch) run_step step_accessories_watch "$@" ;;
   demo-shots) run_step step_demo_shots "$@" ;;
   raw-history) run_step step_raw_history "$@" ;;
-  menubar) run_step step_menubar ;;
+  menubar) run_step step_menubar "$@" ;;
   menu-bar-shots) run_step step_menu_bar_shots "$@" ;;
   wp18) run_step step_wp18 "$@" ;;
   tools) run_step step_tools ;;
@@ -5590,7 +6924,20 @@ case "$COMMAND" in
   charge-limit) run_step step_charge_limit "$@" ;;
   hold-watch) run_step step_hold_watch "$@" ;;
   after) run_step step_after "$@" ;;
-  count-check) run_step step_count_check "$@" ;;
+  screen) run_step step_screen "$@" ;;
+  pages) run_step step_pages "$@" ;;
+  scene-shots) run_step step_scene_shots "$@" ;;
+  app-language) run_step step_app_language "$@" ;;
+  report-check) run_step step_report_check ;;
+  sentinel) run_step step_sentinel "$@" ;;
+  help-link) run_step step_help_link ;;
+  weak-adapter) run_step step_weak_adapter "$@" ;;
+  window-style) run_step step_window_style "$@" ;;
+  appearance-set) run_step step_appearance_set "$@" ;;
+  app-tree) run_step step_app_tree "$@" ;;
+  keys) run_step step_keys "$@" ;;
+  display-shots) run_step step_display_shots "$@" ;;
+  widgets-check) run_step step_widgets_check ;;
   *)
     step_help >&2
     exit 1
