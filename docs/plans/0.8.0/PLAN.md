@@ -965,7 +965,9 @@ order (§7.2), where it was fourth.
   again only while an allowed section has no listed kind (`WidgetFeed.needsPlacementAnswer`), so
   once every allowed section has one, the answer is never renewed: removing the last iPhone & iPad
   widget leaves the devices in the feed until BatteryPulse quits, which can be days for an app that
-  opens at login. AP71's feed was such a one (Appendix C).
+  opens at login. G7-17's measurement (Appendix C) shows WidgetKit's answers are real, so an answer
+  asked again can take the section out. (AP71's feed held devices for another reason: a widget
+  Session F had left placed, which is T-1 item 7's.)
 - **Items:**
   1. **The decision in BatteryCore:** `WidgetPlacements` gains a renewal age of about an hour
      [estimate; `WidgetFeed.repairAge`, the feed's own hour, is the model], and
