@@ -31,7 +31,9 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     /// Capacity the battery can hold right now, as measured by the gauge
     /// (`BatteryData.FullChargeCapacity`; `AppleRawMaxCapacity` before macOS 27).
     public var fullChargeCapacityMAh: Int?
-    /// Gauge's nominal full-charge capacity; on Apple Silicon this backs "Maximum Capacity".
+    /// Gauge's nominal full-charge capacity, which BatteryPulse's maximum capacity compares with
+    /// the design capacity (``healthPercent``); System Settings' "Maximum Capacity" can differ from
+    /// that figure by a point or two.
     public var nominalChargeCapacityMAh: Int?
     public var designCapacityMAh: Int?
     public var cycleCount: Int?
