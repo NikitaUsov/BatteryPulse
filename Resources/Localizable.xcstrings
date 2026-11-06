@@ -1234,14 +1234,14 @@
         }
       }
     },
-    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge.": {
+    "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge. On the MacBook Air M5 sampled it reads 0x80 on battery and for the first seconds after plugging in.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд."
+            "value": "Битовое поле причин, по которым аккумулятор не заряжается; Apple не документирует эти биты. Бит 24 (0x01000000) установлен, пока Лимит зарядки удерживает заряд. На проверенном MacBook Air M5 поле равно 0x80 при работе от аккумулятора и в первые секунды после подключения адаптера."
           }
         }
       }

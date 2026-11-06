@@ -147,7 +147,7 @@ import Testing
             #expect(row.decoded == .bits(UInt64(Self.held), setBits: [24]), "\(row.key)")
             let summary = try #require(row.info?.summary)
             #expect(summary.hasPrefix("Bitfield of reasons the battery is not charging; Apple does not document"))
-            #expect(summary.hasSuffix("Bit 24 (0x01000000) is set while the Charge Limit holds the charge."))
+            #expect(summary.contains(" Bit 24 (0x01000000) is set while the Charge Limit holds the charge. "))
         }
     }
 

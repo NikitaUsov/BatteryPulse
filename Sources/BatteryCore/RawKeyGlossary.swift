@@ -538,12 +538,13 @@ public enum RawKeyGlossary {
         ("ChargerData.ChargingCurrent", Info(.milliamps, "Charge current the gauge is asking the charger for.")),
         ("ChargerData.ChargingVoltage", Info(.millivolts, "Per-cell charge voltage target the gauge requests.")),
         ("ChargerData.IsCharging", Info(.boolean, "Charger-side charging flag; mirrors top-level IsCharging.")),
-        // Bit 24 is SystemChargeLimit.heldBit (m5-macos27-charge-limit.plist).
+        // Bit 24 is SystemChargeLimit.heldBit (m5-macos27-charge-limit.plist). 0x80 is an
+        // observation, not a meaning: every on-battery capture and m5-macos27-plugged-in-10s.plist.
         (
             "ChargerData.NotChargingReason",
             Info(
                 .flags,
-                "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge."
+                "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge. On the MacBook Air M5 sampled it reads 0x80 on battery and for the first seconds after plugging in."
             )
         ),
         ("ChargerData.PMUConfiguration", Info(.milliamps, "Input current limit requested for the active adapter.")),

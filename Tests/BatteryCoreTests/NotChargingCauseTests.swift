@@ -204,6 +204,29 @@ import Testing
         #expect(line(try Fixture.m5OnBattery.snapshot()) == nil)
     }
 
+    // MARK: Raw Data
+
+    /// Raw Data's description of the reason keeps the Charge Limit's bit and adds what the M5's
+    /// captures show, 0x80 on battery and right after a plug-in, as an observation: bit 7 gets no
+    /// meaning, and neither does bit 12 or the charger's own inhibit reason.
+    @Test func rawDataObservesBit7WithoutAMeaning() throws {
+        let rows = RawSection.sections(for: try Fixture.m5PluggedIn10s.reading().rawCapture).flatMap(\.rows)
+        let reasons = rows.filter { $0.key.hasSuffix("ChargerData.NotChargingReason") }
+        #expect(reasons.count == 2)
+        for row in reasons {
+            #expect(row.decoded == .bits(0x80, setBits: [7]), "\(row.key)")
+            let summary = try #require(row.info?.summary)
+            #expect(summary.contains("Bit 24 (0x01000000) is set while the Charge Limit holds the charge."))
+            #expect(
+                summary.hasSuffix(
+                    " On the MacBook Air M5 sampled it reads 0x80 on battery and for the first seconds after plugging in."
+                ))
+            #expect(!summary.contains("Bit 7") && !summary.contains("Bit 12"))
+        }
+        let inhibit = try #require(rows.first { $0.key.hasSuffix("ChargerData.ChargerInhibitReason") })
+        #expect(inhibit.info?.summary == "Bitfield of reasons the charger itself is inhibited.")
+    }
+
     // MARK: Motion
 
     /// The cause is a part of the motion key, so the sentence that names it moves once when the
