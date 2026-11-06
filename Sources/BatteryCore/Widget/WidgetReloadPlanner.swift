@@ -30,10 +30,12 @@ import Foundation
 ///   ``immediateInterval``, the Battery kind's shared with its five above. A removal that waits
 ///   reloads at the first evaluation after the minimum (``pendingReloads(at:)``), never on a
 ///   timer of its own.
-/// - **A repair:** a write that replaced a feed the widgets couldn't use or that had aged
-///   (``WidgetFeed/Repair``) reloads the kinds that show it the same way (``written(_:at:)``): so
-///   "Open BatteryPulse to update" goes soon after BatteryPulse writes, not at the kind's own
-///   hourly or half-hourly refresh.
+/// - **A repair or an addition:** a write that replaced a feed the widgets couldn't use or that
+///   had aged (``WidgetFeed/Repair``), or that added a section they show (Record battery history
+///   or device reads turned on, a kind newly placed), reloads the kinds that show it the same way
+///   (``written(_:at:)``): so "Open BatteryPulse to update", or a state that waits for the
+///   section, goes soon after BatteryPulse writes, not at the kind's own hourly or half-hourly
+///   refresh.
 ///
 /// The app never reads a placed widget's configuration, so one plan serves every configuration
 /// and accepts the odd reload a widget doesn't need. Each kind's first evaluation is the value the
@@ -88,10 +90,13 @@ public struct WidgetReloadPlanner: Sendable {
         /// The feed was written in place of one the widgets couldn't use or that had aged
         /// (``WidgetFeed/Repair``).
         case repair
+        /// The feed was written with a section the kind shows that the one before left out
+        /// (``WidgetFeed/WriteEffect/added``).
+        case addition
     }
 
-    /// A kind to reload now, and why: a change of the feed it shows (``Reason/removal`` or
-    /// ``Reason/repair``).
+    /// A kind to reload now, and why: a change of the feed it shows (``Reason/removal``,
+    /// ``Reason/repair`` or ``Reason/addition``).
     public struct FeedReload: Sendable, Equatable {
         public var kind: WidgetKindID
         public var reason: Reason
@@ -340,10 +345,13 @@ public struct WidgetReloadPlanner: Sendable {
 
     /// The kinds that show what a write of the feed changed (``WidgetFeed/WriteEffect``) to
     /// reload now, as ``removal(of:at:)``'s do: with ``Reason/repair`` those that show the feed it
-    /// replaced (``WidgetFeed/Repair/readers``). Records the reloads; none for
-    /// ``WidgetFeed/WriteEffect/nothing``.
+    /// replaced (``WidgetFeed/Repair/readers``), and with ``Reason/addition`` those that show a
+    /// section it added. Records the reloads; none for ``WidgetFeed/WriteEffect/nothing``.
     public mutating func written(_ effect: WidgetFeed.WriteEffect, at date: Date) -> [FeedReload] {
         if let repair = effect.repair { wait(repair.readers, for: .repair) }
+        for section in WidgetFeed.Section.allCases where effect.added.contains(section) {
+            wait(section.readers, for: .addition)
+        }
         return pendingReloads(at: date)
     }
 

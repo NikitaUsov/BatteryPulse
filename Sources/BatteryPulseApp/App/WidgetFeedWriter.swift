@@ -33,8 +33,8 @@ enum AppWidgetFeed {
 /// that shows the widgets something their own timelines would show only later counts in
 /// ``changesWritten``, the one property anything observes: what the user removed, once the file
 /// is without it, and what a write brought (``WidgetFeed/WriteEffect``), a feed in place of one
-/// they couldn't use or that had aged. ``WidgetRefresher`` then reloads the kinds that show it
-/// (``takeChanges()``).
+/// they couldn't use or that had aged, or a section added. ``WidgetRefresher`` then reloads the
+/// kinds that show it (``takeChanges()``).
 /// Observable for that, and to be in the Settings pane's environment.
 @Observable
 final class WidgetFeedWriter {

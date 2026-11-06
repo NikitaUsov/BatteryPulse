@@ -12,8 +12,8 @@ import Synchronization
 /// - A feed that differs from the last one written only in `writtenAt` isn't written, unless the
 ///   caller says so (the routine write).
 /// - A write can say what it replaced, as the widget saw it (``writeReporting(_:unchanged:)``), so
-///   the kinds that would otherwise keep "Open BatteryPulse to update" until their own refresh
-///   reload.
+///   the kinds that would otherwise keep "Open BatteryPulse to update" or a missing section until
+///   their own refresh reload.
 ///
 /// Foundation alone, so it needs no pointer and no `unsafe`. Its calls block on the file system,
 /// so the app makes them off the main actor; one runs at a time. A final class rather than an

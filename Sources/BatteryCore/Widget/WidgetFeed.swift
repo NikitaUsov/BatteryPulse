@@ -295,6 +295,17 @@ extension WidgetFeed {
             }
         }
     }
+
+    /// Whether the feed holds `section`: the builder writes the history's series whenever it holds
+    /// the history, gaps and all, and the devices' list whenever it holds the devices, empty or
+    /// not. A feed whose setting is on but that leaves a section out was written while no kind that
+    /// shows it counted as placed.
+    public func holds(_ section: Section) -> Bool {
+        switch section {
+        case .history: day != nil || week != nil || daily != nil
+        case .devices: devices != nil
+        }
+    }
 }
 
 // MARK: - Writes
@@ -388,21 +399,28 @@ extension WidgetFeed {
 
     /// What a write shows the placed widgets that their own timelines would show only at their
     /// next refresh, up to an hour later: a feed in place of one they couldn't use or that had
-    /// aged. The kinds that show it then reload (``WidgetReloadPlanner/written(_:at:)``).
+    /// aged, and a section they show added. The kinds that show it then reload
+    /// (``WidgetReloadPlanner/written(_:at:)``).
     public struct WriteEffect: Sendable, Equatable {
         /// Why the widgets need a reload to leave the feed the write replaced, if they do.
         public var repair: Repair?
+        /// The sections the feed holds and the one it replaced didn't: Record battery history or
+        /// device reads turned on, or a kind that WidgetKit's answer now lists.
+        public var added: Set<Section>
 
-        public init(repair: Repair? = nil) {
+        public init(repair: Repair? = nil, added: Set<Section> = []) {
             self.repair = repair
+            self.added = added
         }
 
         /// Nothing a reload must show.
         public static let nothing = WriteEffect()
 
-        /// The effects of two writes, for the reloads that serve both: the larger repair.
+        /// The effects of two writes, for the reloads that serve both: the larger repair, and
+        /// every section added.
         public mutating func formUnion(_ other: WriteEffect) {
             if let next = other.repair, repair.map({ $0 < next }) ?? true { repair = next }
+            added.formUnion(other.added)
         }
     }
 
@@ -439,10 +457,12 @@ extension WidgetFeed {
     /// what a previous one left. A feed with a date too far ahead of this one's (a clock set back
     /// since) is one the widget turns down.
     public func effect(replacing previous: WidgetFeedState) -> WriteEffect {
+        let added = Set(Section.allCases.filter(holds))
         guard let old = previous.feed, (try? old.validate(now: writtenAt)) != nil else {
-            return WriteEffect(repair: .unusable)
+            return WriteEffect(repair: .unusable, added: added)
         }
-        return WriteEffect(repair: writtenAt.timeIntervalSince(old.writtenAt) >= Self.repairAge ? .outdated : nil)
+        let repair: Repair? = writtenAt.timeIntervalSince(old.writtenAt) >= Self.repairAge ? .outdated : nil
+        return WriteEffect(repair: repair, added: added.filter { !old.holds($0) })
     }
 
     /// The devices section a write would hold, but for the read times: what tells a change the
