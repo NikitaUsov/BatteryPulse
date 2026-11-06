@@ -2926,8 +2926,13 @@ step_preflight() {
   echo "runs once here, so every prompt comes now:"
   echo "RUN $SCRIPT ui idle; $SCRIPT ui guard; $SCRIPT shot preflight-family;$(if [ "$SESSION" = R ]; then echo " $SCRIPT heartbeat preflight;"; fi)"
   echo "RUN $SCRIPT measure / judge on one shot; $SCRIPT status"
+  # PLAN.md §6.0 rule 2: a menu-bar app has no Dock icon without a window, and computer use's
+  # access request can't name it then.
+  if [ ! -f "$WORK/main.time" ]; then
+    echo "DO (session): $SCRIPT main before computer use asks for access to BatteryPulse or acts in it (rule 2: its window gives it the Dock icon the request names)"
+  fi
   if [ "$SESSION" = L ]; then
-    echo "NEXT: $SCRIPT prepare reads, then the Charge Limit (SESSION-L.md, L1)"
+    echo "NEXT: $SCRIPT main, then the one computer-use access request, then $SCRIPT prepare reads and the Charge Limit (SESSION-L.md, L1)"
   else
     echo "NEXT: $SCRIPT arm open; $SCRIPT mark away; then R1, from capacity start and step 2"
   fi
@@ -3095,11 +3100,13 @@ widget_log_since() {
 
 # main: BatteryPulse's main window by a reopen event, placed on the right. Computer use finds a
 # menu-bar-only app only once it has a window (0.6.2's after-publishing check), so the session
-# calls this before its first computer-use action in BatteryPulse.
+# calls this before computer use asks for access to BatteryPulse and before its first computer-use
+# action in it (PLAN.md §6.0 rule 2); main.time records that it ran, which preflight checks.
 step_main() {
   app_running || launch_r
   open_main
   place_window
+  clock >"$WORK/main.time"
   echo "the main window: $(main_window_line)"
 }
 
