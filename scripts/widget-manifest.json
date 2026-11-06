@@ -93,6 +93,38 @@
         "type" : "AccessoriesWidgetIntent"
       },
       "kind" : "io.github.nikitausov.BatteryPulse.accessories"
+    },
+    {
+      "families" : [
+        "medium",
+        "large"
+      ],
+      "intent" : {
+        "parameters" : [
+          {
+            "name" : "period",
+            "values" : [
+              "day",
+              "week"
+            ]
+          },
+          {
+            "name" : "series",
+            "values" : [
+              "charge",
+              "batteryPower",
+              "temperature",
+              "capacityToDesign",
+              "cycleCount"
+            ]
+          },
+          {
+            "name" : "statistics"
+          }
+        ],
+        "type" : "HistoryWidgetIntent"
+      },
+      "kind" : "io.github.nikitausov.BatteryPulse.history"
     }
   ]
 }

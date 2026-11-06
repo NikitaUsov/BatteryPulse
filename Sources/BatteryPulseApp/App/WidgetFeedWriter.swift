@@ -224,7 +224,7 @@ final class WidgetFeedWriter {
             let level: OSLogType = changed ? .default : .debug
             Diagnostics.widget.log(
                 level: level,
-                "Placed widgets, for the widget feed: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories"
+                "Placed widgets, for the widget feed: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories, \(counts[.history] ?? 0, privacy: .public) History"
             )
         } catch {
             placements.recordFailure(at: .now)

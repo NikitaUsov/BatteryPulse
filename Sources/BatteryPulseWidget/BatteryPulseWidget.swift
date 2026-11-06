@@ -11,6 +11,7 @@ struct BatteryPulseWidgets: WidgetBundle {
     var body: some Widget {
         BatteryWidget()
         AccessoriesWidget()
+        HistoryWidget()
     }
 }
 
@@ -49,6 +50,23 @@ struct AccessoriesWidget: Widget {
         .configurationDisplayName("Accessories")
         .description("Batteries of your keyboard, mouse, trackpad and headphones.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+/// The History widget: the last 24 hours or 7 days of a reading, or the 90-day trend of the
+/// battery's health, from the feed the app writes, configured through ``HistoryWidgetIntent``.
+/// Medium and large; a family can be added later but never removed.
+struct HistoryWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: WidgetKindID.history.rawValue, intent: HistoryWidgetIntent.self, provider: HistoryTimelineProvider()
+        ) { entry in
+            HistoryWidgetRoot(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("History")
+        .description("Charge, power or temperature over the last day or week.")
+        .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
 #else

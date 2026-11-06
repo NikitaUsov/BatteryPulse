@@ -1572,6 +1572,18 @@
         }
       }
     },
+    "Charge, power or temperature over the last day or week.": {
+      "extractionState": "manual",
+      "comment": "Widget gallery: the History widget's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, мощность или температура за последние сутки или неделю."
+          }
+        }
+      }
+    },
     "Charge, time remaining and the details you choose.": {
       "extractionState": "manual",
       "comment": "Widget gallery: the Battery widget's description",
@@ -1836,6 +1848,18 @@
         }
       }
     },
+    "Choose History": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the History widget configuration's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать историю"
+          }
+        }
+      }
+    },
     "Choose what the Battery widget shows.": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: the Battery widget configuration's description",
@@ -1844,6 +1868,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите, что показывает виджет «Аккумулятор»."
+          }
+        }
+      }
+    },
+    "Choose what the History widget shows.": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: the History widget configuration's description",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, что показывает виджет «История»."
           }
         }
       }
@@ -6948,6 +6984,18 @@
         }
       }
     },
+    "Series": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: what the History widget charts (charge, battery power, temperature, capacity, cycle count)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показатель"
+          }
+        }
+      }
+    },
     "Service": {
       "extractionState": "manual",
       "comment": "Widget: Service Recommended where the full words do not fit one line beside the warning symbol",
@@ -7275,6 +7323,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Статус"
+          }
+        }
+      }
+    },
+    "Statistics": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: whether the large History widget shows the last 24 hours' figures",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статистика"
           }
         }
       }

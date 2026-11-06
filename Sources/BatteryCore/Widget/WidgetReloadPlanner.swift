@@ -15,6 +15,10 @@ import Foundation
 ///   until ``WidgetReloadPolicy/minimumInterval`` has passed since the kind's last reload.
 /// - **Accessories:** a connect or a disconnect reloads at once. A step of ``accessoryStep``
 ///   points waits until ``accessoryInterval`` has passed since the kind's last reload.
+/// - **History:** a plug change, the charging stretches its chart shades, at most once per
+///   ``historyInterval``; a change that waited reloads once the interval has passed, if the plug
+///   still differs from what the kind last showed. Its timeline refreshes hourly in between
+///   (``WidgetTimelinePlan/history(writtenAt:at:)``).
 ///
 /// The app never reads a placed widget's configuration, so one plan serves every configuration
 /// and accepts the odd reload a widget doesn't need. Each kind's first evaluation is the value the
@@ -30,6 +34,8 @@ public struct WidgetReloadPlanner: Sendable {
     /// In percentage points of any part of any accessory.
     static let accessoryStep = 10
     static let accessoryInterval: TimeInterval = 15 * 60
+    /// The least time between two reloads of the History kind.
+    static let historyInterval: TimeInterval = 60 * 60
 
     /// Why a kind reloads; logged as its case name.
     public enum Reason: String, Sendable, CaseIterable {
@@ -52,6 +58,8 @@ public struct WidgetReloadPlanner: Sendable {
         case connection
         /// A part of an accessory moved ``WidgetReloadPlanner/accessoryStep`` points.
         case level
+        /// The adapter was plugged in or out: the History kind's charging stretches.
+        case plug
     }
 
     /// What the Battery widget shows besides ``WidgetReloadPolicy``'s values, as of its last reload.
@@ -129,6 +137,11 @@ public struct WidgetReloadPlanner: Sendable {
     private var lastImmediateReload: Date?
     private var accessoriesShown: AccessoriesShown?
     private var lastAccessoryReload: Date?
+    /// Whether the History kind last showed the Mac on its adapter; `nil` before a reading that
+    /// says.
+    private var historyPlugged: Bool?
+    private var historyStarted = false
+    private var lastHistoryReload: Date?
 
     public init() {}
 
@@ -189,6 +202,29 @@ public struct WidgetReloadPlanner: Sendable {
         accessoriesShown = next
         lastAccessoryReload = date
         return reason
+    }
+
+    /// Why the History kind reloads for `snapshot` now, or `nil` when it waits; records the
+    /// reload. The first evaluation records `snapshot` and returns `nil`, and a reading that
+    /// doesn't say whether the adapter is connected changes nothing.
+    public mutating func history(_ snapshot: BatterySnapshot, at date: Date) -> Reason? {
+        let plugged = snapshot.isExternalPowerConnected
+        guard historyStarted else {
+            historyStarted = true
+            historyPlugged = plugged
+            return nil
+        }
+        guard let plugged else { return nil }
+        guard let shown = historyPlugged else {
+            historyPlugged = plugged
+            return nil
+        }
+        guard plugged != shown, Self.hasPassed(Self.historyInterval, since: lastHistoryReload, at: date) else {
+            return nil
+        }
+        historyPlugged = plugged
+        lastHistoryReload = date
+        return .plug
     }
 
     /// Whether `interval` has passed since `last`; with no `last`, or a clock set back before it,

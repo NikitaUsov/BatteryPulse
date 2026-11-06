@@ -82,6 +82,11 @@ struct WidgetTextBudgetTests {
         }
     }
 
+    /// "%@ per hour" with `value`, in `language`.
+    static func perHour(_ value: String, _ language: Language) throws -> [String] {
+        try [text("%@ per hour", language)].compactMap { $0?.replacingOccurrences(of: "%@", with: value) }
+    }
+
     static let stateKeys = WidgetStateWord.allCases.map(WidgetKeys.state)
     static let conditions: [WidgetCondition] = [.fair, .poor, .checkBattery, .serviceRecommended]
 
@@ -218,6 +223,37 @@ struct WidgetTextBudgetTests {
                 check(
                     oneLine(outdated, Budget.contentWidth(size)), outdated.last ?? "",
                     "a chart's old-data line, \(size)")
+            }
+        }
+        // The History widget, medium and large, the whole width: the chart's name beside its
+        // latest value, and in large the last 24 hours' figures as rows of a label and its value,
+        // each on one line.
+        for language in Language.allCases {
+            let f = try formatter(language)
+            for size in [WidgetSize.medium, .large] {
+                let place = Budget.contentWidth(size)
+                for series in HistoryWidgetSeries.allCases {
+                    let title = try choices([series.titleKey], language)
+                    let latest = series.valueLabel(series == .cycleCount ? 9_999 : -88.8, f)
+                    check(
+                        oneLine(title, after: Budget.width(latest) + Budget.gap(.medium), place),
+                        "\(title.last ?? "") \(latest)", "the History chart's header, \(size)")
+                }
+                let statistics = [
+                    (
+                        HistoryWidgetStatistic.Kind.averageDrain,
+                        try perHour(f.percent(99.9, fractionDigits: 1), language)
+                    ),
+                    (.onBattery, [f.duration(minutes: 23 * 60 + 59)]), (.chargingSessions, ["9,999"]),
+                ]
+                for (kind, values) in statistics where size == .large {
+                    let label = try choices([kind.labelKey], language)
+                    for value in values {
+                        check(
+                            oneLine(label, after: Budget.width(value) + Budget.gap(.medium), place),
+                            "\(label.last ?? "") \(value)", "a History figure, \(size)")
+                    }
+                }
             }
         }
         // The empty states: the Russian takes as many lines as the English, counted with the

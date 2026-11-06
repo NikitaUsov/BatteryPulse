@@ -56,6 +56,9 @@ struct WidgetWordTests {
             return
         }
         #expect(WidgetChartSummary.values.key == values)
+        for kind in HistoryWidgetStatistic.Kind.allCases {
+            #expect(kind.label.key == kind.labelKey, "\(kind)")
+        }
         for reason in HistoryWidgetEmptyReason.allCases {
             #expect(reason.message.key == reason.messageKey, "\(reason)")
         }

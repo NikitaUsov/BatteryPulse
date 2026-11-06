@@ -44,13 +44,17 @@ struct WidgetSourceTests {
     /// W-15: every root view draws in the entry's language, its words, locale and formatter, and
     /// every provider resolves it from the feed for each timeline and snapshot.
     @Test func theWidgetsDrawInTheFeedsLanguage() throws {
-        for path in ["BatteryPulseWidget/BatteryWidgetView.swift", "BatteryPulseWidget/AccessoriesWidgetView.swift"] {
+        for path in [
+            "BatteryPulseWidget/BatteryWidgetView.swift", "BatteryPulseWidget/AccessoriesWidgetView.swift",
+            "BatteryPulseWidget/HistoryWidgetView.swift",
+        ] {
             let code = try SourceScanner.file(path).code
             #expect(code.contains("formatter: entry.language.formatter"), "\(path)")
             #expect(code.contains(".widgetLanguage(entry.language)"), "\(path)")
         }
         for path in [
             "BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryPulseWidget/AccessoriesTimelineProvider.swift",
+            "BatteryPulseWidget/HistoryTimelineProvider.swift",
         ] {
             let code = try SourceScanner.file(path).code
             #expect(code.ranges(of: "await WidgetLanguageTable.current()").count == 2, "\(path)")
@@ -268,6 +272,10 @@ struct WidgetSourceTests {
         "AccessoriesWidgetIntent": [
             "mode": AccessoryWidgetMode.allCases.map(\.rawValue)
         ],
+        "HistoryWidgetIntent": [
+            "period": HistoryWidgetPeriod.allCases.map(\.rawValue),
+            "series": HistoryWidgetSeries.allCases.map(\.rawValue),
+        ],
     ]
 
     /// The body of the widget's `struct <type>`, where its parameters are declared.
@@ -287,7 +295,7 @@ struct WidgetSourceTests {
     @Test func eachChoiceMapsToItsMirror() throws {
         let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
         let intents = WidgetIntentManifest.shipping.kinds.compactMap(\.intent)
-        #expect(intents.count == 2)
+        #expect(intents.count == 3)
         for intent in intents {
             let intentBody = try Self.intentBody(intent.type, in: code)
             for parameter in intent.parameters {
@@ -364,6 +372,18 @@ struct WidgetSourceTests {
         #expect(
             try Self.parameterDefaults("AccessoriesWidgetIntent") == [
                 "mode": ".\(c.mode.rawValue)", "hideFullyCharged": "\(c.hidesFullyCharged)",
+            ])
+    }
+
+    /// The History widget's defaults are `HistoryWidgetConfiguration()`'s: the last 24 hours'
+    /// charge, with the statistics in large.
+    @Test func eachHistoryDefaultIsTheModels() throws {
+        let c = HistoryWidgetConfiguration()
+        #expect(c.period == .day && c.series == .charge && c.showsStatistics)
+        #expect(
+            try Self.parameterDefaults("HistoryWidgetIntent") == [
+                "period": ".\(c.period.rawValue)", "series": ".\(c.series.rawValue)",
+                "statistics": "\(c.showsStatistics)",
             ])
     }
 
