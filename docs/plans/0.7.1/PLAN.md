@@ -1675,8 +1675,14 @@ follow the chart's period: the last 24 hours under a 24-hour chart, the last 7 d
 chart and under the 90-day series. **Look 2:** 1 y; 2 **1**, "Updated 14:05", or the date when it
 isn't today; 3 y; 4 y; and the medium one-device layout (the most recently read, the lowest, one
 chosen) shows cycle count and temperature below maximum capacity, as the medium Battery widget
-shows its details; large and All unchanged. L-1 built the two proposals (Appendix C). Look 3 is
-still due.
+shows its details; large and All unchanged. L-1 built the two proposals (Appendix C). **Look 3**
+(2026-11-06, from the merged head's sheets, `look3-sheets-6cd0b6d…`): 1, laid out alike, and no
+space before % in either. The scanner's five "differs" (the medium one-device layout, 5 lines
+against 6) are its whole-width bands meeting the two columns: the pairs look alike.
+
+**Q71-1** (2026-11-06, when the session was due): **2**, the short feed check (§6.5, W-17 item 14),
+in place of the full session and its logged day. So §6.5's "What the notes then say" applies to the
+checks the feed check doesn't run, and D3 writes VERIFICATION's 0.7.1 rows from the F session.
 
 Already decided, and only signed off in the looks: Q-W2 (the two kinds; the 90-day trend), Q-W4
 (placed large widgets get the chart), Q-W8 (a click opens the widget's page), Q-W11 (device names
