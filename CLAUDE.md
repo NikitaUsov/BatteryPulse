@@ -33,7 +33,9 @@ through the App Store. Reference hardware: MacBook Air M5.
   (Bluetooth accessory batteries: model, parser, pseudonymized capture, alerts, report),
   `HistoryExport` (CSV/JSON), `CaptureRecorder` (`bpulse --record`), `LiveRefreshPolicy`
   (slower polls in Low Power Mode, under reduced resources or heat), `WindowLook`
-  (`WindowLookPolicy`), `ToneMap` (window styles), `SystemChargeLimit` (the Charge Limit's hold,
+  (`WindowLookPolicy`), `ToneMap` (window styles), `SettingsPageFit` (how tall a Settings pane,
+  or the welcome window's settings, grows before it scrolls: the shortest screen's visible height
+  less the window around it, never under a floor), `SystemChargeLimit` (the Charge Limit's hold,
   `BatterySnapshot.isAtSystemChargeLimit`; never the app's own "When charged to" alert,
   `AlertSettings.chargeLimit`), `MachineJSON` (`bpulse`'s JSON and Copy JSON, with
   `formatVersion` and ISO 8601 dates), `VersionCounter` (`VersionCounterPolicy`, the anonymous
@@ -47,8 +49,15 @@ through the App Store. Reference hardware: MacBook Air M5.
   Linux), `WidgetRoute` and `PageID` (the page a click opens; the `mainSelection` strings),
   `WidgetIntentManifest` (`scripts/widget-manifest.json`, the names that freeze),
   `WidgetReloadPolicy`, `WidgetReloadPlanner` and `WidgetPlacements` (which kind to reload when,
-  and whether it is placed) and `ReadCoalescer` (one read per burst of timeline requests). Must
-  stay free of Apple-only frameworks.
+  and whether it is placed), `ReadCoalescer` (one read per burst of timeline requests),
+  `WidgetFeed` (the feed: the small copy of the history the sandboxed widget can't read itself,
+  with BatteryPulse's languages and the two reading toggles; version 1, whose schema only gains
+  fields; its builder, sections by placed kind, the routine write once per 15-minute step, and the
+  widget's validating decoder with `WidgetFeedState`, what a read found (a feed, none, a rejection
+  or an errno); never Demo Mode's data, and the devices only once a kind that shows them joins
+  `Section.readers`) and `WidgetFeedStore` (its file, `Widget/feed.json` beside `History/` and
+  `Devices/`: the folder 0700, each write a 0600 temporary file renamed into place;
+  `homeRelativePath` is the widget entitlement's path). Must stay free of Apple-only frameworks.
 - `Sources/BatterySource` — the battery and accessory reads, its own library product: all the
   widget links besides BatteryCore and BatteryArt (no CryptoKit, no MobileDevice).
   `BatteryProvider` protocol (a read's `BatteryReadScope` is two decisions, `rereadsRegistry` and
@@ -79,7 +88,12 @@ through the App Store. Reference hardware: MacBook Air M5.
   language (`lastSeenLanguage`, a settings key since 0.7) the old extension ended and every kind
   reloaded; a widget's click reaches the app delegate's `application(_:open:)` as a
   `batterypulse://page/…` URL, with no scheme registered, or `application(_:continue:…)` as an
-  activity of the intent's type, and opens the main window at the page), `Main/` (sidebar window:
+  activity of the intent's type, and opens the main window at the page; and `WidgetFeedWriter`,
+  the feed's writes, at moments that already happen: once per 15-minute step at
+  `HistoryRecorder`'s minute tick, recording on or off, and at once on Clear History and the
+  recording toggle (Settings → Advanced calls it) and on a change of the remembered devices or of
+  their reads' switch, a plug change and Demo Mode's end (`WidgetRefresher` follows them), never
+  in Demo Mode, one write at a time), `Main/` (sidebar window:
   Overview, Power, History (`Main/History/`), Health, the Devices section with a page per
   iPhone/iPad and Accessories, and the Developer section with Raw Data and Demo Mode; the compact
   window; `Main/Components/`, one file per component, `Card.swift` with `Card`, `CardGroup` and
@@ -96,18 +110,29 @@ through the App Store. Reference hardware: MacBook Air M5.
   test bundle, where ld warns), wrapped into `BatteryPulse.app/Contents/PlugIns/*.appex` with its
   `Metadata.appintents` (extracted by `build-app.sh` with Apple's processor, checked by
   `scripts/appintents-check.swift` against `scripts/widget-manifest.json` and the catalog) and
-  signed with only the app-sandbox entitlement by `scripts/build-app.sh`. Two kinds, each in
+  signed by `scripts/build-app.sh` with `Resources/BatteryPulseWidget.entitlements`: the app
+  sandbox and one read-only home-relative exception, whose one path is the feed's folder
+  (`WidgetSurfaceTests` pins it to `WidgetFeedStore.homeRelativePath`). Two kinds, each in
   small, medium and large: `BatteryWidget` (0.6's `…battery` kind, configured by
   `BatteryWidgetIntent`) and `AccessoriesWidget` (`…accessories`, `AccessoriesWidgetIntent`);
   extra large isn't declared, and a family is only ever added. App Intents types and their
-  strings live only here. It draws what BatteryCore's `Widget/` plans, reads no file of ours and
-  makes no request.
+  strings live only here. It draws what BatteryCore's `Widget/` plans, of our files reads only
+  the feed, in `WidgetFeedReader` (the real home from `getpwuid`, since the sandbox's home is the
+  extension's container; `open` with `O_NOFOLLOW`, a regular file of at most 32 KB, then
+  BatteryCore's decoder; a rejection logs its case name at notice, and so does an `open` that
+  fails but for a missing file or a link, with its errno, which is how a narrowed exception
+  shows), shared per burst through `WidgetReads.feed`, and makes no request.
 - `Sources/bpulse` — CLI. `--raw` writes the capture format used by test fixtures; `--input`
   renders a capture (works on Linux); `--smc` lists the SMC's battery keys; `--devices` and
   `--device <n> [--json | --raw]` read a connected iPhone or iPad; `--accessories [--json |
   --raw]` lists accessory batteries; `--export csv|json` prints the recorded history; `--record
   <folder>` keeps captures around every charging change.
-- Releases: `release.yml` checks that `.github/release-notes.md` opens with `## What's new in
+- Releases: the build number (`CFBundleVersion` of the app and the widget) is
+  `scripts/build-number.sh`'s clock, whole seconds since 2026-01-01T00:00:00Z, which `ci.yml` and
+  `release.yml` each read once per job into `BUILD_NUMBER` before their first packaging step
+  (never `github.run_number`; `BuildNumberTests` pins it), so every build sits above every
+  earlier one: WidgetKit caches a widget's description by it. `release.yml` checks that
+  `.github/release-notes.md` opens with `## What's new in
   <version>`, checks the secret's key against `ReleaseSigning.publicKeys`, signs the DMG with
   `scripts/sign-update.swift` and the `UPDATE_SIGNING_KEY` secret of the `release` environment
   (`BatteryPulse.dmg.sig`; `--help` is the key rotation runbook) and publishes
@@ -122,7 +147,8 @@ through the App Store. Reference hardware: MacBook Air M5.
   info -plist` (`UpdateInstallPolicy`); updaters up to 0.6.1 use `hdiutil`, and CI's install step
   runs both. Never ask for or handle the private key.
 - `scripts/` — `build-app.sh` (packages the app, `PROFILING=1` for an Instruments build, and
-  fails on any signing-posture violation, listing each), `size-report.sh` with
+  fails on any signing-posture violation, listing each), `build-number.sh` (the build number's
+  clock, above), `size-report.sh` with
   `size-budget.json` (CI's size report and ceilings), `string-tables.swift` (every translated
   table has every catalog key), `appintents-check.swift` with `widget-manifest.json` and
   `appintents-sample.actionsdata` (the widget's App Intents metadata against the manifest and the
@@ -130,7 +156,10 @@ through the App Store. Reference hardware: MacBook Air M5.
   `rusage.swift` (one process's energy and wake-ups), `release-stats.swift` (each release's DMG,
   signature and, from 0.7.0, `BatteryPulse-count.txt` downloads from GitHub's public API,
   unauthenticated, for ROADMAP's Releases table a week after a release), `quick-check.sh` (the
-  reads to look at after a macOS 27.x update), `menu-bar-shots.sh` with `display-metrics.swift`.
+  reads to look at after a macOS 27.x update, the widget's feed among them: the file's age, modes
+  and version, never a name, and the feed's rejections and read or write failures logged since
+  the restart, where a narrowed exception shows first as errno 1), `menu-bar-shots.sh` with
+  `display-metrics.swift`.
 - `Tests/BatteryCoreTests/Fixtures/*.plist` — raw captures (see its README). `m5-macos27-*` are
   real; `synthetic-legacy-*` are hand-written and only cover fallback keys.
 
@@ -193,7 +222,9 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   and allows no silenced `StrictMemorySafety`. The app, the widget and BatteryArt build without
   the check, so their few unsafe calls stay unmarked: the `proc_*` calls (`WidgetRefresher`),
   `UpdateInstaller`'s code-signature check (`Unmanaged<CFError>`) and `renamex_np` with its
-  `strerror`, and the battery painter's Core Text glyph calls (`BatteryIconPainter`).
+  `strerror`, the battery painter's Core Text glyph calls (`BatteryIconPainter`), and the feed
+  reader's POSIX calls (`WidgetFeedReader`: `open`, `fstat`, and `getpwuid` with its `pw_dir`
+  read through `String(cString:)`).
 - Concurrency: the app target runs on the main actor by default (`.defaultIsolation(MainActor.self)`
   in `Package.swift`); the other targets, the widget included, stay nonisolated. App code that a
   framework calls on its own threads, or that runs off the main actor, is marked `nonisolated`,
@@ -235,8 +266,10 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   `registry`, `iops`, `adapter`, `smc.power`, `smc.other`, `children` and `parse`;
   `history.load`, `history.record`, `raw.rebuild`, `raw.filter`, `update.check`, `page.switch`,
   `device.read`, `accessory.read`, `widget.timeline` (its trigger the kind, `battery` or
-  `accessories`); the events `widget.reload` (`policy`, `policy.accessories`, `update`,
-  `language`), `menuBarReady` and
+  `accessories`), `widget.feed.write` (the app's; its trigger the `WidgetFeed.WriteReason`,
+  `step`, `historyCleared`, `recording`, `devices`, `plug` or `demoEnded`) and `widget.feed.read`
+  (the widget's, with no trigger); the events `widget.reload` (`policy`, `policy.accessories`,
+  `update`, `language`), `menuBarReady` and
   `registry.missed` (a read that fetched the registry found an update no notification announced;
   its trigger is the refresh's). Keep them stable: measurements compare by name.
 - Guard suites run on Linux over the sources with comments and strings blanked
@@ -244,7 +277,8 @@ The SessionStart hook (`.claude/hooks/session-start.sh`) installs the Swift tool
   (motion, glass, window style, tone map, and the widget's time: no seconds, sign or per-second
   countdown, the time label's offset the one self-updating text), `EnergyGuardTests` (the energy
   rules above), `SecurityGuardTests` (where `dlopen`/`dlsym`, IOKit user clients, `Process` and
-  `kill` may appear, the SMC's one selector, no file or network API in the widget and BatteryArt,
+  `kill` may appear, the SMC's one selector, no dynamic loading or network API in the widget and
+  BatteryArt and no file API there but in `WidgetFeedReader`, which opens only the feed,
   the click handlers only in the app delegate and no URL scheme, `URLSession` only in
   `UpdateNetwork` and the version count's URL only in the update checker, and the escapes from
   the compiler's checks), `IsolationGuardTests` (the app's isolation, above),

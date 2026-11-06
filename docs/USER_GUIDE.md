@@ -65,6 +65,21 @@ start (**Check Now** or **Check for Updates…**) never counts. While Check for 
 the switch is greyed out and keeps its value. [Updates](#updates) lists every request
 BatteryPulse sends.
 
+**Widgets and privacy.** The widgets run in macOS's sandbox, which keeps them from reading
+BatteryPulse's history themselves, so BatteryPulse keeps a small copy for them, `feed.json`, in a
+folder of its own that only your account can read:
+`~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. While history is
+recorded, it holds the last day's and week's charge, battery power, temperature and plugged-in
+state in 15-minute and 2-hour steps, the last 24 hours' average drain, time on battery and
+charging sessions, when the Mac was last unplugged (while it runs on battery), and up to 90 days
+of capacity compared with design and cycle count, all of it already in the History folder beside
+it. It also holds BatteryPulse's language and whether history recording and iPhone and iPad
+reads are on. It never holds Demo Mode's readings or an accessory. The widgets' one exception to
+the sandbox is read-only and names that folder alone, and they open no other file of
+BatteryPulse's. Nothing in it leaves your Mac. While BatteryPulse runs, it rewrites the file
+about every 15 minutes, and at once when you clear the history or turn recording off, which
+takes the history out of it.
+
 ## Where BatteryPulse lives
 
 By default BatteryPulse sits in the **menu bar**. Click its icon for a quick look at charge,
@@ -642,9 +657,10 @@ may not reach them.
 - **Charge** is the percentage macOS shows. The smaller *Gauge* value under it is the battery
   controller's own measurement (remaining ÷ full-charge mAh); macOS keeps a small reserve, so the
   two differ slightly.
-- **Maximum capacity** matches System Settings → Battery → Battery Health. macOS caps it at 100 %;
-  a new battery often holds more than its design capacity, and BatteryPulse shows the real ratio
-  under Health.
+- **Maximum capacity** is the battery's nominal capacity against its design capacity, capped at
+  100 % as System Settings → Battery → Battery Health caps it. System Settings' own figure can
+  differ from it by a point or two. A new battery often holds more than its design capacity, and
+  BatteryPulse shows the real ratio under Health.
 - **Cycle count** is out of the rated cycle life reported by the battery (1,000 on current Mac
   notebooks).
 - **Time remaining** comes from macOS. Right after you plug in or unplug, macOS takes a minute to
