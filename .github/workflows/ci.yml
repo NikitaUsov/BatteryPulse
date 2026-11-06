@@ -149,6 +149,18 @@ jobs:
           name: look2-sheets-${{ github.sha }}
           path: build/widget-previews/sheet-look2-*.png
           if-no-files-found: error
+      - name: Upload Look 3's contact sheets
+        # 0.7.1's layout parity look (plan-0.7.1 §6.1), apart from the rest: every widget and
+        # state 0.7.1 adds, English beside Russian, each pair's lines measured in the pictures
+        # (LayoutParityPreviewTests), with the measurements beside the sheets. It goes with the
+        # plan folder at 0.7.1's D3.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: look3-sheets-${{ github.sha }}
+          path: |
+            build/widget-previews/sheet-look3-*.png
+            build/widget-previews/look3-measurements.md
+          if-no-files-found: error
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
       - name: Peak memory of the parser
