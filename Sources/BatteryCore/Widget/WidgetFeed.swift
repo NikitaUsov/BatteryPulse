@@ -429,10 +429,13 @@ extension WidgetFeed {
         /// It was ``WidgetFeed/repairAge`` old or older: the History, iPhone & iPad and large
         /// Battery widgets show its last data with "Open BatteryPulse to update", or soon would.
         case outdated
-        /// The widgets couldn't use it: there was none (none written since BatteryPulse was
-        /// installed or updated from 0.7.0, or a removal took the file before this launch's first
-        /// write), or one they turn down. Those three said "Open BatteryPulse to update", and every
-        /// kind drew in the extension's own language rather than BatteryPulse's.
+        /// The widgets may not have been able to use it: before this launch's first write, the
+        /// file a previous launch left may be none (BatteryPulse installed or updated from 0.7.0,
+        /// or a removal took the file before the write), one they turn down, or hours old, and
+        /// isn't read to tell; or the last feed written was dated over
+        /// ``WidgetFeed/futureTolerance`` ahead (a clock set back since), which they turn down.
+        /// Without a feed, those three say "Open BatteryPulse to update", and every kind draws in
+        /// the extension's own language rather than BatteryPulse's.
         case unusable
 
         public static func < (lhs: Repair, rhs: Repair) -> Bool {
@@ -452,17 +455,18 @@ extension WidgetFeed {
         }
     }
 
-    /// What writing this feed shows the placed widgets in place of `previous`, the file as the
-    /// widget would have read it: the feed last written, or before the first write of a launch,
-    /// what a previous one left. A feed with a date too far ahead of this one's (a clock set back
-    /// since) is one the widget turns down.
-    public func effect(replacing previous: WidgetFeedState) -> WriteEffect {
+    /// What writing this feed shows the placed widgets in place of `previous`, the feed this
+    /// launch last wrote; `nil` before its first write, which repairs every kind
+    /// (``Repair/unusable``). The builder dates nothing in a feed after its `writtenAt`, so a
+    /// `previous` written over the reader's tolerance ahead of this one is the one date the widget
+    /// would turn down.
+    public func effect(replacing previous: WidgetFeed?) -> WriteEffect {
         let added = Set(Section.allCases.filter(holds))
-        guard let old = previous.feed, (try? old.validate(now: writtenAt)) != nil else {
+        guard let previous, previous.writtenAt.timeIntervalSince(writtenAt) <= Self.futureTolerance else {
             return WriteEffect(repair: .unusable, added: added)
         }
-        let repair: Repair? = writtenAt.timeIntervalSince(old.writtenAt) >= Self.repairAge ? .outdated : nil
-        return WriteEffect(repair: repair, added: added.filter { !old.holds($0) })
+        let repair: Repair? = writtenAt.timeIntervalSince(previous.writtenAt) >= Self.repairAge ? .outdated : nil
+        return WriteEffect(repair: repair, added: added.filter { !previous.holds($0) })
     }
 
     /// The devices section a write would hold, but for the read times: what tells a change the

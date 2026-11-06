@@ -11,9 +11,9 @@ import Synchronization
 ///   never a part; the new file keeps its own 0600, not the old file's mode.
 /// - A feed that differs from the last one written only in `writtenAt` isn't written, unless the
 ///   caller says so (the routine write).
-/// - A write can say what it replaced, as the widget saw it (``writeReporting(_:unchanged:)``), so
-///   the kinds that would otherwise keep "Open BatteryPulse to update" or a missing section until
-///   their own refresh reload.
+/// - A write can say what it replaced (``writeReporting(_:unchanged:)``), so the kinds that would
+///   otherwise keep "Open BatteryPulse to update" or a missing section until their own refresh
+///   reload.
 ///
 /// Foundation alone, so it needs no pointer and no `unsafe`. Its calls block on the file system,
 /// so the app makes them off the main actor; one runs at a time. A final class rather than an
@@ -75,34 +75,19 @@ public final class WidgetFeedStore: Sendable {
     }
 
     /// Writes `feed` as ``write(_:unchanged:)`` does, and says what the write shows the placed
-    /// widgets that their own timelines would show only later (``WidgetFeed/effect(replacing:)``):
-    /// against the feed this store last wrote, or before its first write, against the file a
-    /// previous launch left, read as the widget reads it. Nothing, when nothing was written.
+    /// widgets that their own timelines would show only later (``WidgetFeed/effect(replacing:)``),
+    /// against the feed this store last wrote: before its first write, the file a previous launch
+    /// left isn't read, so that write repairs every kind. Nothing, when nothing was written.
     public func writeReporting(_ feed: WidgetFeed, unchanged: Bool = false) throws -> (
         outcome: Outcome, effect: WidgetFeed.WriteEffect
     ) {
         try written.withLock { written in
             if !unchanged, let written, written.written(at: feed.writtenAt) == feed { return (.unchanged, .nothing) }
-            let previous = written.map { WidgetFeedState.feed($0) } ?? stateOnDisk(at: feed.writtenAt)
+            let previous = written
             let bytes = try replace(with: WidgetFeed.encoded(feed))
             written = feed
             return (.written(bytes: bytes), feed.effect(replacing: previous))
         }
-    }
-
-    /// The file as the widget would read it at `date`: none, one it turns down, or a feed. Its
-    /// type and size are read without following a link, and nothing larger than the widget reads
-    /// is read.
-    private func stateOnDisk(at date: Date) -> WidgetFeedState {
-        let manager = FileManager.default
-        guard let attributes = try? manager.attributesOfItem(atPath: fileURL.path) else { return .missing }
-        guard attributes[.type] as? FileAttributeType == .typeRegular else { return .rejected(.notARegularFile) }
-        guard let size = (attributes[.size] as? NSNumber)?.intValue, size <= WidgetFeed.maximumBytes else {
-            return .rejected(.oversized)
-        }
-        // A file that can't be read is one the widget can't use either.
-        guard let data = manager.contents(atPath: fileURL.path) else { return .missing }
-        return WidgetFeedState(data: data, now: date)
     }
 
     /// Rewrites the feed this store last wrote with `change` applied, and nothing else read or

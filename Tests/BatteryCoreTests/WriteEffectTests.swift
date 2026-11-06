@@ -36,47 +36,31 @@ import Testing
 
     // MARK: The feed a write replaces
 
-    /// Before this launch's first write, the store reads the file a previous launch left as the
-    /// widget reads it: none, or one the widget turns down, is one the widgets couldn't use.
-    @Test func aFirstWriteOverAFileTheWidgetsCouldntUseRepairsIt() throws {
+    /// Before this launch's first write, the store doesn't read the file a previous launch left:
+    /// it may be none (an update from 0.7.0), one the widget turns down, or hours old, so the
+    /// first write repairs every kind, whatever is there.
+    @Test func aLaunchsFirstWriteRepairsEveryKind() throws {
         let garbage = Data("{\"version\":1}".utf8)
         let future = try WidgetFeed.encoded(Self.feed(at: Self.at(minutes: 11)))
-        let oversized = Data(repeating: 0x20, count: WidgetFeed.maximumBytes + 1)
-        for contents in [nil, garbage, future, oversized] {
+        let aged = try WidgetFeed.encoded(Self.feed(at: Self.at(minutes: -3 * 60)))
+        let fresh = try WidgetFeed.encoded(Self.feed(at: Self.at(minutes: -1)))
+        for contents in [nil, garbage, future, aged, fresh] {
             let (store, directory) = try Self.store(leaving: contents)
             defer { WidgetFeedStoreTests.remove(directory) }
             let (outcome, effect) = try store.writeReporting(Self.feed())
             #expect(outcome != .unchanged)
             #expect(effect.repair == .unusable, "\(contents.map(\.count) ?? -1) bytes")
         }
+        #expect(Self.feed().effect(replacing: nil).repair == .unusable)
     }
 
-    /// A link in the feed's place, to a feed just written, is one the widget turns down: the store
-    /// reads its type without following it, and never writes through it. Darwin's Foundation
-    /// refuses to replace the link, Linux's replaces it; either way, a write that goes out says the
-    /// widgets couldn't use what was there.
-    @Test func aLinkInTheFeedsPlaceIsOneTheWidgetsCouldntUse() throws {
-        let (store, directory) = try Self.store(leaving: nil)
-        defer { WidgetFeedStoreTests.remove(directory) }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let target = directory.deletingLastPathComponent().appendingPathComponent("elsewhere.json")
-        let fresh = try WidgetFeed.encoded(Self.feed())
-        try fresh.write(to: target)
-        try FileManager.default.createSymbolicLink(at: Self.file(directory), withDestinationURL: target)
-        if let written = try? store.writeReporting(Self.feed(at: Self.at(minutes: 1))) {
-            #expect(written.effect.repair == .unusable)
-        }
-        #expect(try Data(contentsOf: target) == fresh)
-    }
-
-    /// A feed a previous launch left an hour ago or more: the widgets' timelines made from it can
-    /// reach "Open BatteryPulse to update" before their own refresh reads the new one.
-    @Test func aFirstWriteOverAnAgedFileRepairsIt() throws {
+    /// A feed written an hour ago or more: the widgets' timelines made from it can reach "Open
+    /// BatteryPulse to update" before their own refresh reads the new one.
+    @Test func aFeedAnHourOldIsRepaired() throws {
         for (minutes, repair) in [(-60.0, WidgetFeed.Repair.outdated), (-59, nil), (-3 * 60, .outdated), (-1, nil)] {
-            let (store, directory) = try Self.store(
-                leaving: WidgetFeed.encoded(Self.feed(at: Self.at(minutes: minutes))))
-            defer { WidgetFeedStoreTests.remove(directory) }
-            #expect(try store.writeReporting(Self.feed()).effect.repair == repair, "\(minutes) minutes")
+            #expect(
+                Self.feed().effect(replacing: Self.feed(at: Self.at(minutes: minutes))).repair == repair,
+                "\(minutes) minutes")
         }
     }
 
@@ -184,17 +168,17 @@ import Testing
         var noDevices = full
         noDevices.devices = nil
         let later = Self.at(minutes: 15)
-        #expect(full.written(at: later).effect(replacing: .feed(noHistory)) == .init(added: [.history]))
-        #expect(full.written(at: later).effect(replacing: .feed(noDevices)) == .init(added: [.devices]))
-        #expect(full.written(at: later).effect(replacing: .feed(full)) == .nothing)
-        #expect(noDevices.written(at: later).effect(replacing: .feed(full)) == .nothing)
+        #expect(full.written(at: later).effect(replacing: noHistory) == .init(added: [.history]))
+        #expect(full.written(at: later).effect(replacing: noDevices) == .init(added: [.devices]))
+        #expect(full.written(at: later).effect(replacing: full) == .nothing)
+        #expect(noDevices.written(at: later).effect(replacing: full) == .nothing)
         // An empty list is a section held: none remembered, not "not written".
         var none = full
         none.devices = []
-        #expect(none.written(at: later).effect(replacing: .feed(noDevices)) == .init(added: [.devices]))
-        #expect(full.written(at: later).effect(replacing: .feed(none)) == .nothing)
-        // Without a feed the widgets could use, everything it holds is new, beside the repair.
-        #expect(full.effect(replacing: .missing) == .init(repair: .unusable, added: [.history, .devices]))
+        #expect(none.written(at: later).effect(replacing: noDevices) == .init(added: [.devices]))
+        #expect(full.written(at: later).effect(replacing: none) == .nothing)
+        // At a launch's first write, everything it holds is new, beside the repair.
+        #expect(full.effect(replacing: nil) == .init(repair: .unusable, added: [.history, .devices]))
     }
 
     /// What a feed holds: the history whenever it was written with it, gaps and all, so Clear
@@ -215,13 +199,14 @@ import Testing
         #expect(built?.holds(.history) == false && built?.holds(.devices) == true)
     }
 
-    /// Before this launch's first write, a previous launch's feed written while no iPhone & iPad
-    /// widget counted as placed: the first write that holds the devices adds them.
-    @Test func aFirstWriteAddsWhatThePreviousLaunchLeftOut() throws {
+    /// Through the store: a feed written while no iPhone & iPad widget counted as placed, then one
+    /// with the devices once WidgetKit lists it.
+    @Test func theStoreSaysWhatAWriteAdds() throws {
         var old = Self.feed(at: Self.at(minutes: -20))
         old.devices = nil
-        let (store, directory) = try Self.store(leaving: WidgetFeed.encoded(old))
+        let (store, directory) = try Self.store(leaving: nil)
         defer { WidgetFeedStoreTests.remove(directory) }
+        #expect(try store.writeReporting(old).effect == .init(repair: .unusable, added: [.history]))
         #expect(try store.writeReporting(Self.feed()).effect == .init(added: [.devices]))
     }
 
