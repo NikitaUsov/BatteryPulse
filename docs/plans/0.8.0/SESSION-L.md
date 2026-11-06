@@ -209,6 +209,10 @@ waits (L1 step 2).
    (1 A-1's sentence and Battery Settings…, 2 the info button, 3 A-2's number, 4 Health's summary,
    5 Clear's badge, 6 a help tag and popover, 7 Welcome, 8 Report a Problem, 9 P-1's note), the
    language last ("Q4 Health's summary, en"): `$S attach <shot> "<caption>"`.
+10. **Once both passes are done** (not in the English one): judge the questions no step asks, each
+    from its shots in both languages, by the Answers table: `L-a1-scenes`, `L-a2-number`,
+    `L-a3-health`, `L-q84-badge`, `L-a4-help`, `L-a5-welcome`, `L-a6-window`. The script records
+    `L-a6-file` itself, and asks `L-p1-note` and `L-a7-link` at their steps.
 
 ## L3: the weak adapter (only with his Q8-3 yes)
 

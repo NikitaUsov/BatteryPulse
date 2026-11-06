@@ -458,8 +458,9 @@ own close button, `$S ui close BatteryPulse --window "<its title>"` (rule 8).
    unless he keeps them (`R-keep-widgets` y), then `$S widgets-check`, which records them gone only
    when BatteryPulse's counts are back at prepare's; anything else not confirmed earlier. `$S summary
    end`, and tell him in Russian what is back, each widget kind that stayed or is gone by count (an
-   `ALERT` each), and what is his (the Focus; at the end of the series, Terminal's Accessibility,
-   unless he keeps it).
+   `ALERT` each, and a `KEPT` line as an alert too: the widgets he chose to keep stay on his desktop,
+   and an iPhone & iPad one keeps his devices in the widget feed), and what is his (the Focus; at the
+   end of the series, Terminal's Accessibility, unless he keeps it).
 9. **`$S send` once more** (T-1 item 7): step 7's send went before the restore, so `R.md` had no
    counts after it; now it gains the restore's section and the widgets' counts after each read, what
    stayed by kind and count. His yes stands for the same report (tell him what it adds); nothing new
