@@ -29,7 +29,7 @@ prints this file up to "The short sessions"; the session it starts, you, begins 
 
 - **Language.** Talk to him in Russian, always. Everything recorded is English: `answer`, `judge`,
   `note`, `change`, `restored`, `attach` captions; the script refuses Cyrillic.
-- **One prefix.** `$S` below stands for `bash ~/bp-071/R/run/docs/plans/0.8.0/m5-session.sh`. Write it
+- **One prefix.** `$S` below stands for `bash ~/bp-080/R/run/docs/plans/0.8.0/m5-session.sh`. Write it
   in full in every call, exactly so, one script call per Bash call: no `cd`, no variables, no pipes, no
   redirection, no `&&`. The only commands outside it are R0's `git fetch`, `git show`, `git rev-parse`,
   `git worktree move` and `git worktree add`, under auto mode. `$S help` lists the commands, and the
@@ -79,7 +79,7 @@ prints this file up to "The short sessions"; the session it starts, you, begins 
   widgets while it is open, are the script's crops (`look nc`).
 - **Places.** Terminal windows in the left third of the screen, BatteryPulse's windows and widgets
   on the right, away from the top-right corner where banners land.
-- **Commits.** You commit and push nothing. The only push is `send`'s, to `claude/071-session-r`,
+- **Commits.** You commit and push nothing. The only push is `send`'s, to `claude/080-session-r`,
   committed in UTC, after his yes. No other branch, no pull request.
 
 ## Privacy
@@ -90,7 +90,7 @@ prints this file up to "The short sessions"; the session it starts, you, begins 
 - No computer-use screenshot while Notification Center or Control Center is open: AX actions and the
   script's crops of BatteryPulse's frames instead. No computer-use screenshot of System Settings →
   Bluetooth (device names): AX presses only, and `accessories-watch`'s crops.
-- Full-desktop, Notification Center and System Settings shots stay in `~/bp-071/R`. Only crops of
+- Full-desktop, Notification Center and System Settings shots stay in `~/bp-080/R`. Only crops of
   BatteryPulse's windows, widgets and menu bar item are attached (`$S attach`), never one taken while
   BatteryPulse remembers an iPhone or iPad by name or its widget feed holds one (the script refuses
   those). The Accessories and iPhone & iPad widgets' trees and crops show names: read them, never
@@ -130,14 +130,14 @@ prints this file up to "The short sessions"; the session it starts, you, begins 
 ## R0: the start (he is there, about 6-8 minutes)
 
 1. **The worktree.** `git -C ~/BatteryPulse rev-parse FETCH_HEAD` is the commit you read this file
-   from. If `~/bp-071/R/run` exists, read its commit (`git -C ~/bp-071/R/run rev-parse HEAD`): the same
-   commit is a restart (read `~/bp-071/R/run/docs/plans/0.8.0/SESSION-R.md`, from "If the session
+   from. If `~/bp-080/R/run` exists, read its commit (`git -C ~/bp-080/R/run rev-parse HEAD`): the same
+   commit is a restart (read `~/bp-080/R/run/docs/plans/0.8.0/SESSION-R.md`, from "If the session
    restarts"); another commit: ask him whether this is a new attempt; a new attempt: `git -C
-   ~/BatteryPulse worktree move ~/bp-071/R/run ~/bp-071/R/run-<its first 7 characters>`. Then `git -C
-   ~/BatteryPulse worktree add --detach ~/bp-071/R/run FETCH_HEAD`, and **`$S prepare attempt`**, your
+   ~/BatteryPulse worktree move ~/bp-080/R/run ~/bp-080/R/run-<its first 7 characters>`. Then `git -C
+   ~/BatteryPulse worktree add --detach ~/bp-080/R/run FETCH_HEAD`, and **`$S prepare attempt`**, your
    first script call (an earlier attempt's folder moves aside once its changes are back; if it lists
    some, follow its message: `--kept` on his word, `--restored` after you put one back and shot it).
-   Then `$S help` and `$S status`, and read this file's "Answers" in `~/bp-071/R/run` with your
+   Then `$S help` and `$S status`, and read this file's "Answers" in `~/bp-080/R/run` with your
    file-reading tool (the start printed only up to "The short sessions").
 2. **The start message,** one message in Russian, before anything changes:
    - What may change, each written to `changes.tsv` first and put back: the installed BatteryPulse
@@ -299,11 +299,11 @@ change desktop-widgets "<before>" "<added>"` first and `$S widget <name> ...` af
 3. Stop every background task. `$S ready`, your last call. End your turn. From here only text answers
    until his "day-end"; the arm window starts the logged day (the perf stream under `nohup`, the
    display assertion released) and he may close it. On "day-end", read "R3: the day's end" in
-   `~/bp-071/R/run`'s copy of this file first.
+   `~/bp-080/R/run`'s copy of this file first.
 
 ## If the session restarts or compacts
 
-- First read this file again from `~/bp-071/R/run`, then `$S status`, `~/bp-071/R/answers.tsv` and
+- First read this file again from `~/bp-080/R/run`, then `$S status`, `~/bp-080/R/answers.tsv` and
   `changes.tsv`, and go on from the first step not done (a step that ran as the old session's
   background task: run it once more). If `ready` is up and day-end hasn't come, only text answers until
   "day-end".
@@ -315,19 +315,19 @@ Each starts like Session R, from any folder, with its own argument to the short 
 the start line with its own worktree in the allow rule and a sentence that prints only its section:
 
 ```
-git -C ~/BatteryPulse fetch origin claude/071-integration
+git -C ~/BatteryPulse fetch origin claude/080-integration
 bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.8.0/start-short-session.sh) <charge-limit|hold-watch|feed-check>
 ```
 
 After publishing, D3 posts the line with the release PR's number and the last commit that holds this
 folder (`after-publishing <n> <keep>`), and the sentence "Don't press Install and Relaunch yourself;
 the session does it." Each section stands alone: Session R's Rules, Privacy, Decisions you make alone
-and Answers hold, with `$S` standing for its own worktree's script (`~/bp-071/C/run`,
-`~/bp-071/H/run`, `~/bp-071/D3/run`, `~/bp-071/F/run`), and its results leave the Mac only through
+and Answers hold, with `$S` standing for its own worktree's script (`~/bp-080/C/run`,
+`~/bp-080/H/run`, `~/bp-080/D3/run`, `~/bp-080/F/run`), and its results leave the Mac only through
 `$S send` after his yes. The start printed only this part, so first, in each: `git -C ~/BatteryPulse
-worktree add --detach ~/bp-071/<C|H|D3|F>/run <the commit you read this from>` (if it exists at
+worktree add --detach ~/bp-080/<C|H|D3|F>/run <the commit you read this from>` (if it exists at
 another commit, move it aside to `run-<its first 7 characters>` first); then read those four sections
-in `~/bp-071/<C|H|D3|F>/run/docs/plans/0.8.0/SESSION-R.md` with your file-reading tool; then `$S
+in `~/bp-080/<C|H|D3|F>/run/docs/plans/0.8.0/SESSION-R.md` with your file-reading tool; then `$S
 tools` (ui and frames from this worktree, about a minute; the After publishing check and the feed
 check click and crop through them) and `$S help`.
 
@@ -487,7 +487,7 @@ Every item left "not checked" or "not run" takes its gate's default (PLAN.md §7
 5. `$S batch`: the items you answered 3 or unsure, offered in one line ("N items I wasn't sure about:
    look now, or skip and they keep their defaults?"); on "look", give each picture's full path (he
    types `! open <path>`; you never open a file by computer use) and record each with `--by person`.
-6. `$S send --dry-run`; give him its `SHEET` the same way, summarize `~/bp-071/R/R.md` in Russian, and
+6. `$S send --dry-run`; give him its `SHEET` the same way, summarize `~/bp-080/R/R.md` in Russian, and
    ask whether he added any allow rule beyond the launcher's (`note` his answer). On his yes, `$S
    answer --by person R-send y`, then `$S send`. A lint refusal names a line: drop it, tell him, dry
    run and his yes again.
@@ -509,7 +509,7 @@ Not printed for the session (its launcher stops at "The short sessions"): what h
    covers the screen.
 3. In `~/BatteryPulse`: `claude`, then `/mcp`: `computer-use` is enabled (kept per project from
    Session B; if not, Enable). He asks that session: `Check the launcher docs/plans/0.8.0/start-session-r.sh
-   (git fetch origin claude/071-integration && git show FETCH_HEAD:docs/plans/0.8.0/start-session-r.sh)
+   (git fetch origin claude/080-integration && git show FETCH_HEAD:docs/plans/0.8.0/start-session-r.sh)
    against claude --help and the Claude Code documentation, and answer me in Russian.` It checks that
    `--allowedTools`, `--permission-mode auto`, the rule `Bash(<prefix>:*)` with `~` as written, and
    `DISABLE_AUTOUPDATER=1` are still the documented spellings, and changes nothing; a changed spelling
@@ -520,10 +520,10 @@ Not printed for the session (its launcher stops at "The short sessions"): what h
 In Terminal, from any folder:
 
 ```
-git -C ~/BatteryPulse fetch origin claude/071-integration
+git -C ~/BatteryPulse fetch origin claude/080-integration
 bash <(git -C ~/BatteryPulse show FETCH_HEAD:docs/plans/0.8.0/start-session-r.sh)
 ```
 
 The launcher changes to `~/BatteryPulse` and runs the start line of PLAN.md §6.2: one allow rule,
-`Bash(bash ~/bp-071/R/run/docs/plans/0.8.0/m5-session.sh:*)`, auto mode, and a sentence that has the
-session fetch `claude/071-integration` and read this file up to "The short sessions"; it begins at R0.
+`Bash(bash ~/bp-080/R/run/docs/plans/0.8.0/m5-session.sh:*)`, auto mode, and a sentence that has the
+session fetch `claude/080-integration` and read this file up to "The short sessions"; it begins at R0.

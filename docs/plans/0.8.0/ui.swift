@@ -1,20 +1,19 @@
-// The hands of the hands-free sessions of BatteryPulse 0.7.1 (PLAN.md §6.2;
-// Session R and its short sessions, built on 0.6.2's Session B): Accessibility (AX), posted mouse
-// events (CGEvent) and the window list (CGWindowList), with safety rules of its own, so they don't
-// rest on the Claude session alone. The session script builds it beside `frames` and is its only
-// caller (`m5-session.sh ui <command>`):
+// The hands of the hands-free sessions of BatteryPulse 0.8 (PLAN.md §6: Session R8, the look shoot
+// and the short sessions, built on 0.6.2's Session B): Accessibility (AX), posted mouse events and
+// a few keys to BatteryPulse alone (CGEvent) and the window list (CGWindowList), with safety rules
+// of its own, so they don't rest on the Claude session alone. The session script builds it beside
+// `frames` and is its only caller (`m5-session.sh ui <command>`):
 //
-//   xcrun swiftc -O docs/plans/0.8.0/ui.swift -o ~/bp-071/<R|C|H|D3|F>/bin/ui
+//   xcrun swiftc -O docs/plans/0.8.0/ui.swift -o ~/bp-080/<R|L|H|D3>/bin/ui
 //
-// 0.7.0's, copied from docs/plans/0.7.0/ at 0.7.0's release, which shipped without Session R, and
-// re-pointed at 0.7.1; copied again from docs/plans/0.7.1/ at 0.7.1's release for 0.8's M5
-// sessions. PLAN.md is 0.7.1's docs/plans/0.7.1/PLAN.md, readable at
-// dbc696a979b0cad265ae554d1e6d69db1eac1572 in the 0.7.1 release PR's head; plan-0.7.0 is 0.7.0's
-// docs/plans/0.7.0/PLAN.md, readable at ebe654772c7f06d5e136327e0e6a236fed71cdc9 in
-// refs/pull/13/head.
+// 0.7.0's, re-pointed at 0.7.1 and moved here by 0.7.1's D3 for 0.8's M5 sessions, which T-1
+// re-points (docs/plans/0.8.0/PLAN.md, T-1). PLAN.md is docs/plans/0.8.0/PLAN.md; P71 is 0.7.1's
+// docs/plans/0.7.1/PLAN.md, readable at dbc696a979b0cad265ae554d1e6d69db1eac1572 in the 0.7.1
+// release PR's head; plan-0.7.0 is 0.7.0's docs/plans/0.7.0/PLAN.md, readable at
+// ebe654772c7f06d5e136327e0e6a236fed71cdc9 in refs/pull/13/head.
 //
 // Its folder is the session's: the folder above the bin/ it runs from, which must be
-// ~/bp-071/R, C, H, D3 or F of the account's own home; run from anywhere else it refuses everything.
+// ~/bp-080/R, L, H or D3 of the account's own home; run from anywhere else it refuses everything.
 //
 // A point is global display points, the top left of the main display at 0,0, given as `<x> <y>`,
 // or as `--image <png> <x> <y>`: pixels of a full-screen shot of the main display (the script's
@@ -62,6 +61,8 @@
 //                                                    icon or the Dock
 //   scroll <point> <lines> --expect …                positive lines scroll down
 //   press <app> <text> [--role r] [--within role] [--index n] [--action AXPress]
+//                                                    <app> may be "widget sheet": the widget edit
+//                                                    sheet's own controls (`Sheet`, below)
 //   press <app> --menu-cmd <char>                    the menu item with that Command key and no other
 //                                                    modifier (Settings… is ",", Close "W")
 //   press BatteryPulse --status-item                 an AX press on the menu bar item (its popover
@@ -81,6 +82,13 @@
 //   quit <app>                                       an AX press on the app's own Quit menu item:
 //                                                    BatteryPulse, or a process the script opened
 //                                                    (launched.tsv), never his own copy
+//   key <tab|shift-tab|left|right|up|down> | key <space|return> --on <text>
+//                                                    one key posted to BatteryPulse alone (its pid),
+//                                                    only while it is the focused application, and
+//                                                    the element focused after it (the keyboard
+//                                                    walk, C10); Space and Return only on the focused
+//                                                    element --on names, never on one that installs,
+//                                                    quits, deletes, clears, forgets, sends or saves
 // Reads:
 //   frame <app> [--window <title> | --minimize-button | --match <text>]
 //   frame BatteryPulse --status-item                 the menu bar item's frame by AX (the app's
@@ -104,6 +112,10 @@
 //                                                    chain and the frames (proof P1); labels only
 //                                                    inside BatteryPulse
 //   tree <app> | --app <app> [--match <text>] [--inside x y w h] [--depth n]
+//                                                    BatteryPulse's own elements with their link's
+//                                                    URL (AXURL) where they have one
+//   focused                                          BatteryPulse's focused element: its role, label
+//                                                    and frame
 //   windows [--app <name>] [--main [--allow-cover <app>]] [--status-item]
 //   idle | locked | thermal | sample | access | screen | guard
 //                                                    sample: idle, locked, the screen saver and
@@ -112,19 +124,24 @@
 //
 // What the script recorded comes from files in the session's folder, never from the environment:
 // ui-hosts (proof P1's widget hosts), ui-panes (proof P8's panes), widgets.tsv (`widget`'s frames),
-// ui-tap and launched.tsv; the fence from ~/bp-071/R (ready, day-ended, arm.pid). The home folder
+// ui-tap, launched.tsv and sheet-words (BatteryPulse's widget descriptions, from the catalog); the
+// fence from ~/bp-080/R (ready, day-ended, arm.pid). The home folder
 // is the account's own, from the user database (getpwuid), never HOME; with CFFIXED_USER_HOME set
 // it refuses everything.
 //
 // Safety rules (exit status 3 when one refuses):
-//   - no key presses at all: only a Shift or Control modifier, as a flagsChanged event, around a
-//     click; never Esc, which would end the Claude session's turn. SIGINT, SIGTERM and SIGHUP wait
+//   - no key presses but `key`'s, to BatteryPulse's pid alone while it is the focused application
+//     (Tab, Shift-Tab, the arrows; Space and Return only on the element --on names), and a Shift or
+//     Control modifier, as a flagsChanged event, around a click; never Esc, which would end the
+//     Claude session's turn. SIGINT, SIGTERM and SIGHUP wait
 //     while a button or a modifier is down, and every acting command first releases a Shift,
 //     Control or left button that the session's state shows down and the hardware's doesn't (a ui
 //     killed mid-press);
 //   - a click, move or scroll acts only where its --expect holds (above); AX actions target only
-//     BatteryPulse, System Settings, TextEdit's cover window, Accessibility Inspector and Xcode's
-//     window of the session's frozen worktree (<folder>/run). Finder is only ever the bare desktop,
+//     BatteryPulse, System Settings, TextEdit's cover window, Accessibility Inspector, Xcode's
+//     window of the session's frozen worktree (<folder>/run) and the widget edit sheet while it
+//     shows a BatteryPulse widget's description (sheet-words), only its pop-up buttons, menu items,
+//     checkboxes, radio buttons and buttons (Session F: its menus were out of computer use's reach). Finder is only ever the bare desktop,
 //     the Dock only the minimized window's tile, Control Center only its clock; a widget host only
 //     at a BatteryPulse widget (a BatteryPulse label in the AX chain; by the window list alone, a
 //     recorded frame at the desktop's widget layer); the hosts in ui-hosts count only when they
@@ -139,7 +156,7 @@
 //     Groups, Touch ID & Password, Lock Screen, Passwords or Login Password, nor on an element
 //     whose label names one of them;
 //   - it refuses everything that touches AX or posts an event while the screen is locked or the
-//     lid is closed, and while ~/bp-071/R/ready exists without a newer ~/bp-071/R/day-ended (the
+//     lid is closed, and while ~/bp-080/R/ready exists without a newer ~/bp-080/R/day-ended (the
 //     logged day), unless Session R's arm window (its pid and start time in arm.pid) is among its
 //     own ancestors;
 //   - it refuses any point within 20 points of a hot corner set to Start Screen Saver, Put Display
@@ -206,11 +223,14 @@ enum Rules {
     static let terminal = "com.apple.Terminal"
     static let textEdit = "com.apple.TextEdit"
     static let xcode = "com.apple.dt.Xcode"
+    /// The widget edit sheet's process, which owns its menus (an AXMenu at layer 101, Session F's
+    /// reading, AC71's F rows): ui presses in it only by `Sheet`'s rules.
+    static let widgetSheet = "com.apple.WorkflowUI.WidgetConfigurationExtension"
     /// The apps an AX action (press, select-row, minimize, fullscreen, position, close, quit, a menu
     /// command) may target. Finder, the Dock and Control Center never are; TextEdit and Xcode only in
-    /// the session's own window (`OwnWindows`).
+    /// the session's own window (`OwnWindows`); the widget sheet only by `Sheet`'s rules.
     static let targetBundles: Set<String> = [
-        batteryPulse, settings, textEdit, "com.apple.AccessibilityInspector", xcode,
+        batteryPulse, settings, textEdit, "com.apple.AccessibilityInspector", xcode, widgetSheet,
     ]
     /// The widget hosts known before proof P1; P1 may add a WidgetKit host (ui-hosts).
     static let builtInHosts: Set<String> = [notificationCenter, "com.apple.chronod"]
@@ -245,7 +265,7 @@ enum Rules {
         "notification center": notificationCenter, "notificationcenter": notificationCenter,
         "system settings": settings, "dock": dock, "finder": finder, "control center": controlCenter,
         "controlcenter": controlCenter, "batterypulse": batteryPulse, "textedit": textEdit,
-        "xcode": xcode, "accessibility inspector": "com.apple.AccessibilityInspector",
+        "xcode": xcode, "accessibility inspector": "com.apple.AccessibilityInspector", "widget sheet": widgetSheet,
     ]
 
     static func bundle(for query: String) -> String { aliases[query.lowercased()] ?? query }
@@ -426,7 +446,8 @@ enum Processes {
         let wanted = Rules.bundle(for: query)
         var byName: RunningProcess?
         for pid in all() {
-            guard let path = path(pid), path.contains(".app/") else { continue }
+            // An app, or an app extension (the widget sheet's process is one).
+            guard let path = path(pid), path.contains(".app/") || path.contains(".appex/") else { continue }
             let bundle = bundle(ofExecutable: path)
             if bundle == wanted { return RunningProcess(pid: pid, name: name(pid), bundle: bundle) }
             if byName == nil, name(pid) == wanted || URL(fileURLWithPath: path).lastPathComponent == wanted {
@@ -667,7 +688,7 @@ enum OwnWindows {
     static func allows(_ window: AXUIElement, of process: RunningProcess) -> Bool {
         switch process.bundle {
         case Rules.textEdit:
-            return document(window) == resolved(Safety.home + "/bp-071-cover.txt")
+            return document(window) == resolved(Safety.home + "/bp-080-cover.txt")
         case Rules.xcode:
             guard let path = document(window) else { return false }
             let run = resolved(Safety.home + "/run")
@@ -690,6 +711,94 @@ enum OwnWindows {
     static func window(of element: AXUIElement) -> AXUIElement? {
         if let window = AX.element(AX.attribute(element, "AXWindow")) { return window }
         return AX.chain(element, hops: 40).first { AX.string($0, "AXRole") == "AXWindow" }
+    }
+}
+
+// MARK: - The widget edit sheet and the keys
+
+/// The widget edit sheet (Edit Widget on a placed widget): its pop-up menus belong to WorkflowUI's
+/// configuration extension, an AXMenu at layer 101 that computer use refuses and can't be granted
+/// (Session F, AC71's F rows), so the script presses them by AX: only while the sheet shows one of
+/// BatteryPulse's widget descriptions (sheet-words, which the script writes from the frozen
+/// worktree's catalog, in English and Russian), and only a pop-up button, a menu item, a checkbox, a
+/// radio button or a plain button (Done) [the sheet's AX tree is unverified on macOS 27].
+enum Sheet {
+    static let roles: Set<String> = [
+        "AXPopUpButton", "AXMenuItem", "AXMenuButton", "AXButton", "AXCheckBox", "AXRadioButton",
+    ]
+
+    static func words() -> [String] {
+        Files.text("sheet-words").split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// The sheet shows a BatteryPulse widget's description in one of its windows.
+    static func check(_ process: RunningProcess) throws {
+        let words = words()
+        guard !words.isEmpty else {
+            throw Refusal(description: "no sheet-words in the session's folder: the widget sheet is acted in only once the script wrote them")
+        }
+        let shows = AX.windows(process).contains { window in
+            words.contains { !AX.find(in: window, text: $0, role: nil, depth: 30).isEmpty }
+        }
+        guard shows else { throw Refusal(description: "the widget sheet doesn't show a BatteryPulse widget's description") }
+    }
+
+    static func checkElement(_ element: AXUIElement) throws {
+        let role = AX.string(element, "AXRole") ?? ""
+        guard roles.contains(role) else {
+            throw Refusal(
+                description: "in the widget sheet only a pop-up button, a menu item, a checkbox, a radio button or a button is pressed (\(role))"
+            )
+        }
+    }
+}
+
+/// The keys `key` posts (the keyboard walk, C10): Tab, Shift-Tab and the arrows move the keyboard
+/// focus; Space and Return press the focused element. Esc (53) is never among them: it would end
+/// the Claude session's turn.
+enum Keys {
+    struct Key {
+        let code: CGKeyCode
+        let flags: CGEventFlags
+        let presses: Bool
+    }
+
+    /// An arrow key reports itself with the numeric pad and function flags.
+    static let arrow: CGEventFlags = [.maskNumericPad, .maskSecondaryFn]
+    /// HIToolbox's Events.h: kVK_Tab 0x30, kVK_Space 0x31, kVK_Return 0x24, kVK_LeftArrow 0x7B,
+    /// kVK_RightArrow 0x7C, kVK_DownArrow 0x7D, kVK_UpArrow 0x7E.
+    static let named: [String: Key] = [
+        "tab": Key(code: 0x30, flags: [], presses: false),
+        "shift-tab": Key(code: 0x30, flags: .maskShift, presses: false),
+        "left": Key(code: 0x7B, flags: arrow, presses: false),
+        "right": Key(code: 0x7C, flags: arrow, presses: false),
+        "down": Key(code: 0x7D, flags: arrow, presses: false),
+        "up": Key(code: 0x7E, flags: arrow, presses: false),
+        "space": Key(code: 0x31, flags: [], presses: true),
+        "return": Key(code: 0x24, flags: [], presses: true),
+    ]
+    /// The roles Space and Return may press: a setting's toggle, tile or radio button never (the
+    /// walk only reaches those).
+    static let pressRoles: Set<String> = ["AXButton", "AXPopUpButton", "AXMenuButton", "AXDisclosureTriangle"]
+    /// Labels a key never presses.
+    static let refusedWords = [
+        "install", "relaunch", "quit", "delete", "remove", "clear", "forget", "erase", "reset", "send", "save",
+        "download", "update", "turn off", "uninstall", "skip",
+    ]
+
+    /// The process of the focused application (the system-wide element's AXFocusedApplication).
+    static func focusedApplication() -> pid_t? {
+        AX.element(AX.attribute(AXUIElementCreateSystemWide(), "AXFocusedApplication")).flatMap(AX.pid)
+    }
+
+    static func focusedElement(_ process: RunningProcess) -> AXUIElement? {
+        AX.element(AX.attribute(AX.application(process), "AXFocusedUIElement"))
+    }
+
+    static func describe(_ element: AXUIElement?) -> String {
+        guard let element else { return "none" }
+        return "\(AX.role(element)) \"\(AX.label(element))\" frame \(AX.frame(element).map(Command.describe) ?? "-")"
     }
 }
 
@@ -1025,16 +1134,16 @@ struct WindowHit {
 }
 
 enum Safety {
-    /// The sessions' folders, ~/bp-071/<name> of the account's own home.
-    static let sessions = ["R", "C", "H", "D3", "F"]
+    /// The sessions' folders, ~/bp-080/<name> of the account's own home.
+    static let sessions = ["R", "L", "H", "D3"]
 
     /// The session's folder: the one above the bin/ this executable runs from, when that is
-    /// ~/bp-071/R, C, H, D3 or F of the account's own home; nil otherwise (`run` refuses then).
+    /// ~/bp-080/R, L, H or D3 of the account's own home; nil otherwise (`run` refuses then).
     static let folder: String? = {
         guard let home = Account.home, let executable = Processes.path(getpid()) else { return nil }
         let bin = URL(fileURLWithPath: executable).resolvingSymlinksInPath().deletingLastPathComponent()
         let session = bin.deletingLastPathComponent()
-        let root = URL(fileURLWithPath: home + "/bp-071").resolvingSymlinksInPath().path
+        let root = URL(fileURLWithPath: home + "/bp-080").resolvingSymlinksInPath().path
         guard bin.lastPathComponent == "bin", session.deletingLastPathComponent().path == root,
             Safety.sessions.contains(session.lastPathComponent)
         else { return nil }
@@ -1045,7 +1154,7 @@ enum Safety {
     static let home = folder ?? "/var/empty"
 
     /// Session R's folder, whose ready and day-ended fence every session.
-    static let sessionR = (Account.home ?? "/var/empty") + "/bp-071/R"
+    static let sessionR = (Account.home ?? "/var/empty") + "/bp-080/R"
 
     static func modified(_ path: String) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date
@@ -1074,7 +1183,7 @@ enum Safety {
     /// R's arm window is an ancestor; and always without a session folder.
     static func checkFence() throws {
         guard folder != nil else {
-            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-071/R, C, H, D3 or F)")
+            throw Refusal(description: "ui runs only from a session's bin/ (~/bp-080/R, L, H or D3)")
         }
         if let readyAt = modified(sessionR + "/ready") {
             let ended = modified(sessionR + "/day-ended").map { $0 > readyAt } ?? false
@@ -1388,6 +1497,7 @@ enum Safety {
             throw Refusal(description: "\(process.publicName) isn't a target (Finder, the Dock and Control Center never are)")
         }
         if panes, process.bundle == Rules.settings { try Panes.check(process) }
+        if process.bundle == Rules.widgetSheet { try Sheet.check(process) }
     }
 
     /// `guard`: every action's rule, now, plus System Settings' panes whenever it shows a window.
@@ -1524,7 +1634,7 @@ struct Options {
     init(_ arguments: [String]) throws {
         let takesOne: Set<String> = [
             "--tap", "--window", "--match", "--role", "--index", "--action", "--menu-cmd", "--steps", "--seconds",
-            "--depth", "--app", "--allow-cover", "--ax", "--within", "--expect", "--new-since", "--dock-title",
+            "--depth", "--app", "--allow-cover", "--ax", "--within", "--expect", "--new-since", "--dock-title", "--on",
         ]
         let takesFour: Set<String> = ["--inside"]
         let switches: Set<String> = [
@@ -1851,6 +1961,7 @@ enum Command {
             try Panes.checkLabels(of: matched)
             try Panes.checkLabels(of: element)
         }
+        if process.bundle == Rules.widgetSheet { try Sheet.checkElement(element) }
         try AX.perform(element, action)
         print("\(action) on \(AX.role(element)) in \(process.publicName)")
     }
@@ -2167,6 +2278,60 @@ enum Command {
         }
     }
 
+    /// `key <name> [--on <text>]`: one key posted to BatteryPulse's pid alone (`postToPid`), only
+    /// while BatteryPulse is the focused application, so no other app ever gets it; Space and Return
+    /// only on the focused element --on names, of a role `Keys.pressRoles` lists and with no refused
+    /// word in its label. Prints the element focused after it.
+    static func key(_ options: Options) throws {
+        try Safety.checkAction()
+        guard options.words.count == 2, let key = Keys.named[options.words[1]] else {
+            throw UsageError(description: "key tab|shift-tab|left|right|up|down | key space|return --on <text>")
+        }
+        let process = try Processes.app(Rules.batteryPulse)
+        try Safety.checkTarget(process)
+        guard Keys.focusedApplication() == process.pid else {
+            throw Refusal(description: "BatteryPulse isn't the focused application: a key would reach another app")
+        }
+        if key.presses {
+            guard let text = options.value("--on") else {
+                throw UsageError(description: "\(options.words[1]) presses the focused element: --on <its label>")
+            }
+            guard let element = Keys.focusedElement(process) else {
+                throw NotFound(description: "BatteryPulse has no focused element")
+            }
+            let label = AX.label(element)
+            guard label.localizedCaseInsensitiveContains(text) else {
+                throw Refusal(description: "the focused element is \(Keys.describe(element)), not \(text)")
+            }
+            let role = AX.string(element, "AXRole") ?? ""
+            guard Keys.pressRoles.contains(role) else {
+                throw Refusal(description: "a key presses only a button, a pop-up button or a disclosure triangle (\(role))")
+            }
+            if let word = Keys.refusedWords.first(where: { label.localizedCaseInsensitiveContains($0) }) {
+                throw Refusal(description: "the focused element's label names \"\(word)\": never pressed by a key")
+            }
+        }
+        Signals.hold()
+        defer { Signals.release() }
+        for down in [true, false] {
+            guard let event = CGEvent(keyboardEventSource: Events.source(), virtualKey: key.code, keyDown: down) else {
+                throw Failure(description: "can't make a key event")
+            }
+            event.flags = key.flags
+            event.postToPid(process.pid)
+            Events.pause(0.05)
+        }
+        Events.pause(0.3)
+        print("focused: \(Keys.describe(Keys.focusedElement(process))) (after \(options.words[1]))")
+    }
+
+    /// BatteryPulse's focused element (the keyboard walk's start).
+    static func focused() throws {
+        try Safety.checkAll()
+        let process = try Processes.app(Rules.batteryPulse)
+        print("focused: \(Keys.describe(Keys.focusedElement(process)))")
+    }
+
     static func tree(_ options: Options) throws {
         try Safety.checkAll()
         let process = try readTarget(options)
@@ -2204,7 +2369,11 @@ enum Command {
             let isInside = inside.map { box in frame.map { box.insetBy(dx: -2, dy: -2).contains($0) } ?? false } ?? true
             if isInside {
                 let detail = showsText ? " \"\(AX.label(element))\" value \(AX.value(element))" : ""
-                print("\(String(repeating: "  ", count: level))\(AX.role(element))\(detail) frame \(frame.map(describe) ?? "-")")
+                // A link's target, for BatteryPulse's own elements only (the help link, A-7).
+                let link = own ? (AX.attribute(element, "AXURL") as? URL).map { " url \($0.absoluteString)" } ?? "" : ""
+                print(
+                    "\(String(repeating: "  ", count: level))\(AX.role(element))\(detail) frame \(frame.map(describe) ?? "-")\(link)"
+                )
                 printed += 1
             }
             for child in AX.children(element) { walk(child, level + 1) }
@@ -2349,6 +2518,8 @@ enum Command {
         case "title": try title(options)
         case "pane-state": try paneState(options)
         case "tree": try tree(options)
+        case "key": try key(options)
+        case "focused": try focused()
         case "windows": try windows(options)
         case "idle": idle()
         case "locked": locked()
@@ -2364,7 +2535,7 @@ enum Command {
     }
 
     static let usage =
-        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|close|banner|quit|frame|title|pane-state|hit|tree|windows|idle|locked|thermal|sample|access|screen|guard ... (see ui.swift)"
+        "usage: ui click|move|drag|scroll|press|select-row|minimize|fullscreen|position|close|banner|quit|key|frame|title|pane-state|hit|tree|focused|windows|idle|locked|thermal|sample|access|screen|guard ... (see ui.swift)"
 }
 
 do {
