@@ -176,6 +176,34 @@ import Testing
         }
     }
 
+    // MARK: The text report
+
+    /// The report's "Not charging reason" names a proven cause after the hex; without one the hex
+    /// stands alone, and on battery the line stays out.
+    @Test func theReportNamesTheCause() throws {
+        func line(_ s: BatterySnapshot) -> String? {
+            BatteryReport.lines(for: s).first { $0.label == "Not charging reason" }?.value
+        }
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        #expect(line(held) == "0x1000000 (Charge Limit)")
+        #expect(BatteryReport.text(for: held).contains("Not charging reason  0x1000000 (Charge Limit)\n"))
+        for cause in NotChargingCause.allCases {
+            #expect(!BatteryReport.causeName(cause).isEmpty)
+        }
+
+        var noCause = held
+        noCause.notChargingReason = 0x80
+        #expect(line(noCause) == "0x80")
+        var optimized = held
+        optimized.isOptimizedChargingEngaged = true
+        #expect(line(optimized) == "0x1000000")
+        var onBattery = held
+        onBattery.isExternalPowerConnected = false
+        onBattery.chargeState = .discharging
+        #expect(line(onBattery) == nil)
+        #expect(line(try Fixture.m5OnBattery.snapshot()) == nil)
+    }
+
     // MARK: Motion
 
     /// The cause is a part of the motion key, so the sentence that names it moves once when the

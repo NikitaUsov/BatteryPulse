@@ -74,9 +74,9 @@ public enum BatteryReport {
             add("Charger request", "\(current) mA at \(fixed(Double(voltage) / 1000, 2)) V" + perCell)
         }
         // The gauge reports a "not charging" reason on battery too; it only means something
-        // while an adapter is connected.
+        // while an adapter is connected. A cause BatteryPulse can prove follows in brackets.
         if let reason = s.notChargingReason, reason != 0, s.isExternalPowerConnected == true {
-            add("Not charging reason", hex(reason))
+            add("Not charging reason", hex(reason) + (s.notChargingCause.map { " (\(causeName($0)))" } ?? ""))
         }
         if let reason = s.slowChargingReason, reason != 0, s.chargeState == .charging {
             add("Slow charging reason", hex(reason))
@@ -120,6 +120,13 @@ public enum BatteryReport {
         }
         if adapter.isWireless == true { parts.append("wireless") }
         return parts.isEmpty ? "connected" : parts.joined(separator: " · ")
+    }
+
+    /// A cause for not charging, as the report names it.
+    static func causeName(_ cause: NotChargingCause) -> String {
+        switch cause {
+        case .systemChargeLimit: "Charge Limit"
+        }
     }
 
     static func stateDescription(_ s: BatterySnapshot) -> String {
