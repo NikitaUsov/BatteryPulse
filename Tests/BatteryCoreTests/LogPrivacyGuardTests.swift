@@ -123,8 +123,9 @@ import Testing
             PublicValue("version", reason: "the release's version number, such as 0.7.0"),
             PublicValue(
                 "reason", count: 2,
-                reason: "an UpdateInstallError's case name (no case has a value), and strerror's text for an errno"),
+                reason: "a case name of UpdateInstallError, with needsNewerMacOS's version, or strerror's errno text"),
             PublicValue("status", count: 2, reason: "an OSStatus, Launch Services' or the code signature check's"),
+            PublicValue("failure", reason: "mkdir's errno for the launch marker, a number"),
             PublicValue("status ?? -1", reason: "diskutil's exit status, -1 when it didn't start"),
         ],
         "BatteryPulseWidget/WidgetFeedReader.swift": [
