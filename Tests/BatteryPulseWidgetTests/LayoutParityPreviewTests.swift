@@ -19,17 +19,22 @@ import Testing
 ///   pair.
 ///
 /// A line here is a band of pixel rows that hold anything but the widget's fill: text, a symbol, a
-/// chart's stroke. A pair lays out alike when both pictures have as many bands and each band's top
-/// and bottom lie within ``tolerance`` of its pair's: room for the two scripts' ascenders and
-/// descenders, not for a line more, a line moved or a value drawn smaller. Nothing here fails on
+/// chart's stroke. A pair lays out alike when both pictures have as many bands, each band's top
+/// within ``tolerance`` of its pair's and its bottom within ``descent``: room for the two scripts'
+/// glyphs and for the Russian decimal comma, which reaches below the line where the English point
+/// doesn't (0.7.1's first sheets measured 2.5 points under a value's row, 6 under a 34-point main
+/// value), but not for a line more, a moved line or a value drawn smaller. Nothing here fails on
 /// what it measures; the maintainer decides on the pictures.
 @MainActor
 struct LayoutParityPreviewTests {
     typealias Language = WidgetPreviewTests.Language
     typealias Picture = WidgetPreviewTests.Picture
 
-    /// How far a band's top or bottom may lie from its pair's, in points.
+    /// How far a band's top may lie from its pair's, in points.
     nonisolated static let tolerance = 2.0
+    /// How far a band's bottom may lie from its pair's, in points: a comma's or a descender's depth
+    /// under the largest value, less than a caption line's height, so a line more still shows.
+    nonisolated static let descent = 7.0
     /// How far a channel must differ from the widget's fill, of 255, for a pixel to count as drawn:
     /// above a chart's shading, below any text's.
     nonisolated static let threshold = 40
@@ -181,29 +186,32 @@ struct LayoutParityPreviewTests {
         var english: [Band]
         var russian: [Band]
 
-        /// The largest distance between a band's top or bottom and its pair's, in points; `nil`
-        /// when the two have a different number of bands.
-        var largestShift: Double? {
+        /// The largest distance between a band's top and its pair's, in points; `nil` when the two
+        /// have a different number of bands.
+        var topShift: Double? {
             guard english.count == russian.count else { return nil }
-            return zip(english, russian).map { max(abs($0.top - $1.top), abs($0.bottom - $1.bottom)) }.max() ?? 0
+            return zip(english, russian).map { abs($0.top - $1.top) }.max() ?? 0
+        }
+
+        /// The largest distance between a band's bottom and its pair's, in points; `nil` when the
+        /// two have a different number of bands.
+        var bottomShift: Double? {
+            guard english.count == russian.count else { return nil }
+            return zip(english, russian).map { abs($0.bottom - $1.bottom) }.max() ?? 0
         }
 
         var isAlike: Bool {
-            largestShift.map { $0 <= LayoutParityPreviewTests.tolerance } ?? false
-        }
-
-        /// How much further right the Russian picture draws than the English one, in points: its
-        /// rightmost drawn pixel against the English one's.
-        var reach: Double {
-            (russian.map(\.right).max() ?? 0) - (english.map(\.right).max() ?? 0)
+            guard let top = topShift, let bottom = bottomShift else { return false }
+            return top <= LayoutParityPreviewTests.tolerance && bottom <= LayoutParityPreviewTests.descent
         }
 
         var summary: String {
-            guard let shift = largestShift else {
+            guard let top = topShift, let bottom = bottomShift else {
                 return "differs: \(english.count) lines in English, \(russian.count) in Russian"
             }
-            let verdict = shift <= LayoutParityPreviewTests.tolerance ? "alike" : "differs"
-            return "\(verdict): \(english.count) lines, each within \(LayoutParityPreviewTests.points(shift)) pt"
+            let p = LayoutParityPreviewTests.points
+            return
+                "\(isAlike ? "alike" : "differs"): \(english.count) lines, tops within \(p(top)) pt, bottoms within \(p(bottom)) pt"
         }
     }
 
@@ -226,10 +234,11 @@ struct LayoutParityPreviewTests {
             "# Look 3: layout parity, English beside Russian",
             "",
             "Each line is a band of pixel rows with something drawn in it, in points from the widget's top.",
-            "A pair is alike with as many lines in both languages, each top and bottom within "
-                + "\(Self.points(Self.tolerance)) pt of its pair's. Reach: how much further right Russian draws.",
+            "A pair is alike with as many lines in both languages, each top within "
+                + "\(Self.points(Self.tolerance)) pt of its pair's and each bottom within \(Self.points(Self.descent)) pt "
+                + "(the Russian decimal comma reaches below the line).",
             "",
-            "| Sheet | Widget | Size | Scene | Lines | Largest shift (pt) | Reach (pt) | Verdict |",
+            "| Sheet | Widget | Size | Scene | Lines | Top shift (pt) | Bottom shift (pt) | Verdict |",
             "|---|---|---|---|---|---|---|---|",
         ]
         var details: [String] = ["", "## Every pair's lines", ""]
@@ -253,7 +262,7 @@ struct LayoutParityPreviewTests {
                     ? "\(comparison.english.count)" : "\(comparison.english.count) / \(comparison.russian.count)"
                 report.append(
                     "| \(sheet.name) | \(pair.widget) | \(family) | \(pair.title) | \(lines) | "
-                        + "\(comparison.largestShift.map(Self.points) ?? "—") | \(Self.points(comparison.reach)) | "
+                        + "\(comparison.topShift.map(Self.points) ?? "—") | \(comparison.bottomShift.map(Self.points) ?? "—") | "
                         + "\(comparison.isAlike ? "alike" : "**differs**") |")
                 details.append("- \(pair.widget), \(family), \(pair.title)")
                 details.append("  - English: \(Self.spans(comparison.english))")
