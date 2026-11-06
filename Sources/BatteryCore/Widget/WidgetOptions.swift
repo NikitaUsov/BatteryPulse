@@ -152,8 +152,8 @@ public enum HistoryWidgetPeriod: String, Sendable, CaseIterable {
 }
 
 /// Which of the remembered iPhones and iPads the iPhone & iPad widget shows: one of them, the
-/// most recently read or the lowest, or all of them, as many as the size has room for. Small has
-/// room for one, so All shows the most recently read there.
+/// most recently read, the lowest or a chosen one, or all of them, as many as the size has room
+/// for. Small has room for one, so All shows the most recently read there.
 public enum DevicesWidgetShow: String, Sendable, CaseIterable {
     /// The device BatteryPulse read last: the one most likely in hand or on its cable.
     case mostRecent
@@ -161,6 +161,8 @@ public enum DevicesWidgetShow: String, Sendable, CaseIterable {
     case lowest
     /// Every device, the most recently read first.
     case all
+    /// The device chosen in the edit sheet (``DevicesWidgetConfiguration/device``).
+    case oneDevice
 }
 
 /// Which accessories the Accessories widget lists in medium and large; small always shows the

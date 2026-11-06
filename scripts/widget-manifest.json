@@ -139,8 +139,12 @@
             "values" : [
               "mostRecent",
               "lowest",
-              "all"
+              "all",
+              "oneDevice"
             ]
+          },
+          {
+            "name" : "device"
           }
         ],
         "type" : "DevicesWidgetIntent"

@@ -4,9 +4,13 @@ import Foundation
 /// one to one. The default shows the most recently read device.
 public struct DevicesWidgetConfiguration: Sendable, Equatable {
     public var show: DevicesWidgetShow
+    /// One device's key, for ``DevicesWidgetShow/oneDevice``; `nil` until one is chosen, which
+    /// shows the most recently read.
+    public var device: DeviceKey?
 
-    public init(show: DevicesWidgetShow = .mostRecent) {
+    public init(show: DevicesWidgetShow = .mostRecent, device: DeviceKey? = nil) {
         self.show = show
+        self.device = device
     }
 }
 
@@ -18,9 +22,10 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 /// message; a feed over two hours old shows its last readings, each with its time, and "Open
 /// BatteryPulse to update".
 ///
-/// - **One device** (small, and the most recently read or the lowest in every size): its charge
-///   large, its name, state and read time; medium adds its maximum capacity, large its cycle
-///   count and temperature too. A click opens its page.
+/// - **One device** (small, and the most recently read, the lowest or the chosen one in every
+///   size): its charge large, its name, state and read time; medium adds its maximum capacity,
+///   large its cycle count and temperature too. A click opens its page. A chosen device the feed
+///   no longer holds was forgotten, which the widget says.
 /// - **All** (medium and large): a row per device, the most recently read first, each with its
 ///   charge, state and read time: three in medium and six in large, one fewer while "Open
 ///   BatteryPulse to update" takes the last row's place. A click opens the Devices section.
@@ -62,7 +67,11 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
         guard let feed else { return .empty(.noFeed) }
         guard feed.readsDevices else { return .empty(.readsOff) }
         let devices = ordered(feed.devices ?? [], by: c.show)
-        guard let first = devices.first else { return .empty(.noDevices) }
+        guard var first = devices.first else { return .empty(.noDevices) }
+        if c.show == .oneDevice, let key = c.device {
+            guard let chosen = devices.first(where: { $0.key == key }) else { return .empty(.forgotten) }
+            first = chosen
+        }
         let isOutdated = feed.isOutdated(at: entry.date)
         let showsOne = size == .small || c.show != .all
         let shown = showsOne ? [first] : Array(devices.prefix(rowSlots(size, isOutdated: isOutdated)))
@@ -119,6 +128,9 @@ public enum DevicesWidgetEmptyReason: Sendable, Equatable, CaseIterable {
     case readsOff
     /// Reads are on and no device is remembered yet ("Connect an iPhone or iPad with a cable").
     case noDevices
+    /// The chosen device isn't remembered any more ("This device was forgotten"): the edit sheet
+    /// offers the others.
+    case forgotten
 }
 
 /// The iPhone & iPad widget's content for one entry.
@@ -196,7 +208,7 @@ public enum DeviceWidgetName: Sendable, Equatable {
     case named(String)
     case unknown
 
-    init(_ device: WidgetFeed.Device) {
+    public init(_ device: WidgetFeed.Device) {
         if let name = device.name ?? device.model {
             self = .named(name)
         } else if let deviceClass = device.deviceClass, deviceClass == "iPhone" || deviceClass == "iPad" {
@@ -258,6 +270,7 @@ extension DevicesWidgetEmptyReason {
         case .noFeed: HistoryWidgetEmptyReason.outdatedKey
         case .readsOff: "Turn on Read iPhone and iPad batteries in BatteryPulse"
         case .noDevices: "Connect an iPhone or iPad with a cable"
+        case .forgotten: "This device was forgotten"
         }
     }
 }

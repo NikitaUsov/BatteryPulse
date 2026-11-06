@@ -518,6 +518,23 @@ import Testing
         }
     }
 
+    /// W-7: One device's entity query lists the feed's devices through the read every kind
+    /// shares (`WidgetReads.feed`, which reads through ``feedReader``), in the extension only, and
+    /// has no file API of its own.
+    @Test func theDeviceQueryReadsOnlyThroughTheFeedReader() throws {
+        let path = "BatteryPulseWidget/DevicesWidgetIntent.swift"
+        let code = try SourceScanner.file(path).code
+        let query = try #require(
+            code.firstMatch(of: #/struct DevicesWidgetDeviceQuery: EntityQuery \{([\s\S]*?)\n\}/#)?.output.1)
+        #expect(query.contains("await WidgetReads.feed.value()"))
+        #expect(
+            query.replacing(#/\s+/#, with: " ").contains(
+                "static var allowedExecutionTargets: IntentExecutionTargets { .widgetKitExtension }"))
+        #expect(!code.contains(Self.widgetFileAPIs))
+        #expect(!code.contains(Self.words(#/\bWidgetFeedReader\b/#)))
+        #expect(Self.violations(inCode: code, path: path).isEmpty)
+    }
+
     @Test func theWidgetMayNameFilesInText() {
         let widget = "BatteryPulseWidget/BatteryTimelineProvider.swift"
         #expect(!flags("// Reads no file: no FileManager, no URLSession.\nlet name = \"Network\"", path: widget))

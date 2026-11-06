@@ -90,6 +90,43 @@ struct DevicesWidgetPlanTests {
         #expect(Self.names(try Self.layout(.small, .lowest, feed: equal)) == ["New"])
     }
 
+    /// One device: the chosen one in every size, the most recently read until one is chosen, and
+    /// "This device was forgotten" once the feed no longer holds it.
+    @Test func oneDeviceShowsTheChosenOne() throws {
+        func one(_ key: DeviceKey?) -> DevicesWidgetConfiguration {
+            DevicesWidgetConfiguration(show: .oneDevice, device: key)
+        }
+        let feed = Self.feed(Self.four)
+        for size in [WidgetSize.small, .medium, .large] {
+            let plan = DevicesWidgetPlan.make(
+                size: size, configuration: one(Self.key("2")), feed: feed, entry: Self.fresh,
+                formatter: Self.formatter, timeZone: Self.utc)
+            guard case .devices(let layout) = plan else {
+                Issue.record("\(size): \(plan)")
+                continue
+            }
+            #expect(layout.showsOne && Self.names(layout) == ["iPad Air"], "\(size)")
+            #expect(plan.route.page == .device(Self.key("2")))
+        }
+        func plan(_ configuration: DevicesWidgetConfiguration, feed: WidgetFeed?) -> DevicesWidgetPlan {
+            DevicesWidgetPlan.make(
+                size: .small, configuration: configuration, feed: feed, entry: Self.fresh, formatter: Self.formatter,
+                timeZone: Self.utc)
+        }
+        guard case .devices(let unchosen) = plan(one(nil), feed: feed) else {
+            Issue.record("none chosen")
+            return
+        }
+        #expect(Self.names(unchosen) == ["Anna's iPhone"])
+        let forgotten = plan(one(Self.key("9")), feed: feed)
+        #expect(forgotten == .empty(.forgotten))
+        #expect(forgotten.route.page == .devices)
+        // Reads off and none remembered come first.
+        #expect(plan(one(Self.key("9")), feed: Self.feed(Self.four, readsDevices: false)) == .empty(.readsOff))
+        #expect(plan(one(Self.key("9")), feed: Self.feed([])) == .empty(.noDevices))
+        #expect(plan(one(Self.key("9")), feed: nil) == .empty(.noFeed))
+    }
+
     /// All lists the devices the most recently read first: three in medium, six in large, one
     /// fewer while the old feed's line shows; small has room for one, the most recently read.
     @Test func allListsAsManyAsTheSizeHasRoomFor() throws {

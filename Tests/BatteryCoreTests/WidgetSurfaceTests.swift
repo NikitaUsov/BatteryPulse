@@ -48,7 +48,7 @@ struct WidgetSurfaceTests {
             HistoryWidgetSeries.allCases.map(\.rawValue) == [
                 "charge", "batteryPower", "temperature", "capacityToDesign", "cycleCount",
             ])
-        #expect(DevicesWidgetShow.allCases.map(\.rawValue) == ["mostRecent", "lowest", "all"])
+        #expect(DevicesWidgetShow.allCases.map(\.rawValue) == ["mostRecent", "lowest", "all", "oneDevice"])
     }
 
     /// The pages' strings, which `@SceneStorage("mainSelection")` keeps and a click names.
@@ -102,7 +102,8 @@ struct WidgetSurfaceTests {
                 {"name": "statistics"}]}},
               {"kind": "io.github.nikitausov.BatteryPulse.devices", "families": ["small", "medium", "large"],
               "intent": {"type": "DevicesWidgetIntent", "parameters": [
-                {"name": "show", "values": ["mostRecent", "lowest", "all"]}]}}]}
+                {"name": "show", "values": ["mostRecent", "lowest", "all", "oneDevice"]},
+                {"name": "device"}]}}]}
             """
         #expect(try JSONDecoder().decode(WidgetIntentManifest.self, from: Data(json.utf8)) == .shipping)
     }

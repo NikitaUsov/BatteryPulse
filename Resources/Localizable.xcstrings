@@ -2718,6 +2718,17 @@
         }
       }
     },
+    "Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство"
+          }
+        }
+      }
+    },
     "Devices": {
       "extractionState": "manual",
       "localizations": {
@@ -5591,6 +5602,17 @@
         }
       }
     },
+    "One device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Одно устройство"
+          }
+        }
+      }
+    },
     "Opaque manufacturer data block read from the battery gauge at boot.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -7634,6 +7656,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Тепловое состояние"
+          }
+        }
+      }
+    },
+    "This device was forgotten": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это устройство забыто"
           }
         }
       }

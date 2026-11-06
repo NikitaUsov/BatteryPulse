@@ -255,6 +255,7 @@ extension DevicesWidgetEmptyReason {
         case .noFeed: "Open BatteryPulse to update"
         case .readsOff: "Turn on Read iPhone and iPad batteries in BatteryPulse"
         case .noDevices: "Connect an iPhone or iPad with a cable"
+        case .forgotten: "This device was forgotten"
         }
     }
 }

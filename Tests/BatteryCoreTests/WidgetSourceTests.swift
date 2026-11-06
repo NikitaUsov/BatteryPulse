@@ -152,11 +152,14 @@ struct WidgetSourceTests {
     }
 
     /// An iPhone's or iPad's name, which may be its owner's own, reaches the screen only through
-    /// `DeviceNameText`, which marks it privacy sensitive (Q-W11; §11 of 0.7.1's plan).
+    /// `DeviceNameText`, which marks it privacy sensitive (Q-W11; §11 of 0.7.1's plan), and the
+    /// edit sheet's chooser only through `DevicesWidgetDevice`'s title, which the widget never
+    /// draws.
     @Test func deviceNamesArePrivacySensitive() throws {
         var namers = 0
         for file in try Self.widgetCode() {
-            let scan = Self.nameScan(file.code, namer: "DeviceNameText", name: "named")
+            let scan = Self.nameScan(
+                file.code, namer: "DeviceNameText", name: "named", also: "DevicesWidgetDevice: AppEntity")
             namers += scan.namers
             #expect(scan.unmarkedNamers == 0, "\(file.path): DeviceNameText without .privacySensitive()")
             #expect(scan.namesOutside == 0, "\(file.path): a device's name outside DeviceNameText")
@@ -176,19 +179,30 @@ struct WidgetSourceTests {
 
     /// `namer`'s struct and the `.<name>` cases outside it: an accessory's reported name, or a
     /// device's.
-    static func nameScan(_ code: String, namer type: String = "AccessoryNameText", name: String = "reported")
-        -> NameScan
-    {
+    /// `namer`'s struct and the `.<name>` cases outside it: an accessory's reported name, or a
+    /// device's; `also` is a struct (with its conformance) that may name it too, which the
+    /// widget never draws.
+    static func nameScan(
+        _ code: String, namer type: String = "AccessoryNameText", name: String = "reported", also: String? = nil
+    ) -> NameScan {
         var scan = NameScan()
-        let namer = (try? Regex("struct \(type): View \\{([\\s\\S]*?)\\n\\}")).flatMap { code.firstMatch(of: $0) }
+        func body(_ declaration: String) -> Regex<AnyRegexOutput>.Match? {
+            (try? Regex("struct \(declaration) \\{([\\s\\S]*?)\\n\\}")).flatMap { code.firstMatch(of: $0) }
+        }
+        let namer = body("\(type): View")
         if let namer {
             scan.namers = 1
             scan.unmarkedNamers = namer.output[1].substring?.contains(".privacySensitive()") == true ? 0 : 1
         }
+        let allowed = [namer?.range, also.flatMap(body)?.range].compactMap { $0 }
         let outside = (try? Regex("\\.\(name)\\b"))?.wordBoundaryKind(.simple)
         scan.namesOutside =
-            outside.map { code.matches(of: $0).filter { namer?.range.contains($0.range.lowerBound) != true }.count }
-            ?? 0
+            outside.map { pattern in
+                code.matches(of: pattern).filter { match in
+                    !allowed.contains { $0.contains(match.range.lowerBound) }
+                }
+                .count
+            } ?? 0
         return scan
     }
 
@@ -235,6 +249,21 @@ struct WidgetSourceTests {
         #expect(
             device(deviceNamer + "\nif case .named(let name) = row.name { Text(verbatim: name) }").namesOutside == 1)
         #expect(device(namer).namers == 0)
+        // The edit sheet's entity may title a device with its name; nothing else may.
+        let entity = """
+            struct DevicesWidgetDevice: AppEntity {
+                var displayRepresentation: DisplayRepresentation {
+                    if case .named(let name)? = name { DisplayRepresentation(title: "x") } else { nil }
+                }
+            }
+            """
+        func sheet(_ text: String) -> NameScan {
+            Self.nameScan(
+                SourceScanner.codeOnly(text), namer: "DeviceNameText", name: "named",
+                also: "DevicesWidgetDevice: AppEntity")
+        }
+        #expect(sheet(deviceNamer + "\n" + entity).namesOutside == 0)
+        #expect(device(deviceNamer + "\n" + entity).namesOutside == 1)
     }
 
     /// VoiceOver never reads a symbol's name (0.6.1's level symbol read "Three-Quarter-Charged
@@ -433,7 +462,22 @@ struct WidgetSourceTests {
     @Test func eachDevicesDefaultIsTheModels() throws {
         let c = DevicesWidgetConfiguration()
         #expect(c.show == .mostRecent)
-        #expect(try Self.parameterDefaults("DevicesWidgetIntent") == ["show": ".\(c.show.rawValue)"])
+        #expect(c.device == nil)
+        #expect(
+            try Self.parameterDefaults("DevicesWidgetIntent") == ["show": ".\(c.show.rawValue)", "device": "none"])
+    }
+
+    /// One device's entity is identified by the device's `DeviceKey` string, an HMAC only the app
+    /// can make, never a hardware identifier, and holds nothing else but the name it shows.
+    @Test func eachDeviceIsIdentifiedByItsKey() throws {
+        let code = try Self.widgetCode().map(\.code).joined(separator: "\n")
+        let entity = try #require(
+            code.firstMatch(of: #/struct DevicesWidgetDevice: AppEntity \{([\s\S]*?)\n\}/#)?.output.1)
+        let stored = entity.matches(of: #/(?m)^    (?:let|var) (\w+):/#).map { String($0.output.1) }
+        #expect(stored == ["key", "name", "id", "displayRepresentation"])
+        #expect(entity.contains("let key: DeviceKey"))
+        #expect(entity.replacing(#/\s+/#, with: " ").contains("var id: String { key.rawValue }"))
+        #expect(code.contains(#/@Parameter\b[^@]*?\bvar\s+device\s*:\s*DevicesWidgetDevice\?/#))
     }
 
     /// Details' entity is identified by its field's frozen raw value.
