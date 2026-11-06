@@ -985,8 +985,9 @@ build_gui_tools() {
 }
 
 # tools: a short session's first script call: ui and frames built from its own frozen worktree
-# into ~/bp-080/<C|H|D3|F>/bin, where ui finds its session's folder (Session R's prepare builds
-# them in ~/bp-080/R/bin). The After publishing check clicks, crops and reads AX through them.
+# into ~/bp-080/<H|D3>/bin, where ui finds its session's folder (Session R8's and the look shoot's
+# prepare build them in their own bin/). The After publishing check clicks, crops and reads AX
+# through them.
 step_tools() {
   [ "$(uname -s)" = Darwin ] || fail "this runs on the Mac"
   xcode-select -p >/dev/null 2>&1 ||
@@ -2186,7 +2187,8 @@ select_page() {
 
 # MARK: - The start (prepare attempt, prepare, prepare reads)
 
-# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-080/R/attempt).
+# attempt_head: the frozen worktree's commit, which names this attempt (~/bp-080/R/attempt, or the
+# look shoot's ~/bp-080/L/attempt).
 attempt_head() { git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown; }
 
 # attempt_current: the session's folder is this attempt's (its attempt file names this commit).
@@ -2436,9 +2438,11 @@ keyboard_navigation() {
 # widgets on desktop by computer use from System Settings' sidebar (0.6.2's P8: their URLs open
 # other panes), answered from its shot. A value it can't read is "unknown" and never changed. Then
 # the desktop's shot and pluginkit, under his 0.7.1: his own widgets, one of which proof P1 needs.
+# report/ is the folder step 10 saves Report a Problem's files into (report-check reads it).
 step_prepare_reads() {
   begin_section 01-reads "Prepare's reads (the start)"
   local limit corner value screen keys
+  mkdir -p "$WORK/report"
   pmset -g battlimit >"$LOGS/battlimit.txt" 2>&1 || true
   limit="$(battlimit_value "$LOGS/battlimit.txt")"
   if [ -n "$limit" ]; then
@@ -3622,9 +3626,11 @@ step_demo_shots() {
 
 # MARK: - The new screens (the look shoot's step 3, Session R8's steps 3-11)
 
-# The pages of the main window's sidebar, by their English labels (MainView's SidebarItem); a
-# device's page shows only with one remembered, which prepare hides.
-PAGES="Overview Power History Health Accessories"
+# The pages of the main window's sidebar, by their English labels (MainView's SidebarItem), split
+# at "|" since some have spaces: iPhone and iPad is the Devices section's page while no device is
+# remembered (prepare hides his), Raw Data and Demo Mode the Developer section's (the session's
+# settings show it).
+PAGES="Overview|Power|History|Health|Accessories|iPhone and iPad|Raw Data|Demo Mode"
 
 # ui_lang: the language BatteryPulse runs in for the session's shots: en, or ru after
 # `app-language ru` (launch_r passes it, so every relaunch keeps it).
@@ -3684,19 +3690,21 @@ step_screen() {
   echo "LOOK $file"
 }
 
-# pages <tag> [<page>...]: the main window's pages (all of PAGES by default), each selected by its
-# sidebar row in the session's language and shot, into shots/screens/<tag>-<page>-<language>.png:
-# a Demo Mode scene on Overview and Power (the look shoot), every page in Russian (R8's step 8).
+# pages <tag> [<page>...]: the main window's pages (all of PAGES by default; a page of two words is
+# one quoted argument, "Raw Data"), each selected by its sidebar row in the session's language and
+# shot, into shots/screens/<tag>-<page>-<language>.png: a Demo Mode scene on Overview and Power (the
+# look shoot), every page in Russian (R8's step 8).
 step_pages() {
   rl_only pages
   [ $# -ge 1 ] || fail "usage: $SCRIPT pages <tag> [<page>...]"
   case "$1" in *[!A-Za-z0-9._-]*) fail "a tag is letters, digits, dots, dashes and underscores" ;; esac
-  local tag="$1" page lower file
+  local tag="$1" page lower file pages
   shift
+  if [ $# -gt 0 ]; then pages=("$@"); else IFS='|' read -r -a pages <<<"$PAGES"; fi
   app_running || launch_r
   open_main
   place_window
-  for page in ${*:-$PAGES}; do
+  for page in "${pages[@]}"; do
     lower="$(tr '[:upper:]' '[:lower:]' <<<"$page" | tr ' ' '-')"
     select_page "$(page_label "$page")" || {
       not_checked "pages-$tag-$lower" "the sidebar row $page wasn't selected"
@@ -3712,7 +3720,7 @@ step_pages() {
   done
   park_pointer
   use_section 30-screens "The screens (PLAN.md §6.1 step 3, §6.4 steps 8-10)"
-  out "- $tag ($(ui_lang), $(clock)): $(printf '%s ' ${*:-$PAGES})"
+  out "- $tag ($(ui_lang), $(clock)): $(printf '%s; ' "${pages[@]}")"
 }
 
 # scene-shots <tag>: a Demo Mode scene the session chose by an AX press on its row (Developer →
@@ -6352,7 +6360,8 @@ step_after() {
 # the change record and its restored lines; the logged day's fence and its day-end; the summary's
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
-  local problems=0 id session setting report printed feed facts counts=""
+  local problems=0 id session setting report printed feed facts counts="" starts runbook section bytes status other
+  local wanted missing name names
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -6547,14 +6556,44 @@ dry_run() {
     if question "$id" >/dev/null; then :; else check fail "the widget name behind $id has no step 3 question"; fi
   done
   check ok "every widget name has its step 3 question"
-  # The start sentence prints SESSION-R.md up to "The short sessions" (start-session-r.sh's sed)
+  # Every start line prints one runbook section by section.sh (PLAN.md §6.0 rule 1, T-1 item 4),
   # through the Bash tool, which cuts an output past 30,000 characters (a whole runbook printed at
-  # once was too long for 0.6.2's after-publishing check): its bytes, an upper bound of its
-  # characters, stay under 28,500.
-  printed="$(sed "/^## The short sessions/,\$d" "$HERE/SESSION-R.md" 2>/dev/null | wc -c | tr -d ' ')"
-  [ "${printed:-0}" -gt 1000 ] && [ "$printed" -lt 28500 ] &&
-    check ok "Session R's start prints $printed bytes of SESSION-R.md, under 28,500" ||
-    check fail "Session R's start prints ${printed:-no} bytes of SESSION-R.md: keep it under 28,500"
+  # once was too long for 0.6.2's after-publishing check): each section PLAN.md's start lines and
+  # start-session.sh name prints alone, its heading first and no other, under 28,500 bytes (an
+  # upper bound of its characters).
+  starts="$({
+    sed -n 's/.*section\.sh) [^ ]* \(SESSION-[LR]\.md\) \([^,]*\), then follow only what it prints.*/\1 \2/p' "$HERE/PLAN.md"
+    sed -n 's/.*runbook=\(SESSION-[LR]\.md\) section="\([^"]*\)".*/\1 \2/p' "$HERE/start-session.sh"
+  } | sort -u)"
+  [ "$(grep -c . <<<"$starts")" -ge 4 ] && check ok "the start lines name $(grep -c . <<<"$starts") runbook sections" ||
+    check fail "the start lines name too few runbook sections ($(tr '\n' ';' <<<"$starts"))"
+  while read -r runbook section; do
+    [ -n "$runbook" ] || continue
+    printed="$(bash "$HERE/section.sh" --worktree "$runbook" "$section" 2>&1 </dev/null)" || {
+      check fail "section.sh prints no section \"$section\" of $runbook ($(head -1 <<<"$printed"))"
+      continue
+    }
+    bytes="$(printf '%s\n' "$printed" | wc -c | tr -d ' ')"
+    [ "$(head -1 <<<"$printed")" = "## $section" ] && [ "$(grep -c '^## ' <<<"$printed")" = 1 ] &&
+      [ "$bytes" -gt 300 ] && [ "$bytes" -lt 28500 ] &&
+      check ok "the start of \"$section\" prints that section of $runbook alone, $bytes bytes" ||
+      check fail "the start of \"$section\" prints $bytes bytes of $runbook, or more than its section: one section, under 28,500"
+  done <<<"$starts"
+  # The sections a start section sends the session to read, each a heading of its runbook.
+  for wanted in "SESSION-L.md|Rules|Privacy|Decisions you make alone|L0:|L1:|L2:|L3:|L4:|L5:|If the session restarts or compacts|Answers" \
+    "SESSION-R.md|Rules|Privacy|Decisions you make alone|R0:|R1:|R2:|R3:|If the session restarts or compacts|Answers"; do
+    runbook="${wanted%%|*}"
+    missing=""
+    IFS='|' read -r -a names <<<"${wanted#*|}"
+    for name in "${names[@]}"; do grep -q "^## $name" "$HERE/$runbook" || missing="$missing \"$name\""; done
+    [ -z "$missing" ] && check ok "$runbook has every section its start sections name" ||
+      check fail "$runbook lacks the sections$missing, which its start sections name"
+  done
+  bash "$HERE/section.sh" --worktree SESSION-R.md "No such section" >/dev/null 2>&1 && status=0 || status=$?
+  bash "$HERE/section.sh" --worktree PLAN.md R8 >/dev/null 2>&1 && other=0 || other=$?
+  [ "$status" = 1 ] && [ "$other" = 2 ] &&
+    check ok "section.sh refuses a heading its runbook lacks (1) and a file that is no runbook (2)" ||
+    check fail "section.sh's refusals are wrong (a missing heading $status, not 1; another file $other, not 2)"
   rm -rf "$WORK"
   if [ "$problems" -gt 0 ]; then
     echo "dry run: $problems broken rule(s)" >&2
@@ -6572,6 +6611,7 @@ step_help() {
 usage: $SCRIPT <command> [arguments]          (the look shoot; SESSION-L.md is the runbook)
 
 The start (he is there):
+  prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]   first: a clean start
   answer --by person L-yes y (and L-usage, L-adapter); prepare (a background task: wait 9 until it ends): the
   backup, the CI build L installed over his $BASE_VERSION, the tools, the app's counts of the placed widgets; a beep
   preflight; main (before the one computer-use access request); ui access; prepare reads
@@ -6673,8 +6713,9 @@ if [ "$COMMAND" = dry-run ]; then
   exit $?
 fi
 # The start's clean start comes before every fence: an earlier attempt's ready would stop it, and
-# it moves that aside (step_attempt refuses while that attempt's arm window runs).
-if [ "$SESSION" = R ] && [ "$COMMAND" = prepare ] && [ "${1:-}" = attempt ]; then
+# it moves that aside (step_attempt refuses while that attempt's arm window runs). The look shoot's
+# too: an earlier attempt's restored lines would count its changes as back.
+if { [ "$SESSION" = R ] || [ "$SESSION" = L ]; } && [ "$COMMAND" = prepare ] && [ "${1:-}" = attempt ]; then
   shift
   run_step step_attempt "$@"
   exit 0
@@ -6698,7 +6739,7 @@ fi
 case "$COMMAND:${1:-}" in
   status:* | day-end:* | arm:) ;;
   *)
-    if [ "$SESSION" = R ]; then attempt_fence; fi
+    if [ "$SESSION" = R ] || [ "$SESSION" = L ]; then attempt_fence; fi
     r_fence
     mkdir -p "$WORK"
     touch "$HEARTBEAT"

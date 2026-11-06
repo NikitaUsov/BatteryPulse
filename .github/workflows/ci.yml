@@ -73,11 +73,12 @@ jobs:
             --fallback-display-name BatteryCore --fallback-bundle-identifier io.github.nikitausov.BatteryCore \
             --output-path "$RUNNER_TEMP/BatteryCore.doccarchive"
       - name: Check Session R's bookkeeping (dry run)
-        # 0.7's M5 session script (plan-0.7.0 W-12), built from 0.6.2's, re-pointed at 0.7.1 for its
-        # short feed check and copied on from 0.7.1's plan folder at 0.7.1's release, for 0.8's M5
-        # sessions: its questions, the change record and its restored lines, the logged day's
-        # fence, the summary's alerts, the report and its privacy lint, the log tool's own lines
-        # left out of its counts, with nothing of the Mac. It goes with that folder at 0.8's D3.
+        # 0.8's M5 session script (plan-0.8.0 T-1), built on 0.7's and 0.6.2's and moved here from
+        # 0.7.1's plan folder: its questions, the change record and its restored lines, the logged
+        # day's fence, the summary's alerts, the session's widgets by the app's counts (T-1 item 7),
+        # G8-1's verdicts, the report and its privacy lint, the log tool's own lines left out of its
+        # counts, and each start line's runbook section as section.sh prints it, with nothing of
+        # the Mac. It goes with that folder at 0.8's D3.
         run: bash docs/plans/0.8.0/m5-session.sh dry-run
 
   macos:
@@ -247,12 +248,12 @@ jobs:
           swift scripts/appintents-check.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
-          # 0.7's M5 session script, its launchers and helpers (plan-0.7.0 W-12, built from 0.6.2's),
-          # copied on from 0.7.1's plan folder at 0.7.1's release for 0.8's M5 sessions, until 0.8's
-          # D3 removes the folder. 0.6.2's Session B launchers stayed behind with 0.7.0's plan folder.
+          # 0.8's M5 session script, its launcher, section.sh and helpers (plan-0.8.0 T-1, built on
+          # 0.7's W-12 and 0.6.2's), until 0.8's D3 removes the folder. 0.7.1's two launchers gave
+          # way to start-session.sh, whose start lines print their runbook section by section.sh.
           bash -n docs/plans/0.8.0/m5-session.sh
-          bash -n docs/plans/0.8.0/start-session-r.sh
-          bash -n docs/plans/0.8.0/start-short-session.sh
+          bash -n docs/plans/0.8.0/section.sh
+          bash -n docs/plans/0.8.0/start-session.sh
           swiftc -typecheck docs/plans/0.8.0/swap.swift
           swiftc -typecheck docs/plans/0.8.0/frames.swift
           swiftc -typecheck docs/plans/0.8.0/ui.swift
