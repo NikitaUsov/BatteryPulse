@@ -273,17 +273,8 @@ public actor HistoryStore {
         activity.appends += 1
     }
 
-    private func writeLines(_ values: [some Encodable], to url: URL) throws {
-        var data = Data()
-        for value in values {
-            data.append(try encoder.encode(value))
-            data.append(0x0A)
-        }
-        try data.write(to: url, options: .atomic)
-    }
-
     /// The samples in a day's file, in file order, decoding only what this session hasn't. Like
-    /// ``readLines(_:from:)``, it skips lines that don't decode.
+    /// `loadDays()`, it skips lines that don't decode (a write cut short by a crash).
     private func samples(inDay day: String) throws -> [HistorySample] {
         let url = sampleURL(day)
         guard FileManager.default.fileExists(atPath: url.path) else {
@@ -323,12 +314,5 @@ public actor HistoryStore {
     private func decode(_ line: Data, into samples: inout [HistorySample]) {
         activity.decodedSampleLines += 1
         if let sample = try? decoder.decode(HistorySample.self, from: line) { samples.append(sample) }
-    }
-
-    /// Reads a JSON Lines file, skipping lines that don't decode (a write cut short by a crash).
-    private func readLines<T: Decodable>(_ type: T.Type, from url: URL) throws -> [T] {
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
-        // Each line is a slice of the file's data, decoded where it is.
-        return try Data(contentsOf: url).split(separator: 0x0A).compactMap { try? decoder.decode(T.self, from: $0) }
     }
 }
