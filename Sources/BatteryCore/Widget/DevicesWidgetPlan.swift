@@ -25,8 +25,7 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 /// - **One device** (small, and the most recently read, the lowest or the chosen one in every
 ///   size): its charge large, its name, state and read time; medium and large add its maximum
 ///   capacity, cycle count and temperature, as the Battery widget shows its details. A click opens
-///   its page. A chosen device the feed
-///   no longer holds was forgotten, which the widget says.
+///   its page. A chosen device the feed no longer holds was forgotten, which the widget says.
 /// - **All** (medium and large): a row per device in the feed's order, the most recently read
 ///   first, each with its charge, state and read time: three in medium and six in large, one
 ///   fewer while "Open BatteryPulse to update" takes the last row's place. A click opens the

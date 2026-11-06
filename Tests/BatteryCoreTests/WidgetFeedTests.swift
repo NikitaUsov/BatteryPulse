@@ -337,7 +337,8 @@ import Testing
         // 10:00 starts a 2-hour step too.
         #expect(week.date(ofStep: 83) == Date(timeIntervalSince1970: 1_793_872_800))
         #expect(Int(week.start.timeIntervalSince1970) % 7_200 == 0)
-        // The samples start at the History page's 7 days, a few minutes before the week's first step.
+        // The samples start at the History page's 7 days, under a step (here 112.5 minutes) before
+        // the week's first.
         #expect(WidgetFeed.historyStart(at: Self.now) == Self.now.addingTimeInterval(-7 * 86_400))
         #expect(week.start.timeIntervalSince(WidgetFeed.historyStart(at: Self.now)) == 112.5 * 60)
         #expect(day.percent.last == 50)
