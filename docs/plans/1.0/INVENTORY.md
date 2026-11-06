@@ -39,7 +39,7 @@ note holds:
   M5 session.
 - FEA-10, FEA-11 and FEA-12 (the feed, the History widget and the iPhone & iPad widget), with SEC-08
   and DOC-08, go to 0.7.1, not 1.1, and so does the widget following the app's own language (0.7's
-  W-0 item 8). Their design is in `docs/plans/0.7.1/widgets.md`.
+  W-0 item 8). Their design is in `docs/plans/0.7.1/widgets.md`, readable since 0.7.1's release at `<keep>` in the 0.7.1 release PR's head.
 - The backup release key (the roadmap's NEW-13) goes to 0.8. The build-number clock (plan-0.7.0
   D1), a technical choice, comes before 0.7.1's first candidate.
 
@@ -47,6 +47,10 @@ note holds:
 session and its release): FEA-10, FEA-11 and FEA-12, with SEC-08 and DOC-08, are built for 0.7.1
 (W-5, W-6, W-7) and ship with it; QUA-16 is carried by 0.7.1's M5 session, not yet run; SIZ-07,
 W-7's widget-only string table, is built for 0.7.1 too. Their rows say so.
+
+**Updated 2026-11-06, at 0.7.1's release:** QUA-16 ran in part in 0.7.1's short feed check
+(Session F, the maintainer's choice in place of the full session), and the rest goes to 0.8's M5
+session; its row says so. 0.7.1's plan folder left at the release (plan-0.7.1 below).
 
 ## How to read this
 
@@ -77,8 +81,9 @@ W-7's widget-only string table, is built for 0.7.1 too. Their rows say so.
 | UG:n | `docs/USER_GUIDE.md`, line n |
 | RM:n | `README.md`, line n |
 | RN:n | `.github/release-notes.md`, line n |
-| P2 | the verified 0.6.2 plan (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, is in `docs/plans/0.7.1/widgets.md`; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
-| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C is copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build is in `docs/plans/0.7.1/widgets.md` |
+| P2 | the verified 0.6.2 plan (section, package or question ID; `P2:n` is a line of the plan as committed at `bb6eeab`), removed at 0.6.2's release: its §8, §9 with §9.1, §10's Q-W answers and Appendix C's W0 rows went to `docs/plans/0.7.0/widgets.md`, numbers kept, and its whole Appendix C, where 0.6.2's D3 records Session B's results, to `docs/plans/0.7.0/0.6.2-appendix-c.md`, a folder removed at 0.7.0's release and readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`; what 0.7 didn't build of §8, with the Q-W answers, went on to `docs/plans/0.7.1/widgets.md`, removed at 0.7.1's release and readable at `<keep>` in the 0.7.1 release PR's head; the rest is readable in the history of the 0.6.2 release PR's head (`refs/pull/12/head`), in the commit before the one that removed the folder |
+| plan-0.7.0 | 0.7.0's plan, `docs/plans/0.7.0/PLAN.md`, removed at 0.7.0's release: readable at `ebe654772c7f06d5e136327e0e6a236fed71cdc9` in `refs/pull/13/head`. Its Appendix C was copied to `docs/plans/0.7.1/0.7.0-appendix-c.md`, and what 0.7 didn't build went to `docs/plans/0.7.1/widgets.md`, both readable at `<keep>` in the 0.7.1 release PR's head |
+| plan-0.7.1 | 0.7.1's plan, `docs/plans/0.7.1/PLAN.md`, removed at 0.7.1's release: readable at `<keep>` in the 0.7.1 release PR's head, with Session F's report beside it (`sessions/F.md`). Its Appendix C is copied to `docs/plans/0.8.0/0.7.1-appendix-c.md`, and the session tools moved to `docs/plans/0.8.0/` |
 | P1 | the 0.6.1 plan, `6aec4d2:docs/plans/0.6.1/PLAN.md` (in PR 11's history) (§6 deferred table at line 1372, Appendix A, Appendix B, Appendix C) |
 | PB | `6aec4d2:docs/plans/0.6.1/playbook.md` |
 | AUD-x | `6aec4d2:docs/plans/0.6.1/audit-x-verified.md` |
@@ -230,7 +235,7 @@ Enhanced Security spike.
 | QUA-13 | SUI-09: `@State` initialized in one place | Kept to `App/`; optionally one `AppServices` grouping | R:531; P2 WP-19; RES-swiftui SUI-09 | no | S | none | none | 0.6.2 (P3) |
 | QUA-14 | CB-02: device JSON dates as ISO 8601 | `bpulse --device <n> --json` writes `firstUseDate` as seconds since 2001 today; change with a release-notes line | R:554-556; P1 §8 Q3; AUD-cli-build CB-02 | yes (scripts) | S | none | frozen-output rule (needs a minor version) | 0.7 |
 | QUA-15 | Remove the legacy `samples.jsonl` migration | No release ever wrote that file, so the migration only serves pre-0.3 development folders | AUD-cli-build CB-01 ("for a later decision"); PB §3.4 storage list | no | S | none | none (frozen storage list needs a version that announces it) | unassigned (new) |
-| QUA-16 | 0.7's own M5 session | A 0.6.x widget after the in-app update; every kind × family × rendering mode in both languages at 12- and 24-hour time; the edit sheet; VoiceOver; clicks with and without a window; reloads requested against delivered; widget energy; the feed's contents | P2 §8.14 (P2:1767-1775) | yes | M | FEA-06 to FEA-12 | M5 session | 0.7.1's M5 session (carried, not yet run; 2026-10-31: was 0.7: 0.7.0 shipped without it) |
+| QUA-16 | 0.7's own M5 session | A 0.6.x widget after the in-app update; every kind × family × rendering mode in both languages at 12- and 24-hour time; the edit sheet; VoiceOver; clicks with and without a window; reloads requested against delivered; widget energy; the feed's contents | P2 §8.14 (P2:1767-1775) | yes | M | FEA-06 to FEA-12 | M5 session | 0.8's M5 session (carried: 2026-11-06, 0.7.1 ran only the short feed check, Session F, a part of it; 2026-10-31: was 0.7: 0.7.0 shipped without it) |
 
 ## 3. Energy and performance
 
@@ -304,7 +309,7 @@ Enhanced Security spike.
 | DOC-02 | User Guide for 0.6.2 | Clear's known issue removed (UG:162-163); graduated styles without "beta"; a refresh sentence if E4b lands (UG:124-132); installer text | P2 WP-22 | yes | S | QUA-01, FEA-22, ENG-09 | none | 0.6.2 |
 | DOC-03 | Roadmap for 0.6.2 | Ticks; the window-style Decisions line (R:31-32); "Performance baseline (0.6.1 → 0.6.2)"; reword "power in the menu bar for an hour" (R:507); Session A's length (R:500-501 says about 25 minutes, P2 §1 about 65) and Session B's (hands-free since 2026-10-23: about 18-22 minutes of the maintainer's time, P2 §1); the 0.7 stage with §9.1's phases | P2 WP-21 output, WP-22 | no | S | ENG-01 to ENG-05 | none | 0.6.2 |
 | DOC-04 | 0.6.2 release notes | `## What's new in 0.6.2` (checked by CB-06); only user-visible items that landed; the energy line; "Updating from 0.6.1" | P2 D1 | yes | S | DIS-08 | none | 0.6.2 |
-| DOC-05 | Plan files | Commit the 0.6.2 plan under a plan folder of its own (removed at the release; readable in the history of the 0.6.2 release PR's head, `refs/pull/12/head`); at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` (removed at 0.7.0's release in turn, readable at the commit plan-0.7.0 names; what 0.7 didn't build moved on to `docs/plans/0.7.1/widgets.md`) and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
+| DOC-05 | Plan files | Commit the 0.6.2 plan under a plan folder of its own (removed at the release; readable in the history of the 0.6.2 release PR's head, `refs/pull/12/head`); at D3 move §8, §9.1, the Q-W answers and W0 results to `docs/plans/0.7.0/widgets.md` (removed at 0.7.0's release in turn, readable at the commit plan-0.7.0 names; what 0.7 didn't build moved on to `docs/plans/0.7.1/widgets.md`, removed at 0.7.1's release and readable at `<keep>` in the 0.7.1 release PR's head) and link it from the roadmap | P2 header (P2:26-27), D3 | no | S | none | none | 0.6.2 |
 | DOC-06 | Window-style screenshots for the User Guide | Session B produces 24 + 19 shots; whether any are committed to the guide is not decided (uncertain) | R:339; P2 §6 Session B step 3 | yes | S | QUA-03 | M5 session, maintainer taste | 0.6.2 (evidence; publication undecided) |
 | DOC-07 | Widget docs for 0.7 | Rewrite the guide's Widget section (W-10); it still says a DMG replacement removes placed widgets (UG:425), which R:202-203 contradicts for 0.3.1 → 0.4.0, and calls the widget new (UG:428, RM:84) | P2 W-10 | yes | S | FEA-06 | none | 0.7 |
 | DOC-08 | Privacy text with the widget feed | SEC-16: keep the guide's privacy section current; the feed is a new file in Application Support | RES-security SEC-16; P2 §8.8 | yes | S | FEA-10 | none | 0.7.1 (written, W-18: the guide, README and the notes; 2026-10-31: was 0.7 (with W-5)) |
@@ -315,7 +320,7 @@ Enhanced Security spike.
 
 | ID | Item | Description | Sources | User-visible | Size | Depends on | Blocked by | Version |
 |---|---|---|---|---|---|---|---|---|
-| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3, readable at the commit plan-0.7.0 names, and 0.7's to `docs/plans/0.7.1/` at 0.7.0's): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
+| TCI-01 | The 0.6.2 session script | `m5-session.sh` (copied to `docs/plans/0.7.0/` at 0.6.2's D3, readable at the commit plan-0.7.0 names, 0.7's to `docs/plans/0.7.1/` at 0.7.0's, readable at `<keep>` in the 0.7.1 release PR's head, and on to `docs/plans/0.8.0/` at 0.7.1's): fresh backups per session, a restore that covers Application Support, the energy runs, the swap helper, `y = looks right` wording, `bash -n` in CI | P2 WP-21, §3 session wording, §6 | no | M | none | none | 0.6.2 (P1) |
 | TCI-02 | CI pins | Review `actions/checkout` v6.1.0 (a tag without a changelog entry) and `upload-artifact` v7.0.2; move only to a tagged, changelogged release pinned by SHA | R:533-534; P2 WP-19; P1 App C B6 | no | S | none | none | 0.6.2 |
 | TCI-03 | SW-21: DocC check in CI | Only if it costs under a minute | R:531; P2 WP-19; RES-swift SW-21 | no | S | none | none | 0.6.2 (P3) |
 | TCI-04 | C2: parser instruction budget | Tried once, never a gate | R:531-532; P2 WP-19; RES-energy C2 | no | S | none | none | 0.6.2 (P3) |
