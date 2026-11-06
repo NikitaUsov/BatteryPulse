@@ -79,12 +79,31 @@ struct WidgetTextBudgetTests {
         case .cellBalance: [f.millivolts(999)]
         case .voltage: [f.volts(millivolts: 13_050)]
         case .systemChargeLimit: try words(["Reached"])
+        case .averageDrain: try perHour(f.percent(99.9, fractionDigits: 1), language)
+        // The system's own text, one field in a line's place (hours, or minutes under an hour).
+        case .timeOnBattery:
+            [systemDuration(minutes: 59, [.minutes], language), systemDuration(minutes: 23 * 60, [.hours], language)]
         }
+    }
+
+    /// A duration in full words, as the system's self-updating offset writes it ("59 minutes")
+    /// [estimate: Foundation's own wide units in the language].
+    static func systemDuration(minutes: Int, _ units: Set<Duration.UnitsFormatStyle.Unit>, _ language: Language)
+        -> String
+    {
+        var style = Duration.UnitsFormatStyle(allowedUnits: units, width: .wide)
+        style.locale = language.locale
+        return Duration.seconds(minutes * 60).formatted(style)
     }
 
     /// "%@ per hour" with `value`, in `language`.
     static func perHour(_ value: String, _ language: Language) throws -> [String] {
         try [text("%@ per hour", language)].compactMap { $0?.replacingOccurrences(of: "%@", with: value) }
+    }
+
+    /// The time on battery in a tile, which has room for both fields.
+    static func timeOnBatteryTile(_ language: Language) -> String {
+        systemDuration(minutes: 23 * 60 + 59, [.hours, .minutes], language)
     }
 
     static let stateKeys = WidgetStateWord.allCases.map(WidgetKeys.state)
@@ -198,8 +217,9 @@ struct WidgetTextBudgetTests {
                                 oneLine(labels, after: before, place) || alone, "\(labels.last ?? "") \(value)",
                                 "a detail, \(size)")
                         case .large, .extraLarge, .extraLargePortrait:
+                            let tile = field == .timeOnBattery ? Self.timeOnBatteryTile(language) : value
                             check(oneLine([labels[0]], place), labels[0], "a tile's label, \(size)")
-                            check(Budget.lines(value, width: place, .title3) <= 2, value, "a tile's value, \(size)")
+                            check(Budget.lines(tile, width: place, .title3) <= 2, tile, "a tile's value, \(size)")
                         }
                     }
                 }

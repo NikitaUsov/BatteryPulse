@@ -89,8 +89,8 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
     static let chartSlots = 2
 
     /// The plan for `entry` of a timeline made for `snapshot`; `nil` means the widget read no
-    /// battery. `feed` is the one the app writes, `nil` without one: the History chart comes from
-    /// it. Clock times are in `formatter`'s locale and `timeZone`.
+    /// battery. `feed` is the one the app writes, `nil` without one: the History chart and the
+    /// two feed details come from it. Clock times are in `formatter`'s locale and `timeZone`.
     public static func make(
         size: WidgetSize, configuration c: BatteryWidgetConfiguration, snapshot: BatterySnapshot?,
         entry: WidgetTimelinePlan.Entry, formatter: BatteryFormatter, timeZone: TimeZone, feed: WidgetFeed? = nil
@@ -120,7 +120,7 @@ public enum WidgetLayoutPlan: Sendable, Equatable {
         if case .condition = attention { seen.insert(.condition) }
         let rows = fields.compactMap { field -> WidgetRow? in
             guard seen.insert(field).inserted else { return nil }
-            return WidgetRow(field, snapshot: snapshot, time: time, formatter: formatter)
+            return WidgetRow(field, snapshot: snapshot, time: time, formatter: formatter, feed: feed)
         }
 
         // The History chart: large only, in place of the last two details, whatever the layout,

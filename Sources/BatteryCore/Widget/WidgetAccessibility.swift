@@ -64,6 +64,9 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
     /// The time left, which the system counts down in the text itself: that text is the element,
     /// and its label stays the system's.
     case timeLeft(until: Date)
+    /// A label's key and the time since a moment, which the system counts up in the text itself:
+    /// the element combines the label and that text, as the system reads them.
+    case counting(label: String, since: Date)
 
     /// The label in one language; `nil` for the time left, whose words only the system has.
     public func text(_ localize: (String) -> String) -> String? {
@@ -81,6 +84,7 @@ public enum WidgetSpokenLabel: Sendable, Equatable {
         switch self {
         case .phrases(let phrases): phrases.flatMap(\.keys)
         case .timeLeft: []
+        case .counting(let label, _): [label]
         }
     }
 }
@@ -163,6 +167,7 @@ extension WidgetRow {
     public var spokenLabel: WidgetSpokenLabel {
         switch value {
         case .time(let time): time.spokenLabel
+        case .since(let date): .counting(label: field.labelKey, since: date)
         case .text, .state, .condition, .onOff, .reached, .perHour: .phrases([.key(field.labelKey)] + value.phrases)
         }
     }
@@ -179,7 +184,7 @@ extension WidgetValue {
         case .onOff(let on): [.key(on ? "On" : "Off")]
         case .reached: [.key("Reached")]
         case .perHour(let text): [.key("%@ per hour", [.verbatim(text)])]
-        case .time: []
+        case .time, .since: []
         }
     }
 }
@@ -265,6 +270,8 @@ extension BatteryWidgetField {
         case .cellBalance: "Cell balance"
         case .voltage: "Voltage"
         case .systemChargeLimit: "Charge limit"
+        case .averageDrain: "Average drain"
+        case .timeOnBattery: "Time on battery"
         }
     }
 
@@ -282,6 +289,8 @@ extension BatteryWidgetField {
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
         case .cellBalance: "Balance"
+        case .averageDrain: "Drain"
+        case .timeOnBattery: "Unplugged"
         case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }

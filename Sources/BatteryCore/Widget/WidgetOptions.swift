@@ -69,6 +69,12 @@ public enum BatteryWidgetField: String, Sendable, CaseIterable {
     /// (``BatterySnapshot/isAtSystemChargeLimit``), and dropped otherwise. Its meaning is frozen,
     /// its value isn't: a later release can show the limit's percentage in the same field.
     case systemChargeLimit
+    /// The last 24 hours' average drain on battery, from the app's feed ("%@ per hour", as the
+    /// History page shows it); "—" without one. Custom only.
+    case averageDrain
+    /// How long the Mac has run on battery since it was last unplugged, from the app's feed,
+    /// counted by the system between reloads; "—" on the adapter or without one. Custom only.
+    case timeOnBattery
 }
 
 /// The value the Battery widget shows large.

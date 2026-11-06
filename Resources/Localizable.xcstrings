@@ -2740,6 +2740,18 @@
         }
       }
     },
+    "Drain": {
+      "extractionState": "manual",
+      "comment": "Widget: Average drain where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расход"
+          }
+        }
+      }
+    },
     "Drain to empty": {
       "extractionState": "manual",
       "comment": "Demo animation",
@@ -7672,6 +7684,18 @@
         }
       }
     },
+    "Time on battery": {
+      "extractionState": "manual",
+      "comment": "Widget: how long the Mac has run on battery since it was last unplugged",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работа от аккумулятора"
+          }
+        }
+      }
+    },
     "Time remaining": {
       "extractionState": "manual",
       "localizations": {
@@ -8103,6 +8127,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Разблокируйте «%@», чтобы считать данные аккумулятора."
+          }
+        }
+      }
+    },
+    "Unplugged": {
+      "extractionState": "manual",
+      "comment": "Widget: Time on battery where the full label does not fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без адаптера"
           }
         }
       }

@@ -324,6 +324,8 @@ extension BatteryWidgetField {
         case .cycleLifeUsed: "Cycle life used"
         case .cellBalance: "Cell balance"
         case .systemChargeLimit: "Charge limit"
+        case .averageDrain: "Average drain"
+        case .timeOnBattery: "Time on battery"
         }
     }
 
@@ -338,6 +340,8 @@ extension BatteryWidgetField {
         case .remainingCapacity: "Remaining"
         case .cycleLifeUsed: "Life used"
         case .cellBalance: "Balance"
+        case .averageDrain: "Drain"
+        case .timeOnBattery: "Unplugged"
         case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
             nil
         }

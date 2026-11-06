@@ -126,9 +126,10 @@ struct WidgetDetailRow: View {
         }
     }
 
-    /// Medium's values line up their digits in a column, as 0.6.x's did.
+    /// Medium's values line up their digits in a column, as 0.6.x's did. A time on battery shows
+    /// its hours, or its minutes under an hour, so it fits the line beside its label.
     private var value: some View {
-        WidgetValueLabel(row: row, tinted: tinted)
+        WidgetValueLabel(row: row, tinted: tinted, oneLine: true)
             .font(spreads ? Font.caption.monospacedDigit() : .caption)
             .fixedSize()
     }
@@ -139,7 +140,7 @@ extension WidgetRow {
     fileprivate var standsAlone: Bool {
         switch value {
         case .state, .condition: true
-        case .text, .onOff, .time, .reached, .perHour: false
+        case .text, .onOff, .time, .reached, .perHour, .since: false
         }
     }
 }
@@ -227,13 +228,15 @@ struct WidgetTile: View {
 struct WidgetValueLabel: View {
     let row: WidgetRow
     let tinted: Bool
+    /// A line's place rather than a tile's (``WidgetPlainValue/oneLine``).
+    var oneLine = false
 
     var body: some View {
         HStack(spacing: 2) {
             if let cue = row.cue {
                 WidgetCueSymbol(cue: cue, tinted: tinted)
             }
-            WidgetPlainValue(value: row.value)
+            WidgetPlainValue(value: row.value, oneLine: oneLine)
         }
     }
 }
@@ -241,6 +244,9 @@ struct WidgetValueLabel: View {
 /// A value as the plan formatted it, or its words in the widget's language.
 struct WidgetPlainValue: View {
     let value: WidgetValue
+    /// A line's place: a time on battery shows one field, its hours or, under an hour, its
+    /// minutes; a tile has room for both.
+    var oneLine = false
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
@@ -253,7 +259,24 @@ struct WidgetPlainValue: View {
         case .time(let time): WidgetTimeLabel(time: time)
         case .reached: Text("Reached", bundle: strings)
         case .perHour(let text): Text("\(text) per hour", bundle: strings)
+        case .since(let date): WidgetOffsetText(date: date, fields: oneLine ? 1 : 2)
         }
+    }
+}
+
+/// The widget's one self-updating text: the time between now and `date` in hours and minutes,
+/// which the system keeps current by the minute without a reload. It counts down to an estimate's
+/// end (the time left) and up from an unplug (the time on battery). Never seconds or a sign: the
+/// default sign puts a minus before a later end (W0-6).
+struct WidgetOffsetText: View {
+    let date: Date
+    /// The most fields it shows: "2 hours, 13 minutes", or "2 hours" where one line is tight.
+    var fields = 2
+
+    var body: some View {
+        Text(
+            .currentDate,
+            format: .offset(to: date, allowedFields: [.hour, .minute], maxFieldCount: fields, sign: .never))
     }
 }
 
@@ -287,7 +310,7 @@ struct WidgetTimeLabel: View {
                 }
             }
         case .timeLeft:
-            Text(.currentDate, format: .offset(to: time.end, allowedFields: [.hour, .minute], sign: .never))
+            WidgetOffsetText(date: time.end)
         }
     }
 }
