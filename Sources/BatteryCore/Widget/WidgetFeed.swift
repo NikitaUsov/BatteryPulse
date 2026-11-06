@@ -527,7 +527,13 @@ extension WidgetFeed {
             feed.daily = daily(source.days, at: source.now, timeZone: source.timeZone)
         }
         if source.includesDevices {
-            feed.devices = devices(source.devices, modelNames: source.modelNames)
+            // A read time ahead of now (a read while the clock ran ahead, set right since) is
+            // now's: the reader turns down a whole feed with a date further ahead.
+            feed.devices = devices(source.devices, modelNames: source.modelNames).map { device in
+                var device = device
+                device.readAt = device.readAt.map { min($0, feed.writtenAt) }
+                return device
+            }
         }
         return feed
     }

@@ -30,8 +30,9 @@ enum AppWidgetFeed {
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
 /// moment only. One write runs at a time; the requests meanwhile make one follow-on write. A write
-/// that took out what the user removed counts in ``removalsWritten``, the one property anything
-/// observes: ``WidgetRefresher`` then reloads the kinds that show it (``takeRemovedSections()``).
+/// for what the user removed counts in ``removalsWritten`` once the file is without it, the one
+/// property anything observes: ``WidgetRefresher`` then reloads the kinds that show it
+/// (``takeRemovedSections()``).
 /// Observable for that, and to be in the Settings pane's environment.
 @Observable
 final class WidgetFeedWriter {
@@ -54,7 +55,8 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var queuedRemovals: Set<WidgetFeed.Section> = []
     /// The sections the removals written since the refresher last asked took out.
     @ObservationIgnored private var removedSections: Set<WidgetFeed.Section> = []
-    /// How many writes took out what the user removed: each changed the file.
+    /// How many writes took out what the user removed: each left the file without it, whether it
+    /// took it out or found it out already.
     private(set) var removalsWritten = 0
 
     init(
@@ -101,21 +103,24 @@ final class WidgetFeedWriter {
         return removedSections
     }
 
-    /// Runs the queued writes one after another until none is left. A write that changed the file
-    /// counts its removals as written; a failed one leaves them for the next write.
+    /// Runs the queued writes one after another until none is left. A write that didn't fail
+    /// counts its removals as written even when the file was unchanged: another write may have
+    /// taken them out first, one that read the history or the devices after the user's change (a
+    /// routine write between Clear History and its request, or one running when Forget came), and
+    /// no widget reloaded for that one. A failed write leaves them for the next.
     private func writeQueued() async {
         while let next = queued.take() {
             let removals = queuedRemovals
             queuedRemovals = []
-            let result = await writeOnce(next.reason, unchanged: next.unchanged)
+            let result = await writeOnce(next.reason, unchanged: next.unchanged, removing: removals)
             switch result {
-            case .changed where !removals.isEmpty:
-                removedSections.formUnion(removals)
-                removalsWritten += 1
             case .failed:
                 queuedRemovals.formUnion(removals)
             case .changed, .unchanged:
-                break
+                if !removals.isEmpty {
+                    removedSections.formUnion(removals)
+                    removalsWritten += 1
+                }
             }
         }
         writing = nil
@@ -126,11 +131,16 @@ final class WidgetFeedWriter {
         case changed, unchanged, failed
     }
 
-    private func writeOnce(_ reason: WidgetFeed.WriteReason, unchanged: Bool) async -> WriteResult {
+    /// Writes the feed for `reason`. `removals` are the sections the requests it serves take out:
+    /// a write that can't build a feed, in Demo Mode or with a history it can't read, still takes
+    /// them out of the feed last written, whichever reason the requests were folded under.
+    private func writeOnce(
+        _ reason: WidgetFeed.WriteReason, unchanged: Bool, removing removals: Set<WidgetFeed.Section>
+    ) async -> WriteResult {
         let clearing = historyCleared
         historyCleared = false
         guard !monitor.isOverridden else {
-            return await removeInDemoMode(reason, historyCleared: clearing)
+            return await removeInDemoMode(reason, historyCleared: clearing, removing: removals)
         }
         let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
         defer { interval.end() }
@@ -151,13 +161,14 @@ final class WidgetFeedWriter {
             current: snapshot.map { HistorySample($0, at: now) },
             devices: devices, modelNames: modelNames)
         guard let feed = await FeedBuild.make(source, history: history) else {
-            // The history couldn't be read, so the previous feed stays; a clear still leaves it.
-            return clearing ? await removeOnly(reason, historyCleared: true) : .failed
+            // The history couldn't be read, so the previous feed stays; a clear, a device
+            // forgotten or reads turned off still leave it.
+            return clearing || !removals.isEmpty ? await removeOnly(reason, historyCleared: clearing) : .failed
         }
         // The placements and the build ran off the main actor: Demo Mode may have started
         // meanwhile.
         guard !monitor.isOverridden else {
-            return await removeInDemoMode(reason, historyCleared: clearing)
+            return await removeInDemoMode(reason, historyCleared: clearing, removing: removals)
         }
         do {
             let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
@@ -203,9 +214,12 @@ final class WidgetFeedWriter {
     }
 
     /// Demo Mode lets through only a removal the user made meanwhile: one of the reasons a removal
-    /// arrives with, or a clear that a write hasn't accounted for yet.
-    private func removeInDemoMode(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async -> WriteResult {
-        guard reason.removesInDemoMode || historyCleared else { return .unchanged }
+    /// arrives with, a clear that a write hasn't accounted for yet, or a removal a request folded
+    /// into this write asked for.
+    private func removeInDemoMode(
+        _ reason: WidgetFeed.WriteReason, historyCleared: Bool, removing removals: Set<WidgetFeed.Section>
+    ) async -> WriteResult {
+        guard reason.removesInDemoMode || historyCleared || !removals.isEmpty else { return .unchanged }
         return await removeOnly(reason, historyCleared: historyCleared)
     }
 
