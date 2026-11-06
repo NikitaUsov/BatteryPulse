@@ -188,6 +188,18 @@
         }
       }
     },
+    "A language you choose for BatteryPulse alone in System Settings → General → Language & Region should reach its widgets too, once you reopen BatteryPulse.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: a language chosen for BatteryPulse alone reaches the widgets",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Язык, выбранный только для BatteryPulse в Системных настройках → «Основные» → «Язык и регион», должен применяться и к его виджетам после повторного открытия BatteryPulse."
+          }
+        }
+      }
+    },
     "A New Version of BatteryPulse Is Available": {
       "extractionState": "manual",
       "localizations": {
@@ -195,6 +207,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Доступна новая версия BatteryPulse"
+          }
+        }
+      }
+    },
+    "A Settings pane taller than your screen now scrolls, so every setting can be reached on a MacBook.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: Settings panes scroll when taller than the screen",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вкладка настроек, которая выше экрана, теперь прокручивается, поэтому на MacBook доступен каждый параметр."
           }
         }
       }
@@ -262,18 +286,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Аксессуары недоступны"
-          }
-        }
-      }
-    },
-    "Accessories widget": {
-      "extractionState": "manual",
-      "comment": "What's New for 0.7.0: the title of the Accessories widget's row.",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Виджет «Аксессуары»"
           }
         }
       }
@@ -1572,6 +1584,18 @@
         }
       }
     },
+    "Charge, battery power or temperature over the last day or week, or capacity and cycles over 90 days, on your desktop. The large Battery widget charts the last day's charge too.": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: the History widget, and the large Battery widget's chart",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд, мощность аккумулятора или температура за последние сутки или неделю либо ёмкость и циклы перезарядки за 90 дней — на рабочем столе. Большой виджет «Аккумулятор» теперь тоже показывает график заряда за последние сутки."
+          }
+        }
+      }
+    },
     "Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.": {
       "extractionState": "manual",
       "localizations": {
@@ -2171,18 +2195,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Продолжить"
-          }
-        }
-      }
-    },
-    "Control-click the Battery widget and choose Edit Widget to pick what it shows, now in a large size too. A placed widget keeps its look, and a click opens the matching page.": {
-      "extractionState": "manual",
-      "comment": "What's New for 0.7.0: the detail of the configurable Battery widget's row. Edit Widget is the widget's menu item in macOS.",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нажмите виджет «Аккумулятор», удерживая клавишу Control, и выберите «Изменить виджет», чтобы задать, что он показывает, — теперь и в большом размере. Размещённый виджет сохраняет свой вид, а нажатие на него открывает нужную страницу."
           }
         }
       }
@@ -3753,6 +3765,18 @@
         }
       }
     },
+    "History widget": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: the History widget's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет «История»"
+          }
+        }
+      }
+    },
     "Holding charge": {
       "extractionState": "manual",
       "localizations": {
@@ -4090,6 +4114,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "iPhone и iPad"
+          }
+        }
+      }
+    },
+    "iPhone and iPad widget": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: the iPhone & iPad widget's title",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виджет «iPhone и iPad»"
           }
         }
       }
@@ -7118,6 +7154,18 @@
         }
       }
     },
+    "Settings fit the screen": {
+      "extractionState": "manual",
+      "comment": "What's New for 0.7.1: Settings panes scroll when taller than the screen",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки помещаются на экране"
+          }
+        }
+      }
+    },
     "Show": {
       "extractionState": "manual",
       "localizations": {
@@ -8723,18 +8771,6 @@
         }
       }
     },
-    "When the Charge Limit in System Settings → Battery stops charging, BatteryPulse says so in the app, its menu bar panel and the Battery widget.": {
-      "extractionState": "manual",
-      "comment": "What's New for 0.7.0: the detail of the Charged to limit row. Charge Limit is the setting in System Settings → Battery.",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Когда Лимит зарядки в Системных настройках → «Аккумулятор» останавливает зарядку, BatteryPulse сообщает об этом в приложении, в панели строки меню и в виджете «Аккумулятор»."
-          }
-        }
-      }
-    },
     "When the driver last finished a 'full' poll (adds cycle count, failure status, etc.).": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -8902,14 +8938,14 @@
         }
       }
     },
-    "Widgets you configure": {
+    "Widgets in BatteryPulse's language": {
       "extractionState": "manual",
-      "comment": "What's New for 0.7.0: the title of the configurable Battery widget's row.",
+      "comment": "What's New for 0.7.1: the widgets follow the language chosen for BatteryPulse",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Настраиваемые виджеты"
+            "value": "Виджеты на языке BatteryPulse"
           }
         }
       }
@@ -9026,14 +9062,14 @@
         }
       }
     },
-    "Your keyboard's, mouse's, trackpad's and headphones' batteries at a glance, in small, medium and large.": {
+    "Your iPhones' and iPads' charge as BatteryPulse last read it: the most recently read, the lowest, all or one you choose. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read, and nothing in it leaves your Mac.": {
       "extractionState": "manual",
-      "comment": "What's New for 0.7.0: the detail of the Accessories widget's row; small, medium and large are the widget's sizes.",
+      "comment": "What's New for 0.7.1: the iPhone & iPad widget's choices, and the feed's privacy sentence",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд клавиатуры, мыши, трекпада и наушников с первого взгляда — в маленьком, среднем и большом размере."
+            "value": "Заряд ваших iPhone и iPad по последним данным BatteryPulse: устройства, считанного последним, устройства с наименьшим зарядом, всех сразу или выбранного. Для этого виджета и виджета «История» BatteryPulse хранит небольшую копию их данных в папке, доступной только вам, и ничто из неё не покидает ваш Mac."
           }
         }
       }
