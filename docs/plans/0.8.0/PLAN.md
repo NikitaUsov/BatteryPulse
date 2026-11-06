@@ -70,9 +70,10 @@ and FEA-20's widget field stays in 1.1: 0.8 keeps off the widget.
 
 **IDs:**
 - Packages: A-0 (intake); A-1 to A-7 (the answers); X-1, X-2 (accessibility); P-1, P-2
-  (protection: the sentinel and update safety); E-1 to E-3 (the engineering lane); T-1 (the
-  session script); K-1, V-1 (0.7's conditional carry-overs); L-1 (localization, docs, What's New);
-  D1-D3. A package split into a core half and an app half has `a` and `b` (A-6a, A-6b).
+  (protection: the sentinel and update safety); E-1 to E-3 (the engineering lane); F-1 (the
+  feed's placements, added at the intake); T-1 (the session script); K-1, V-1 (0.7's conditional
+  carry-overs); L-1 (localization, docs, What's New); D1-D3. A package split into a core half and
+  an app half has `a` and `b` (A-6a, A-6b).
 - Gates are `G8-…`; new maintainer questions are `Q8-…`. RD's `M-…`, `C…` and `NEW-…`, INV's row
   IDs and 0.7's `W-…`, `G7-…`, `Q7-…` keep theirs.
 
