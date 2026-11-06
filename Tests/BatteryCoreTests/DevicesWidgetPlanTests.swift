@@ -225,10 +225,26 @@ struct DevicesWidgetPlanTests {
         #expect(Self.plan(.small, feed: nil) == .empty(.noFeed))
         #expect(Self.plan(.medium, feed: Self.feed(Self.four, readsDevices: false)) == .empty(.readsOff))
         #expect(Self.plan(.large, feed: Self.feed([])) == .empty(.noDevices))
-        #expect(Self.plan(.large, feed: Self.feed(nil)) == .empty(.noDevices))
         #expect(Self.plan(.small, feed: nil).route.page == .overview)
         #expect(Self.plan(.small, feed: Self.feed(nil, readsDevices: false)).route.page == .devices)
         #expect(Self.plan(.small, feed: Self.feed([])).route.page == .devices)
+    }
+
+    /// Reads on, but a feed written while no iPhone & iPad widget counted as placed holds no
+    /// devices yet: the widget waits for BatteryPulse to write them, as without a feed, and never
+    /// says to connect a device that may be remembered already. Reads off still says so first.
+    @Test func aFeedWithoutTheDevicesYetWaitsForThem() {
+        for size in [WidgetSize.small, .medium, .large] {
+            for show in DevicesWidgetShow.allCases {
+                let plan = Self.plan(size, show, feed: Self.feed(nil))
+                #expect(plan == .empty(.noFeed), "\(size) \(show)")
+                #expect(plan.route.page == .overview)
+                #expect(WidgetAccessibility.elements(plan) == [.phrases([.key("Open BatteryPulse to update")])])
+            }
+        }
+        #expect(Self.plan(.small, feed: Self.feed(nil, readsDevices: false)) == .empty(.readsOff))
+        // Once written, an empty list is none remembered.
+        #expect(Self.plan(.small, feed: Self.feed([])) == .empty(.noDevices))
     }
 
     /// One device opens its page; All opens the Devices section.
