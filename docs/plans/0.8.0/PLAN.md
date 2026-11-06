@@ -21,7 +21,8 @@ VoiceOver and the keyboard. M-10 and M-11 set the rules (decided by delegation, 
 also takes the INV rows RD places in 0.8, and what 0.7's plan hands to 0.8: FEA-35's second half
 (the Charge Limit's configured percentage), NEW-01's other causes, the session script's
 `charge-limit` step, and 0.7's conditional carry-overs (§2.1). W-9's widget extras stay after 1.0,
-and FEA-20's widget field stays in 1.1: 0.8 keeps off the widget.
+and FEA-20's widget field stays in 1.1: 0.8 keeps off the widget, but for A-2's number in its
+Charge limit field, through 0.7.1's feed (I-6, §3).
 
 **What this plan changes in RD §3.3, from the evidence** (§2.4 and Appendix B have the details):
 - **Bit 12 is not decoded.** RD gives `NotChargingReason` bit 12 a meaning [unverified, CLR:96];
@@ -974,11 +975,13 @@ order (§7.2), where it was fourth.
      `WidgetFeed.needsPlacementAnswer(…)` is also true when the last answer is that old, whatever
      kinds it lists; a clock set back before the answer counts as old, as
      `needsAnswer(toReload:at:)` already does. Pure and `Sendable`, with Linux tests.
-  2. **Asked only at a write that already happens:** the routine write, once per 15-minute step at
-     `HistoryRecorder`'s minute tick (`WidgetFeed.WriteReason.step`), so at most one question an
-     hour while BatteryPulse runs, and no timer, task or sleep of its own (CL's Energy rules). A
-     removed kind's section leaves at most an hour and a quarter after the last answer. Demo Mode,
-     whose writes are only the user's removals, asks nothing new.
+  2. **Asked only at a write that already happens:** the writer already consults
+     `needsPlacementAnswer` before every write outside Demo Mode (`askForPlacementsIfNeeded`), and
+     the routine write comes once per 15-minute step at `HistoryRecorder`'s minute tick
+     (`WidgetFeed.WriteReason.step`), so at most one question an hour while BatteryPulse runs, and
+     no timer, task or sleep of its own (CL's Energy rules). A removed kind's section leaves at most
+     an hour and a quarter after the last answer. Demo Mode, whose writes are only the user's
+     removals, asks nothing new.
   3. **The removal takes 0.7.1's path:** the renewed answer leaves the kind out, `sections` drops
      its section, the write takes it out, and the kinds that showed it reload as after any removal
      (`WriteEffect`, inside the 5-minute minimum). An empty or failed answer still counts as every
@@ -989,12 +992,15 @@ order (§7.2), where it was fourth.
      kinds reload, is unchanged.
   4. **The log:** a renewed answer logs as today's ("Placed widgets, for the widget feed: …", at
      notice only when its counts change), which is how a session sees a removal (T-1 item 7).
-  5. **The words:** UG's Privacy line says a kind you remove stops counting within about an hour
-     (L-1 checks the wording), and so do the comments of `WidgetPlacements` and `WidgetFeedWriter`
-     that say "until the app quits"; CLAUDE.md's `WidgetPlacements` line if it changes (§12).
+  5. **The words:** `WidgetPlacements`' comment, which says a removed kind counts "until the app
+     quits", and the writer's `askForPlacementsIfNeeded` comment, which says when it asks, follow
+     the change. UG's Privacy line ("a kind you remove can still count until BatteryPulse quits")
+     becomes "stops counting within about an hour" in L-1, from the sentence F-1's PR gives (§12),
+     since F-1 runs beside A-4, which edits the guide too (§5); CLAUDE.md's `WidgetPlacements` line
+     if it changes, also L-1's (§12).
 - **Files:** `Sources/BatteryCore/Widget/{WidgetReloadPlanner, WidgetFeed}.swift`,
   `Sources/BatteryPulseApp/App/WidgetFeedWriter.swift`,
-  `Tests/BatteryCoreTests/WidgetFeedTests.swift`, `docs/USER_GUIDE.md` (Privacy).
+  `Tests/BatteryCoreTests/WidgetFeedTests.swift`; not the guide (item 5).
 - **Linux tests:** with every allowed section's kind listed, no question before the renewal age,
   one at it and one after a clock set back; with a section whose kinds no answer lists, today's
   15-minute rule unchanged; an answer that leaves the iPhone & iPad kind out drops the devices'
@@ -1007,7 +1013,8 @@ order (§7.2), where it was fourth.
   what it saw [not a gate].
 - **Effort:** S, 1 run [estimate]. **Risk:** low: one WidgetKit question an hour while BatteryPulse
   runs, at a write that happens anyway; a failed answer counts as every kind placed, as today.
-  **Rollback:** revert, with the guide's line; the feed is internal (P71 §7.3).
+  **Rollback:** revert, and L-1 leaves the guide's line as 0.7.1 wrote it; the feed is internal
+  (P71 §7.3).
 
 ### T-1: The session script and runbooks for 0.8 (P1)
 
@@ -1023,9 +1030,11 @@ order (§7.2), where it was fourth.
      and A-2's sample script), `weak-adapter` (optional, Q8-3), `hold-watch` (0.7's, offered again,
      I-8), and Session R8's steps (§6.4), the checks 0.7.0 and 0.7.1 shipped without among them
      (I-13, I-14; their steps are 0.7.1's Session R's, already in the script).
-  2. **The `battlimit` reading:** today's script looks for a number followed by "%"
-     (`m5-session.sh:3768`, `:6623`, `:6911`), while Session A recorded `chargeSocLimitSoc = 80`;
-     T-1 parses both forms, from A-2's verbatim sample [unverified until the sample].
+  2. **The `battlimit` reading:** written when today's script looked for a number followed by "%"
+     (`m5-session.sh:3768`, `:6623`, `:6911` at v0.6.2), while Session A recorded
+     `chargeSocLimitSoc = 80`. The moved script already reads both, `chargeSocLimitSoc` first
+     (`battlimit_value`, `docs/plans/0.8.0/m5-session.sh` at v0.7.1), so T-1 only checks it
+     against A-2's verbatim sample [unverified until the sample].
   3. **Runbooks:** `docs/plans/0.8.0/SESSION-L.md` (the look shoot) and `SESSION-R.md` (R8, its
      day's end, Hold watch and After publishing, each short section making its own worktree under
      `~/bp-080/`), each with Session B's rules, privacy and proofs.
@@ -1179,10 +1188,13 @@ once (P7 §5). Slot 1 owns the catalog; slot 2 never touches it. One-line additi
 `App/WidgetFeedWriter.swift` (A-2's widget half, then F-1), `App/BatteryPulseApp.swift` (P-1,
 A-6b), `BatteryKit/AccessoryMonitor.swift` (P-1, A-6b), `Updates/UpdateViews.swift` (P-2b, X-2b,
 L-1), `Tests/BatteryCoreTests/SecurityGuardTests.swift` (A-2, P-1, A-6b) and `docs/USER_GUIDE.md`
-(each package its own section, L-1 last). The widget target and `BatteryCore/Widget/`'s other
-files are A-2's alone, and E-2's gaps' if their fix reaches the widget (C9). **Rebase-over only:**
-`.github/workflows/ci.yml` (T-1, A-2, E-1). `SourceScanner.swift` has one editor left, A-4 (E-3's
-change came in with A-0).
+(each package its own section, in sequence, L-1 last: nearly every slot-1 package edits it, §12,
+so no slot-2 package does, and F-1's sentence is L-1's). The widget target and
+`BatteryCore/Widget/`'s other files are A-2's alone, and E-2's gaps' if their fix reaches the widget
+(C9). **Rebase-over only:** `.github/workflows/ci.yml` (T-1, A-2, E-1), keeping P-2a's "Check the
+relaunch fallback" right after "Install the way 0.6.1 does, then launch" and before "Package the
+profiling build", which deletes the app it reads. `SourceScanner.swift` has one editor left, A-4
+(E-3's change came in with A-0).
 
 ---
 
@@ -1697,7 +1709,7 @@ of 0.6.2, measured at the final 0.9.x) is the bar, and these keep 0.8 inside it:
 | `docs/USER_GUIDE.md`, Accessories and iPhone and iPad | The sentinel's note and Turn On Again | P-1 |
 | `docs/USER_GUIDE.md`, Updates | What the installer checks and the fallback | P-2 |
 | `docs/USER_GUIDE.md`, Privacy | One sentence (§11) | A-6b |
-| `docs/USER_GUIDE.md`, Privacy (the feed's paragraph) | "A kind you remove can still count until BatteryPulse quits" becomes within about an hour (§11) | F-1 |
+| `docs/USER_GUIDE.md`, Privacy (the feed's paragraph) | "A kind you remove can still count until BatteryPulse quits" becomes within about an hour (§11), if F-1 shipped | L-1, from F-1's PR (F-1 runs beside A-4, which edits the guide, §5) |
 | `.github/ISSUE_TEMPLATE/bug_report.yml` | The capture field points to Report a Problem | A-6b |
 | `CLAUDE.md` | **Layout:** `NotChargingCause`, `SystemChargeLimitSource` (and the reader in BatterySource), `HealthSummary`, `MetricExplanation`, `ProblemReport`, `PerfSummary`, `ChartSummary`, `AccessibilityText`, `SentinelPolicy`, `SystemIdentity`. **macOS 27 layout:** the Charge Limit's number from powerd's plist on AC only. **Guards:** `ExplanationGuardTests`, `LogPrivacyGuardTests`, `FrozenSurfaceTests` and the goldens; SecurityGuardTests' new placements. **Language:** `SystemIdentity`'s `unsafe` sysctl in BatterySource's list. **Signposts:** `report.build`. **Releases:** the installer's minimum-system check and the relaunch fallback. **Logging:** "enforced by `LogPrivacyGuardTests`". **Widget/:** `WidgetPlacements`' renewal (F-1) and the feed's Charge Limit field (A-2) | L-1 (each package lists its lines in its PR) |
 | `docs/ROADMAP.md` | The 0.8 entry rewritten to what shipped, then ticked; Decisions: M-6 (E-1), the cause rule, the Charge Limit's source and caveat, "Placements fail open" with G7-17 measured (Appendix C) and F-1's renewal; Stage 1.4 and Stage 1.3's accessibility lines from §6.4; Stage 1.9's after-publishing item ticked from AP71 (still open at `63a01f2`); the Releases rows, v0.7.0's and v0.7.1's counts when due (Appendix C); "Next: 0.9.0" | L-1, E-1, D3 |
