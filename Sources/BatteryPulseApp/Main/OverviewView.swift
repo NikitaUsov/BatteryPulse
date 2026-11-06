@@ -26,13 +26,13 @@ struct OverviewView: View {
                     }
                 }
             }
-            // A new charge state brings or removes the hero's time line, and the Charge Limit's
-            // hold its sentence, which changes the height of the cards above the rest: the whole
-            // page moves as one, once per event. The hold can start with no new charge state, so
-            // it is a key of its own. Under Reduce Motion the cards snap into place and only the
+            // A new charge state brings or removes the hero's time line, and a cause for not
+            // charging its sentence, which changes the height of the cards above the rest: the
+            // whole page moves as one, once per event. A cause can start with no new charge state,
+            // so it is a key of its own. Under Reduce Motion the cards snap into place and only the
             // time line or the sentence fades.
             .animation(motion.change, value: BatteryMotionKey(snapshot).chargeState)
-            .animation(motion.change, value: BatteryMotionKey(snapshot).isAtSystemChargeLimit)
+            .animation(motion.change, value: BatteryMotionKey(snapshot).notChargingCause)
             .padding(20)
             .frame(maxWidth: 820)
             .frame(maxWidth: .infinity)

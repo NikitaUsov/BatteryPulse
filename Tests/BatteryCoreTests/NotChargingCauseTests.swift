@@ -175,4 +175,32 @@ import Testing
             #expect(s.isAtSystemChargeLimit == (s.notChargingCause == .systemChargeLimit))
         }
     }
+
+    // MARK: Motion
+
+    /// The cause is a part of the motion key, so the sentence that names it moves once when the
+    /// cause comes or goes, even with no other change; the next reading's live values never move it.
+    @Test func theMotionKeyFollowsTheCause() throws {
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        let key = BatteryMotionKey(held)
+        #expect(key.notChargingCause == .systemChargeLimit)
+        var noCause = held
+        noCause.notChargingReason = 0x80
+        let other = BatteryMotionKey(noCause)
+        #expect(other.notChargingCause == nil)
+        #expect(other != key)
+        var same = other
+        same.notChargingCause = .systemChargeLimit
+        #expect(same == key, "only the cause differs")
+
+        var next = held
+        next.voltageMV = held.voltageMV.map { $0 + 6 }
+        next.amperageMA = 3
+        next.systemLoadMW = held.systemLoadMW.map { $0 + 900 }
+        #expect(next != held)
+        #expect(BatteryMotionKey(next) == key)
+
+        #expect(BatteryMotionKey(nil).notChargingCause == nil)
+        #expect(BatteryMotionKey(device: nil).notChargingCause == nil)
+    }
 }

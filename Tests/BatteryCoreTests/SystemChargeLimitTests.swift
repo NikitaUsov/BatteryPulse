@@ -120,7 +120,7 @@ import Testing
     }
 
     /// The hold can start with no change of the charge state, so the motion key has a part of its
-    /// own for it, and the Overview's sentence and Power's row move with it.
+    /// own for it, the cause, and the Overview's sentence and Power's row move with it.
     @Test func theMotionKeyChangesWithTheHoldAlone() throws {
         let held = try Fixture.m5ChargeLimit.snapshot()
         var notHeld = held
@@ -128,13 +128,13 @@ import Testing
         #expect(held.chargeState == notHeld.chargeState)
         let heldKey = BatteryMotionKey(held)
         let notHeldKey = BatteryMotionKey(notHeld)
-        #expect(heldKey.isAtSystemChargeLimit)
-        #expect(!notHeldKey.isAtSystemChargeLimit)
+        #expect(heldKey.notChargingCause == .systemChargeLimit)
+        #expect(notHeldKey.notChargingCause == nil)
         #expect(heldKey != notHeldKey)
         var same = notHeldKey
-        same.isAtSystemChargeLimit = true
+        same.notChargingCause = .systemChargeLimit
         #expect(same == heldKey, "only the hold differs")
-        #expect(!BatteryMotionKey(nil).isAtSystemChargeLimit)
+        #expect(BatteryMotionKey(nil).notChargingCause == nil)
     }
 
     /// Raw Data lists bit 24 among the reason's set bits, in AppleSmartBattery and in its charger
@@ -163,7 +163,7 @@ import Testing
         #expect(s.chargePercent == 80)
         #expect(s.adapter?.watts == 60)
         #expect(s.batteryPowerWatts == 0)
-        #expect(BatteryMotionKey(s).isAtSystemChargeLimit)
+        #expect(BatteryMotionKey(s).notChargingCause == .systemChargeLimit)
         for scenario in DemoScenario.allCases where scenario != .systemChargeLimit {
             #expect(scenario.battery?.reading(at: Fixture.timestamp).snapshot.isAtSystemChargeLimit != true)
         }
