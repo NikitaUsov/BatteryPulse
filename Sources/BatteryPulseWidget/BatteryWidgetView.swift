@@ -56,7 +56,7 @@ struct BatteryWidgetView: View {
     var body: some View {
         let plan = WidgetLayoutPlan.make(
             size: size, configuration: entry.configuration, snapshot: entry.snapshot, entry: entry.moment,
-            formatter: formatter, timeZone: timeZone, feed: entry.feed)
+            formatter: formatter, timeZone: timeZone, feed: entry.feed?.feed)
         Group {
             switch plan {
             case .battery(let layout):
@@ -90,19 +90,21 @@ struct WidgetLargeLayout: View {
     let layout: BatteryWidgetLayout
 
     var body: some View {
+        let below = !layout.details.isEmpty || layout.chart != nil
         VStack(alignment: .leading, spacing: 8) {
-            WidgetChargeBlock(layout: layout, size: .large, fills: layout.details.isEmpty && layout.chart == nil)
-            if let chart = layout.chart {
+            WidgetChargeBlock(layout: layout, size: .large, fills: !below)
+            if below {
+                // The chart, when it shows, takes the rest of the height; else the details go to
+                // the bottom.
+                if layout.chart == nil { Spacer(minLength: 0) }
                 Divider()
                 if !layout.details.isEmpty {
                     WidgetTileGrid(details: layout.details, tinted: layout.tinted)
                 }
-                WidgetChartPlace(content: chart)
-                    .frame(minHeight: 40, maxHeight: .infinity)
-            } else if !layout.details.isEmpty {
-                Spacer(minLength: 0)
-                Divider()
-                WidgetTileGrid(details: layout.details, tinted: layout.tinted)
+                if let chart = layout.chart {
+                    WidgetChartPlace(content: chart)
+                        .frame(minHeight: 40, maxHeight: .infinity)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

@@ -79,7 +79,8 @@ struct HistoryWidgetPreviewTests {
     /// The History widget as it draws `scene` in `size`, `look` and `language`, in its place.
     static func widget(_ scene: Scene, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
         let entry = HistoryEntry(
-            feed: scene.feed, moment: WidgetTimelinePlan.Entry(date: WidgetPreviewTests.date, showsEstimate: false),
+            feed: scene.feed.map { WidgetFeedState.feed($0) },
+            moment: WidgetTimelinePlan.Entry(date: WidgetPreviewTests.date, showsEstimate: false),
             configuration: scene.configuration)
         return WidgetPreviewTests.framed(
             HistoryWidgetView(

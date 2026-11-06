@@ -1,9 +1,10 @@
 import Foundation
 
-/// What a chart's place shows: the chart, or why there is none.
+/// What a chart's place shows: the chart, or why there is none. The chart is boxed, so the layouts
+/// and views that hold one stay small to copy.
 public enum WidgetChartContent: Sendable, Equatable {
     /// `isOutdated`: the feed is over two hours old, so "Open BatteryPulse to update" shows with it.
-    case chart(WidgetChart, isOutdated: Bool)
+    indirect case chart(WidgetChart, isOutdated: Bool)
     case message(HistoryWidgetEmptyReason)
 
     /// `series` over `period` from `feed` at `date`, the entry's.

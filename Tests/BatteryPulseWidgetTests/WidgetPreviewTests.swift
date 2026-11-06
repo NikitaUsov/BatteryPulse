@@ -286,7 +286,8 @@ struct WidgetPreviewTests {
     /// The widget as it draws `scene` in `size`, `look` and `language`, in its place.
     static func widget(_ scene: Scene, _ size: WidgetSize, _ look: Look, _ language: Language) -> some View {
         let entry = BatteryEntry(
-            snapshot: scene.snapshot, moment: moment(scene), configuration: scene.configuration, feed: scene.feed)
+            snapshot: scene.snapshot, moment: moment(scene), configuration: scene.configuration,
+            feed: scene.feed.map { WidgetFeedState.feed($0) })
         return framed(
             BatteryWidgetView(entry: entry, size: size, formatter: language.formatter, timeZone: timeZone), size, look,
             language)

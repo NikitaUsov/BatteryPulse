@@ -8,8 +8,9 @@ import WidgetKit
 /// it stands for (``WidgetTimelinePlan/history(writtenAt:at:)``), the widget's configuration, and
 /// the language it draws in.
 struct HistoryEntry: TimelineEntry {
-    /// `nil` without one, or one the reader turned down.
-    let feed: WidgetFeed?
+    /// What the read of the feed found; `nil` without a read. Boxed, as the read keeps it, so an
+    /// entry and every view that holds one stay small to copy.
+    let feed: WidgetFeedState?
     let moment: WidgetTimelinePlan.Entry
     let configuration: HistoryWidgetConfiguration
     /// BatteryPulse's own, from the feed; the extension's own without one.
@@ -24,7 +25,7 @@ struct HistoryTimelineProvider: AppIntentTimelineProvider {
     /// A made-up history in the real layout, which WidgetKit draws redacted while the widget loads.
     func placeholder(in context: Context) -> HistoryEntry {
         HistoryEntry(
-            feed: .sample(at: .now), moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: false),
+            feed: .feed(.sample(at: .now)), moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: false),
             configuration: HistoryWidgetConfiguration())
     }
 
@@ -44,7 +45,7 @@ struct HistoryTimelineProvider: AppIntentTimelineProvider {
         defer { interval.end() }
         let feed = await WidgetReads.feedContent(preview: context.isPreview)
         let language = await WidgetLanguageTable.current()
-        let plan = WidgetTimelinePlan.history(writtenAt: feed?.writtenAt, at: .now)
+        let plan = WidgetTimelinePlan.history(writtenAt: feed?.feed?.writtenAt, at: .now)
         let options = HistoryWidgetConfiguration(configuration)
         let entries = plan.entries.map {
             HistoryEntry(feed: feed, moment: $0, configuration: options, language: language)

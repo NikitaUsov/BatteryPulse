@@ -13,8 +13,9 @@ struct BatteryEntry: TimelineEntry {
     let configuration: BatteryWidgetConfiguration
     /// BatteryPulse's own, from the feed; the extension's own without one.
     var language = WidgetLanguageTable.extensionOwn
-    /// `nil` without one, or one the reader turned down.
-    var feed: WidgetFeed?
+    /// What the read of the feed found; `nil` without a read. Boxed, as the read keeps it, so an
+    /// entry and every view that holds one stay small to copy.
+    var feed: WidgetFeedState?
 
     var date: Date {
         moment.date
@@ -27,7 +28,7 @@ struct BatteryTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> BatteryEntry {
         BatteryEntry(
             snapshot: Self.sample, moment: WidgetTimelinePlan.Entry(date: .now, showsEstimate: true),
-            configuration: BatteryWidgetConfiguration(), feed: .sample(at: .now))
+            configuration: BatteryWidgetConfiguration(), feed: .feed(.sample(at: .now)))
     }
 
     private static var sample: BatterySnapshot {

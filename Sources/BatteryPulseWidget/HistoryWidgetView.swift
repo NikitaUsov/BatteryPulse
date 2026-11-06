@@ -40,7 +40,7 @@ struct HistoryWidgetView: View {
 
     var body: some View {
         let plan = HistoryWidgetPlan.make(
-            size: size, configuration: entry.configuration, feed: entry.feed, entry: entry.moment,
+            size: size, configuration: entry.configuration, feed: entry.feed?.feed, entry: entry.moment,
             formatter: formatter, timeZone: timeZone)
         Group {
             switch plan {
