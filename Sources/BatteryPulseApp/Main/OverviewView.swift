@@ -94,8 +94,18 @@ struct OverviewView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .accessibilityElement(children: .combine)
+            // One VoiceOver element for the readout, unless it holds a button (the possible
+            // reasons, Battery Settings…): combining turns a button into a named action of the
+            // element, out of the accessibility tree's buttons, so then each part stays an element
+            // of its own.
+            .accessibilityElement(children: heroHasButtons ? .contain : .combine)
         }
+    }
+
+    /// The hero shows the info button or Battery Settings…: on the adapter, not charging, with or
+    /// without a cause BatteryPulse can prove.
+    private var heroHasButtons: Bool {
+        snapshot.isNotChargingWithoutCause || snapshot.notChargingCause != nil
     }
 
     private var gauges: some View {
