@@ -158,13 +158,17 @@ import Testing
         #expect(blocker(noImage) == .notSigned)
     }
 
+    /// macOS 27.0, the oldest the app runs on (`build-app.sh`'s `LSMinimumSystemVersion`).
+    private static let macOS27 = AppVersion(parts: [27, 0, 0])
+
     @Test func checksTheCopyTakenOutOfTheDMG() {
         let id = "io.github.nikitausov.BatteryPulse"
         func check(_ identifier: String?, _ version: String?, current: AppVersion = UpdateInstallTests.v031)
             -> UpdateInstallError?
         {
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: identifier, version: version, expectedIdentifier: id, release: Self.v040, current: current)
+                identifier: identifier, version: version, minimumSystemVersion: "27.0", expectedIdentifier: id,
+                release: Self.v040, current: current, system: Self.macOS27)
         }
         #expect(check(id, "0.4.0") == nil)
         #expect(check(id, "0.4") == nil)
@@ -176,8 +180,94 @@ import Testing
         #expect(check(id, "0.4.0", current: Self.v040) == .notNewer)
         #expect(
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: "", version: "0.4.0", expectedIdentifier: "", release: Self.v040, current: Self.v031)
+                identifier: "", version: "0.4.0", minimumSystemVersion: "27.0", expectedIdentifier: "",
+                release: Self.v040, current: Self.v031, system: Self.macOS27)
                 == .unexpectedBundle)
+    }
+
+    /// A copy that needs a newer macOS than the running one is refused before the swap, so an
+    /// update can't leave an app macOS won't open; so is one whose minimum can't be read.
+    @Test func refusesACopyThatNeedsANewerMacOS() {
+        let id = "io.github.nikitausov.BatteryPulse"
+        func check(_ minimum: String?, system: AppVersion = UpdateInstallTests.macOS27) -> UpdateInstallError? {
+            UpdateInstallPolicy.checkStagedBundle(
+                identifier: id, version: "0.4.0", minimumSystemVersion: minimum, expectedIdentifier: id,
+                release: Self.v040, current: Self.v031, system: system)
+        }
+        #expect(check("99.0") == .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])))
+        #expect(check("27.0.1") == .needsNewerMacOS(minimum: AppVersion(parts: [27, 0, 1])))
+        #expect(
+            check("27.2", system: AppVersion(parts: [27, 1, 9]))
+                == .needsNewerMacOS(minimum: AppVersion(parts: [27, 2])))
+        #expect(check("27.0") == nil)
+        #expect(check("27") == nil)
+        #expect(check("26.4") == nil)
+        #expect(check("27.1", system: AppVersion(parts: [27, 1, 0])) == nil)
+        #expect(check("27.1", system: AppVersion(parts: [28, 0, 0])) == nil)
+        // The running system meets its own version (on Linux, the kernel's).
+        let running = UpdateInstallPolicy.runningSystem
+        #expect(check(running.description, system: running) == nil)
+        #expect(running.parts.count == 3)
+        for unreadable in [
+            nil, "", " ", "27.0 ", " 27.0", "v27.0", "27.0-beta", "27.", ".27", "27..0", "27.0.0.0", "x",
+        ]
+            + ["27,0", "+27.0", "-1", "٢٧.0", "27.0\n", "99999999999999999999.0"]
+        {
+            #expect(check(unreadable) == .unexpectedBundle, "\(String(describing: unreadable))")
+        }
+        // The DMG is genuine, but it would only install an app this Mac can't open.
+        let error = UpdateInstallError.needsNewerMacOS(minimum: AppVersion(parts: [99, 0]))
+        #expect(!error.isIntegrityFailure && !error.isRetryable)
+        #expect(error.fallback == .releasePage)
+    }
+
+    /// Only a volume that says it can't swap stops the install before the copy; one that doesn't
+    /// say gets the swap tried.
+    @Test func refusesAVolumeThatCantSwap() {
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: false) == .swapUnsupported)
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: true) == nil)
+        #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: nil) == nil)
+        #expect(UpdateInstallError.swapUnsupported.fallback == .releasePage)
+        #expect(!UpdateInstallError.swapUnsupported.isIntegrityFailure)
+    }
+
+    #if os(macOS)
+    /// On a Mac the check reads a real answer, and the volumes an app lives on (APFS: here CI's
+    /// `/Applications` and its temporary folder, where the swap's folder is made) say they can
+    /// swap, so the check never stops an update there; a `false` would stop every one.
+    @Test func aMacsOwnVolumesCanSwap() throws {
+        let folders = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true), FileManager.default.temporaryDirectory,
+        ]
+        for folder in folders {
+            let swaps = try folder.resourceValues(forKeys: [.volumeSupportsSwapRenamingKey]).volumeSupportsSwapRenaming
+            #expect(swaps == true, "\(folder.path)")
+            #expect(UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: swaps) == nil)
+        }
+    }
+    #endif
+
+    /// The volume is checked first in the installer's replace, before anything is staged, and the
+    /// copy's checks and the widget extension's end still come before the swap.
+    @Test func checksTheVolumeBeforeStaging() throws {
+        let code = try SourceScanner.file("BatteryPulseApp/Updates/UpdateInstaller.swift").code
+        let replace = try #require(code.range(of: "static func replace("))
+        let next = code.range(of: "static func ", range: replace.upperBound..<code.endIndex)?.lowerBound
+        let body = code[replace.upperBound..<(next ?? code.endIndex)]
+        let volume = try #require(body.range(of: ".volumeSupportsSwapRenamingKey"))
+        let check = try #require(body.range(of: "UpdateInstallPolicy.checkSwapRenaming("))
+        let staging = try #require(body.range(of: ".itemReplacementDirectory"))
+        #expect(volume.upperBound <= check.lowerBound)
+        #expect(check.upperBound <= staging.lowerBound)
+    }
+
+    @Test func readsLSMinimumSystemVersionStrictly() {
+        #expect(UpdateInstallPolicy.minimumSystem("27.0") == AppVersion(parts: [27, 0]))
+        #expect(UpdateInstallPolicy.minimumSystem("27.1.2")?.parts == [27, 1, 2])
+        #expect(UpdateInstallPolicy.minimumSystem("27")?.parts == [27])
+        #expect(UpdateInstallPolicy.minimumSystem("027.0")?.parts == [27, 0])
+        #expect(UpdateInstallPolicy.minimumSystem("27.0.0.0") == nil)
+        #expect(UpdateInstallPolicy.minimumSystem(nil) == nil)
     }
 
     /// An older release never replaces a newer copy, even signed with the release key: it isn't
@@ -194,7 +284,8 @@ import Testing
         let id = "io.github.nikitausov.BatteryPulse"
         func check(_ version: String, release: AppVersion, current: AppVersion) -> UpdateInstallError? {
             UpdateInstallPolicy.checkStagedBundle(
-                identifier: id, version: version, expectedIdentifier: id, release: release, current: current)
+                identifier: id, version: version, minimumSystemVersion: "27.0", expectedIdentifier: id,
+                release: release, current: current, system: Self.macOS27)
         }
         #expect(check("0.4.0", release: Self.v040, current: newer) == .notNewer)
         #expect(check("0.4.0", release: Self.v040, current: Self.v040) == .notNewer)
@@ -345,33 +436,217 @@ import Testing
         #expect(launch.contains("WidgetRefresher.endPreviousExtension(versionChanged: versionChanged)"))
     }
 
-    /// Runs the relaunch script with a stand-in for `open` that records its arguments, using a
-    /// path that would break any quoting.
-    @Test func relaunchPassesThePathUntouched() throws {
-        let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("relaunch-test-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let record = folder.appendingPathComponent("arguments.txt")
-        let opener = folder.appendingPathComponent("open.sh")
-        try Data("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"\(record.path)\"\n".utf8).write(to: opener)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: opener.path)
+    /// An update as the relaunch script finds it, in a temporary folder: the new version at the
+    /// app's path, the previous one in the swap's temporary folder under the same name, and the
+    /// downloads folder the launch marker goes in. Each copy holds a file with its version. The
+    /// app's name would break any quoting.
+    private struct Relaunch {
+        let root: URL
+        let app: URL
+        let previous: URL
+        let downloads: URL
+        let marker: URL
+        let record: URL
 
-        let appPath = #"/Applications/My "Battery" $(touch x); Pulse's.app"#
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        // No process has this ID, so the script doesn't wait.
-        var arguments = UpdateInstallPolicy.relaunchArguments(
-            appPath: appPath, processID: Int32.max, opener: opener.path)
-        // The app's script gives the old process a second more; the test runs it without that pause.
-        #expect(arguments[1].contains("sleep 1; exec"))
-        arguments[1] = arguments[1].replacingOccurrences(of: "sleep 1;", with: "sleep 0;")
-        process.arguments = arguments
-        try process.run()
-        process.waitUntilExit()
-        #expect(process.terminationStatus == 0)
-        let recorded = try String(contentsOf: record, encoding: .utf8)
-        #expect(recorded == "-n\n" + appPath + "\n")
+        init() throws {
+            root = FileManager.default.temporaryDirectory
+                .appendingPathComponent("relaunch-test-\(UUID().uuidString)", isDirectory: true)
+            let name = #"My "Battery" $(touch x); Pulse's.app"#
+            app = root.appendingPathComponent("Applications/" + name, isDirectory: true)
+            previous = root.appendingPathComponent("NSIRD_BatteryPulse_1/" + name, isDirectory: true)
+            downloads = root.appendingPathComponent("Caches/Updates", isDirectory: true)
+            marker = downloads.appendingPathComponent(UpdateInstallPolicy.launchMarkerName, isDirectory: true)
+            record = root.appendingPathComponent("opened.txt")
+            try Self.copy(at: app, version: "0.8.0")
+            try Self.copy(at: previous, version: "0.7.1")
+            try FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
+            try Data().write(to: downloads.appendingPathComponent("BatteryPulse.dmg"))
+        }
+
+        private static func copy(at url: URL, version: String) throws {
+            try FileManager.default.createDirectory(
+                at: url.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+            try Data(version.utf8).write(to: url.appendingPathComponent("Contents/version"))
+        }
+
+        /// The version of the copy at `url`, or `nil` when there is none.
+        func version(at url: URL) -> String? {
+            (try? Data(contentsOf: url.appendingPathComponent("Contents/version"))).flatMap {
+                String(data: $0, encoding: .utf8)
+            }
+        }
+
+        /// Runs the app's relaunch script with a stand-in for `open` that records its arguments
+        /// and then runs `launch`, a shell command standing in for the opened version, which finds
+        /// the paths in `$MARKER`, `$PREVIOUS` and `$DOWNLOADS`. No process has the installer's
+        /// ID, so the script doesn't wait for it, and the second it gives it more is left out.
+        /// Returns the script's exit status and the arguments of each opening.
+        func run(launch: String, markerChecks: Int = 1) throws -> (status: Int32, openings: [[String]]) {
+            let opener = root.appendingPathComponent("open.sh")
+            let script = "#!/bin/sh\nprintf '%s\\n' \"$@\" '--' >> \"$RECORD\"\n" + launch + "\n"
+            try Self.writeExecutable(script, to: opener)
+            var arguments = UpdateInstallPolicy.relaunchArguments(
+                appPath: app.path, processID: Int32.max, previousPath: previous.path, launchMarker: marker.path,
+                opener: opener.path, markerChecks: markerChecks)
+            #expect(arguments[1].contains("\nsleep 1\n"))
+            arguments[1] = arguments[1].replacingOccurrences(of: "\nsleep 1\n", with: "\nsleep 0\n")
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = arguments
+            process.environment = ProcessInfo.processInfo.environment.merging([
+                "RECORD": record.path, "MARKER": marker.path, "PREVIOUS": previous.path, "DOWNLOADS": downloads.path,
+            ]) { $1 }
+            try process.run()
+            process.waitUntilExit()
+            let recorded = (try? String(contentsOf: record, encoding: .utf8)) ?? ""
+            let openings = recorded.split(separator: "--\n", omittingEmptySubsequences: true).map {
+                $0.split(separator: "\n").map(String.init)
+            }
+            return (process.terminationStatus, openings)
+        }
+
+        /// Writes an executable script from a shell, so this process never holds the file open for
+        /// writing: a process another test starts meanwhile would inherit that descriptor, and
+        /// running the script would then fail with "Text file busy".
+        private static func writeExecutable(_ script: String, to url: URL) throws {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", #"printf '%s' "$1" > "$2" && chmod 755 "$2""#, "sh", script, url.path]
+            try process.run()
+            process.waitUntilExit()
+            #expect(process.terminationStatus == 0)
+        }
+    }
+
+    /// The new version opens and creates the launch marker: the script stops there and leaves
+    /// both copies, the new one at the app's path, its path passed untouched.
+    @Test func relaunchLeavesAVersionThatOpened() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(launch: #"mkdir "$MARKER""#, markerChecks: UpdateInstallPolicy.launchMarkerChecks)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(update.version(at: update.previous) == "0.7.1")
+        #expect(FileManager.default.fileExists(atPath: update.marker.path), "the new version's, not the script's")
+    }
+
+    /// The new version doesn't open: the script puts the previous one back at the app's path and
+    /// the new one where the previous one was, where the previous version deletes it at launch,
+    /// removes its marker and opens the app again.
+    @Test func relaunchPutsThePreviousVersionBack() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        // `open` itself succeeds; the version it opens just never gets as far as the marker.
+        let result = try update.run(launch: ":")
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path], ["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.7.1")
+        #expect(update.version(at: update.previous) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.previous.path + ".new"))
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+        #expect(FileManager.default.fileExists(atPath: update.downloads.path))
+    }
+
+    /// The new version opened and cleaned up before the script looked: the downloads folder, and
+    /// the marker in it, are gone, so the script stops waiting at once, its own marker can't be
+    /// made, and it ends.
+    @Test func relaunchLeavesAVersionThatAlreadyCleanedUp() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(
+            launch: #"rm -rf "$PREVIOUS" "$DOWNLOADS""#, markerChecks: UpdateInstallPolicy.launchMarkerChecks)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.previous.path))
+    }
+
+    /// The marker is missing but so is the previous version (it was deleted, and the downloads
+    /// stayed): there is nothing to put back, so the script removes its marker and ends.
+    @Test func relaunchPutsNothingBackWithoutAPreviousVersion() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let result = try update.run(launch: #"rm -rf "$PREVIOUS""#)
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+    }
+
+    /// The move aside can't happen (its place is taken): the app's path keeps the new version, and
+    /// the script doesn't open it again.
+    @Test func relaunchNeverLeavesTheAppsPathEmpty() throws {
+        let update = try Relaunch()
+        defer { try? FileManager.default.removeItem(at: update.root) }
+        let aside = URL(fileURLWithPath: update.previous.path + ".new", isDirectory: true)
+        try FileManager.default.createDirectory(at: aside, withIntermediateDirectories: true)
+        let result = try update.run(launch: ":")
+        #expect(result.status == 0)
+        #expect(result.openings == [["-n", update.app.path]])
+        #expect(update.version(at: update.app) == "0.8.0")
+        #expect(update.version(at: update.previous) == "0.7.1")
+        #expect(!FileManager.default.fileExists(atPath: update.marker.path))
+    }
+
+    /// The script waits about 30 seconds for the marker, and a shell script can hold it in single
+    /// quotes.
+    @Test func relaunchScriptsShape() {
+        #expect(UpdateInstallPolicy.launchMarkerChecks == 150)
+        #expect(UpdateInstallPolicy.launchMarkerName == "Launched")
+        #expect(!UpdateInstallPolicy.relaunchScript.contains("'"))
+        let arguments = UpdateInstallPolicy.relaunchArguments(
+            appPath: "/Applications/BatteryPulse.app", processID: 42, previousPath: "/tmp/x/BatteryPulse.app",
+            launchMarker: "/tmp/c/Updates/Launched")
+        #expect(
+            arguments == [
+                "-c", UpdateInstallPolicy.relaunchScript, "sh", "/Applications/BatteryPulse.app", "42", "/usr/bin/open",
+                "/tmp/x/BatteryPulse.app", "/tmp/c/Updates/Launched", "150",
+            ])
+    }
+
+    /// CI's macOS job runs the relaunch script both ways an update can go, with the app's own
+    /// text, waits and marker, so the check can't drift from the code.
+    @Test func ciChecksTheRelaunchFallback() throws {
+        let root = SourceScanner.sources.deletingLastPathComponent()
+        let check = try String(
+            contentsOf: root.appendingPathComponent("scripts/relaunch-fallback-check.sh"), encoding: .utf8)
+        #expect(check.contains("\nRELAUNCH='" + UpdateInstallPolicy.relaunchScript + "'\n"))
+        #expect(check.ranges(of: "RELAUNCH=").count == 1)
+        #expect(check.contains("\nCHECKS=\(UpdateInstallPolicy.launchMarkerChecks)\n"))
+        #expect(check.contains("\nMARKER_NAME=\(UpdateInstallPolicy.launchMarkerName)\n"))
+        #expect(check.contains(#"/bin/sh -c "$RELAUNCH" sh "$1" "$installer" /usr/bin/open "$2" "$3" "$CHECKS""#))
+        let workflow = try String(
+            contentsOf: root.appendingPathComponent(".github/workflows/ci.yml"), encoding: .utf8)
+        #expect(workflow.contains("run: scripts/relaunch-fallback-check.sh build/BatteryPulse.app\n"))
+    }
+
+    /// What a launch deletes after an update, by how it found the launch marker.
+    @Test func aLaunchDeletesOnlyWhatTheRelaunchLeftIt() {
+        let previous = "/private/var/folders/ab/T/TemporaryItems/NSIRD_BatteryPulse_x/BatteryPulse.app"
+        #expect(UpdateInstallPolicy.cleansUp(after: .claimed, previousPath: previous))
+        #expect(UpdateInstallPolicy.cleansUp(after: .nothingPending, previousPath: previous))
+        #expect(!UpdateInstallPolicy.cleansUp(after: .taken, previousPath: previous), "the script is putting it back")
+        #expect(UpdateInstallPolicy.cleansUp(after: .taken, previousPath: nil), "a stale marker")
+        #expect(UpdateInstallPolicy.cleansUp(after: .claimed, previousPath: nil))
+        #expect(UpdateInstallPolicy.removesDownloads(previousRemains: false))
+        #expect(!UpdateInstallPolicy.removesDownloads(previousRemains: true))
+
+        let id = "io.github.nikitausov.BatteryPulse"
+        func deletes(_ identifier: String?, _ version: String?, running: String? = "0.8.0", bundle: String = id) -> Bool
+        {
+            UpdateInstallPolicy.deletesPreviousVersion(
+                identifier: identifier, version: version, bundleIdentifier: bundle, runningVersion: running)
+        }
+        #expect(deletes(id, "0.7.1"))
+        #expect(deletes(id, "0.9.0"), "the update that didn't open, after the previous version came back")
+        #expect(deletes(id, nil))
+        #expect(deletes(id, "0.7.1", running: nil))
+        #expect(!deletes(id, "0.8.0"), "the running version itself, moved aside")
+        #expect(!deletes(id, "0.8"))
+        #expect(!deletes(id + ".Widget", "0.7.1"))
+        #expect(!deletes(nil, "0.7.1"))
+        #expect(!deletes("", "0.7.1", bundle: ""))
     }
 
     @Test func deletesOnlyThePreviousVersion() {
@@ -402,31 +677,39 @@ import Testing
         #expect(UpdateInstallPolicy.signatureAssetName(for: "BatteryPulse.dmg") == "BatteryPulse.dmg.sig")
     }
 
-    /// After a failed integrity check, or for a release without a signature, the window offers
-    /// only the release page, never the DMG the app refused.
-    @Test func everyErrorMapsToItsFallback() {
-        let expected: [UpdateInstallError: UpdateFallback] = [
-            .developmentBuild: .downloadDMG,
-            .translocated: .downloadDMG,
-            .folderNotWritable: .downloadDMG,
-            .notSigned: .releasePage,
-            .notNewer: .downloadDMG,
-            .downloadFailed: .downloadDMG,
-            .digestMismatch: .releasePage,
-            .badSignature: .releasePage,
-            .mountFailed: .downloadDMG,
-            .unexpectedBundle: .releasePage,
-            .invalidCodeSignature: .releasePage,
-            .replaceFailed: .downloadDMG,
-            .relaunchFailed: .none,
-        ]
-        #expect(Set(expected.keys) == Set(UpdateInstallError.allCases))
-        for error in UpdateInstallError.allCases {
-            #expect(error.fallback == expected[error], "\(error)")
-            #expect(error.isIntegrityFailure == (expected[error] == .releasePage), "\(error)")
+    /// Every error, one of each case.
+    private static let everyError: [UpdateInstallError] = [
+        .developmentBuild, .translocated, .folderNotWritable, .notSigned, .notNewer, .downloadFailed,
+        .digestMismatch, .badSignature, .mountFailed, .unexpectedBundle, .invalidCodeSignature,
+        .needsNewerMacOS(minimum: AppVersion(parts: [99, 0])), .swapUnsupported, .replaceFailed, .relaunchFailed,
+    ]
+
+    /// What each error leads to: its fallback, and whether it is an integrity failure. A switch, so
+    /// a new case doesn't compile until it is here (and in ``everyError``).
+    private static func expected(_ error: UpdateInstallError) -> (UpdateFallback, integrity: Bool) {
+        switch error {
+        case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
+            .replaceFailed:
+            (.downloadDMG, false)
+        case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature:
+            (.releasePage, true)
+        case .needsNewerMacOS, .swapUnsupported: (.releasePage, false)
+        case .relaunchFailed: (.none, false)
         }
-        // An integrity failure is never worth another try.
-        #expect(!UpdateInstallError.allCases.contains { $0.isIntegrityFailure && $0.isRetryable })
+    }
+
+    /// After a failed integrity check, or for a release without a signature, the window offers
+    /// only the release page, never the DMG the app refused; and only the release page for an
+    /// update this Mac can't open or this volume can't swap in.
+    @Test func everyErrorMapsToItsFallback() {
+        #expect(Set(Self.everyError).count == Self.everyError.count)
+        for error in Self.everyError {
+            let (fallback, integrity) = Self.expected(error)
+            #expect(error.fallback == fallback, "\(error)")
+            #expect(error.isIntegrityFailure == integrity, "\(error)")
+            // An integrity failure is never worth another try.
+            #expect(!(error.isIntegrityFailure && error.isRetryable), "\(error)")
+        }
     }
 
     @Test func theBrowserOpensOnlyGitHubPages() throws {

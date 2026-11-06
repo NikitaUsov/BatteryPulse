@@ -14,13 +14,16 @@ import os
 ///
 /// It downloads the DMG and its signature into Caches, checks the DMG against GitHub's digest
 /// and the release key (``ReleaseSigning``), mounts it read-only, copies the new app next to
-/// this one on the same volume, checks the copy's bundle identifier, version and code
-/// signature, swaps the two bundles in one atomic rename, and relaunches. The previous version
-/// is deleted at the next launch. Files the app downloads itself aren't quarantined (the
-/// Info.plist has no `LSFileQuarantineEnabled`), so the new version opens without Open Anyway.
+/// this one on the same volume, checks the copy's bundle identifier, version, minimum macOS and
+/// code signature, swaps the two bundles in one atomic rename, and relaunches. If the new
+/// version doesn't open within 30 seconds, the relaunch puts the previous one back and opens it
+/// (``UpdateInstallPolicy/relaunchScript``); otherwise the new version deletes the previous one
+/// at its launch. Files the app downloads itself aren't quarantined (the Info.plist has no
+/// `LSFileQuarantineEnabled`), so the new version opens without Open Anyway.
 ///
 /// Every failure leaves the installed app untouched. The window then offers the browser download,
-/// or only the release page after a failed integrity check (``UpdateFallback``).
+/// or only the release page after a failed integrity check or for an update this Mac can't take
+/// (``UpdateFallback``).
 @Observable
 final class UpdateInstaller {
     enum Phase: Equatable {
@@ -119,6 +122,10 @@ final class UpdateInstaller {
 
     /// Deletes what an earlier update left behind: the previous version, swapped out to a
     /// temporary folder, and the downloads. Called at launch, never while that version runs.
+    ///
+    /// First it claims the update's launch marker, which tells the relaunch script that this
+    /// version opened (``UpdateLaunchClaim``). When the script has given up on this copy
+    /// instead, and is putting the previous version back, nothing is deleted.
     static func cleanUpAfterUpdate(bundle: Bundle = .main) {
         let defaults = UserDefaults.standard
         let recorded = defaults.string(forKey: AppSettings.updateLeftoverKey)
@@ -126,9 +133,17 @@ final class UpdateInstaller {
         let leftover = UpdateInstallPolicy.leftoverToDelete(
             recorded: recorded, runningBundlePath: bundle.bundleURL.resolvingSymlinksInPath().path)
         let identifier = bundle.bundleIdentifier ?? ""
+        let version = bundle.infoDictionary?["CFBundleShortVersionString"] as? String
+        // Here, at launch, not in the task below: the relaunch script counts the seconds.
+        let claim = UpdateInstallSteps.claimLaunch(bundleIdentifier: identifier)
+        guard UpdateInstallPolicy.cleansUp(after: claim, previousPath: leftover) else {
+            Diagnostics.update.error("This version opened after the relaunch gave up on it; the previous version stays")
+            return
+        }
         // Fire and forget: launch doesn't wait for the deletion, and nothing needs its result.
         Task.detached(name: "UpdateInstaller.removeLeftovers", priority: .utility) {
-            UpdateInstallSteps.removeLeftovers(leftover: leftover, bundleIdentifier: identifier)
+            UpdateInstallSteps.removeLeftovers(
+                leftover: leftover, bundleIdentifier: identifier, runningVersion: version)
         }
     }
 
@@ -165,7 +180,9 @@ final class UpdateInstaller {
             }
             // The running process still uses the previous version's files; it goes at the next launch.
             UserDefaults.standard.set(previous.path, forKey: AppSettings.updateLeftoverKey)
-            if !isQuitting { relaunch() }
+            if !isQuitting {
+                relaunch(previous: previous, launchMarker: UpdateInstallSteps.launchMarker(in: folder))
+            }
         } catch {
             UpdateInstallSteps.removeDownloads(bundleIdentifier: identifier)
             if error is CancellationError {
@@ -240,8 +257,9 @@ final class UpdateInstaller {
     }
 
     /// Registers the new version with Launch Services, starts a shell that opens it once this
-    /// process is gone, and quits.
-    private func relaunch() {
+    /// process is gone and puts `previous` back if it doesn't create `launchMarker` in time
+    /// (``UpdateInstallPolicy/relaunchScript``), and quits.
+    private func relaunch(previous: URL, launchMarker: URL) {
         phase = .relaunching
         // Updates the registration even if the modification date looks unchanged.
         let status = LSRegisterURL(bundleURL as CFURL, true)
@@ -251,7 +269,8 @@ final class UpdateInstaller {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = UpdateInstallPolicy.relaunchArguments(
-            appPath: bundleURL.path, processID: ProcessInfo.processInfo.processIdentifier)
+            appPath: bundleURL.path, processID: ProcessInfo.processInfo.processIdentifier,
+            previousPath: previous.path, launchMarker: launchMarker.path)
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
@@ -293,7 +312,10 @@ extension UpdateInstallError {
         case .unexpectedBundle:
             String(localized: "The disk image doesn't contain the expected version of BatteryPulse.")
         case .invalidCodeSignature: String(localized: "The new version's code signature isn't valid.")
-        case .replaceFailed: String(localized: "BatteryPulse couldn't replace the installed copy.")
+        // A version that needs a newer macOS and a volume that can't swap get words of their own
+        // once they are translated; until then, what happened: the installed copy stays.
+        case .needsNewerMacOS, .swapUnsupported, .replaceFailed:
+            String(localized: "BatteryPulse couldn't replace the installed copy.")
         case .relaunchFailed:
             String(
                 localized:
@@ -306,7 +328,8 @@ extension UpdateInstallError {
         switch self {
         case .translocated, .folderNotWritable: message
         case .developmentBuild, .notSigned, .notNewer, .downloadFailed, .digestMismatch, .badSignature, .mountFailed,
-            .unexpectedBundle, .invalidCodeSignature, .replaceFailed, .relaunchFailed:
+            .unexpectedBundle, .invalidCodeSignature, .needsNewerMacOS, .swapUnsupported, .replaceFailed,
+            .relaunchFailed:
             nil
         }
     }
@@ -362,6 +385,26 @@ nonisolated enum UpdateInstallSteps {
             .appendingPathComponent("Updates", isDirectory: true)
     }
 
+    /// The launch marker in the downloads folder `folder` (``UpdateInstallPolicy/launchMarkerName``).
+    static func launchMarker(in folder: URL) -> URL {
+        folder.appendingPathComponent(UpdateInstallPolicy.launchMarkerName, isDirectory: true)
+    }
+
+    /// Creates the launch marker, this launch's claim on an update waiting for it to open.
+    /// `mkdir` creates the folder or fails in one step, so of this launch and the relaunch script,
+    /// which creates the same folder when it gives up waiting, only one has it.
+    static func claimLaunch(bundleIdentifier: String) -> UpdateLaunchClaim {
+        guard let folder = try? downloadsFolder(bundleIdentifier: bundleIdentifier) else { return .nothingPending }
+        if mkdir(launchMarker(in: folder).path, 0o700) == 0 { return .claimed }
+        let failure = errno
+        if failure == EEXIST { return .taken }
+        // Usually ENOENT: no update has downloads waiting.
+        if failure != ENOENT {
+            Diagnostics.update.error("Couldn't create the launch marker: \(failure, privacy: .public)")
+        }
+        return .nothingPending
+    }
+
     /// Checks the downloaded DMG before anything mounts it: GitHub's digest when the release has
     /// one, then the release signature, which must be valid. `@concurrent`: hashing the DMG and
     /// checking the signature is synchronous work that must not hold the caller's actor.
@@ -381,15 +424,21 @@ nonisolated enum UpdateInstallSteps {
         }
     }
 
-    /// Copies the app out of the verified DMG next to `target` (a temporary folder on the same
-    /// volume), checks the copy, ends the widget extension and swaps the copy with `target` in one
-    /// rename. Returns where the previous version is now. `@concurrent`: the copy, the quarantine
-    /// clearing and the strict code signature check are synchronous work that must not hold the
-    /// caller's actor.
+    /// Checks that `target`'s volume can swap two folders in one rename, copies the app out of the
+    /// verified DMG next to `target` (a temporary folder on the same volume), checks the copy, ends
+    /// the widget extension and swaps the copy with `target` in one rename. Returns where the
+    /// previous version is now. `@concurrent`: the copy, the quarantine clearing and the strict
+    /// code signature check are synchronous work that must not hold the caller's actor.
     @concurrent static func replace(
         target: URL, image: URL, identifier: String, release: AppVersion, current: AppVersion
     ) async throws(UpdateInstallError) -> URL {
         let fileManager = FileManager.default
+        // Before anything is copied: a volume that can't swap would only fail at the swap.
+        let swaps = try? target.resourceValues(forKeys: [.volumeSupportsSwapRenamingKey]).volumeSupportsSwapRenaming
+        if let problem = UpdateInstallPolicy.checkSwapRenaming(volumeSupportsSwapRenaming: swaps) {
+            Diagnostics.update.error("The app's volume can't swap two folders in one rename")
+            throw problem
+        }
         let staging: URL
         do {
             staging = try fileManager.url(
@@ -555,7 +604,8 @@ nonisolated enum UpdateInstallSteps {
         }
     }
 
-    /// The same app, exactly the release's version, newer than the running one.
+    /// The same app, exactly the release's version, newer than the running one, and one that
+    /// this Mac's macOS opens.
     private static func checkBundle(
         _ bundle: URL, identifier: String, release: AppVersion, current: AppVersion
     ) throws(UpdateInstallError) {
@@ -563,7 +613,9 @@ nonisolated enum UpdateInstallSteps {
         if let problem = UpdateInstallPolicy.checkStagedBundle(
             identifier: info?["CFBundleIdentifier"] as? String,
             version: info?["CFBundleShortVersionString"] as? String,
-            expectedIdentifier: identifier, release: release, current: current)
+            minimumSystemVersion: info?["LSMinimumSystemVersion"] as? String,
+            expectedIdentifier: identifier, release: release, current: current,
+            system: UpdateInstallPolicy.runningSystem)
         {
             throw problem
         }
@@ -588,15 +640,30 @@ nonisolated enum UpdateInstallSteps {
         }
     }
 
-    /// Deletes the previous version (only a copy of this app) and the downloads.
-    static func removeLeftovers(leftover: String?, bundleIdentifier: String) {
+    /// Deletes the previous version (only a copy of this app at another version than
+    /// `runningVersion`), then the downloads with the launch marker, unless the previous version
+    /// is still there (``UpdateInstallPolicy/removesDownloads(previousRemains:)``).
+    static func removeLeftovers(leftover: String?, bundleIdentifier: String, runningVersion: String?) {
+        var remains = false
+        if let leftover {
+            let app = URL(fileURLWithPath: leftover, isDirectory: true)
+            let info = infoDictionary(ofBundleAt: app)
+            if UpdateInstallPolicy.deletesPreviousVersion(
+                identifier: info?["CFBundleIdentifier"] as? String,
+                version: info?["CFBundleShortVersionString"] as? String, bundleIdentifier: bundleIdentifier,
+                runningVersion: runningVersion)
+            {
+                try? FileManager.default.removeItem(at: app)
+                // The temporary folder it was in, if nothing else is there.
+                _ = rmdir(app.deletingLastPathComponent().path)
+            }
+            remains = FileManager.default.fileExists(atPath: leftover)
+        }
+        guard UpdateInstallPolicy.removesDownloads(previousRemains: remains) else {
+            Diagnostics.update.error("The previous version is still in its temporary folder; the downloads stay")
+            return
+        }
         removeDownloads(bundleIdentifier: bundleIdentifier)
-        guard let leftover, !bundleIdentifier.isEmpty else { return }
-        let app = URL(fileURLWithPath: leftover, isDirectory: true)
-        guard infoDictionary(ofBundleAt: app)?["CFBundleIdentifier"] as? String == bundleIdentifier else { return }
-        try? FileManager.default.removeItem(at: app)
-        // The temporary folder it was in, if nothing else is there.
-        _ = rmdir(app.deletingLastPathComponent().path)
     }
 
     /// The Info.plist of the app at `bundle`, or `nil` if it can't be read. Read from the file,

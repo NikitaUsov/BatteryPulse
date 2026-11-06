@@ -3,7 +3,7 @@ import Foundation
 /// Why BatteryPulse can't install an update itself, or why an installation stopped. Every case
 /// leaves the installed copy as it was (except ``relaunchFailed``, which comes after the swap);
 /// ``fallback`` says what the Software Update window offers instead.
-public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
+public enum UpdateInstallError: Error, Sendable, Hashable {
     // Checked before Install and Relaunch is offered.
     /// A build without a version (CI artifacts, `swift run`).
     case developmentBuild
@@ -24,12 +24,19 @@ public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
     /// The DMG's signature doesn't verify with any of ``ReleaseSigning/publicKeys``.
     case badSignature
     case mountFailed
-    /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version.
+    /// The DMG has no BatteryPulse.app, or one with another bundle identifier or version, or
+    /// without a readable `LSMinimumSystemVersion`.
     case unexpectedBundle
     /// The new copy's code signature (ad-hoc, sealing its contents) doesn't validate.
     case invalidCodeSignature
+    /// The new copy's `LSMinimumSystemVersion`, `minimum`, is above the running macOS, which
+    /// wouldn't open it.
+    case needsNewerMacOS(minimum: AppVersion)
+    /// The app's volume can't swap two folders in one rename (its `volumeSupportsSwapRenaming`
+    /// is false), so the new copy can't replace this one without a moment with no app at all.
+    case swapUnsupported
     /// The copy couldn't be made next to the app, or the two couldn't be swapped (another
-    /// volume, a file system without swapping renames, or macOS refused).
+    /// volume, or macOS refused).
     case replaceFailed
     /// The new version is in place but couldn't be opened; the user has to open it.
     case relaunchFailed
@@ -43,15 +50,20 @@ public enum UpdateInstallError: Error, Sendable, Equatable, CaseIterable {
         switch self {
         case .notSigned, .digestMismatch, .badSignature, .unexpectedBundle, .invalidCodeSignature: true
         case .developmentBuild, .translocated, .folderNotWritable, .notNewer, .downloadFailed, .mountFailed,
-            .replaceFailed, .relaunchFailed:
+            .needsNewerMacOS, .swapUnsupported, .replaceFailed, .relaunchFailed:
             false
         }
     }
 
     /// What the window offers when the app doesn't install the update itself.
     public var fallback: UpdateFallback {
-        if isIntegrityFailure { return .releasePage }
-        return self == .relaunchFailed ? .none : .downloadDMG
+        switch self {
+        case .relaunchFailed: .none
+        // A genuine update that this copy can't take in place. The release page says which macOS
+        // it needs; on a volume that can't swap, its DMG still installs by hand.
+        case .needsNewerMacOS, .swapUnsupported: .releasePage
+        default: isIntegrityFailure ? .releasePage : .downloadDMG
+        }
     }
 }
 
@@ -64,6 +76,20 @@ public enum UpdateFallback: Sendable, Equatable {
     case releasePage
     /// Nothing: the update is already installed.
     case none
+}
+
+/// How a launch found the update's launch marker (``UpdateInstallPolicy/launchMarkerName``), which
+/// it creates early, before anything else of the update's cleanup.
+public enum UpdateLaunchClaim: Sendable, Equatable {
+    /// This launch created it: the first after an update, so the relaunch script stops waiting
+    /// and leaves this version in place.
+    case claimed
+    /// No update waits for a launch: there is no downloads folder to create it in (or it couldn't
+    /// be created there).
+    case nothingPending
+    /// It was there already: the relaunch script gave up waiting and is putting the previous
+    /// version back, or an earlier launch left it.
+    case taken
 }
 
 /// Checks for the downloaded DMG that need no platform frameworks.
@@ -122,7 +148,9 @@ public enum UpdateIntegrity {
 ///   so a link in them opens only over `https`, on any host (``ReleaseNotes/isAllowedLink(_:)``).
 /// - **Which version:** the copy taken out of the DMG must be this app at exactly the release's
 ///   version, and newer than the running one, so an older signed release can't be installed
-///   over a newer one (``checkStagedBundle(identifier:version:expectedIdentifier:release:current:)``).
+///   over a newer one, and it must run on this Mac's macOS, so an update can't leave an app that
+///   macOS won't open
+///   (``checkStagedBundle(identifier:version:minimumSystemVersion:expectedIdentifier:release:current:system:)``).
 /// - **Not a boundary:** another process of the same user. It could change the DMG between the
 ///   check and the mount, or the new copy between the check and the swap, but it can replace the
 ///   app anyway, so the updater doesn't try to defend against it.
@@ -159,14 +187,48 @@ public enum UpdateInstallPolicy {
     }
 
     /// Checks the Info.plist values of the copy taken out of the DMG before it replaces this one:
-    /// the same app, exactly the release's version, and newer than the running one.
+    /// the same app, exactly the release's version, newer than the running one, and an
+    /// `LSMinimumSystemVersion` that `system`, the running macOS (``runningSystem``), meets. A
+    /// copy without a readable `LSMinimumSystemVersion` (``minimumSystem(_:)``) isn't what the
+    /// release workflow builds: `build-app.sh` always writes one.
     public static func checkStagedBundle(
-        identifier: String?, version: String?, expectedIdentifier: String, release: AppVersion, current: AppVersion
+        identifier: String?, version: String?, minimumSystemVersion: String?, expectedIdentifier: String,
+        release: AppVersion, current: AppVersion, system: AppVersion
     ) -> UpdateInstallError? {
         guard !expectedIdentifier.isEmpty, identifier == expectedIdentifier,
-            let version = version.flatMap(AppVersion.init), version == release
+            let version = version.flatMap(AppVersion.init), version == release,
+            let minimum = minimumSystem(minimumSystemVersion)
         else { return .unexpectedBundle }
-        return release > current ? nil : .notNewer
+        guard release > current else { return .notNewer }
+        return minimum > system ? .needsNewerMacOS(minimum: minimum) : nil
+    }
+
+    /// An `LSMinimumSystemVersion` value: one to three numbers of ASCII digits separated by dots,
+    /// as in `27.0` or `27.1.2`. `nil` for a missing, empty or malformed value, which the check
+    /// refuses: unlike ``AppVersion/init(_:)``, nothing around the numbers is ignored.
+    public static func minimumSystem(_ value: String?) -> AppVersion? {
+        guard let value else { return nil }
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        let numbers = parts.compactMap { part in
+            part.allSatisfy { ("0"..."9").contains($0) } ? Int(part) : nil
+        }
+        guard (1...3).contains(parts.count), numbers.count == parts.count else { return nil }
+        return AppVersion(parts: numbers)
+    }
+
+    /// The version of the running system (macOS, on a Mac), which a staged copy's
+    /// `LSMinimumSystemVersion` must not be above.
+    public static var runningSystem: AppVersion {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return AppVersion(parts: [version.majorVersion, version.minorVersion, version.patchVersion])
+    }
+
+    /// Whether the app's volume can take the swap, from its `volumeSupportsSwapRenaming`:
+    /// ``UpdateInstallError/swapUnsupported`` only when the volume says it can't. When the
+    /// volume doesn't say (`nil`), the swap is tried, and a refusal is
+    /// ``UpdateInstallError/replaceFailed``.
+    public static func checkSwapRenaming(volumeSupportsSwapRenaming: Bool?) -> UpdateInstallError? {
+        volumeSupportsSwapRenaming == false ? .swapUnsupported : nil
     }
 
     /// The tool the installer attaches, inspects and ejects the DMG with. Since macOS 26 it
@@ -262,17 +324,101 @@ public enum UpdateInstallPolicy {
         path.hasPrefix("/private/") ? String(path.dropFirst("/private".count)) : path
     }
 
-    /// `/bin/sh` arguments that open the updated app once this process has quit: wait up to
-    /// about 10 seconds for `processID` to exit, give it a second more, then open a new
-    /// instance. The path is passed as an argument, never inside the script, so no character in
-    /// it can change the command.
+    /// The launch marker's name: a folder in the update's downloads folder (`Caches/<bundle
+    /// identifier>/Updates`, which still holds the DMG) that the new version creates at launch,
+    /// telling the relaunch script that it opened. Every version keeps creating it there, since
+    /// the version that installs it waits for it (``relaunchScript``).
+    public static let launchMarkerName = "Launched"
+
+    /// How many times the relaunch script looks for the launch marker, 0.2 seconds apart, before it
+    /// puts the previous version back: 30 seconds.
+    public static let launchMarkerChecks = 150
+
+    /// The `/bin/sh` script that opens the updated app once the installing process has quit, and
+    /// puts the previous version back if the new one doesn't open. Its arguments
+    /// (``relaunchArguments(appPath:processID:previousPath:launchMarker:opener:markerChecks:)``):
+    /// `$1` the app's path, `$2` the installing process, `$3` the opener, `$4` the previous
+    /// version's path (in the swap's temporary folder, on the app's volume), `$5` the launch
+    /// marker, `$6` the number of checks for it.
+    ///
+    /// 1. It waits up to about 10 seconds for `$2` to exit, gives it a second more, and opens a
+    ///    new instance of the app.
+    /// 2. It waits up to `$6` times 0.2 seconds for the marker, which the new version creates
+    ///    early in its launch (``UpdateLaunchClaim``), or for the downloads folder it is in to
+    ///    go, which the new version removes, marker and all, once the previous one is deleted.
+    /// 3. It claims the marker itself with `mkdir`, which creates the folder or fails in one step:
+    ///    if the new version has it, or has already removed the downloads folder it was in,
+    ///    `mkdir` fails and the script ends, leaving the new version in place.
+    /// 4. Otherwise the new version didn't open in time, and neither will it delete the previous
+    ///    one now (it finds the marker taken). If the previous version is still there, the script
+    ///    moves the new one aside, the previous one back to the app's path, and the new one to the
+    ///    previous one's place, where the previous version deletes it at its own launch as an
+    ///    update's leftover; then it removes its marker and opens the app. The moves are renames on
+    ///    one volume. If the previous version can't be moved back, the new one returns to the
+    ///    app's path, so the path never stays empty.
+    ///
+    /// The paths are arguments, never inside the script, so no character in them can change the
+    /// command. No single quote appears in it, so a shell script can hold it in one
+    /// (`scripts/relaunch-fallback-check.sh` runs it on macOS).
+    public static let relaunchScript = #"""
+        i=0
+        while kill -0 "$2" 2>/dev/null && [ "$i" -lt 50 ]; do sleep 0.2; i=$((i + 1)); done
+        sleep 1
+        "$3" -n "$1"
+        i=0
+        while [ ! -e "$5" ] && [ -d "${5%/*}" ] && [ "$i" -lt "$6" ]; do sleep 0.2; i=$((i + 1)); done
+        mkdir "$5" 2>/dev/null || exit 0
+        if [ -d "$4" ] && [ ! -e "$4.new" ] && mv "$1" "$4.new"; then
+          if mv "$4" "$1"; then
+            mv "$4.new" "$4"
+            rmdir "$5"
+            exec "$3" -n "$1"
+          fi
+          mv "$4.new" "$1"
+        fi
+        rmdir "$5"
+        """#
+
+    /// `/bin/sh` arguments that run ``relaunchScript``: open the updated app at `appPath` once
+    /// `processID` has quit, and put `previousPath` back if the new version doesn't create
+    /// `launchMarker` within `markerChecks` times 0.2 seconds.
     public static func relaunchArguments(
-        appPath: String, processID: Int32, opener: String = "/usr/bin/open"
+        appPath: String, processID: Int32, previousPath: String, launchMarker: String,
+        opener: String = "/usr/bin/open", markerChecks: Int = launchMarkerChecks
     ) -> [String] {
-        let script =
-            #"i=0; while kill -0 "$2" 2>/dev/null && [ "$i" -lt 50 ]; do sleep 0.2; i=$((i + 1)); done; "#
-            + #"sleep 1; exec "$3" -n "$1""#
-        return ["-c", script, "sh", appPath, String(processID), opener]
+        [
+            "-c", relaunchScript, "sh", appPath, String(processID), opener, previousPath, launchMarker,
+            String(markerChecks),
+        ]
+    }
+
+    /// Whether the launch after an update deletes the previous version and the downloads, given
+    /// how it found the launch marker and whether an update recorded a previous version. When the
+    /// marker was taken and there is a previous version, the relaunch script has given up on this
+    /// copy and is putting the previous version back, so both stay. Without a previous version a
+    /// taken marker is a stale one, and the downloads go with it.
+    public static func cleansUp(after claim: UpdateLaunchClaim, previousPath: String?) -> Bool {
+        claim != .taken || previousPath == nil
+    }
+
+    /// Whether the app at the previous version's path is one to delete: a copy of this app
+    /// (`bundleIdentifier`) at another version than the running one. After the relaunch script has
+    /// put the previous version back, that path holds the update that didn't open in time; should
+    /// that copy still open, it doesn't delete itself.
+    public static func deletesPreviousVersion(
+        identifier: String?, version: String?, bundleIdentifier: String, runningVersion: String?
+    ) -> Bool {
+        guard !bundleIdentifier.isEmpty, identifier == bundleIdentifier else { return false }
+        let previous = version.flatMap(AppVersion.init)
+        return previous == nil || previous != runningVersion.flatMap(AppVersion.init)
+    }
+
+    /// Whether the downloads go, with the launch marker in them: only once no previous version is
+    /// left at its path. While one is, a relaunch script still waiting must find the marker taken,
+    /// not missing: a missing marker with the downloads folder still there reads as an update that
+    /// never opened.
+    public static func removesDownloads(previousRemains: Bool) -> Bool {
+        !previousRemains
     }
 
     /// The previous version that an update swapped out, to delete at the next launch: only an
