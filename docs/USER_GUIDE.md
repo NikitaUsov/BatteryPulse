@@ -71,24 +71,24 @@ History and iPhone and iPad widgets show (and the large Battery widget's chart),
 folder of its own that only your account can read:
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. While history is
 recorded, it holds the last day's and week's charge, battery power, temperature and plugged-in
-state in 15-minute and 2-hour steps, the last 24 hours' average drain, time on battery and
-charging sessions, when the Mac was last unplugged (while it runs on battery), and up to 90 days
-of capacity compared with design and cycle count, all of it already in the History folder beside
-it. While **Read iPhone and iPad batteries** is on, it also holds the names and last readings of
-up to 8 iPhones and iPads BatteryPulse remembers (the charge, what the battery was doing, maximum
-capacity, cycle count, temperature, the model and when each was read), as the Devices folder
-beside it does: each device is known by the same key made from its identifier and a secret of this
-Mac, never by its identifier or serial number. It also holds BatteryPulse's language and whether
-history recording and iPhone and iPad reads are on. It never holds Demo Mode's readings or an
-accessory. When macOS lists the BatteryPulse widgets you have placed, it holds only what they can
+state in 15-minute and 2-hour steps, the last 24 hours' and the last 7 days' average drain, time
+on battery and charging sessions, when the Mac was last unplugged (while it runs on battery), and
+up to 90 days of capacity compared with design and cycle count, all of it already in the History
+folder beside it. While **Read iPhone and iPad batteries** is on, it also holds the names and last
+readings of up to 8 iPhones and iPads BatteryPulse remembers (the charge, what the battery was
+doing, maximum capacity, cycle count, temperature, the model and when each was read), as the Devices
+folder beside it does: each device is known by the same key made from its identifier and a secret of
+this Mac, never by its identifier or serial number. It also holds BatteryPulse's language and
+whether history recording and iPhone and iPad reads are on. It never holds Demo Mode's readings or
+an accessory. When macOS lists the BatteryPulse widgets you have placed, it holds only what they can
 show: the devices only while an iPhone and iPad widget is placed, the history only while a History
 or a Battery widget is; when macOS lists none, as it does when you have placed none, it holds all
 the settings allow, and a kind you remove still counts until BatteryPulse quits. The widgets' one
 exception to the sandbox is read-only and names that folder alone, and they open no other file of
 BatteryPulse's. Nothing in it leaves your Mac. While BatteryPulse runs, it rewrites the file about
 every 15 minutes, and at once when you clear the history or turn recording off, which takes the
-history out of it, and when you turn reading devices off or forget a device, which takes the
-devices out, or that device.
+history out of it, and when you turn reading devices off or forget a device, which takes the devices
+out, or that device.
 
 ## Where BatteryPulse lives
 
@@ -484,13 +484,14 @@ BatteryPulse has four widgets for the desktop and Notification Center:
 - **History**, in medium and large, charts the last 24 hours or 7 days of the charge, battery
   power or temperature, or the last 90 days of the capacity compared with design or the cycle
   count, with the stretches on the adapter shaded, as the [History](#history) page does, with the
-  series' name and its latest value above the chart; the large one also shows the last 24 hours'
-  average drain, time on battery and charging sessions under it.
+  series' name and its latest value above the chart; the large one also shows the average drain,
+  time on battery and charging sessions under it: the last 24 hours' under a 24-hour chart, the
+  last 7 days' under a 7-day or 90-day one.
 - **iPhone and iPad**, in small, medium and large, shows your iPhones' and iPads' charge as
   BatteryPulse last read it (see [iPhone and iPad](#iphone-and-ipad)), with what the battery was
   doing and when it was read: *Updated 14:05*, or the date when it wasn't today. A single device
-  shows its charge large, with its name; the medium one adds its maximum capacity, the large one
-  its cycle count and temperature too.
+  shows its charge large, with its name; the medium and large ones add its maximum capacity, cycle
+  count and temperature, beside it in medium and under it in large.
 
 To add one:
 
@@ -540,7 +541,8 @@ show, it says *No accessories with batteries connected*, or that all of them are
 
 The History widget offers **Period**, *24 Hours* (as it comes) or *7 Days*, **Series**, the
 charge (as it comes), battery power, temperature, capacity compared with design or cycle count,
-and, in large, **Statistics**, the last 24 hours' figures under the chart, on or off. The
+and, in large, **Statistics**, the figures under the chart, on or off: the last 24 hours' under a
+24-hour chart, the last 7 days' under a 7-day one and under the capacity and the cycle count. The
 capacity and the cycle count always cover the last 90 days, so Period hides for them.
 
 The iPhone and iPad widget offers **Show**: *Most recently read* (as it comes), *Lowest charge*,

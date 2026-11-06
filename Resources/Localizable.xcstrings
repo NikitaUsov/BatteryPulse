@@ -7465,7 +7465,7 @@
     },
     "Statistics": {
       "extractionState": "manual",
-      "comment": "Widget edit sheet: whether the large History widget shows the last 24 hours' figures",
+      "comment": "Widget edit sheet: whether the large History widget shows the figures under its chart: the last 24 hours' under a 24-hour chart, else the last 7 days'",
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -7575,14 +7575,14 @@
         }
       }
     },
-    "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of their readings in a folder only you can read; nothing in it leaves your Mac.": {
+    "The charge of your iPhones and iPads as BatteryPulse last read it. For this widget and the History widget, BatteryPulse keeps a small copy of what they show in a folder only you can read; nothing in it leaves your Mac.": {
       "extractionState": "manual",
       "comment": "What's New for 0.7.1: the iPhone & iPad widget, and the feed's privacy sentence",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд ваших iPhone и iPad по последним данным BatteryPulse. Для этого виджета и виджета «История» BatteryPulse хранит небольшую копию их данных в папке, доступной только вам; ничто из неё не покидает ваш Mac."
+            "value": "Заряд ваших iPhone и iPad по последним данным BatteryPulse. Для этого виджета и виджета «История» BatteryPulse хранит небольшую копию того, что они показывают, в папке, доступной только вам; ничто из неё не покидает ваш Mac."
           }
         }
       }

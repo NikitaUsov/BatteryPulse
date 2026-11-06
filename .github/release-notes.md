@@ -3,8 +3,8 @@
 - **History widget:** the last 24 hours or 7 days of your Mac's charge, battery power or
   temperature, or the last 90 days of its capacity compared with design and its cycle count, on
   the desktop or in Notification Center, in medium and large, with the stretches on the adapter
-  shaded. The large one adds the last 24 hours' average drain, time on battery and charging
-  sessions. A click opens History.
+  shaded. The large one adds the average drain, time on battery and charging sessions of the
+  last 24 hours, or of the last 7 days under a 7-day or 90-day chart. A click opens History.
 - **iPhone and iPad widget:** your iPhones' and iPads' charge as BatteryPulse last read them, in
   small, medium and large: the most recently read, the one with the lowest charge, all of them,
   or one you choose in **Edit Widget**, each with when it was read. A click opens the device's
@@ -17,10 +17,11 @@
   Widget's sheet and the gallery follow your Mac's).
 - **Widgets and privacy.** The History and iPhone and iPad widgets can't read BatteryPulse's
   history or your devices themselves, so BatteryPulse keeps a small copy of what they show (the
-  last day and week of readings, and your iPhones' and iPads' last readings) in its own folder,
-  which only you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`.
-  The widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
-  and it is rewritten at once when you clear the history, forget a device or turn a reading off.
+  last day and week of readings with the last 24 hours' and the last 7 days' figures, and your
+  iPhones' and iPads' last readings) in its own folder, which only you can read:
+  `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The widgets read
+  that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac, and it is
+  rewritten at once when you clear the history, forget a device or turn a reading off.
 - **What's New** now appears after every update, this one included.
 - **Fixes:** Settings fit the screen: a Settings pane taller than your screen, and the welcome
   window's settings, now scroll, so every setting can be reached on a MacBook's display.

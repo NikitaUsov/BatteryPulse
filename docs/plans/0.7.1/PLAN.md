@@ -1561,10 +1561,11 @@ A device page's `DeviceKey` logs as `.private(mask: .hash)` (CL logging).
 
 > **Widgets and privacy.** The History and iPhone & iPad widgets can't read BatteryPulse's history
 > or your devices themselves, so BatteryPulse keeps a small copy of what they show (the last day
-> and week of readings, and your iPhones' and iPads' last readings) in its own folder, which only
-> you can read: `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The
-> widgets read that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac,
-> and it is rewritten at once when you clear the history, forget a device or turn a reading off.
+> and week of readings with the last 24 hours' and the last 7 days' figures, and your iPhones'
+> and iPads' last readings) in its own folder, which only you can read:
+> `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. The widgets read
+> that folder and nothing else of BatteryPulse's. Nothing in it leaves your Mac, and it is
+> rewritten at once when you clear the history, forget a device or turn a reading off.
 
 ---
 

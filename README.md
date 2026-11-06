@@ -93,7 +93,8 @@ dependencies.
   trackpad and headphones, all of them or the lowest.
 - A History widget (from 0.7.1), in medium and large: the last 24 hours or 7 days of charge,
   battery power or temperature, or 90 days of capacity and cycle count, with the charging
-  stretches shaded and, in large, the last day's figures.
+  stretches shaded and, in large, the figures of the last 24 hours, or of the last 7 days under a
+  7-day or 90-day chart.
 - An iPhone and iPad widget (from 0.7.1), in small, medium and large: the charge of your iPhones
   and iPads as BatteryPulse last read it, the most recently read, the lowest, all of them or one
   you choose, each with when it was read.
@@ -181,16 +182,16 @@ or your devices themselves, so BatteryPulse keeps a small copy of what the Histo
 iPad widgets show (the last day and week of readings, and your iPhones' and iPads' last
 readings), `feed.json`, in a folder of its own that only your account can read:
 `~/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/`. While history is
-recorded, it holds the last day's and week's readings, the last 24 hours' figures and up to 90
-days of capacity and cycle count; while iPhone and iPad reads are on, the names and last readings
-of up to 8 remembered iPhones and iPads, known by a key made on this Mac, never by an identifier
-or serial number; and BatteryPulse's language and whether history recording and iPhone and iPad
-reads are on. It never holds Demo Mode's data or an accessory, and once macOS lists your placed
-widgets, only what they can show. The widgets' one exception to the sandbox is read-only and names
-that folder alone, and they open no other file of BatteryPulse's. Nothing in it leaves your Mac.
-BatteryPulse rewrites it about every 15 minutes while it runs, and at once when you clear the
-history, forget a device or turn recording or iPhone and iPad reads off, which takes out what
-you removed.
+recorded, it holds the last day's and week's readings, the last 24 hours' and the last 7 days'
+figures and up to 90 days of capacity and cycle count; while iPhone and iPad reads are on, the
+names and last readings of up to 8 remembered iPhones and iPads, known by a key made on this Mac,
+never by an identifier or serial number; and BatteryPulse's language and whether history
+recording and iPhone and iPad reads are on. It never holds Demo Mode's data or an accessory, and
+once macOS lists your placed widgets, only what they can show. The widgets' one exception to the
+sandbox is read-only and names that folder alone, and they open no other file of BatteryPulse's.
+Nothing in it leaves your Mac. BatteryPulse rewrites it about every 15 minutes while it runs, and
+at once when you clear the history, forget a device or turn recording or iPhone and iPad reads off,
+which takes out what you removed.
 
 ## Command-line report
 
