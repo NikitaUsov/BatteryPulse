@@ -23,8 +23,9 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 /// BatteryPulse to update".
 ///
 /// - **One device** (small, and the most recently read, the lowest or the chosen one in every
-///   size): its charge large, its name, state and read time; medium adds its maximum capacity,
-///   large its cycle count and temperature too. A click opens its page. A chosen device the feed
+///   size): its charge large, its name, state and read time; medium and large add its maximum
+///   capacity, cycle count and temperature, as the Battery widget shows its details. A click opens
+///   its page. A chosen device the feed
 ///   no longer holds was forgotten, which the widget says.
 /// - **All** (medium and large): a row per device in the feed's order, the most recently read
 ///   first, each with its charge, state and read time: three in medium and six in large, one
@@ -48,14 +49,11 @@ public enum DevicesWidgetPlan: Sendable, Equatable {
         return size == .small || !isOutdated ? slots : slots - 1
     }
 
-    /// The details of one device a size shows under it: none in small, its maximum capacity in
-    /// medium, and its cycle count and temperature too in large, each only when its reading has it.
+    /// The details a size shows with one device, each only when its reading has it: none in small;
+    /// its maximum capacity, cycle count and temperature in medium, rows beside it as the medium
+    /// Battery widget's, and in large, tiles under it.
     static func detailFields(_ size: WidgetSize) -> [BatteryWidgetField] {
-        switch size {
-        case .small: []
-        case .medium: [.maximumCapacity]
-        case .large, .extraLarge, .extraLargePortrait: [.maximumCapacity, .cycleCount, .temperature]
-        }
+        size == .small ? [] : [.maximumCapacity, .cycleCount, .temperature]
     }
 
     /// The plan for `entry` of a timeline whose read found `feed`; `nil` means no feed (none

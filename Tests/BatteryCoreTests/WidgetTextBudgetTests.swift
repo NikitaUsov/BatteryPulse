@@ -301,6 +301,20 @@ struct WidgetTextBudgetTests {
             for line in states + updated {
                 check(oneLine([line], Budget.lineWidth(.small)), line, "a device's line, small")
             }
+            // One device's details in medium: rows beside its block, the medium Battery widget's
+            // place, each label in the form that place shows (Look 2's answer added cycle count and
+            // temperature to maximum capacity).
+            for field in DevicesWidgetPlan.detailFields(.medium) {
+                let shown = try Self.label(field, field.labelForm(in: .medium, locale: language.locale), language)
+                for value in try widestValues(field, language) {
+                    let fits =
+                        shown.map {
+                            Budget.fits(
+                                Self.before(field, value, .medium) + Budget.width($0), in: Budget.detailWidth(.medium))
+                        } ?? oneLine([value], Budget.detailWidth(.medium))
+                    check(fits, "\(shown ?? "") \(value)", "a device's detail, medium")
+                }
+            }
             let row = Budget.contentWidth(.medium) - 20 - 8
             for state in states {
                 for time in updated {

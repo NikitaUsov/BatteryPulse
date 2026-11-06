@@ -147,20 +147,29 @@ struct DevicesWidgetPlanTests {
         #expect(try Self.layout(.large, .all, feed: Self.feed(Self.four)).rows.count == 4)
     }
 
-    /// One device's details: none in small, its maximum capacity in medium, its cycle count and
-    /// temperature too in large, each only when its reading has it.
+    /// One device's details: none in small; its maximum capacity, cycle count and temperature in
+    /// medium (Look 2's answer: the medium Battery widget's rows beside it) and in large, each only
+    /// when its reading has it, for every choice that shows one device.
     @Test func oneDevicesDetailsGrowWithTheSize() throws {
         let feed = Self.feed([Self.four[0]])
         #expect(try Self.layout(.small, feed: feed).rows[0].details.isEmpty)
-        let medium = try Self.layout(.medium, feed: feed).rows[0].details
-        #expect(medium.map(\.field) == [.maximumCapacity] && medium.map(\.value) == [.text("95%")])
-        let large = try Self.layout(.large, feed: feed).rows[0].details
-        #expect(large.map(\.field) == [.maximumCapacity, .cycleCount, .temperature])
-        #expect(large.map(\.value) == [.text("95%"), .text("278"), .text(Self.formatter.celsius(36.5))])
-        var sparse = Self.four[0]
-        sparse.cycleCount = nil
-        sparse.temperature10 = nil
-        #expect(try Self.layout(.large, feed: Self.feed([sparse])).rows[0].details.map(\.field) == [.maximumCapacity])
+        for size in [WidgetSize.medium, .large] {
+            for show in [DevicesWidgetShow.mostRecent, .lowest, .oneDevice] {
+                let details = try Self.layout(size, show, feed: feed).rows[0].details
+                #expect(details.map(\.field) == [.maximumCapacity, .cycleCount, .temperature], "\(size), \(show)")
+                #expect(
+                    details.map(\.value) == [.text("95%"), .text("278"), .text(Self.formatter.celsius(36.5))],
+                    "\(size), \(show)")
+            }
+            var sparse = Self.four[0]
+            sparse.cycleCount = nil
+            sparse.temperature10 = nil
+            #expect(
+                try Self.layout(size, feed: Self.feed([sparse])).rows[0].details.map(\.field) == [.maximumCapacity],
+                "\(size)")
+        }
+        // All lists rows without details.
+        #expect(try Self.layout(.medium, .all, feed: Self.feed(Self.four)).rows.allSatisfy { $0.details.isEmpty })
     }
 
     /// A row's charge, state, tier and symbol.
@@ -252,6 +261,15 @@ struct DevicesWidgetPlanTests {
         let localize = WidgetAccessibilityTests.localize(language)
         let f = try WidgetTextBudgetTests.formatter(language)
         let feed = Self.feed(Self.four)
+        // Medium's one device has large's details, an element each.
+        let medium = Self.plan(.medium, feed: feed, formatter: f)
+        guard case .devices(let mediumLayout) = medium else {
+            Issue.record("\(medium)")
+            return
+        }
+        let mediumElements = WidgetAccessibility.elements(medium)
+        #expect(mediumElements == [mediumLayout.rows[0].spokenLabel] + mediumLayout.rows[0].details.map(\.spokenLabel))
+        #expect(mediumElements.count == 4)
         let one = Self.plan(.large, feed: feed, formatter: f)
         guard case .devices(let layout) = one else {
             Issue.record("\(one)")
@@ -260,10 +278,11 @@ struct DevicesWidgetPlanTests {
         let elements = WidgetAccessibility.elements(one)
         #expect(elements == [layout.rows[0].spokenLabel] + layout.rows[0].details.map(\.spokenLabel))
         #expect(elements.count == 4)
+        #expect(mediumElements == elements)
         let all = WidgetAccessibility.elements(Self.plan(.large, .all, feed: feed, formatter: f))
         #expect(all.count == 4)
         let empties = DevicesWidgetEmptyReason.allCases.map { WidgetAccessibility.elements(.empty($0)) }
-        for element in elements + all + empties.flatMap({ $0 }) {
+        for element in mediumElements + elements + all + empties.flatMap({ $0 }) {
             let text = try #require(element.text(localize))
             #expect(!text.contains("%@"), "\(text)")
         }
