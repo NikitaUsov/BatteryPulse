@@ -80,6 +80,11 @@ public enum ChartUnit: Sendable, Equatable {
 /// name, unit, first and last value, lowest and highest value and at most
 /// ``ChartSummary/maximumPoints`` points, every number and time formatted. Built off the main actor
 /// with the chart data, from ``HistoryChartData`` or the daily summaries' ``HistoryDayPoint``s.
+///
+/// The app's charts only. A widget's chart keeps its one label, ``WidgetChartSummary``: the series,
+/// its span and its lowest, highest and latest value, from the widget's feed. The two aren't
+/// merged, and needn't agree: over 24 hours or 7 days the feed holds the means of 15-minute or
+/// 2-hour steps, while these extremes are the chart's own values.
 public struct ChartSummary: Sendable, Equatable {
     /// Which chart.
     public enum Kind: Sendable, Equatable {
