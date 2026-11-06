@@ -267,8 +267,8 @@ public enum UpdatePolicy {
     }
 
     /// The "What's New" window appears once after an update that brought the listed features
-    /// (`features`, the version they arrived in), not after a fresh install and not again for a
-    /// later bug-fix release.
+    /// (`features`, the version they arrived in), not after a fresh install, and not again until a
+    /// later release lists its own: since 0.7.1 every release does, a fix release too.
     public static func showsWhatsNew(lastSeen: AppVersion?, current: AppVersion, features: AppVersion) -> Bool {
         guard let lastSeen else { return false }
         return lastSeen < features && features <= current

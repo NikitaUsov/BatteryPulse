@@ -545,10 +545,10 @@ capacity and the cycle count always cover the last 90 days, so Period hides for 
 
 The iPhone and iPad widget offers **Show**: *Most recently read* (as it comes), *Lowest charge*,
 *All*, a row for each device in medium and large, the most recently read first (three in medium,
-six in large), or *One device*, which adds **Device** to choose it from the devices BatteryPulse
-remembers; until you choose one, it shows the most recently read. A device has the name its page
-in BatteryPulse shows, marked as private, so macOS can hide it where it hides a widget's private
-data.
+six in large; small shows the most recently read), or *One device*, which adds **Device** to choose
+it from the devices BatteryPulse remembers; until you choose one, it shows the most recently read.
+A device has the name its page in BatteryPulse shows, marked as private, so macOS can hide it where
+it hides a widget's private data.
 
 **When there is nothing to show.** The History widget and the Battery widget's History chart say
 *No History Yet* until BatteryPulse has recorded some, and *Turn on Record battery history in
