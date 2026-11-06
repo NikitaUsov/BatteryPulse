@@ -73,6 +73,43 @@ charging state.
   widgets can only read a small copy of readings the app writes for them (the feed); the feed
   and those widgets were 0.7's stretch, which the maintainer left out of 0.7, so they wait for
   0.7.1 (decided on 2026-10-31).
+- **The widgets' feed (0.7.1):** what the sandboxed widget can't read itself, the app copies into
+  one small file, `Widget/feed.json` in its Application Support folder beside `History/` and
+  `Devices/`, and the widget reads it through one read-only home-relative sandbox exception whose
+  one path is that folder: the widget's one new entitlement, which `WidgetSurfaceTests` pins to
+  the writer's folder (`WidgetFeedStore`).
+  - **On disk:** the folder 0700 and the file 0600, the user's alone; each write goes to a 0600
+    temporary file renamed into place, so a reader sees the old file or the new one.
+  - **The reader:** one widget file (`WidgetFeedReader`, the only one with a file API,
+    `SecurityGuardTests`) opens only that file, never through a link, and BatteryCore's decoder
+    treats it as untrusted: at most 32 KB, a known version, arrays of one length, finite numbers,
+    no date more than 10 minutes ahead, names stripped of control characters and capped.
+  - **What it holds:** nothing that isn't already in `History/` or `Devices/devices.json`, never
+    a UDID, ECID or serial, Demo Mode's data or an accessory, plus BatteryPulse's language and
+    its two reading switches. Its sections follow the placed kinds once WidgetKit lists them; a
+    failed or empty answer writes every section the switches allow.
+  - **When it is written:** only at moments that already happen, so it adds no wake-up: once per
+    15-minute step at the history recorder's minute tick, recording on or off, since `writtenAt`
+    is the widget's sign that BatteryPulse runs; and at once on Clear History, a reading switch
+    turned on or off, a change of the remembered devices, a plug change and Demo Mode's end.
+    Never in Demo Mode.
+  - **The contract** (C14 item 2): an internal file between an app and a widget of the same
+    version, so its location may move in a minor release with a line in the notes, and its
+    schema, version 1, only gains fields; the exception isn't a 1.x promise. Apple calls these
+    exceptions temporary, so the quick check after a macOS update reads the feed's state and the
+    widget's errors (`scripts/quick-check.sh`). README's and the User Guide's Privacy sections
+    say what it holds, where, who can read it and when it is rewritten.
+- **Build numbers (0.7.1):** `CFBundleVersion` is a clock that only grows.
+  `scripts/build-number.sh` prints the whole seconds since 2026-01-01T00:00:00Z, and `ci.yml` and
+  `release.yml` each read it once per job, before their first packaging step, never their run
+  numbers, so every build sits above every earlier one, whichever workflow made it: a release
+  above the candidates its M5 session installed, since WidgetKit caches a widget's description by
+  that number. Seconds, so two builds dispatched back to back don't share one; it stays within
+  `Int32` until 2094. A technical choice, so not asked; in both workflows before 0.7.1's first
+  candidate.
+- **What's New for every version** (the maintainer's decision, 2026-11-05): from 0.7.1 on, every
+  release has a What's New window, shown once after the update, a fix release too; before, it
+  came after an update that added features.
 - **Releases have no dates.** BatteryPulse is a hobby project: a release ships when there is time
   and desire. The plans keep the order of the versions and estimate their effort, but set no
   target date (decided on 2026-10-22).
@@ -988,9 +1025,11 @@ What 0.7 left for the release after it, before 0.8, as the maintainer decided on
 design and the checks: `docs/plans/0.7.1/widgets.md`, beside 0.7's session tools and its Appendix
 C (`0.7.0-appendix-c.md`).
 
-- [ ] The small copy of the last readings the app writes for the widgets (the feed, W-5), in a
+- [x] The small copy of the last readings the app writes for the widgets (the feed, W-5), in a
   folder only the user can read, which the widget reads through one read-only sandbox exception;
-  rewritten at once when history is cleared, a device forgotten or a reading turned off
+  rewritten at once when history is cleared, a device forgotten or a reading turned off. The
+  devices are written only once a widget that shows them ships; until then the file holds none,
+  so forgetting a device leaves it as it was
 - [ ] The History widget (W-6), with the 24-hour and 7-day charts and the 90-day capacity and cycle
   trend, and the Battery widget's feed-backed options: the History chart in large, average drain
   and time on battery
@@ -1006,7 +1045,7 @@ C (`0.7.0-appendix-c.md`).
   update path (F12), the check after publishing, the switch from Raw Data to History, the menu
   bar painter's pixel check before and after W-11's move, and 0.6.2's WP-18 Xcode items and the
   menu bar on a dark bar, which reached Session R from 0.6.2
-- [ ] 0.7's session tools re-pointed at 0.7.1 before its session: they still name 0.7.0's
+- [x] 0.7's session tools re-pointed at 0.7.1 before its session: they named 0.7.0's
   integration branch, starting release, candidates, folders and result branches
 
 The feed is a new file of ours on disk and the widget's one new entitlement, which 0.6.1's frozen
