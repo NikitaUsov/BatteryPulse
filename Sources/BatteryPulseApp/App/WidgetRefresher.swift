@@ -174,8 +174,8 @@ final class WidgetRefresher {
     /// request, which follows here. After an in-app install, ``endExtensionBeforeSwap()`` has
     /// usually ended it already, and this finds nothing, or the new extension WidgetKit started
     /// meanwhile, which a reload brings back. The end doesn't wait for the feed: the launch's first
-    /// write follows, and when the feed it replaces was missing (an update from 0.7.0) or had aged,
-    /// it reloads the kinds that read it through the planner, after the extension was ended.
+    /// write follows and reloads every placed kind through the planner, after the extension was
+    /// ended, so the feed reaches them even after an update from 0.7.0, which left none.
     ///
     /// A language chosen for BatteryPulse alone (System Settings → General → Language & Region →
     /// Applications) applies at the next launch, and every placed widget keeps its render in the

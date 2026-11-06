@@ -419,9 +419,9 @@ extension WidgetReloadPlanner {
         /// running one must not keep a read of the old one. An update ends the previous version's
         /// extension at once, as before, and its reload doesn't wait for a write: the sooner an
         /// extension of the previous version is gone, the less WidgetKit hears from it. The
-        /// launch's first write then reloads the kinds that need the feed it brings, through the
-        /// planner (``WidgetReloadPlanner/Reason/repair``): after an update from 0.7.0 there was
-        /// none, and after one that took a while, it had aged.
+        /// launch's first write, after the end, then reloads every placed kind through the planner
+        /// (``WidgetReloadPlanner/Reason/repair``), so the extension the update starts finds the
+        /// feed: after an update from 0.7.0 there was none.
         public var steps: [LaunchStep] {
             switch self {
             case .update: [.endExtension, .reload]

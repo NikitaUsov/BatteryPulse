@@ -21,8 +21,9 @@ public struct DevicesWidgetConfiguration: Sendable, Equatable {
 /// readings, never Demo Mode's. No feed, device reads off and no device remembered each show a
 /// message; a feed over two hours old shows its last readings, each with its time, and "Open
 /// BatteryPulse to update". A feed written while no iPhone & iPad widget counted as placed holds
-/// no devices yet, and shows the no-feed message until BatteryPulse writes them, at most about
-/// 15 minutes and a write later, never "Connect an iPhone or iPad with a cable".
+/// no devices yet, and shows the no-feed message until BatteryPulse writes them, within 15 minutes
+/// and a write moment, about half an hour at most, never "Connect an iPhone or iPad with a
+/// cable".
 ///
 /// - **One device** (small, and the most recently read, the lowest or the chosen one in every
 ///   size): its charge large, its name, state and read time; medium and large add its maximum

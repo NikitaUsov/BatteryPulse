@@ -558,9 +558,10 @@ BatteryPulse* while recording is off (Settings → Advanced). The iPhone and iPa
 on Read iPhone and iPad batteries in BatteryPulse* while reading devices is off (Settings →
 General), *Connect an iPhone or iPad with a cable* until a device has been read, and *This device
 was forgotten* when the device chosen under One device has been forgotten; choose another in
-Edit Widget. Once their data is two hours old, as when BatteryPulse isn't running, these widgets
-keep their last readings, each with its time, and add *Open BatteryPulse to update*; until
-BatteryPulse first writes their data, that is all they show.
+Edit Widget. One you have just placed may say *Open BatteryPulse to update* for up to about half an
+hour, until BatteryPulse writes the devices for it. Once their data is two hours old, as when
+BatteryPulse isn't running, these widgets keep their last readings, each with its time, and add
+*Open BatteryPulse to update*; until BatteryPulse first writes their data, that is all they show.
 
 ### Clicking a widget
 
@@ -600,8 +601,11 @@ widget you have placed:
 
 When you clear the history, turn recording off, turn reading devices off or forget a device,
 BatteryPulse refreshes the widgets that showed it right away, or a few minutes later if it has
-just refreshed them, so they don't keep showing what you removed. When your Mac's language or
-BatteryPulse's own changes, BatteryPulse refreshes every widget the next time it opens, so none
+just refreshed them, so they don't keep showing what you removed. It does the same when you turn
+recording or reading devices on, when it first writes the data a widget you just placed needs, when
+it opens, and when it writes again after an hour or more without writing (after the Mac slept,
+say), so *Open BatteryPulse to update* goes soon after BatteryPulse runs. When your Mac's language
+or BatteryPulse's own changes, BatteryPulse refreshes every widget the next time it opens, so none
 keeps the old language's words; after an update, it does the same if the old version's widget is
 still running.
 
