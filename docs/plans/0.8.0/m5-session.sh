@@ -6361,7 +6361,7 @@ step_after() {
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
   local problems=0 id session setting report printed feed facts counts="" starts runbook section bytes status other
-  local wanted missing name names
+  local wanted missing name names found file want got
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -6440,10 +6440,29 @@ dry_run() {
   if has_cyrillic "$(cat "$report")"; then check fail "the report has Russian text"; else check ok "the report is English"; fi
   (privacy_lint "$report" >/dev/null 2>&1) && check ok "the privacy lint passes a clean report" ||
     check fail "the privacy lint refused a clean report"
+  # T-1 item 2: these two forms are Session A's paraphrase of pmset -g battlimit, not its verbatim
+  # text, which only A-2's sample brings (the look shoot saves it as samples/powerd-charging-<n or
+  # none>-<tag>-battlimit.txt). Each such file in the repository, beside A-2's fixtures or in a
+  # session's results, must read as the number its name carries; until one is there, the parse
+  # stays unverified, for A-2 to close.
   [ "$(battlimit_value <(printf ' Battery level limits:\n  chargeSocLimitSoc = 80\n'))" = 80 ] &&
-    check ok "battlimit's chargeSocLimitSoc reads as the limit" || check fail "battlimit's value isn't read"
-  [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none" ||
+    check ok "battlimit's chargeSocLimitSoc reads as the limit [Session A's paraphrase]" || check fail "battlimit's value isn't read"
+  [ -z "$(battlimit_value <(printf 'No battery level limits set\n'))" ] && check ok "no limit reads as none [Session A's paraphrase]" ||
     check fail "no limit didn't read as none"
+  found=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    found=$((found + 1))
+    want="$(basename "$file" | sed -n 's/^powerd-charging-\([0-9a-z]*\)-.*battlimit\.txt$/\1/p')"
+    got="$(battlimit_value "$file")"
+    if { [ "$want" = none ] && [ -z "$got" ]; } || { [ -n "$got" ] && [ "$got" = "$want" ]; }; then
+      check ok "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}"
+    else
+      check fail "A-2's verbatim battlimit $(basename "$file") reads as ${got:-none}, not ${want:-the number in its name}: battlimit_value misreads it"
+    fi
+  done < <(find "$ROOT/Tests/BatteryCoreTests/Fixtures" "$HERE/sessions" -type f -name 'powerd-charging-*battlimit*.txt' 2>/dev/null | sort)
+  [ "$found" -gt 0 ] ||
+    echo "unverified: pmset -g battlimit's verbatim text: no A-2 sample (powerd-charging-*-battlimit.txt) yet, so the forms above are Session A's paraphrase (T-1 item 2)"
   # The feed's facts on W-5's format (WidgetFeed.encoded: compact, sorted keys, dates in seconds).
   feed="$WORK/feed.json"
   printf '%s' '{"day":{"batteryWatts10":[null,-52,null],"percent":[null,81,80],"plugged":[null,false,false],"start":1730800800,"step":900,"temperature10":[null,301,null]},"devices":[{"deviceClass":"iPhone","key":"0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d","name":"Phone","percent":64,"readAt":1730801400,"state":"charging"},{"key":"9f8e7d6c5b4a39281706f5e4d3c2b1a0","state":"unknown"}],"languages":["ru","en"],"readsDevices":true,"recordsHistory":true,"version":1,"writtenAt":1730801700}' >"$feed"
