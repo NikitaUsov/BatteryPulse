@@ -847,11 +847,19 @@ step_install() {
 }
 
 # chs_since <time>: the CHSErrorDomain 1103 lines since then (chronod's refusal of a timeline whose
-# descriptor it cached from another build; Session A).
+# descriptor it cached from another build; Session A), the log tool's own left out (chs_line).
 chs_since() {
+  log_since "$1" "$CHS_PREDICATE" "$LOGS/chs.ndjson" >/dev/null
+  chs_line "$1" "$LOGS/chs.ndjson"
+}
+
+# chs_line <time> <ndjson>: chs_since's line from what `log show` found. The predicate reads
+# eventMessage alone, so it also matches each `log` run's own line since then (not_log_tool):
+# Session F counted 1, 2 and 3 for its three calls from one start.
+chs_line() {
   local count
-  count="$(log_since "$1" "$CHS_PREDICATE" "$LOGS/chs.ndjson")"
-  echo "CHSErrorDomain 1103 lines since $1: $count"
+  count="$(not_log_tool "$2" | grep -c . || true)"
+  echo "CHSErrorDomain 1103 lines since $1: ${count:-0} ($(($(entry_count "$2") - ${count:-0})) of the log tool's own left out)"
 }
 
 # MARK: - Tools
@@ -1036,6 +1044,12 @@ entries() {
 
 # messages <ndjson>: "<time of day> <process> <message>" per entry, for reading and for the report.
 messages() { entries "$1" | awk -F '\t' '{ print substr($1, 12, 12) " " $2 " " $3 }'; }
+
+# not_log_tool <ndjson>: the entries, as `entries` prints them, but the log tool's own. Each run of
+# `log` logs its command line, predicate and all ("log run noninteractively, args: …"), so a
+# predicate on eventMessage alone also matches its own run and the earlier ones: Session F's one
+# sandbox denial and its CHSErrorDomain 1103 lines were those (its R-feed-history note).
+not_log_tool() { entries "$1" | awk -F '\t' '$2 != "log" && index($3, "log run noninteractively") == 0'; }
 
 crash_reports_since() { find "$REPORTS" -maxdepth 1 -name 'BatteryPulse*' -newer "$1" -type f 2>/dev/null | sort; }
 
@@ -3551,11 +3565,20 @@ feed_logs_since() {
 FEED_DENIALS_LINE=""
 FEED_DENIALS=0
 feed_denials_since() {
-  local all
-  all="$(log_since "$1" 'eventMessage CONTAINS "Sandbox: BatteryPulseWidget" AND eventMessage CONTAINS "deny"' "$LOGS/feed-denials.ndjson")"
+  log_since "$1" 'eventMessage CONTAINS "Sandbox: BatteryPulseWidget" AND eventMessage CONTAINS "deny"' "$LOGS/feed-denials.ndjson" >/dev/null
   messages "$LOGS/feed-denials.ndjson" >>"$LOGS/feed-denials.txt" 2>/dev/null || true
+  feed_denials_count "$1" "$LOGS/feed-denials.ndjson"
+}
+
+# feed_denials_count <time> <ndjson>: feed_denials_since's counts from what `log show` found. The
+# predicate reads eventMessage alone, so it also matches each `log` run's own line since then
+# (not_log_tool), which Session F counted as its one denial; those are left out and counted apart.
+feed_denials_count() {
+  local lines all
+  lines="$(not_log_tool "$2")"
+  all="$(grep -c . <<<"$lines" || true)"
   FEED_DENIALS="${all:-0}"
-  FEED_DENIALS_LINE="sandbox denials of BatteryPulseWidget since $1: ${all:-0}, of them in Widget/: $(messages "$LOGS/feed-denials.ndjson" | grep -c -F '/Widget/' || true) (logs/feed-denials.txt on the Mac; the predicate is unverified)"
+  FEED_DENIALS_LINE="sandbox denials of BatteryPulseWidget since $1: ${all:-0}, of them in Widget/: $(grep -c -F '/Widget/' <<<"$lines" || true) ($(($(entry_count "$2") - ${all:-0})) of the log tool's own left out; logs/feed-denials.txt on the Mac; the predicate is unverified)"
 }
 
 # feed_record <moment> <facts>: the run's line of feed.tsv.
@@ -5306,6 +5329,25 @@ dry_run() {
     [ "$(fact "$facts" written)" = 1730801700 ] && [ "$(fact "$facts" version)" = 2 ] &&
     check ok "a demo key, a udid and a serial are found, and no day is none" || check fail "the feed's checks miss a key ($facts)"
   [ "$(feed_facts "$WORK/no-feed.json")" = missing ] && check ok "no feed reads as missing" || check fail "a missing feed isn't missing"
+  # Each `log` run logs its own command line, predicate and all, so a predicate on eventMessage
+  # alone finds it: never a sandbox denial or an 1103 line (Session F's R-feed-history).
+  printf '%s\n' \
+    '{"timestamp":"2026-11-06 12:48:14.101010+0300","processImagePath":"/usr/bin/log","eventMessage":"log run noninteractively, args: show --predicate eventMessage CONTAINS \"Sandbox: BatteryPulseWidget\" AND eventMessage CONTAINS \"deny\""}' \
+    '{"timestamp":"2026-11-06 12:48:14.202020+0300","processImagePath":"/kernel","eventMessage":"Sandbox: BatteryPulseWidget(857) deny(1) file-read-data /Users/someone/Library/Application Support/io.github.nikitausov.BatteryPulse/Widget/feed.json"}' \
+    '{"timestamp":"2026-11-06 12:48:14.303030+0300","processImagePath":"/kernel","eventMessage":"Sandbox: BatteryPulseWidget(857) deny(1) file-read-data /Users/someone/Library/Application Support/io.github.nikitausov.BatteryPulse/History"}' \
+    '{"count":3,"finished":1}' >"$LOGS/dry-denials.ndjson"
+  feed_denials_count 12:48:00 "$LOGS/dry-denials.ndjson"
+  [ "$FEED_DENIALS" = 2 ] && grep -q -F "in Widget/: 1 (1 of the log tool's own left out" <<<"$FEED_DENIALS_LINE" &&
+    check ok "the sandbox denials are the kernel's, the log tool's own line left out" ||
+    check fail "the denials count the log tool's own line ($FEED_DENIALS_LINE)"
+  printf '%s\n' \
+    '{"timestamp":"2026-11-06 12:53:02.101010+0300","processImagePath":"/usr/bin/log","eventMessage":"log run noninteractively, args: show --predicate eventMessage CONTAINS \"CHSErrorDomain\" AND eventMessage CONTAINS \"1103\""}' \
+    '{"timestamp":"2026-11-06 12:57:02.101010+0300","processImagePath":"/usr/bin/log","eventMessage":"log run noninteractively, args: show --predicate eventMessage CONTAINS \"CHSErrorDomain\" AND eventMessage CONTAINS \"1103\""}' \
+    '{"timestamp":"2026-11-06 12:57:03.101010+0300","processImagePath":"/System/Library/PrivateFrameworks/ChronoCore.framework/Support/chronod","eventMessage":"Error Domain=CHSErrorDomain Code=1103 \"Intent configuration is required but was not provided\""}' \
+    '{"count":3,"finished":1}' >"$LOGS/dry-chs.ndjson"
+  [ "$(chs_line 12:52:01 "$LOGS/dry-chs.ndjson")" = "CHSErrorDomain 1103 lines since 12:52:01: 1 (2 of the log tool's own left out)" ] &&
+    check ok "the CHSErrorDomain 1103 lines are chronod's, the log tool's own two left out" ||
+    check fail "the 1103 count reads the log tool's own lines ($(chs_line 12:52:01 "$LOGS/dry-chs.ndjson"))"
   [ "$(percent_of 5711 5760)" = 99.15 ] && [ "$(percent_of - 5760)" = - ] && check ok "capacity's ratio reads as the plan's 99.15 %" ||
     check fail "capacity's ratio is wrong"
   # The capture's keys where macOS 27 keeps them (plutil is macOS's: a Mac's dry run reads them).
