@@ -38,6 +38,10 @@ extension WidgetFeed {
             writtenAt: writtenAt, languages: ["en"], recordsHistory: true, readsDevices: true, day: day, week: week,
             statistics24h: Statistics(
                 averageDrainPercentPerHour: 6.4, timeOnBattery: 14 * 60 * 60, chargingSessions: 1),
+            // The week's: six days of 16 hours on battery, 7 points every 2 hours, plugged in after
+            // all but the first.
+            statistics7d: Statistics(
+                averageDrainPercentPerHour: 3.5, timeOnBattery: 6 * 16 * 60 * 60, chargingSessions: 5),
             onBatterySince: day.date(ofStep: 56),
             daily: Daily(
                 firstDay: HistoryDay.key(for: firstDay, calendar: calendar),

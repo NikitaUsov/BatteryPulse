@@ -10,8 +10,8 @@ import Foundation
 ///
 /// It holds only what a widget can show, and nothing that isn't already in `History/` or
 /// `Devices/devices.json` beside it: the last day's and week's charge, battery power, temperature
-/// and plugged-in state in steps; the last 24 hours' figures; the start of the run on battery; up
-/// to 90 days of capacity and cycle count; up to 8 remembered iPhones and iPads by their
+/// and plugged-in state in steps; the last 24 hours' and 7 days' figures; the start of the run on
+/// battery; up to 90 days of capacity and cycle count; up to 8 remembered iPhones and iPads by their
 /// `DeviceKey`, never a UDID, ECID or serial; BatteryPulse's language list; and whether recording
 /// and device reads are on, so a widget can tell "off" from "none". Never Demo Mode's data and
 /// never an accessory.
@@ -54,6 +54,9 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
     /// The figures of the last 24 hours, as the History page computes them; `nil` without the
     /// history section or without a sample in that time.
     public var statistics24h: Statistics?
+    /// The figures of the last 7 days, as the History page computes them for its 7 days; `nil`
+    /// without the history section or without a sample in that time.
+    public var statistics7d: Statistics?
     /// When the Mac's current run on battery began; `nil` on the adapter, without the history
     /// section or without samples.
     public var onBatterySince: Date?
@@ -67,7 +70,7 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
     public init(
         version: Int = Self.currentVersion, writtenAt: Date, languages: [String], recordsHistory: Bool,
         readsDevices: Bool, day: Series? = nil, week: Series? = nil, statistics24h: Statistics? = nil,
-        onBatterySince: Date? = nil, daily: Daily? = nil, devices: [Device]? = nil
+        statistics7d: Statistics? = nil, onBatterySince: Date? = nil, daily: Daily? = nil, devices: [Device]? = nil
     ) {
         self.version = version
         self.writtenAt = writtenAt
@@ -77,6 +80,7 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
         self.day = day
         self.week = week
         self.statistics24h = statistics24h
+        self.statistics7d = statistics7d
         self.onBatterySince = onBatterySince
         self.daily = daily
         self.devices = devices
@@ -128,7 +132,7 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
         public var count: Int { self == .day ? 96 : 84 }
     }
 
-    /// ``HistoryStatistics`` of the last 24 hours, the figures the widget shows.
+    /// ``HistoryStatistics`` of the last 24 hours or 7 days, the figures the widget shows.
     public struct Statistics: Sendable, Equatable, Codable {
         /// In percent per hour, to a tenth; `nil` until there is enough to go on.
         public var averageDrainPercentPerHour: Double?
@@ -215,6 +219,14 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
             cycleCount = try c.decodeIfPresent(Int.self, forKey: .cycleCount)
             temperature10 = try c.decodeIfPresent(Int.self, forKey: .temperature10)
             readAt = try c.decodeIfPresent(Date.self, forKey: .readAt)
+        }
+    }
+
+    /// The figures of `period`: the last 24 hours' or the last 7 days'.
+    public func statistics(for period: HistoryWidgetPeriod) -> Statistics? {
+        switch period {
+        case .day: statistics24h
+        case .week: statistics7d
         }
     }
 
@@ -436,6 +448,7 @@ extension WidgetFeed {
         }
         if !feed.recordsHistory || removal.historyCleared {
             feed.statistics24h = nil
+            feed.statistics7d = nil
             feed.onBatterySince = nil
             feed.daily = nil
         }
@@ -504,9 +517,10 @@ extension WidgetFeed {
         public var includesDevices: Bool { readsDevices && sections.contains(.devices) }
     }
 
-    /// The earliest sample the builder uses at `now`: the start of the week series.
+    /// The earliest sample the builder uses at `now`: the start of the History page's 7 days, whose
+    /// figures the feed holds, up to a step before the week series' first.
     public static func historyStart(at now: Date) -> Date {
-        seriesStart(.week, at: now)
+        min(seriesStart(.week, at: now), now.addingTimeInterval(-HistoryPeriod.week.length))
     }
 
     /// The feed for `source`, or `nil` in Demo Mode. A pure function: the app calls it off the
@@ -521,8 +535,8 @@ extension WidgetFeed {
             let samples = source.samples.filter { $0.time.timeIntervalSince1970.isFinite && $0.time <= source.now }
             feed.day = series(.day, from: samples, at: source.now)
             feed.week = series(.week, from: samples, at: source.now)
-            let lastDay = samples.filter { $0.time >= source.now.addingTimeInterval(-24 * 60 * 60) }
-            feed.statistics24h = lastDay.isEmpty ? nil : Statistics(HistoryStatistics(samples: lastDay))
+            feed.statistics24h = statistics(over: .day, of: samples, at: source.now)
+            feed.statistics7d = statistics(over: .week, of: samples, at: source.now)
             feed.onBatterySince = onBatterySince(samples, current: source.current).map(wholeSeconds)
             feed.daily = daily(source.days, at: source.now, timeZone: source.timeZone)
         }
@@ -530,6 +544,14 @@ extension WidgetFeed {
             feed.devices = devices(source.devices, modelNames: source.modelNames)
         }
         return feed
+    }
+
+    /// The figures of the History page's `period` at `now`: ``HistoryStatistics`` of the samples
+    /// since its start; `nil` without one.
+    static func statistics(over period: HistoryPeriod, of samples: [HistorySample], at now: Date) -> Statistics? {
+        let start = now.addingTimeInterval(-period.length)
+        let inPeriod = samples.filter { $0.time >= start }
+        return inPeriod.isEmpty ? nil : Statistics(HistoryStatistics(samples: inPeriod))
     }
 
     /// The start of the period's first step at `now`: its last step holds `now`.
@@ -696,6 +718,18 @@ extension WidgetFeed.Statistics {
             timeOnBattery: WidgetFeed.scaled(statistics.timeOnBattery, by: 1, in: WidgetFeed.Bounds.timeOnBattery) ?? 0,
             chargingSessions: WidgetFeed.within(statistics.chargingSessions, WidgetFeed.Bounds.sessions) ?? 0)
     }
+
+    /// The figures with a number outside its range bounded as the builder writes it: a drain a
+    /// gap, a time or a count zero.
+    func bounded() -> WidgetFeed.Statistics {
+        var statistics = self
+        statistics.averageDrainPercentPerHour = averageDrainPercentPerHour.flatMap {
+            WidgetFeed.scaled($0, by: 10, in: WidgetFeed.Bounds.drain10).map { Double($0) / 10 }
+        }
+        statistics.timeOnBattery = WidgetFeed.within(timeOnBattery, WidgetFeed.Bounds.timeOnBattery) ?? 0
+        statistics.chargingSessions = WidgetFeed.within(chargingSessions, WidgetFeed.Bounds.sessions) ?? 0
+        return statistics
+    }
 }
 
 // MARK: - Names
@@ -781,7 +815,9 @@ extension WidgetFeed {
         let dates =
             [writtenAt, day?.start, week?.start, onBatterySince].compactMap { $0 }
             + (devices ?? []).compactMap(\.readAt)
-        let numbers = dates.map(\.timeIntervalSince1970) + [statistics24h?.averageDrainPercentPerHour].compactMap { $0 }
+        let numbers =
+            dates.map(\.timeIntervalSince1970)
+            + [statistics24h?.averageDrainPercentPerHour, statistics7d?.averageDrainPercentPerHour].compactMap { $0 }
         guard numbers.allSatisfy(\.isFinite) else { throw .notFinite }
         guard dates.allSatisfy({ $0.timeIntervalSince(now) <= Self.futureTolerance }) else { throw .futureDate }
         for (series, period) in [(day, Period.day), (week, Period.week)] {
@@ -816,15 +852,8 @@ extension WidgetFeed {
         feed.languages = Self.sanitizedLanguages(languages)
         feed.day = day?.bounded()
         feed.week = week?.bounded()
-        feed.statistics24h = statistics24h.map { statistics in
-            var statistics = statistics
-            statistics.averageDrainPercentPerHour = statistics.averageDrainPercentPerHour.flatMap {
-                Self.scaled($0, by: 10, in: Bounds.drain10).map { Double($0) / 10 }
-            }
-            statistics.timeOnBattery = Self.within(statistics.timeOnBattery, Bounds.timeOnBattery) ?? 0
-            statistics.chargingSessions = Self.within(statistics.chargingSessions, Bounds.sessions) ?? 0
-            return statistics
-        }
+        feed.statistics24h = statistics24h?.bounded()
+        feed.statistics7d = statistics7d?.bounded()
         feed.daily = daily.map { daily in
             var daily = daily
             daily.capacityToDesign10 = daily.capacityToDesign10.map { Self.within($0, Bounds.capacity10) }

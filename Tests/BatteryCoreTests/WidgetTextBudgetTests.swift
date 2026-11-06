@@ -248,8 +248,8 @@ struct WidgetTextBudgetTests {
             }
         }
         // The History widget, medium and large, the whole width: the chart's name beside its
-        // latest value, and in large the last 24 hours' figures as rows of a label and its value,
-        // each on one line.
+        // latest value, and in large the period's figures as rows of a label and its value, each on
+        // one line: the last 24 hours' or 7 days', whose time on battery has three digits of hours.
         for language in Language.allCases {
             let f = try formatter(language)
             for size in [WidgetSize.medium, .large] {
@@ -266,7 +266,8 @@ struct WidgetTextBudgetTests {
                         HistoryWidgetStatistic.Kind.averageDrain,
                         try perHour(f.percent(99.9, fractionDigits: 1), language)
                     ),
-                    (.onBattery, [f.duration(minutes: 23 * 60 + 59)]), (.chargingSessions, ["9,999"]),
+                    (.onBattery, [f.duration(minutes: 23 * 60 + 59), f.duration(minutes: 7 * 24 * 60 - 1)]),
+                    (.chargingSessions, ["9,999"]),
                 ]
                 for (kind, values) in statistics where size == .large {
                     let label = try choices([kind.labelKey], language)

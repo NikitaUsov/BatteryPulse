@@ -6,7 +6,7 @@ public struct HistoryWidgetConfiguration: Sendable, Equatable {
     /// Ignored by the 90-day series (``HistoryWidgetSeries/isDaily``).
     public var period: HistoryWidgetPeriod
     public var series: HistoryWidgetSeries
-    /// Large only: the last 24 hours' figures under the chart.
+    /// Large only: the figures of ``statisticsPeriod`` under the chart.
     public var showsStatistics: Bool
 
     public init(period: HistoryWidgetPeriod = .day, series: HistoryWidgetSeries = .charge, showsStatistics: Bool = true)
@@ -14,6 +14,12 @@ public struct HistoryWidgetConfiguration: Sendable, Equatable {
         self.period = period
         self.series = series
         self.showsStatistics = showsStatistics
+    }
+
+    /// The period of the large widget's figures, as the History page shows them for its own: the
+    /// chart's, and the last 7 days under a 90-day series, the longer of the page's two.
+    public var statisticsPeriod: HistoryWidgetPeriod {
+        series.isDaily ? .week : period
     }
 }
 
@@ -42,7 +48,7 @@ public enum HistoryWidgetPlan: Sendable, Equatable {
         case .chart(let chart, let isOutdated):
             let statistics =
                 size != .small && size != .medium && c.showsStatistics
-                ? HistoryWidgetStatistic.all(feed?.statistics24h, formatter: formatter) : []
+                ? HistoryWidgetStatistic.all(feed?.statistics(for: c.statisticsPeriod), formatter: formatter) : []
             return .history(HistoryWidgetLayout(chart: chart, statistics: statistics, isOutdated: isOutdated))
         }
     }
@@ -56,7 +62,8 @@ public enum HistoryWidgetPlan: Sendable, Equatable {
 /// The History widget's content for one entry.
 public struct HistoryWidgetLayout: Sendable, Equatable {
     public var chart: WidgetChart
-    /// Large with Statistics on: the last 24 hours' figures, in order.
+    /// Large with Statistics on: the figures of the configuration's
+    /// ``HistoryWidgetConfiguration/statisticsPeriod``, in order.
     public var statistics: [HistoryWidgetStatistic]
     /// The feed is over two hours old: "Open BatteryPulse to update" under its last data.
     public var isOutdated: Bool
@@ -64,8 +71,8 @@ public struct HistoryWidgetLayout: Sendable, Equatable {
 
 // MARK: - Statistics
 
-/// One of the last 24 hours' figures the large History widget shows under its chart, as the
-/// History page shows them.
+/// One of the figures the large History widget shows under its chart, the last 24 hours' or 7
+/// days', as the History page shows them for its period.
 public struct HistoryWidgetStatistic: Sendable, Equatable {
     public enum Kind: Sendable, Equatable, CaseIterable {
         case averageDrain, onBattery, chargingSessions

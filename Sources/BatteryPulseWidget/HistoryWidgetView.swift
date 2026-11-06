@@ -28,7 +28,8 @@ struct HistoryWidgetRoot: View {
 /// opens History.
 ///
 /// - Medium: the series' name and latest value over its chart.
-/// - Large: the same, taller, and the last 24 hours' figures under it.
+/// - Large: the same, taller, and the figures of its period under it: the last 24 hours' or 7
+///   days', the 7 days' under a 90-day series.
 ///
 /// A feed over two hours old keeps its last data, with its times on the axis, and says "Open
 /// BatteryPulse to update" under it.
@@ -88,7 +89,7 @@ struct HistoryChartBlock: View {
     }
 }
 
-/// The last 24 hours' figures: a row each, its label at the leading edge and its value at the
+/// The period's figures: a row each, its label at the leading edge and its value at the
 /// trailing one, as medium's details. Each row is one VoiceOver element.
 struct HistoryStatisticsList: View {
     let statistics: [HistoryWidgetStatistic]

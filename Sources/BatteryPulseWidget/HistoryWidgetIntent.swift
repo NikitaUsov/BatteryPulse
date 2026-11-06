@@ -22,7 +22,7 @@ struct HistoryWidgetIntent: WidgetConfigurationIntent {
     @Parameter(title: "Series", default: .charge)
     var series: HistorySeriesChoice
 
-    /// Large only: the last 24 hours' figures under the chart.
+    /// Large only: the figures of the chart's period under it, the 7 days' under a 90-day series.
     @Parameter(title: "Statistics", default: true)
     var statistics: Bool
 
