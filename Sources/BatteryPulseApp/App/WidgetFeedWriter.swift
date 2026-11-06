@@ -29,8 +29,10 @@ enum AppWidgetFeed {
 ///   (``WidgetFeed/removing(_:)``); before the first write since launch, the file goes whole.
 ///
 /// The sections follow the placed widgets (``WidgetPlacements``), asked of WidgetKit at a write
-/// moment only. One write runs at a time; the requests meanwhile make one follow-on write.
-/// Observable only to be in the Settings pane's environment: nothing of it is observed.
+/// moment only. One write runs at a time; the requests meanwhile make one follow-on write. A write
+/// that took out what the user removed counts in ``removalsWritten``, the one property anything
+/// observes: ``WidgetRefresher`` then reloads the kinds that show it (``takeRemovedSections()``).
+/// Observable for that, and to be in the Settings pane's environment.
 @Observable
 final class WidgetFeedWriter {
     private let monitor: BatteryMonitor
@@ -48,6 +50,12 @@ final class WidgetFeedWriter {
     /// Clear History ran since the last write that accounted for it: an event, not a setting, so a
     /// folded request can't lose it, and a failed write leaves it for the next.
     @ObservationIgnored private var historyCleared = false
+    /// The sections the queued requests take out, for the write that serves them.
+    @ObservationIgnored private var queuedRemovals: Set<WidgetFeed.Section> = []
+    /// The sections the removals written since the refresher last asked took out.
+    @ObservationIgnored private var removedSections: Set<WidgetFeed.Section> = []
+    /// How many writes took out what the user removed: each changed the file.
+    private(set) var removalsWritten = 0
 
     init(
         monitor: BatteryMonitor, history: HistoryStore = AppHistory.store, store: WidgetFeedStore = AppWidgetFeed.store
@@ -63,9 +71,12 @@ final class WidgetFeedWriter {
         write(.step)
     }
 
-    /// Writes the feed now, or right after the write that is running.
-    func write(_ reason: WidgetFeed.WriteReason) {
+    /// Writes the feed now, or right after the write that is running. `removed` are the sections
+    /// it takes out besides what `reason` says (``WidgetFeed/WriteReason/removes(recordsHistory:)``):
+    /// the devices for reads off and Forget.
+    func write(_ reason: WidgetFeed.WriteReason, removing removed: Set<WidgetFeed.Section> = []) {
         if reason == .historyCleared { historyCleared = true }
+        queuedRemovals.formUnion(removed.union(reason.removes(recordsHistory: AppSettings.recordsHistory)))
         let unchanged = (queued?.unchanged ?? false) || reason.writesUnchanged
         // An immediate reason labels the follow-on write over a routine one: it logs.
         let label = queued.map { $0.reason == .step ? reason : $0.reason } ?? reason
@@ -78,25 +89,48 @@ final class WidgetFeedWriter {
 
     /// Writes the feed, and returns once that write and any it was folded with are done, written
     /// or not: a launch in another language reloads the widgets only then (``WidgetRefresher``).
-    func writeAndWait(_ reason: WidgetFeed.WriteReason) async {
-        write(reason)
+    func writeAndWait(_ reason: WidgetFeed.WriteReason, removing removed: Set<WidgetFeed.Section> = []) async {
+        write(reason, removing: removed)
         await writing?.value
     }
 
-    /// Runs the queued writes one after another until none is left.
+    /// The sections the removals written since the last call took out, for the kinds that show
+    /// them to reload.
+    func takeRemovedSections() -> Set<WidgetFeed.Section> {
+        defer { removedSections = [] }
+        return removedSections
+    }
+
+    /// Runs the queued writes one after another until none is left. A write that changed the file
+    /// counts its removals as written; a failed one leaves them for the next write.
     private func writeQueued() async {
         while let next = queued.take() {
-            await writeOnce(next.reason, unchanged: next.unchanged)
+            let removals = queuedRemovals
+            queuedRemovals = []
+            let result = await writeOnce(next.reason, unchanged: next.unchanged)
+            switch result {
+            case .changed where !removals.isEmpty:
+                removedSections.formUnion(removals)
+                removalsWritten += 1
+            case .failed:
+                queuedRemovals.formUnion(removals)
+            case .changed, .unchanged:
+                break
+            }
         }
         writing = nil
     }
 
-    private func writeOnce(_ reason: WidgetFeed.WriteReason, unchanged: Bool) async {
+    /// What a write did to the file.
+    private enum WriteResult {
+        case changed, unchanged, failed
+    }
+
+    private func writeOnce(_ reason: WidgetFeed.WriteReason, unchanged: Bool) async -> WriteResult {
         let clearing = historyCleared
         historyCleared = false
         guard !monitor.isOverridden else {
-            await removeInDemoMode(reason, historyCleared: clearing)
-            return
+            return await removeInDemoMode(reason, historyCleared: clearing)
         }
         let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
         defer { interval.end() }
@@ -118,18 +152,17 @@ final class WidgetFeedWriter {
             devices: devices, modelNames: modelNames)
         guard let feed = await FeedBuild.make(source, history: history) else {
             // The history couldn't be read, so the previous feed stays; a clear still leaves it.
-            if clearing { await removeOnly(reason, historyCleared: true) }
-            return
+            return clearing ? await removeOnly(reason, historyCleared: true) : .failed
         }
         // The placements and the build ran off the main actor: Demo Mode may have started
         // meanwhile.
         guard !monitor.isOverridden else {
-            await removeInDemoMode(reason, historyCleared: clearing)
-            return
+            return await removeInDemoMode(reason, historyCleared: clearing)
         }
         do {
             let outcome = try await FeedBuild.write(feed, to: store, unchanged: unchanged)
             Self.log(outcome, of: feed, reason: reason)
+            return outcome == .unchanged ? .unchanged : .changed
         } catch {
             if clearing { historyCleared = true }
             // The widgets keep the previous feed and, two hours after it, say so. The error's
@@ -138,6 +171,7 @@ final class WidgetFeedWriter {
             Diagnostics.widget.error(
                 "Writing the widget feed failed (\(reason.rawValue, privacy: .public); \(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
             )
+            return .failed
         }
     }
 
@@ -170,16 +204,16 @@ final class WidgetFeedWriter {
 
     /// Demo Mode lets through only a removal the user made meanwhile: one of the reasons a removal
     /// arrives with, or a clear that a write hasn't accounted for yet.
-    private func removeInDemoMode(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async {
-        guard reason.removesInDemoMode || historyCleared else { return }
-        await removeOnly(reason, historyCleared: historyCleared)
+    private func removeInDemoMode(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async -> WriteResult {
+        guard reason.removesInDemoMode || historyCleared else { return .unchanged }
+        return await removeOnly(reason, historyCleared: historyCleared)
     }
 
     /// Takes out of the feed last written what the user removed, from the real settings and the
     /// real remembered devices, never the demo's, and adds, updates or moves nothing
     /// (``WidgetFeed/removing(_:)``). Logs at notice when it took something out, so `log show`
     /// finds it.
-    private func removeOnly(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async {
+    private func removeOnly(_ reason: WidgetFeed.WriteReason, historyCleared: Bool) async -> WriteResult {
         let interval = Diagnostics.begin("widget.feed.write", trigger: reason.signpostName)
         defer { interval.end() }
         let removal = WidgetFeed.Removal(
@@ -191,13 +225,16 @@ final class WidgetFeedWriter {
                 Diagnostics.widget.notice(
                     "Took a removal out of the widget feed (\(reason.rawValue, privacy: .public)), nothing added: \(bytes, privacy: .public) bytes"
                 )
+                return .changed
             case .removed:
                 Diagnostics.widget.notice(
                     "Removed the widget feed for a removal (\(reason.rawValue, privacy: .public)): none was written since launch"
                 )
+                return .changed
             case .unchanged, nil:
                 Diagnostics.widget.debug(
                     "Nothing to take out of the widget feed (\(reason.rawValue, privacy: .public))")
+                return .unchanged
             }
         } catch {
             if historyCleared { self.historyCleared = true }
@@ -207,6 +244,7 @@ final class WidgetFeedWriter {
             Diagnostics.widget.error(
                 "Taking a removal out of the widget feed failed (\(reason.rawValue, privacy: .public); \(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
             )
+            return .failed
         }
     }
 

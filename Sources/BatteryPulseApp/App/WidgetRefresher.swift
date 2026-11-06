@@ -9,8 +9,9 @@ import os
 /// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
 /// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
 /// read the battery and the accessories themselves; this only says when. It also has the widget's
-/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``). Demo Mode never
-/// reaches the widgets.
+/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``), and once a rewrite
+/// took out what the user removed, reloads the kinds that show it. Demo Mode never reaches the
+/// widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private let accessories: AccessoryMonitor
@@ -21,6 +22,7 @@ final class WidgetRefresher {
     private var batteryObservation: Task<Void, Never>?
     private var accessoryObservation: Task<Void, Never>?
     private var deviceObservation: Task<Void, Never>?
+    private var removalObservation: Task<Void, Never>?
     /// The adapter as the feed was last told of it, outside Demo Mode.
     private var feedPlugged: Bool?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
@@ -71,6 +73,7 @@ final class WidgetRefresher {
                 }
                 await self.evaluateBattery()
                 await self.evaluateHistory()
+                await self.reload(removed: self.planner.pendingRemovals(at: .now))
             }
         }
         accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
@@ -88,9 +91,25 @@ final class WidgetRefresher {
                 guard let self else { return }
                 let content = self.devicesContent()
                 guard content != self.feedDevices else { continue }
+                // Reads off and Forget take devices out of the feed: their kind reloads after it.
+                let removes = self.feedDevices.map { content.removesDevices(since: $0) } ?? false
                 self.feedDevices = content
-                await self.feed.writeAndWait(.devices)
+                await self.feed.writeAndWait(.devices, removing: removes ? [.devices] : [])
                 await self.evaluateDevices()
+                await self.reload(removed: self.planner.pendingRemovals(at: .now))
+            }
+        }
+        // Clear History, recording off, reads off and Forget: once their rewrite is done, the
+        // kinds that show what they removed reload, in Demo Mode too.
+        removalObservation = Task(name: "WidgetRefresher.removals") { [weak self, feed] in
+            for await _ in Observations({ feed.removalsWritten }).dropFirst() {
+                guard let self else { return }
+                let removed = feed.takeRemovedSections()
+                var kinds: [WidgetKindID] = []
+                for section in WidgetFeed.Section.allCases where removed.contains(section) {
+                    kinds += self.planner.removal(of: section, at: .now)
+                }
+                await self.reload(removed: kinds)
             }
         }
     }
@@ -102,6 +121,8 @@ final class WidgetRefresher {
         accessoryObservation = nil
         deviceObservation?.cancel()
         deviceObservation = nil
+        removalObservation?.cancel()
+        removalObservation = nil
     }
 
     /// The remembered devices as the feed would hold them, read times aside.
@@ -315,6 +336,24 @@ final class WidgetRefresher {
         WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.devices.rawValue)
         Diagnostics.event("widget.reload", trigger: "policy.devices")
         Diagnostics.widget.notice("Reloading the iPhone & iPad widget: \(reason.rawValue, privacy: .public)")
+    }
+
+    /// Reloads `kinds`, the placed ones, after a removal rewrote the feed
+    /// (``WidgetReloadPlanner/removal(of:at:)``): each with its kind's trigger, and one line each.
+    private func reload(removed kinds: [WidgetKindID]) async {
+        for kind in kinds where await isPlaced(kind) {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind.rawValue)
+            switch kind {
+            case .battery: Diagnostics.event("widget.reload", trigger: "policy")
+            case .accessories: Diagnostics.event("widget.reload", trigger: "policy.accessories")
+            case .history: Diagnostics.event("widget.reload", trigger: "policy.history")
+            case .devices: Diagnostics.event("widget.reload", trigger: "policy.devices")
+            }
+            let name = kind.signpostName.description
+            Diagnostics.widget.notice(
+                "Reloading the \(name, privacy: .public) widget kind: \(WidgetReloadPlanner.Reason.removal.rawValue, privacy: .public)"
+            )
+        }
     }
 
     private func evaluateAccessories() async {

@@ -23,6 +23,13 @@ import Foundation
 ///   its state or read a device for the first time, at most once per ``devicesInterval``; a
 ///   change that waited reloads once the interval has passed. Its timeline refreshes every half
 ///   hour in between (``WidgetTimelinePlan/devices(writtenAt:at:timeZone:)``).
+/// - **A removal:** Clear History, Record battery history turned off, Read iPhone and iPad
+///   batteries turned off and Forget rewrite the feed without what they remove, and the kinds that
+///   show it then reload at once (``removal(of:at:)``), so a placed widget doesn't keep showing it
+///   until its own timeline's reload: within each kind's immediate reasons' shared minimum,
+///   ``immediateInterval``, the Battery kind's shared with its five above. A removal that waits
+///   reloads at the first evaluation after the minimum (``pendingRemovals(at:)``), never on a
+///   timer of its own.
 ///
 /// The app never reads a placed widget's configuration, so one plan serves every configuration
 /// and accepts the odd reload a widget doesn't need. Each kind's first evaluation is the value the
@@ -71,6 +78,9 @@ public struct WidgetReloadPlanner: Sendable {
         /// An iPhone or iPad was read for the first time, or its charge moved
         /// ``WidgetReloadPlanner/deviceStep`` points, or its state changed.
         case reading
+        /// The feed was rewritten without what the user removed, which the kind shows: the
+        /// history (Clear History, recording off) or the devices (reads off, Forget).
+        case removal
     }
 
     /// What the Battery widget shows besides ``WidgetReloadPolicy``'s values, as of its last reload.
@@ -188,6 +198,11 @@ public struct WidgetReloadPlanner: Sendable {
     private var lastHistoryReload: Date?
     private var devicesShown: DevicesShown?
     private var lastDevicesReload: Date?
+    /// The kinds a removal reloads that wait for their kind's minimum.
+    private var pendingRemovalKinds: Set<WidgetKindID> = []
+    /// The last immediate reload of the History and the iPhone & iPad kinds, a removal's; the
+    /// Battery kind's is ``lastImmediateReload``.
+    private var lastImmediateReloads: [WidgetKindID: Date] = [:]
 
     public init() {}
 
@@ -291,6 +306,41 @@ public struct WidgetReloadPlanner: Sendable {
         devicesShown = next
         lastDevicesReload = date
         return .reading
+    }
+
+    /// The kinds that show `section` (``WidgetFeed/Section/readers``) to reload with
+    /// ``Reason/removal`` now that a removal rewrote the feed without it, each at once unless its
+    /// kind reloaded for an immediate reason less than ``immediateInterval`` ago; those wait for
+    /// ``pendingRemovals(at:)``. Records the reloads. Demo Mode included: the rewrite took out only
+    /// what the user removed, and no widget shows the demo.
+    public mutating func removal(of section: WidgetFeed.Section, at date: Date) -> [WidgetKindID] {
+        pendingRemovalKinds.formUnion(section.readers)
+        return pendingRemovals(at: date)
+    }
+
+    /// The kinds whose removal reload waited and may reload now, in ``WidgetKindID``'s order;
+    /// records the reloads. The app asks at every evaluation, so a removal that waited reloads at
+    /// the first one after its minimum.
+    public mutating func pendingRemovals(at date: Date) -> [WidgetKindID] {
+        let due = WidgetKindID.allCases.filter { kind in
+            pendingRemovalKinds.contains(kind)
+                && Self.hasPassed(Self.immediateInterval, since: lastImmediate(kind), at: date)
+        }
+        for kind in due {
+            pendingRemovalKinds.remove(kind)
+            if kind == .battery {
+                lastImmediateReload = date
+                lastBatteryReload = date
+            } else {
+                lastImmediateReloads[kind] = date
+            }
+        }
+        return due
+    }
+
+    /// When `kind` last reloaded for an immediate reason.
+    private func lastImmediate(_ kind: WidgetKindID) -> Date? {
+        kind == .battery ? lastImmediateReload : lastImmediateReloads[kind]
     }
 
     /// Whether `interval` has passed since `last`; with no `last`, or a clock set back before it,

@@ -311,6 +311,19 @@ extension WidgetFeed {
         /// Whether the write goes out even when nothing but `writtenAt` changed.
         public var writesUnchanged: Bool { self == .step }
 
+        /// The sections a write for this reason takes out, whose kinds then reload
+        /// (``WidgetReloadPlanner/removal(of:at:)``): Clear History and recording turned off take
+        /// out the history. The devices' removals, reads off and Forget, arrive with
+        /// ``devices``, which a device's read does too, so the caller tells them apart
+        /// (``DevicesContent/removesDevices(since:)``).
+        public func removes(recordsHistory: Bool) -> Set<Section> {
+            switch self {
+            case .historyCleared: [.history]
+            case .recording: recordsHistory ? [] : [.history]
+            case .step, .devices, .plug, .demoEnded, .language: []
+            }
+        }
+
         /// Whether the write still goes out in Demo Mode, as a removal only
         /// (``WidgetFeed/removing(_:)``): the reasons a user's removal arrives with (Clear
         /// History, recording off, device reads off, Forget). Nothing else is written while the
@@ -361,6 +374,12 @@ extension WidgetFeed {
     public struct DevicesContent: Sendable, Equatable {
         var readsDevices: Bool
         var devices: [Device]
+
+        /// Whether the change from `old` takes something out: reads turned off, or a device of
+        /// `old` gone, forgotten (or past the eight the feed holds).
+        public func removesDevices(since old: DevicesContent) -> Bool {
+            (old.readsDevices && !readsDevices) || !Set(old.devices.map(\.key)).isSubset(of: devices.map(\.key))
+        }
 
         /// `remembered` as the builder writes it, `modelNames` as the app resolves them.
         public init(readsDevices: Bool, remembered: [RememberedDevice], modelNames: [String: String]) {
