@@ -219,7 +219,7 @@ import Testing
             #expect(summary.contains("Bit 24 (0x01000000) is set while the Charge Limit holds the charge."))
             #expect(
                 summary.hasSuffix(
-                    " On the MacBook Air M5 sampled it reads 0x80 on battery and for the first seconds after plugging in."
+                    " On the MacBook Air M5 sampled, it reads 0x80 on battery and for the first seconds after plugging in."
                 ))
             #expect(!summary.contains("Bit 7") && !summary.contains("Bit 12"))
         }

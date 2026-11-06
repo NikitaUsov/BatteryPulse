@@ -544,7 +544,7 @@ public enum RawKeyGlossary {
             "ChargerData.NotChargingReason",
             Info(
                 .flags,
-                "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge. On the MacBook Air M5 sampled it reads 0x80 on battery and for the first seconds after plugging in."
+                "Bitfield of reasons the battery is not charging; Apple does not document the bits. Bit 24 (0x01000000) is set while the Charge Limit holds the charge. On the MacBook Air M5 sampled, it reads 0x80 on battery and for the first seconds after plugging in."
             )
         ),
         ("ChargerData.PMUConfiguration", Info(.milliamps, "Input current limit requested for the active adapter.")),
