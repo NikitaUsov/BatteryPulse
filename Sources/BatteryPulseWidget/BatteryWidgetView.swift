@@ -92,7 +92,10 @@ struct WidgetLargeLayout: View {
     var body: some View {
         let below = !layout.details.isEmpty || layout.chart != nil
         VStack(alignment: .leading, spacing: 8) {
+            // Beside the chart, which takes what is left, the charge block keeps its own height:
+            // its number never shrinks for it.
             WidgetChargeBlock(layout: layout, size: .large, fills: !below)
+                .layoutPriority(layout.chart == nil ? 0 : 1)
             if below {
                 // The chart, when it shows, takes the rest of the height; else the details go to
                 // the bottom.
