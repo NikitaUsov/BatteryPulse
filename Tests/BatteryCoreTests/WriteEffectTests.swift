@@ -52,7 +52,9 @@ import Testing
     }
 
     /// A link in the feed's place, to a feed just written, is one the widget turns down: the store
-    /// reads its type without following it, and replaces the link, never what it points to.
+    /// reads its type without following it, and never writes through it. Darwin's Foundation
+    /// refuses to replace the link, Linux's replaces it; either way, a write that goes out says the
+    /// widgets couldn't use what was there.
     @Test func aLinkInTheFeedsPlaceIsOneTheWidgetsCouldntUse() throws {
         let (store, directory) = try Self.store(leaving: nil)
         defer { WidgetFeedStoreTests.remove(directory) }
@@ -61,7 +63,9 @@ import Testing
         let fresh = try WidgetFeed.encoded(Self.feed())
         try fresh.write(to: target)
         try FileManager.default.createSymbolicLink(at: Self.file(directory), withDestinationURL: target)
-        #expect(try store.writeReporting(Self.feed()).effect.repair == .unusable)
+        if let written = try? store.writeReporting(Self.feed(at: Self.at(minutes: 1))) {
+            #expect(written.effect.repair == .unusable)
+        }
         #expect(try Data(contentsOf: target) == fresh)
     }
 
