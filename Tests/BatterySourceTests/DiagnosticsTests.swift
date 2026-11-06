@@ -1,6 +1,11 @@
+import BatteryCore
 import Testing
 
 @testable import BatterySource
+
+#if canImport(os)
+import os
+#endif
 
 /// The `perf` lines are parsed by `scripts/perf-stats.swift`, so their format is fixed.
 @Suite struct DiagnosticsTests {
@@ -47,6 +52,94 @@ import Testing
         #expect(scopes.map(\.signpostName.description) == ["full", "live", "cached", "cached.slow"])
         #expect(scopes.map(\.rereadsRegistry) == [true, true, false, false])
         #expect(scopes.map(\.readsAllSMCKeys) == [true, false, false, true])
+    }
+
+    /// Every ended interval and every event is counted in the summary, on every platform.
+    @Test func signpostsFeedTheirSummary() {
+        let summary = PerfSummary()
+        #if canImport(os)
+        let signposts = Signposts(
+            subsystem: Diagnostics.subsystem, log: Logger(subsystem: Diagnostics.subsystem, category: "perf"),
+            summary: summary)
+        #else
+        let signposts = Signposts(summary: summary)
+        #endif
+        #expect(signposts.measure("read", trigger: "full") { 42 } == 42)
+        var interval = signposts.begin("page.switch")
+        interval.trigger = "overview"
+        #expect(summary.snapshot().intervals.count == 1, "an interval counts when it ends")
+        interval.end()
+        signposts.event("menuBarReady")
+        signposts.event("widget.reload", trigger: "policy")
+        let snapshot = summary.snapshot()
+        typealias Key = PerfSummary.Key
+        #expect(
+            Set(snapshot.intervals.keys) == [
+                Key(name: "page.switch", trigger: "overview"), Key(name: "read", trigger: "full"),
+            ])
+        #expect(snapshot.intervals.values.allSatisfy { $0.count == 1 })
+        #expect(
+            snapshot.events == [
+                Key(name: "menuBarReady", trigger: "-"): 1, Key(name: "widget.reload", trigger: "policy"): 1,
+            ])
+    }
+
+    /// The signposts 0.7.1 added count under the names and triggers their `perf` lines write, each
+    /// trigger a key of its own: the app's `widget.feed.write` by write reason, the widget's
+    /// `widget.feed.read` and its `widget.timeline` by kind, and `widget.reload` by policy, the
+    /// History and iPhone & iPad kinds' included. The app's `Diagnostics` makes its `Signposts` as
+    /// BatterySource's does, which the widget uses.
+    @Test func theWidgetsSignpostsCountByNameAndTrigger() {
+        let summary = PerfSummary()
+        #if canImport(os)
+        let signposts = Signposts(
+            subsystem: Diagnostics.subsystem, log: Logger(subsystem: Diagnostics.subsystem, category: "perf"),
+            summary: summary)
+        #else
+        let signposts = Signposts(summary: summary)
+        #endif
+        let reloads: [StaticString] = [
+            "policy", "policy.accessories", "policy.history", "policy.devices", "update", "language",
+        ]
+        for reason in WidgetFeed.WriteReason.allCases {
+            signposts.begin("widget.feed.write", trigger: reason.signpostName).end()
+        }
+        signposts.begin("widget.feed.read").end()
+        for kind in WidgetKindID.allCases {
+            signposts.begin("widget.timeline", trigger: kind.signpostName).end()
+        }
+        for trigger in reloads {
+            signposts.event("widget.reload", trigger: trigger)
+        }
+        typealias Key = PerfSummary.Key
+        let writes = WidgetFeed.WriteReason.allCases.map {
+            Key(name: "widget.feed.write", trigger: $0.signpostName.description)
+        }
+        let timelines = WidgetKindID.allCases.map { Key(name: "widget.timeline", trigger: $0.signpostName.description) }
+        let snapshot = summary.snapshot()
+        #expect(Set(snapshot.intervals.keys) == Set(writes + timelines + [Key(name: "widget.feed.read", trigger: "-")]))
+        #expect(snapshot.intervals.count == writes.count + timelines.count + 1)
+        #expect(snapshot.intervals.values.allSatisfy { $0.count == 1 })
+        #expect(
+            snapshot.events
+                == Dictionary(
+                    uniqueKeysWithValues: reloads.map { (Key(name: "widget.reload", trigger: $0.description), 1) }))
+        // The report's lines name them as the `perf` lines do.
+        let labels = Set(snapshot.lines.map { String($0.prefix { $0 != ":" }) })
+        #expect(
+            labels.isSuperset(of: [
+                "widget.feed.write step", "widget.feed.read", "widget.timeline history", "widget.timeline devices",
+                "widget.reload policy.history", "widget.reload policy.devices",
+            ]))
+    }
+
+    /// `Diagnostics`, and the app's twin, which makes its `Signposts` the same way, feed the
+    /// session's summary. Other tests may measure at the same time, so only the growth is checked.
+    @Test func diagnosticsFeedTheSessionSummary() {
+        let key = PerfSummary.Key(name: "registry.missed", trigger: RefreshTrigger.manual.name.description)
+        let before = PerfSummary.session.snapshot().events[key] ?? 0
+        Diagnostics.event("registry.missed", trigger: RefreshTrigger.manual.name)
+        #expect((PerfSummary.session.snapshot().events[key] ?? 0) >= before + 1)
     }
 
     @Test func measureReturnsTheBodysValueAndRethrows() {
