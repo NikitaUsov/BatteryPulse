@@ -714,7 +714,15 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
   allow-list completeness test; the marker lines round-trip each capture to the same dictionary.
 - **Guards:** `SecurityGuardTests`: no `URLSession`, `URLRequest` or `Network` use in the report's
   files, and the issue chooser's URL in one place; the `DiagnosticReports` path only in the report
-  file. `IsolationGuardTests`: the assembly is on its off-main list.
+  file, among `Sources` (`scripts/relaunch-fallback-check.sh` and `ci.yml`'s launch step name the
+  folder too). `IsolationGuardTests`: the assembly is on its off-main list. A-6a's
+  `theReportsFilesUseNoNetwork` checks a fixed list of two files (`ProblemReport.swift`,
+  `PerfSummary.swift`): A-6b adds its window's file, or turns it into the rule
+  `theReportTakesNothingFromTheWidgetFeed` already uses (every `Sources` file that names
+  `ProblemReport`). A new settings key fails `everySettingsKeyIsIncludedOrLeftOut` until
+  `ProblemReport` includes it or leaves it out with a reason. The report's perf section holds only
+  the app's signposts; the widget's `widget.timeline` and `widget.feed.read` count in the
+  extension's own summary, which no report reads.
 - **Acceptance:** both jobs green; the look review's y on the window; Session R8 step 10's check
   of a saved file on the M5.
 - **Effort:** L, 3 runs (A-6a 1, A-6b 2). **Risks:** a field the redaction misses (the tests list
@@ -787,10 +795,17 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
      the Report a Problem window; `focusSection()` where Tab must visit a group first.
   3. **The catalog scan learns** `accessibilityValue(` and `accessibilityHint(` (in W-1's
      `localizedLiterals(in:)`, or today's regex, I-4), so their literals can't go untranslated.
+  4. **X-2a's five waiting phrases** ("%@ adapter", "%@ from the adapter", "%@ to the Mac", "%@ to
+     the battery", "%@ from the battery") enter the catalog with their Russian, and leave
+     `AccessibilityTextTests.pendingKeys` in the same commit (its test fails otherwise); and
+     `LocalizationCatalogTests` counts `AccessibilityText.catalogKeys` as used, as it counts
+     `RawKeyGlossary.summaries`, since its scan reads only the app's, the widget's and BatteryArt's
+     sources (`catalogHasNoLeftovers` fails otherwise).
 - **Files:** `Sources/BatteryCore/AccessibilityText.swift` and its tests (X-2a);
   `Sources/BatteryPulseApp/Main/Components/{RingGauge, PowerFlowView, CapacityBars}.swift`,
   `Settings/PreviewTilePicker.swift`, `Main/DeveloperView.swift`, `Updates/UpdateViews.swift`,
-  `Resources/Localizable.xcstrings`, `Tests/BatteryCoreTests/LocalizationCatalogTests.swift` (X-2b).
+  `Resources/Localizable.xcstrings`, `Tests/BatteryCoreTests/{LocalizationCatalogTests,
+  AccessibilityTextTests}.swift` (X-2b).
 - **Guards:** a source test that each custom view in `Main/Components/` has an accessibility
   modifier or is on a list as decorative, with its reason.
 - **Acceptance:** both jobs green; Session R8 steps 3-4 (the tree in both languages, the keyboard
@@ -854,7 +869,10 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
      test (I-10).
   4. **A macOS CI check** (`scripts/relaunch-fallback-check.sh`): two throwaway bundles in a
      temporary folder, the newer one exiting at launch; the script expects the older one back.
-- **P-2b, the strings (the catalog):** the two new errors' words in the update window.
+- **P-2b, the strings (the catalog):** the two new errors' words in the update window. Until then
+  `needsNewerMacOS` and `swapUnsupported` show `replaceFailed`'s sentence ("BatteryPulse couldn't
+  replace the installed copy.", `UpdateInstaller.swift`'s error text), which P-2a left with a
+  comment saying so; P-2b gives each its own.
 - **Files:** `Sources/BatteryCore/UpdateInstall.swift`,
   `Sources/BatteryPulseApp/Updates/{UpdateInstaller, UpdateViews}.swift`,
   `Tests/BatteryCoreTests/UpdateInstallTests.swift`, `scripts/relaunch-fallback-check.sh`,
@@ -907,7 +925,14 @@ package lists: source; items; files; Linux tests; guards; acceptance; effort; ri
 storage formats and says what a missing source leaves 0.7.0's and 0.7.1's widgets. What remains
 is item 3's gaps, their strings in C9 (§5): rows the pages, and the Battery, iPhone & iPad and
 Accessories widgets, leave out or empty without saying why (E-2's commit messages list them); a fix
-that reaches the widget records its numbers as §3 says.
+that reaches the widget records its numbers as §3 says. **What E-2 pins for later packages:**
+`DegradationTests` matches source text in `App/Localized.swift` (`deviceUnavailable`'s
+`frameworkUnavailable` branch), `Main/DevicesIntroView.swift`, `Main/DeviceView.swift`,
+`Main/AccessoriesView.swift` and `App/WidgetFeedWriter.swift` (`AppDevices.monitor.remembered`), so
+a package that edits one (A-1 to A-4, P-1, F-1, E-2's gaps) keeps the pattern or updates the test in
+the same commit; and since a `devices.json` with fields this version doesn't know now makes the store
+read-only and lists no device (`DeviceStore`), the feed, which takes its devices from that registry,
+holds none either, until a version that knows them runs again.
 
 - **Source:** RD C9 (RD:314-324); the decoders that already tolerate change (`History.swift:86-94`,
   `HistoryStore.swift:333-337`, `DeviceStore.swift:90-95`).
@@ -1711,7 +1736,7 @@ of 0.6.2, measured at the final 0.9.x) is the bar, and these keep 0.8 inside it:
 | `docs/USER_GUIDE.md`, Privacy | One sentence (§11) | A-6b |
 | `docs/USER_GUIDE.md`, Privacy (the feed's paragraph) | "A kind you remove can still count until BatteryPulse quits" becomes within about an hour (§11), if F-1 shipped | L-1, from F-1's PR (F-1 runs beside A-4, which edits the guide, §5) |
 | `.github/ISSUE_TEMPLATE/bug_report.yml` | The capture field points to Report a Problem | A-6b |
-| `CLAUDE.md` | **Layout:** `NotChargingCause`, `SystemChargeLimitSource` (and the reader in BatterySource), `HealthSummary`, `MetricExplanation`, `ProblemReport`, `PerfSummary`, `ChartSummary`, `AccessibilityText`, `SentinelPolicy`, `SystemIdentity`. **macOS 27 layout:** the Charge Limit's number from powerd's plist on AC only. **Guards:** `ExplanationGuardTests`, `LogPrivacyGuardTests`, `FrozenSurfaceTests` and the goldens; SecurityGuardTests' new placements. **Language:** `SystemIdentity`'s `unsafe` sysctl in BatterySource's list. **Signposts:** `report.build`. **Releases:** the installer's minimum-system check and the relaunch fallback. **Logging:** "enforced by `LogPrivacyGuardTests`". **Widget/:** `WidgetPlacements`' renewal (F-1) and the feed's Charge Limit field (A-2) | L-1 (each package lists its lines in its PR) |
+| `CLAUDE.md` | **Layout:** `NotChargingCause`, `SystemChargeLimitSource` (and the reader in BatterySource), `HealthSummary`, `MetricExplanation`, `ProblemReport`, `PerfSummary`, `ChartSummary`, `AccessibilityText`, `SentinelPolicy`, `SystemIdentity`. **macOS 27 layout:** the Charge Limit's number from powerd's plist on AC only. **Guards:** `ExplanationGuardTests`, `LogPrivacyGuardTests`, `FrozenSurfaceTests` and the goldens; SecurityGuardTests' new placements; E-2's `StorageCompatibilityTests` (every storage format, the feed's included), `PerturbationTests` and `DegradationTests` (with the source text it pins, §4 E-2). **Language:** `SystemIdentity`'s `unsafe` sysctl in BatterySource's list. **Signposts:** `report.build`. **Releases:** the installer's minimum-system check and the relaunch fallback, with `scripts/relaunch-fallback-check.sh` and its CI step. **Logging:** "enforced by `LogPrivacyGuardTests`". **Widget/:** `WidgetPlacements`' renewal (F-1) and the feed's Charge Limit field (A-2) | L-1 (each package lists its lines in its PR) |
 | `docs/ROADMAP.md` | The 0.8 entry rewritten to what shipped, then ticked; Decisions: M-6 (E-1), the cause rule, the Charge Limit's source and caveat, "Placements fail open" with G7-17 measured (Appendix C) and F-1's renewal; Stage 1.4 and Stage 1.3's accessibility lines from §6.4; Stage 1.9's after-publishing item ticked from AP71 (still open at `63a01f2`); the Releases rows, v0.7.0's and v0.7.1's counts when due (Appendix C); "Next: 0.9.0" | L-1, E-1, D3 |
 | `docs/plans/1.0/ROADMAP.md`, `INVENTORY.md` | §2.4's corrections (bit 12, the parse method, the format version, the line numbers, the `.public` count, the sittings' minutes); FEA-35, NEW-01, QUA-06, QUA-15, A11Y-01 to A11Y-04, DIS-09 marked with what shipped | L-1 |
 | `docs/VERIFICATION.md` | 0.7.1's after-publishing check (AP71), which it doesn't hold yet (I-12); 0.8's rows filled at D3 | L-1, D3 |
