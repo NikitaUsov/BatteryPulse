@@ -618,4 +618,24 @@ import Testing
         #expect("let session = URLSession(configuration: .ephemeral)".contains(network))
         #expect("import Network".contains(network))
     }
+
+    /// The report takes nothing from the widget feed, which plan §11's list of what it holds
+    /// leaves out: no file that names the report, the app's window to come included, names the
+    /// feed's types, so neither the feed's copy of the history nor its devices' names and
+    /// readings can reach the text. The reading switches and the language it shows are the app's
+    /// own settings.
+    @Test func theReportTakesNothingFromTheWidgetFeed() throws {
+        let feed = #/\bWidgetFeed\w*/#.wordBoundaryKind(.simple)
+        let report = #/\bProblemReport\b/#.wordBoundaryKind(.simple)
+        let files = try SourceScanner.allFiles.get().filter { $0.code.contains(report) }
+        #expect(
+            Set(files.map(\.path)).isSuperset(of: [
+                "BatteryCore/ProblemReport.swift", "BatterySource/SystemIdentity.swift",
+            ]))
+        for file in files {
+            #expect(!file.code.contains(feed), "\(file.path)")
+        }
+        #expect("let feed = try WidgetFeedStore(folder: folder).read()".contains(feed))
+        #expect("case .feed(let feed): WidgetFeedState.feed(feed)".contains(feed))
+    }
 }
