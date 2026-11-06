@@ -239,12 +239,12 @@ extension WidgetFeed {
         case devices
 
         /// The kinds that show the section: the history the large Battery widget's chart and its
-        /// two feed details show, and the History widget. No kind shows the devices yet, so they
-        /// are never written until one that does ships and joins its list.
+        /// two feed details show, and the History widget; the devices the iPhone & iPad widget
+        /// shows, by their names and last readings alone.
         public var readers: [WidgetKindID] {
             switch self {
             case .history: [.battery, .history]
-            case .devices: []
+            case .devices: [.devices]
             }
         }
     }
@@ -311,6 +311,19 @@ extension WidgetFeed {
         /// Whether the write goes out even when nothing but `writtenAt` changed.
         public var writesUnchanged: Bool { self == .step }
 
+        /// The sections a write for this reason takes out, whose kinds then reload
+        /// (``WidgetReloadPlanner/removal(of:at:)``): Clear History and recording turned off take
+        /// out the history. The devices' removals, reads off and Forget, arrive with
+        /// ``devices``, which a device's read does too, so the caller tells them apart
+        /// (``DevicesContent/removesDevices(since:)``).
+        public func removes(recordsHistory: Bool) -> Set<Section> {
+            switch self {
+            case .historyCleared: [.history]
+            case .recording: recordsHistory ? [] : [.history]
+            case .step, .devices, .plug, .demoEnded, .language: []
+            }
+        }
+
         /// Whether the write still goes out in Demo Mode, as a removal only
         /// (``WidgetFeed/removing(_:)``): the reasons a user's removal arrives with (Clear
         /// History, recording off, device reads off, Forget). Nothing else is written while the
@@ -350,6 +363,34 @@ extension WidgetFeed {
             guard step != lastStep else { return false }
             lastStep = step
             return true
+        }
+    }
+
+    /// The devices section a write would hold, but for the read times: what tells a change the
+    /// widget shows (a device read for the first time, forgotten or renamed, a new charge, state or
+    /// detail, another device read last, reads turned on or off) from a read that only read the same
+    /// again, every 5 minutes while a device is on its cable. Such a read writes nothing; its time
+    /// reaches the feed with the next write, the routine one within 15 minutes.
+    public struct DevicesContent: Sendable, Equatable {
+        var readsDevices: Bool
+        var devices: [Device]
+
+        /// Whether the change from `old` takes something out: reads turned off, or a device of
+        /// `old` gone, forgotten (or past the eight the feed holds).
+        public func removesDevices(since old: DevicesContent) -> Bool {
+            (old.readsDevices && !readsDevices) || !Set(old.devices.map(\.key)).isSubset(of: devices.map(\.key))
+        }
+
+        /// `remembered` as the builder writes it, `modelNames` as the app resolves them.
+        public init(readsDevices: Bool, remembered: [RememberedDevice], modelNames: [String: String]) {
+            self.readsDevices = readsDevices
+            devices =
+                readsDevices
+                ? WidgetFeed.devices(remembered, modelNames: modelNames).map { device in
+                    var device = device
+                    device.readAt = nil
+                    return device
+                } : []
         }
     }
 

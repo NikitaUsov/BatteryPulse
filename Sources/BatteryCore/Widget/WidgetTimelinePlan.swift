@@ -100,6 +100,32 @@ public struct WidgetTimelinePlan: Sendable, Equatable {
         return WidgetTimelinePlan(entries: entries, nextReload: date.addingTimeInterval(historyRefreshInterval))
     }
 
+    /// The iPhone & iPad widget's timeline: the feed as read now and a new read every half hour,
+    /// as the Accessories widget's, with up to two entries before it: local midnight, when a read
+    /// time of today turns into its date, if it comes before the reload; and the moment the feed
+    /// turns two hours old (``WidgetFeed/outdatedAge``), when the widget adds "Open BatteryPulse
+    /// to update" to its last readings, at least ``minimumReloadInterval`` after the first entry.
+    /// Both show only if WidgetKit postpones the reload past them. `writtenAt` is the feed's;
+    /// without a feed, the midnight entry alone may follow.
+    public static func devices(writtenAt: Date?, at date: Date, timeZone: TimeZone) -> WidgetTimelinePlan {
+        let next = date.addingTimeInterval(refreshInterval)
+        let outdated = writtenAt?.addingTimeInterval(WidgetFeed.outdatedAge)
+        let calendar = HistoryDay.gregorian(in: timeZone)
+        let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date)).flatMap {
+            $0 > date && $0 < next ? $0 : nil
+        }
+        let oldEntry = outdated.flatMap { $0 > date ? max($0, date.addingTimeInterval(minimumReloadInterval)) : nil }
+        // In time order without a sort: the old feed's entry may come before midnight or after it.
+        var dates = [date]
+        if let midnight, oldEntry.map({ midnight < $0 }) ?? true { dates.append(midnight) }
+        if let oldEntry { dates.append(oldEntry) }
+        if let midnight, let oldEntry, oldEntry < midnight { dates.append(midnight) }
+        let entries = dates.map { entry in
+            Entry(date: entry, showsEstimate: false, isStale: outdated.map { entry >= $0 } == true || entry == oldEntry)
+        }
+        return WidgetTimelinePlan(entries: entries, nextReload: next)
+    }
+
     private init(entries: [Entry], nextReload: Date) {
         self.entries = entries
         self.nextReload = nextReload

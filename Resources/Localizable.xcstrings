@@ -1572,14 +1572,13 @@
         }
       }
     },
-    "Charge, power or temperature over the last day or week.": {
+    "Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.": {
       "extractionState": "manual",
-      "comment": "Widget gallery: the History widget's description",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заряд, мощность или температура за последние сутки или неделю."
+            "value": "Заряд, мощность или температура за последние сутки или неделю либо ёмкость и циклы перезарядки за 90 дней."
           }
         }
       }
@@ -1860,6 +1859,17 @@
         }
       }
     },
+    "Choose iPhone and iPad": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать iPhone и iPad"
+          }
+        }
+      }
+    },
     "Choose what the Battery widget shows.": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: the Battery widget configuration's description",
@@ -1892,6 +1902,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите, аккумуляторы каких аксессуаров показывает виджет."
+          }
+        }
+      }
+    },
+    "Choose which iPhones and iPads the widget shows.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите, какие iPhone и iPad показывает виджет."
           }
         }
       }
@@ -2039,6 +2060,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подключите клавиатуру, мышь, трекпад или наушники Bluetooth, и здесь появится уровень их заряда."
+          }
+        }
+      }
+    },
+    "Connect an iPhone or iPad with a cable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите iPhone или iPad кабелем"
           }
         }
       }
@@ -2681,6 +2713,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сборки для разработки не могут устанавливать обновления."
+          }
+        }
+      }
+    },
+    "Device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устройство"
           }
         }
       }
@@ -4356,6 +4399,17 @@
         }
       }
     },
+    "Lowest charge": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С наименьшим зарядом"
+          }
+        }
+      }
+    },
     "Lowest only": {
       "extractionState": "manual",
       "comment": "Widget edit sheet: what the Accessories widget shows, the accessory with the lowest charge alone",
@@ -4677,6 +4731,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ещё"
+          }
+        }
+      }
+    },
+    "Most recently read": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Считанный последним"
           }
         }
       }
@@ -5532,6 +5597,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "BatteryPulse один раз для каждой версии загружает с GitHub крошечный файл, и его счётчик загрузок показывает, сколько компьютеров Mac используют каждую версию. Не передаются ни идентификатор, ни сведения о вашем Mac; GitHub видит только то же, что и при проверке обновлений. Подсчёт можно выключить в разделе «Настройки» → «Основные»."
+          }
+        }
+      }
+    },
+    "One device": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Одно устройство"
           }
         }
       }
@@ -7440,6 +7516,17 @@
         }
       }
     },
+    "The charge of your iPhone and iPad, as BatteryPulse last read it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заряд iPhone и iPad по последним данным BatteryPulse."
+          }
+        }
+      }
+    },
     "The charts start over. This can't be undone.": {
       "extractionState": "manual",
       "localizations": {
@@ -7568,6 +7655,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Тепловое состояние"
+          }
+        }
+      }
+    },
+    "This device was forgotten": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это устройство забыто"
           }
         }
       }
@@ -8047,6 +8145,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Включить"
+          }
+        }
+      }
+    },
+    "Turn on Read iPhone and iPad batteries in BatteryPulse": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите считывание данных iPhone и iPad в BatteryPulse"
           }
         }
       }

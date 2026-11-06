@@ -3,7 +3,8 @@ import Foundation
 extension WidgetFeed {
     /// A made-up feed written at `now`, for the widget gallery and the CI previews, so neither
     /// needs a feed: a day that ran on battery, slept, charged on the adapter to full and ran on
-    /// battery again; a week of such days; 90 days of a slowly wearing battery. No one's own data.
+    /// battery again; a week of such days; 90 days of a slowly wearing battery; an iPhone read a
+    /// few minutes ago and an iPad read the day before, named by their models. No one's own data.
     public static func sample(at now: Date) -> WidgetFeed {
         let writtenAt = wholeSeconds(now)
         let day = sampleSeries(.day, at: writtenAt) { index in
@@ -34,14 +35,37 @@ extension WidgetFeed {
         let firstDay = calendar.date(byAdding: .day, value: -(maximumDays - 1), to: writtenAt) ?? writtenAt
         let days = 0..<maximumDays
         return WidgetFeed(
-            writtenAt: writtenAt, languages: ["en"], recordsHistory: true, readsDevices: false, day: day, week: week,
+            writtenAt: writtenAt, languages: ["en"], recordsHistory: true, readsDevices: true, day: day, week: week,
             statistics24h: Statistics(
                 averageDrainPercentPerHour: 6.4, timeOnBattery: 14 * 60 * 60, chargingSessions: 1),
             onBatterySince: day.date(ofStep: 56),
             daily: Daily(
                 firstDay: HistoryDay.key(for: firstDay, calendar: calendar),
                 capacityToDesign10: days.map { 1_003 - $0 * 28 / (maximumDays - 1) },
-                cycleCount: days.map { 92 + $0 * 39 / (maximumDays - 1) }))
+                cycleCount: days.map { 92 + $0 * 39 / (maximumDays - 1) }),
+            devices: sampleDevices(at: writtenAt))
+    }
+
+    /// Demo Mode's iPhone (``DemoDevice``), read four minutes before `now`, and an iPad read the
+    /// day before, under made-up keys: never ``DeviceKey/demo``, which the feed refuses.
+    static func sampleDevices(at now: Date) -> [Device] {
+        let phone = DemoDevice.battery
+        return [
+            Device(
+                key: sampleKey("1"), model: "iPhone 17 Pro Max", deviceClass: "iPhone",
+                percent: phone.chargePercent.map { Int($0.rounded()) }, state: phone.chargeState,
+                maximumCapacity: phone.maximumCapacityPercent.map { Int($0.rounded()) }, cycleCount: phone.cycleCount,
+                temperature10: phone.temperatureCelsius.map { Int(($0 * 10).rounded()) },
+                readAt: now.addingTimeInterval(-4 * 60)),
+            Device(
+                key: sampleKey("2"), model: "iPad Air", deviceClass: "iPad", percent: 18, state: .discharging,
+                maximumCapacity: 97, cycleCount: 64, temperature10: 291, readAt: now.addingTimeInterval(-26 * 60 * 60)),
+        ]
+    }
+
+    /// A key of 32 hexadecimal characters that ends in `last`, as a real one is long.
+    static func sampleKey(_ last: Character) -> DeviceKey {
+        DeviceKey(rawValue: String(repeating: "0", count: 31) + String(last)) ?? .demo
     }
 
     /// One step of a sample series.

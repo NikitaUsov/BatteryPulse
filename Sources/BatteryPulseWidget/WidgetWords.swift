@@ -24,7 +24,10 @@ extension EnvironmentValues {
 /// own tables would follow the Mac's language and draw Russian on a Russian Mac. Without a feed,
 /// or without the language's folder, the widget draws in the extension's own language, as 0.7.0
 /// did.
-struct WidgetLanguageTable: Sendable {
+///
+/// A class, so every entry and view that holds one copies a reference rather than its locales,
+/// its bundle and its formatter's words: a table never changes once made.
+final class WidgetLanguageTable: Sendable {
     /// The localization drawn ("en", "ru"); `nil` for the extension's own language.
     let localization: String?
     /// `nil` for the extension's own tables.
@@ -32,6 +35,13 @@ struct WidgetLanguageTable: Sendable {
     /// `nil` for the Mac's locale.
     let locale: Locale?
     let formatter: BatteryFormatter
+
+    init(localization: String?, strings: Bundle?, locale: Locale?, formatter: BatteryFormatter) {
+        self.localization = localization
+        self.strings = strings
+        self.locale = locale
+        self.formatter = formatter
+    }
 
     /// The extension's own language: its own tables, the Mac's locale and formatter.
     static let extensionOwn = WidgetLanguageTable(localization: nil, strings: nil, locale: nil, formatter: .widget)

@@ -1,9 +1,11 @@
-// Checks the string tables that xcstringstool compiled from the String Catalog, and removes the
+// Checks the string tables that xcstringstool compiled from a String Catalog, and removes the
 // source language's table when it holds only identity entries:
 //
-//   swift scripts/string-tables.swift Resources/Localizable.xcstrings <Resources folder>...
+//   swift scripts/string-tables.swift <catalog>.xcstrings <Resources folder>...
 //
-// scripts/build-app.sh runs it on the app's and the widget's Resources folder. In each one:
+// scripts/build-app.sh runs it on the app's Resources folder with the app's catalog,
+// Resources/Localizable.xcstrings, and on the widget's with the widget's own, the entries of it the
+// widget's sources name (scripts/widget-strings.swift, INV SIZ-07). In each one:
 // - The source language's table (en.lproj/Localizable.strings) is removed when every value equals
 //   its key, which is what the catalog compiles to while its strings are keyed by their English
 //   text: a lookup that finds no table returns the key, so only the size changes. A table with any

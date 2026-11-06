@@ -9,8 +9,9 @@ import os
 /// Asks WidgetKit to reload a widget kind when what it shows changes enough to matter
 /// (``WidgetReloadPlanner``), and only a kind someone placed (``WidgetPlacements``). The widgets
 /// read the battery and the accessories themselves; this only says when. It also has the widget's
-/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``). Demo Mode never
-/// reaches the widgets.
+/// feed rewritten at once when what it holds changes (``WidgetFeedWriter``), and once a rewrite
+/// took out what the user removed, reloads the kinds that show it. Demo Mode never reaches the
+/// widgets.
 final class WidgetRefresher {
     private let monitor: BatteryMonitor
     private let accessories: AccessoryMonitor
@@ -21,10 +22,14 @@ final class WidgetRefresher {
     private var batteryObservation: Task<Void, Never>?
     private var accessoryObservation: Task<Void, Never>?
     private var deviceObservation: Task<Void, Never>?
+    private var removalObservation: Task<Void, Never>?
     /// The adapter as the feed was last told of it, outside Demo Mode.
     private var feedPlugged: Bool?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
     private var feedSawDemo = false
+    /// The devices as the feed was last told of them, read times aside: a read that changed
+    /// nothing else writes nothing.
+    private var feedDevices: WidgetFeed.DevicesContent?
     /// The feed writer of the refresher the app started, for the launch's language reload, which
     /// writes the feed first: `start()` runs before ``endPreviousExtension(versionChanged:)``.
     private static weak var launchFeed: WidgetFeedWriter?
@@ -52,9 +57,11 @@ final class WidgetRefresher {
                 _ = planner.history(snapshot, at: now)
             }
             _ = planner.accessories(accessories.accessories, at: now)
+            _ = planner.devices(devices.remembered, at: now)
         }
         feedSawDemo = monitor.isOverridden
         if !feedSawDemo { feedPlugged = monitor.snapshot?.isExternalPowerConnected }
+        feedDevices = devicesContent()
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
@@ -66,6 +73,7 @@ final class WidgetRefresher {
                 }
                 await self.evaluateBattery()
                 await self.evaluateHistory()
+                await self.reload(removed: self.planner.pendingRemovals(at: .now))
             }
         }
         accessoryObservation = Task(name: "WidgetRefresher.accessories") { [weak self, accessories] in
@@ -75,11 +83,35 @@ final class WidgetRefresher {
             }
         }
         // A new reading, Forget, and reads turned on or off each change the remembered devices or
-        // the monitor's state; the writer skips a feed whose content didn't change.
+        // the monitor's state. Only a change the feed shows rewrites it: a read every 5 minutes
+        // that read the same again doesn't. The iPhone & iPad widget reads the feed, so its reload
+        // waits for the rewrite.
         deviceObservation = Task(name: "WidgetRefresher.devices") { [weak self, devices] in
             for await _ in Observations({ (devices.remembered, devices.isEnabled) }).dropFirst() {
                 guard let self else { return }
-                self.feed.write(.devices)
+                let content = self.devicesContent()
+                if content != self.feedDevices {
+                    // Reads off and Forget take devices out of the feed: their kind reloads after it.
+                    let removes = self.feedDevices.map { content.removesDevices(since: $0) } ?? false
+                    self.feedDevices = content
+                    await self.feed.writeAndWait(.devices, removing: removes ? [.devices] : [])
+                }
+                // A reading that waited for the planner's interval is in the feed already.
+                await self.evaluateDevices()
+                await self.reload(removed: self.planner.pendingRemovals(at: .now))
+            }
+        }
+        // Clear History, recording off, reads off and Forget: once their rewrite is done, the
+        // kinds that show what they removed reload, in Demo Mode too.
+        removalObservation = Task(name: "WidgetRefresher.removals") { [weak self, feed] in
+            for await _ in Observations({ feed.removalsWritten }).dropFirst() {
+                guard let self else { return }
+                let removed = feed.takeRemovedSections()
+                var kinds: [WidgetKindID] = []
+                for section in WidgetFeed.Section.allCases where removed.contains(section) {
+                    kinds += self.planner.removal(of: section, at: .now)
+                }
+                await self.reload(removed: kinds)
             }
         }
     }
@@ -91,6 +123,16 @@ final class WidgetRefresher {
         accessoryObservation = nil
         deviceObservation?.cancel()
         deviceObservation = nil
+        removalObservation?.cancel()
+        removalObservation = nil
+    }
+
+    /// The remembered devices as the feed would hold them, read times aside.
+    private func devicesContent() -> WidgetFeed.DevicesContent {
+        let remembered = devices.remembered
+        return WidgetFeed.DevicesContent(
+            readsDevices: AppSettings.readsDevices, remembered: remembered,
+            modelNames: WidgetFeedWriter.modelNames(of: remembered))
     }
 
     /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end
@@ -287,6 +329,35 @@ final class WidgetRefresher {
         Diagnostics.widget.notice("Reloading the History widget: \(reason.rawValue, privacy: .public)")
     }
 
+    /// The iPhone & iPad kind: a new reading that moved 3 points or changed state, at most every
+    /// 15 minutes (``WidgetReloadPlanner``).
+    private func evaluateDevices() async {
+        guard !isDemo, let reason = planner.devices(devices.remembered, at: .now), await isPlaced(.devices) else {
+            return
+        }
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetKindID.devices.rawValue)
+        Diagnostics.event("widget.reload", trigger: "policy.devices")
+        Diagnostics.widget.notice("Reloading the iPhone & iPad widget: \(reason.rawValue, privacy: .public)")
+    }
+
+    /// Reloads `kinds`, the placed ones, after a removal rewrote the feed
+    /// (``WidgetReloadPlanner/removal(of:at:)``): each with its kind's trigger, and one line each.
+    private func reload(removed kinds: [WidgetKindID]) async {
+        for kind in kinds where await isPlaced(kind) {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind.rawValue)
+            switch kind {
+            case .battery: Diagnostics.event("widget.reload", trigger: "policy")
+            case .accessories: Diagnostics.event("widget.reload", trigger: "policy.accessories")
+            case .history: Diagnostics.event("widget.reload", trigger: "policy.history")
+            case .devices: Diagnostics.event("widget.reload", trigger: "policy.devices")
+            }
+            let name = kind.signpostName.description
+            Diagnostics.widget.notice(
+                "Reloading the \(name, privacy: .public) widget kind: \(WidgetReloadPlanner.Reason.removal.rawValue, privacy: .public)"
+            )
+        }
+    }
+
     private func evaluateAccessories() async {
         let list = accessories.accessories
         guard !isDemo, let reason = planner.accessories(list, at: .now), await isPlaced(.accessories) else { return }
@@ -307,7 +378,7 @@ final class WidgetRefresher {
                 placements.record(answer: kinds, at: .now)
                 let counts = WidgetPlacements.counts(in: kinds)
                 Diagnostics.widget.notice(
-                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories, \(counts[.history] ?? 0, privacy: .public) History"
+                    "Placed widgets: \(kinds.count, privacy: .public) in all, \(counts[.battery] ?? 0, privacy: .public) Battery, \(counts[.accessories] ?? 0, privacy: .public) Accessories, \(counts[.history] ?? 0, privacy: .public) History, \(counts[.devices] ?? 0, privacy: .public) iPhone & iPad"
                 )
             } catch {
                 placements.recordFailure(at: .now)

@@ -247,7 +247,8 @@ struct HistoryWidgetPreviewTests {
     /// The edit sheet's and the gallery's new words, English beside the Russian the widget's table
     /// holds (Look 1, question 5).
     static let editSheetWords: [String] = [
-        "History", "Charge, power or temperature over the last day or week.", "Choose History",
+        "History", "Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.",
+        "Choose History",
         "Choose what the History widget shows.", "Period", "24 Hours", "7 Days", "Series", "Charge", "Battery power",
         "Temperature", "Capacity compared with design", "Cycle count", "Statistics", "History chart",
         "Average drain", "Time on battery",

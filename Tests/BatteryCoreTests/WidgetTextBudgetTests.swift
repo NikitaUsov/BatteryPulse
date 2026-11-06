@@ -66,7 +66,9 @@ struct WidgetTextBudgetTests {
         case .state: try words(stateKeys)
         // A time row is its phrase alone; the phrases are checked as lines.
         case .time: []
-        case .maximumCapacity, .cycleLifeUsed: [f.percent(100), f.percent(999)]
+        // Capped at 100% like System Settings.
+        case .maximumCapacity: [f.percent(100)]
+        case .cycleLifeUsed: [f.percent(100), f.percent(999)]
         // An abnormal condition goes to the attention row, so a condition row reads Normal.
         case .condition: try words(["Normal"])
         case .cycleCount: [9_999.formatted(.number.locale(f.locale))]
@@ -200,22 +202,22 @@ struct WidgetTextBudgetTests {
                         check(lines <= 2, words[0], "an attention tile, \(size)")
                     }
                 }
-                // The details: a label and its value on one line, with the field's shorter label
-                // where its own doesn't fit, or a word that says what it is alone; a tile's label
-                // on one line over its value on up to two.
+                // The details: a label and its value on one line, in the one form the place shows
+                // the label in whatever the value (``BatteryWidgetField/labelForm(in:locale:)``):
+                // the field's label, its shorter one, or none, a word that says what it is alone;
+                // a tile's label on one line over its value on up to two.
                 for field in BatteryWidgetField.allCases where field != .time {
                     let labels = try choices([WidgetKeys.label(field), field.shortLabelKey], language)
                     for value in try widestValues(field, language) {
                         let place = Budget.detailWidth(size)
                         switch size {
                         case .small, .medium:
-                            let before =
-                                Budget.width(value, monospacedDigits: size == .medium)
-                                + (hasCue(field) ? Budget.cueWidth : 0) + Budget.gap(size)
-                            let alone = (field == .state || field == .condition) && oneLine([value], place)
-                            check(
-                                oneLine(labels, after: before, place) || alone, "\(labels.last ?? "") \(value)",
-                                "a detail, \(size)")
+                            let shown = try Self.label(
+                                field, field.labelForm(in: size, locale: language.locale), language)
+                            let fits =
+                                shown.map { Budget.fits(Self.before(field, value, size) + Budget.width($0), in: place) }
+                                ?? oneLine([value], place)
+                            check(fits, "\(shown ?? "") \(value)", "a detail, \(size)")
                         case .large, .extraLarge, .extraLargePortrait:
                             let tile = field == .timeOnBattery ? Self.timeOnBatteryTile(language) : value
                             check(oneLine([labels[0]], place), labels[0], "a tile's label, \(size)")
@@ -276,6 +278,57 @@ struct WidgetTextBudgetTests {
                 }
             }
         }
+        // The iPhone & iPad widget: one device's state and read time, each on a line of small's
+        // width (the block is as wide in medium and larger in large); a row of All, its state
+        // beside its read time across the row, after its symbol's column; its messages, the
+        // Russian in as many lines as the English, in every family.
+        for language in Language.allCases {
+            let states = try [WidgetStateWord.charging, .onBattery, .fullyCharged, .notCharging, .unknown].compactMap {
+                try text(WidgetKeys.state($0), language)
+            }
+            // The widest day: one late in each month, in the language's own abbreviations.
+            let utc = TimeZone(identifier: "UTC") ?? .gmt
+            let days = (0..<12).map { month in
+                DeviceWidgetRow.readTime(
+                    Date(timeIntervalSince1970: 1_769_558_400 + Double(month) * 30.5 * 24 * 3600), at: .distantFuture,
+                    locale: language.locale, timeZone: utc)
+            }
+            let dates = [language.clock] + days
+            let updated = try choices(["Updated %@"], language).flatMap { format in
+                dates.map { format.replacingOccurrences(of: "%@", with: $0) }
+            }
+            for line in states + updated {
+                check(oneLine([line], Budget.lineWidth(.small)), line, "a device's line, small")
+            }
+            let row = Budget.contentWidth(.medium) - 20 - 8
+            for state in states {
+                for time in updated {
+                    check(
+                        oneLine([time], after: Budget.width(state) + Budget.gap(.medium), row), "\(state) \(time)",
+                        "a device's row")
+                }
+            }
+        }
+        // Small's line under an old feed's last reading has two lines, in both languages.
+        for language in Language.allCases {
+            let line = try choices([HistoryWidgetEmptyReason.outdatedKey], language)
+            let width = Budget.contentWidth(.small) * (language == .russian ? Budget.margin : 1)
+            for text in line {
+                check(Budget.lines(text, width: width) <= 2, text, "a device's old-data line, small")
+            }
+        }
+        for reason in DevicesWidgetEmptyReason.allCases {
+            for size in [WidgetSize.small, .medium, .large] {
+                let place = Budget.contentWidth(size)
+                let english = Budget.lines(reason.messageKey, width: place)
+                let russian = try text(reason.messageKey, .russian).map {
+                    Budget.lines($0, width: place * Budget.margin)
+                }
+                check(
+                    russian == english, try text(reason.messageKey, .russian) ?? "",
+                    "a device message of \(english) lines, \(size)")
+            }
+        }
         // The empty states: the Russian takes as many lines as the English, counted with the
         // margin, and the English without it. A message with shorter words shows the first that
         // fits one line.
@@ -323,6 +376,66 @@ struct WidgetTextBudgetTests {
             }
         }
         return overflows
+    }
+
+    /// What comes before a detail's label on its line: its value (medium's with tabular digits),
+    /// a tier's symbol and the gap.
+    static func before(_ field: BatteryWidgetField, _ value: String, _ size: WidgetSize) -> Double {
+        WidgetTextBudget.width(value, monospacedDigits: size == .medium)
+            + (hasCue(field) ? WidgetTextBudget.cueWidth : 0)
+            + WidgetTextBudget.gap(size)
+    }
+
+    /// The label `form` shows of `field` in `language`; `nil` for none.
+    static func label(_ field: BatteryWidgetField, _ form: WidgetLabelForm, _ language: Language) throws -> String? {
+        switch form {
+        case .full: try text(WidgetKeys.label(field), language)
+        case .short: try field.shortLabelKey.flatMap { try text($0, language) }
+        case .none: nil
+        }
+    }
+
+    /// Look 1's pre-answer: one label per place. Each one-line place of each language shows the
+    /// first form of a field's label that fits beside every widest value the place can show, and
+    /// keeps it whatever the value is: the table in ``BatteryWidgetField/labelForm(in:locale:)`` is
+    /// that choice, derived here from the budget.
+    @Test(arguments: Language.allCases)
+    func eachPlaceShowsOneLabelWhateverTheValue(_ language: Language) throws {
+        for size in [WidgetSize.small, .medium] {
+            let place = WidgetTextBudget.detailWidth(size)
+            for field in BatteryWidgetField.allCases where field != .time {
+                let values = try Self.widestValues(field, language)
+                func fits(_ form: WidgetLabelForm) throws -> Bool {
+                    guard let label = try Self.label(field, form, language) else {
+                        return values.allSatisfy { WidgetTextBudget.fits(WidgetTextBudget.width($0), in: place) }
+                    }
+                    return values.allSatisfy {
+                        WidgetTextBudget.fits(Self.before(field, $0, size) + WidgetTextBudget.width(label), in: place)
+                    }
+                }
+                let expected: WidgetLabelForm =
+                    try fits(.full) ? .full : field.shortLabelKey != nil && fits(.short) ? .short : .none
+                #expect(field.labelForm(in: size, locale: language.locale) == expected, "\(field), \(size)")
+            }
+        }
+        // Tiles have a line of their own for the label.
+        for field in BatteryWidgetField.allCases {
+            #expect(field.labelForm(in: .large, locale: language.locale) == .full)
+        }
+    }
+
+    /// The forms 0.7.1's pictures show: the medium Battery widget's Time on battery is its shorter
+    /// Unplugged in Russian beside any value, and small's Average drain "Drain" in English.
+    @Test func theRussianTimeOnBatteryIsShortInMedium() {
+        let russian = Locale(identifier: "ru_RU")
+        #expect(BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: russian) == .short)
+        #expect(BatteryWidgetField.averageDrain.labelForm(in: .small, locale: Locale(identifier: "en_US")) == .short)
+        #expect(BatteryWidgetField.maximumCapacity.labelForm(in: .small, locale: Locale(identifier: "en_US")) == .full)
+        #expect(BatteryWidgetField.state.labelForm(in: .small, locale: russian) == .none)
+        // A language without a table of its own is laid out as English.
+        #expect(
+            BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: Locale(identifier: "de_DE"))
+                == BatteryWidgetField.timeOnBattery.labelForm(in: .medium, locale: Locale(identifier: "en_US")))
     }
 
     @Test func everyWidgetTextFitsItsPlace() throws {

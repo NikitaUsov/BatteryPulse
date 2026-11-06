@@ -94,11 +94,13 @@ struct WidgetRouteTests {
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent", manifest: Self.configurable)?.page == .overview)
         #expect(
             WidgetRoute(activityType: "AccessoriesWidgetIntent", manifest: Self.configurable)?.page == .accessories)
-        #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories, .history])
+        #expect(WidgetKindID.allCases.map(\.page) == [.overview, .accessories, .history, .devices])
         // The app's route, over the intents that ship.
         #expect(WidgetRoute(activityType: "BatteryWidgetIntent")?.page == .overview)
         #expect(WidgetRoute(activityType: "AccessoriesWidgetIntent")?.page == .accessories)
         #expect(WidgetRoute(activityType: "HistoryWidgetIntent")?.page == .history)
+        // A click without a URL can't say which device it showed: the Devices section.
+        #expect(WidgetRoute(activityType: "DevicesWidgetIntent")?.page == .devices)
     }
 
     /// The app's route names the intents the manifest ships, kind by kind, so it opens a page for

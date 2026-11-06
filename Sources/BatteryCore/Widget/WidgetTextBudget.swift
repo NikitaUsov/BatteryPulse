@@ -11,10 +11,12 @@
 ///   widget still lets it shrink to 0.7 for a value wider than the budget's widest, 100 W or more;
 ///   a ring's value is smaller and shrinks to fit inside the ring.
 /// - A line under it, small's detail and attention row, and medium's rows are one line at full
-///   size. Where a label or a condition's words don't fit, the widget shows the shorter key
-///   (``BatteryWidgetField/shortLabelKey``, ``WidgetCondition/shortKey``), so a place fits when one
-///   of them does. Each language picks on its own: small shows Maximum capacity and Service
-///   Recommended in full in English and shorter in Russian, laid out alike.
+///   size. A detail's label takes one form per place and language, the first that fits the
+///   place's widest value, whatever the value shown (``BatteryWidgetField/labelForm(in:locale:)``:
+///   the label, ``BatteryWidgetField/shortLabelKey`` or none); where a condition's words don't
+///   fit, the widget shows ``WidgetCondition/shortKey``. Each language picks on its own: small
+///   shows Maximum capacity and Service Recommended in full in English and shorter in Russian,
+///   laid out alike.
 /// - A message (an empty state) wraps; the Russian takes as many lines as the English.
 /// - Large's and extra large's tiles hold a label on one line over a value on up to two.
 enum WidgetTextBudget {

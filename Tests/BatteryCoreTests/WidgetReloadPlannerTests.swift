@@ -509,10 +509,11 @@ struct WidgetReloadPlannerTests {
 
     @Test func countsPerKind() {
         let battery = WidgetKindID.battery.rawValue
-        #expect(WidgetPlacements.counts(in: []) == [.battery: 0, .accessories: 0, .history: 0])
+        #expect(WidgetPlacements.counts(in: []) == [.battery: 0, .accessories: 0, .history: 0, .devices: 0])
         #expect(
             WidgetPlacements.counts(
                 in: [battery, battery, WidgetKindID.accessories.rawValue, WidgetKindID.history.rawValue, "other"])
-                == [.battery: 2, .accessories: 1, .history: 1])
+                == [.battery: 2, .accessories: 1, .history: 1, .devices: 0])
+        #expect(WidgetPlacements.counts(in: [WidgetKindID.devices.rawValue])[.devices] == 1)
     }
 }

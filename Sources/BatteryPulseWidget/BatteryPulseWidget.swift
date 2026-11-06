@@ -12,6 +12,7 @@ struct BatteryPulseWidgets: WidgetBundle {
         BatteryWidget()
         AccessoriesWidget()
         HistoryWidget()
+        DevicesWidget()
     }
 }
 
@@ -65,8 +66,25 @@ struct HistoryWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("History")
-        .description("Charge, power or temperature over the last day or week.")
+        .description("Charge, power or temperature over the last day or week, or capacity and cycles over 90 days.")
         .supportedFamilies([.systemMedium, .systemLarge])
+    }
+}
+
+/// The iPhone & iPad widget: the remembered iPhones' and iPads' last readings, from the feed the
+/// app writes, configured through ``DevicesWidgetIntent``. Small, medium and large; a family can be
+/// added later but never removed.
+struct DevicesWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: WidgetKindID.devices.rawValue, intent: DevicesWidgetIntent.self, provider: DevicesTimelineProvider()
+        ) { entry in
+            DevicesWidgetRoot(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("iPhone and iPad")
+        .description("The charge of your iPhone and iPad, as BatteryPulse last read it.")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 #else

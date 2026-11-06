@@ -107,11 +107,13 @@ jobs:
           xcodebuild -version
           swift --version
       - name: Compile the string tables for the widget previews
-        # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
-        # build-app.sh compiles it: each language's table is a bundle of its own.
+        # BatteryPulseWidgetTests draws the widget in Russian too, from the widget's own table
+        # (scripts/widget-strings.swift), made and compiled as build-app.sh makes and compiles it:
+        # each language's table is a bundle of its own.
         run: |
           mkdir -p build/widget-strings
-          xcrun xcstringstool compile --output-directory build/widget-strings Resources/Localizable.xcstrings
+          swift scripts/widget-strings.swift Resources/Localizable.xcstrings build/widget-strings/Localizable.xcstrings Sources/BatteryPulseWidget Sources/BatteryCore/Widget
+          xcrun xcstringstool compile --output-directory build/widget-strings build/widget-strings/Localizable.xcstrings
           ls build/widget-strings
       - name: Test
         # The warning gate, as in the Linux job.
@@ -136,6 +138,16 @@ jobs:
         with:
           name: look1-sheets-${{ github.sha }}
           path: build/widget-previews/sheet-look1-*.png
+          if-no-files-found: error
+      - name: Upload Look 2's contact sheets
+        # 0.7.1's second look (plan-0.7.1 §6.1), apart from the rest, small enough to open on a
+        # phone: the iPhone & iPad widget's Show choices in every family with sample names, the
+        # read time and its alternative, the states and the edit sheet's words, in English and
+        # Russian, light and dark. It goes with the plan folder at 0.7.1's D3.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: look2-sheets-${{ github.sha }}
+          path: build/widget-previews/sheet-look2-*.png
           if-no-files-found: error
       - name: Build bpulse (release)
         run: swift build -c release --product bpulse
