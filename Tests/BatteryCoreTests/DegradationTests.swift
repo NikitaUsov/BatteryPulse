@@ -9,13 +9,19 @@ import Testing
 ///
 /// The first two take a feature away, and the page that has it says why: these tests read the
 /// phrase from the view's source and its Russian translation from the catalog, since the views
-/// only build on macOS. The other two are each other's fallback for the temperature and the
-/// cells, and the registry's own entry for the live voltage and current: one missing changes no
-/// reading's presence. Both missing leave the temperature and the cells out without a word, a gap
-/// that needs a string of its own (C9).
+/// only build on macOS. The widgets 0.7.0 and 0.7.1 added don't say why: the Accessories widget
+/// shows none connected, and the iPhone & iPad widget the remembered devices' last readings, or
+/// with none a cable to connect. The other two are each other's fallback for the temperature and
+/// the cells, and the registry's own entry for the live voltage and current: one missing changes no
+/// reading's presence. Both missing leave the temperature and the cells out without a word, on the
+/// pages and in the Battery widget. The gaps without a word need strings of their own (C9).
 @Suite struct DegradationTests {
     /// The real captures with both the SMC's keys and the registry children.
-    static let completeCaptures: [Fixture] = [.m5OnBatterySMC, .m5PluggedIn10s, .m5Unplugged]
+    static let completeCaptures: [Fixture] = [.m5OnBatterySMC, .m5PluggedIn10s, .m5Unplugged, .m5ChargeLimit]
+
+    static let formatter = BatteryFormatter(locale: Locale(identifier: "en_US"))
+    static let utc = TimeZone(identifier: "UTC") ?? .current
+    static let entry = WidgetTimelinePlan.Entry(date: Fixture.timestamp, showsEstimate: false)
 
     static func reading(_ fixture: Fixture, without keys: [String]) throws -> BatteryReading {
         var capture = try fixtureDictionary(fixture.rawValue)
@@ -41,6 +47,8 @@ import Testing
         #expect(s.cellVoltagesMV == full.cellVoltagesMV)
         #expect(s.voltageMV == reading.smartBattery["Voltage"]?.intValue)
         #expect(s.amperageMA == reading.smartBattery["Amperage"]?.intValue)
+        // The Charge Limit's hold is the registry's own.
+        #expect(s.isAtSystemChargeLimit == full.isAtSystemChargeLimit)
         let labels = BatteryReport.lines(for: s).map(\.label)
         #expect(["Temperature", "Cells", "Battery power"].allSatisfy(labels.contains))
     }
@@ -53,13 +61,16 @@ import Testing
         #expect(s.temperatureCelsius == SMCBattery.temperatureCelsius(in: full.smc))
         #expect(s.cellVoltagesMV.count == full.snapshot.cellVoltagesMV.count)
         #expect(s.cellVoltagesMV == SMCBattery.cellVoltagesMV(in: full.smc, packVoltageMV: s.voltageMV))
+        // The top-level ChargerData repeats the charger entry's reason.
+        #expect(s.isAtSystemChargeLimit == full.snapshot.isAtSystemChargeLimit)
         let labels = BatteryReport.lines(for: s).map(\.label)
         #expect(["Temperature", "Cells", "Battery power"].allSatisfy(labels.contains))
     }
 
     /// Both gone, the temperature and the cells are left out, with no "0" in their place and
     /// nothing else lost. The menu bar shows its icon instead of a temperature it can't show.
-    /// The pages leave the rows out without a word: E-2's gap for C9, which adds the explanation.
+    /// The pages, and the Battery widget set to show them, leave the rows out without a word:
+    /// E-2's gap for C9, which adds the explanation.
     @Test(arguments: completeCaptures)
     func withoutEitherTheTemperatureAndTheCellsAreLeftOut(_ fixture: Fixture) throws {
         let full = try fixture.snapshot()
@@ -72,15 +83,22 @@ import Testing
         #expect(s.healthPercent == full.healthPercent)
         #expect(s.cycleCount == full.cycleCount)
         #expect(s.voltageMV != nil)
+        #expect(s.isAtSystemChargeLimit == full.isAtSystemChargeLimit)
         let labels = BatteryReport.lines(for: s).map(\.label)
         #expect(!labels.contains("Temperature"))
         #expect(!labels.contains("Cells"))
         #expect(labels.contains("Health"))
 
         let temperatureOnly = MenuBarContent(showsIcon: false, showsCharge: false, showsTemperature: true)
-        let title = temperatureOnly.title(for: s, formatter: BatteryFormatter(locale: Locale(identifier: "en_US")))
+        let title = temperatureOnly.title(for: s, formatter: Self.formatter)
         #expect(title.isEmpty)
         #expect(temperatureOnly.showsIcon(title: title))
+
+        for field in [BatteryWidgetField.temperature, .cellBalance] {
+            #expect(WidgetRow(field, snapshot: full, time: nil, formatter: Self.formatter) != nil, "\(field)")
+            #expect(WidgetRow(field, snapshot: s, time: nil, formatter: Self.formatter) == nil, "\(field)")
+        }
+        #expect(WidgetRow(.maximumCapacity, snapshot: s, time: nil, formatter: Self.formatter) != nil)
     }
 
     // MARK: - MobileDevice
@@ -107,6 +125,37 @@ import Testing
             ))
     }
 
+    /// The iPhone & iPad widget shows what the feed holds: the remembered devices, which the app
+    /// writes from `devices.json` whether or not MobileDevice loads. Without the framework, a
+    /// remembered device shows its last reading and when it was read; with none remembered, the
+    /// widget asks for a cable without saying why (C9's gap).
+    @Test func withoutMobileDeviceTheDevicesWidgetShowsTheLastReadings() throws {
+        let writer = try SourceScanner.file("BatteryPulseApp/App/WidgetFeedWriter.swift").code
+        #expect(writer.contains("AppDevices.monitor.remembered"))
+
+        let key = try #require(DeviceKey("cfa3073fbe82243a2581b4d4ce99245e"))
+        let readAt = Fixture.timestamp.addingTimeInterval(-3 * 24 * 60 * 60)
+        func plan(_ devices: [WidgetFeed.Device]) -> DevicesWidgetPlan {
+            let feed = WidgetFeed(
+                writtenAt: Fixture.timestamp, languages: ["en"], recordsHistory: true, readsDevices: true,
+                devices: devices)
+            return DevicesWidgetPlan.make(
+                size: .medium, configuration: DevicesWidgetConfiguration(), feed: feed, entry: Self.entry,
+                formatter: Self.formatter, timeZone: Self.utc)
+        }
+        let device = WidgetFeed.Device(key: key, name: "Phone", percent: 65, state: .discharging, readAt: readAt)
+        guard case .devices(let layout) = plan([device]) else {
+            Issue.record("a remembered device isn't shown")
+            return
+        }
+        // Read three days before the entry: its charge then, and the day.
+        #expect(layout.rows.map(\.charge) == ["65%"])
+        #expect(layout.rows.map(\.updated) == ["Jan 12"])
+
+        #expect(plan([]) == .empty(.noDevices))
+        try Self.expectTranslated(DevicesWidgetEmptyReason.noDevices.messageKey)
+    }
+
     // MARK: - IOPSCopyPowerSourcesByType
 
     /// Without the private power-source call, the Accessories page says that this macOS doesn't
@@ -120,6 +169,18 @@ import Testing
             ))
         try Self.expectTranslated(String(branch.output.title))
         try Self.expectTranslated(String(branch.output.description))
+    }
+
+    /// The Accessories widget calls the same function itself, and reads `nil` without it, which
+    /// it can't tell from none connected (W-8): every size says "No accessories with batteries
+    /// connected", without saying why (C9's gap).
+    @Test(arguments: WidgetSize.allCases)
+    func withoutTheAccessoryCallTheAccessoriesWidgetShowsNone(_ size: WidgetSize) throws {
+        let plan = AccessoriesWidgetPlan.make(
+            size: size, configuration: AccessoriesWidgetConfiguration(), accessories: nil, readAt: Fixture.timestamp,
+            entry: Self.entry, formatter: Self.formatter, timeZone: Self.utc)
+        #expect(plan == .empty(.noAccessories))
+        try Self.expectTranslated(AccessoriesWidgetEmptyReason.noAccessories.messageKey)
     }
 
     // MARK: - The catalog
