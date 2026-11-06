@@ -278,6 +278,49 @@ struct WidgetTextBudgetTests {
                 }
             }
         }
+        // The iPhone & iPad widget: one device's state and read time, each on a line of small's
+        // width (the block is as wide in medium and larger in large); a row of All, its state
+        // beside its read time across the row, after its symbol's column; its messages, the
+        // Russian in as many lines as the English, in every family.
+        for language in Language.allCases {
+            let states = try [WidgetStateWord.charging, .onBattery, .fullyCharged, .notCharging, .unknown].compactMap {
+                try text(WidgetKeys.state($0), language)
+            }
+            // The widest day: one late in each month, in the language's own abbreviations.
+            let utc = TimeZone(identifier: "UTC") ?? .gmt
+            let days = (0..<12).map { month in
+                DeviceWidgetRow.readTime(
+                    Date(timeIntervalSince1970: 1_769_558_400 + Double(month) * 30.5 * 24 * 3600), at: .distantFuture,
+                    locale: language.locale, timeZone: utc)
+            }
+            let dates = [language.clock] + days
+            let updated = try choices(["Updated %@"], language).flatMap { format in
+                dates.map { format.replacingOccurrences(of: "%@", with: $0) }
+            }
+            for line in states + updated {
+                check(oneLine([line], Budget.lineWidth(.small)), line, "a device's line, small")
+            }
+            let row = Budget.contentWidth(.medium) - 20 - 8
+            for state in states {
+                for time in updated {
+                    check(
+                        oneLine([time], after: Budget.width(state) + Budget.gap(.medium), row), "\(state) \(time)",
+                        "a device's row")
+                }
+            }
+        }
+        for reason in DevicesWidgetEmptyReason.allCases {
+            for size in [WidgetSize.small, .medium, .large] {
+                let place = Budget.contentWidth(size)
+                let english = Budget.lines(reason.messageKey, width: place)
+                let russian = try text(reason.messageKey, .russian).map {
+                    Budget.lines($0, width: place * Budget.margin)
+                }
+                check(
+                    russian == english, try text(reason.messageKey, .russian) ?? "",
+                    "a device message of \(english) lines, \(size)")
+            }
+        }
         // The empty states: the Russian takes as many lines as the English, counted with the
         // margin, and the English without it. A message with shorter words shows the first that
         // fits one line.

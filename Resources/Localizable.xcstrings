@@ -8155,7 +8155,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Включите «Считывать данные аккумуляторов iPhone и iPad» в BatteryPulse"
+            "value": "Включите считывание данных iPhone и iPad в BatteryPulse"
           }
         }
       }
