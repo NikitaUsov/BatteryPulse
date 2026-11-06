@@ -267,7 +267,7 @@ question() {
     R-yes) echo "yn|person|The list of changes and the start (SESSION-R.md, the start message): y = go ahead" ;;
     R-back) echo "text|person|When he is back at the Mac, HH:MM (default: 4 hours after the start); a daytime session works" ;;
     R-keep-ax) echo "yn|person|Keep Terminal's Accessibility after Session R8: y = keep (default: reminded to revoke it at the end of the series)" ;;
-    R-keep-widgets) echo "yn|person|Keep the widgets the session adds from the gallery: y = keep (default: removed at the end)" ;;
+    R-keep-widgets) echo "yn|person|Keep the widgets the session adds from the gallery: y = keep (default: removed at the end, and the app's counts must be back at prepare's)" ;;
     R-limit) echo "yn|person|Step 9, the Charge Limit live: set to the hold and put back, only if G8-1 passed: y = go ahead (default: step 9 not run)" ;;
     R-usage | L-usage | H-usage | D3-usage) echo "text|person|What /usage showed at the start" ;;
     R-send | L-send | H-send | D3-send)
@@ -1745,6 +1745,8 @@ changed_settings() {
 # restored <setting> [how]: the session put it back and confirmed it with a read or a shot.
 step_restored() {
   [ $# -ge 1 ] || fail "usage: $SCRIPT restored <setting> [how it was confirmed]"
+  [ "$1" != desktop-widgets ] ||
+    fail "desktop-widgets comes back only by the app's counts, never on the session's word: remove the widgets the session added, then $SCRIPT widgets-check"
   english_only "$*"
   printf '%s\t%s\t%s\n' "$1" "$(clock)" "$(shift && printf '%s' "$*" | tr '\t\n' '  ')" >>"$RESTORED"
   echo "restored: $1"
@@ -2243,6 +2245,8 @@ step_attempt() {
           how="$(printf '%s' "$3" | tr '\t\n' '  ')"
           for setting in $(tr ',' ' ' <<<"$2"); do
             changed_settings | grep -qx -- "$setting" || fail "$setting isn't in the earlier attempt's changes.tsv; nothing moved"
+            [ "$setting" != desktop-widgets ] ||
+              fail "desktop-widgets comes back only by the app's counts, never on the session's word: --kept desktop-widgets on his word that the widgets are as he wants them; nothing moved"
             is_restored "$setting" || mark_restored "$setting" "put back by the session at the new start: $how"
           done
           shift 3
@@ -2333,6 +2337,13 @@ prepare_report() {
   if [ -f "$BUILDS/F.none" ]; then out "- $(cat "$BUILDS/F.none")"; fi
 }
 
+# prepare_placed: the placed widgets as his own BatteryPulse counts them (T-1 item 7), read once,
+# before the session changes anything: the counts restore end's are held against.
+prepare_placed() {
+  if [ -z "$(placed_of prepare)" ] && [ -z "$(original_of app)" ]; then placed_read prepare >/dev/null; fi
+  out "- the placed widgets, as his BatteryPulse counts them (WidgetKit's answer, G7-17): $(placed_words "$(placed_of prepare)")"
+}
+
 # prepare_changes <what the app becomes>: changes.tsv's first lines, once, then his remembered
 # iPhones and iPads out of sight: outside Demo Mode the sidebar's Devices section lists them by
 # name, so every shot of the main window would show them. They stay in the backup, which restore
@@ -2363,6 +2374,7 @@ step_prepare_r() {
   build_tools
   prepare_report "Prepare (the start)"
   out "- he is back at: $(epoch_hm "$(back_epoch)") (the GUI phase stops 10 minutes before, at most 4 hours after mark away)"
+  prepare_placed
   prepare_changes "the release candidates RC-U and RC-F (and v$START_VERSION for step 11c)"
   case "$(app_version)" in
     "$BASE_VERSION "*) out "- his $BASE_VERSION runs: step 2 installs RC-U over it" ;;
@@ -2394,6 +2406,7 @@ step_prepare_l() {
     "$BASE_VERSION "*) ;;
     *) warn "his BatteryPulse is $(cat "$BACKUP/version"), not $BASE_VERSION: the look shoot runs over it and puts it back the same" ;;
   esac
+  prepare_placed
   prepare_changes "the look shoot's build L"
   install_build L --no-launch
   out "- L installed ($(app_version)) over his $(cat "$BACKUP/version")"
@@ -5130,6 +5143,137 @@ step_f12() {
   esac
 }
 
+# MARK: - The session's gallery widgets, checked by the app's counts (T-1 item 7)
+
+# What WidgetKit tells BatteryPulse is placed (G7-17, measured at the intake: real answers for this
+# ad-hoc-signed app), one line per read: "<moment>\t<time>\t<all> <battery> <accessories> <history>
+# <devices>", or "unknown". prepare reads it before anything changes; restore end's relaunch and
+# widgets-check read it again. AP71's feed held 4 devices through an iPhone & iPad widget Session F
+# had added and not removed, which nothing flagged: a widget the session adds comes back only by
+# these counts, never on the session's word.
+PLACED="$WORK/placed.tsv"
+
+# placed_counts_in <ndjson>: "<all> <battery> <accessories> <history> <devices>" from the last of
+# BatteryPulse's "Placed widgets" lines in a `log stream --style ndjson` capture: the feed writer's
+# ("Placed widgets, for the widget feed: …", at notice when its counts change, so at its first
+# answer after a launch) or the refresher's ("Placed widgets: …"); empty without one.
+placed_counts_in() {
+  entries "$1" | awk -F '\t' '$2 == "BatteryPulse" && index($3, "Placed widgets") { l = $3 } END { print l }' |
+    sed -n 's/.*: \([0-9][0-9]*\) in all, \([0-9][0-9]*\) Battery, \([0-9][0-9]*\) Accessories, \([0-9][0-9]*\) History, \([0-9][0-9]*\) iPhone & iPad.*/\1 \2 \3 \4 \5/p'
+}
+
+# placed_words <counts>: the counts as words, or the word itself (unknown, none).
+placed_words() {
+  awk -v c="$1" 'BEGIN { if (split(c, n, " ") != 5) { print (c == "" ? "none read" : c); exit }
+    printf "%d in all: %d Battery, %d Accessories, %d History, %d iPhone & iPad", n[1], n[2], n[3], n[4], n[5] }'
+}
+
+# placed_read <moment>: the installed BatteryPulse quit and launched again with its own settings,
+# and its first answer of the placed widgets read from a stream of its widget lines, up to 100 s:
+# its first feed write after a launch (at the history recorder's first minute tick) asks WidgetKit,
+# nothing being in memory, and logs the counts at notice. Into placed.tsv, and printed; "unknown"
+# when no line came (a writer with no section to fill asks nothing: History off and device reads
+# off). F-1, once it ships, renews the answer within about an hour without a relaunch; the relaunch
+# makes it now, and works with his 0.7.1 too.
+placed_read() {
+  local moment="$1" capture="$LOGS/placed-$1.ndjson" stream waited=0 counts=""
+  mkdir -p "$LOGS" "$WORK"
+  /usr/bin/log stream --level debug --style ndjson --predicate "$WIDGET_PREDICATE" >"$capture" 2>"$capture.err" </dev/null &
+  stream=$!
+  STREAMS="$STREAMS $stream"
+  sleep 2
+  quit_app
+  launch_plain
+  while [ "$waited" -lt 100 ]; do
+    counts="$(placed_counts_in "$capture")"
+    [ -z "$counts" ] || break
+    sleep 5
+    waited=$((waited + 5))
+  done
+  perf_stop "$stream"
+  placed_record "$moment" "${counts:-unknown}"
+  echo "${counts:-unknown}"
+}
+
+placed_record() { printf '%s\t%s\t%s\n' "$1" "$(clock)" "$2" >>"$PLACED"; }
+
+# placed_of <moment>: the counts last read at that moment, empty when none was.
+placed_of() { awk -F '\t' -v m="$1" '$1 == m { c = $3 } END { print c }' "$PLACED" 2>/dev/null || true; }
+
+# placed_latest: the newest read after prepare's, as "<moment>\t<counts>", empty when none was.
+placed_latest() { awk -F '\t' '$1 != "prepare" { l = $1 "\t" $3 } END { print l }' "$PLACED" 2>/dev/null || true; }
+
+# placed_differences <prepare's counts> <counts now>: per kind whose count differs,
+# "<kind>\t<now>\t<prepare's>"; nothing when they agree (or either isn't five numbers).
+placed_differences() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    split("Battery|Accessories|History|iPhone & iPad", k, "|")
+    if (split(a, p, " ") != 5 || split(b, q, " ") != 5) exit
+    for (i = 1; i <= 4; i++) if (p[i + 1] + 0 != q[i + 1] + 0) printf "%s\t%d\t%d\n", k[i], q[i + 1], p[i + 1]
+  }'
+}
+
+# placed_lines: what the session's widgets left, by the app's counts against prepare's: an ALERT
+# per kind above prepare's count (a widget the session added stayed; KEPT instead when he keeps
+# the gallery's widgets, R-keep-widgets y) or below it (one of his own is gone), WIDGETS when they
+# agree; an ALERT when either count is unknown, since then nothing confirms them.
+placed_lines() {
+  local before moment="" now="" diffs kind count was
+  before="$(placed_of prepare)"
+  IFS="$TAB" read -r moment now <<<"$(placed_latest)" || true
+  if [ -z "$before" ] || [ "$before" = unknown ]; then
+    echo "ALERT desktop-widgets: prepare's counts of the placed widgets are ${before:-not read}, so no widget the session added can be confirmed gone: look at the desktop and Notification Center by hand"
+    return 0
+  fi
+  if [ -z "$now" ] || [ "$now" = unknown ]; then
+    echo "ALERT desktop-widgets: no counts of the placed widgets since prepare's ($(placed_words "$before"))$(if [ -n "$moment" ]; then echo "; $moment read none"; fi): $SCRIPT widgets-check reads them"
+    return 0
+  fi
+  diffs="$(placed_differences "$before" "$now")"
+  if [ -z "$diffs" ]; then
+    echo "WIDGETS back at prepare's counts ($(placed_words "$now"), read at $moment)"
+    return 0
+  fi
+  while IFS="$TAB" read -r kind count was; do
+    [ -n "$kind" ] || continue
+    if [ "$count" -gt "$was" ] && [ "$(answer_of R-keep-widgets)" = y ]; then
+      echo "KEPT desktop-widgets: $kind $count, prepare $was: $((count - was)) the session added stayed, as he chose (R-keep-widgets y)"
+    elif [ "$count" -gt "$was" ]; then
+      echo "ALERT desktop-widgets: $kind $count, prepare $was: $((count - was)) the session added stayed: remove it by computer use, then $SCRIPT widgets-check"
+    else
+      echo "ALERT desktop-widgets: $kind $count, prepare $was: $((was - count)) of his own gone: add it again from the gallery as prepare's shots show it, then $SCRIPT widgets-check"
+    fi
+  done <<<"$diffs"
+}
+
+# widgets_verdict: placed_lines into the section, and `restored desktop-widgets` recorded by the
+# script when no line is an ALERT (back at prepare's counts, or above them only where he keeps the
+# gallery's widgets): never on the session's word (step_restored refuses it).
+widgets_verdict() {
+  local lines moment line
+  lines="$(placed_lines)"
+  moment="$(placed_latest | cut -f1)"
+  use_section 96-widgets "The session's widgets, by the app's counts (T-1 item 7)"
+  out "- prepare: $(placed_words "$(placed_of prepare)")"
+  awk -F '\t' '$1 != "prepare" { print "- " $1 " (" $2 "): " $3 }' "$PLACED" 2>/dev/null | while IFS= read -r line; do out "$line"; done
+  while IFS= read -r line; do out "- $line"; done <<<"$lines"
+  if [ -n "$(original_of desktop-widgets)" ] && ! is_restored desktop-widgets && ! grep -q '^ALERT' <<<"$lines"; then
+    mark_restored desktop-widgets "script: the app's counts after $moment against prepare's ($(grep -c '^KEPT' <<<"$lines" || true) kinds kept on his word)"
+    echo "desktop-widgets: back (the app's counts)"
+  fi
+}
+
+# widgets-check: the app's counts read again (BatteryPulse relaunched with its own settings) after
+# the session removed the widgets it added (restore end's RESTORE item), then widgets_verdict. Also
+# usable whenever the session wants the counts now.
+step_widgets_check() {
+  rl_only widgets-check
+  local counts
+  counts="$(placed_read "check-$(date '+%H%M%S')")"
+  echo "the placed widgets now: $(placed_words "$counts")"
+  widgets_verdict
+}
+
 # MARK: - Restore gui and restore end
 
 # When each changed setting comes back: "gui" before the logged day (restore gui: the day runs on
@@ -5158,7 +5302,7 @@ restore_how() {
     bluetooth-accessory) echo "AX or computer use (System Settings → Bluetooth: connect it again)" ;;
     widget-choices) echo "computer use (Edit Widget: back to Automatic)" ;;
     charge-limit) echo "computer use (System Settings → Battery), confirmed by pmset -g battlimit" ;;
-    desktop-widgets) echo "computer use (the widgets he didn't keep removed)" ;;
+    desktop-widgets) echo "computer use (the widgets he didn't keep removed), confirmed only by the app's counts (widgets-check)" ;;
     appearance) echo "computer use (System Settings → Appearance: Light, Dark or Auto, as prepare read it)" ;;
     wallpaper) echo "computer use (System Settings → Wallpaper: his picture, as prepare's desktop shot shows it)" ;;
     *) echo "computer use, confirmed by a read or a shot" ;;
@@ -5235,6 +5379,14 @@ restore_gui_items() {
     [ "$(restore_phase "$setting")" = "$phase" ] || continue
     [ "$(restore_how "$setting")" != script ] || continue
     if is_restored "$setting"; then continue; fi
+    if [ "$setting" = desktop-widgets ]; then
+      if [ "$(answer_of R-keep-widgets)" = y ]; then
+        echo "RESTORE desktop-widgets: he keeps the gallery's widgets (R-keep-widgets y): remove none; $SCRIPT widgets-check records what stayed"
+      else
+        echo "RESTORE desktop-widgets: remove every widget the session added, by computer use (Edit Widgets, then each one's minus), then $SCRIPT widgets-check: it records them gone only when the app's counts are back at prepare's"
+      fi
+      continue
+    fi
     echo "RESTORE $setting back to $(original_of "$setting"), by $(restore_how "$setting"); then: $SCRIPT restored $setting <how it was confirmed>"
   done
 }
@@ -5280,8 +5432,11 @@ step_summary() {
   local setting phase="${1:-gui}" line
   for setting in $(changed_settings); do
     [ "$phase" = end ] || [ "$(restore_phase "$setting")" = gui ] || continue
+    # The session's widgets: their lines come from the app's counts (placed_lines, below).
+    [ "$setting" != desktop-widgets ] || continue
     if ! is_restored "$setting"; then echo "ALERT $setting: not confirmed back (it was $(original_of "$setting"))"; fi
   done
+  if [ "$phase" = end ]; then placed_lines; fi
   for setting in $(changed_settings); do
     [ "$phase" = end ] || [ "$(restore_phase "$setting")" = gui ] || continue
     line="$(awk -F '\t' -v s="$setting" '$1 == s { l = $3 } END { print l }' "$RESTORED" 2>/dev/null || true)"
@@ -5330,6 +5485,8 @@ step_restore() {
       now="$(battlimit_value)"
       out "- the Charge Limit: prepare found ${limit:-unknown}; pmset -g battlimit now: ${now:-none (on battery it holds none: a Battery pane shot confirms it)}"
       if [ -n "$(original_of charge-limit)" ] && [ -n "$now" ] && [ "$now" = "$limit" ]; then mark_restored charge-limit "pmset -g battlimit"; fi
+      out "- the placed widgets after restore end's relaunch: $(placed_words "$(placed_read end)")"
+      widgets_verdict
       restore_gui_items end
       restore_gui_items gui
       echo
@@ -5397,6 +5554,7 @@ appendix_rows() {
 | The checks 0.7.0 and 0.7.1 shipped without (step 11c): 0.6.2's widgets across the update, the gallery, the edit sheets, the language, the looks, the trees, the clicks, the accessories, Demo Mode, the feed (G71-2), Settings, the capacity readings | Step 11c; The widget's feed; R2-062-*, R3-* to R9b-*, R-feed-*, R-settings, R-capacity-* |
 | G8-9: F12, per kind | F12; F12-* |
 | G8-10: crash reports and fault messages since prepare; the Charge Limit reader's reads per trigger (§10); G7-11 per kind (I-13) | The logged day |
+| Each session's gallery widgets: the counts at prepare and after its RESTORE items, and what stayed (T-1 item 7) | The session's widgets |
 | Q8-6: the VoiceOver listen | R-listen |
 | The hands-free mode's cost and the preflight's proofs | Timeline; Proofs; Not checked or not run; Notes |
 EOF2
@@ -5410,6 +5568,7 @@ EOF2
 | G8-13 and G8-5: Report a Problem's saved files | Report a Problem's files; L-a6-file |
 | P-1: the sentinel's note and Turn On Again | The sentinel; L-p1-note |
 | G8-3: the weak adapter's captures (Q8-3) | The weak adapter; L-weak-adapter |
+| Each session's gallery widgets: the counts at prepare and after its RESTORE items, and what stayed (T-1 item 7) | The session's widgets |
 | Crash reports and faults since prepare | Crash reports and faults |
 EOF2
       ;;
@@ -6307,6 +6466,43 @@ dry_run() {
     check fail "the 1103 count reads the log tool's own lines ($(chs_line 12:52:01 "$LOGS/dry-chs.ndjson"))"
   [ "$(percent_of 5711 5760)" = 99.15 ] && [ "$(percent_of - 5760)" = - ] && check ok "capacity's ratio reads as the plan's 99.15 %" ||
     check fail "capacity's ratio is wrong"
+  # T-1 item 7: the session's gallery widgets come back only by the app's counts against prepare's.
+  printf '%s\n' \
+    '{"timestamp":"2026-11-06 19:28:20.101010+0300","processImagePath":"/Applications/BatteryPulse.app/Contents/MacOS/BatteryPulse","eventMessage":"Placed widgets: 1 in all, 1 Battery, 0 Accessories, 0 History, 0 iPhone & iPad"}' \
+    '{"timestamp":"2026-11-06 19:28:33.101010+0300","processImagePath":"/Applications/BatteryPulse.app/Contents/MacOS/BatteryPulse","eventMessage":"Placed widgets, for the widget feed: 2 in all, 1 Battery, 0 Accessories, 0 History, 1 iPhone & iPad"}' \
+    '{"count":2,"finished":1}' >"$LOGS/dry-placed.ndjson"
+  [ "$(placed_counts_in "$LOGS/dry-placed.ndjson")" = "2 1 0 0 1" ] &&
+    check ok "the app's counts read from its last Placed widgets line (the feed writer's, as AP71's day logged it)" ||
+    check fail "the Placed widgets line misread ($(placed_counts_in "$LOGS/dry-placed.ndjson"))"
+  placed_record prepare "1 1 0 0 0"
+  step_change desktop-widgets "his: 1 Battery" "the gallery's: 1 iPhone & iPad" >/dev/null
+  if (step_restored desktop-widgets "the session's word" >/dev/null 2>&1); then check fail "restored took desktop-widgets on the session's word"; else
+    check ok "desktop-widgets never comes back on the session's word"
+  fi
+  placed_record end "2 1 0 0 1"
+  widgets_verdict >/dev/null
+  step_summary end >"$LOGS/dry-summary-end.txt"
+  grep -q '^ALERT desktop-widgets: iPhone & iPad 1, prepare 0: 1 the session added stayed' "$LOGS/dry-summary-end.txt" && ! is_restored desktop-widgets &&
+    check ok "a count above prepare's reads as stayed: an ALERT for that kind, and desktop-widgets not back" ||
+    check fail "a count above prepare's didn't read as stayed ($(grep desktop-widgets "$LOGS/dry-summary-end.txt" | head -2 | tr '\n' ' '))"
+  grep -q 'iPhone & iPad 1, prepare 0' "$WORK/sections/96-widgets.md" && check ok "the report's section says what stayed, by kind and count" ||
+    check fail "the report's section misses what stayed"
+  placed_record check-1 "1 0 0 0 1"
+  # Each output is read whole first: grep -q under pipefail would stop its writer (status 141).
+  printed="$(placed_lines)"
+  [ "$(grep -c '^ALERT desktop-widgets' <<<"$printed")" = 2 ] && grep -q 'Battery 0, prepare 1: 1 of his own gone' <<<"$printed" &&
+    check ok "a count below prepare's reads as one of his own gone, each kind its own ALERT" || check fail "a count below prepare's isn't an ALERT ($printed)"
+  placed_record check-2 "1 1 0 0 0"
+  widgets_verdict >/dev/null
+  printed="$(step_summary end)"
+  is_restored desktop-widgets && ! grep -q '^ALERT desktop-widgets' <<<"$printed" && grep -q '^WIDGETS back at prepare' <<<"$printed" &&
+    check ok "counts back at prepare's record desktop-widgets back, by the script" || check fail "counts back at prepare's didn't record desktop-widgets back"
+  : >"$PLACED"
+  placed_record prepare unknown
+  placed_record check-3 "1 1 0 0 0"
+  printed="$(placed_lines)"
+  grep -q '^ALERT desktop-widgets: prepare.s counts of the placed widgets are unknown' <<<"$printed" &&
+    check ok "unknown counts at prepare confirm nothing: an ALERT" || check fail "unknown counts at prepare didn't alert"
   # G8-1's verdicts from the reads' table (the look shoot's step 2).
   SESSION=L
   printf '%s\n' \
@@ -6373,7 +6569,7 @@ usage: $SCRIPT <command> [arguments]          (the look shoot; SESSION-L.md is t
 
 The start (he is there):
   answer --by person L-yes y (and L-usage, L-adapter); prepare (a background task: wait 9 until it ends): the
-  backup, the CI build L installed over his $BASE_VERSION, the tools; a beep
+  backup, the CI build L installed over his $BASE_VERSION, the tools, the app's counts of the placed widgets; a beep
   preflight; main (before the one computer-use access request); ui access; prepare reads
 L1, the Charge Limit (G8-1), with him there for the beeps:
   change charge-limit <his> <n>, the slider by computer use, charge-limit set <n>; charge-limit hold (again
@@ -6385,7 +6581,7 @@ L2, the screens, in English, then after app-language ru in Russian, then app-lan
   window-style clear | back (Q8-4); welcome first, welcome back (A-5); report-check (A-6); sentinel place, sentinel
   check (P-1); help-link (A-7)
 L3, the weak adapter (only with L-adapter y): weak-adapter in (a background task); weak-adapter out
-L4: restore end, each RESTORE item, summary end
+L4: restore end, each RESTORE item, widgets-check (the app's counts against prepare's), summary end
 L5: batch, send --dry-run, his L-send, send
 While a background task runs: wait [<minutes, 1-9>] in the foreground, again until it ended.
 Any time: status, note, change, restored, shot, crop, front, attach, unattach, ui, measure, judge, faults, help.
@@ -6417,8 +6613,8 @@ usage: $SCRIPT <command> [arguments]          (Session R8, hands-free; SESSION-R
 The start (on the adapter, he is there):
   prepare attempt [--kept <setting>[,...]] [--restored <setting>[,...] "<how>"]   first: a clean start
   answer --by person R-yes y (and R-back, R-keep-ax, R-keep-widgets, R-limit, R-usage)
-  prepare [--fresh-backup]   the backup into ~/bp-080/R, the builds (start, U, F), the tools, his $BASE_VERSION
-                             left for step 2; a beep
+  prepare [--fresh-backup]   the backup into ~/bp-080/R, the builds (start, U, F), the tools, the app's counts of
+                             the placed widgets, his $BASE_VERSION left for step 2; a beep
   prepare reads              the Charge Limit, 24-hour, Open at login, Keyboard navigation, Check for updates,
                              Window to open, the languages, the appearance; the panes' shots; pluginkit
   proof P1 --image <png> <x> <y> | P6 | P7 | P8 | P11 | <P#> pass|fail <note>
@@ -6445,7 +6641,7 @@ The GUI phase (heartbeat <step and expected time> after each step, at least ever
   restore gui; summary; ready (last: the arm window starts the logged day)
 The day's end (on his "day-end"):
   day-end; plug (his two beeps); capacity day-end; f12 rate; install F; f12 before; f12 after; batch;
-  send --dry-run; his R-send; send; restore end; each RESTORE item; summary end
+  send --dry-run; his R-send; send; restore end; each RESTORE item; widgets-check; summary end
 While a background task runs: wait [<minutes, 1-9>] in the foreground, again until it ended.
 Any time: status, note, shot, crop, attach, unattach, faults, help; dry-run anywhere (CI); capacity <tag> by hand
 from the checkout, without a session (P71's W-17 item 18).
@@ -6587,6 +6783,7 @@ case "$COMMAND" in
   app-tree) run_step step_app_tree "$@" ;;
   keys) run_step step_keys "$@" ;;
   display-shots) run_step step_display_shots "$@" ;;
+  widgets-check) run_step step_widgets_check ;;
   *)
     step_help >&2
     exit 1
