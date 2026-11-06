@@ -47,6 +47,9 @@ final class WidgetFeedWriter {
     @ObservationIgnored private var answeredCounts: [WidgetKindID: Int]?
     /// The last question failed: a failure that repeats at every routine write logs at error once.
     @ObservationIgnored private var lastAnswerFailed = false
+    /// The last read of the history for the feed failed: as the question's, a failure that repeats
+    /// at every routine write logs at error once, then at debug until a read succeeds.
+    @ObservationIgnored private var lastHistoryReadFailed = false
     @ObservationIgnored private var writing: Task<Void, Never>?
     /// What the requests made while a write ran ask for after it.
     @ObservationIgnored private var queued: (reason: WidgetFeed.WriteReason, unchanged: Bool)?
@@ -176,7 +179,23 @@ final class WidgetFeedWriter {
             readsDevices: readsDevices, sections: sections,
             current: snapshot.map { HistorySample($0, at: now) },
             devices: devices, modelNames: modelNames)
-        guard let feed = await FeedBuild.make(source, history: history) else {
+        let built: WidgetFeed?
+        do {
+            built = try await FeedBuild.make(source, history: history)
+            if source.includesHistory { lastHistoryReadFailed = false }
+        } catch {
+            // The error's domain and code are public, its description, which can name a path, is
+            // not.
+            let level: OSLogType = lastHistoryReadFailed ? .debug : .error
+            lastHistoryReadFailed = true
+            let error = error as NSError
+            Diagnostics.history.log(
+                level: level,
+                "Reading the history for the widget feed failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
+            )
+            built = nil
+        }
+        guard let feed = built else {
             // The history couldn't be read, so the previous feed stays; a clear, a device
             // forgotten or reads turned off still leave it.
             return clearing || !removals.isEmpty ? await removeOnly(reason, historyCleared: clearing) : .failed
@@ -335,24 +354,14 @@ private nonisolated enum FeedBuild {
     }
 
     /// Reads what of the history `source` includes from `store`, then builds the feed; `nil` in
-    /// Demo Mode, or when the history can't be read, so the previous feed stays rather than one
-    /// that lost the history.
+    /// Demo Mode. Throws when the history can't be read, so the previous feed stays rather than
+    /// one that lost the history, and the writer logs it.
     @concurrent
-    static func make(_ source: WidgetFeed.Source, history store: HistoryStore) async -> WidgetFeed? {
+    static func make(_ source: WidgetFeed.Source, history store: HistoryStore) async throws -> WidgetFeed? {
         var source = source
         if source.includesHistory {
-            do {
-                source.samples = try await store.samples(from: WidgetFeed.historyStart(at: source.now))
-                source.days = try await store.dailySummaries()
-            } catch {
-                // The error's domain and code are public, its description, which can name a
-                // path, is not.
-                let error = error as NSError
-                Diagnostics.history.error(
-                    "Reading the history for the widget feed failed (\(error.domain, privacy: .public) \(error.code)): \(error.localizedDescription)"
-                )
-                return nil
-            }
+            source.samples = try await store.samples(from: WidgetFeed.historyStart(at: source.now))
+            source.days = try await store.dailySummaries()
         }
         return WidgetFeed.build(source)
     }
