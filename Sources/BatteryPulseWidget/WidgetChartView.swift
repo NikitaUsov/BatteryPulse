@@ -137,7 +137,8 @@ struct WidgetChartLevel: Shape {
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        let level = rect.chartPoint(WidgetChartPoint(x: 0, y: y)).y
+        // y up, as the chart's points.
+        let level = rect.maxY - y * rect.height
         path.move(to: CGPoint(x: rect.minX, y: level))
         path.addLine(to: CGPoint(x: rect.maxX, y: level))
         return path
