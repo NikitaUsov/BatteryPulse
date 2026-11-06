@@ -139,7 +139,7 @@ extension WidgetRow {
     fileprivate var standsAlone: Bool {
         switch value {
         case .state, .condition: true
-        case .text, .onOff, .time, .reached: false
+        case .text, .onOff, .time, .reached, .perHour: false
         }
     }
 }
@@ -227,22 +227,32 @@ struct WidgetTile: View {
 struct WidgetValueLabel: View {
     let row: WidgetRow
     let tinted: Bool
-    @Environment(\.widgetStrings) private var strings
 
     var body: some View {
         HStack(spacing: 2) {
             if let cue = row.cue {
                 WidgetCueSymbol(cue: cue, tinted: tinted)
             }
-            switch row.value {
-            case .text(let text): Text(verbatim: text)
-            case .state(let word): widgetText(word.title, strings)
-            case .condition(let condition): condition.text(strings)
-            case .onOff(true): Text("On", bundle: strings)
-            case .onOff(false): Text("Off", bundle: strings)
-            case .time(let time): WidgetTimeLabel(time: time)
-            case .reached: Text("Reached", bundle: strings)
-            }
+            WidgetPlainValue(value: row.value)
+        }
+    }
+}
+
+/// A value as the plan formatted it, or its words in the widget's language.
+struct WidgetPlainValue: View {
+    let value: WidgetValue
+    @Environment(\.widgetStrings) private var strings
+
+    var body: some View {
+        switch value {
+        case .text(let text): Text(verbatim: text)
+        case .state(let word): widgetText(word.title, strings)
+        case .condition(let condition): condition.text(strings)
+        case .onOff(true): Text("On", bundle: strings)
+        case .onOff(false): Text("Off", bundle: strings)
+        case .time(let time): WidgetTimeLabel(time: time)
+        case .reached: Text("Reached", bundle: strings)
+        case .perHour(let text): Text("\(text) per hour", bundle: strings)
         }
     }
 }

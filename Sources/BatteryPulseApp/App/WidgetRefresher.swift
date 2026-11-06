@@ -55,7 +55,12 @@ final class WidgetRefresher {
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
                 guard let self else { return }
-                self.followBatteryForFeed()
+                // The large Battery widget's chart reads the feed, and the extension shares one
+                // read of it for a few seconds: the reload waits for its rewrite, so it finds the
+                // new one.
+                if let reason = self.feedReasonForBattery() {
+                    await self.feed.writeAndWait(reason)
+                }
                 await self.evaluateBattery()
             }
         }
@@ -84,21 +89,23 @@ final class WidgetRefresher {
         deviceObservation = nil
     }
 
-    /// A plug change rewrites the feed at once, and so does the end of Demo Mode, whose readings
-    /// never count as a plug change.
-    private func followBatteryForFeed() {
+    /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end
+    /// of Demo Mode, whose readings never count as a plug change.
+    private func feedReasonForBattery() -> WidgetFeed.WriteReason? {
         guard !monitor.isOverridden else {
             feedSawDemo = true
-            return
+            return nil
         }
         let plugged = monitor.snapshot?.isExternalPowerConnected
+        var reason: WidgetFeed.WriteReason?
         if feedSawDemo {
             feedSawDemo = false
-            feed.write(.demoEnded)
+            reason = .demoEnded
         } else if let plugged, let last = feedPlugged, plugged != last {
-            feed.write(.plug)
+            reason = .plug
         }
         if let plugged { feedPlugged = plugged }
+        return reason
     }
 
     /// The app's effective language at its last launch (the first of

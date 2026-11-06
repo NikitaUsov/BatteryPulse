@@ -41,6 +41,26 @@ struct WidgetWordTests {
         }
     }
 
+    /// The History widget's and the large Battery widget's chart words: the series' names, the
+    /// spans and values VoiceOver reads with a chart, the figures' names and the messages.
+    @Test func historyWords() {
+        for series in HistoryWidgetSeries.allCases {
+            #expect(series.title.key == series.titleKey, "\(series)")
+        }
+        for span in WidgetChartSummary.Span.allCases {
+            #expect(span.title.key == span.titleKey, "\(span)")
+        }
+        let summary = WidgetChartSummary(series: .charge, span: .hours24, lowest: "1", highest: "2", latest: "3")
+        guard case .phrases(let phrases) = summary.spokenLabel, case .key(let values, _)? = phrases.last else {
+            Issue.record("\(summary.spokenLabel)")
+            return
+        }
+        #expect(WidgetChartSummary.values.key == values)
+        for reason in HistoryWidgetEmptyReason.allCases {
+            #expect(reason.message.key == reason.messageKey, "\(reason)")
+        }
+    }
+
     @Test func thermalStates() {
         for state in ThermalState.allCases {
             #expect(WidgetPhrase.key(state.title.key) == state.phrase, "\(state)")

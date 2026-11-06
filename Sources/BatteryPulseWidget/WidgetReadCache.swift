@@ -56,6 +56,16 @@ enum WidgetReads {
     /// per burst.
     static let feed = WidgetReadCache<WidgetFeedState> { await readFeed() }
 
+    /// The feed the History widget and the large Battery widget's chart draw, through ``feed``;
+    /// `nil` without one, or one the reader turned down. In the widget gallery, a Mac without a
+    /// feed shows BatteryCore's made-up history instead of a message, so the gallery shows the
+    /// widget.
+    static func feedContent(preview: Bool) async -> WidgetFeed? {
+        let content = await Self.feed.value()?.feed
+        guard preview, content == nil else { return content }
+        return .sample(at: .now)
+    }
+
     /// Reads IOKit directly, off the caller's thread. The SMC can't be opened from the sandbox, so
     /// it is skipped. A new provider for each read, which reads the registry in full and never
     /// reuses an earlier read's.

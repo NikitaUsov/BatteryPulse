@@ -62,6 +62,9 @@
               "whenOld",
               "always"
             ]
+          },
+          {
+            "name" : "historyChart"
           }
         ],
         "type" : "BatteryWidgetIntent"

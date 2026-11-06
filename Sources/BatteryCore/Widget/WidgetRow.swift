@@ -95,6 +95,8 @@ public enum WidgetValue: Sendable, Equatable {
     case time(WidgetTimeText)
     /// "Reached": the Charge Limit holds the charge.
     case reached
+    /// "%@ per hour", the value pre-formatted: the average drain.
+    case perHour(String)
 }
 
 /// The Mac battery's state in the words the widget and the app use, decided once for both so

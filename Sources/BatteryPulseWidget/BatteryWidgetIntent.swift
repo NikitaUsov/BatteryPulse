@@ -18,7 +18,8 @@ import WidgetKit
 // name, case and summary is a String Catalog key with its Russian.
 
 /// The Battery widget's configuration. Every default is 0.6.x's widget: a widget placed before
-/// 0.7 gets them all, Automatic first, and looks as it did.
+/// 0.7 gets them all, Automatic first, and looks as it did, but for the History chart, which 0.7.1
+/// adds to large, on.
 struct BatteryWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Choose Battery Details"
     static let description = IntentDescription("Choose what the Battery widget shows.")
@@ -60,29 +61,62 @@ struct BatteryWidgetIntent: WidgetConfigurationIntent {
     @Parameter(title: "Update time", default: .whenOld)
     var updateTime: WidgetUpdateTimeChoice
 
-    /// Details shows only with the Custom layout. macOS 27's edit sheet doesn't show the summary
-    /// sentence, so each branch's is a plain catalog key, never a parameter placeholder.
+    /// Large only: the last 24 hours' charge from the app's feed, in place of the last two
+    /// details. Added in 0.7.1 with its default on, which a widget placed before it gets too.
+    @Parameter(title: "History chart", default: true)
+    var historyChart: Bool
+
+    /// Details shows only with the Custom layout, History chart only in large. macOS 27's edit
+    /// sheet doesn't show the summary sentence, so each branch's is a plain catalog key, never a
+    /// parameter placeholder.
     static var parameterSummary: some ParameterSummary {
         When(\.$layout, .equalTo, .custom) {
-            Summary("Custom layout") {
-                \.$layout
-                \.$mainValue
-                \.$mainVisual
-                \.$statusLines
-                \.$details
-                \.$time
-                \.$colors
-                \.$updateTime
+            When(widgetFamily: .equalTo, .systemLarge) {
+                Summary("Custom layout") {
+                    \.$layout
+                    \.$mainValue
+                    \.$mainVisual
+                    \.$statusLines
+                    \.$details
+                    \.$time
+                    \.$colors
+                    \.$updateTime
+                    \.$historyChart
+                }
+            } otherwise: {
+                Summary("Custom layout") {
+                    \.$layout
+                    \.$mainValue
+                    \.$mainVisual
+                    \.$statusLines
+                    \.$details
+                    \.$time
+                    \.$colors
+                    \.$updateTime
+                }
             }
         } otherwise: {
-            Summary("Automatic layout") {
-                \.$layout
-                \.$mainValue
-                \.$mainVisual
-                \.$statusLines
-                \.$time
-                \.$colors
-                \.$updateTime
+            When(widgetFamily: .equalTo, .systemLarge) {
+                Summary("Automatic layout") {
+                    \.$layout
+                    \.$mainValue
+                    \.$mainVisual
+                    \.$statusLines
+                    \.$time
+                    \.$colors
+                    \.$updateTime
+                    \.$historyChart
+                }
+            } otherwise: {
+                Summary("Automatic layout") {
+                    \.$layout
+                    \.$mainValue
+                    \.$mainVisual
+                    \.$statusLines
+                    \.$time
+                    \.$colors
+                    \.$updateTime
+                }
             }
         }
     }

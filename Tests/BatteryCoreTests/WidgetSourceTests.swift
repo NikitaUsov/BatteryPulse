@@ -41,8 +41,8 @@ struct WidgetSourceTests {
         #expect(perLanguage == app)
     }
 
-    /// W-15: both root views draw in the entry's language, its words, locale and formatter, and
-    /// both providers resolve it from the feed for each timeline and snapshot.
+    /// W-15: every root view draws in the entry's language, its words, locale and formatter, and
+    /// every provider resolves it from the feed for each timeline and snapshot.
     @Test func theWidgetsDrawInTheFeedsLanguage() throws {
         for path in ["BatteryPulseWidget/BatteryWidgetView.swift", "BatteryPulseWidget/AccessoriesWidgetView.swift"] {
             let code = try SourceScanner.file(path).code
@@ -347,7 +347,10 @@ struct WidgetSourceTests {
             "time": ".\(c.time.rawValue)",
             "colors": ".\(c.colors.rawValue)",
             "updateTime": ".\(c.updateTime.rawValue)",
+            "historyChart": "\(c.historyChart)",
         ]
+        // 0.7.1 adds the History chart, on, which a widget placed before it gets too.
+        #expect(c.historyChart)
         #expect(c.details.isEmpty)
         let defaults = try Self.parameterDefaults("BatteryWidgetIntent")
         #expect(defaults == expected)

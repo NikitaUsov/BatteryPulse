@@ -56,7 +56,7 @@ struct BatteryWidgetView: View {
     var body: some View {
         let plan = WidgetLayoutPlan.make(
             size: size, configuration: entry.configuration, snapshot: entry.snapshot, entry: entry.moment,
-            formatter: formatter, timeZone: timeZone)
+            formatter: formatter, timeZone: timeZone, feed: entry.feed)
         Group {
             switch plan {
             case .battery(let layout):
@@ -84,14 +84,22 @@ struct BatteryWidgetView: View {
     }
 }
 
-/// Large: the charge block at the top and the details below it, in two columns of tiles.
+/// Large: the charge block at the top and the details below it, in two columns of tiles, and the
+/// History chart in the last row's place, which takes what is left of the height.
 struct WidgetLargeLayout: View {
     let layout: BatteryWidgetLayout
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            WidgetChargeBlock(layout: layout, size: .large, fills: layout.details.isEmpty)
-            if !layout.details.isEmpty {
+            WidgetChargeBlock(layout: layout, size: .large, fills: layout.details.isEmpty && layout.chart == nil)
+            if let chart = layout.chart {
+                Divider()
+                if !layout.details.isEmpty {
+                    WidgetTileGrid(details: layout.details, tinted: layout.tinted)
+                }
+                WidgetChartPlace(content: chart)
+                    .frame(minHeight: 40, maxHeight: .infinity)
+            } else if !layout.details.isEmpty {
                 Spacer(minLength: 0)
                 Divider()
                 WidgetTileGrid(details: layout.details, tinted: layout.tinted)

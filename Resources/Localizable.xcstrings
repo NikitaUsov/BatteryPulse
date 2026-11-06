@@ -140,6 +140,18 @@
         }
       }
     },
+    "90 Days": {
+      "extractionState": "manual",
+      "comment": "VoiceOver: the span of the History widget's capacity and cycle count trend",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 дней"
+          }
+        }
+      }
+    },
     "A": {
       "extractionState": "manual",
       "comment": "Unit symbol: amperes",
@@ -3638,6 +3650,18 @@
         }
       }
     },
+    "History chart": {
+      "extractionState": "manual",
+      "comment": "Widget edit sheet: whether the large Battery widget shows the last 24 hours' charge",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "График истории"
+          }
+        }
+      }
+    },
     "Holding charge": {
       "extractionState": "manual",
       "localizations": {
@@ -4256,6 +4280,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Нижнее напряжение элемента в окне заряда Carrier Mode."
+          }
+        }
+      }
+    },
+    "Lowest %@, highest %@, latest %@": {
+      "extractionState": "manual",
+      "comment": "VoiceOver: a widget chart's lowest, highest and latest values",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Минимум %@, максимум %@, последнее значение %@"
           }
         }
       }
@@ -5482,6 +5518,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть BatteryPulse"
+          }
+        }
+      }
+    },
+    "Open BatteryPulse to update": {
+      "extractionState": "manual",
+      "comment": "Widget: under the last data the app wrote for the widget, once it is two hours old or missing",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте BatteryPulse, чтобы обновить"
           }
         }
       }
@@ -7915,6 +7963,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Включить"
+          }
+        }
+      }
+    },
+    "Turn on Record battery history in BatteryPulse": {
+      "extractionState": "manual",
+      "comment": "Widget: the History chart's message while Record battery history (Settings → Advanced) is off",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите «Записывать историю аккумулятора» в BatteryPulse"
           }
         }
       }

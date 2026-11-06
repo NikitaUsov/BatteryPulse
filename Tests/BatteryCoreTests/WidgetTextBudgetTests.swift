@@ -210,6 +210,16 @@ struct WidgetTextBudgetTests {
                 }
             }
         }
+        // The line under a feed's last data once it is old, on one line across a chart's place:
+        // the whole width of the History widget and of the large Battery widget's chart.
+        for language in Language.allCases {
+            let outdated = try choices([HistoryWidgetEmptyReason.outdatedKey], language)
+            for size in [WidgetSize.medium, .large] {
+                check(
+                    oneLine(outdated, Budget.contentWidth(size)), outdated.last ?? "",
+                    "a chart's old-data line, \(size)")
+            }
+        }
         // The empty states: the Russian takes as many lines as the English, counted with the
         // margin, and the English without it. A message with shorter words shows the first that
         // fits one line.
@@ -223,6 +233,24 @@ struct WidgetTextBudgetTests {
             (["No accessories with batteries connected"], .caption),
             (["All accessories are fully charged"], .caption),
         ]
+        // The History widget's and the large Battery widget's chart: medium and large only.
+        let historyMessages = HistoryWidgetEmptyReason.allCases.map {
+            (keys: [$0.messageKey] as [String?], style: Budget.Style.caption)
+        }
+        for size in WidgetSize.allCases where size == .medium || size == .large {
+            let place = Budget.contentWidth(size)
+            for message in historyMessages {
+                func shown(_ language: Language) throws -> Int {
+                    let words = try choices(message.keys, language)
+                    let width = language == .russian ? place * Budget.margin : place
+                    return words.map { Budget.lines($0, width: width, message.style) }.first ?? 0
+                }
+                let english = try shown(.english)
+                let russian = try shown(.russian)
+                let text = try text(message.keys[0] ?? "", .russian) ?? ""
+                check(russian == english && english == 1, text, "a History message of \(english) lines, \(size)")
+            }
+        }
         for size in WidgetSize.allCases {
             let place = Budget.contentWidth(size)
             for message in messages {
