@@ -239,12 +239,12 @@ extension WidgetFeed {
         case devices
 
         /// The kinds that show the section: the history the large Battery widget's chart and its
-        /// two feed details show, and the History widget. No kind shows the devices yet, so they
-        /// are never written until one that does ships and joins its list.
+        /// two feed details show, and the History widget; the devices the iPhone & iPad widget
+        /// shows, by their names and last readings alone.
         public var readers: [WidgetKindID] {
             switch self {
             case .history: [.battery, .history]
-            case .devices: []
+            case .devices: [.devices]
             }
         }
     }

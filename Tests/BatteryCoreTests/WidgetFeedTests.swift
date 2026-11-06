@@ -198,17 +198,11 @@ import Testing
 
     // MARK: Sections
 
-    /// The devices' section, as if a kind showed it, to test the rule before one ships.
-    static func readers(_ section: WidgetFeed.Section) -> [WidgetKindID] {
-        section == .devices ? [.accessories] : section.readers
-    }
-
     @Test func sectionsFollowThePlacedKinds() {
         func sections(_ placements: WidgetPlacements, history: Bool = true, devices: Bool = true)
             -> Set<WidgetFeed.Section>
         {
-            WidgetFeed.sections(
-                recordsHistory: history, readsDevices: devices, placements: placements, readers: Self.readers)
+            WidgetFeed.sections(recordsHistory: history, readsDevices: devices, placements: placements)
         }
         var placements = WidgetPlacements()
         // No answer yet, an empty one and a failed one: every section the settings allow.
@@ -222,26 +216,55 @@ import Testing
         // An answer that lists widgets: only what they show.
         placements.record(answer: [WidgetKindID.battery.rawValue], at: Self.now)
         #expect(sections(placements) == [.history])
-        placements.record(answer: [WidgetKindID.accessories.rawValue, "io.example.other"], at: Self.now)
+        placements.record(answer: [WidgetKindID.devices.rawValue, "io.example.other"], at: Self.now)
         #expect(sections(placements) == [.devices])
         #expect(sections(placements, devices: false) == [])
     }
 
-    /// The large Battery widget and the History widget show the history; no kind shows the
-    /// devices yet: they are never written, even before WidgetKit answers.
-    @Test func theHistoryHasItsReadersAndNoKindShowsTheDevicesYet() {
+    /// The large Battery widget and the History widget show the history, the iPhone & iPad widget
+    /// the devices; the Accessories widget neither. Before WidgetKit answers, both are written.
+    @Test func eachSectionHasItsReaders() {
         #expect(WidgetFeed.Section.history.readers == [.battery, .history])
-        #expect(WidgetFeed.Section.devices.readers == [])
+        #expect(WidgetFeed.Section.devices.readers == [.devices])
         #expect(
-            WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: WidgetPlacements()) == [.history])
+            WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: WidgetPlacements()) == [
+                .history, .devices,
+            ])
         // A History widget alone keeps the history, and so does a Battery widget alone.
         var placements = WidgetPlacements()
         for kind in [WidgetKindID.history, .battery] {
             placements.record(answer: [kind.rawValue], at: Self.now)
             #expect(WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: placements) == [.history])
         }
+        // An iPhone & iPad widget alone keeps the devices, and nothing of the history.
+        placements.record(answer: [WidgetKindID.devices.rawValue], at: Self.now)
+        #expect(WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: placements) == [.devices])
         placements.record(answer: [WidgetKindID.accessories.rawValue], at: Self.now)
         #expect(WidgetFeed.sections(recordsHistory: true, readsDevices: true, placements: placements).isEmpty)
+    }
+
+    /// §11 of 0.7.1's plan: a device is in the feed by its key, its names and its last reading
+    /// alone. Nothing else the app remembers of it reaches the widget: not its product identifier,
+    /// its system's version, when it was first or last seen or how it connected, and never a UDID,
+    /// an ECID or a serial number, which the app doesn't remember either.
+    @Test func aDeviceHoldsOnlyItsNamesAndItsLastReading() throws {
+        var device = Self.device(Self.phone, name: "Anna's iPhone")
+        device.osVersion = "27.0.1"
+        device.lastConnection = .usb
+        device.lastSeen = Self.now.addingTimeInterval(-60)
+        let feed = try Self.build(Self.source(devices: [device]))
+        let data = try WidgetFeed.encoded(feed)
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let devices = try #require(object["devices"] as? [[String: Any]])
+        #expect(
+            Set(devices.flatMap(\.keys)) == [
+                "key", "name", "model", "deviceClass", "percent", "state", "maximumCapacity", "cycleCount",
+                "temperature10", "readAt",
+            ])
+        let text = String(decoding: data, as: UTF8.self)
+        for absent in ["iPhone18,2", "27.0.1", "usb", "udid", "ecid", "serial"] {
+            #expect(!text.lowercased().contains(absent.lowercased()), "\(absent)")
+        }
     }
 
     @Test func placementsAreAskedOnlyWhenTheyCouldChangeASection() {
@@ -250,12 +273,12 @@ import Testing
         {
             WidgetFeed.needsPlacementAnswer(
                 recordsHistory: history, readsDevices: devices, placements: placements,
-                at: Self.now.addingTimeInterval(minutes * 60), readers: Self.readers)
+                at: Self.now.addingTimeInterval(minutes * 60))
         }
         var placements = WidgetPlacements()
         #expect(needs(placements, after: 0))
         // Both sections' kinds listed: never again.
-        placements.record(answer: [WidgetKindID.battery.rawValue, WidgetKindID.accessories.rawValue], at: Self.now)
+        placements.record(answer: [WidgetKindID.battery.rawValue, WidgetKindID.devices.rawValue], at: Self.now)
         #expect(!needs(placements, after: 60))
         // A section none of whose kinds is listed: again once the answer is 15 minutes old.
         placements.record(answer: [WidgetKindID.battery.rawValue], at: Self.now)
@@ -267,6 +290,10 @@ import Testing
         // A section no kind shows can't change: no question for it.
         #expect(
             !WidgetFeed.needsPlacementAnswer(
+                recordsHistory: false, readsDevices: true, placements: WidgetPlacements(), at: Self.now,
+                readers: { $0 == .devices ? [] : $0.readers }))
+        #expect(
+            WidgetFeed.needsPlacementAnswer(
                 recordsHistory: false, readsDevices: true, placements: WidgetPlacements(), at: Self.now))
     }
 
