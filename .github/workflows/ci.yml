@@ -107,11 +107,13 @@ jobs:
           xcodebuild -version
           swift --version
       - name: Compile the string tables for the widget previews
-        # BatteryPulseWidgetTests draws the widget in Russian too, from the catalog compiled as
-        # build-app.sh compiles it: each language's table is a bundle of its own.
+        # BatteryPulseWidgetTests draws the widget in Russian too, from the widget's own table
+        # (scripts/widget-strings.swift), made and compiled as build-app.sh makes and compiles it:
+        # each language's table is a bundle of its own.
         run: |
           mkdir -p build/widget-strings
-          xcrun xcstringstool compile --output-directory build/widget-strings Resources/Localizable.xcstrings
+          swift scripts/widget-strings.swift Resources/Localizable.xcstrings build/widget-strings/Localizable.xcstrings Sources/BatteryPulseWidget Sources/BatteryCore/Widget
+          xcrun xcstringstool compile --output-directory build/widget-strings build/widget-strings/Localizable.xcstrings
           ls build/widget-strings
       - name: Test
         # The warning gate, as in the Linux job.
