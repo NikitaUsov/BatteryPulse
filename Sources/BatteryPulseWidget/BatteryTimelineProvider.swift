@@ -8,17 +8,44 @@ import WidgetKit
 /// for (``WidgetTimelinePlan``), the widget's configuration, the language it draws in, and the
 /// feed the History chart and the two feed details come from.
 struct BatteryEntry: TimelineEntry {
-    let snapshot: BatterySnapshot?
+    /// The reading; `nil` without one.
+    var snapshot: BatterySnapshot? {
+        reading?.snapshot
+    }
     let moment: WidgetTimelinePlan.Entry
     let configuration: BatteryWidgetConfiguration
     /// BatteryPulse's own, from the feed; the extension's own without one.
-    var language = WidgetLanguageTable.extensionOwn
+    var language: WidgetLanguageTable
     /// What the read of the feed found; `nil` without a read. Boxed, as the read keeps it, so an
     /// entry and every view that holds one stay small to copy.
     var feed: WidgetFeedState?
+    /// The reading, boxed as the feed is: inline, its many fields made the value witnesses of the
+    /// entry and of every view that holds one, which copy it field by field, the widget's largest
+    /// code.
+    private let reading: Reading?
+
+    init(
+        snapshot: BatterySnapshot?, moment: WidgetTimelinePlan.Entry, configuration: BatteryWidgetConfiguration,
+        language: WidgetLanguageTable = .extensionOwn, feed: WidgetFeedState? = nil
+    ) {
+        reading = snapshot.map(Reading.init)
+        self.moment = moment
+        self.configuration = configuration
+        self.language = language
+        self.feed = feed
+    }
 
     var date: Date {
         moment.date
+    }
+
+    /// A reading on the heap, which every copy of the entry shares.
+    final class Reading: Sendable {
+        let snapshot: BatterySnapshot
+
+        init(_ snapshot: BatterySnapshot) {
+            self.snapshot = snapshot
+        }
     }
 }
 
