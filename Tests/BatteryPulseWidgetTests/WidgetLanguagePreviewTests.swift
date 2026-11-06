@@ -91,6 +91,18 @@ struct WidgetLanguagePreviewTests {
         #expect(missing.localization == nil && missing.strings == nil)
     }
 
+    /// BatteryCore's choice is the one `Bundle.preferredLocalizations(from:forPreferences:)` makes
+    /// for the widget's own localizations, as ``WidgetLanguage`` says. Only Apple's Foundation can
+    /// tell: Linux's answers "en" for every list, so this runs in the macOS job.
+    @Test(arguments: [
+        ["ru"], ["en"], ["ru-RU", "en"], ["en", "ru"], ["de", "en"], ["de", "ru"], ["de"], ["ru_RU"], ["en-GB"],
+    ])
+    func theChoiceIsFoundations(_ preferences: [String]) {
+        let foundation = Bundle.preferredLocalizations(from: Self.localizations, forPreferences: preferences).first
+        let choice = WidgetLanguage.localization(for: preferences, available: Self.localizations, development: "en")
+        #expect(choice == foundation, "\(preferences)")
+    }
+
     // MARK: The pictures
 
     static let batteryScenes: [Scene] = [
