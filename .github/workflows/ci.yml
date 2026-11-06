@@ -243,6 +243,7 @@ jobs:
           echo "Build $build_number"
           echo "BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
       - name: Package app (DMG)
+        id: package
         env:
           VERSION: ${{ inputs.version }}
         run: |
@@ -306,7 +307,9 @@ jobs:
           if-no-files-found: error
       - name: Upload the link maps
         # For size attribution: which object file and symbol each byte of the shipped binaries
-        # comes from.
+        # comes from. Also after a size report over its budget, when they're needed most; the
+        # packaging made them.
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: link-maps-${{ github.sha }}
