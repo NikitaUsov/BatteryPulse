@@ -1,5 +1,5 @@
 // Writes the widget's own String Catalog, the widget-only string table (INV SIZ-07): the entries
-// of the app's catalog whose keys the widget's sources name, about half of them, so the widget
+// of the app's catalog whose keys the widget's sources name, about a fifth of them, so the widget
 // extension's .lproj folders hold its own words rather than the whole app's:
 //
 //   swift scripts/widget-strings.swift Resources/Localizable.xcstrings <output>.xcstrings \

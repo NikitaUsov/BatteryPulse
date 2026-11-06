@@ -178,8 +178,6 @@ struct WidgetSourceTests {
     }
 
     /// `namer`'s struct and the `.<name>` cases outside it: an accessory's reported name, or a
-    /// device's.
-    /// `namer`'s struct and the `.<name>` cases outside it: an accessory's reported name, or a
     /// device's; `also` is a struct (with its conformance) that may name it too, which the
     /// widget never draws.
     static func nameScan(
