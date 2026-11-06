@@ -73,15 +73,17 @@ struct WidgetChartPlace: View {
     }
 }
 
-/// The line under a feed's last data once it is two hours old. Its own VoiceOver element.
+/// The line under a feed's last data once it is two hours old. Its own VoiceOver element. One line
+/// across a medium or large widget; small's iPhone & iPad widget gives it two.
 struct WidgetOutdatedLine: View {
+    var lines = 1
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
         Text("Open BatteryPulse to update", bundle: strings)
             .font(.caption)
             .foregroundStyle(.secondary)
-            .lineLimit(1)
+            .lineLimit(lines)
     }
 }
 

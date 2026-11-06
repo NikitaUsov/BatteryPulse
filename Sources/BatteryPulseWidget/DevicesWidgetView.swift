@@ -36,7 +36,8 @@ struct DevicesWidgetRoot: View {
 /// - All: a row per device, its name and charge over its state and read time.
 ///
 /// Names may be their owners' own, so they are privacy sensitive; the numbers stay. A feed over
-/// two hours old keeps its last readings and says "Open BatteryPulse to update" under them.
+/// two hours old keeps its last readings and says "Open BatteryPulse to update" under them: on two
+/// lines in small, in the place of the state, which is as old.
 struct DevicesWidgetView: View {
     let plan: DevicesWidgetPlan
     let size: WidgetSize
@@ -47,12 +48,12 @@ struct DevicesWidgetView: View {
             case .devices(let layout):
                 VStack(alignment: .leading, spacing: 6) {
                     if layout.showsOne, let row = layout.rows.first {
-                        DeviceOneView(row: row, size: size)
+                        DeviceOneView(row: row, size: size, showsState: !(layout.isOutdated && size == .small))
                     } else {
                         DeviceListView(rows: layout.rows, roomy: size != .small && size != .medium)
                     }
                     if layout.isOutdated {
-                        WidgetOutdatedLine()
+                        WidgetOutdatedLine(lines: size == .small ? 2 : 1)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -69,12 +70,14 @@ struct DevicesWidgetView: View {
 struct DeviceOneView: View {
     let row: DeviceWidgetRow
     let size: WidgetSize
+    /// Small leaves the state out while the line under it says the feed is old.
+    var showsState = true
 
     var body: some View {
         let details = row.details.map(WidgetDetail.row)
         if size == .small || size == .medium {
             HStack(spacing: 16) {
-                DeviceBlock(row: row, roomy: false)
+                DeviceBlock(row: row, roomy: false, showsState: showsState)
                 if !details.isEmpty {
                     Divider()
                     WidgetDetailList(details: details, tinted: true)
@@ -98,6 +101,7 @@ struct DeviceBlock: View {
     let row: DeviceWidgetRow
     /// Large has room for a bigger number.
     let roomy: Bool
+    var showsState = true
     @Environment(\.widgetStrings) private var strings
 
     var body: some View {
@@ -111,7 +115,9 @@ struct DeviceBlock: View {
             DeviceNameText(name: row.name)
                 .font(.caption)
             VStack(alignment: .leading, spacing: 4) {
-                row.stateText(strings)
+                if showsState {
+                    row.stateText(strings)
+                }
                 row.updatedText(strings)
             }
             .font(.caption)

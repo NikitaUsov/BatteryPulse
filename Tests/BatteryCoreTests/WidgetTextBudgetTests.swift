@@ -309,6 +309,14 @@ struct WidgetTextBudgetTests {
                 }
             }
         }
+        // Small's line under an old feed's last reading has two lines, in both languages.
+        for language in Language.allCases {
+            let line = try choices([HistoryWidgetEmptyReason.outdatedKey], language)
+            let width = Budget.contentWidth(.small) * (language == .russian ? Budget.margin : 1)
+            for text in line {
+                check(Budget.lines(text, width: width) <= 2, text, "a device's old-data line, small")
+            }
+        }
         for reason in DevicesWidgetEmptyReason.allCases {
             for size in [WidgetSize.small, .medium, .large] {
                 let place = Budget.contentWidth(size)
