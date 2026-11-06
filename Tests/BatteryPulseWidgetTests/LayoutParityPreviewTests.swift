@@ -145,10 +145,12 @@ struct LayoutParityPreviewTests {
         let bytes = [UInt8](data as Data)
         let stride = pixels.bytesPerRow
         guard stride >= width * 4, bytes.count >= stride * height else { return nil }
-        // The widget's fill, 8 points in from its top left corner: in its margin, inside the
-        // corner's curve.
-        let probe = 16 * stride + 16 * 4
+        // The widget's fill, 12 points in from its top left corner: in its margin, well inside the
+        // corner's curve, so as opaque as the widget is.
+        let probe = 24 * stride + 24 * 4
         let fill = (Int(bytes[probe]), Int(bytes[probe + 1]), Int(bytes[probe + 2]))
+        let opaque = bytes[probe + 3]
+        guard opaque > 200 else { return nil }
         var bands: [Band] = []
         var open: (top: Int, left: Int, right: Int)?
         for y in 0..<height {
@@ -156,8 +158,11 @@ struct LayoutParityPreviewTests {
             var right = -1
             for x in 0..<width {
                 let pixel = y * stride + x * 4
-                // Only opaque pixels: outside the corners' curves the picture is clear.
-                guard bytes[pixel + 3] > 200 else { continue }
+                // Only pixels as opaque as the fill: outside the corners' curves the picture is
+                // clear, and along them partly clear, where a premultiplied pixel is darker than
+                // the fill with nothing drawn on it (0.7.1's first measurements counted those rows
+                // as ten lines a picture).
+                guard bytes[pixel + 3] >= opaque else { continue }
                 let difference = max(
                     abs(Int(bytes[pixel]) - fill.0), abs(Int(bytes[pixel + 1]) - fill.1),
                     abs(Int(bytes[pixel + 2]) - fill.2))
@@ -296,7 +301,8 @@ struct LayoutParityPreviewTests {
     }
 
     /// The scanner's bands are pinned on a drawn picture: two bars of text-like height, one under the
-    /// other, read back as two bands where they were drawn.
+    /// other, in a widget's rounded corners, read back as two bands where they were drawn, with the
+    /// corners' partly clear edges in no band.
     @Test func bandsAreWhereTheyWereDrawn() throws {
         let view = ZStack(alignment: .topLeading) {
             Color(white: 0.95)
@@ -304,6 +310,8 @@ struct LayoutParityPreviewTests {
             Rectangle().fill(Color.black).frame(width: 60, height: 12).offset(x: 30, y: 50)
         }
         .frame(width: 120, height: 100)
+        // The widget previews' container shape (WidgetPreviewTests.framed).
+        .clipShape(.rect(cornerRadius: 22, style: .continuous))
         let image = try WidgetPreviewTests.render(view, "look3-bands-self-test")
         let bands = try #require(Self.bands(image))
         try #require(bands.count == 2)
