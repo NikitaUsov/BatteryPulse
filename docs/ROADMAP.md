@@ -1097,10 +1097,11 @@ at the end.
   way than computer use, which can't act in its menus), the widgets in BatteryPulse's own language
   set the user's way, the rendering modes, time left, the accessibility tree, the Battery and
   Accessories widgets' clicks and a click with BatteryPulse quit, the feed's rewrites and Demo
-  Mode, the reloads per kind over a logged day, the update path (F12), Settings on the Air's
-  display, the maximum-capacity readings against macOS's, the switch from Raw Data to History,
-  the menu bar painter's pixel check before and after W-11's move, and 0.6.2's WP-18 Xcode items
-  and the menu bar on a dark bar
+  Mode, the reloads per kind, crash reports and faults over a logged day (the short feed check's
+  27 minutes had none), the update path (F12), Settings on the Air's display, the
+  maximum-capacity readings against macOS's, the switch from Raw Data to History, the menu bar
+  painter's pixel check before and after W-11's move, and 0.6.2's WP-18 Xcode items and the menu
+  bar on a dark bar
 - [ ] The check after publishing, the short session from his 0.7.0 (Q71-4): Install and Relaunch
   by the session, his widgets, the feed's modes and the widget's exception on the published build
 - [ ] A week after publishing: v0.7.1's DMG, signature and `BatteryPulse-count.txt` downloads in

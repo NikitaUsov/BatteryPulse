@@ -28,10 +28,10 @@
 
 Updating from 0.7.0 or 0.6.2: **Install and Relaunch** in the update window installs 0.7.1 from
 inside the app. Placed widgets should keep their choices. If one has lost them, Control-click it
-and choose **Edit Widget** to choose again; if one is gone or blank, remove it and add it again
-from the gallery: Control-click the desktop and choose **Edit Widgets…**. If you go back to 0.7.0
-later, remove the History and iPhone and iPad widgets first: 0.7.0 doesn't have them, so they
-would stay as they last were.
+and choose **Edit Widget** to choose again; if one is gone or blank, remove the blank one and add
+it again from the gallery: Control-click the desktop and choose **Edit Widgets…**. If you go back
+to 0.7.0 later, remove the History and iPhone and iPad widgets first: 0.7.0 doesn't have them, so
+they would stay as they last were.
 
 ## What's new in 0.7.0
 
