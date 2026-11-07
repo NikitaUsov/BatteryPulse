@@ -1324,7 +1324,9 @@ its default):
    Region → Applications, then a relaunch): every new screen, by AX and the script's window shots
    (rule 8):
    - each Demo Mode scene of A-1 (Overview, the popover, Power) and A-2's number;
-   - Health's summary (A-3) and Clear's badge in the worn-battery scene (Q8-4);
+   - Health's summary (A-3) and Clear's badge in the Reduced capacity scene (Q8-4), under 80 %
+     while macOS reports Normal (the worn-battery scene's macOS says Service Recommended, which the
+     badge keeps);
    - one row's help tag and info popover per page (A-4);
    - Welcome (A-5), with `hasSeenWelcome` cleared, then restored;
    - Report a Problem (A-6): the window, the preview's top and its end, both choices; the file it
