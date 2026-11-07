@@ -674,8 +674,8 @@ Open it from the sidebar (Developer → Demo Mode; turn the section on in Settin
   each one best, then starts over. Choose how long each scene stays under **Scene length**.
 - Click a **scene** to show it by hand: fast charging, on battery, low battery, critical
   battery, fully charged, optimized charging, the Charge Limit, not charging with no reason
-  reported, just plugged in, a worn battery, heavy load, a slow charger, Low Power Mode, or a Mac
-  without a battery.
+  reported, just plugged in, a worn battery, a reduced capacity that macOS still calls Normal,
+  heavy load, a slow charger, Low Power Mode, or a Mac without a battery.
 - Click an **animation** to watch the battery charge from empty or drain to empty in 20
   seconds.
 

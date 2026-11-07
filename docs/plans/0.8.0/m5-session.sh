@@ -368,7 +368,7 @@ question() {
     L-a1-scenes) echo "yn|judge|Step 3 (A-1): each Demo Mode scene that names a cause, and the one whose info button lists Apple's reasons, shot on Overview, Power and the popover, in English and Russian (n names the scene)" ;;
     L-a2-number) echo "3|judge|Step 3 (A-2): the Charge Limit's number in its Demo Mode scene: 1 Power and Overview's sentence show it, 2 not shown (which), 3 no such scene in this build" ;;
     L-a3-health) echo "yn|judge|Step 3 (A-3): Health's summary at the top (Condition, Maximum capacity, Cycle count), in English and Russian" ;;
-    L-q84-badge) echo "3|judge|Step 3 (Q8-4): Clear's badge in the worn-battery scene, beta styles on and Clear chosen: 1 the capacity's own words (Maximum capacity below 80 percent), 2 Service Recommended, 3 not shot (why)" ;;
+    L-q84-badge) echo "3|judge|Step 3 (Q8-4): Clear's badge in the Reduced capacity scene (below 80 percent, macOS's condition Normal), beta styles on and Clear chosen: 1 the capacity's own words (Maximum capacity below 80 percent), 2 Service Recommended, 3 not shot (why)" ;;
     L-a4-help) echo "yn|judge|Step 3 (A-4): one row's help tag and its info popover per page (Overview, Power, Health, a device page when one is remembered) and the popover's help tag, in English and Russian (n names the page)" ;;
     L-a5-welcome) echo "yn|judge|Step 3 (A-5): Welcome with hasSeenWelcome cleared, its lines and controls, in English and Russian; hasSeenWelcome back as it was (the script reads it)" ;;
     L-a6-window) echo "yn|judge|Step 3 (A-6): Report a Problem's window, its preview's top and its end, and both choices, in English and Russian" ;;

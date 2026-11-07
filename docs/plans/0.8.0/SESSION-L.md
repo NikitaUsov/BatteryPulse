@@ -185,10 +185,11 @@ waits (L1 step 2).
    number, if its scene exists: `$S scene-shots a2-number`. Stop Demo by its own button (`$S ui
    press`), then `$S restored demo-mode "<the shot without the demo bar>"`.
 2. **A-3's summary:** `$S pages a3-health Health`.
-3. **Q8-4's badge:** `$S window-style clear`; `$S change demo-mode off on`, Demo Mode's worn-battery
-   scene by `$S ui select-row BatteryPulse "Demo Mode"` and `$S ui press`; `$S pages q84-badge
-   Overview Health`; `$S window-style back` (its relaunch ends Demo Mode), then `$S restored
-   demo-mode "<the relaunch ended it: a page without the demo bar>"`.
+3. **Q8-4's badge:** `$S window-style clear`; `$S change demo-mode off on`, Demo Mode's Reduced
+   capacity scene (below 80 % while macOS reports Normal; the worn battery's macOS says Service
+   Recommended, which the badge keeps) by `$S ui select-row BatteryPulse "Demo Mode"` and `$S ui
+   press`; `$S pages q84-badge Overview Health`; `$S window-style back` (its relaunch ends Demo
+   Mode), then `$S restored demo-mode "<the relaunch ended it: a page without the demo bar>"`.
 4. **A-4's explanations:** on Overview, Power and Health (and a device's page when one shows), one
    row's help tag (a `$S ui move <the row's centre> --expect BatteryPulse`, two seconds, `$S screen
    a4-<page>-tag`) and its info popover (`$S ui press` on its info button, `$S screen

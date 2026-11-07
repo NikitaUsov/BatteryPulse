@@ -1246,6 +1246,18 @@
         }
       }
     },
+    "Below 80 percent capacity while macOS still reports its condition as Normal.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость ниже 80 процентов, но macOS по-прежнему сообщает, что состояние аккумулятора нормальное."
+          }
+        }
+      }
+    },
     "Beta": {
       "extractionState": "manual",
       "comment": "Mark on a beta window style's tile in Settings → General (Translucent, Clear)",
@@ -6748,6 +6760,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Запись выключена. Включить её можно в разделе «Настройки» → «Дополнения»."
+          }
+        }
+      }
+    },
+    "Reduced capacity": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уменьшенная ёмкость"
           }
         }
       }

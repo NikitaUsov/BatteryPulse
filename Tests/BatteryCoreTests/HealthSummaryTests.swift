@@ -211,6 +211,29 @@ import Testing
         #expect(try Self.badge(below, .english) == "Maximum capacity below \(f.percent(threshold))")
     }
 
+    /// Demo Mode shows both badges, which the look shoot takes in Clear: the worn battery, whose
+    /// condition macOS reports, in macOS's words; the reduced capacity, which macOS calls Normal,
+    /// in the capacity's. A scene with a healthy battery has none.
+    @Test func demoModeShowsBothBadges() throws {
+        func scene(_ scenario: DemoScenario) throws -> BatterySnapshot {
+            try #require(scenario.battery).reading(at: Fixture.timestamp).snapshot
+        }
+        let worn = try scene(.wornBattery)
+        #expect(try Self.rows(worn, .english).map(\.value) == ["Service Recommended", "75%", "1,184 of 1,000"])
+        #expect(try Self.badge(worn, .english) == "Service Recommended")
+
+        let reduced = try scene(.reducedCapacity)
+        #expect(try Self.rows(reduced, .english).map(\.value) == ["Normal", "78%", "640 of 1,000"])
+        #expect(try Self.badge(reduced, .english) == "Maximum capacity below 80%")
+        let below = try #require(try WidgetTextBudgetTests.text("Maximum capacity below %@", .russian))
+        #expect(try Self.badge(reduced, .russian) == Self.fill(below, "80%"))
+
+        for scenario in DemoScenario.allCases where ![.wornBattery, .reducedCapacity].contains(scenario) {
+            guard let battery = scenario.battery else { continue }
+            #expect(try Self.badge(battery.reading(at: Fixture.timestamp).snapshot, .english) == nil, "\(scenario)")
+        }
+    }
+
     // MARK: The catalog
 
     /// The snapshots every case above reads, the captures and Demo Mode's scenes with them.
