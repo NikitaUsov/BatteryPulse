@@ -61,6 +61,66 @@ import Testing
         #expect(ReleaseChannel.assetName == "BatteryPulse.dmg")
     }
 
+    /// Help opens the user guide at the running version's release tag (NEW-06); a build without a
+    /// version opens `main`'s.
+    @Test func theGuideOpensAtTheReleasesTag() throws {
+        let guide = "docs/USER_GUIDE.md"
+        let v080 = AppVersion(parts: [0, 8, 0])
+        #expect(
+            ReleaseChannel.file(guide, at: v080).absoluteString
+                == "https://github.com/NikitaUsov/BatteryPulse/blob/v0.8.0/docs/USER_GUIDE.md")
+        // The bundle's version string, as the app reads it.
+        let bundled = try #require(AppVersion("0.8.0"))
+        #expect(ReleaseChannel.file(guide, at: bundled) == ReleaseChannel.file(guide, at: v080))
+        #expect(
+            ReleaseChannel.file(guide, at: UpdateInstallPolicy.unversioned).absoluteString
+                == "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md")
+        #expect(ReleaseChannel.file(guide, at: UpdateInstallPolicy.unversioned) == ReleaseChannel.file(guide))
+        // The tag is the one the release's assets are under.
+        #expect(
+            ReleaseChannel.releaseAsset(ReleaseChannel.assetName, of: v080).pathComponents.contains(
+                ReleaseChannel.ref(of: v080)))
+    }
+
+    /// Releases are tagged `vX.Y.Z`, so any other version has no tag and opens `main`: the
+    /// versions the version count leaves out. A release candidate's version looks like a release's.
+    @Test(arguments: [
+        ([0, 8, 0], "v0.8.0"), ([1, 2, 3], "v1.2.3"), ([0, 7, 99], "v0.7.99"), ([0, 0, 1], "v0.0.1"),
+        ([0, 0, 0], "main"), ([0, 8], "main"), ([1], "main"), ([0, 8, 0, 1], "main"), ([0, -1, 0], "main"),
+    ])
+    func theRefOfAVersion(parts: [Int], ref: String) {
+        let version = AppVersion(parts: parts)
+        #expect(ReleaseChannel.ref(of: version) == ref)
+        #expect((VersionCounterPolicy.url(for: version) == nil) == (ref == "main"))
+    }
+
+    /// The anchor form, for a section such as the Widget one: the anchor is appended once, with
+    /// or without its `#`.
+    @Test func anAnchorIsAppendedOnce() throws {
+        let guide = "docs/USER_GUIDE.md"
+        let v080 = AppVersion(parts: [0, 8, 0])
+        let page = "https://github.com/NikitaUsov/BatteryPulse/blob/v0.8.0/docs/USER_GUIDE.md"
+        for anchor in ["widget", "#widget"] {
+            let url = ReleaseChannel.file(guide, at: v080, anchor: anchor)
+            #expect(url.absoluteString == page + "#widget", "\(anchor)")
+            #expect(url.fragment == "widget", "\(anchor)")
+        }
+        for none in [nil, "", "#"] as [String?] {
+            let url = ReleaseChannel.file(guide, at: v080, anchor: none)
+            #expect(url.absoluteString == page, "\(none ?? "nil")")
+        }
+        #expect(
+            ReleaseChannel.file(guide, at: UpdateInstallPolicy.unversioned, anchor: "widget").absoluteString
+                == "https://github.com/NikitaUsov/BatteryPulse/blob/main/docs/USER_GUIDE.md#widget")
+        // A fragment in the path is replaced, not followed by a second one.
+        #expect(ReleaseChannel.file(guide + "#install", at: v080, anchor: "widget").absoluteString == page + "#widget")
+        // What a fragment can't hold is percent-encoded, and the anchor reads back whole.
+        let encoded = ReleaseChannel.file(guide, at: v080, anchor: "a b#c")
+        #expect(encoded.absoluteString.hasPrefix(page + "#"))
+        #expect(encoded.absoluteString.filter { $0 == "#" }.count == 1)
+        #expect(URLComponents(url: encoded, resolvingAgainstBaseURL: false)?.fragment == "a b#c")
+    }
+
     @Test func notesOpenOnlyHTTPSLinks() throws {
         func allowed(_ string: String) throws -> Bool {
             ReleaseNotes.isAllowedLink(try #require(URL(string: string)))
