@@ -7,19 +7,22 @@
 //
 // The copy keeps the file's structure, its format and every value but these, each overwritten with
 // zeros of the same length where they are: `bootSessionUUID` (the boot session's UUID, its hex
-// digits zeroed), every UUID's bytes in the policies' archive (each policy's `token`), and each
-// policy's `owner` (powerd's record of the process that set the limit: a number becomes 0, a string
-// or data zeros of its length). The copy is then decoded by the rules of BatteryPulse's parser
-// (BatteryCore's SystemChargeLimitSource, which `SystemChargeLimitSourceTests` holds this script
-// to), and it must give what the original gives, with none of the original's UUIDs left in it;
-// otherwise no copy is left. The last line printed says what it decodes to, "decodes to 80
-// (manualChargeLimit)" or "decodes to none (noPolicy)": a fixture is named by it,
-// powerd-charging-<n>.plist or powerd-charging-none.plist (Tests/BatteryCoreTests/Fixtures/powerd).
+// digits zeroed); each policy's `token` and `owner` (powerd's record of the process that set the
+// limit), whatever they hold: a UUID's bytes, a number (0), a string or data (zeros of its length);
+// and any other UUID in the policies' archive, as bytes or written out. A token or owner that is
+// nil refers to the archive's null object, which stays. The copy is then decoded by the rules of
+// BatteryPulse's parser (BatteryCore's SystemChargeLimitSource, which
+// `SystemChargeLimitSourceTests` holds this script to), and it must give what the original gives,
+// with none of the original's UUIDs left in it; otherwise no copy is left. The last line printed
+// says what it decodes to, "decodes to 80 (manualChargeLimit)" or "decodes to none (noPolicy)": a
+// fixture is named by it, powerd-charging-<n>.plist or powerd-charging-none.plist
+// (Tests/BatteryCoreTests/Fixtures/powerd).
 //
 // It reads powerd's file, which every user may read, and writes only the copy. It needs macOS:
 // the archive's object references, the mutable property lists it edits in place and the class name
 // its self-test archives under are Darwin Foundation's. Exit status: 0 with the copy written, 1 on a
-// usage error or a file it can't redact, with nothing written.
+// usage error or a file it can't redact, with nothing written; then the last line says why, which
+// the session's step prints after "failed:".
 import Foundation
 
 #if os(macOS)
@@ -212,7 +215,44 @@ func zeroedValue(_ value: Any) -> Any? {
     }
 }
 
-/// The archive with every UUID's bytes and every `owner` zeroed, in its own format.
+/// Whether `text` is a UUID written out, as `bootSessionUUID` is.
+func isUUIDText(_ text: String) -> Bool {
+    UUID(uuidString: text) != nil
+}
+
+/// Zeroes `object`'s value for `key`, a policy's `owner` or `token`, at its length: in place, or in
+/// the object it refers to, a value, a mutable string's text or a UUID's bytes. A key the policy
+/// lacks has nothing to zero, and so has one that refers to the archive's first object, `$null`,
+/// which stands for nil and stays.
+func zeroValue(of key: String, in object: NSMutableDictionary, objects: NSMutableArray) throws {
+    guard let value = object[key] else { return }
+    guard let index = referenceIndex(value) else {
+        guard let zero = zeroedValue(value) else {
+            throw Failure(description: "a policy's \(key) is of a kind the script can't zero: nothing written")
+        }
+        object[key] = zero
+        return
+    }
+    guard index != 0 else { return }
+    guard index > 0, index < objects.count else {
+        throw Failure(description: "a policy's \(key) refers past the archive's objects: nothing written")
+    }
+    if let zero = zeroedValue(objects[index]) {
+        objects[index] = zero
+    } else if let string = objects[index] as? NSMutableDictionary, let text = string["NS.string"],
+        let zero = zeroedValue(text)
+    {
+        // A mutable string, archived as an object of its own.
+        string["NS.string"] = zero
+    } else if let uuid = objects[index] as? NSMutableDictionary, let bytes = uuid["NS.uuidbytes"] as? Data {
+        uuid["NS.uuidbytes"] = Data(count: bytes.count)
+    } else {
+        throw Failure(description: "a policy's \(key) refers to a value the script can't zero: nothing written")
+    }
+}
+
+/// The archive with every UUID zeroed, as bytes or written out, and each policy's `owner` and
+/// `token`, in its own format.
 func redactedArchive(_ archive: Data) throws -> Data {
     var format = PropertyListSerialization.PropertyListFormat.binary
     guard
@@ -225,26 +265,17 @@ func redactedArchive(_ archive: Data) throws -> Data {
         if let bytes = object["NS.uuidbytes"] as? Data {
             object["NS.uuidbytes"] = Data(count: bytes.count)
         }
-        guard let owner = object["owner"] else { continue }
-        if let index = referenceIndex(owner) {
-            guard index >= 0, index < objects.count else {
-                throw Failure(description: "a policy's owner refers past the archive's objects: nothing written")
-            }
-            if let zero = zeroedValue(objects[index]) {
-                objects[index] = zero
-            } else if let string = objects[index] as? NSMutableDictionary, let text = string["NS.string"] {
-                // A mutable string, archived as an object of its own.
-                guard let zero = zeroedValue(text) else {
-                    throw Failure(description: "a policy's owner is of a kind the script can't zero: nothing written")
-                }
-                string["NS.string"] = zero
-            } else {
-                throw Failure(description: "a policy's owner refers to a value the script can't zero: nothing written")
-            }
-        } else if let zero = zeroedValue(owner) {
-            object["owner"] = zero
-        } else {
-            throw Failure(description: "a policy's owner is of a kind the script can't zero: nothing written")
+        try zeroValue(of: "owner", in: object, objects: objects)
+        try zeroValue(of: "token", in: object, objects: objects)
+    }
+    // A UUID written out anywhere else in the archive, as a string or a mutable string's text.
+    for index in 0..<objects.count {
+        if let text = objects[index] as? String, isUUIDText(text) {
+            objects[index] = zeroed(text)
+        } else if let string = objects[index] as? NSMutableDictionary, let text = string["NS.string"] as? String,
+            isUUIDText(text)
+        {
+            string["NS.string"] = zeroed(text)
         }
     }
     return try PropertyListSerialization.data(fromPropertyList: root, format: format, options: 0)
@@ -271,7 +302,17 @@ func redactedFile(_ data: Data) throws -> Data {
     return try PropertyListSerialization.data(fromPropertyList: file, format: format, options: 0)
 }
 
-/// The UUIDs `data`'s file holds: `bootSessionUUID`'s text and every UUID's bytes in its archive.
+/// The objects of `data`'s policies' archive; none without one.
+func archiveObjects(ofFile data: Data) -> [Any] {
+    guard let file = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+        let archive = file["policies"] as? Data,
+        let root = try? PropertyListSerialization.propertyList(from: archive, format: nil) as? [String: Any]
+    else { return [] }
+    return root["$objects"] as? [Any] ?? []
+}
+
+/// The UUIDs `data`'s file holds: `bootSessionUUID`'s text, and in its archive every UUID's bytes,
+/// every UUID written out and a token kept as bytes in its policy.
 func identifiers(inFile data: Data) -> [Data] {
     guard let file = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
         return []
@@ -279,13 +320,12 @@ func identifiers(inFile data: Data) -> [Data] {
     var found: [Data] = []
     if let text = file["bootSessionUUID"] as? String { found.append(Data(text.utf8)) }
     if let bytes = file["bootSessionUUID"] as? Data { found.append(bytes) }
-    if let archive = file["policies"] as? Data,
-        let root = try? PropertyListSerialization.propertyList(from: archive, format: nil) as? [String: Any],
-        let objects = root["$objects"] as? [Any]
-    {
-        for case let object as [String: Any] in objects {
-            if let bytes = object["NS.uuidbytes"] as? Data { found.append(bytes) }
-        }
+    for object in archiveObjects(ofFile: data) {
+        if let text = object as? String, isUUIDText(text) { found.append(Data(text.utf8)) }
+        guard let fields = object as? [String: Any] else { continue }
+        if let bytes = fields["NS.uuidbytes"] as? Data { found.append(bytes) }
+        if let text = fields["NS.string"] as? String, isUUIDText(text) { found.append(Data(text.utf8)) }
+        if let token = fields["token"] as? Data { found.append(token) }
     }
     return found.filter { !$0.allSatisfy { $0 == 0 || $0 == UInt8(ascii: "0") || $0 == UInt8(ascii: "-") } }
 }
@@ -321,16 +361,20 @@ final class ArchivedPolicy: NSObject, NSSecureCoding {
     static var supportsSecureCoding: Bool { true }
 
     let limit: Int
+    /// A process ID, a name, or `NSNull()` for none, which the archive keeps as its null object.
     let owner: Any
     /// Whether the policy's end is archived as a number, which the parser turns down, rather than
     /// the Boolean powerd archives.
     let endsAsNumber: Bool
+    /// Whether the token is archived written out, as a string, rather than as a UUID's bytes.
+    let tokenAsText: Bool
     let token = UUID()
 
-    init(limit: Int, owner: Any, endsAsNumber: Bool = false) {
+    init(limit: Int, owner: Any, endsAsNumber: Bool = false, tokenAsText: Bool = false) {
         self.limit = limit
         self.owner = owner
         self.endsAsNumber = endsAsNumber
+        self.tokenAsText = tokenAsText
     }
 
     init?(coder: NSCoder) { nil }
@@ -349,9 +393,14 @@ final class ArchivedPolicy: NSObject, NSSecureCoding {
         switch owner {
         case let pid as Int: coder.encode(pid, forKey: "owner")
         case let name as String: coder.encode(name as NSString, forKey: "owner")
+        case is NSNull: coder.encode(nil as Any?, forKey: "owner")
         default: break
         }
-        coder.encode(token as NSUUID, forKey: "token")
+        if tokenAsText {
+            coder.encode(token.uuidString as NSString, forKey: "token")
+        } else {
+            coder.encode(token as NSUUID, forKey: "token")
+        }
     }
 }
 
@@ -405,6 +454,21 @@ func selfTest() throws {
         of: syntheticFile(
             [ArchivedPolicy(limit: 80, owner: 1, endsAsNumber: true)], format: .binary, fileFormat: .binary))
     try check(number.outcome == .unknownFormat, "a policy's end as a number is another format")
+    // A token written out and a policy without an owner: the token's text goes, and the archive's
+    // null object, which the owner refers to, stays.
+    let textual = ArchivedPolicy(limit: 85, owner: NSNull(), tokenAsText: true)
+    let withText = try syntheticFile([textual], format: .binary, fileFormat: .binary)
+    let tokenText = Data(textual.token.uuidString.utf8)
+    try check(
+        archiveObjects(ofFile: withText).contains { ($0 as? [String: Any])?["owner"].flatMap(referenceIndex) == 0 },
+        "a policy without an owner refers to the null object")
+    try check(
+        holds(withText, tokenText) && identifiers(inFile: withText).contains(tokenText), "the token's text is found")
+    let (textCopy, textFound) = try sample(of: withText)
+    try check(textFound == .manualChargeLimit(85), "a token written out: a limit of 85 decodes to \(textFound)")
+    try check(!holds(textCopy, tokenText), "the token's text is gone")
+    try check(identifiers(inFile: textCopy).isEmpty, "the copy with a token written out holds no UUID")
+    try check(archiveObjects(ofFile: textCopy).first as? String == "$null", "the null object stays")
     // A file the script can't read is refused, and the outcome printed names its last line.
     try check(
         (try? sample(of: Data("not a property list".utf8))) == nil, "a file that isn't a property list is refused")
@@ -432,10 +496,11 @@ do {
     print("wrote \(arguments[1]), \(copy.count) bytes, from a file of \(original.count)")
     print("decodes to \(found)")
 } catch {
-    print("failed: \(error)")
+    // Why nothing was written, on the last line: the session's step prints it after "failed:".
+    print("\(error)")
     exit(1)
 }
 #else
-print("failed: the sample script needs macOS")
+print("the sample script needs macOS: nothing written")
 exit(1)
 #endif
