@@ -2,8 +2,9 @@ import Foundation
 
 /// macOS's Charge Limit, which the user sets in System Settings → Battery → Charging (Apple silicon,
 /// macOS 26.4 or later): macOS stops charging at the limit and holds the charge there. BatteryPulse
-/// only reads that the limit holds the charge; it never sets a limit, and it can't read which limit
-/// is set, because no IOKit or IOPS key holds the number.
+/// reads that the limit holds the charge from bit 24 here, and which limit is set, a number no
+/// IOKit or IOPS key holds, from powerd's charging preferences on the adapter
+/// (``SystemChargeLimitSource``). It never sets a limit.
 ///
 /// Named apart from the app's own notification threshold (``AlertSettings/chargeLimit``, "When
 /// charged to"), which only notifies and never stops charging.
@@ -28,5 +29,31 @@ extension BatterySnapshot {
     /// own for the hold, since History and `bpulse --json` store the five there are.
     public var isAtSystemChargeLimit: Bool {
         notChargingCause == .systemChargeLimit
+    }
+}
+
+/// What the Charge limit row shows, on Power and in the Battery widget's Charge limit field,
+/// decided once for both so they can't drift apart: the limit's number on the adapter, and that it
+/// is reached while it holds the charge. Never the charge itself, which sits within a few points
+/// of the limit at the hold (macOS resumes charging only after a drop of more than 5 %).
+public enum SystemChargeLimitRow: Sendable, Equatable {
+    /// "80%": the limit set, on the adapter, not holding the charge.
+    case limit(Int)
+    /// "80%, reached": the limit holds the charge.
+    case reached(Int)
+    /// "Reached": the limit holds the charge, its number unknown, as 0.7 showed it.
+    case reachedUnknown
+
+    /// The row for `snapshot` with the limit `percent`: the snapshot's own in the app
+    /// (``BatterySnapshot/systemChargeLimitPercent``), the feed's in the widget. `nil` hides it: on
+    /// battery, and on the adapter with neither a number nor the hold.
+    public init?(_ snapshot: BatterySnapshot, percent: Int?) {
+        if snapshot.isAtSystemChargeLimit {
+            self = percent.map(Self.reached) ?? .reachedUnknown
+        } else if snapshot.isExternalPowerConnected == true, let percent {
+            self = .limit(percent)
+        } else {
+            return nil
+        }
     }
 }

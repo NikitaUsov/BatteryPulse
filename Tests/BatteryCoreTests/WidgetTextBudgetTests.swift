@@ -80,7 +80,13 @@ struct WidgetTextBudgetTests {
         case .remainingCapacity: [f.milliampHours(9_999)]
         case .cellBalance: [f.millivolts(999)]
         case .voltage: [f.volts(millivolts: 13_050)]
-        case .systemChargeLimit: try words(["Reached"])
+        // The limit's widest, 100% (Apple's range is 80 to 100), alone on the adapter and reached at
+        // the hold; the hold without the number.
+        case .systemChargeLimit:
+            try words(["Reached"]) + [f.percent(100)]
+                + [text("%@, reached", language)].compactMap {
+                    $0?.replacingOccurrences(of: "%@", with: f.percent(100))
+                }
         case .averageDrain: try perHour(f.percent(99.9, fractionDigits: 1), language)
         // The system's own text, one field in a line's place (hours, or minutes under an hour).
         case .timeOnBattery:

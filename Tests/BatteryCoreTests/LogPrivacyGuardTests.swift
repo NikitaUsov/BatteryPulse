@@ -150,6 +150,13 @@ import Testing
             PublicValue(
                 "reason", reason: "an IOKit status, a reply's size or an SMC result, each a number in static text"),
         ],
+        "BatterySource/SystemChargeLimitReader.swift": [
+            PublicValue(
+                "trigger.rawValue", reason: "a SystemChargeLimitReadPolicy.Trigger case name, such as pluggedIn"),
+            PublicValue(
+                "outcome.summary",
+                reason: "a SystemChargeLimitSource.Outcome case name and the limit in percent, such as noPolicy"),
+        ],
         "BatterySource/SystemNotifications.swift": [
             PublicValue(
                 "name", overridesName: true,

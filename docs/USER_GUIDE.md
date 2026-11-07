@@ -78,8 +78,9 @@ folder beside it. While **Read iPhone and iPad batteries** is on, it also holds 
 readings of up to 8 iPhones and iPads BatteryPulse remembers (the charge, what the battery was
 doing, maximum capacity, cycle count, temperature, the model and when each was read), as the Devices
 folder beside it does: each device is known by the same key made from its identifier and a secret of
-this Mac, never by its identifier or serial number. It also holds BatteryPulse's language and
-whether history recording and iPhone and iPad reads are on. It never holds Demo Mode's readings or
+this Mac, never by its identifier or serial number. It also holds BatteryPulse's language,
+whether history recording and iPhone and iPad reads are on, and, while BatteryPulse knows it, the
+Charge Limit's percentage you set in System Settings. It never holds Demo Mode's readings or
 an accessory. When macOS lists the BatteryPulse widgets you have placed, it holds only what they can
 show: the devices only while an iPhone and iPad widget is placed, the history only while a History
 or a Battery widget is; when macOS lists none, as it does when you have placed none, it holds all
@@ -146,11 +147,11 @@ accessories (see [Accessories](#accessories)).
   On the adapter it also says why the battery isn't charging, when it can; see
   [Why it isn't charging](#why-it-isnt-charging).
 - **Power** — battery voltage, current, power and temperature, and while charging the current
-  and voltage the battery asks the charger for; *Charge limit: Reached* while the Charge Limit
-  holds the charge (no percentage: macOS holds the charge within a few points of the limit, so
-  the charge there would read as the limit); the power adapter (name, rated power, negotiated voltage and
-  current) and every USB Power Delivery voltage it offers; power from the adapter, system load,
-  adapter loss, Low Power Mode and thermal state.
+  and voltage the battery asks the charger for; on the adapter, the **Charge limit** you set in
+  System Settings → Battery, such as *80%*, or *80%, reached* while it holds the charge (see
+  [Why it isn't charging](#why-it-isnt-charging)); the power adapter (name, rated power,
+  negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
+  adapter, system load, adapter loss, Low Power Mode and thermal state.
 - **History** — charge, power and temperature over time; see [History](#history).
 - **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
@@ -193,9 +194,9 @@ only when the battery reports it:
 
 - **The Charge Limit** you set in System Settings → Battery (Apple silicon, macOS 26.4 or later):
   once it has stopped charging, the battery reads *Charged to limit*, and a line under it says
-  that charging stopped at the Charge Limit, with **Battery Settings…**, which opens that pane.
-  BatteryPulse only reads that the limit holds the charge: it can't read which percentage you
-  set, and it never changes the limit.
+  that charging stopped at the Charge Limit and at which percentage (*Charging stopped at the
+  Charge Limit, 80%, set in System Settings → Battery.*), with **Battery Settings…**, which opens
+  that pane. BatteryPulse never changes the limit.
 - **No reason reported:** the battery reads *Not charging*, and the info button beside it lists
   the reasons macOS can stop charging on the adapter, from Apple's guide: a battery health
   feature such as the Charge Limit or Optimized Battery Charging, a battery warmer than
@@ -206,7 +207,18 @@ Optimized Battery Charging's own hold reads *Charging on hold*. The menu bar pop
 same line with a **Battery Settings…** link, and the list as the help tag of the info symbol
 beside *Not charging*; the compact window shows the state alone. The text report (**Copy
 Report**, `bpulse`) names the reason after the raw value of `NotChargingReason`, for example
-`0x1000000 (Charge Limit)`.
+`0x1000000 (Charge Limit)`, and the limit's percentage on a *Charge limit* line when it is known.
+
+**The Charge Limit's percentage** comes from macOS's charging preferences, which BatteryPulse
+reads and never writes. macOS keeps the limit there only while the Mac is on its adapter, so on
+battery the percentage isn't known: Power leaves the row out, and BatteryPulse never shows a
+limit from before you unplugged. On the adapter BatteryPulse reads it when it opens, when you plug
+in, when the limit starts or stops holding the charge and when you open Power, not on every
+refresh; a limit you change while the Mac charges toward it shows once one of those happens. With
+the limit at 100 % there is none to show. That file isn't documented, so if a macOS update
+changes it, BatteryPulse shows no percentage rather than a wrong one: Power reads *Reached* while
+the limit holds the charge, and the line *Charging stopped at the Charge Limit set in System
+Settings → Battery.*, as before 0.8.
 
 ### Motion and Liquid Glass
 
@@ -532,7 +544,10 @@ its look until you change something here. The Battery widget offers:
   to full or empty, the condition, the power from the adapter, cycle life used, cell balance, the
   voltage, the Charge Limit, and two from BatteryPulse's history: **Average drain** over the last
   24 hours on battery, and **Time on battery** since the Mac was last unplugged, which counts up by
-  the minute on its own and shows *—* on the adapter.
+  the minute on its own and shows *—* on the adapter. **Charge limit** (*Limit* in the small
+  widget) reads as on Power, *80%* on the adapter and *80%, reached* while the limit holds the
+  charge, when BatteryPulse has written the percentage for the widget in the last two hours; without
+  it, *Reached* while the limit holds the charge, and nothing otherwise.
 - **Main value:** the charge, maximum capacity, temperature or battery power. Battery power can be
   up to half an hour old in a widget, so it always comes with the time it was read.
 - **Main visual:** the number with the level symbol, a ring, or a drawn battery like the menu
@@ -597,11 +612,12 @@ opens Overview.
 
 The Battery and Accessories widgets read the battery and the accessories themselves, so they keep
 working while BatteryPulse isn't running. The History and iPhone and iPad widgets, and the
-Battery widget's History chart and its Average drain and Time on battery details, show what
-BatteryPulse last wrote for them (see [Privacy](#privacy)): BatteryPulse writes it about every 15
-minutes while it runs, and at once when you plug in or unplug, when a device's new reading changes
-what the widget shows, and when you clear the history, forget a device or turn recording or
-reading devices on or off. So they show nothing newer while BatteryPulse is quit.
+Battery widget's History chart and its Average drain, Time on battery and Charge limit details,
+show what BatteryPulse last wrote for them (see [Privacy](#privacy)): BatteryPulse writes it about
+every 15 minutes while it runs, and at once when you plug in or unplug, when it reads a new Charge
+Limit percentage, when a device's new reading changes what the widget shows, and when you clear the
+history, forget a device or turn recording or reading devices on or off. So they show nothing newer
+while BatteryPulse is quit.
 
 macOS limits how often widgets refresh, so they may lag behind: by up to half an hour while
 BatteryPulse isn't running. While it runs, BatteryPulse asks macOS to refresh only the kinds of
@@ -610,8 +626,9 @@ widget you have placed:
 - **Battery:** right away when you plug in or unplug, when the battery's state changes, and once
   macOS has its first estimate; at most every 5 minutes when Low Power Mode turns on or off, the
   adapter changes, the battery's condition changes, the Mac starts running hot (or has cooled
-  down again), or the Charge Limit starts or stops holding the charge; and at most every quarter
-  of an hour while the charge, the estimate or the temperature moves.
+  down again), the Charge Limit starts or stops holding the charge, or BatteryPulse reads a new
+  percentage for it; and at most every quarter of an hour while the charge, the estimate or the
+  temperature moves.
 - **Accessories:** right away when an accessory connects or disconnects, and at most every
   quarter of an hour while a charge moves.
 - **History:** when you plug in or unplug, at most once an hour; it also refreshes itself every
@@ -800,7 +817,9 @@ line), and `bpulse --device <n> --json` the battery of an iPhone or iPad. Each o
 (`currentCapacityMAh`, `voltageMV`, `systemLoadMW`), the current is negative while discharging,
 dates are ISO 8601 strings in UTC (`"2025-10-02T00:00:00Z"`), and a value that isn't reported is
 left out rather than written as `null`; a list that isn't reported, such as `cellVoltagesMV`,
-is empty. **Copy JSON** in Raw Data copies the object of `bpulse --json`, serial numbers removed.
+is empty. On the adapter, `systemChargeLimitPercent` is the Charge Limit's percentage when
+`bpulse` could read it (see [Why it isn't charging](#why-it-isnt-charging)). **Copy JSON** in Raw
+Data copies the object of `bpulse --json`, serial numbers removed.
 
 Keys are only ever added. If a key is renamed or removed, or its meaning changes,
 `formatVersion` goes up and the release notes say so; scripts should ignore the keys they don't

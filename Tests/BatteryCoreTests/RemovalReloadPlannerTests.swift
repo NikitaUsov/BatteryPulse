@@ -58,7 +58,7 @@ struct RemovalReloadPlannerTests {
         #expect(Reason.historyCleared.removes(recordsHistory: true) == [.history])
         #expect(Reason.recording.removes(recordsHistory: false) == [.history])
         #expect(Reason.recording.removes(recordsHistory: true) == [])
-        for reason in [Reason.step, .devices, .plug, .demoEnded, .language] {
+        for reason in [Reason.step, .devices, .plug, .demoEnded, .systemChargeLimit, .language] {
             #expect(reason.removes(recordsHistory: false) == [], "\(reason)")
         }
     }

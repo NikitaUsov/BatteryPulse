@@ -185,6 +185,23 @@ struct WidgetPreviewTests {
         "custom-charge-limit", "Custom: the Charge limit detail", .systemChargeLimit,
         BatteryWidgetConfiguration(
             layout: .custom, details: [.systemChargeLimit, .adapter, .systemLoad, .maximumCapacity]))
+    // 0.8 (A-2): the limit's number from the app's feed, 80: "80%, reached" at the hold, and "80%"
+    // while charging toward it.
+    static let customSystemChargeLimitNumber = withChargeLimit(
+        scene(
+            "custom-charge-limit-number", "Custom: the Charge limit with its number", .systemChargeLimit,
+            customSystemChargeLimit.configuration))
+    static let customSystemChargeLimitCharging = withChargeLimit(
+        scene(
+            "custom-charge-limit-charging", "Custom: the Charge limit while charging", .charging,
+            customSystemChargeLimit.configuration))
+
+    /// `scene` with the app's feed holding the Charge Limit's number, 80.
+    static func withChargeLimit(_ scene: Scene) -> Scene {
+        var scene = scene
+        scene.feed?.systemChargeLimitPercent = 80
+        return scene
+    }
     // The attention row: a condition other than Normal, and heat.
     static let serviced = scene("automatic-service-recommended", "Service Recommended", .wornBattery)
     static let hot = scene("automatic-heat", "High heat", .heavyLoad)
@@ -261,7 +278,8 @@ struct WidgetPreviewTests {
     }
 
     static let scenes: [Scene] = [
-        onBattery, charging, low, critical, full, onHold, chargedToLimit, customSystemChargeLimit, old, serviced, hot,
+        onBattery, charging, low, critical, full, onHold, chargedToLimit, customSystemChargeLimit,
+        customSystemChargeLimitNumber, customSystemChargeLimitCharging, old, serviced, hot,
         ring, ringCharging, ringLow, ringHealth, drawn, drawnCharging, drawnLow, drawnFull,
         health, temperature, power, monochromeLow, monochromeCritical, monochromeServiced, timeLeft,
         timeLeftCharging, customPower, customHealth, customMonochrome, customTime, customEvery, customEmpty,
@@ -518,12 +536,15 @@ struct WidgetPreviewTests {
 
     /// The second look's sheet (plan-0.7.0 §6.1b): small and medium Automatic at the Charge Limit
     /// beside 0.6.1's widget, which said "Not charging", large, and Custom with the "Charge limit"
-    /// detail in each declared family.
+    /// detail in each declared family; then 0.8's number in the same detail (plan-0.8.0 A-2, the
+    /// look review's question 3), at the hold in each family and while charging toward it.
     static func systemChargeLimitRows(_ l: Language) -> [[Picture]] {
         [
             [WidgetSize.small, .medium].flatMap { pair(chargedToLimit, $0, l) },
             [picture(chargedToLimit, .large, l), picture(customSystemChargeLimit, .medium, l)],
             [picture(customSystemChargeLimit, .small, l), picture(customSystemChargeLimit, .large, l)],
+            [picture(customSystemChargeLimitNumber, .small, l), picture(customSystemChargeLimitNumber, .medium, l)],
+            [picture(customSystemChargeLimitNumber, .large, l), picture(customSystemChargeLimitCharging, .medium, l)],
         ]
     }
 

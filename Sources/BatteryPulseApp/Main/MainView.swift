@@ -296,6 +296,11 @@ struct MainView: View {
             monitor.setShowsSlowValues(shows, for: "main")
         }
         .onDisappear { monitor.setShowsSlowValues(false, for: "main") }
+        // Power shows the Charge Limit's number: each time it can be seen, the next reading, one of
+        // its polls, reads the number again from powerd's file.
+        .onChange(of: selection == .power && motion.isVisible, initial: true) { _, shows in
+            if shows { monitor.powerAppeared() }
+        }
         .trackedWindow(WindowID.main)
     }
 

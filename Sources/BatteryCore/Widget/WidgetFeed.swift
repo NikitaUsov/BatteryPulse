@@ -13,8 +13,9 @@ import Foundation
 /// and plugged-in state in steps; the last 24 hours' and 7 days' figures; the start of the run on
 /// battery; up to 90 days of capacity and cycle count; up to 8 remembered iPhones and iPads by their
 /// `DeviceKey`, never a UDID, ECID or serial; BatteryPulse's language list; and whether recording
-/// and device reads are on, so a widget can tell "off" from "none". Never Demo Mode's data and
-/// never an accessory.
+/// and device reads are on, so a widget can tell "off" from "none". Besides those, the Charge
+/// Limit's number while the app knows it, a macOS setting the widget's sandbox can't read
+/// (``systemChargeLimitPercent``). Never Demo Mode's data and never an accessory.
 public struct WidgetFeed: Sendable, Equatable, Codable {
     /// The version this build writes and reads.
     public static let currentVersion = 1
@@ -66,11 +67,17 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
     /// The remembered iPhones and iPads, the most recently read first; `nil` without the devices
     /// section.
     public var devices: [Device]?
+    /// macOS's Charge Limit, as the app read it from powerd's charging preferences on the adapter
+    /// (``BatterySnapshot/systemChargeLimitPercent``), for the Battery widget's Charge limit field;
+    /// `nil` while unknown, on battery and before 0.8, which wrote no such field. Written at the
+    /// feed's writes whatever the sections, never from Demo Mode.
+    public var systemChargeLimitPercent: Int?
 
     public init(
         version: Int = Self.currentVersion, writtenAt: Date, languages: [String], recordsHistory: Bool,
         readsDevices: Bool, day: Series? = nil, week: Series? = nil, statistics24h: Statistics? = nil,
-        statistics7d: Statistics? = nil, onBatterySince: Date? = nil, daily: Daily? = nil, devices: [Device]? = nil
+        statistics7d: Statistics? = nil, onBatterySince: Date? = nil, daily: Daily? = nil, devices: [Device]? = nil,
+        systemChargeLimitPercent: Int? = nil
     ) {
         self.version = version
         self.writtenAt = writtenAt
@@ -84,6 +91,7 @@ public struct WidgetFeed: Sendable, Equatable, Codable {
         self.onBatterySince = onBatterySince
         self.daily = daily
         self.devices = devices
+        self.systemChargeLimitPercent = systemChargeLimitPercent
     }
 
     /// Readings in steps of equal length, oldest first, as parallel arrays of one length; a step
@@ -326,6 +334,10 @@ extension WidgetFeed {
         case plug
         /// Demo Mode ended: what it kept from being written is written now.
         case demoEnded
+        /// The Charge Limit's number changed on the adapter (a limit set, changed or turned off,
+        /// read at the hold's start or end or when Power appeared): the Battery widget's Charge limit
+        /// field shows it from the feed, so it is written before that kind reloads.
+        case systemChargeLimit
         /// A launch in another language than the last one: the widgets take BatteryPulse's
         /// language from the feed (``WidgetLanguage``), so it is written before they reload
         /// (``WidgetReloadPlanner/LaunchReason/steps``).
@@ -343,7 +355,7 @@ extension WidgetFeed {
             switch self {
             case .historyCleared: [.history]
             case .recording: recordsHistory ? [] : [.history]
-            case .step, .devices, .plug, .demoEnded, .language: []
+            case .step, .devices, .plug, .demoEnded, .systemChargeLimit, .language: []
             }
         }
 
@@ -354,7 +366,7 @@ extension WidgetFeed {
         public var removesInDemoMode: Bool {
             switch self {
             case .historyCleared, .recording, .devices: true
-            case .step, .plug, .demoEnded, .language: false
+            case .step, .plug, .demoEnded, .systemChargeLimit, .language: false
             }
         }
 
@@ -367,6 +379,7 @@ extension WidgetFeed {
             case .devices: "devices"
             case .plug: "plug"
             case .demoEnded: "demoEnded"
+            case .systemChargeLimit: "systemChargeLimit"
             case .language: "language"
             }
         }
@@ -526,7 +539,8 @@ extension WidgetFeed {
     /// - Recording off drops the history section; device reads off drop the devices; a device no
     ///   longer remembered goes.
     /// - A setting turned on stays off in the feed, and `writtenAt` stays, so the widgets age the
-    ///   rest as before: the end of Demo Mode writes the feed in full.
+    ///   rest as before: the end of Demo Mode writes the feed in full. The Charge Limit's number
+    ///   stays as the last real write left it.
     public func removing(_ removal: Removal) -> WidgetFeed {
         var feed = self
         feed.recordsHistory = recordsHistory && removal.recordsHistory
@@ -582,12 +596,14 @@ extension WidgetFeed {
         public var modelNames: [String: String]
         /// The time zone of the daily summaries' local days.
         public var timeZone: TimeZone
+        /// The Charge Limit's number, as the app's battery reading carries it.
+        public var systemChargeLimitPercent: Int?
 
         public init(
             now: Date, isOverridden: Bool = false, languages: [String], recordsHistory: Bool, readsDevices: Bool,
             sections: Set<Section>, samples: [HistorySample] = [], days: [HistoryDay] = [],
             current: HistorySample? = nil, devices: [RememberedDevice] = [], modelNames: [String: String] = [:],
-            timeZone: TimeZone = .current
+            timeZone: TimeZone = .current, systemChargeLimitPercent: Int? = nil
         ) {
             self.now = now
             self.isOverridden = isOverridden
@@ -601,6 +617,7 @@ extension WidgetFeed {
             self.devices = devices
             self.modelNames = modelNames
             self.timeZone = timeZone
+            self.systemChargeLimitPercent = systemChargeLimitPercent
         }
 
         /// Whether the feed holds the history: recording is on and a placed kind shows it.
@@ -621,7 +638,8 @@ extension WidgetFeed {
         guard !source.isOverridden else { return nil }
         var feed = WidgetFeed(
             writtenAt: wholeSeconds(source.now), languages: sanitizedLanguages(source.languages),
-            recordsHistory: source.recordsHistory, readsDevices: source.readsDevices)
+            recordsHistory: source.recordsHistory, readsDevices: source.readsDevices,
+            systemChargeLimitPercent: within(source.systemChargeLimitPercent, Bounds.systemChargeLimit))
         if source.includesHistory {
             let samples = source.samples.filter { $0.time.timeIntervalSince1970.isFinite && $0.time <= source.now }
             feed.day = series(.day, from: samples, at: source.now)
@@ -784,6 +802,8 @@ extension WidgetFeed {
         /// A week, in seconds.
         static let timeOnBattery = 0...(7 * 24 * 60 * 60)
         static let sessions = 0...9_999
+        /// The limits System Settings offers.
+        static let systemChargeLimit = SystemChargeLimitSource.range
     }
 
     /// `value × scale`, rounded, if it lies in `range`; `nil` for a value that isn't finite or is
@@ -947,6 +967,7 @@ extension WidgetFeed {
     func sanitized() -> WidgetFeed {
         var feed = self
         feed.languages = Self.sanitizedLanguages(languages)
+        feed.systemChargeLimitPercent = Self.within(systemChargeLimitPercent, Bounds.systemChargeLimit)
         feed.day = day?.bounded()
         feed.week = week?.bounded()
         feed.statistics24h = statistics24h?.bounded()

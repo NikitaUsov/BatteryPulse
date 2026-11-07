@@ -168,7 +168,8 @@ extension WidgetRow {
         switch value {
         case .time(let time): time.spokenLabel
         case .since(let date): .counting(label: field.labelKey, since: date)
-        case .text, .state, .condition, .onOff, .reached, .perHour: .phrases([.key(field.labelKey)] + value.phrases)
+        case .text, .state, .condition, .onOff, .reached, .limitReached, .perHour:
+            .phrases([.key(field.labelKey)] + value.phrases)
         }
     }
 }
@@ -183,6 +184,7 @@ extension WidgetValue {
         case .condition(let condition): [condition.phrase]
         case .onOff(let on): [.key(on ? "On" : "Off")]
         case .reached: [.key("Reached")]
+        case .limitReached(let text): [.key("%@, reached", [.verbatim(text)])]
         case .perHour(let text): [.key("%@ per hour", [.verbatim(text)])]
         case .time, .since: []
         }
@@ -291,8 +293,8 @@ extension BatteryWidgetField {
         case .cellBalance: "Balance"
         case .averageDrain: "Drain"
         case .timeOnBattery: "Unplugged"
-        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
-            nil
+        case .systemChargeLimit: "Limit"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage: nil
         }
     }
 }
@@ -319,17 +321,17 @@ extension BatteryWidgetField {
         if russian && self == .state { return .none }
         let short: Set<BatteryWidgetField> =
             switch (russian, size) {
-            case (false, .small): [.adapterInput, .remainingCapacity, .averageDrain]
+            case (false, .small): [.adapterInput, .remainingCapacity, .averageDrain, .systemChargeLimit]
             case (false, _): [.remainingCapacity, .averageDrain]
             case (true, .small):
                 [
                     .maximumCapacity, .batteryPower, .adapterInput, .lowPowerMode, .remainingCapacity, .cycleLifeUsed,
-                    .cellBalance, .averageDrain, .timeOnBattery,
+                    .cellBalance, .averageDrain, .timeOnBattery, .systemChargeLimit,
                 ]
             case (true, _):
                 [
                     .maximumCapacity, .batteryPower, .adapterInput, .lowPowerMode, .remainingCapacity, .cycleLifeUsed,
-                    .averageDrain, .timeOnBattery,
+                    .averageDrain, .timeOnBattery, .systemChargeLimit,
                 ]
             }
         return short.contains(self) ? .short : .full

@@ -77,9 +77,16 @@ public struct WidgetRow: Sendable, Equatable {
             guard let voltage = s.voltageMV else { return nil }
             value = .text(f.volts(millivolts: voltage))
         case .systemChargeLimit:
-            // The limit itself is in no key BatteryPulse reads, so the row shows only that it holds.
-            guard s.isAtSystemChargeLimit else { return nil }
-            value = .reached
+            // As Power's row: the number from the app's feed (powerd's file, which the sandbox
+            // can't read) while the feed is current at this reading, the hold from the reading.
+            let limit = feed.flatMap { $0.isOutdated(at: s.timestamp) ? nil : $0.systemChargeLimitPercent }
+            guard let row = SystemChargeLimitRow(s, percent: limit) else { return nil }
+            value =
+                switch row {
+                case .limit(let percent): .text(f.percent(Double(percent)))
+                case .reached(let percent): .limitReached(f.percent(Double(percent)))
+                case .reachedUnknown: .reached
+                }
         case .averageDrain:
             value = .averageDrain(feed?.statistics24h?.averageDrainPercentPerHour, f)
         case .timeOnBattery:
@@ -103,8 +110,10 @@ public enum WidgetValue: Sendable, Equatable {
     /// "On" or "Off".
     case onOff(Bool)
     case time(WidgetTimeText)
-    /// "Reached": the Charge Limit holds the charge.
+    /// "Reached": the Charge Limit holds the charge, its number unknown.
     case reached
+    /// "%@, reached", the limit pre-formatted: the Charge Limit holds the charge at it.
+    case limitReached(String)
     /// "%@ per hour", the value pre-formatted: the average drain.
     case perHour(String)
     /// The time since a moment, which the system counts up between reloads with the widget's one
@@ -118,7 +127,8 @@ public enum WidgetStateWord: Sendable, Equatable, CaseIterable {
     case charging, onBattery, fullyCharged, chargingOnHold
     /// "Charged to limit": macOS's Charge Limit holds the charge
     /// (``BatterySnapshot/isAtSystemChargeLimit``). Apple's battery menu says "Charged to 80%
-    /// Limit"; the number is in no key BatteryPulse reads, so the words leave it out.
+    /// Limit"; the words leave the number out, since the reading alone doesn't have it: the Charge
+    /// limit field and Power show it when BatteryPulse knows it.
     case chargedToLimit
     case notCharging, unknown
 

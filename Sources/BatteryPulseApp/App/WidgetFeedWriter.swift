@@ -20,9 +20,10 @@ enum AppWidgetFeed {
 /// - **Routine:** at the history recorder's minute tick, which runs whether or not recording is on,
 ///   once per 15-minute step, changed or not, so `writtenAt` keeps saying that BatteryPulse runs.
 /// - **At once:** Clear History and the recording toggle (Settings → Advanced calls it), a device
-///   read, forgotten or reads turned on or off, a plug change and Demo Mode's end
-///   (``WidgetRefresher`` follows them), and a launch in another language, before the widgets
-///   reload (``writeAndWait(_:)``): they take BatteryPulse's language from the feed.
+///   read, forgotten or reads turned on or off, a plug change, a new Charge Limit number on the
+///   adapter and Demo Mode's end (``WidgetRefresher`` follows them), and a launch in another
+///   language, before the widgets reload (``writeAndWait(_:)``): they take BatteryPulse's language
+///   from the feed.
 /// - **Never** in Demo Mode, whose readings never reach the widgets, but for what the user removes
 ///   meanwhile: Clear History, recording off, device reads off and Forget take their part out of
 ///   the feed last written at once, from the real settings and devices, and add nothing
@@ -178,7 +179,7 @@ final class WidgetFeedWriter {
             now: now, languages: Bundle.main.preferredLocalizations, recordsHistory: recordsHistory,
             readsDevices: readsDevices, sections: sections,
             current: snapshot.map { HistorySample($0, at: now) },
-            devices: devices, modelNames: modelNames)
+            devices: devices, modelNames: modelNames, systemChargeLimitPercent: snapshot?.systemChargeLimitPercent)
         let built: WidgetFeed?
         do {
             built = try await FeedBuild.make(source, history: history)
