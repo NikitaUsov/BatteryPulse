@@ -4764,6 +4764,18 @@
         }
       }
     },
+    "Maximum capacity below %@": {
+      "extractionState": "manual",
+      "comment": "Clear's warning badge on Health and Overview when only the maximum capacity warns: it is below the placeholder (80%) while macOS reports the battery's condition as Normal. A fact, never macOS's \"Service Recommended\"",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная ёмкость ниже %@"
+          }
+        }
+      }
+    },
     "Maximum current the adapter offers at this profile's voltage.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",

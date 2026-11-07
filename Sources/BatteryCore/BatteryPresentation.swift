@@ -67,8 +67,13 @@ public enum BatteryPresentation {
         default: break
         }
         guard let health = s.healthPercent else { return .normal }
-        return health < 80 ? .low : .normal
+        return health < capacityWarningPercent ? .low : .normal
     }
+
+    /// A Mac's maximum capacity below this warns by itself, whatever condition macOS reports: its
+    /// tier is low (``healthTier(for:)``), and Clear's badge says the capacity is below it
+    /// (``HealthSummary``) in place of a condition macOS didn't report.
+    public static let capacityWarningPercent = 80.0
 
     /// Colour tier for an iPhone's or iPad's maximum capacity: a gauge error or a latched
     /// permanent failure, then the capacity (iOS recommends service below 80 %).

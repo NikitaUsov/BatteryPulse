@@ -8,7 +8,8 @@ import Testing
 /// maintained by hand. This test finds the localized literals in `Sources/BatteryPulseApp` and
 /// `Sources/BatteryPulseWidget` (whose bundle gets the same compiled catalog) and checks that each has a Russian translation with matching placeholders, and that the catalog
 /// has no leftovers. The Developer section's ``RawKeyGlossary`` summaries are looked up by their
-/// English text at run time, so they count as UI strings too. Conventions it relies on (see
+/// English text at run time, and so are the keys of Health's summary (``HealthSummary``), so they
+/// count as UI strings too. Conventions it relies on (see
 /// `Localized.swift`): interpolations are always pre-formatted Strings, so every placeholder is
 /// `%@`.
 @Suite struct LocalizationCatalogTests {
@@ -86,7 +87,7 @@ import Testing
 
     /// The localized literals of the app and the widget, from ``SourceScanner``'s files.
     private static func scanSourceKeys() throws -> Set<String> {
-        var keys = RawKeyGlossary.summaries
+        var keys = RawKeyGlossary.summaries.union(HealthSummary.catalogKeys)
         for file in try SourceScanner.files.get() {
             for literal in localizedLiterals(in: file.text) where !verbatim.contains(literal) {
                 keys.insert(catalogKey(for: literal))
