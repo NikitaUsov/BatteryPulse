@@ -58,8 +58,8 @@ public enum BatteryPresentation {
         return percent > 10 ? .low : .critical
     }
 
-    /// Colour tier for maximum capacity: the condition macOS reports, then the capacity itself
-    /// (macOS recommends service below 80 %).
+    /// Colour tier for maximum capacity: the condition macOS reports, then the capacity itself,
+    /// below ``capacityWarningPercent``, which macOS may still call Normal.
     public static func healthTier(for s: BatterySnapshot) -> LevelTier {
         switch s.healthCondition {
         case "Poor", "Check Battery", "Permanent Battery Failure": return .critical
@@ -71,7 +71,7 @@ public enum BatteryPresentation {
     }
 
     /// A Mac's maximum capacity below this warns by itself, whatever condition macOS reports: its
-    /// tier is low (``healthTier(for:)``), and Clear's badge says the capacity is below it
+    /// tier is at least low (``healthTier(for:)``), and Clear's badge says the capacity is below it
     /// (``HealthSummary``) in place of a condition macOS didn't report.
     public static let capacityWarningPercent = 80.0
 
