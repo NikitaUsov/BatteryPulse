@@ -153,7 +153,8 @@ accessories (see [Accessories](#accessories)).
   negotiated voltage and current) and every USB Power Delivery voltage it offers; power from the
   adapter, system load, adapter loss, Low Power Mode and thermal state.
 - **History** — charge, power and temperature over time; see [History](#history).
-- **Health** — maximum capacity, condition, cycle count and how much of the rated cycle life is
+- **Health** — first what macOS reports of the battery: its condition, maximum capacity and
+  cycle count (see [Battery health](#battery-health)); then how much of the rated cycle life is
   used; design, nominal, full-charge and remaining capacity; and the voltage of each cell with
   the spread between them.
 - **Devices** — your iPhones and iPads, one page each (see [iPhone and iPad](#iphone-and-ipad)),
@@ -220,6 +221,25 @@ changes it, BatteryPulse shows no percentage rather than a wrong one: Power read
 the limit holds the charge, and the line *Charging stopped at the Charge Limit set in System
 Settings → Battery.*, as before 0.8.
 
+### Battery health
+
+The top of **Health** says whether the battery is OK with what macOS reports of it, label beside
+value, as System Settings → Battery shows it, and with no grade of BatteryPulse's own:
+
+- **Condition** is macOS's word for the battery. macOS names one only when something is wrong,
+  so without one it reads *Normal*; otherwise it is macOS's own, such as *Service Recommended*.
+- **Maximum capacity** is the battery's capacity against its design capacity, capped at 100% as
+  System Settings caps it; when a new battery holds more, the **Battery Health** section below
+  says how much.
+- **Cycle count** is out of the rated cycle life the battery reports, for example *52 of 1,000*.
+
+*Service Recommended* is macOS's own judgement of the battery, and BatteryPulse shows it only
+when macOS reports it. The Maximum capacity rings on Overview and Health turn orange for it, red
+for a condition such as *Check Battery*, and orange too when the maximum capacity is under 80%
+while macOS still says *Normal*: a fact on its own, not a judgement. The Clear window style has
+no orange or red, so a badge under the ring says why instead: the condition macOS reports, or
+*Maximum capacity below 80%* when only the capacity is low.
+
 ### Motion and Liquid Glass
 
 Numbers roll to their new value, the battery and the rings fill, and the bolt draws in when
@@ -242,7 +262,7 @@ you chose Translucent or Clear in 0.6.0, Beta window styles is already on and yo
 | **Standard** | An opaque window with cards, as in earlier versions. The default. |
 | **Frosted** | The desktop shows through the window, blurred and frosted, like the widget gallery of macOS. The cards become faint, lighter layers; the Raw Data table stays opaque. The frost stays when the window is in the background. |
 | **Translucent** (beta) | One sheet of clear Liquid Glass behind the whole window, with a dimming layer (dark in Dark Mode, a white wash in Light Mode). The colours stay; there are no cards: thin lines, bold numbers and headings separate the groups. |
-| **Clear** (beta) | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a battery that needs service shows a white badge with its words instead of orange or red. The window is always dark. |
+| **Clear** (beta) | Pure glass, like the Clear icon and widget style of macOS: the desktop shows through sharp but dimmed, so the white content stays readable even over a white window behind it, and all content turns white, colours included. A low battery or a worn one shows a white badge saying so instead of orange or red (see [Battery health](#battery-health)). The window is always dark. |
 
 The change applies at once to both windows. Settings, the menu bar popover, the welcome window
 and the widget always look as macOS draws them, so Settings stays readable whatever you choose.
