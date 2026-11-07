@@ -132,6 +132,74 @@ import Testing
         #expect(try SourceScanner.file("BatteryPulseApp/App/AppSettings.swift").text.contains(versioned))
     }
 
+    /// A section the app opens the guide at is an anchor github.com gives one of the guide's
+    /// headings, so renaming a heading that a link opens fails here, not on a page that opens at
+    /// its top. The Widget section's, `widget`, is the one Welcome's Show How takes (A-5).
+    @Test func everySectionTheAppOpensIsAHeading() throws {
+        let guide = SourceScanner.sources.deletingLastPathComponent().appendingPathComponent("docs/USER_GUIDE.md")
+        let anchors = Set(Self.headingAnchors(in: try String(contentsOf: guide, encoding: .utf8)))
+        #expect(anchors.contains("widget"), "the Widget section, for Welcome's Show How (A-5)")
+        for file in try SourceScanner.files.get() {
+            #expect(Self.sections(in: file.text).subtracting(anchors).isEmpty, "\(file.path)")
+        }
+        // The scan reads each call's section, with or without its #, and nothing else.
+        let calls = ##"AppLinks.guide(section: "#widget"); guide( section:"widgets" ); guide(section: nil)"##
+        #expect(Self.sections(in: calls) == ["widget", "widgets"])
+    }
+
+    /// The anchors are the ones github.com gives, as its rendering of the guide at v0.7.1 has them
+    /// for all 37 headings: a repeated heading's anchor ends in `-1`, punctuation is dropped, and a
+    /// `#` line in a code block is no heading.
+    @Test func headingAnchorsAreGitHubs() {
+        let markdown = """
+            # BatteryPulse User Guide
+            ## Privacy
+            ### Why it isn't charging
+            ```sh
+            # a comment in a code block
+            ```
+            ### Privacy
+            ## iPhone and iPad from the command line ##
+            #Not a heading
+            """
+        #expect(
+            Self.headingAnchors(in: markdown) == [
+                "batterypulse-user-guide", "privacy", "why-it-isnt-charging", "privacy-1",
+                "iphone-and-ipad-from-the-command-line",
+            ])
+    }
+
+    /// The anchors github.com gives the headings of `markdown`, in order: a heading's text
+    /// lowercased, without what isn't a letter, a digit, `_`, `-` or a space, its spaces as `-`,
+    /// and `-1`, `-2`, … after the first of a repeated one. A fenced code block holds no heading.
+    private static func headingAnchors(in markdown: String) -> [String] {
+        var anchors: [String] = []
+        var repeats: [String: Int] = [:]
+        var fenced = false
+        for line in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.drop(while: { $0 == " " }).hasPrefix("```") {
+                fenced.toggle()
+                continue
+            }
+            guard !fenced, let heading = line.wholeMatch(of: #/#{1,6} +(.*?)(?: +#+)? */#)?.1 else { continue }
+            let anchor = String(
+                heading.lowercased().compactMap { character -> Character? in
+                    if character == " " { return "-" }
+                    let kept = character.isLetter || character.isNumber || character == "_" || character == "-"
+                    return kept ? character : nil
+                })
+            let seen = repeats[anchor, default: 0]
+            repeats[anchor] = seen + 1
+            anchors.append(seen == 0 ? anchor : "\(anchor)-\(seen)")
+        }
+        return anchors
+    }
+
+    /// The sections that `source`'s `guide(section:)` calls name as literals, without their `#`.
+    private static func sections(in source: String) -> Set<String> {
+        Set(source.matches(of: #/guide\(\s*section:\s*"#?([^"\\]*)"/#).map { String($0.1) })
+    }
+
     @Test func notesOpenOnlyHTTPSLinks() throws {
         func allowed(_ string: String) throws -> Bool {
             ReleaseNotes.isAllowedLink(try #require(URL(string: string)))
