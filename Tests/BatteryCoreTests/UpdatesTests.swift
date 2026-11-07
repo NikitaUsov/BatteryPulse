@@ -121,6 +121,17 @@ import Testing
         #expect(URLComponents(url: encoded, resolvingAgainstBaseURL: false)?.fragment == "a b#c")
     }
 
+    /// The app's guide links take the running version: none opens `main`'s guide through the
+    /// unversioned form, which only the license link keeps.
+    @Test func theAppLinksTheGuideOfItsVersion() throws {
+        let unversioned = #/ReleaseChannel\.file\(\s*"docs/USER_GUIDE\.md"\s*\)/#
+        let versioned = #/ReleaseChannel\.file\(\s*"docs/USER_GUIDE\.md"\s*,\s*at:/#
+        for file in try SourceScanner.files.get() {
+            #expect(!file.text.contains(unversioned), "\(file.path)")
+        }
+        #expect(try SourceScanner.file("BatteryPulseApp/App/AppSettings.swift").text.contains(versioned))
+    }
+
     @Test func notesOpenOnlyHTTPSLinks() throws {
         func allowed(_ string: String) throws -> Bool {
             ReleaseNotes.isAllowedLink(try #require(URL(string: string)))
