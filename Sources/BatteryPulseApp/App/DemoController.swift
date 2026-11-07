@@ -39,6 +39,7 @@ final class DemoController {
         (.scene(.notChargingWithoutCause), .overview),
         (.scene(.slowCharger), .power),
         (.scene(.wornBattery), .health),
+        (.scene(.reducedCapacity), .health),
         (.scene(.noBattery), .overview),
         (.scene(.charging), .developer),
     ]
@@ -279,7 +280,9 @@ extension DemoController.Step {
     var toneKind: DemoStepKind {
         switch self {
         case .scene(.charging), .scene(.fullyCharged), .scene(.justPluggedIn), .animation(.chargeFromEmpty): .charging
-        case .scene(.lowBattery), .scene(.wornBattery), .scene(.slowCharger), .scene(.lowPowerMode): .warning
+        case .scene(.lowBattery), .scene(.wornBattery), .scene(.reducedCapacity), .scene(.slowCharger),
+            .scene(.lowPowerMode):
+            .warning
         case .scene(.criticalBattery), .scene(.heavyLoad), .animation(.drainToEmpty): .critical
         case .scene(.onBattery), .scene(.optimizedHold), .scene(.systemChargeLimit), .scene(.notChargingWithoutCause),
             .scene(.noBattery):
@@ -301,6 +304,7 @@ extension DemoScenario {
         case .notChargingWithoutCause: "Not charging"
         case .justPluggedIn: "Just plugged in"
         case .wornBattery: "Worn battery"
+        case .reducedCapacity: "Reduced capacity"
         case .heavyLoad: "Heavy load"
         case .slowCharger: "Slow charger"
         case .lowPowerMode: "Low Power Mode"
@@ -320,6 +324,7 @@ extension DemoScenario {
         case .notChargingWithoutCause: "Plugged in but not charging, for no reason BatteryPulse can name."
         case .justPluggedIn: "macOS is still estimating the time to full."
         case .wornBattery: "Past its rated cycles and below 80 percent capacity: service recommended."
+        case .reducedCapacity: "Below 80 percent capacity while macOS still reports its condition as Normal."
         case .heavyLoad: "Rendering or gaming: high power draw and an elevated thermal state."
         case .slowCharger: "A 15 W phone charger barely keeps up."
         case .lowPowerMode: "Reduced performance to make the battery last."
@@ -339,6 +344,7 @@ extension DemoScenario {
         case .notChargingWithoutCause: "bolt.slash"
         case .justPluggedIn: "powerplug.portrait.fill"
         case .wornBattery: "exclamationmark.triangle"
+        case .reducedCapacity: "chart.line.downtrend.xyaxis"
         case .heavyLoad: "flame"
         case .slowCharger: "tortoise"
         case .lowPowerMode: "leaf"

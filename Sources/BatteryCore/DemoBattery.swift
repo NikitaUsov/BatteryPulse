@@ -298,7 +298,15 @@ public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
     /// 10 s after a plug-in (`m5-macos27-plugged-in-10s.plist`), so the main window lists Apple's
     /// possible reasons.
     case notChargingWithoutCause
-    case justPluggedIn, wornBattery, heavyLoad, slowCharger, lowPowerMode, noBattery
+    case justPluggedIn
+    /// Past its rated cycles and below 80 % capacity, with the condition macOS reports then, "Service
+    /// Recommended", which Clear's badge says as macOS does.
+    case wornBattery
+    /// Below 80 % of its design capacity while macOS reports no condition, so it reads Normal: the
+    /// capacity warns on its own, and Clear's badge says the capacity is below 80 %, not "Service
+    /// Recommended" (``HealthSummary``).
+    case reducedCapacity
+    case heavyLoad, slowCharger, lowPowerMode, noBattery
 
     public var id: Self { self }
 
@@ -339,6 +347,11 @@ public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
                 $0.healthPercent = 74.6
                 $0.cycleCount = 1184
                 $0.condition = "Service Recommended"
+            }
+        case .reducedCapacity:
+            DemoBattery(percent: 71, batteryWatts: -7.9, systemLoadWatts: 7.9, minutesRemaining: 272).with {
+                $0.healthPercent = 78.4
+                $0.cycleCount = 640
             }
         case .heavyLoad:
             DemoBattery(percent: 58, batteryWatts: -34.5, systemLoadWatts: 34.5, minutesRemaining: 68)

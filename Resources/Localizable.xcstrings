@@ -548,6 +548,18 @@
         }
       }
     },
+    "As macOS reports it in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Health: the line under the summary at the top (Condition, Maximum capacity, Cycle count): these are macOS's own facts, as System Settings → Battery shows them, with no grade of BatteryPulse's own",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как сообщает macOS в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
     "Augmented %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery augmented power offer, shown as a hex code",
@@ -1230,6 +1242,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ниже 20 процентов заряд становится оранжевым."
+          }
+        }
+      }
+    },
+    "Below 80 percent capacity while macOS still reports its condition as Normal.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ёмкость ниже 80 процентов, но macOS по-прежнему сообщает, что состояние аккумулятора нормальное."
           }
         }
       }
@@ -4764,6 +4788,18 @@
         }
       }
     },
+    "Maximum capacity below %@": {
+      "extractionState": "manual",
+      "comment": "Clear's warning badge on Health and Overview when only the maximum capacity warns: it is below the placeholder (80%) while macOS reports the battery's condition as Normal. A fact, never macOS's \"Service Recommended\"",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная ёмкость ниже %@"
+          }
+        }
+      }
+    },
     "Maximum current the adapter offers at this profile's voltage.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -6724,6 +6760,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Запись выключена. Включить её можно в разделе «Настройки» → «Дополнения»."
+          }
+        }
+      }
+    },
+    "Reduced capacity": {
+      "extractionState": "manual",
+      "comment": "Demo scene",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уменьшенная ёмкость"
           }
         }
       }

@@ -21,6 +21,7 @@ import Testing
         (.notChargingWithoutCause, .notCharging, 57, .normal),
         (.justPluggedIn, .charging, 52, .normal),
         (.wornBattery, .discharging, 64, .normal),
+        (.reducedCapacity, .discharging, 71, .normal),
         (.heavyLoad, .discharging, 58, .normal),
         (.slowCharger, .charging, 41, .normal),
         (.lowPowerMode, .discharging, 23, .normal),
@@ -72,6 +73,13 @@ import Testing
         #expect(worn.healthCondition == "Service Recommended")
         #expect(BatteryPresentation.healthTier(for: worn) == .low)
         #expect(try #require(worn.cycleLifeUsed) > 1)
+
+        // Below 80 % with no condition from macOS, before its rated cycles: only the capacity warns.
+        let reduced = try snapshot(.reducedCapacity)
+        #expect(reduced.healthCondition == "Normal")
+        #expect(try #require(reduced.healthPercent) < BatteryPresentation.capacityWarningPercent)
+        #expect(BatteryPresentation.healthTier(for: reduced) == .low)
+        #expect(try #require(reduced.cycleLifeUsed) < 1)
 
         let fresh = try snapshot(.onBattery)
         #expect(fresh.healthCondition == "Normal")
