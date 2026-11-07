@@ -224,7 +224,7 @@ Settings → Battery.*, as before 0.8.
 ### Battery health
 
 The top of **Health** says whether the battery is OK with what macOS reports of it, label beside
-value, as System Settings → Battery shows it, and with no grade of BatteryPulse's own:
+value, and with no grade of BatteryPulse's own:
 
 - **Condition** is macOS's word for the battery. macOS names one only when something is wrong,
   so without one it reads *Normal*; otherwise it is macOS's own, such as *Service Recommended*.
