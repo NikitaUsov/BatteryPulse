@@ -61,9 +61,9 @@ import Testing
         let ended = Self.m5Policy().with("terminated", .bool(true))
         #expect(try Self.outcome([ended]) == .noPolicy)
         #expect(try Self.outcome([ended.with("soclimit", .int(90)), Self.m5Policy()]) == .manualChargeLimit(80))
-        // A Boolean archived as an integer reads the same.
-        #expect(try Self.outcome([Self.m5Policy().with("terminated", .int(1))]) == .noPolicy)
-        #expect(try Self.outcome([Self.m5Policy().with("terminated", .int(0))]) == .manualChargeLimit(80))
+        // The end archived as an integer is another format: Darwin's unarchiver fails it.
+        #expect(try Self.outcome([Self.m5Policy().with("terminated", .int(1))]) == .unknownFormat)
+        #expect(try Self.outcome([Self.m5Policy().with("terminated", .int(0))]) == .unknownFormat)
     }
 
     @Test func onlyTheLimitSetInSystemSettingsCounts() throws {

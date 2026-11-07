@@ -120,8 +120,9 @@ public enum SystemChargeLimitSource {
     }
 
     /// The archive's objects as plain property-list values, as the stand-in reads them: every
-    /// `soclimit` an integer (not a Boolean), every `terminated` a Boolean or an integer, and
-    /// every `reason` a reference to an object rather than a value of its own.
+    /// `soclimit` an integer (not a Boolean), every `terminated` a Boolean (Darwin's unarchiver
+    /// fails an integer there), and every `reason` a reference to an object rather than a value of
+    /// its own.
     struct ArchiveShape: Decodable {
         var objects: [Object]
 
@@ -143,8 +144,7 @@ public enum SystemChargeLimitSource {
                     (try? object.decode(type, forKey: key)) != nil
                 }
                 let limit = !object.contains(.soclimit) || (holds(Int.self, .soclimit) && !holds(Bool.self, .soclimit))
-                let terminated =
-                    !object.contains(.terminated) || holds(Bool.self, .terminated) || holds(Int.self, .terminated)
+                let terminated = !object.contains(.terminated) || holds(Bool.self, .terminated)
                 let reason = !holds(String.self, .reason) && !holds(Int.self, .reason) && !holds(Bool.self, .reason)
                 isPlain = limit && terminated && reason
             }
