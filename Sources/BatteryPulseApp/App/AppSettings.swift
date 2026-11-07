@@ -5,6 +5,7 @@ import Foundation
 import Observation
 import ServiceManagement
 import SwiftUI
+import os
 
 /// UserDefaults keys and launch-time decisions.
 enum AppSettings {
@@ -191,7 +192,23 @@ enum AppLinks {
     static let project = ReleaseChannel.project
     static let releases = ReleaseLinks.browserURL(for: ReleaseChannel.releasesPage)
     static let license = ReleaseChannel.file("LICENSE")
-    static let help = ReleaseChannel.file("docs/USER_GUIDE.md")
+    /// The user guide as the running version shipped it (``guide(section:)``): Help → BatteryPulse
+    /// Help, About's User Guide and Settings → Advanced.
+    static var help: URL { guide(section: nil) }
+    /// The user guide at the running version's release tag, or at `main` for a build without a
+    /// version (``ReleaseChannel/ref(of:)``), opened at `section`: the anchor github.com gives a
+    /// heading, such as `widget` for "## Widget", or `nil` for the top. Each call logs the ref at
+    /// notice: the app never shows where the link leads, and `log show` can.
+    static func guide(section: String?) -> URL {
+        let ref = ReleaseChannel.ref(of: runningVersion)
+        Diagnostics.update.notice("User guide link: blob/\(ref, privacy: .public)")
+        return ReleaseChannel.file("docs/USER_GUIDE.md", at: runningVersion, anchor: section)
+    }
+    /// The version this copy runs, read as the update check reads it (``UpdateChecker``):
+    /// ``UpdateInstallPolicy/unversioned`` for a build without one.
+    private static let runningVersion: AppVersion =
+        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String).flatMap(AppVersion.init)
+        ?? UpdateInstallPolicy.unversioned
     /// System Settings → General → Language & Region, where per-app languages are chosen.
     // swift-format-ignore: NeverForceUnwrap
     static let languageSettings = URL(string: "x-apple.systempreferences:com.apple.Localization-Settings.extension")!

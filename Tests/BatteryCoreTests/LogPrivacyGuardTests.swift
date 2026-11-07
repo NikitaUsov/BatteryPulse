@@ -62,6 +62,10 @@ import Testing
                 "name", count: 2, overridesName: true,
                 reason: "\"MobileDevice\" and the framework's version from its Info.plist")
         ],
+        "BatteryPulseApp/App/AppSettings.swift": [
+            PublicValue(
+                "ref", reason: "the user guide's git ref, main or a release's tag such as v0.8.0, never the URL")
+        ],
         "BatteryPulseApp/App/BatteryPulseApp.swift": [
             PublicValue("via", count: 3, reason: "how a widget click arrived, a StaticString: url or activity"),
             PublicValue(

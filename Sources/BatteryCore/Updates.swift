@@ -176,6 +176,34 @@ public enum ReleaseChannel {
         url("https://github.com/\(repository)/blob/main/\(path)")
     }
 
+    /// A file as github.com shows it at `version`'s release (``ref(of:)``), so the user guide that
+    /// a version opens describes that version, not what a later one changed. `anchor` opens the
+    /// page at a heading: the anchor github.com gives it, such as `widget` for "## Widget", with or
+    /// without its `#`; the URL holds it once.
+    public static func file(_ path: String, at version: AppVersion, anchor: String? = nil) -> URL {
+        let page = url("https://github.com/\(repository)/blob/\(ref(of: version))/\(path)")
+        let fragment = anchor.map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 } ?? ""
+        guard !fragment.isEmpty, var components = URLComponents(url: page, resolvingAgainstBaseURL: false) else {
+            return page
+        }
+        // Percent-encodes what a fragment can't hold, and replaces a fragment the path brought.
+        components.fragment = fragment
+        return components.url ?? page
+    }
+
+    /// Where github.com shows `version`'s files: at its release's tag, `v<version>`, or at `main`
+    /// for a version no release has. That is ``UpdateInstallPolicy/unversioned``, the version of a
+    /// build without one (CI's, `swift run`), and a version without exactly three parts, since
+    /// releases are tagged `vX.Y.Z` (as ``VersionCounterPolicy/url(for:)`` has it). A release
+    /// candidate's version, such as 0.7.99, can't be told from a release's, so its link opens a tag
+    /// that doesn't exist.
+    public static func ref(of version: AppVersion) -> String {
+        guard version.parts.count == 3, version.parts.allSatisfy({ $0 >= 0 }),
+            version != UpdateInstallPolicy.unversioned
+        else { return "main" }
+        return "v\(version)"
+    }
+
     // swift-format-ignore: NeverForceUnwrap
     private static func url(_ string: String) -> URL {
         URL(string: string)!
