@@ -1,10 +1,10 @@
 import BatteryCore
-import BatterySource
 import Foundation
 import Synchronization
 import Testing
 
 @testable import BatteryKit
+@testable import BatterySource
 
 @MainActor
 final class MockBatteryProvider: BatteryProvider {
@@ -1053,5 +1053,157 @@ private func reading(connected: Bool) -> BatteryReading {
         await monitor.refreshAndWait(trigger: .history)
         #expect(monitor.snapshot?.chargePercent == 79)
         #expect(provider.readCount == 2)
+    }
+}
+
+/// A file of powerd's whose reads give `outcome`, counted.
+final class ChargeLimitFile: Sendable {
+    private struct State {
+        var outcome: SystemChargeLimitSource.Outcome
+        var reads = 0
+    }
+
+    private let state: Mutex<State>
+
+    init(_ outcome: SystemChargeLimitSource.Outcome) {
+        state = Mutex(State(outcome: outcome))
+    }
+
+    var reads: Int { state.withLock { $0.reads } }
+
+    func set(_ outcome: SystemChargeLimitSource.Outcome) {
+        state.withLock { $0.outcome = outcome }
+    }
+
+    func reader() -> SystemChargeLimitReader {
+        SystemChargeLimitReader(logsReads: false) { [self] in
+            state.withLock { state in
+                state.reads += 1
+                return state.outcome
+            }
+        }
+    }
+}
+
+/// The Charge Limit's number rides the device's readings: read from powerd's file on the reader's
+/// triggers only, never for Demo Mode's readings, and off the main actor but for the launch's and
+/// a manual read.
+@MainActor
+@Suite(.timeLimit(.minutes(1))) struct SystemChargeLimitMonitorTests {
+    let clock = ManualMonitorClock()
+
+    private func makeMonitor(_ provider: any BatteryProvider, _ file: ChargeLimitFile) -> BatteryMonitor {
+        BatteryMonitor(provider: provider, clock: clock, systemChargeLimit: file.reader())
+    }
+
+    private func held() -> BatteryReading {
+        var reading = reading(connected: true)
+        reading.snapshot.notChargingReason = 0x0100_0000
+        return reading
+    }
+
+    /// Posts one change notification and ends its coalescing window: one read.
+    private func notifyAndRead(_ provider: MockBatteryProvider) async {
+        let reads = provider.readCount
+        let sleepers = clock.sleeperCount
+        provider.simulateSystemChange()
+        await settle { clock.sleeperCount == sleepers + 1 }
+        clock.advance(by: BatteryMonitor.coalescingWindow)
+        await settle { provider.readCount == reads + 1 }
+    }
+
+    @Test func theNumberComesWithTheReadingsOnItsTriggersOnly() async {
+        let device = MockBatteryProvider(next: reading(connected: true))
+        let file = ChargeLimitFile(.manualChargeLimit(80))
+        let monitor = makeMonitor(device, file)
+        monitor.start()
+        #expect(file.reads == 1, "the first reading on the adapter")
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 80)
+
+        device.next = reading(connected: true)
+        device.next?.snapshot.chargePercent = 51
+        await notifyAndRead(device)
+        monitor.refresh(trigger: .poll)
+        #expect(file.reads == 1, "a notification and a poll keep the number")
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 80)
+
+        device.next = held()
+        await notifyAndRead(device)
+        #expect(file.reads == 2, "the hold began")
+
+        device.next = reading(connected: false)
+        await notifyAndRead(device)
+        #expect(file.reads == 2)
+        #expect(monitor.snapshot?.systemChargeLimitPercent == nil, "none on battery")
+
+        file.set(.manualChargeLimit(85))
+        device.next = reading(connected: true)
+        await notifyAndRead(device)
+        #expect(file.reads == 3, "plugged in")
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 85)
+    }
+
+    @Test func powerAppearingReadsItAgainAtTheNextReading() async {
+        let device = MockBatteryProvider(next: reading(connected: true))
+        let file = ChargeLimitFile(.manualChargeLimit(80))
+        let monitor = makeMonitor(device, file)
+        monitor.start()
+        let reads = device.readCount
+        file.set(.manualChargeLimit(90))
+        monitor.powerAppeared()
+        #expect(device.readCount == reads, "no read of its own")
+        #expect(file.reads == 1)
+        monitor.refresh(trigger: .poll)
+        #expect(file.reads == 2)
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 90)
+        monitor.refresh(trigger: .poll)
+        #expect(file.reads == 2, "once per appearance")
+    }
+
+    /// Demo Mode's readings carry their scene's number and never read the file; the device's
+    /// first reading on the adapter after the demo does, and so does the first after a restart.
+    @Test func demoModeAndARestartStartTheReadsOver() {
+        let device = MockBatteryProvider(next: reading(connected: true))
+        let file = ChargeLimitFile(.manualChargeLimit(80))
+        let monitor = makeMonitor(device, file)
+        monitor.start()
+        #expect(file.reads == 1)
+
+        let scene = DemoScenario.systemChargeLimit.battery
+        monitor.setOverride(DemoBatteryProvider(battery: scene))
+        monitor.powerAppeared()
+        monitor.refresh(trigger: .demo)
+        #expect(file.reads == 1)
+        #expect(monitor.snapshot?.isAtSystemChargeLimit == true)
+
+        monitor.setOverride(nil)
+        #expect(file.reads == 2, "the demo's end")
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 80)
+
+        monitor.stop()
+        monitor.start()
+        #expect(file.reads == 3, "the restart")
+    }
+
+    /// A reading off the main actor reads the file inside the same read, right after the battery,
+    /// and lands with its number in one step; the launch's read, on the main actor, is done when
+    /// `start()` returns.
+    @Test func aReadOffTheMainActorReadsTheFileInsideIt() async {
+        let device = SuspendingProvider(next: reading(connected: true))
+        let file = ChargeLimitFile(.manualChargeLimit(80))
+        let monitor = makeMonitor(device, file)
+        monitor.start()
+        #expect(file.reads == 1)
+
+        file.set(.manualChargeLimit(85))
+        monitor.refresh(trigger: .notify)
+        await settle { device.reader.inFlight == 1 }
+        #expect(file.reads == 1, "not before the battery's read")
+        device.reader.finish(with: held())
+        await settle { !monitor.isReadingOffMainActor }
+        #expect(file.reads == 2)
+        #expect(!device.reader.ranOnMainActor)
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 85)
+        #expect(monitor.snapshot?.isAtSystemChargeLimit == true)
     }
 }

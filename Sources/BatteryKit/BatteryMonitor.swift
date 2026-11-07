@@ -28,6 +28,12 @@ import os
 /// read (``readsOnMainActor(_:)``) reads in a `@concurrent` function, and the result is assigned
 /// in one step when it lands. One such read runs at a time; the requests that arrive meanwhile make
 /// one follow-on read.
+///
+/// Each reading of the device carries the Charge Limit's number from a `SystemChargeLimitReader`,
+/// in the same read: it reads powerd's file only on its policy's triggers (the first reading on
+/// the adapter, a plug-in, the hold beginning or ending, Power appearing, ``powerAppeared()``),
+/// so inside the read off the main actor but for the launch's and a manual one; Demo Mode's
+/// readings carry their own.
 @MainActor
 @Observable
 public final class BatteryMonitor {
@@ -50,6 +56,11 @@ public final class BatteryMonitor {
 
     @ObservationIgnored private let provider: any BatteryProvider
     @ObservationIgnored private let clock: any MonitorClock
+    /// Gives the device's readings the Charge Limit's number; `nil` without one (iOS, tests).
+    @ObservationIgnored private let systemChargeLimit: SystemChargeLimitReader?
+    /// Power appeared since the last reading of the device: the next one reads the Charge Limit's
+    /// number again.
+    @ObservationIgnored private var powerShown = false
     @ObservationIgnored private var overrideProvider: (any BatteryProvider)?
     @ObservationIgnored private var observation: BatteryObservation?
     // Each task has a name ("BatteryMonitor.…") for Instruments' Swift Tasks view and the debugger.
@@ -103,8 +114,12 @@ public final class BatteryMonitor {
         .seconds(3), .seconds(8), .seconds(15), .seconds(30), .seconds(60),
     ]
 
-    public convenience init(provider: any BatteryProvider) {
-        self.init(provider: provider, clock: ContinuousClock())
+    /// - Parameters:
+    ///   - provider: Reads the device's battery.
+    ///   - systemChargeLimit: Gives the device's readings the Charge Limit's number, as its policy
+    ///     decides; `nil` leaves it unknown.
+    public convenience init(provider: any BatteryProvider, systemChargeLimit: SystemChargeLimitReader? = nil) {
+        self.init(provider: provider, clock: ContinuousClock(), systemChargeLimit: systemChargeLimit)
     }
 
     /// - Parameters:
@@ -113,10 +128,15 @@ public final class BatteryMonitor {
     ///     ``lastReadAt``. Tests pass one they advance by hand.
     ///   - registryPolicy: When polls may reuse the registry. Tests pass both settings of the
     ///     switch.
-    init(provider: any BatteryProvider, clock: any MonitorClock, registryPolicy: RegistryReadPolicy = .app) {
+    ///   - systemChargeLimit: Gives the device's readings the Charge Limit's number.
+    init(
+        provider: any BatteryProvider, clock: any MonitorClock, registryPolicy: RegistryReadPolicy = .app,
+        systemChargeLimit: SystemChargeLimitReader? = nil
+    ) {
         self.provider = provider
         self.clock = clock
         self.registryPolicy = registryPolicy
+        self.systemChargeLimit = systemChargeLimit
     }
 
     public func start() {
@@ -138,6 +158,8 @@ public final class BatteryMonitor {
         slowValuesReadAt = nil
         // The device's notifications pause meanwhile.
         registryWatch.reset()
+        // The limit may have changed meanwhile: the device's first reading on the adapter reads it.
+        systemChargeLimit?.reset()
         // A read in flight belongs to the provider shown until now.
         generation += 1
         requestedTrigger = nil
@@ -169,6 +191,7 @@ public final class BatteryMonitor {
         requestedTrigger = nil
         // No notification is heard until the next start.
         registryWatch.reset()
+        systemChargeLimit?.reset()
         observation?.cancel()
         observation = nil
         liveRefreshTask?.cancel()
@@ -225,6 +248,13 @@ public final class BatteryMonitor {
             Diagnostics.monitor.debug("Slow values on every read for \(clients, privacy: .public)")
         }
         #endif
+    }
+
+    /// Power appeared, which shows the Charge Limit's number: the next reading of the device reads
+    /// it again from powerd's file, whatever brings that reading (Power's polls, within their
+    /// interval). Never a read of its own.
+    public func powerAppeared() {
+        powerShown = true
     }
 
     /// Whether the battery was read less than `age` ago, on the monitor's clock: a caller that
@@ -295,7 +325,25 @@ public final class BatteryMonitor {
         requestedTrigger = nil
         let scope = readScope(for: trigger, isPoll: trigger == .poll)
         let mark = registryWatch.mark
-        apply(activeProvider.read(scope: scope), scope: scope, trigger: trigger, mark: mark)
+        var new = activeProvider.read(scope: scope)
+        if let limits = deviceLimits(), var reading = new {
+            limits.update(&reading, powerShown: takePowerShown())
+            new = reading
+        }
+        apply(new, scope: scope, trigger: trigger, mark: mark)
+    }
+
+    /// The Charge Limit's reader for a reading of the device; `nil` in Demo Mode, whose readings
+    /// carry their own number.
+    private func deviceLimits() -> SystemChargeLimitReader? {
+        overrideProvider == nil ? systemChargeLimit : nil
+    }
+
+    /// Whether Power appeared since the last reading of the device, for the reading that starts
+    /// now.
+    private func takePowerShown() -> Bool {
+        defer { powerShown = false }
+        return powerShown
     }
 
     /// Starts a read off the main actor or, while one is in flight, asks for one after it: any
@@ -322,7 +370,9 @@ public final class BatteryMonitor {
             let generation = generation
             let scope = readScope(for: trigger, isPoll: requestedPollsOnly)
             let mark = registryWatch.mark
-            let new = await Self.read(reader, scope: scope)
+            let limits = deviceLimits()
+            let shown = limits != nil && takePowerShown()
+            let new = await Self.read(reader, scope: scope, limits: limits, powerShown: shown)
             if generation == self.generation {
                 apply(new, scope: scope, trigger: trigger, mark: mark)
             } else {
@@ -335,13 +385,17 @@ public final class BatteryMonitor {
         readLoop = nil
     }
 
-    /// Reads through `reader` on the global concurrent executor, so IOKit and the SMC never hold
-    /// the main actor; only the result comes back.
+    /// Reads through `reader` on the global concurrent executor, so IOKit, the SMC and powerd's
+    /// file never hold the main actor; only the result comes back, with the Charge Limit's number
+    /// from `limits`.
     @concurrent
-    private static func read(_ reader: any NonisolatedBatteryReader, scope: BatteryReadScope) async
-        -> BatteryReading?
-    {
-        await reader.readNonisolated(scope: scope)
+    private static func read(
+        _ reader: any NonisolatedBatteryReader, scope: BatteryReadScope, limits: SystemChargeLimitReader?,
+        powerShown: Bool
+    ) async -> BatteryReading? {
+        guard var reading = await reader.readNonisolated(scope: scope) else { return nil }
+        limits?.update(&reading, powerShown: powerShown)
+        return reading
     }
 
     /// The two decisions of a read for `trigger`: the registry unless the read serves only polls

@@ -22,7 +22,12 @@ import Testing
 ///   (``noURLSchemeIsRegistered()``): the widget's URL reaches the app without one, and no web
 ///   page's link opens it;
 /// - a `URLSession` made outside `UpdateNetwork`, or the version count's URL taken outside the
-///   update checker.
+///   update checker;
+/// - the Charge Limit's reader of powerd's file (`SystemChargeLimitReader`) outside the battery
+///   monitor, `bpulse` and the app's start, so never in the widget; an archive decoded outside the
+///   Charge Limit's parser; and a class looked up by name anywhere
+///   (``powerdsFileAndClassAreNamedInOnePlaceEach()`` keeps the file's path and powerd's class name
+///   in one file each).
 ///
 /// The SMC client itself makes one call, with selector 2 (``smcClientCallsOnlySelectorTwo()``);
 /// `SMCTests` pins its commands to the three reads (5, 8 and 9).
@@ -151,6 +156,28 @@ import Testing
                 pattern: words(#/\bStrictMemorySafety\b/#),
                 allowed: [:],
                 message: "StrictMemorySafety silenced; mark each unsafe use `unsafe` with its reason"),
+            // A-2: powerd's charging preferences are read by the app's monitor and by `bpulse`,
+            // never by the widget, which shows the number from the app's feed.
+            Placement(
+                literals: ["SystemChargeLimitReader"],
+                pattern: words(#/\bSystemChargeLimitReader\b/#),
+                allowed: [
+                    "BatterySource/SystemChargeLimitReader.swift": .max, "BatteryKit/BatteryMonitor.swift": .max,
+                    "bpulse/main.swift": 1, "BatteryPulseApp/App/BatteryPulseApp.swift": 1,
+                ],
+                message: "the Charge Limit's reader only in the monitor, bpulse and the app's start"),
+            // A-2: one archive is decoded, powerd's policies, with secure coding and a stand-in for
+            // its class, which is never looked up by name.
+            Placement(
+                literals: ["NSKeyedUnarchiver"],
+                pattern: words(#/\bNSKeyedUnarchiver\b/#),
+                allowed: ["BatteryCore/SystemChargeLimitSource.swift": 1],
+                message: "an archive is decoded only by the Charge Limit's parser"),
+            Placement(
+                literals: ["NSClassFromString", "objc_getClass", "objc_lookUpClass"],
+                pattern: words(#/\bNSClassFromString\b|\bobjc_(?:getClass|lookUpClass)\b/#),
+                allowed: [:],
+                message: "a class looked up by its name"),
         ]
     }
 
@@ -368,6 +395,11 @@ import Testing
         "let session = URLSession .init(configuration: configuration)",
         "let url = VersionCounterPolicy.url(for: version)",
         "let url = VersionCounterPolicy . url(for: version)",
+        "let limits = SystemChargeLimitReader()",
+        "let unarchiver = try NSKeyedUnarchiver(forReadingFrom: data)",
+        "let type = NSClassFromString(name)",
+        "let type = objc_getClass(name)",
+        "let type = objc_lookUpClass(name)",
     ])
     func catches(source: String) {
         #expect(flags(source), "\(source)")
@@ -395,6 +427,42 @@ import Testing
     ])
     func allows(source: String) {
         #expect(!flags(source), "\(Self.violations(in: source, path: Self.somewhere))")
+    }
+
+    /// A-2: the widget never reads powerd's file, nor does anything else but the monitor, `bpulse`
+    /// and the app's start.
+    @Test func theChargeLimitsReaderIsTheMonitorsAndBpulses() {
+        let reader = "let limits = SystemChargeLimitReader()\n"
+        #expect(!flags(reader, path: "bpulse/main.swift"))
+        #expect(flags(reader + reader, path: "bpulse/main.swift"))
+        #expect(!flags(reader + reader, path: "BatteryKit/BatteryMonitor.swift"))
+        #expect(!flags(reader, path: "BatteryPulseApp/App/BatteryPulseApp.swift"))
+        for path in [
+            "BatteryPulseWidget/BatteryTimelineProvider.swift", "BatteryPulseWidget/WidgetFeedReader.swift",
+            "BatterySource/MacBatteryProvider.swift", "BatteryPulseApp/App/WidgetFeedWriter.swift",
+            "BatteryPulseApp/Main/PowerView.swift",
+        ] {
+            #expect(flags(reader, path: path), "\(path)")
+        }
+        let decode = "let unarchiver = try NSKeyedUnarchiver(forReadingFrom: data)\n"
+        #expect(!flags(decode, path: "BatteryCore/SystemChargeLimitSource.swift"))
+        #expect(flags(decode + decode, path: "BatteryCore/SystemChargeLimitSource.swift"))
+        #expect(flags(decode, path: "BatterySource/SystemChargeLimitReader.swift"))
+        #expect(!flags("let record = ChargePolicyRecord(coder: coder)"))
+    }
+
+    /// A-2: the path of powerd's charging preferences is in the reader's file alone, and the name of
+    /// powerd's policy class in the parser's alone, comments included: a second reader of the file,
+    /// or a decoder of the class, has to show up here first.
+    @Test func powerdsFileAndClassAreNamedInOnePlaceEach() throws {
+        let names = [
+            ("com.apple.powerd.charging", "BatterySource/SystemChargeLimitReader.swift"),
+            ("ChargeCtrlPolicy", "BatteryCore/SystemChargeLimitSource.swift"),
+        ]
+        let files = try SourceScanner.allFiles.get()
+        for (name, owner) in names {
+            #expect(files.filter { $0.text.contains(name) }.map(\.path) == [owner], "\(name)")
+        }
     }
 
     @Test func eachAPIIsAllowedOnlyWhereItIsToday() {

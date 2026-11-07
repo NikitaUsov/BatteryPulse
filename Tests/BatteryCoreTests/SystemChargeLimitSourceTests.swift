@@ -197,6 +197,67 @@ import Testing
     }
 }
 
+/// When the reads fetch powerd's file (``SystemChargeLimitReadPolicy``): the first reading on the
+/// adapter, a plug-in, the hold beginning or ending, and Power appearing; never per poll.
+@Suite struct SystemChargeLimitReadPolicyTests {
+    typealias Trigger = SystemChargeLimitReadPolicy.Trigger
+
+    static func snapshot(adapter: Bool?, reason: Int? = 0) -> BatterySnapshot {
+        BatterySnapshot(
+            timestamp: Fixture.timestamp, chargePercent: 80,
+            chargeState: adapter == true
+                ? (reason == SystemChargeLimit.heldBit ? .notCharging : .charging) : .discharging,
+            isExternalPowerConnected: adapter, notChargingReason: reason)
+    }
+
+    static let onBattery = snapshot(adapter: false, reason: 0x80)
+    static let charging = snapshot(adapter: true)
+    static let held = snapshot(adapter: true, reason: SystemChargeLimit.heldBit)
+
+    /// The triggers over `readings`, each with whether Power appeared just before it.
+    static func triggers(_ readings: [(BatterySnapshot, powerShown: Bool)]) -> [Trigger?] {
+        var policy = SystemChargeLimitReadPolicy()
+        return readings.map { policy.trigger(for: $0.0, powerShown: $0.powerShown) }
+    }
+
+    @Test func aDayOnAndOffTheAdapterReadsOnlyOnItsTriggers() {
+        let readings: [(BatterySnapshot, powerShown: Bool)] = [
+            (Self.onBattery, false), (Self.onBattery, false), (Self.charging, false), (Self.charging, false),
+            (Self.held, false), (Self.held, false), (Self.held, true), (Self.held, false), (Self.charging, false),
+            (Self.onBattery, true), (Self.onBattery, false), (Self.held, false),
+        ]
+        #expect(
+            Self.triggers(readings) == [
+                nil, nil, .pluggedIn, nil, .holdChanged, nil, .powerShown, nil, .holdChanged, nil, nil, .pluggedIn,
+            ])
+    }
+
+    @Test func theFirstReadingOnTheAdapterReads() {
+        #expect(Self.triggers([(Self.held, false), (Self.held, true)]) == [.firstOnAdapter, .powerShown])
+        #expect(Self.triggers([(Self.charging, true)]) == [.firstOnAdapter])
+        // The M5's captures: on the adapter at the hold, then charging; on battery none.
+        let captures: [Fixture] = [.m5OnBattery, .m5ChargeLimit, .m5Charging, .m5Unplugged, .m5PluggedIn10s]
+        let snapshots = captures.compactMap { try? $0.snapshot() }
+        #expect(snapshots.count == captures.count)
+        #expect(
+            Self.triggers(snapshots.map { ($0, false) }) == [nil, .pluggedIn, .holdChanged, nil, .pluggedIn])
+    }
+
+    /// The power unknown counts as off the adapter; Power appearing on battery reads nothing.
+    @Test func offTheAdapterNothingIsRead() {
+        let unknown = Self.snapshot(adapter: nil, reason: nil)
+        #expect(Self.triggers([(unknown, true), (Self.onBattery, true), (unknown, false)]) == [nil, nil, nil])
+        #expect(Self.triggers([(unknown, false), (Self.charging, false)]) == [nil, .pluggedIn])
+        // Bit 24 counts on the adapter only, as the parser's cause does.
+        var oddBattery = Self.onBattery
+        oddBattery.notChargingReason = SystemChargeLimit.heldBit
+        #expect(
+            Self.triggers([(Self.charging, false), (oddBattery, false), (Self.charging, false)]) == [
+                .firstOnAdapter, nil, .pluggedIn,
+            ])
+    }
+}
+
 /// A policy archived under powerd's class name, with the values given, each encoded as powerd's
 /// would be: integers and Booleans in place, strings and UUIDs as objects.
 final class ArchivedPolicy: NSObject, NSSecureCoding {

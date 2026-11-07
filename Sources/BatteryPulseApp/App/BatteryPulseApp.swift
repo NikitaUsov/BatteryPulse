@@ -30,7 +30,9 @@ struct BatteryPulseApp: App {
     init() {
         UserDefaults.standard.register(defaults: [AppSettings.showInMenuBarKey: true])
         AppSettings.migrate()
-        let monitor = BatteryMonitor(provider: MacBatteryProvider())
+        // The Charge Limit's number rides the battery's reads (A-2): the reader reads powerd's file on
+        // its policy's triggers, never per poll.
+        let monitor = BatteryMonitor(provider: MacBatteryProvider(), systemChargeLimit: SystemChargeLimitReader())
         monitor.start()
         // Plain assignment: in Xcode 27 @State is a macro without a public `_monitor` storage.
         self.monitor = monitor

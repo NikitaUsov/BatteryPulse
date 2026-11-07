@@ -185,3 +185,50 @@ final class ChargePolicyRecord: NSObject, NSSecureCoding {
         static let terminated = "terminated"
     }
 }
+
+/// When the app reads the Charge Limit's number from powerd's file (``SystemChargeLimitSource``):
+/// the first reading on the adapter, a plug-in, the Charge Limit's hold beginning or ending
+/// (bit 24 of `NotChargingReason`, ``SystemChargeLimit``), and Power appearing; never per poll.
+/// Between those reads, a reading on the adapter keeps the number the last read found, and one on
+/// battery has none: powerd keeps the policy only on the adapter, and drops it within minutes of
+/// an unplug. A pure decision over the readings, which the reader in BatterySource keeps.
+public struct SystemChargeLimitReadPolicy: Sendable, Equatable {
+    /// Why a reading reads the file; logged as its case name.
+    public enum Trigger: String, Sendable, CaseIterable {
+        /// The first reading on the adapter since the reads began: the app's launch, a restart of
+        /// its monitor, the end of Demo Mode, or `bpulse`'s first.
+        case firstOnAdapter
+        /// The adapter was plugged in since the last reading.
+        case pluggedIn
+        /// The Charge Limit's hold began or ended since the last reading: a limit set or changed
+        /// at the hold, or the charge reaching it.
+        case holdChanged
+        /// Power appeared, which shows the number.
+        case powerShown
+    }
+
+    /// What the last reading showed, `nil` before the first.
+    private var last: Seen?
+
+    private struct Seen: Sendable, Equatable {
+        var onAdapter: Bool
+        var held: Bool
+    }
+
+    public init() {}
+
+    /// Why `snapshot`, the newest reading, reads the file; `nil` when it keeps the last number (on
+    /// the adapter) or has none (on battery, or with the power unknown). `powerShown`: Power
+    /// appeared since the last reading. Records the reading.
+    public mutating func trigger(for snapshot: BatterySnapshot, powerShown: Bool) -> Trigger? {
+        let onAdapter = snapshot.isExternalPowerConnected == true
+        let held = onAdapter && (snapshot.notChargingReason ?? 0) & SystemChargeLimit.heldBit != 0
+        let previous = last
+        last = Seen(onAdapter: onAdapter, held: held)
+        guard onAdapter else { return nil }
+        guard let previous else { return .firstOnAdapter }
+        if !previous.onAdapter { return .pluggedIn }
+        if previous.held != held { return .holdChanged }
+        return powerShown ? .powerShown : nil
+    }
+}

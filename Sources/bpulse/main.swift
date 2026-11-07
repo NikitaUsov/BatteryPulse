@@ -397,13 +397,20 @@ let provider = options.inputPath == nil ? SystemBattery.makeProvider() : nil
 if options.inputPath == nil, provider == nil {
     fail("bpulse: battery information is not available on this platform.", code: 2)
 }
+// The report and --json carry the Charge Limit's number while it is known, read from powerd's file
+// on the reader's triggers (each --watch tick doesn't read it again); a capture never has it. Its
+// reads don't log: the session counts the app's.
+let chargeLimit =
+    provider != nil && (options.format == .text || options.format == .json)
+    ? SystemChargeLimitReader(logsReads: false) : nil
 
 let clearsScreen = options.format == .text && isatty(STDOUT_FILENO) != 0
 repeat {
     let reading: BatteryReading
     if let path = options.inputPath {
         reading = BatteryReading(rawCapture: loadCapture(at: path), timestamp: Date())
-    } else if let current = provider?.read() {
+    } else if var current = provider?.read() {
+        chargeLimit?.update(&current)
         reading = current
     } else {
         fail("bpulse: no internal battery found.", code: 2)
