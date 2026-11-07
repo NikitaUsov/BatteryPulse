@@ -317,4 +317,21 @@ import Testing
         // With no reload before it, the end reloads at once.
         #expect(Self.reloads([s.held, s.pluggedIn]) == [nil, .systemChargeLimit])
     }
+
+    /// A-2: the Charge Limit's number changing on the adapter, which the app writes to the feed
+    /// first, reloads as the hold does: once, within the immediate reasons' 5 minutes. A plug-in
+    /// that brings the number reloads through the policy alone.
+    @Test func aNewNumberReloadsOnce() throws {
+        let s = try Self.states()
+        var held80 = s.held
+        held80.systemChargeLimitPercent = 80
+        var held85 = s.held
+        held85.systemChargeLimitPercent = 85
+        #expect(
+            Self.reloads([s.held, held80, held80] + Array(repeating: held85, count: 5))
+                == [nil, .systemChargeLimit, nil, nil, nil, nil, .systemChargeLimit, nil])
+        var pluggedIn80 = s.pluggedIn
+        pluggedIn80.systemChargeLimitPercent = 80
+        #expect(Self.reloads([s.onBattery, pluggedIn80, pluggedIn80]) == [nil, .policy, nil])
+    }
 }

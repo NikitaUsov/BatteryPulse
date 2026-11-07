@@ -8,10 +8,11 @@ import Foundation
 ///   estimate, a 3-point step and a moved estimate. Five more reasons reload at once: a Low Power
 ///   Mode flip, a change of the adapter's watts or wireless flag, a change of condition, the
 ///   thermal state entering serious or critical, and the Charge Limit's hold starting or ending
-///   without a change of the charge state. The thermal reason has the heat alert's hysteresis:
-///   leaving reloads only once the state is back at nominal, so a state flapping between fair and
-///   serious under load reloads once. These five share ``immediateInterval`` between their
-///   reloads. A temperature move of ``temperatureStep`` waits, like a percent step,
+///   without a change of the charge state, or its number changing, which the Charge limit field
+///   shows once the app has written it to the feed. The thermal reason has the heat alert's
+///   hysteresis: leaving reloads only once the state is back at nominal, so a state flapping
+///   between fair and serious under load reloads once. These five share ``immediateInterval``
+///   between their reloads. A temperature move of ``temperatureStep`` waits, like a percent step,
 ///   until ``WidgetReloadPolicy/minimumInterval`` has passed since the kind's last reload.
 /// - **Accessories:** a connect or a disconnect reloads at once. A step of ``accessoryStep``
 ///   points waits until ``accessoryInterval`` has passed since the kind's last reload.
@@ -72,7 +73,8 @@ public struct WidgetReloadPlanner: Sendable {
         /// macOS's Charge Limit started or stopped holding the charge
         /// (``BatterySnapshot/isAtSystemChargeLimit``) with no change of the charge state, which
         /// ``WidgetReloadPolicy`` reloads for: plugged in near the limit, the state goes from
-        /// discharging to not charging first, and the hold's bit may follow.
+        /// discharging to not charging first, and the hold's bit may follow. Or its number changed
+        /// (``BatterySnapshot/systemChargeLimitPercent``), which the app writes to the feed first.
         case systemChargeLimit
         case temperature
         /// An accessory connected or disconnected.
@@ -116,6 +118,7 @@ public struct WidgetReloadPlanner: Sendable {
         /// The planner's heat as of the reload.
         var isHot: Bool
         var isAtSystemChargeLimit: Bool
+        var systemChargeLimitPercent: Int?
         var temperature: Double?
 
         init(_ snapshot: BatterySnapshot, isHot: Bool) {
@@ -125,6 +128,7 @@ public struct WidgetReloadPlanner: Sendable {
             condition = WidgetCondition(snapshot.healthCondition)
             self.isHot = isHot
             isAtSystemChargeLimit = snapshot.isAtSystemChargeLimit
+            systemChargeLimitPercent = snapshot.systemChargeLimitPercent
             temperature = snapshot.temperatureCelsius
         }
 
@@ -134,7 +138,11 @@ public struct WidgetReloadPlanner: Sendable {
             if next.adapterWatts != adapterWatts || next.adapterIsWireless != adapterIsWireless { return .adapter }
             if next.condition != condition { return .condition }
             if next.isHot != isHot { return .heat }
-            if next.isAtSystemChargeLimit != isAtSystemChargeLimit { return .systemChargeLimit }
+            if next.isAtSystemChargeLimit != isAtSystemChargeLimit
+                || next.systemChargeLimitPercent != systemChargeLimitPercent
+            {
+                return .systemChargeLimit
+            }
             return nil
         }
 

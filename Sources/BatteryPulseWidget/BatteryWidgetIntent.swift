@@ -342,8 +342,8 @@ extension BatteryWidgetField {
         case .cellBalance: "Balance"
         case .averageDrain: "Drain"
         case .timeOnBattery: "Unplugged"
-        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage, .systemChargeLimit:
-            nil
+        case .systemChargeLimit: "Limit"
+        case .state, .time, .condition, .cycleCount, .temperature, .adapter, .systemLoad, .voltage: nil
         }
     }
 }

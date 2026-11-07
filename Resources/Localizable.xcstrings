@@ -4414,6 +4414,18 @@
         }
       }
     },
+    "Limit": {
+      "extractionState": "manual",
+      "comment": "The Battery widget's shorter label for Charge limit (macOS's Charge Limit, System Settings → Battery) where the full one doesn't fit beside its value",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лимит"
+          }
+        }
+      }
+    },
     "Looking for devices…": {
       "extractionState": "manual",
       "localizations": {

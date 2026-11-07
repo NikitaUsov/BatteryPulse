@@ -52,6 +52,38 @@ struct WidgetRowTests {
         #expect(Self.value(.voltage) == .text("12.18\u{00A0}V"))
     }
 
+    /// A-2: the Charge limit field reads as Power's row, the number from the app's feed while the
+    /// feed is current at the reading: "80%, reached" at the hold, "80%" on the adapter, 0.7's
+    /// "Reached" at the hold without it, and nothing otherwise.
+    @Test func theChargeLimitShowsTheFeedsNumber() throws {
+        let held = try Fixture.m5ChargeLimit.snapshot()
+        var feed = WidgetFeed(
+            writtenAt: held.timestamp, languages: ["en"], recordsHistory: true, readsDevices: true,
+            systemChargeLimitPercent: 80)
+        func value(_ s: BatterySnapshot, _ feed: WidgetFeed?) -> WidgetValue? {
+            WidgetRow(.systemChargeLimit, snapshot: s, time: nil, formatter: Self.formatter, feed: feed)?.value
+        }
+        #expect(held.timestamp == Self.full.timestamp)
+        #expect(value(held, feed) == .limitReached("80%"))
+        #expect(value(held, nil) == .reached)
+        #expect(value(Self.full, feed) == .text("80%"))
+        #expect(value(Self.full, nil) == nil)
+        var unplugged = Self.full
+        unplugged.isExternalPowerConnected = false
+        unplugged.chargeState = .discharging
+        #expect(value(unplugged, feed) == nil)
+        // A feed two hours old: BatteryPulse hasn't run, so the limit may have changed meanwhile.
+        feed.writtenAt = held.timestamp.addingTimeInterval(-WidgetFeed.outdatedAge)
+        #expect(value(held, feed) == .reached)
+        #expect(value(Self.full, feed) == nil)
+        feed.writtenAt = held.timestamp.addingTimeInterval(1 - WidgetFeed.outdatedAge)
+        #expect(value(Self.full, feed) == .text("80%"))
+        // The label and the value VoiceOver reads.
+        let row = try #require(
+            WidgetRow(.systemChargeLimit, snapshot: held, time: nil, formatter: Self.formatter, feed: feed))
+        #expect(row.spokenLabel.text { $0 } == "Charge limit, 80%, reached")
+    }
+
     @Test func theTimeComesFromThePlanner() {
         let time = WidgetTimeText(direction: .full, end: Self.full.timestamp, form: .timeLeft)
         #expect(Self.value(.time) == nil)

@@ -89,6 +89,7 @@ import Testing
         var source = source(samples: samples, days: days, devices: devices)
         source.modelNames = modelNames
         source.languages = [String](repeating: String(repeating: "a", count: 35), count: 20)
+        source.systemChargeLimitPercent = WidgetFeed.Bounds.systemChargeLimit.upperBound
         var feed = try build(source)
         // The longest numbers each field may hold, the longest state and the longest class.
         feed.statistics24h = WidgetFeed.Statistics(
@@ -139,6 +140,23 @@ import Testing
 
     @Test func demoModeWritesNothing() {
         #expect(WidgetFeed.build(Self.source(samples: [Self.sample(1)], isOverridden: true)) == nil)
+    }
+
+    /// A-2: the Charge Limit's number rides every write while the app knows it, whatever the
+    /// sections and settings, within Apple's range; Demo Mode writes nothing at all.
+    @Test func theChargeLimitIsWrittenWhileKnown() throws {
+        var source = Self.source(recordsHistory: false, readsDevices: false, sections: [])
+        #expect(try Self.build(source).systemChargeLimitPercent == nil)
+        source.systemChargeLimitPercent = 80
+        #expect(try Self.build(source).systemChargeLimitPercent == 80)
+        #expect(try Self.build(Self.source(samples: [Self.sample(1)])).systemChargeLimitPercent == nil)
+        for outside in [79, 101, 0, -80] {
+            source.systemChargeLimitPercent = outside
+            #expect(try Self.build(source).systemChargeLimitPercent == nil, "\(outside)")
+        }
+        source.systemChargeLimitPercent = 85
+        source.isOverridden = true
+        #expect(WidgetFeed.build(source) == nil)
     }
 
     @Test func demoModesDeviceIsNeverWritten() throws {
@@ -582,6 +600,34 @@ import Testing
             ])
         #expect(object["version"] as? Int == 1)
         #expect(PropertyValue(any: object["writtenAt"] as Any) == .int(1_793_873_250))
+    }
+
+    /// A-2: the field version 1 gained in 0.8, written only while known, read back as written, and
+    /// a number outside Apple's range read as unknown.
+    @Test func theChargeLimitsFieldRoundTrips() throws {
+        var feed = try Self.fullFeed()
+        #expect(try Self.object(feed)["systemChargeLimitPercent"] == nil)
+        feed.systemChargeLimitPercent = 80
+        let object = try Self.object(feed)
+        #expect(PropertyValue(any: object["systemChargeLimitPercent"] as Any) == .int(80))
+        #expect(object["version"] as? Int == 1)
+        #expect(try WidgetFeed.decode(Self.data(feed), now: Self.now) == feed)
+        feed.systemChargeLimitPercent = 150
+        #expect(try WidgetFeed.decode(Self.data(feed), now: Self.now).systemChargeLimitPercent == nil)
+        // Of another type, the field is a feed the reader doesn't know, as any field is.
+        var forged = try Self.object(feed)
+        forged["systemChargeLimitPercent"] = "80"
+        #expect(throws: WidgetFeed.Rejection.malformed) { try Self.decode(forged) }
+    }
+
+    /// A-2: Demo Mode's removals keep the number the last real write left: they add, update and
+    /// move nothing.
+    @Test func aRemovalKeepsTheChargeLimit() throws {
+        var feed = try Self.fullFeed()
+        feed.systemChargeLimitPercent = 80
+        let removal = WidgetFeed.Removal(
+            historyCleared: true, recordsHistory: false, readsDevices: false, remembered: [])
+        #expect(feed.removing(removal).systemChargeLimitPercent == 80)
     }
 
     @Test func unknownFieldsAreIgnored() throws {

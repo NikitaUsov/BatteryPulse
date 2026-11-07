@@ -246,6 +246,7 @@ struct WidgetPlainValue: View {
         case .onOff(false): Text("Off", bundle: strings)
         case .time(let time): WidgetTimeLabel(time: time)
         case .reached: Text("Reached", bundle: strings)
+        case .limitReached(let text): Text("\(text), reached", bundle: strings)
         case .perHour(let text): Text("\(text) per hour", bundle: strings)
         case .since(let date): WidgetOffsetText(date: date, fields: oneLine ? 1 : 2)
         }

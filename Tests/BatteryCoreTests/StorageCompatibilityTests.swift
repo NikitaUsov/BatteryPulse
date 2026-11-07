@@ -307,6 +307,7 @@ import Testing
         #expect(WidgetFeed.currentVersion == 1)
         let read = try WidgetFeed.decode(Data(Self.shippedFeed.utf8), now: Self.feedReadAt)
         #expect(read == Self.shippedFeedValue)
+        #expect(read.systemChargeLimitPercent == nil)
         #expect(String(decoding: try WidgetFeed.encoded(Self.shippedFeedValue), as: UTF8.self) == Self.shippedFeed)
 
         // Where the app keeps it, beside `History/` and `Devices/`, and who may read it: the folder
@@ -322,6 +323,28 @@ import Testing
         #expect(try String(contentsOf: file, encoding: .utf8) == Self.shippedFeed)
         #expect(try WidgetFeedStoreTests.mode(folder).map { $0 & 0o777 } == 0o700)
         #expect(try WidgetFeedStoreTests.mode(file).map { $0 & 0o777 } == 0o600)
+    }
+
+    /// 0.8's addition to version 1 (A-2): the Charge Limit's number, a top-level field that 0.7.1's
+    /// file lacks and its widget ignores (``aFutureFeedReadsWhatThisVersionKnows(_:_:_:)``'s first
+    /// case is that reader's view). Written only while known, at its sorted place; no version bump.
+    static let chargeLimitFeed = shippedFeed.replacingOccurrences(
+        of: #""version":1"#, with: #""systemChargeLimitPercent":80,"version":1"#)
+
+    @Test func theChargeLimitsFieldIsAnAddition() throws {
+        let root = Self.temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        #expect(Self.chargeLimitFeed != Self.shippedFeed)
+        var value = Self.shippedFeedValue
+        value.systemChargeLimitPercent = 80
+        #expect(try WidgetFeed.decode(Data(Self.chargeLimitFeed.utf8), now: Self.feedReadAt) == value)
+        #expect(String(decoding: try WidgetFeed.encoded(value), as: UTF8.self) == Self.chargeLimitFeed)
+        let (folder, file) = Self.feedFolder(in: root)
+        #expect(try WidgetFeedStore(directory: folder).write(value) == .written(bytes: Self.chargeLimitFeed.utf8.count))
+        #expect(try String(contentsOf: file, encoding: .utf8) == Self.chargeLimitFeed)
+        // Without the number the file is 0.7.1's, byte for byte.
+        _ = try WidgetFeedStore(directory: folder).write(Self.shippedFeedValue)
+        #expect(try String(contentsOf: file, encoding: .utf8) == Self.shippedFeed)
     }
 
     /// A later 1.x adds fields to version 1 (C14). The widget reads such a feed with the fields

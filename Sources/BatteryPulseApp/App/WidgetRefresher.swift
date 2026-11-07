@@ -25,6 +25,8 @@ final class WidgetRefresher {
     private var feedObservation: Task<Void, Never>?
     /// The adapter as the feed was last told of it, outside Demo Mode.
     private var feedPlugged: Bool?
+    /// The Charge Limit's number as the feed was last told of it, outside Demo Mode.
+    private var feedChargeLimit: Int?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
     private var feedSawDemo = false
     /// The devices as the feed was last told of them, read times aside: a read that changed
@@ -61,7 +63,10 @@ final class WidgetRefresher {
             _ = planner.devices(devices.remembered, at: now)
         }
         feedSawDemo = monitor.isOverridden
-        if !feedSawDemo { feedPlugged = monitor.snapshot?.isExternalPowerConnected }
+        if !feedSawDemo {
+            feedPlugged = monitor.snapshot?.isExternalPowerConnected
+            feedChargeLimit = monitor.snapshot?.systemChargeLimitPercent
+        }
         feedDevices = devicesContent()
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
             for await _ in Observations({ monitor.snapshot }).dropFirst() {
@@ -139,22 +144,28 @@ final class WidgetRefresher {
             modelNames: WidgetFeedWriter.modelNames(of: remembered))
     }
 
-    /// Why the battery's change rewrites the feed at once, if it does: a plug change, and the end
-    /// of Demo Mode, whose readings never count as a plug change.
+    /// Why the battery's change rewrites the feed at once, if it does: a plug change, a new Charge
+    /// Limit number on the adapter, which the Battery widget shows from the feed and so must find
+    /// there when its kind reloads for it, and the end of Demo Mode, whose readings never count as
+    /// either.
     private func feedReasonForBattery() -> WidgetFeed.WriteReason? {
         guard !monitor.isOverridden else {
             feedSawDemo = true
             return nil
         }
         let plugged = monitor.snapshot?.isExternalPowerConnected
+        let chargeLimit = monitor.snapshot?.systemChargeLimitPercent
         var reason: WidgetFeed.WriteReason?
         if feedSawDemo {
             feedSawDemo = false
             reason = .demoEnded
         } else if let plugged, let last = feedPlugged, plugged != last {
             reason = .plug
+        } else if chargeLimit != feedChargeLimit {
+            reason = .systemChargeLimit
         }
         if let plugged { feedPlugged = plugged }
+        feedChargeLimit = chargeLimit
         return reason
     }
 
