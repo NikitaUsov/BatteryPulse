@@ -26,7 +26,7 @@ final class WidgetRefresher {
     /// The adapter as the feed was last told of it, outside Demo Mode.
     private var feedPlugged: Bool?
     /// The Charge Limit's number as the feed was last told of it, outside Demo Mode.
-    private var feedChargeLimit: Int?
+    private var feedSystemChargeLimit: Int?
     /// Demo Mode was on at the last battery change: its end rewrites the feed.
     private var feedSawDemo = false
     /// The devices as the feed was last told of them, read times aside: a read that changed
@@ -65,7 +65,7 @@ final class WidgetRefresher {
         feedSawDemo = monitor.isOverridden
         if !feedSawDemo {
             feedPlugged = monitor.snapshot?.isExternalPowerConnected
-            feedChargeLimit = monitor.snapshot?.systemChargeLimitPercent
+            feedSystemChargeLimit = monitor.snapshot?.systemChargeLimitPercent
         }
         feedDevices = devicesContent()
         batteryObservation = Task(name: "WidgetRefresher.battery") { [weak self, monitor] in
@@ -154,18 +154,18 @@ final class WidgetRefresher {
             return nil
         }
         let plugged = monitor.snapshot?.isExternalPowerConnected
-        let chargeLimit = monitor.snapshot?.systemChargeLimitPercent
+        let systemChargeLimit = monitor.snapshot?.systemChargeLimitPercent
         var reason: WidgetFeed.WriteReason?
         if feedSawDemo {
             feedSawDemo = false
             reason = .demoEnded
         } else if let plugged, let last = feedPlugged, plugged != last {
             reason = .plug
-        } else if chargeLimit != feedChargeLimit {
+        } else if systemChargeLimit != feedSystemChargeLimit {
             reason = .systemChargeLimit
         }
         if let plugged { feedPlugged = plugged }
-        feedChargeLimit = chargeLimit
+        feedSystemChargeLimit = systemChargeLimit
         return reason
     }
 
