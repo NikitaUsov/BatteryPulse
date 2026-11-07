@@ -2,7 +2,8 @@
 import BatteryCore
 import SwiftUI
 
-/// Battery health: maximum capacity, condition, cycles and the capacities behind them.
+/// Battery health: first what macOS reports of it (condition, maximum capacity, cycles), then the
+/// rings, the rated cycle life used, the capacities behind them and the cells.
 struct HealthView: View {
     let snapshot: BatterySnapshot
     private let formatter = BatteryFormatter.app
@@ -16,6 +17,7 @@ struct HealthView: View {
 
     var body: some View {
         LookForm {
+            summarySection
             if snapshot.healthPercent != nil || snapshot.cycleCount != nil {
                 Section {
                     gauges
@@ -80,39 +82,54 @@ struct HealthView: View {
             ringsFilled = true
         }
         .contentTreatment()
-        // Clear has no orange or red: a worn battery says so in its badge, under the rings.
+        // Clear has no orange or red: a worn battery says so in its badge, under the rings, in the
+        // condition macOS reports or, when only the capacity warns, the capacity's own words.
         let tier = BatteryPresentation.healthTier(for: snapshot)
-        if tones.badge(for: tier) == .inverted {
-            InvertedBadge(text: Text(Phrases.healthWarning(tier, condition: snapshot.healthCondition)))
+        if tones.badge(for: tier) == .inverted, let warning = Phrases.healthWarning(snapshot, formatter) {
+            InvertedBadge(text: Text(warning))
                 .frame(maxWidth: .infinity)
         }
     }
 
+    /// Is the battery OK: the condition macOS reports, the maximum capacity and the cycles out of
+    /// the rated count, label beside value, as BatteryCore's `HealthSummary` gives them, and where
+    /// macOS shows them. No grade of BatteryPulse's own.
+    private var summarySection: some View {
+        Section {
+            ForEach(HealthSummary.rows(for: snapshot, formatter: formatter), id: \.labelKey) { row in
+                ValueRow(LocalizedStringKey(row.labelKey), row.valueText { Phrases.text(forKey: $0) })
+            }
+        } footer: {
+            Text("As macOS reports it in System Settings → Battery.")
+        }
+    }
+
+    /// The battery's capacity against its design capacity where the summary's maximum capacity
+    /// stops at 100 %: a new battery often holds more than its design capacity.
+    private var uncappedDesignPercent: Double? {
+        guard let health = snapshot.healthPercent, let ratio = snapshot.capacityToDesignPercent, ratio > health
+        else { return nil }
+        return ratio
+    }
+
+    /// The rated cycle life used, and the cap behind the summary's maximum capacity; the summary
+    /// holds the rest of the battery's health.
     @ViewBuilder
     private var healthSection: some View {
-        Section {
-            if let health = snapshot.healthPercent {
-                ValueRow("Maximum capacity", formatter.percent(health))
-            }
-            if let condition = Phrases.condition(snapshot.healthCondition) {
-                ValueRow("Condition", condition)
-            }
-            if let cycles = snapshot.cycleCount {
-                ValueRow(
-                    "Cycle count",
-                    BatteryPresentation.ratedCycles(snapshot.designCycleCount).map { Phrases.count(cycles, of: $0) }
-                        ?? cycles.formatted())
-            }
-            if let used = snapshot.cycleLifeUsed {
-                ValueRow("Rated cycle life used", formatter.percent(used * 100))
-            }
-        } header: {
-            Text("Battery Health")
-        } footer: {
-            if let health = snapshot.healthPercent, let ratio = snapshot.capacityToDesignPercent, ratio > health {
-                Text(
-                    "macOS caps maximum capacity at \(formatter.percent(100)). The battery currently holds \(formatter.percent(ratio, fractionDigits: 1)) of its design capacity."
-                )
+        let uncapped = uncappedDesignPercent
+        if snapshot.cycleLifeUsed != nil || uncapped != nil {
+            Section {
+                if let used = snapshot.cycleLifeUsed {
+                    ValueRow("Rated cycle life used", formatter.percent(used * 100))
+                }
+            } header: {
+                Text("Battery Health")
+            } footer: {
+                if let uncapped {
+                    Text(
+                        "macOS caps maximum capacity at \(formatter.percent(100)). The battery currently holds \(formatter.percent(uncapped, fractionDigits: 1)) of its design capacity."
+                    )
+                }
             }
         }
     }

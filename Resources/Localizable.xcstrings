@@ -548,6 +548,18 @@
         }
       }
     },
+    "As macOS reports it in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Health: the line under the summary at the top (Condition, Maximum capacity, Cycle count): these are macOS's own facts, as System Settings → Battery shows them, with no grade of BatteryPulse's own",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как сообщает macOS в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
     "Augmented %@": {
       "extractionState": "manual",
       "comment": "USB Power Delivery augmented power offer, shown as a hex code",

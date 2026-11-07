@@ -210,15 +210,22 @@ enum Phrases {
         }
     }
 
-    /// The words on Clear's warning badge for a health tier: the condition macOS reports, or what
-    /// the tier means when only the capacity (below 80 %) warns.
-    static func healthWarning(_ tier: BatteryPresentation.LevelTier, condition raw: String?) -> String {
-        if let raw, raw != "Normal", raw != "Good", let text = condition(raw) { return text }
-        return condition(for: tier)
+    /// The words on Clear's warning badge for the Mac battery's health, as BatteryCore's
+    /// `HealthSummary` decides them: the condition macOS reports, or, when only the capacity is
+    /// under 80 %, that fact ("Maximum capacity below 80%"), never "Service Recommended" unless macOS
+    /// says it; `nil` when nothing warns.
+    static func healthWarning(_ s: BatterySnapshot, _ f: BatteryFormatter) -> String? {
+        HealthSummary.warningText(for: s, formatter: f) { text(forKey: $0) }
+    }
+
+    /// A catalog key BatteryCore chose (Health's summary, Clear's health badge) in the app's
+    /// language; the key itself, its English, when the catalog has no entry for it.
+    static func text(forKey key: String) -> String {
+        Bundle.main.localizedString(forKey: key, value: key, table: nil)
     }
 
     /// A health tier in the words of a battery condition: an iPhone's or iPad's condition, which
-    /// comes from its capacity alone, and a Mac's warning when only its capacity warns.
+    /// comes from its capacity alone.
     static func condition(for tier: BatteryPresentation.LevelTier) -> String {
         switch tier {
         case .normal: String(localized: "Normal", comment: "Battery condition")

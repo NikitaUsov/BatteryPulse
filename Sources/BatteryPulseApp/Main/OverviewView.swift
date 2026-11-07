@@ -135,8 +135,7 @@ struct OverviewView: View {
                     number: health,
                     caption: Phrases.condition(snapshot.healthCondition),
                     tint: tones.color(.level(tier)),
-                    badge: tones.badge(for: tier) == .inverted
-                        ? Phrases.healthWarning(tier, condition: snapshot.healthCondition) : nil
+                    badge: tones.badge(for: tier) == .inverted ? Phrases.healthWarning(snapshot, formatter) : nil
                 )
             }
             if let cycles = snapshot.cycleCount {
