@@ -20,7 +20,8 @@ let usage = """
       --input <file>    Read a capture saved with --raw (a Mac's, a device's or the
                         accessories') instead of this Mac's battery
       --smc             List the SMC's battery and charger keys with their types, and the raw
-                        bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) (macOS);
+                        bytes and values of the battery keys (B0*, BC*, BN*, TB*, SBA*) and of
+                        CHLT and CHNC, the charger's keys seen beside the Charge Limit (macOS);
                         read-only, for finding the keys on a new Mac model
       --record <folder> Keep raw captures for later study (macOS): one at the start, one just before
                         and one after every change of the charging state, and one every 15 minutes,
@@ -305,12 +306,15 @@ func exportHistory(_ kind: HistoryExportKind, _ options: Options) async -> Never
 }
 
 /// Lists the SMC keys that look battery-related. Every listed key's type is read; values only for
-/// the battery prefixes, because a few SMC keys change state when read.
+/// the battery prefixes and two charger keys, because a few SMC keys change state when read. `CHLT`
+/// and `CHNC` are read for the Charge Limit's check: their values at each limit are evidence of
+/// what they hold, which the app doesn't read (plan-0.8.0 A-2), with the same read command as every
+/// other key.
 @MainActor
 func smcKeyList() -> String {
     #if os(macOS)
     let listedPrefixes = ["B", "TB", "SB", "CH", "AC"]
-    let readPrefixes = ["B0", "BC", "BN", "TB", "SBA"]
+    let readPrefixes = ["B0", "BC", "BN", "TB", "SBA", "CHLT", "CHNC"]
     let smc = SMCClient()
     let count: Int
     do {
