@@ -1180,9 +1180,18 @@ final class ChargeLimitFile: Sendable {
         #expect(file.reads == 2, "the demo's end")
         #expect(monitor.snapshot?.systemChargeLimitPercent == 80)
 
+        // Power didn't appear during this one: the demo's start and end alone read the file again,
+        // the device on the adapter before and after it.
+        file.set(.manualChargeLimit(85))
+        monitor.setOverride(DemoBatteryProvider(battery: scene))
+        #expect(file.reads == 2)
+        monitor.setOverride(nil)
+        #expect(file.reads == 3, "the next demo's end")
+        #expect(monitor.snapshot?.systemChargeLimitPercent == 85)
+
         monitor.stop()
         monitor.start()
-        #expect(file.reads == 3, "the restart")
+        #expect(file.reads == 4, "the restart")
     }
 
     /// A reading off the main actor reads the file inside the same read, right after the battery,
