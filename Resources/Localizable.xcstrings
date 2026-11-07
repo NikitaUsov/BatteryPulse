@@ -106,6 +106,18 @@
         }
       }
     },
+    "%@, reached": {
+      "extractionState": "manual",
+      "comment": "The Charge limit row's value while macOS's Charge Limit holds the charge, with the limit's percentage, e.g. 80%, reached (Power, the Battery widget's Charge limit detail)",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, достигнут"
+          }
+        }
+      }
+    },
     "1 when the Mac lets the battery charge from the adapter; 0 on battery or while charging is paused.": {
       "extractionState": "manual",
       "comment": "Developer table: what a raw key means",
@@ -1773,12 +1785,36 @@
     },
     "Charging stopped at the Charge Limit set in System Settings → Battery.": {
       "extractionState": "manual",
-      "comment": "Overview, below the state, and the Charge limit demo scene: macOS's Charge Limit (System Settings → Battery) stopped charging; BatteryPulse only reads it",
+      "comment": "Overview, below the state, and the menu bar, while BatteryPulse doesn't know the limit's percentage: macOS's Charge Limit (System Settings → Battery) stopped charging; BatteryPulse only reads it",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Зарядка остановлена на уровне Лимита зарядки, заданного в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
+    "Charging stopped at the Charge Limit, %@, set in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Overview, below the state, and the menu bar: macOS's Charge Limit (System Settings → Battery) stopped charging at its percentage, e.g. 80%; BatteryPulse only reads it",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка остановлена на уровне Лимита зарядки (%@), заданного в Системных настройках → «Аккумулятор»."
+          }
+        }
+      }
+    },
+    "Charging stopped at the Charge Limit, 80 percent, set in System Settings → Battery.": {
+      "extractionState": "manual",
+      "comment": "Demo scene subtitle",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зарядка остановлена на уровне Лимита зарядки (80 процентов), заданного в Системных настройках → «Аккумулятор»."
           }
         }
       }

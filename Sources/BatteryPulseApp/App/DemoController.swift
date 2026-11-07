@@ -316,7 +316,7 @@ extension DemoScenario {
         case .criticalBattery: "Below 10 percent, the charge turns red."
         case .fullyCharged: "Plugged in and full; the adapter powers the Mac."
         case .optimizedHold: "macOS holds the charge at 80 percent to slow battery aging."
-        case .systemChargeLimit: "Charging stopped at the Charge Limit set in System Settings → Battery."
+        case .systemChargeLimit: "Charging stopped at the Charge Limit, 80 percent, set in System Settings → Battery."
         case .notChargingWithoutCause: "Plugged in but not charging, for no reason BatteryPulse can name."
         case .justPluggedIn: "macOS is still estimating the time to full."
         case .wornBattery: "Past its rated cycles and below 80 percent capacity: service recommended."

@@ -71,7 +71,7 @@ struct OverviewView: View {
                     }
                     // Why the battery isn't charging, for a cause BatteryPulse can prove, and the pane
                     // that changes it: BatteryPulse only reads the cause.
-                    if let sentence = Phrases.notChargingSentence(snapshot) {
+                    if let sentence = Phrases.notChargingSentence(snapshot, formatter) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(sentence)
                                 .foregroundStyle(.secondary)

@@ -78,6 +78,8 @@ public enum BatteryReport {
         if let reason = s.notChargingReason, reason != 0, s.isExternalPowerConnected == true {
             add("Not charging reason", hex(reason) + (s.notChargingCause.map { " (\(causeName($0)))" } ?? ""))
         }
+        // macOS's Charge Limit, from powerd's file on the adapter, while it is known.
+        add("Charge limit", s.systemChargeLimitPercent.map { "\($0) %" })
         if let reason = s.slowChargingReason, reason != 0, s.chargeState == .charging {
             add("Slow charging reason", hex(reason))
         }

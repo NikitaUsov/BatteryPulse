@@ -134,12 +134,28 @@ enum Phrases {
 
     /// Why the Mac battery isn't charging, for a cause BatteryPulse can prove: the sentence under
     /// the state line on Overview and in the menu bar popover; `nil` without one. BatteryPulse only
-    /// reads the cause, so the sentence says where it is changed.
-    static func notChargingSentence(_ s: BatterySnapshot) -> String? {
+    /// reads the cause, so the sentence says where it is changed, and the Charge Limit's number
+    /// while the reader knows it.
+    static func notChargingSentence(_ s: BatterySnapshot, _ f: BatteryFormatter) -> String? {
         guard let cause = s.notChargingCause else { return nil }
-        return switch cause {
+        switch cause {
         case .systemChargeLimit:
-            String(localized: "Charging stopped at the Charge Limit set in System Settings → Battery.")
+            guard let limit = s.systemChargeLimitPercent else {
+                return String(localized: "Charging stopped at the Charge Limit set in System Settings → Battery.")
+            }
+            let percent = f.percent(Double(limit))
+            return String(
+                localized: "Charging stopped at the Charge Limit, \(percent), set in System Settings → Battery.")
+        }
+    }
+
+    /// The Charge limit row's value (Power): the limit, the limit and that it is reached, or only
+    /// that it is reached when the number is unknown.
+    static func systemChargeLimit(_ row: SystemChargeLimitRow, _ f: BatteryFormatter) -> String {
+        switch row {
+        case .limit(let limit): f.percent(Double(limit))
+        case .reached(let limit): String(localized: "\(f.percent(Double(limit))), reached")
+        case .reachedUnknown: String(localized: "Reached")
         }
     }
 

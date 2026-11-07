@@ -354,3 +354,52 @@ enum PolicyArchive {
         return try PropertyListSerialization.data(fromPropertyList: plist, format: format, options: 0)
     }
 }
+
+/// What the Charge limit row shows (``SystemChargeLimitRow``), the text report's line and Demo
+/// Mode's scene.
+@Suite struct SystemChargeLimitRowTests {
+    typealias Policy = SystemChargeLimitReadPolicyTests
+
+    @Test func theRowShowsTheNumberOnTheAdapterAndReachedAtTheHold() throws {
+        #expect(SystemChargeLimitRow(Policy.held, percent: 80) == .reached(80))
+        #expect(SystemChargeLimitRow(Policy.held, percent: nil) == .reachedUnknown)
+        #expect(SystemChargeLimitRow(Policy.charging, percent: 85) == .limit(85))
+        #expect(SystemChargeLimitRow(Policy.charging, percent: nil) == nil)
+        #expect(SystemChargeLimitRow(Policy.onBattery, percent: 80) == nil)
+        #expect(SystemChargeLimitRow(Policy.onBattery, percent: nil) == nil)
+        // Optimized Battery Charging's hold is its own: the limit set shows as a number.
+        var optimized = Policy.held
+        optimized.isOptimizedChargingEngaged = true
+        #expect(SystemChargeLimitRow(optimized, percent: 80) == .limit(80))
+        // The M5's capture at the hold, without and with the reader's number.
+        let capture = try Fixture.m5ChargeLimit.snapshot()
+        #expect(SystemChargeLimitRow(capture, percent: capture.systemChargeLimitPercent) == .reachedUnknown)
+        #expect(SystemChargeLimitRow(capture, percent: 80) == .reached(80))
+    }
+
+    @Test func theReportNamesTheLimitWhileItIsKnown() throws {
+        var snapshot = try Fixture.m5ChargeLimit.snapshot()
+        let before = BatteryReport.lines(for: snapshot)
+        #expect(!before.contains { $0.label == "Charge limit" })
+        snapshot.systemChargeLimitPercent = 80
+        let lines = BatteryReport.lines(for: snapshot)
+        #expect(lines.first { $0.label == "Charge limit" }?.value == "80 %")
+        // Right after the reason it explains.
+        let reason = try #require(lines.firstIndex { $0.label == "Not charging reason" })
+        #expect(lines[reason + 1].label == "Charge limit")
+        // Nothing else changes.
+        #expect(lines.filter { $0.label != "Charge limit" } == before)
+    }
+
+    @Test func theDemoSceneHasItsNumberOnTheAdapterOnly() throws {
+        let scene = try #require(DemoScenario.systemChargeLimit.battery)
+        let snapshot = scene.reading(at: Fixture.timestamp).snapshot
+        #expect(snapshot.systemChargeLimitPercent == 80)
+        #expect(SystemChargeLimitRow(snapshot, percent: snapshot.systemChargeLimitPercent) == .reached(80))
+        for scenario in DemoScenario.allCases where scenario != .systemChargeLimit {
+            #expect(scenario.battery?.reading(at: Fixture.timestamp).snapshot.systemChargeLimitPercent == nil)
+        }
+        let unplugged = scene.with { $0.adapter = nil }
+        #expect(unplugged.reading(at: Fixture.timestamp).snapshot.systemChargeLimitPercent == nil)
+    }
+}

@@ -19,6 +19,10 @@ public struct DemoBattery: Sendable, Equatable {
     /// (``BatterySnapshot/notChargingCause``): bit 24 while the Charge Limit holds the charge.
     /// `nil` reads as the M5 reports it with no cause: 0x80 on battery and 0 on the adapter.
     public var notChargingReason: Int?
+    /// The Charge Limit set in System Settings → Battery, which the snapshot carries on the
+    /// adapter as the app's reader gives it (``BatterySnapshot/systemChargeLimitPercent``); `nil`
+    /// unknown.
+    public var systemChargeLimitPercent: Int?
     /// Power into the battery: positive while charging, negative while discharging.
     public var batteryWatts: Double
     public var systemLoadWatts: Double
@@ -177,8 +181,10 @@ public struct DemoBattery: Sendable, Equatable {
             adapterDetails: adapter?.details ?? [:],
             timestamp: date
         )
-        // The thermal state comes from the system, not from these dictionaries.
+        // The thermal state comes from the system, and the Charge Limit's number from powerd's file
+        // on the adapter, not from these dictionaries.
         reading.snapshot.thermalState = thermalState
+        reading.snapshot.systemChargeLimitPercent = isExternal ? systemChargeLimitPercent : nil
         return reading
     }
 }
@@ -284,7 +290,8 @@ public struct DemoAdapter: Sendable, Equatable {
 /// each cause for not charging BatteryPulse names (``NotChargingCause``) and one for none.
 public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
     case charging, onBattery, lowBattery, criticalBattery, fullyCharged, optimizedHold
-    /// Held at 80 % by the Charge Limit set in System Settings → Battery.
+    /// Held at 80 % by the Charge Limit set in System Settings → Battery, whose number the reader
+    /// gives on the adapter.
     case systemChargeLimit
     /// On the adapter and not charging, with no cause BatteryPulse can name
     /// (``BatterySnapshot/isNotChargingWithoutCause``): the reason reads 0x80, as the M5's did
@@ -316,7 +323,10 @@ public enum DemoScenario: String, Sendable, CaseIterable, Identifiable {
                 .with { $0.isOptimizedHold = true }
         case .systemChargeLimit:
             DemoBattery(percent: 80, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 6.8, minutesRemaining: 0)
-                .with { $0.notChargingReason = SystemChargeLimit.heldBit }
+                .with {
+                    $0.notChargingReason = SystemChargeLimit.heldBit
+                    $0.systemChargeLimitPercent = 80
+                }
         case .notChargingWithoutCause:
             DemoBattery(percent: 57, adapter: .usbC60W, batteryWatts: 0, systemLoadWatts: 7.4, minutesRemaining: 0)
                 .with { $0.notChargingReason = 0x80 }

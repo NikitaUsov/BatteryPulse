@@ -61,11 +61,11 @@ struct PowerView: View {
                     ValueRow("Requested charge voltage", formatter.volts(millivolts: voltage))
                 }
             }
-            // Reached, never a percentage: macOS holds the charge within a few points of the limit
-            // and resumes only after a drop of more than 5 %, so the charge here would read as the
-            // limit.
-            if snapshot.isAtSystemChargeLimit {
-                ValueRow("Charge limit", String(localized: "Reached"))
+            // The Charge Limit: its number on the adapter, from powerd's file, and that it is
+            // reached while it holds the charge; at the hold without the number, Reached alone. Never
+            // the charge itself, which sits within a few points of the limit.
+            if let row = SystemChargeLimitRow(snapshot, percent: snapshot.systemChargeLimitPercent) {
+                ValueRow("Charge limit", Phrases.systemChargeLimit(row, formatter))
             }
             if let optimized = snapshot.isOptimizedChargingEngaged {
                 // `false` means the feature isn't holding the charge right now, not that it's off.
