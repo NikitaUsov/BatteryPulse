@@ -2,8 +2,9 @@ import Foundation
 
 /// macOS's Charge Limit, which the user sets in System Settings → Battery → Charging (Apple silicon,
 /// macOS 26.4 or later): macOS stops charging at the limit and holds the charge there. BatteryPulse
-/// only reads that the limit holds the charge; it never sets a limit, and it can't read which limit
-/// is set, because no IOKit or IOPS key holds the number.
+/// reads that the limit holds the charge from bit 24 here, and which limit is set, a number no
+/// IOKit or IOPS key holds, from powerd's charging preferences on the adapter
+/// (``SystemChargeLimitSource``). It never sets a limit.
 ///
 /// Named apart from the app's own notification threshold (``AlertSettings/chargeLimit``, "When
 /// charged to"), which only notifies and never stops charging.

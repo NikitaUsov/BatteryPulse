@@ -24,6 +24,12 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
     public var isTimeRemainingCalculating: Bool
     /// macOS is holding the charge (usually at 80 %) to reduce battery ageing.
     public var isOptimizedChargingEngaged: Bool?
+    /// macOS's Charge Limit, the percentage set in System Settings → Battery, as powerd's charging
+    /// preferences hold it on the adapter (``SystemChargeLimitSource``); `nil` when unknown: on
+    /// battery, with no limit set, or when the file can't be read. Never parsed from a capture:
+    /// the app and `bpulse` read the file apart from the battery, and `bpulse --json` has the key
+    /// only while it is known.
+    public var systemChargeLimitPercent: Int?
 
     // MARK: Capacity & health
 
@@ -95,6 +101,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         timeToFullMinutes: Int? = nil,
         isTimeRemainingCalculating: Bool = false,
         isOptimizedChargingEngaged: Bool? = nil,
+        systemChargeLimitPercent: Int? = nil,
         currentCapacityMAh: Int? = nil,
         fullChargeCapacityMAh: Int? = nil,
         nominalChargeCapacityMAh: Int? = nil,
@@ -131,6 +138,7 @@ public struct BatterySnapshot: Sendable, Equatable, Codable {
         self.timeToFullMinutes = timeToFullMinutes
         self.isTimeRemainingCalculating = isTimeRemainingCalculating
         self.isOptimizedChargingEngaged = isOptimizedChargingEngaged
+        self.systemChargeLimitPercent = systemChargeLimitPercent
         self.currentCapacityMAh = currentCapacityMAh
         self.fullChargeCapacityMAh = fullChargeCapacityMAh
         self.nominalChargeCapacityMAh = nominalChargeCapacityMAh
