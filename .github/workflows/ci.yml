@@ -236,7 +236,9 @@ jobs:
         # with a display, rusage a running BatteryPulse, the quick check after a macOS update a
         # person at the Mac; perf-stats and release-stats run here on their samples, offline.
         # appintents-check's self-test runs it on the 0.6.2 widget spike's metadata and on doctored
-        # copies, which must fail.
+        # copies, which must fail. charge-limit-sample's (plan-0.8.0 A-2) redacts synthetic copies
+        # of powerd's charging preferences and decodes each as the parser does; the M5 session runs
+        # it on the real file.
         run: |
           bash -n scripts/menu-bar-shots.sh
           bash -n scripts/quick-check.sh
@@ -244,8 +246,10 @@ jobs:
           swiftc -typecheck scripts/rusage.swift
           swiftc -typecheck scripts/perf-stats.swift
           swiftc -typecheck scripts/release-stats.swift
+          swiftc -typecheck scripts/charge-limit-sample.swift
           swift scripts/release-stats.swift --self-test
           swift scripts/appintents-check.swift --self-test
+          swift scripts/charge-limit-sample.swift --self-test
           swift scripts/release-stats.swift --input scripts/release-stats-sample.json | diff -u scripts/release-stats-sample.expected -
           swift scripts/perf-stats.swift scripts/perf-sample.ndjson | diff -u scripts/perf-sample.expected -
           # 0.8's M5 session script, its launcher, section.sh and helpers (plan-0.8.0 T-1, built on

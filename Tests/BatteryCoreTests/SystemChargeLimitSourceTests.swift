@@ -173,6 +173,56 @@ import Testing
         }
     }
 
+    /// `scripts/charge-limit-sample.swift`, which redacts the M5's file for those samples, decodes
+    /// by these rules: its constants and its decisions repeat the parser's declarations line for
+    /// line, comments and line breaks aside, so a change to the parser fails here until the script
+    /// makes it too. The session names a sample by the script's last line.
+    @Test func theSampleScriptDecodesAsTheParserDoes() throws {
+        let script = try String(
+            contentsOf: SourceScanner.sources.deletingLastPathComponent()
+                .appendingPathComponent("scripts/charge-limit-sample.swift"), encoding: .utf8)
+        let parser = try String(
+            contentsOf: SourceScanner.sources.appendingPathComponent("BatteryCore/SystemChargeLimitSource.swift"),
+            encoding: .utf8)
+        let heads = [
+            "let range = ", "let manualReason = ", "let policyClassName = ", "let maximumBytes = ",
+            "func outcome(fileData data: Data) -> Outcome {", "struct File: Decodable {",
+            "func outcome(of policies: [ChargePolicyRecord]) -> Outcome {",
+            "func policies(in archive: Data) -> [ChargePolicyRecord]? {", "struct ArchiveShape: Decodable {",
+            "final class ChargePolicyRecord: NSObject, NSSecureCoding {",
+        ]
+        for head in heads {
+            let declared = try #require(Self.declaration(head, in: parser), "\(head)")
+            #expect(Self.declaration(head, in: script) == declared, "\(head)")
+        }
+        let range = SystemChargeLimitSource.range
+        #expect(Self.declaration("let range = ", in: script) == "letrange=\(range.lowerBound)...\(range.upperBound)")
+        #expect(script.contains(#"print("decodes to \(found)")"#))
+        #expect(script.contains(#"case .manualChargeLimit(let percent): "\(percent) (manualChargeLimit)""#))
+    }
+
+    /// The declaration in `text` whose first line, trimmed and without `public` or `static`, starts
+    /// with `head`: that line alone, or to the closing brace at its indentation, without comments
+    /// or whitespace.
+    static func declaration(_ head: String, in text: String) -> String? {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        func normalized(_ line: String) -> String {
+            var line = line.trimmingCharacters(in: .whitespaces)
+            for prefix in ["public ", "static "] where line.hasPrefix(prefix) {
+                line.removeFirst(prefix.count)
+            }
+            return line
+        }
+        guard let start = lines.firstIndex(where: { normalized($0).hasPrefix(head) }) else { return nil }
+        var code = [normalized(lines[start])]
+        if code[0].hasSuffix("{") {
+            let indentation = lines[start].prefix { $0 == " " }
+            guard let end = lines[(start + 1)...].firstIndex(of: indentation + "}") else { return nil }
+            code += lines[(start + 1)...end].filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+        }
+        return String(code.joined().filter { !$0.isWhitespace })
+    }
+
     /// `bpulse --json` has the key only while the number is known, which the snapshot keeps
     /// through a round trip; History and a capture never carry it.
     @Test func theJSONKeyIsThereOnlyWhenKnown() throws {
