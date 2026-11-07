@@ -182,18 +182,22 @@ func zeroed(_ text: String) -> String {
     String(text.map { $0.isHexDigit ? "0" : $0 })
 }
 
-/// An object reference of an archive: the index into `$objects` it stands for, read from the
-/// opaque object Foundation hands out for it; `nil` for any other value.
+/// An object reference of an archive: the index into `$objects` it stands for; `nil` for any other
+/// value. Foundation hands a reference out as an opaque CF object whose class doesn't name it, so
+/// the index is read from the reference's XML form, `<dict><key>CF$UID</key><integer>5</integer>`,
+/// or else from its description, `<CFKeyedArchiverUID …>{value = 5}`.
 func referenceIndex(_ value: Any) -> Int? {
-    let object = value as AnyObject
-    guard String(describing: type(of: object)).contains("KeyedArchiverUID") else { return nil }
-    if let target = object as? NSObject, target.responds(to: Selector(("value"))),
-        let number = target.value(forKey: "value") as? NSNumber
-    {
-        return number.intValue
+    guard !(value is NSDictionary || value is NSArray || value is String || value is Data || value is NSNumber)
+    else { return nil }
+    if let xml = try? PropertyListSerialization.data(fromPropertyList: [value], format: .xml, options: 0) {
+        let text = String(decoding: xml, as: UTF8.self)
+        if let match = text.range(of: #"<key>CF\$UID</key>\s*<integer>\d+</integer>"#, options: .regularExpression) {
+            return Int(text[match].filter(\.isNumber))
+        }
     }
-    let text = String(describing: object)
-    guard let match = text.range(of: #"value = (\d+)"#, options: .regularExpression) else { return nil }
+    let text = String(describing: value)
+    guard text.contains("KeyedArchiverUID"), let match = text.range(of: #"value = \d+"#, options: .regularExpression)
+    else { return nil }
     return Int(text[match].filter(\.isNumber))
 }
 
@@ -216,7 +220,8 @@ func redactedArchive(_ archive: Data) throws -> Data {
             from: archive, options: .mutableContainersAndLeaves, format: &format) as? NSMutableDictionary,
         let objects = root["$objects"] as? NSMutableArray
     else { throw Failure(description: "policies isn't a keyed archive: nothing written") }
-    for case let object as NSMutableDictionary in objects {
+    // The objects are listed first: replacing one while the array is enumerated would raise.
+    for object in objects.compactMap({ $0 as? NSMutableDictionary }) {
         if let bytes = object["NS.uuidbytes"] as? Data {
             object["NS.uuidbytes"] = Data(count: bytes.count)
         }
@@ -317,14 +322,15 @@ final class ArchivedPolicy: NSObject, NSSecureCoding {
 
     let limit: Int
     let owner: Any
-    /// A Boolean, as powerd archives it, or a number, which the parser turns down.
-    let terminated: Any
+    /// Whether the policy's end is archived as a number, which the parser turns down, rather than
+    /// the Boolean powerd archives.
+    let endsAsNumber: Bool
     let token = UUID()
 
-    init(limit: Int, owner: Any, terminated: Any = false) {
+    init(limit: Int, owner: Any, endsAsNumber: Bool = false) {
         self.limit = limit
         self.owner = owner
-        self.terminated = terminated
+        self.endsAsNumber = endsAsNumber
     }
 
     init?(coder: NSCoder) { nil }
@@ -335,10 +341,10 @@ final class ArchivedPolicy: NSObject, NSSecureCoding {
         coder.encode(true, forKey: "drain")
         coder.encode(true, forKey: "isEndOfCharge")
         coder.encode(false, forKey: "noChargeToFull")
-        switch terminated {
-        case let ended as Bool: coder.encode(ended, forKey: "terminated")
-        case let number as Int: coder.encode(number, forKey: "terminated")
-        default: break
+        if endsAsNumber {
+            coder.encode(0, forKey: "terminated")
+        } else {
+            coder.encode(false, forKey: "terminated")
         }
         switch owner {
         case let pid as Int: coder.encode(pid, forKey: "owner")
@@ -397,7 +403,7 @@ func selfTest() throws {
     try check(outside.outcome == .outOfRange, "75 is out of range")
     let number = try sample(
         of: syntheticFile(
-            [ArchivedPolicy(limit: 80, owner: 1, terminated: 0)], format: .binary, fileFormat: .binary))
+            [ArchivedPolicy(limit: 80, owner: 1, endsAsNumber: true)], format: .binary, fileFormat: .binary))
     try check(number.outcome == .unknownFormat, "a policy's end as a number is another format")
     // A file the script can't read is refused, and the outcome printed names its last line.
     try check(

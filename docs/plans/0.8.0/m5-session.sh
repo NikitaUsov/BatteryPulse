@@ -6432,7 +6432,7 @@ step_after() {
 # alerts; the report and its privacy lint. Exit status 1 on a broken rule.
 dry_run() {
   local problems=0 id session setting report printed feed facts counts="" starts runbook section bytes status other
-  local wanted missing name names found file want got
+  local wanted missing name names found file want got samples
   DRY_RUN=1
   check() {
     if [ "$1" = ok ]; then echo "ok: $2"; else
@@ -6633,10 +6633,21 @@ dry_run() {
     "plugin-5s$TAB$(clock)${TAB}ac${TAB}none$TAB-$TAB-${TAB}no${TAB}none${TAB}not run" \
     "plugin-1min$TAB$(clock)${TAB}ac${TAB}80${TAB}80${TAB}80${TAB}yes${TAB}1210 bytes${TAB}not run" >"$LIMIT_TABLE"
   limit_verdicts >/dev/null
+  # A-2's sample script is at the frozen commit from A-2 on: no sample failed, so his batch compares
+  # each decoded number with battlimit's; before it, the samples weren't run (3).
+  if [ -f "$ROOT/scripts/charge-limit-sample.swift" ]; then samples=unsure; else samples=3; fi
   [ "$(answer_of G8-1-hold)" = y ] && [ "$(answer_of G8-1-second)" = y ] && [ "$(answer_of G8-1-full)" = y ] &&
-    [ "$(answer_of G8-1-battery)" = y ] && [ "$(answer_of G8-1-plugin)" = y ] && [ "$(answer_of L-samples)" = 3 ] &&
+    [ "$(answer_of G8-1-battery)" = y ] && [ "$(answer_of G8-1-plugin)" = y ] && [ "$(answer_of L-samples)" = "$samples" ] &&
     check ok "G8-1's verdicts read the reads: the hold, a second limit, 100 %, battery and the plug-in" ||
-    check fail "G8-1's verdicts misread the reads ($(for id in hold second full battery plugin; do printf '%s=%s ' "$id" "$(answer_of "G8-1-$id")"; done))"
+    check fail "G8-1's verdicts misread the reads ($(for id in hold second full battery plugin; do printf '%s=%s ' "$id" "$(answer_of "G8-1-$id")"; done)L-samples=$(answer_of L-samples))"
+  (ROOT="$WORK/no-sample-script" && limit_verdicts >/dev/null 2>&1)
+  [ "$(answer_of L-samples)" = 3 ] && check ok "no sample script at the frozen commit reads 3, not run" ||
+    check fail "no sample script didn't read 3 ($(answer_of L-samples))"
+  if [ -f "$ROOT/scripts/charge-limit-sample.swift" ]; then
+    printf '%s\n' "hold$TAB$(clock)${TAB}ac${TAB}80${TAB}80${TAB}80${TAB}yes${TAB}1210 bytes${TAB}failed: a UUID of the file is still in the copy: nothing written" >"$LIMIT_TABLE"
+    limit_verdicts >/dev/null 2>&1
+    [ "$(answer_of L-samples)" = 2 ] && check ok "a failed sample reads 2" || check fail "a failed sample didn't read 2 ($(answer_of L-samples))"
+  fi
   printf '%s\n' "hold$TAB$(clock)${TAB}ac${TAB}80${TAB}80$TAB-${TAB}no${TAB}1210 bytes${TAB}not run" >"$LIMIT_TABLE"
   limit_verdicts >/dev/null 2>&1
   [ "$(answer_of G8-1-hold)" = unsure ] && grep -q '^G8-1-hold' "$BATCH" &&
